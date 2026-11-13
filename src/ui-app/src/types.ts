@@ -610,6 +610,8 @@ export interface ReviewState {
   running: boolean;
   /** Whether the review agent is enabled on the Agents page. */
   enabled: boolean;
+  /** Completed passes before non-blocking suggestions may be filed. */
+  freezeAfterPasses?: number;
   /** The stored report, or null when none has been written yet. */
   report: ReviewReport | null;
   /** Numbered review pass summaries (#0680). */

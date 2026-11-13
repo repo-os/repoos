@@ -78,6 +78,7 @@ import {
   reviewReportHasBlockingBugs,
 } from "../../core/review-report-sections.js";
 import { parseReviewVerdict } from "../../core/review-verdict.js";
+import { reviewFreezeThreshold } from "../review.js";
 import { isHoldActive } from "../../core/task-selection.js";
 import { holdBlocksEngineer } from "../hold-guard.js";
 import { relaunchEngineerOnActiveTask } from "../engineer-launch.js";
@@ -4067,6 +4068,7 @@ export const getTaskReview: RouteHandler = (ctx, _req, res, params) => {
     ok: true,
     running: reviews.isRunning(id),
     enabled: reviews.enabled(),
+    freezeAfterPasses: reviewFreezeThreshold(ctx.config),
     review: reviews.read(id),
     history: reviews.listPasses(id).map((pass) => ({
       ...pass,
@@ -4081,9 +4083,10 @@ export const createReviewFollowup: RouteHandler = async (ctx, req, res, params) 
   const task = ctx.index.getTask(params.param1);
   if (!task) return json(res, 404, { error: `Task #${params.param1} not found` });
   const report = ctx.reviews.read(task.id);
-  if (Number(task.extra?.review_passes ?? 0) < 4) {
+  const freezeAfterPasses = reviewFreezeThreshold(ctx.config);
+  if (Number(task.extra?.review_passes ?? 0) < freezeAfterPasses) {
     return json(res, 409, {
-      error: "Follow-up tasks are available after the four-pass review freeze",
+      error: `Follow-up tasks are available after the ${freezeAfterPasses}-pass review freeze`,
     });
   }
   const suggestions = report ? extractReviewReportSections(report.markdown).suggestions : undefined;

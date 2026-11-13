@@ -3325,6 +3325,7 @@ export const useRepoStore = defineStore("repo", () => {
         ok: boolean;
         running: boolean;
         enabled: boolean;
+        freezeAfterPasses?: number;
         review: ReviewReport | null;
         history?: ReviewState["history"];
         lines?: AgentOutputEntry[];
@@ -3335,6 +3336,7 @@ export const useRepoStore = defineStore("repo", () => {
         [id]: {
           running: r.running,
           enabled: r.enabled,
+          freezeAfterPasses: r.freezeAfterPasses ?? 4,
           report: r.review,
           history: r.history ?? [],
           lines: r.lines ?? [],

@@ -3499,7 +3499,9 @@ const reviewSuggestionsPresent = computed(() =>
     extractReviewReportSections(displayedReviewReport.value.markdown).suggestions,
   ),
 );
-const reviewFrozen = computed(() => taskRounds.value.review >= 4);
+const reviewFrozen = computed(
+  () => taskRounds.value.review >= (review.value?.freezeAfterPasses ?? 4),
+);
 async function createReviewFollowup(): Promise<void> {
   if (!ui.active || creatingReviewFollowup.value || !reviewSuggestionsPresent.value) return;
   creatingReviewFollowup.value = true;
