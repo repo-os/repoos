@@ -1888,6 +1888,7 @@ async function openDebuggerFromError(): Promise<void> {
           v-if="showCardCheckProgress"
           class="task-card-check-progress-tip"
           :data-tip="activeActivityTip ?? undefined"
+          :data-touch-tip="activeActivityTip ? '' : undefined"
           :tabindex="activeActivityTip ? 0 : undefined"
         >
           <ChecksProgressDisplay
@@ -1961,6 +1962,7 @@ async function openDebuggerFromError(): Promise<void> {
           data-test-id="task-card-agent-hint"
           :class="[hint.cls, cardHintUsesLineClamp(hint) ? 'tc-hint--progress-clamp' : '']"
           :data-tip="cardHintDataTip(hint.title, hint.activityTip)"
+          :data-touch-tip="hint.activityTip ? '' : undefined"
           tabindex="0"
           role="button"
           @click.stop="onCardHintClick"
