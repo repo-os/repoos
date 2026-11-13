@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 520887
-last_close_out_gate_at: "2026-11-13T14:49:39.053Z"
 id: "1102"
 title: "Flaky test: 'ReferenceError: Element is not defined' in jsdom tests fails checks for unrelated tasks (seen on #1062, #1075, #1078, #1081)"
 type: bug
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: 071a5b4ff9fbf3808d1c3433318ea22a18faf5d3
 assigned_to: ai
 created_by: t@t
 branch: feat/flaky-test-referenceerror-element-is-not
@@ -14,6 +13,8 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-13T07:11:46Z"
 updated_at: "2026-11-13T14:49:39Z"
+last_close_out_gate_ms: 520887
+last_close_out_gate_at: "2026-11-13T14:49:39.053Z"
 review_passes: 1
 ---
 ## Problem
