@@ -11,7 +11,7 @@ branch: feat/remote-validation-lock-waiters-leak-and-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-12T19:01:43Z"
-updated_at: "2026-11-13T01:07:00Z"
+updated_at: "2026-11-13T01:07:48Z"
 ---
 ## Problem
 
@@ -41,3 +41,4 @@ The lock script is generated in the remote validation lock code (search for `.re
 - 2026-11-13T01:07:00Z · status active→review
 - 2026-11-13T01:07:00Z · message_queued at 2026-11-13T01:07:00.138Z
 - 2026-11-13T01:07:00Z · note: shots: skipped — the diff (4 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-11-13T01:07:48Z · note: review pass 1: good to go
