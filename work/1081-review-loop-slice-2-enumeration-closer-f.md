@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-13T11:57:06.465Z: repoos check failed: tests — tests/handoff-unification.test.ts > the runner finalizes a `repoos mv review` request at turn end (#0507) > ignores a marker left behind by an earlier turn — at check tests/handoff-unification.test.ts:156:50 — Error: timeout: the turn ends"
 id: "1081"
 title: "Review loop slice 2: enumeration closer, follow-up tasks, convergence report, Land anyway override"
 type: feature
@@ -145,3 +147,4 @@ Start from `src/server/review.ts` (`reviewMission`, the "Earlier passes and the 
 - 2026-11-13T11:57:03Z · message_queued at 2026-11-13T11:57:03.318Z
 - 2026-11-13T11:57:03Z · handoff failed · handoff recovery attempted · finalization failed
 - 2026-11-13T11:57:06Z · message_delivered: 1 message(s)
+
