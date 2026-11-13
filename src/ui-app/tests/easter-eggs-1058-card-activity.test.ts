@@ -107,6 +107,19 @@ describe("opt-in touch tooltip gestures (#1069)", () => {
     trigger.remove();
   });
 
+  it("opens on a long press and suppresses the resulting trigger click", () => {
+    const trigger = touchTip("Active 1m ago");
+    const clicked = vi.fn();
+    trigger.addEventListener("click", clicked);
+    touchPointer("pointerdown", trigger);
+    vi.advanceTimersByTime(500);
+    expect(document.querySelector(".app-tooltip.show")?.textContent).toBe("Active 1m ago");
+    touchPointer("pointerup", trigger);
+    trigger.click();
+    expect(clicked).not.toHaveBeenCalled();
+    trigger.remove();
+  });
+
   it("does not open when the touch is cancelled before long press", () => {
     const trigger = touchTip("Active 1m ago");
     touchPointer("pointerdown", trigger);
