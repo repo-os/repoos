@@ -3,6 +3,9 @@ id: "1081"
 title: "Review loop slice 2: enumeration closer, follow-up tasks, convergence report, Land anyway override"
 type: feature
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "engineer keeps crashing (3 in 30m): a human-set task override (codex + gpt-6-luna) is pinned, so RepoOS did not replace it. Review the crash detail and either fix the environment, change the override, or resume manually. If the conversation itself is poisoned (it repeats the same failure), reset it with `repoos start 1081 --fresh`."
 priority: p2
 area: [server, core]
 depends_on: ["1080"]
@@ -12,9 +15,9 @@ branch: feat/review-loop-slice-2-enumeration-closer-f
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-09T13:59:41Z"
-updated_at: "2026-11-13T04:09:39Z"
-dev_error_count: 2
-engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-13T04:09:25.253Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-13T04:09:38.967Z\",\"kind\":\"dev-error\"}]"
+updated_at: "2026-11-13T04:09:54Z"
+dev_error_count: 3
+engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-13T04:09:25.253Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-13T04:09:38.967Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-13T04:09:54.560Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 Slice 1 of #1080 adds the automatic freeze after `review.freezeAfterPasses`, the lighter bar for P3 and Easter-eggs tasks, and authoritative accepted-scope sections. It does not yet make the review loop converge on its own. Three things remain: reviewers still stop at the first instance of a bug class, remaining non-blocking findings are not turned into follow-up tasks, and the human has no way to accept known, non-blocking risk instead of looping again. Tasks still take 10-15 rounds (#1058, #1060, #1061).
@@ -57,3 +60,5 @@ Start from `src/server/review.ts` (`reviewMission`, the "Earlier passes and the 
 - 2026-11-13T04:09:38Z · agent exited with an error (codex) · 2026-11-13T04:09:29.222609Z ERROR codex_models_manager::manager: failed to refresh available models: Connection failed: error sending request
 - 2026-11-13T04:09:38Z · engineer crash recovery: resuming codex + gpt-6-luna (2/3 crashes in 30m) · 2026-11-13T04:09:29.222609Z ERROR codex_models_manager::manager: failed to refresh available models: Connection failed: error sending request
 - 2026-11-13T04:09:39Z · needs_input
+- 2026-11-13T04:09:54Z · agent exited with an error (codex) · 2026-11-13T04:09:42.885437Z ERROR codex_models_manager::manager: failed to refresh available models: Connection failed: error sending request
+- 2026-11-13T04:09:54Z · engineer crash recovery: surfaced instead of switching — a human-set task override (codex + gpt-6-luna) is pinned, so RepoOS did not replace it (3/3 crashes in 30m)
