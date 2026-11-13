@@ -136,3 +136,4 @@ Related code: src/core/copilot-auto-tier.ts and enrichAgentFailureDetail in src/
 - 2026-11-13T02:24:11Z · CTO nudge: held — handoff gate is running
 - 2026-11-13T02:38:31Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-13T02:38:32Z · message_queued at 2026-11-13T02:38:32.022Z
+- 2026-11-13T02:38:32Z · handoff failed · task-file handoff failed at check · repoos check failed: tests — tests/handoff-unification.test.ts > the runner finalizes a `repoos mv review` request at turn end (#0507) > ignores a marker left behind by an earlier turn — at check tests/handoff-unification.test.ts:156:50 — Error: timeout: the turn ends
