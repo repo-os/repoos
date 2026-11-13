@@ -16,7 +16,6 @@ updated_at: "2026-11-13T06:36:00Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ReferenceError: Element is not defined"
 last_handoff_failure_sha: b3fade40fcb336b8d9f88e98eb25876b0cb0dcee
 dev_error_count: 5
-deferred_handoff_resume_count: 1
 ---
 ## Problem
 Slice 1 of #1080 adds the automatic freeze after `review.freezeAfterPasses`, the lighter bar for P3 and Easter-eggs tasks, and authoritative accepted-scope sections. It does not yet make the review loop converge on its own. Three things remain: reviewers still stop at the first instance of a bug class, remaining non-blocking findings are not turned into follow-up tasks, and the human has no way to accept known, non-blocking risk instead of looping again. Tasks still take 10-15 rounds (#1058, #1060, #1061).
