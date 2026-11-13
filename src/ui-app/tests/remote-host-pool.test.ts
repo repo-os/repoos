@@ -11,6 +11,7 @@ import {
   existsSync,
   mkdirSync,
   mkdtempSync,
+  readdirSync,
   readFileSync,
   rmSync,
   statSync,
@@ -2397,6 +2398,54 @@ describe("host-side lock (server + standalone CLI share one limit)", () => {
     expect(again.code).toBe(0);
     expect(readFileSync(marks, "utf8").trim().split("\n")).toEqual(["start", "end", "again"]);
   }, 30_000);
+
+  it("removes waiter entries and exits when its parent session disappears", async () => {
+    const root = tmpRoot();
+    const lockRoot = join(root, "locks");
+    mkdirSync(join(lockRoot, "0"), { recursive: true });
+    writeFileSync(join(lockRoot, "0", ".limit"), "1\n");
+    const script = hostLockShell({
+      slots: 1,
+      waitSecs: 3,
+      lockRoot,
+      inner: "sleep 30",
+    });
+    // A supervising shell represents sshd/the controlling session. The lock
+    // script is a child so it can observe its PPID changing when that session
+    // is killed. Its own child shell runs the script while this shell waits.
+    const quotedScript = script.replace(/'/g, "'\\''");
+    const waiters = Array.from({ length: 3 }, () => `sh -c '${quotedScript}'`).join(" & ");
+    const supervisor = spawn("sh", ["-c", `${waiters} & wait`]);
+    await tick(500);
+    const waitDir = join(lockRoot, "wait");
+    const entries = existsSync(waitDir) ? readdirSync(waitDir) : [];
+    expect(entries.length).toBeGreaterThanOrEqual(3);
+    supervisor.kill("SIGKILL");
+    const deadline = Date.now() + 6_000;
+    while (Date.now() < deadline && existsSync(waitDir) && readdirSync(waitDir).length) {
+      await tick(100);
+    }
+    expect(existsSync(waitDir) ? readdirSync(waitDir) : []).toEqual([]);
+  }, 15_000);
+
+  it("times out while deferred and removes stale dead-pid queue entries", async () => {
+    const root = tmpRoot();
+    const lockRoot = join(root, "locks");
+    const waitDir = join(lockRoot, "wait");
+    mkdirSync(waitDir, { recursive: true });
+    // A live high-priority entry forces deferral; a second dead PID entry is
+    // cleaned as the queue is inspected.
+    writeFileSync(join(waitDir, String(process.pid + 1_000_000)), "999\n");
+    writeFileSync(join(waitDir, String(process.pid)), "999\n");
+    const started = Date.now();
+    const result = await sh(
+      hostLockShell({ slots: 1, waitSecs: 2, lockRoot, inner: "echo SHOULD_NOT_RUN" }),
+    );
+    expect(result.code).toBe(HOST_LOCK_TIMEOUT_EXIT);
+    expect(Date.now() - started).toBeLessThan(7_000);
+    expect(result.out).not.toContain("SHOULD_NOT_RUN");
+    expect(readdirSync(waitDir)).toEqual([String(process.pid)]);
+  }, 10_000);
 
   it("keeps the stale threshold inside the wait budget and well past the heartbeat (#0521 review)", () => {
     // A waiter only ever waits DEFAULT_HOST_LOCK_WAIT_SECS, so a stale

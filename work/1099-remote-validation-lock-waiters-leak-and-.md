@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 724599
-last_close_out_gate_at: "2026-11-13T02:18:55.904Z"
 id: "1099"
 title: Remote validation lock waiters leak and never time out
 type: feature
-status: review
+status: done
 priority: p1
 area: core
+merged_commit: 6f902d76bda9b9cc3ffae66edc478498b60f5481
 assigned_to: ai
 created_by: t@t
 branch: feat/remote-validation-lock-waiters-leak-and-
@@ -14,6 +13,8 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-12T19:01:43Z"
 updated_at: "2026-11-13T02:18:55Z"
+last_close_out_gate_ms: 724599
+last_close_out_gate_at: "2026-11-13T02:18:55.904Z"
 review_passes: 1
 ---
 ## Problem
