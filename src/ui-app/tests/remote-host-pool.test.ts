@@ -2414,11 +2414,12 @@ describe("host-side lock (server + standalone CLI share one limit)", () => {
     // script is a child so it can observe its PPID changing when that session
     // is killed. Its own child shell runs the script while this shell waits.
     const quotedScript = script.replace(/'/g, "'\\''");
-    const supervisor = spawn("sh", ["-c", `sh -c '${quotedScript}' & wait`]);
-    await tick(300);
+    const waiters = Array.from({ length: 3 }, () => `sh -c '${quotedScript}'`).join(" & ");
+    const supervisor = spawn("sh", ["-c", `${waiters} & wait`]);
+    await tick(500);
     const waitDir = join(lockRoot, "wait");
     const entries = existsSync(waitDir) ? readdirSync(waitDir) : [];
-    expect(entries.length).toBeGreaterThan(0);
+    expect(entries.length).toBeGreaterThanOrEqual(3);
     supervisor.kill("SIGKILL");
     const deadline = Date.now() + 6_000;
     while (Date.now() < deadline && existsSync(waitDir) && readdirSync(waitDir).length) {
@@ -2437,7 +2438,9 @@ describe("host-side lock (server + standalone CLI share one limit)", () => {
     writeFileSync(join(waitDir, String(process.pid + 1_000_000)), "999\n");
     writeFileSync(join(waitDir, String(process.pid)), "999\n");
     const started = Date.now();
-    const result = await sh(hostLockShell({ slots: 1, waitSecs: 2, lockRoot, inner: "echo SHOULD_NOT_RUN" }));
+    const result = await sh(
+      hostLockShell({ slots: 1, waitSecs: 2, lockRoot, inner: "echo SHOULD_NOT_RUN" }),
+    );
     expect(result.code).toBe(HOST_LOCK_TIMEOUT_EXIT);
     expect(Date.now() - started).toBeLessThan(7_000);
     expect(result.out).not.toContain("SHOULD_NOT_RUN");
