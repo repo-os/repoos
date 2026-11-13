@@ -11,7 +11,7 @@ branch: ""
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-13T07:11:46Z"
-updated_at: "2026-11-13T11:55:17Z"
+updated_at: "2026-11-13T11:55:21Z"
 ---
 ## Problem
 repoos check intermittently fails with `ReferenceError: Element is not defined`. It appears in the agent logs of #1062, #1075, #1078 and #1081, tasks that touch unrelated code. The likely source is a jsdom MutationObserver callback delivered in a microtask after the environment is torn down (activity-motion-coordinator.test.ts and the overlay-occlusion code from #1062). #1081's engineer worked around it by stubbing the global Element in that test; that was reverted.
