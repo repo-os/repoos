@@ -90,3 +90,4 @@ Start from `src/server/review.ts` (`reviewMission`, the "Earlier passes and the 
 - 2026-11-13T06:23:35Z · handoff failed · task-file handoff failed at check · repoos check failed: ReferenceError: Element is not defined
 - 2026-11-13T06:24:12Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-13T06:35:59Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-13T06:35:59Z · message_queued at 2026-11-13T06:35:59.844Z
