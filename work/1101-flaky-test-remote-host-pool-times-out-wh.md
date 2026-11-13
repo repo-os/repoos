@@ -40,3 +40,4 @@ It passes in isolation, so look for a race between stale-entry cleanup and the l
 - 2026-11-13T10:10:21Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-13T10:36:43Z · body
 - 2026-11-13T10:38:32Z · status active→review
+- 2026-11-13T10:38:32Z · message_queued at 2026-11-13T10:38:32.643Z
