@@ -12,7 +12,7 @@ branch: feat/remote-validation-lock-waiters-leak-and-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-12T19:01:43Z"
-updated_at: "2026-11-13T02:19:11Z"
+updated_at: "2026-11-13T02:38:31Z"
 last_close_out_gate_ms: 724599
 last_close_out_gate_at: "2026-11-13T02:18:55.904Z"
 review_passes: 1
@@ -48,3 +48,4 @@ The lock script is generated in the remote validation lock code (search for `.re
 - 2026-11-13T01:07:48Z · note: review pass 1: good to go
 - 2026-11-13T02:18:55Z · close-out gate completed in 725s
 - 2026-11-13T02:19:11Z · status done→done, release:success
+- 2026-11-13T02:38:31Z · message_dropped: 1 queued message(s) discarded — task is done
