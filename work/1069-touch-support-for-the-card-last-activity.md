@@ -11,7 +11,7 @@ branch: feat/touch-support-for-the-card-last-activity
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-09T03:34:05Z"
-updated_at: "2026-11-13T14:52:17Z"
+updated_at: "2026-11-13T14:52:20Z"
 ---
 ## Problem
 The last-activity popover on Board and Pipeline cards (added by the "card activity recency" bundle, #1058) works on mouse hover and keyboard focus only. On touch devices there is no way to see it. A first touch implementation (tap to pin, long-press) was dropped from #1058 because it broke click handling on unrelated tooltip hosts and kept producing gesture-arbitration bugs.
@@ -58,3 +58,4 @@ Likely best done as part of the planned mobile rewrite; check that first and fol
 - 2026-11-13T14:43:28Z · CTO nudge: held — handoff gate is running
 - 2026-11-13T14:52:17Z · note: ui verification failed: ui verification failed (3 issue(s)): [missing-target] Board card activity recency popover (target "default"): hover [data-task-id="9999"] [data-test-id="task-card-agent-hint"]: hover: Timeout 5000ms exceeded. on / (http://127.0.0.1:36527/?shotState=board%3AactiveCoding); [missing-target] Board card activity recency popover (target "default"): state "board:activeCoding" did not render on target "default" — / shows no task card (http://127.0.0.1:36527/?shotState=board%3Aact
 - 2026-11-13T14:52:17Z · message_queued at 2026-11-13T14:52:17.325Z
+- 2026-11-13T14:52:20Z · message_delivered: 1 message(s)
