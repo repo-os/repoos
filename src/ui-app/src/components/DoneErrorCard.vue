@@ -3,13 +3,13 @@ import { computed, onBeforeUnmount, onMounted, ref, useId } from "vue";
 import {
   CircleAlert,
   ChevronDown,
+  Info,
   Wrench,
   LifeBuoy,
   Copy,
   Check,
   X,
   GitMerge,
-  Info,
 } from "lucide-vue-next";
 import { api, JSON_OPTS } from "../api";
 import type { RetryHint } from "../lib/retryHints";
@@ -58,6 +58,8 @@ const props = withDefaults(
     fixDisabled?: boolean;
     /** Shown when Fix is disabled (e.g. close-out running). */
     fixDisabledTitle?: string;
+    /** Hide redundant help in the drawer, where full error output is visible. */
+    hideHelp?: boolean;
   }>(),
   { mode: "card" },
 );
@@ -273,7 +275,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
         </div>
       </div>
       <div class="done-error-head" :title="headlineTitle">
-        Move to done failed
+        {{ hideHelp ? "Close-out failed" : "Move to done failed" }}
         <span v-if="step" class="done-error-step">at {{ step }}</span
         ><span v-if="failedAtLabel" class="done-error-step"> · {{ failedAtLabel }}</span>
       </div>
@@ -303,7 +305,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
           View the conflicts
         </button>
       </div>
-      <details class="done-error-help">
+      <details v-if="!hideHelp" class="done-error-help">
         <summary aria-label="Help for this close-out failure"><Info class="size-3.5" /></summary>
         <div class="done-error-help-popover" role="note">
           <p>

@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 971253
-last_close_out_gate_at: "2026-11-13T16:27:23.425Z"
 id: "1084"
 title: "Easter eggs bundle: task drawer status cards (one at a time, spacing, stray info icon)"
 type: feature
-status: review
+status: done
 priority: p3
 area: web
+merged_commit: 7aaafb52435a4a8e99c6adcb4e621f470e0f64e7
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-task-drawer-status-ca
@@ -14,6 +13,8 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-10T04:51:24Z"
 updated_at: "2026-11-13T16:27:23Z"
+last_close_out_gate_ms: 971253
+last_close_out_gate_at: "2026-11-13T16:27:23.425Z"
 review_passes: 1
 last_check_failure: "repoos check at 2026-11-13T15:23:12.527Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Drawer close-out failure in light appearance (target \"default\"): highlight .drawer-done-error matched nothing on /work?task=1084&tab=changes (http://127.0.0.1:38527/work?shotState=drawer:statusChecksFailed)"
 ---
