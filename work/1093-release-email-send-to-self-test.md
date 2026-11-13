@@ -35,3 +35,4 @@ See src/server/email.ts and src/server/release-email.ts. Do not put any real key
 - 2026-11-13T07:10:40Z · status ready→active, branch
 - 2026-11-13T07:17:56Z · body
 - 2026-11-13T08:34:24Z · message_queued at 2026-11-13T08:34:24.432Z
+- 2026-11-13T08:34:24Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
