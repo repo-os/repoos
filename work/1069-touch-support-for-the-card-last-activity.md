@@ -1,6 +1,4 @@
 ---
-check_retry_count: 1
-last_check_failure: "repoos check at 2026-11-13T14:52:20.379Z: repoos check failed: ui verification failed (3 issue(s)): [missing-target] Board card activity recency popover (target \"default\"): hover [data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]: hover: Timeout 5000ms exceeded. on / (http://127.0.0.1:36527/?shotState=board%3AactiveCoding); [missing-target] Board card activity recency popover (target \"default\"): state \"board:activeCoding\" did not render on target \"default\" — / shows no task card (http://127.0.0.1:36527/?shotState=board%3Aactive… (truncated)"
 id: "1069"
 title: Touch support for the card last-activity popover (fold into the mobile rewrite)
 type: chore
@@ -13,7 +11,9 @@ branch: feat/touch-support-for-the-card-last-activity
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-09T03:34:05Z"
-updated_at: "2026-11-13T14:52:20Z"
+updated_at: "2026-11-13T14:52:57Z"
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-13T14:52:20.379Z: repoos check failed: ui verification failed (3 issue(s)): [missing-target] Board card activity recency popover (target \"default\"): hover [data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]: hover: Timeout 5000ms exceeded. on / (http://127.0.0.1:36527/?shotState=board%3AactiveCoding); [missing-target] Board card activity recency popover (target \"default\"): state \"board:activeCoding\" did not render on target \"default\" — / shows no task card (http://127.0.0.1:36527/?shotState=board%3Aactive… (truncated)"
 ---
 ## Problem
 The last-activity popover on Board and Pipeline cards (added by the "card activity recency" bundle, #1058) works on mouse hover and keyboard focus only. On touch devices there is no way to see it. A first touch implementation (tap to pin, long-press) was dropped from #1058 because it broke click handling on unrelated tooltip hosts and kept producing gesture-arbitration bugs.
@@ -34,16 +34,40 @@ Likely best done as part of the planned mobile rewrite; check that first and fol
 ```json
 [
 {
-"label": "Board card activity recency popover",
-"target": "default",
-"route": "/",
-"highlight": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]",
-"steps": [
+  "label": "Board card activity recency popover",
+  "target": "default",
+  "route": "/work",
+  "highlight": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]",
+  "steps": [
+    {
+      "waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
+    },
+    {
+      "hover": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
+    },
+    {
+      "waitMs": 500
+    }
+  ],
+  "state": "board:activeCoding"
+},
 {
-"hover": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
-}
-],
-"state": "board:activeCoding"
+  "label": "Pipeline card activity recency popover",
+  "target": "default",
+  "route": "/work?tab=pipeline",
+  "highlight": "[role=\"tooltip\"].show",
+  "steps": [
+    {
+      "waitFor": "[data-task-id=\"pipe-coding\"] .pl-step"
+    },
+    {
+      "hover": "[data-task-id=\"pipe-coding\"] .pl-step"
+    },
+    {
+      "waitMs": 500
+    }
+  ],
+  "state": "board:pipeline"
 }
 ]
 ```
@@ -61,4 +85,4 @@ Likely best done as part of the planned mobile rewrite; check that first and fol
 - 2026-11-13T14:52:17Z · note: ui verification failed: ui verification failed (3 issue(s)): [missing-target] Board card activity recency popover (target "default"): hover [data-task-id="9999"] [data-test-id="task-card-agent-hint"]: hover: Timeout 5000ms exceeded. on / (http://127.0.0.1:36527/?shotState=board%3AactiveCoding); [missing-target] Board card activity recency popover (target "default"): state "board:activeCoding" did not render on target "default" — / shows no task card (http://127.0.0.1:36527/?shotState=board%3Aact
 - 2026-11-13T14:52:17Z · message_queued at 2026-11-13T14:52:17.325Z
 - 2026-11-13T14:52:20Z · message_delivered: 1 message(s)
-
+- 2026-11-13T14:52:57Z · body
