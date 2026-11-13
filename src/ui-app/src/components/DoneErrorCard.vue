@@ -9,7 +9,6 @@ import {
   Check,
   X,
   GitMerge,
-  Info,
 } from "lucide-vue-next";
 import { api, JSON_OPTS } from "../api";
 import type { RetryHint } from "../lib/retryHints";
@@ -273,7 +272,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
         </div>
       </div>
       <div class="done-error-head" :title="headlineTitle">
-        Move to done failed
+        Close-out failed
         <span v-if="step" class="done-error-step">at {{ step }}</span
         ><span v-if="failedAtLabel" class="done-error-step"> · {{ failedAtLabel }}</span>
       </div>
@@ -303,18 +302,6 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
           View the conflicts
         </button>
       </div>
-      <details class="done-error-help">
-        <summary aria-label="Help for this close-out failure"><Info class="size-3.5" /></summary>
-        <div class="done-error-help-popover" role="note">
-          <p>
-            {{
-              hint ??
-              "RepoOS couldn't sync this branch with main automatically — resolve the conflicting files in the worktree, then retry."
-            }}
-          </p>
-          <button type="button" @click="emit('open-status-details')">Open Status details</button>
-        </div>
-      </details>
       <button type="button" class="done-error-support" @click="openSupportBundle">
         <LifeBuoy class="size-3.5" />
         Create a redacted support bundle

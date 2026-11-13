@@ -88,6 +88,26 @@ afterEach(() => {
 });
 
 describe("task drawer status summary (#0952)", () => {
+  it("shows the fresh close-out failure alone when an old review request remains", async () => {
+    const pinia = setup();
+    const repo = useRepoStore();
+    const task = reviewTask({ needsInput: true, needsInputReason: "dev-error" });
+    repo.doneErrors["0001"] = {
+      message: "The check failed on the merged branch",
+      conflicts: [],
+      step: "test",
+      detail: "failed test output",
+      hint: "Retry Move to done after fixing the test.",
+    };
+    const wrapper = await mountDrawer(pinia, task);
+
+    expect(wrapper.findAll(".drawer-critical")).toHaveLength(0);
+    expect(wrapper.findAll(".drawer-done-error")).toHaveLength(1);
+    expect(wrapper.find(".drawer-done-error").text()).toContain("Close-out failed");
+    expect(wrapper.find(".drawer-done-error .done-error-help").exists()).toBe(false);
+    expect(wrapper.find(".done-error-pre").text()).toContain("failed test output");
+  });
+
   it("shows one short header chip and keeps it out of the status card region", async () => {
     const pinia = setup();
     // Active task flagged for human input: the header chip is short and the
