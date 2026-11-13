@@ -16,6 +16,7 @@ import {
   sweepStaleAgentRunTmpdirs,
 } from "../core/agent-run-tmpdir.js";
 import { agentSilenceCountsAsStalled } from "../core/active-task-card.js";
+import { agentSpawnErrorMessage } from "../core/agent-spawn-error.js";
 import { copilotAutoTierModelArgs, enrichAgentFailureDetail } from "../core/copilot-auto-tier.js";
 import { formatAgentFailure } from "../core/agent-failure.js";
 import {
@@ -8138,7 +8139,14 @@ export class AgentRunner {
       this.cleanup(taskId, code === 0, code);
     };
     proc.on("close", finishTurn);
-    proc.on("error", () => this.cleanup(taskId, false, null));
+    proc.on("error", (error) => {
+      const message = agentSpawnErrorMessage(cmd, error, process.env.PATH);
+      if (message) {
+        this.appendLine(taskId, "sys", message);
+        this.logger?.agent(taskId, "error", message, { cmd, path: process.env.PATH });
+      }
+      this.cleanup(taskId, false, null);
+    });
     // A very short-lived command can exit between `spawn()` and listener
     // registration. ChildProcess does not replay a missed `close` event, so
     // finalize it explicitly instead of leaving its last log line and runner
