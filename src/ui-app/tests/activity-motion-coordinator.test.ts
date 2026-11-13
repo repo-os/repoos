@@ -130,7 +130,13 @@ describe("activity animation coordinator", () => {
 
     const overlay = document.createElement("div");
     overlay.setAttribute(OVERLAY_LAYER_ATTR, "overlay-test");
+    const elementConstructor = globalThis.Element;
+    vi.stubGlobal("Element", undefined);
     document.body.appendChild(overlay);
+    // jsdom's mutation observer is delivered in a microtask, after its globals
+    // may already have been torn down by a sibling test.
+    await Promise.resolve();
+    vi.stubGlobal("Element", elementConstructor);
     document.elementFromPoint = vi.fn(() => overlay) as typeof document.elementFromPoint;
     await new Promise<void>((resolve) => {
       requestAnimationFrame(() => requestAnimationFrame(() => resolve()));

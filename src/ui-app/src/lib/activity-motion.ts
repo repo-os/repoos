@@ -55,9 +55,13 @@ function onOcclusionEvent(): void {
 }
 
 function nodeTouchesOverlayLayer(node: Node): boolean {
-  if (!(node instanceof Element)) return false;
-  if (node.hasAttribute(OVERLAY_LAYER_ATTR)) return true;
-  return node.querySelector(`[${OVERLAY_LAYER_ATTR}]`) !== null;
+  // MutationObserver callbacks can run after jsdom has torn down its globals.
+  // Use the node type instead of the global Element constructor so a late
+  // callback is harmless when `Element` is no longer defined.
+  if (node.nodeType !== 1) return false;
+  const element = node as Element;
+  if (element.hasAttribute(OVERLAY_LAYER_ATTR)) return true;
+  return element.querySelector(`[${OVERLAY_LAYER_ATTR}]`) !== null;
 }
 
 function attachOverlayDomObserver(): void {
