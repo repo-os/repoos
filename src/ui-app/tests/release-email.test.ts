@@ -16,6 +16,7 @@ import type { RepoOSConfig } from "../../core/types.js";
 import { loadConfig, parseReleaseEmailConfig } from "../../core/config.js";
 import {
   deliverCutReleaseEmail,
+  createReleaseUnsubscribeUrl,
   escapeHtml,
   getReleaseEmailRecord,
   isPrereleaseVersion,
@@ -26,6 +27,7 @@ import {
   resendReleaseEmail,
   startCutReleaseEmail,
   waitForPublishedRelease,
+  unsubscribeReleaseEmail,
   type ReleaseEmailDeps,
 } from "../../server/release-email.js";
 import { readReleaseHistory, type ReleaseHistoryEntry } from "../../server/release-history.js";
@@ -262,6 +264,45 @@ describe("renderReleaseEmail", () => {
     expect(withRepo.html).toContain("https://github.com/repo-os/repoos/releases/tag/v0.6.0");
     expect(withRepo.html).toContain("https://github.com/repo-os/repoos/blob/v0.6.0/CHANGELOG.md");
     expect(withRepo.text).toContain("Release on GitHub: https://github.com/repo-os/repoos");
+  });
+
+  it("groups release notes into features, fixes, and other sections", () => {
+    const out = renderReleaseEmail(
+      makeConfig(),
+      entry({
+        notes:
+          "## Features\n- New dashboard\n## Fixes\n- Corrected export\n## Other\n- Updated docs",
+      }),
+    );
+    expect(out.html).toContain("<h3");
+    expect(out.html.indexOf("Features")).toBeLessThan(out.html.indexOf("Fixes"));
+    expect(out.html.indexOf("Fixes")).toBeLessThan(out.html.indexOf("Other"));
+    expect(out.html).toContain("New dashboard");
+    expect(out.html).toContain("Corrected export");
+    expect(out.html).toContain("Updated docs");
+  });
+
+  it("builds release and changelog links for a non-GitHub repository URL", () => {
+    const out = renderReleaseEmail(
+      makeConfig({}, { repository: "https://codeberg.org/team/project" }),
+      entry(),
+    );
+    expect(out.html).toContain("https://codeberg.org/team/project/-/releases/tag/v0.6.0");
+    expect(out.html).toContain("https://codeberg.org/team/project/-/blob/v0.6.0/CHANGELOG.md");
+  });
+
+  it("creates a recipient-specific unsubscribe token and suppresses that recipient", () => {
+    const url = createReleaseUnsubscribeUrl(
+      makeConfig(),
+      "team-a@example.test",
+      "https://app.example.test",
+    );
+    expect(url).toMatch(
+      /^https:\/\/app\.example\.test\/api\/release\/email\/unsubscribe\?token=[a-f0-9]+$/,
+    );
+    const token = new URL(url).searchParams.get("token")!;
+    expect(unsubscribeReleaseEmail(makeConfig(), token)).toBe(true);
+    expect(unsubscribeReleaseEmail(makeConfig(), token)).toBe(false);
   });
 
   it("shows the upgrade command only when one is supplied", () => {

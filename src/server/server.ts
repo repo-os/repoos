@@ -292,6 +292,7 @@ import {
   getUnpushedReleaseNotes,
   runRelease,
   sendReleaseEmailNow,
+  unsubscribeReleaseEmailRoute,
 } from "./routes/release.js";
 import { getDeployments, postDeploy } from "./routes/deployments.js";
 import {
@@ -3633,6 +3634,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("GET", "/api/release/email", getReleaseEmail);
   router.register("GET", "/api/release/email/preview", getReleaseEmailPreview);
   router.register("POST", "/api/release/email/send", sendReleaseEmailNow);
+  router.register("GET", "/api/release/email/unsubscribe", unsubscribeReleaseEmailRoute);
   router.register("GET", "/api/deployments", getDeployments);
   router.register("POST", "/api/deployments/deploy", postDeploy);
   // Dev targets (#0747): list/start/stop/restart a user-declared target. The
@@ -4391,6 +4393,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           // break delivery, and one that drops the route handler's secret check
           // would expose the repo to the open internet.
           "/api/telegram/webhook/",
+          "/api/release/email/unsubscribe",
         ];
         const PUBLIC_PATHS = ["/login", "/manifest.webmanifest"];
         const isPublicRoute =
