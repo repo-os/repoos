@@ -376,3 +376,10 @@ checked for a dead PID before deferring. In the test, create and terminate a
 child process to obtain a known-dead PID after the lock shell starts; assert
 only the fixture entries (dead removed, live blocker retained), and avoid
 elapsed-time ceilings. Keep the lock's configured wait budget unchanged.
+
+The same full check also exposed a zero-wait edge in the adjacent acquire-gate
+loop: if its `mkdir` lost a brief race, the loop only checked a positive wait
+budget and could sleep forever when `waitSecs` was zero. The gate retry now
+checks the zero budget after its first failed attempt, matching the outer
+acquisition loop. A regression test holds the gate and verifies immediate
+timeout.

@@ -2360,6 +2360,16 @@ describe("host-side lock (server + standalone CLI share one limit)", () => {
     expect(higher.out).not.toContain("SHOULD_NOT_RUN");
   });
 
+  it("gives up immediately when a zero-wait caller finds the acquire gate occupied", async () => {
+    const lockRoot = join(tmpRoot(), "locks");
+    mkdirSync(join(lockRoot, ".acquire-gate"), { recursive: true });
+    const result = await sh(
+      hostLockShell({ slots: 1, waitSecs: 0, lockRoot, inner: "echo SHOULD_NOT_RUN" }),
+    );
+    expect(result.code).toBe(HOST_LOCK_TIMEOUT_EXIT);
+    expect(result.out).not.toContain("SHOULD_NOT_RUN");
+  });
+
   it("lets a holder expire the waiter with a clear timeout instead of a red gate", async () => {
     const root = tmpRoot();
     const lockRoot = join(root, "locks");

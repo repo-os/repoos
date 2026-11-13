@@ -2506,7 +2506,7 @@ export function hostLockShell(opts: {
     '  while ! mkdir "$LOCKROOT/.acquire-gate" 2>/dev/null; do',
     '    _rvactual_parent=$(ps -o ppid= -p "$$" 2>/dev/null | tr -d " ")',
     '    [ -n "$_rvactual_parent" ] && [ "$_rvactual_parent" = "$_rvparent" ] || exit 143',
-    '    if { [ -n "$DEADLINE" ] && [ "$(date +%s)" -ge "$DEADLINE" ]; } || { [ -z "$DEADLINE" ] && [ "$WAIT" -gt 0 ] && [ "$_rvwaited" -ge "$WAIT" ]; }; then exit "$TIMEOUT_EXIT"; fi',
+    '    if { [ -n "$DEADLINE" ] && [ "$(date +%s)" -ge "$DEADLINE" ]; } || { [ -z "$DEADLINE" ] && [ "$_rvwaited" -ge "$WAIT" ]; }; then exit "$TIMEOUT_EXIT"; fi',
     "    sleep 1; _rvwaited=$((_rvwaited+1))",
     "  done",
     '  if [ -d "$LOCKROOT/.reaping" ]; then rmdir "$LOCKROOT/.acquire-gate" 2>/dev/null || true; sleep 1; continue; fi',
