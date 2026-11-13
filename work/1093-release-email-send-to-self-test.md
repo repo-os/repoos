@@ -46,3 +46,4 @@ See src/server/email.ts and src/server/release-email.ts. Do not put any real key
 - 2026-11-13T09:56:26Z · engineer crash recovery: resuming codex + gpt-6-luna (1/3 crashes in 30m) · 2026-11-13T09:55:25.713129Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Client(HttpRequest(HttpRequest("http/request failed: error sending request for url (https://chatgpt.com/backend-api/ps/mcp)…
 - 2026-11-13T10:06:30Z · needs_input
 - 2026-11-13T10:15:21Z · message_queued at 2026-11-13T10:15:21.720Z
+- 2026-11-13T10:15:21Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
