@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 743795
-last_close_out_gate_at: "2026-11-13T14:40:34.596Z"
 id: "1094"
 title: "Release email: rich templates"
 type: feature
-status: review
+status: done
 priority: p3
 area: [web, server]
+merged_commit: 5ad8dc919c0f17881533b7d93238aa2aaa9e7893
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/release-email-rich-templates
@@ -14,6 +13,8 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-11T05:28:26Z"
 updated_at: "2026-11-13T14:40:34Z"
+last_close_out_gate_ms: 743795
+last_close_out_gate_at: "2026-11-13T14:40:34.596Z"
 review_passes: 1
 ---
 ## Problem
