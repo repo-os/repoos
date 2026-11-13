@@ -135,3 +135,4 @@ Start from `src/server/review.ts` (`reviewMission`, the "Earlier passes and the 
 - 2026-11-13T10:42:31Z · note: Review round 1 findings; fixing reviewer prompt audience, fixture state, and route coverage.
 - 2026-11-13T10:48:42Z · body
 - 2026-11-13T10:55:21Z · message_queued at 2026-11-13T10:55:21.700Z
+- 2026-11-13T10:55:21Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
