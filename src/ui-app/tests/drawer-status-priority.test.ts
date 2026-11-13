@@ -36,9 +36,15 @@ describe("selectDrawerStatus priority", () => {
     }
   });
 
-  it("prioritises waiting for you over everything else", () => {
+  it("prioritises a fresh close-out failure over stale review and waiting states", () => {
+    expect(
+      selectDrawerStatus({ handoffFailed: true, waitingForYou: true, reviewFailed: true }),
+    ).toBe("handoffFailed");
+  });
+
+  it("prioritises waiting for you over routine states", () => {
     for (const key of Object.keys(allFalse) as DrawerStatusKey[]) {
-      if (key === "waitingForYou") continue;
+      if (key === "waitingForYou" || key === "handoffFailed") continue;
       expect(selectDrawerStatus({ ...only(key), waitingForYou: true })).toBe("waitingForYou");
     }
   });
@@ -46,7 +52,6 @@ describe("selectDrawerStatus priority", () => {
   it("prioritises review failed over landing blockers and below", () => {
     const below: DrawerStatusKey[] = [
       "notLandable",
-      "handoffFailed",
       "checksFailedAfterRetries",
       "checksRunning",
       "confirmingHandoff",
@@ -60,7 +65,6 @@ describe("selectDrawerStatus priority", () => {
 
   it("prioritises landing blockers over handoff errors and below", () => {
     const below: DrawerStatusKey[] = [
-      "handoffFailed",
       "checksFailedAfterRetries",
       "checksRunning",
       "confirmingHandoff",
