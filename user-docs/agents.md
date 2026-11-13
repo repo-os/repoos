@@ -371,3 +371,13 @@ human-approved subset.
 
 The allowlist is stored in `repoos.toml` as `[[budget.allowlist]]` rows; see
 [Configuration](/configuration#budget-controls-agent-drivers).
+
+## Agent failure messages
+
+When an agent run fails because its CLI is signed out, its model is unavailable,
+its usage limit is reached, or it cannot reach the service, RepoOS shows a short
+plain-language explanation and a suggested next step on the task. The original
+CLI output remains available behind a disclosure on the task and in the agent
+transcript for diagnosis. Signed-out and unavailable-model failures also create
+one board bell notice per agent; a later successful run clears that notice. The
+Agents page shows each agent's last-run result and its explanation.

@@ -5,6 +5,7 @@
 import { getRepoOSDb } from "../core/db.js";
 import { isProviderFailureReason } from "../core/attention.js";
 import { detectProviderUsageLimit } from "../core/provider-usage-limit.js";
+import { classifyAgentFailure } from "../core/agent-failure.js";
 import type { RepoOSConfig } from "../core/types.js";
 import type { AttentionEventStore } from "./attention-events.js";
 
@@ -21,6 +22,31 @@ export function wireAttentionNotifications(store: AttentionEventStore, bump: Bum
 }
 
 export function notifyAttentionAgentStalled(taskId: string): void {
+  bumpAttention?.();
+}
+
+/** One current board notice per CLI for actionable agent setup failures. */
+export function notifyAttentionAgentFailure(
+  cli: string,
+  detail: string,
+  at = new Date().toISOString(),
+): void {
+  const reason = classifyAgentFailure(detail, cli);
+  if (!attentionEvents || !reason || reason.id === "network" || reason.id === "usage-limit") return;
+  attentionEvents.record({
+    id: `agentFailure:${cli.toLowerCase()}`,
+    kind: "providerFailure",
+    taskId: null,
+    message: `${cli} needs attention`,
+    detail: `${reason.summary} ${reason.fix}`,
+    at,
+  });
+  bumpAttention?.();
+}
+
+export function clearAttentionAgentFailure(cli: string): void {
+  if (!attentionEvents) return;
+  attentionEvents.remove(`agentFailure:${cli.toLowerCase()}`);
   bumpAttention?.();
 }
 
@@ -122,6 +148,7 @@ export function notifyAttentionAfterSession(
   opts: {
     sessionId: string;
     taskId?: string | null;
+    codingAgent?: string | null;
     status: string;
     errorReason?: string | null;
     endedAt: string;
@@ -132,6 +159,9 @@ export function notifyAttentionAfterSession(
       opts.status === "errored" &&
       isProviderFailureReason(opts.errorReason) &&
       !detectProviderUsageLimit(opts.errorReason ?? "") &&
+      !["auth", "model-unavailable"].includes(
+        classifyAgentFailure(opts.errorReason ?? "", opts.codingAgent ?? "")?.id ?? "",
+      ) &&
       attentionEvents
     ) {
       attentionEvents.record({
@@ -140,6 +170,7 @@ export function notifyAttentionAfterSession(
         taskId: opts.taskId ?? null,
         message: opts.taskId ? `Provider error on #${opts.taskId}` : "Provider error",
         detail: (opts.errorReason ?? "").trim().slice(0, 160) || "Provider or credit failure.",
+        codingAgent: opts.codingAgent ?? null,
         at: opts.endedAt,
       });
       bumpAttention?.();

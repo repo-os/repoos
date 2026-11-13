@@ -30,6 +30,7 @@ function isRecordedEvent(v: unknown): v is RecordedAttentionEvent {
       e.kind === "processSignalFailure") &&
     typeof e.message === "string" &&
     typeof e.detail === "string" &&
+    (e.codingAgent === undefined || e.codingAgent === null || typeof e.codingAgent === "string") &&
     typeof e.at === "string"
   );
 }
@@ -94,6 +95,7 @@ export function createAttentionEventStore(
         taskId: event.taskId ?? null,
         message: event.message,
         detail: event.detail,
+        ...(event.codingAgent === undefined ? {} : { codingAgent: event.codingAgent }),
         at: event.at,
       };
       const next = load().filter((e) => e.id !== full.id);

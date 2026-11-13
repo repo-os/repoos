@@ -66,6 +66,43 @@ const emptyFeedInput = () => ({
 });
 
 describe("buildAttentionFeed", () => {
+  it("keeps auth and unavailable-model failures in one CLI-level notice", () => {
+    const feed = buildAttentionFeed({
+      ...emptyFeedInput(),
+      recordedEvents: [
+        {
+          id: "agentFailure:cursor",
+          kind: "providerFailure",
+          taskId: null,
+          message: "cursor needs attention",
+          detail: "Cursor is signed out. Re-authenticate Cursor on this computer.",
+          at: "2026-11-12T00:01:00.000Z",
+        },
+        {
+          id: "providerFailure:cursor-auth-session",
+          kind: "providerFailure",
+          codingAgent: "cursor",
+          taskId: "0042",
+          message: "Provider error on #0042",
+          detail: "Cursor is not logged in",
+          at: "2026-11-12T00:00:00.000Z",
+        },
+      ],
+      recentProviderFailures: [
+        {
+          sessionId: "cursor-model-session",
+          codingAgent: "cursor",
+          taskId: "0043",
+          errorReason: "Cannot use this model: composer-2.5",
+          startedAt: "2026-11-12T00:00:30.000Z",
+        },
+      ],
+    });
+
+    expect(feed.items.filter((item) => item.kind === "providerFailure")).toHaveLength(1);
+    expect(feed.items[0]).toMatchObject({ id: "agentFailure:cursor", link: "/agents" });
+  });
+
   it("includes releaseNotesReady when the notes draft succeeded", () => {
     const feed = buildAttentionFeed({
       ...emptyFeedInput(),

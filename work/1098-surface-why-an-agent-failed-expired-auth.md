@@ -11,8 +11,8 @@ branch: feat/surface-why-an-agent-failed-expired-auth
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-12T05:35:20Z"
-updated_at: "2026-11-13T04:09:11Z"
-review_passes: 6
+updated_at: "2026-11-13T02:59:24Z"
+review_passes: 5
 review_rounds: 2
 last_check_failure: "repoos check at 2026-11-12T16:42:50.789Z: repoos check failed: tests — tests/pre-review-remote-gate.test.ts > standalone `repoos check` remote failure (#0520) > exits non-zero AND records the failure for the Checks surface when the runner is unusable — at tests/pre-review-remote-gate.test.ts:486:26 — AssertionError: expected +0 to be 1 // Object.is equality"
 handoff_signal_retry_count: 2
@@ -130,18 +130,4 @@ Related code: src/core/copilot-auto-tier.ts and enrichAgentFailureDetail in src/
 - 2026-11-13T00:45:38Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-13T02:07:21Z · status review→active
 - 2026-11-13T02:07:23Z · CTO nudge: held — an undelivered message is already queued
-- 2026-11-13T02:07:44Z · note: handoff requested (ui-review)
-- 2026-11-13T02:08:38Z · CTO nudge: held — handoff gate is running
-- 2026-11-13T02:19:30Z · note: handoff requested (cli)
-- 2026-11-13T02:24:11Z · CTO nudge: held — handoff gate is running
-- 2026-11-13T02:38:31Z · message_overdue: still queued after 60m without being delivered
-- 2026-11-13T02:38:32Z · message_queued at 2026-11-13T02:38:32.022Z
-- 2026-11-13T02:38:32Z · handoff failed · task-file handoff failed at check · repoos check failed: tests — tests/handoff-unification.test.ts > the runner finalizes a `repoos mv review` request at turn end (#0507) > ignores a marker left behind by an earlier turn — at check tests/handoff-unification.test.ts:156:50 — Error: timeout: the turn ends
-- 2026-11-13T02:38:32Z · message_delivered: 3 message(s)
-- 2026-11-13T02:52:59Z · body
-- 2026-11-13T02:54:12Z · CTO nudge: held — handoff gate is running
-- 2026-11-13T02:59:23Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
 - 2026-11-13T02:59:24Z · status active→review
-- 2026-11-13T02:59:25Z · message_queued at 2026-11-13T02:59:25.056Z
-- 2026-11-13T03:01:47Z · note: review pass 6: good to go
-- 2026-11-13T04:09:11Z · message_overdue: still queued after 60m without being delivered
