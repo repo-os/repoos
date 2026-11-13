@@ -12,7 +12,6 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-09T03:34:05Z"
 updated_at: "2026-11-13T14:58:28Z"
-check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-13T14:52:20.379Z: repoos check failed: ui verification failed (3 issue(s)): [missing-target] Board card activity recency popover (target \"default\"): hover [data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]: hover: Timeout 5000ms exceeded. on / (http://127.0.0.1:36527/?shotState=board%3AactiveCoding); [missing-target] Board card activity recency popover (target \"default\"): state \"board:activeCoding\" did not render on target \"default\" — / shows no task card (http://127.0.0.1:36527/?shotState=board%3Aactive… (truncated)"
 ---
 ## Problem
@@ -88,3 +87,4 @@ Likely best done as part of the planned mobile rewrite; check that first and fol
 - 2026-11-13T14:52:57Z · body
 - 2026-11-13T14:57:55Z · body
 - 2026-11-13T14:58:28Z · CTO nudge: held — handoff gate is running
+
