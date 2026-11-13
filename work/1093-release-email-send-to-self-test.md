@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 300210
-last_close_out_gate_at: "2026-11-13T11:27:46.101Z"
 id: "1093"
 title: "Release email: send-to-self test"
 type: chore
-status: review
+status: done
 priority: p3
 area: server
+merged_commit: 5db0e5796013ddd6830cbed1dbad28f7ca363edd
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/release-email-send-to-self-test
@@ -14,6 +13,8 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-11T05:28:23Z"
 updated_at: "2026-11-13T11:27:46Z"
+last_close_out_gate_ms: 300210
+last_close_out_gate_at: "2026-11-13T11:27:46.101Z"
 review_passes: 1
 dev_error_count: 1
 ---

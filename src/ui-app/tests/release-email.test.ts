@@ -3,6 +3,8 @@ import { mkdtempSync, rmSync, writeFileSync, mkdirSync, rmdirSync } from "node:f
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Readable } from "node:stream";
+import { createServer } from "node:http";
+import type { AddressInfo } from "node:net";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import type { RouteContext } from "../../server/routes/types.js";
 import {
@@ -131,6 +133,63 @@ function publishedResponse(): Response {
     headers: { "Content-Type": "application/json" },
   });
 }
+
+describe("deliverCutReleaseEmail Resend wiring", () => {
+  it("posts one correctly addressed Resend message per recipient to a local endpoint", async () => {
+    const requests: Array<{
+      headers: Record<string, string | string[] | undefined>;
+      body: unknown;
+    }> = [];
+    const server = createServer((req, res) => {
+      const chunks: Buffer[] = [];
+      req.on("data", (chunk: Buffer) => chunks.push(chunk));
+      req.on("end", () => {
+        requests.push({
+          headers: req.headers,
+          body: JSON.parse(Buffer.concat(chunks).toString("utf8")),
+        });
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end('{"id":"local-test"}');
+      });
+    });
+    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+    const localUrl = `http://127.0.0.1:${(server.address() as AddressInfo).port}/emails`;
+    const config = makeConfig();
+    const fetchLocalResend = ((input: RequestInfo | URL, init?: RequestInit) => {
+      expect(String(input)).toBe("https://api.resend.com/emails");
+      return fetch(localUrl, init);
+    }) as typeof fetch;
+
+    try {
+      const record = await deliverCutReleaseEmail(
+        config,
+        entry(),
+        {},
+        { fetchImpl: fetchLocalResend },
+      );
+
+      expect(record?.status).toBe("sent");
+      expect(record?.sentTo).toEqual(RECIPIENTS);
+      expect(requests).toHaveLength(RECIPIENTS.length);
+      expect(requests.map(({ headers }) => headers.authorization)).toEqual(
+        RECIPIENTS.map(() => `Bearer ${FAKE_KEY}`),
+      );
+      expect(requests.map(({ body }) => body)).toEqual(
+        RECIPIENTS.map((to) => ({
+          from: `RepoOS <${FAKE_FROM}>`,
+          to: [to],
+          subject: "RepoOS v0.6.0 is out",
+          html: expect.any(String),
+          text: expect.any(String),
+        })),
+      );
+    } finally {
+      await new Promise<void>((resolve, reject) =>
+        server.close((error) => (error ? reject(error) : resolve())),
+      );
+    }
+  });
+});
 
 describe("isPrereleaseVersion", () => {
   it("flags beta, canary and rc tags and passes stable versions", () => {
