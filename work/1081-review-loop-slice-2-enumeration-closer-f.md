@@ -81,3 +81,4 @@ Start from `src/server/review.ts` (`reviewMission`, the "Earlier passes and the 
 - 2026-11-13T05:44:12Z · message_queued at 2026-11-13T05:44:12.121Z
 - 2026-11-13T05:44:12Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-13T05:49:12Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-13T05:55:44Z · note: handoff requested (cli)
