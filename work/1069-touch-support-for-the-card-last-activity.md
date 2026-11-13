@@ -11,7 +11,7 @@ branch: feat/touch-support-for-the-card-last-activity
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-09T03:34:05Z"
-updated_at: "2026-11-13T15:03:41Z"
+updated_at: "2026-11-13T15:03:42Z"
 last_check_failure: "repoos check at 2026-11-13T14:52:20.379Z: repoos check failed: ui verification failed (3 issue(s)): [missing-target] Board card activity recency popover (target \"default\"): hover [data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]: hover: Timeout 5000ms exceeded. on / (http://127.0.0.1:36527/?shotState=board%3AactiveCoding); [missing-target] Board card activity recency popover (target \"default\"): state \"board:activeCoding\" did not render on target \"default\" — / shows no task card (http://127.0.0.1:36527/?shotState=board%3Aactive… (truncated)"
 ---
 ## Problem
@@ -88,3 +88,4 @@ Likely best done as part of the planned mobile rewrite; check that first and fol
 - 2026-11-13T14:57:55Z · body
 - 2026-11-13T14:58:28Z · CTO nudge: held — handoff gate is running
 - 2026-11-13T15:03:41Z · note: ui verification failed: ui verification failed (2 issue(s)): [missing-target] Board card activity recency popover (target "default"): waitFor [data-task-id="9999"] [data-test-id="task-card-agent-hint"]: waitFor: Timeout 5000ms exceeded. on /work (http://127.0.0.1:45027/work?shotState=board%3AactiveCoding); [missing-target] Board card activity recency popover (target "default"): hover [data-task-id="9999"] [data-test-id="task-card-agent-hint"]: hover: Timeout 5000ms exceeded. on /work (http://127
+- 2026-11-13T15:03:42Z · message_queued at 2026-11-13T15:03:42.058Z
