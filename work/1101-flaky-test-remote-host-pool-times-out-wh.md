@@ -2,7 +2,7 @@
 id: "1101"
 title: "Flaky test: remote-host-pool 'times out while deferred and removes stale dead-pid queue entries' fails under load (from #1099)"
 type: bug
-status: inbox
+status: ready
 priority: p2
 area: server
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: ""
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-13T05:55:54Z"
-updated_at: "2026-11-13T07:10:31Z"
+updated_at: "2026-11-13T07:10:33Z"
 ---
 ## Problem
 src/ui-app/tests/remote-host-pool.test.ts "times out while deferred and removes stale dead-pid queue entries" (added by #1099) passes alone on main (2.1s) but fails in the full-file run and in remote validation on a loaded machine: `expect(readdirSync(waitDir)).toEqual([String(process.pid)])` (line ~2447). It blocked #1081 twice remotely on 2026-11-13 even though the task does not touch remote validation.
@@ -27,3 +27,4 @@ It passes in isolation, so look for a race between stale-entry cleanup and the l
 
 - 2026-11-13T05:55:54Z · created · t@t
 - 2026-11-13T07:10:31Z · cli_override, model_override
+- 2026-11-13T07:10:33Z · status inbox→ready
