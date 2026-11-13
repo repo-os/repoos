@@ -13,7 +13,6 @@ model_override: gpt-6-luna
 created_at: "2026-11-11T05:28:23Z"
 updated_at: "2026-11-13T10:27:46Z"
 dev_error_count: 1
-engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-13T09:56:26.012Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 The release-email tests (#1071) inject a fake fetch and check the send loop, but nothing drives the real sendEmail wiring from a cut through to the Resend request. A regression in the From header or the request shape would pass the current suite.
