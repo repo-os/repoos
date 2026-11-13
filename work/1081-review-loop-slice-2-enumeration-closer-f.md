@@ -38,3 +38,4 @@ Start from `src/server/review.ts` (`reviewMission`, the "Earlier passes and the 
 - 2026-11-13T02:49:37Z · status inbox→ready
 - 2026-11-13T02:49:38Z · status ready→active, branch
 - 2026-11-13T03:29:12Z · message_queued at 2026-11-13T03:29:12.250Z
+- 2026-11-13T03:29:12Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
