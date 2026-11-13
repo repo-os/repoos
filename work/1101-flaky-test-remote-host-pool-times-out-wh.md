@@ -30,3 +30,4 @@ It passes in isolation, so look for a race between stale-entry cleanup and the l
 - 2026-11-13T07:10:33Z · status inbox→ready
 - 2026-11-13T07:10:34Z · status ready→active, branch
 - 2026-11-13T08:34:24Z · message_queued at 2026-11-13T08:34:24.073Z
+- 2026-11-13T08:34:24Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
