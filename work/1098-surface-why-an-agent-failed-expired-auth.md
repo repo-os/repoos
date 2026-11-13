@@ -11,7 +11,7 @@ branch: feat/surface-why-an-agent-failed-expired-auth
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-12T05:35:20Z"
-updated_at: "2026-11-13T02:38:32Z"
+updated_at: "2026-11-13T02:52:59Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: tests — tests/handoff-unification.test.ts > the runner finalizes a `repoos mv review` request at turn end (#0507) > ignores a marker left behind by an earlier turn — at check tests/handoff-unification.test.ts:156:50 — Error: timeout: the turn ends"
 last_handoff_failure_sha: 1d8580e59488533a22962294050c61990436f9d4
 review_passes: 5
@@ -140,3 +140,4 @@ Related code: src/core/copilot-auto-tier.ts and enrichAgentFailureDetail in src/
 - 2026-11-13T02:38:32Z · message_queued at 2026-11-13T02:38:32.022Z
 - 2026-11-13T02:38:32Z · handoff failed · task-file handoff failed at check · repoos check failed: tests — tests/handoff-unification.test.ts > the runner finalizes a `repoos mv review` request at turn end (#0507) > ignores a marker left behind by an earlier turn — at check tests/handoff-unification.test.ts:156:50 — Error: timeout: the turn ends
 - 2026-11-13T02:38:32Z · message_delivered: 3 message(s)
+- 2026-11-13T02:52:59Z · body
