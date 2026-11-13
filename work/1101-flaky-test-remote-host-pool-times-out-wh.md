@@ -41,3 +41,4 @@ It passes in isolation, so look for a race between stale-entry cleanup and the l
 - 2026-11-13T10:36:43Z · body
 - 2026-11-13T10:38:32Z · status active→review
 - 2026-11-13T10:38:32Z · message_queued at 2026-11-13T10:38:32.643Z
+- 2026-11-13T10:38:32Z · note: shots: skipped — the diff (5 changed paths) touches no capture target's globs — no UI change to capture
