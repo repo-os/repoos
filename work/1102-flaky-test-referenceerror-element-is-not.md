@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-13T12:23:10Z"
-review_passes: 1
 id: "1102"
 title: "Flaky test: 'ReferenceError: Element is not defined' in jsdom tests fails checks for unrelated tasks (seen on #1062, #1075, #1078, #1081)"
 type: bug
@@ -13,6 +11,8 @@ branch: feat/flaky-test-referenceerror-element-is-not
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-13T07:11:46Z"
+updated_at: "2026-11-13T14:30:06Z"
+review_passes: 1
 ---
 ## Problem
 repoos check intermittently fails with `ReferenceError: Element is not defined`. It appears in the agent logs of #1062, #1075, #1078 and #1081, tasks that touch unrelated code. The likely source is a jsdom MutationObserver callback delivered in a microtask after the environment is torn down (activity-motion-coordinator.test.ts and the overlay-occlusion code from #1062). #1081's engineer worked around it by stubbing the global Element in that test; that was reverted.
@@ -44,4 +44,4 @@ No user-facing change: checks on unrelated tasks stop failing with a jsdom teard
 - 2026-11-13T12:22:38Z · status active→review
 - 2026-11-13T12:22:38Z · message_queued at 2026-11-13T12:22:38.599Z
 - 2026-11-13T12:23:10Z · note: review pass 1: good to go
-
+- 2026-11-13T14:30:06Z · message_overdue: still queued after 60m without being delivered
