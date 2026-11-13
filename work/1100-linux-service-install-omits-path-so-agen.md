@@ -40,3 +40,4 @@ Look at the service install code that writes the systemd unit and the engineer l
 - 2026-11-13T03:34:11Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-13T03:39:12Z · body
 - 2026-11-13T03:40:11Z · status active→review
+- 2026-11-13T03:40:11Z · message_queued at 2026-11-13T03:40:11.579Z
