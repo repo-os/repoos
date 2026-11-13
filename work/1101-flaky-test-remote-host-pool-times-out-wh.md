@@ -8,8 +8,10 @@ area: server
 assigned_to: ai
 created_by: t@t
 branch: ""
+cli_override: codex
+model_override: gpt-6-luna
 created_at: "2026-11-13T05:55:54Z"
-updated_at: "2026-11-13T07:10:30Z"
+updated_at: "2026-11-13T07:10:31Z"
 ---
 ## Problem
 src/ui-app/tests/remote-host-pool.test.ts "times out while deferred and removes stale dead-pid queue entries" (added by #1099) passes alone on main (2.1s) but fails in the full-file run and in remote validation on a loaded machine: `expect(readdirSync(waitDir)).toEqual([String(process.pid)])` (line ~2447). It blocked #1081 twice remotely on 2026-11-13 even though the task does not touch remote validation.
@@ -24,3 +26,4 @@ It passes in isolation, so look for a race between stale-entry cleanup and the l
 ## Activity
 
 - 2026-11-13T05:55:54Z · created · t@t
+- 2026-11-13T07:10:31Z · cli_override, model_override
