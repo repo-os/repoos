@@ -11,7 +11,7 @@ branch: feat/release-email-send-to-self-test
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-11T05:28:23Z"
-updated_at: "2026-11-13T10:24:24Z"
+updated_at: "2026-11-13T10:27:46Z"
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-13T09:56:26.012Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -49,3 +49,4 @@ See src/server/email.ts and src/server/release-email.ts. Do not put any real key
 - 2026-11-13T10:15:21Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-13T10:20:21Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-13T10:24:24Z · body
+- 2026-11-13T10:27:46Z · body
