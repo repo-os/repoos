@@ -3,6 +3,9 @@ id: "1093"
 title: "Release email: send-to-self test"
 type: chore
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "2026-11-13T09:55:25.713129Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Client(HttpRequest(HttpRequest(\"http/request failed: error sending request for url (https://chatgpt.com/backend-api/ps/mcp)\")))"
 priority: p3
 area: server
 assigned_to: ai
@@ -11,7 +14,9 @@ branch: feat/release-email-send-to-self-test
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-11T05:28:23Z"
-updated_at: "2026-11-13T09:55:19Z"
+updated_at: "2026-11-13T09:56:26Z"
+dev_error_count: 1
+engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-13T09:56:26.012Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 The release-email tests (#1071) inject a fake fetch and check the send loop, but nothing drives the real sendEmail wiring from a cut through to the Resend request. A regression in the From header or the request shape would pass the current suite.
@@ -40,3 +45,5 @@ See src/server/email.ts and src/server/release-email.ts. Do not put any real key
 - 2026-11-13T09:55:19Z · queued message undelivered for 81m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-13T09:55:19Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code unknown) · last assistant: The remote suite passed, including the new local endpoint test, but the check’s final local guard found formatting in that file and stopped later gates. I’ll apply the repository formatter and rerun the same required scoped check so the tr… · stderr: Reading additional input from stdin... 2026-11-13T07:19:50.830673Z ERROR codex_models_manager::manager: failed to refresh available models: Connection failed: error sending request 2026-11-13T07:20:27.149152Z ERROR codex_api::endpoint::responses_websocket: failed to connect to websocket: IO error: Network is unreachab…
 - 2026-11-13T09:55:19Z · message_delivered: 1 message(s)
+- 2026-11-13T09:56:25Z · agent exited with an error (codex) · 2026-11-13T09:55:25.713129Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Client(HttpRequest(HttpRequest("http/request failed: error sending request for url (https://chatgpt.com/backend-api/ps/mcp)")))
+- 2026-11-13T09:56:26Z · engineer crash recovery: resuming codex + gpt-6-luna (1/3 crashes in 30m) · 2026-11-13T09:55:25.713129Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Client(HttpRequest(HttpRequest("http/request failed: error sending request for url (https://chatgpt.com/backend-api/ps/mcp)…
