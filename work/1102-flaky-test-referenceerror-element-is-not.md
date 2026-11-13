@@ -36,3 +36,4 @@ No user-facing change: checks on unrelated tasks stop failing with a jsdom teard
 - 2026-11-13T11:55:29Z · status inbox→ready
 - 2026-11-13T11:55:34Z · status ready→active, branch
 - 2026-11-13T12:08:28Z · message_queued at 2026-11-13T12:08:28.804Z
+- 2026-11-13T12:08:28Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
