@@ -9,8 +9,10 @@ depends_on: ["1080"]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
+cli_override: codex
+model_override: gpt-6-luna
 created_at: "2026-11-09T13:59:41Z"
-updated_at: "2026-11-13T02:49:28Z"
+updated_at: "2026-11-13T02:49:35Z"
 ---
 ## Problem
 Slice 1 of #1080 adds the automatic freeze after `review.freezeAfterPasses`, the lighter bar for P3 and Easter-eggs tasks, and authoritative accepted-scope sections. It does not yet make the review loop converge on its own. Three things remain: reviewers still stop at the first instance of a bug class, remaining non-blocking findings are not turned into follow-up tasks, and the human has no way to accept known, non-blocking risk instead of looping again. Tasks still take 10-15 rounds (#1058, #1060, #1061).
@@ -32,3 +34,4 @@ Start from `src/server/review.ts` (`reviewMission`, the "Earlier passes and the 
 ## Activity
 
 - 2026-11-09T13:59:41Z · created · njachowski@gmail.com
+- 2026-11-13T02:49:35Z · cli_override, model_override
