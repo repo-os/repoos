@@ -1,6 +1,4 @@
 ---
-check_retry_count: 1
-last_check_failure: "repoos check at 2026-11-13T15:23:12.527Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Drawer close-out failure in light appearance (target \"default\"): highlight .drawer-done-error matched nothing on /work?task=1084&tab=changes (http://127.0.0.1:38527/work?shotState=drawer:statusChecksFailed)"
 id: "1084"
 title: "Easter eggs bundle: task drawer status cards (one at a time, spacing, stray info icon)"
 type: feature
@@ -13,7 +11,9 @@ branch: feat/easter-eggs-bundle-task-drawer-status-ca
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-10T04:51:24Z"
-updated_at: "2026-11-13T15:23:12Z"
+updated_at: "2026-11-13T15:23:50Z"
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-13T15:23:12.527Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Drawer close-out failure in light appearance (target \"default\"): highlight .drawer-done-error matched nothing on /work?task=1084&tab=changes (http://127.0.0.1:38527/work?shotState=drawer:statusChecksFailed)"
 ---
 ## Problem
 The task drawer (screenshot, #1070 after a failed Move to done) stacks a red close-out failure card on top of a yellow "Waiting for you" review card. Several things are wrong:
@@ -39,18 +39,11 @@ On #1086 the board and pipeline cards showed 'Checks · checking review · 9m 46
 ```json
 [
 {
-"label": "Drawer close-out failure in light appearance",
-"target": "default",
-"route": "/work?task=1084&tab=changes",
-"highlight": ".drawer-done-error",
-"state": "drawer:statusChecksFailed"
-},
-{
-"label": "Drawer close-out failure in dark appearance",
-"target": "default",
-"route": "/work?task=1084&tab=changes",
-"highlight": ".drawer-done-error",
-"state": "drawer:statusChecksFailed"
+  "label": "Drawer close-out failure",
+  "target": "default",
+  "route": "/work?task=9999&tab=changes",
+  "highlight": ".drawer-done-error",
+  "state": "card:doneError"
 }
 ]
 ```
@@ -81,4 +74,4 @@ On #1086 the board and pipeline cards showed 'Checks · checking review · 9m 46
 - 2026-11-13T15:23:09Z · note: ui verification failed: ui verification failed (1 issue(s)): [missing-target] Drawer close-out failure in light appearance (target "default"): highlight .drawer-done-error matched nothing on /work?task=1084&tab=changes (http://127.0.0.1:38527/work?shotState=drawer:statusChecksFailed)
 - 2026-11-13T15:23:09Z · message_queued at 2026-11-13T15:23:09.351Z
 - 2026-11-13T15:23:12Z · message_delivered: 1 message(s)
-
+- 2026-11-13T15:23:50Z · body
