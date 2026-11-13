@@ -12,7 +12,7 @@ branch: feat/flaky-test-referenceerror-element-is-not
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-13T07:11:46Z"
-updated_at: "2026-11-13T14:49:39Z"
+updated_at: "2026-11-13T14:49:53Z"
 last_close_out_gate_ms: 520887
 last_close_out_gate_at: "2026-11-13T14:49:39.053Z"
 review_passes: 1
@@ -49,4 +49,4 @@ No user-facing change: checks on unrelated tasks stop failing with a jsdom teard
 - 2026-11-13T12:23:10Z · note: review pass 1: good to go
 - 2026-11-13T14:30:06Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-13T14:49:39Z · close-out gate completed in 521s
-
+- 2026-11-13T14:49:53Z · status done→done, release:success
