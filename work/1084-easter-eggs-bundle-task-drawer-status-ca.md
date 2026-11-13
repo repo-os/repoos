@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-task-drawer-status-ca
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-10T04:51:24Z"
-updated_at: "2026-11-13T14:30:03Z"
+updated_at: "2026-11-13T14:33:47Z"
 ---
 ## Problem
 The task drawer (screenshot, #1070 after a failed Move to done) stacks a red close-out failure card on top of a yellow "Waiting for you" review card. Several things are wrong:
@@ -33,6 +33,26 @@ Find the drawer cards in src/ui-app (task drawer status/close-out failure and re
 ## Also fix: elapsed time differs between task card and drawer
 On #1086 the board and pipeline cards showed 'Checks · checking review · 9m 46s' while the open drawer showed 'Running checks · 2m 46s' for the same handoff. Both subtract the same status.startedAt, but from different clocks: TaskCard.vue (cardChecksDisplay, ~line 96) uses the shared once-a-second useNow clock, while TaskDrawer.vue (drawerChecksDisplay, ~line 462) uses its own checkNow ref, which only ticks while a check-run loop is active (and the drawer's progress line read 'starting...' while the handoff step was 'review'). Make the drawer use the same live clock (useNow) so both always agree, and show the same step wording (the drawer should say what the card says, e.g. 'checking review'). Add a test that renders both with one status and asserts the same elapsed string.
 
+## Shots
+```json
+[
+{
+  "label": "Drawer close-out failure in light appearance",
+  "target": "default",
+  "route": "/work?task=1084&tab=changes",
+  "highlight": ".drawer-done-error",
+  "state": "drawer:statusChecksFailed"
+},
+{
+  "label": "Drawer close-out failure in dark appearance",
+  "target": "default",
+  "route": "/work?task=1084&tab=changes",
+  "highlight": ".drawer-done-error",
+  "state": "drawer:statusChecksFailed"
+}
+]
+```
+
 ## Screenshots
 
 ![32](/api/tasks/1084/attachments/att_bf168d02-53c0-4a61-9f11-e304e50cca7e.webp)
@@ -49,3 +69,4 @@ On #1086 the board and pipeline cards showed 'Checks · checking review · 9m 46
 - 2026-11-13T14:29:59Z · cli_override, model_override
 - 2026-11-13T14:30:02Z · status inbox→ready
 - 2026-11-13T14:30:03Z · status ready→active, needs_input, branch
+- 2026-11-13T14:33:47Z · body
