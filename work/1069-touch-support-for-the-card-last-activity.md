@@ -2,7 +2,7 @@
 id: "1069"
 title: Touch support for the card last-activity popover (fold into the mobile rewrite)
 type: chore
-status: inbox
+status: ready
 priority: p3
 area: web
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: ""
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-09T03:34:05Z"
-updated_at: "2026-11-13T14:30:08Z"
+updated_at: "2026-11-13T14:30:10Z"
 ---
 ## Problem
 The last-activity popover on Board and Pipeline cards (added by the "card activity recency" bundle, #1058) works on mouse hover and keyboard focus only. On touch devices there is no way to see it. A first touch implementation (tap to pin, long-press) was dropped from #1058 because it broke click handling on unrelated tooltip hosts and kept producing gesture-arbitration bugs.
@@ -32,3 +32,4 @@ Likely best done as part of the planned mobile rewrite; check that first and fol
 
 - 2026-11-09T03:34:05Z · created · njachowski@gmail.com
 - 2026-11-13T14:30:06Z · cli_override, model_override
+- 2026-11-13T14:30:10Z · status inbox→ready
