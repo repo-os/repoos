@@ -136,12 +136,18 @@ function publishedResponse(): Response {
 
 describe("deliverCutReleaseEmail Resend wiring", () => {
   it("posts one correctly addressed Resend message per recipient to a local endpoint", async () => {
-    const requests: Array<{ headers: Record<string, string | string[] | undefined>; body: unknown }> = [];
+    const requests: Array<{
+      headers: Record<string, string | string[] | undefined>;
+      body: unknown;
+    }> = [];
     const server = createServer((req, res) => {
       const chunks: Buffer[] = [];
       req.on("data", (chunk: Buffer) => chunks.push(chunk));
       req.on("end", () => {
-        requests.push({ headers: req.headers, body: JSON.parse(Buffer.concat(chunks).toString("utf8")) });
+        requests.push({
+          headers: req.headers,
+          body: JSON.parse(Buffer.concat(chunks).toString("utf8")),
+        });
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end('{"id":"local-test"}');
       });
@@ -155,7 +161,12 @@ describe("deliverCutReleaseEmail Resend wiring", () => {
     }) as typeof fetch;
 
     try {
-      const record = await deliverCutReleaseEmail(config, entry(), {}, { fetchImpl: fetchLocalResend });
+      const record = await deliverCutReleaseEmail(
+        config,
+        entry(),
+        {},
+        { fetchImpl: fetchLocalResend },
+      );
 
       expect(record?.status).toBe("sent");
       expect(record?.sentTo).toEqual(RECIPIENTS);
