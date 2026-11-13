@@ -78,3 +78,4 @@ On #1086 the board and pipeline cards showed 'Checks · checking review · 9m 46
 - 2026-11-13T15:28:28Z · CTO nudge: held — handoff gate is running
 - 2026-11-13T15:28:57Z · note: ui verification passed: 1 of 1 shot captured with clean console
 - 2026-11-13T15:28:58Z · status active→review
+- 2026-11-13T15:28:58Z · note: Task body is underspecified: missing sections: Desired UX, Acceptance criteria
