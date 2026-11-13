@@ -59,6 +59,7 @@ import { fmtFullDateTime, fmtShortDateTime, fmtTime, formatDuration, relTime } f
 import { fmtTokens } from "../lib/format";
 import { api, JSON_OPTS } from "../api";
 import { checkRunSkipped } from "../../../core/check-skip.js";
+import { extractReviewReportSections } from "../../../core/review-report-sections.js";
 import { PRIORITIES, TASK_TYPES } from "../../../core/types.js";
 import { useNow } from "../composables/useNow";
 import {
@@ -355,6 +356,8 @@ const currentStatusLabel = computed(() => {
   return allStatuses.value.find((status) => status.id === current)?.label ?? current;
 });
 const humanDoneDialogOpen = ref(false);
+const landAnywayDialogOpen = ref(false);
+const landAnywayReason = ref("");
 
 /**
  * #0507: a handoff finalization is running for this task, so the Review
@@ -2390,13 +2393,13 @@ const doneProgress = computed(() => {
   return doingDone.value && doneTicks.value > 0 ? `${base} ${doneTicks.value}s` : base;
 });
 
-async function moveToDone(): Promise<void> {
+async function moveToDone(reason?: string): Promise<void> {
   if (!ui.active || review.value?.running || inPipeline.value) return;
   ui.saving = true;
   doingDone.value = true;
   startDoneTimer();
   try {
-    await repo.completeTask(ui.active);
+    await repo.completeTask(ui.active, reason ? { landAnywayReason: reason } : {});
     // The close-out pipeline just started — show its live progress instead
     // of a now-stale task drawer.
     ui.close();
@@ -3267,6 +3270,22 @@ const landable = computed(() => {
   if (!result || !Array.isArray(result.checks) || !result.summary) return undefined;
   return result;
 });
+const landAnywayEligible = computed(() => {
+  const result = landable.value;
+  if (!result || result.landable) return false;
+  const verdictCheck = result.checks.find((check) => check.id === "review-verdict");
+  return Boolean(
+    verdictCheck?.status === "fail" &&
+    verdictCheck.detail.includes('"needs some work"') &&
+    result.checks.every((check) => check.id === "review-verdict" || check.status !== "fail"),
+  );
+});
+async function confirmLandAnyway(): Promise<void> {
+  const reason = landAnywayReason.value.trim();
+  if (!reason || reason.length > 1000 || !landAnywayEligible.value) return;
+  landAnywayDialogOpen.value = false;
+  await moveToDone(reason);
+}
 
 /** Keep the landing checklist focused on blockers until the user expands it. */
 const landableShowAll = ref(false);
@@ -3476,9 +3495,8 @@ const creatingReviewFollowup = ref(false);
 const reviewFollowupCreated = ref(false);
 const reviewSuggestionsPresent = computed(() =>
   Boolean(
-    displayedReviewReport.value?.markdown.match(
-      /## Suggestions(?: \([^\n]*\))?\s*\n(?!\s*(?:None found|None|No suggestions)\s*$)[\s\S]*\S/i,
-    ),
+    displayedReviewReport.value &&
+    extractReviewReportSections(displayedReviewReport.value.markdown).suggestions,
   ),
 );
 const reviewFrozen = computed(() => taskRounds.value.review >= 4);
@@ -3539,6 +3557,7 @@ const reviewHistoryRows = computed(() => {
       verdict: h.state === "ok" ? (h.verdict ?? "—") : h.state,
       reviewer: reviewAgentLabel(h.cli || h.agent || "—"),
       model: h.model || "—",
+      findingClasses: h.findingClasses ?? [],
     }));
 });
 
@@ -5738,6 +5757,25 @@ watch(
                 {{ doingDone ? doneProgress : "Move to done" }}
               </Button>
               <Button
+                v-if="
+                  !isHumanTask && ui.active.status === 'review' && !inPipeline && landAnywayEligible
+                "
+                variant="outline"
+                :disabled="
+                  ui.saving ||
+                  review?.running ||
+                  awaitingFreshReview ||
+                  repo.isRunning(ui.active.id) ||
+                  activeCheckRun ||
+                  localCheckWait ||
+                  localCheckSlot ||
+                  handoffBusy
+                "
+                @click="landAnywayDialogOpen = true"
+              >
+                Land anyway
+              </Button>
+              <Button
                 v-if="ui.active.status === 'review' && inPipeline"
                 variant="destructive"
                 :disabled="ui.saving || stoppingDone"
@@ -6964,6 +7002,7 @@ watch(
                     <th class="ta-left">agent</th>
                     <th class="ta-left">model</th>
                     <th class="ta-left">verdict</th>
+                    <th class="ta-left">finding classes</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -6996,6 +7035,9 @@ watch(
                     <td class="ta-left review-history-reviewer">{{ h.reviewer }}</td>
                     <td class="ta-left review-history-model">{{ h.model }}</td>
                     <td class="ta-left">{{ h.verdict }}</td>
+                    <td class="ta-left">
+                      {{ h.findingClasses.length ? h.findingClasses.join(", ") : "—" }}
+                    </td>
                   </tr>
                 </tbody>
               </table>
@@ -7898,6 +7940,31 @@ watch(
       }
     "
   />
+
+  <Dialog :open="landAnywayDialogOpen" @update:open="(value) => (landAnywayDialogOpen = value)">
+    <DialogOverlay />
+    <DialogContent class="land-anyway-dialog" data-overlay-layer="dialog">
+      <DialogTitle>Land anyway?</DialogTitle>
+      <DialogDescription>
+        This accepts the remaining non-blocking review risk. RepoOS will still run the normal
+        close-out checks and publish pipeline.
+      </DialogDescription>
+      <label class="field">
+        <span>Reason for accepting this risk</span>
+        <textarea v-model="landAnywayReason" rows="4" maxlength="1000" required />
+      </label>
+      <div class="btn-row">
+        <Button variant="outline" @click="landAnywayDialogOpen = false">Cancel</Button>
+        <Button
+          variant="status"
+          :disabled="!landAnywayReason.trim() || landAnywayReason.length > 1000 || ui.saving"
+          @click="confirmLandAnyway"
+        >
+          Land anyway
+        </Button>
+      </div>
+    </DialogContent>
+  </Dialog>
 
   <DirtyCheckoutDialog
     :task="dirtyTask"

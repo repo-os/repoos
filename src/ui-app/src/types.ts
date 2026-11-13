@@ -624,6 +624,8 @@ export interface ReviewState {
     cli?: string;
     /** Reviewer model for this pass, when the run reported one. */
     model?: string;
+    /** Stable bug classes explicitly labeled by the reviewer. */
+    findingClasses?: string[];
   }>;
   /**
    * The reviewer conversation, kept separate from the engineer session (0110).

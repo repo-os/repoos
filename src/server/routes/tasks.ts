@@ -72,7 +72,12 @@ import { humanStepFlagDetail } from "../../core/human-step-decision.js";
 import { runHumanStepDecisionCheck } from "../human-step-decision.js";
 import { HumanStepSplitError, splitHumanStepTask } from "../human-step-split.js";
 import { humanTaskGuideWarning } from "../../core/task-underspecified.js";
-import { extractReviewReportSections } from "../../core/review-report-sections.js";
+import {
+  extractReviewFindingClasses,
+  extractReviewReportSections,
+  reviewReportHasBlockingBugs,
+} from "../../core/review-report-sections.js";
+import { parseReviewVerdict } from "../../core/review-verdict.js";
 import { isHoldActive } from "../../core/task-selection.js";
 import { holdBlocksEngineer } from "../hold-guard.js";
 import { relaunchEngineerOnActiveTask } from "../engineer-launch.js";
@@ -3167,7 +3172,45 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
     // needs to ask about. Source files, repoos.toml, reports and other
     // bookkeeping dirs still block.
     const dirty = blockingMainDirtyPaths(rawDirty, config);
-    const doneBody = (await readBody(req)) as { commitDirty?: unknown };
+    const doneBody = (await readBody(req)) as { commitDirty?: unknown; landAnywayReason?: unknown };
+    const landAnywayReason =
+      typeof doneBody.landAnywayReason === "string" ? doneBody.landAnywayReason.trim() : "";
+    if (doneBody.landAnywayReason !== undefined) {
+      const report = reviews.read(id);
+      if (!landAnywayReason || landAnywayReason.length > 1000) {
+        return json(res, 400, { error: "Land anyway requires a reason of 1–1000 characters" });
+      }
+      if (
+        !report ||
+        report.state !== "ok" ||
+        parseReviewVerdict(report.markdown) !== "needs some work" ||
+        reviewReportHasBlockingBugs(report.markdown)
+      ) {
+        return json(res, 409, {
+          error:
+            "Land anyway is allowed only for a current needs-some-work review with no blocking Bugs",
+        });
+      }
+      const landing = await gatherLandable(config, taskStillExists, report);
+      const verdictCheck = landing.checks.find((check) => check.id === "review-verdict");
+      const blockers = landing.checks.filter(
+        (check) => check.id !== "review-verdict" && check.status === "fail",
+      );
+      if (
+        blockers.length > 0 ||
+        verdictCheck?.status !== "fail" ||
+        !verdictCheck.detail.includes('"needs some work"')
+      ) {
+        return json(res, 409, {
+          error: "Land anyway requires the review verdict to be the only failing landing check",
+          checks: blockers,
+        });
+      }
+      patchTaskFile(config, taskStillExists.absPath, {
+        note: `Land anyway accepted by human: ${landAnywayReason}`,
+      });
+      index.applyFileChange(taskStillExists.absPath);
+    }
     const commitDirty = doneBody?.commitDirty === true;
     if (dirty.length > 0 && !commitDirty) {
       return json(res, 409, {
@@ -4025,13 +4068,16 @@ export const getTaskReview: RouteHandler = (ctx, _req, res, params) => {
     running: reviews.isRunning(id),
     enabled: reviews.enabled(),
     review: reviews.read(id),
-    history: reviews.listPasses(id),
+    history: reviews.listPasses(id).map((pass) => ({
+      ...pass,
+      findingClasses: extractReviewFindingClasses(reviews.readPass(id, pass.pass)?.markdown),
+    })),
     lines: reviews.session(id),
   });
 };
 
 /** Create a follow-up only after an explicit human action (#1081). */
-export const createReviewFollowup: RouteHandler = async (ctx, _req, res, params) => {
+export const createReviewFollowup: RouteHandler = async (ctx, req, res, params) => {
   const task = ctx.index.getTask(params.param1);
   if (!task) return json(res, 404, { error: `Task #${params.param1} not found` });
   const report = ctx.reviews.read(task.id);
@@ -4050,8 +4096,9 @@ export const createReviewFollowup: RouteHandler = async (ctx, _req, res, params)
     priority: "p3",
     dependsOn: [task.id],
     body: `## Findings from review of #${task.id}\n\n${suggestions}\n`,
-    createdBy: resolveApiCreator(undefined),
+    createdBy: resolveApiCreator(getCurrentUser(req, ctx.config)?.email),
   });
+  commitTaskFile(ctx.config.root, created.absPath, `docs(${created.id}): add review follow-up`);
   ctx.index.applyFileChange(created.absPath);
   return json(res, 201, { ok: true, task: created });
 };

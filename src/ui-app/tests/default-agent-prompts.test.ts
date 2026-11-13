@@ -27,7 +27,10 @@ import {
   reviewPassesSoFar,
   reviewUsesLightBar,
 } from "../../server/review.js";
-import { extractReviewReportSections } from "../../core/review-report-sections.js";
+import {
+  extractReviewFindingClasses,
+  extractReviewReportSections,
+} from "../../core/review-report-sections.js";
 import {
   needsInputClearsOnNewEngineerRun,
   needsInputClearsOnSuccessfulReview,
@@ -569,7 +572,8 @@ describe("review blocking bar, freeze and accepted scope (#1080)", () => {
 
   it("keeps the engineer handoff sentence well formed", () => {
     const engineer = promptFor("engineer");
-    expect(engineer).toMatch(/instead of patching one\. A new config key needs a Settings control/);
+    expect(engineer).toMatch(/instead of patching one\./);
+    expect(engineer).toMatch(/A new config key needs a Settings control/);
     expect(engineer).toContain("self-review the change against that same checklist");
     expect(engineer).not.toMatch(/Before handoff, A new/);
   });
@@ -586,6 +590,14 @@ describe("review blocking bar, freeze and accepted scope (#1080)", () => {
       "## Bugs\n- The fallback crashes for an empty response.\nNo further findings of this class were found after grepping: callers, fallback branches and tests\n",
     );
     expect(sections.bugs).toBe("- The fallback crashes for an empty response.");
+  });
+
+  it("extracts stable finding class labels for convergence history", () => {
+    expect(
+      extractReviewFindingClasses(
+        "## Bugs\n- **Class: retry cleanup** — src/retry.ts leaks the timer.\n- **Class: retry cleanup** — src/worker.ts leaves the lock.\nNo further findings of this class were found after grepping: callers and tests\n",
+      ),
+    ).toEqual(["retry cleanup"]);
   });
 
   it("exposes the freeze setting in the schema, supported keys and loader", () => {

@@ -3181,13 +3181,19 @@ export const useRepoStore = defineStore("repo", () => {
    * in via `commitDirty`, the file list is stored per task and a
    * `DirtyCheckoutError` is thrown so the caller can show the confirmation modal.
    */
-  async function completeTask(t: Task, opts: { commitDirty?: boolean } = {}): Promise<DoneResult> {
+  async function completeTask(
+    t: Task,
+    opts: { commitDirty?: boolean; landAnywayReason?: string } = {},
+  ): Promise<DoneResult> {
     const raw = await fetch(`/api/tasks/${t.id}/done`, {
       method: "POST",
-      ...(opts.commitDirty
+      ...(opts.commitDirty || opts.landAnywayReason
         ? {
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ commitDirty: true }),
+            body: JSON.stringify({
+              ...(opts.commitDirty ? { commitDirty: true } : {}),
+              ...(opts.landAnywayReason ? { landAnywayReason: opts.landAnywayReason } : {}),
+            }),
           }
         : {}),
     });

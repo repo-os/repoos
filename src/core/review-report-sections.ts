@@ -169,10 +169,14 @@ export function isEmptyReviewSection(text: string | null | undefined): boolean {
 function sectionContent(sectionLines: Record<string, string[]>): Record<string, string> {
   const sections: Record<string, string> = {};
   for (const [key, lines] of Object.entries(sectionLines)) {
-    const content = lines
-      .filter(
-        (line) => !/^\s*No further findings of this class were found after grepping:/i.test(line),
-      )
+    const content = (
+      key === "bugs"
+        ? lines.filter(
+            (line) =>
+              !/^\s*No further findings of this class were found after grepping:/i.test(line),
+          )
+        : lines
+    )
       .join("\n")
       .trim();
     if (!content) continue;
@@ -256,6 +260,18 @@ export function extractReviewReportSections(markdown: string): {
 export function reviewReportHasBlockingBugs(markdown: string | null | undefined): boolean {
   if (!markdown?.trim()) return false;
   return !!extractReviewReportSections(markdown).bugs;
+}
+
+/** Read stable reviewer-supplied class labels for per-task convergence history. */
+export function extractReviewFindingClasses(markdown: string | null | undefined): string[] {
+  if (!markdown) return [];
+  const bugs = extractReviewReportSections(markdown).bugs ?? "";
+  const classes = new Set<string>();
+  for (const match of bugs.matchAll(/\*\*Class:\s*([^*]+)\*\*/gi)) {
+    const value = match[1].trim().replace(/[.!:;]+$/, "");
+    if (value) classes.add(value);
+  }
+  return [...classes];
 }
 
 /**

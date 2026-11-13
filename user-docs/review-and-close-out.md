@@ -85,7 +85,14 @@ After four completed review passes, non-blocking suggestions can be filed as a
 separate task with **Create follow-up task** in the review panel or
 `repoos review followup <id>`. RepoOS never creates that task without this
 explicit action. The panel labels progress as “round N of ~4” and keeps the
-individual pass history available above the report.
+individual pass history, including the finding classes, available above the
+report.
+
+When the latest current review says `needs some work`, has no blocking Bugs,
+and its verdict is the only failed landing check, the drawer offers **Land
+anyway**. Confirm it with a reason. RepoOS records that reason and still runs
+the normal checks and close-out pipeline; the action cannot override any other
+landing failure.
 
 A second exception is **`EVIDENCE-GAP-ONLY`**: the code is acceptable but
 handoff shots or verification are missing or unusable (not stale). The task stays
