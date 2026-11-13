@@ -2,7 +2,7 @@
 id: "1094"
 title: "Release email: rich templates"
 type: feature
-status: active
+status: review
 priority: p3
 area: [web, server]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/release-email-rich-templates
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-11T05:28:26Z"
-updated_at: "2026-11-13T12:22:40Z"
+updated_at: "2026-11-13T12:22:41Z"
 ---
 ## Problem
 The first release-email cut (#1071) renders one plain HTML and text pair. The spec asked for grouped release notes, per-recipient unsubscribe and links that work for non-GitHub hosts. None of these fit the first cut, so they are filed here.
@@ -36,3 +36,4 @@ See src/server/release-email.ts (renderReleaseEmail). Keep zero runtime dependen
 - 2026-11-13T12:13:27Z · body
 - 2026-11-13T12:20:35Z · body
 - 2026-11-13T12:22:40Z · CTO nudge: held — handoff gate is running
+- 2026-11-13T12:22:41Z · status active→review
