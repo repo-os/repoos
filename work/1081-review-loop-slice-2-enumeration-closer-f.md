@@ -12,7 +12,7 @@ branch: feat/review-loop-slice-2-enumeration-closer-f
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-09T13:59:41Z"
-updated_at: "2026-11-13T10:42:31Z"
+updated_at: "2026-11-13T10:48:42Z"
 review_rounds: 1
 review_passes: 1
 dev_error_count: 6
@@ -38,11 +38,11 @@ Start from `src/server/review.ts` (`reviewMission`, the "Earlier passes and the 
 ```json
 [
 {
-"label": "Review pass history and round estimate",
-"target": "default",
-"route": "/work?task=9999&tab=review",
-"highlight": ".rounds-badge",
-"state": "drawer:reviewPasses"
+  "label": "Review history and round guidance",
+  "target": "default",
+  "route": "/work?task=1081&tab=review",
+  "highlight": ".review-round-guidance",
+  "state": "drawer:reviewPasses"
 }
 ]
 ```
@@ -133,3 +133,4 @@ Start from `src/server/review.ts` (`reviewMission`, the "Earlier passes and the 
 - 2026-11-13T10:41:52Z · status review→active
 - 2026-11-13T10:41:54Z · CTO nudge: held — remote validation is running
 - 2026-11-13T10:42:31Z · note: Review round 1 findings; fixing reviewer prompt audience, fixture state, and route coverage.
+- 2026-11-13T10:48:42Z · body
