@@ -2444,6 +2444,13 @@ export function hostLockShell(opts: {
     `DEADLINE=${deadline !== undefined ? deadline : ""}`,
     'WAITDIR="$LOCKROOT/wait"',
     'mkdir -p "$WAITDIR" 2>/dev/null || true',
+    '_rvslot=""',
+    '_rvparent=$PPID',
+    '_rvcleanup() { _rc=$?; trap - EXIT; [ -n "$_rvslot" ] && { kill "$_rvhb" 2>/dev/null; rm -f "$LOCKROOT/$_rvslot/.limit" "$LOCKROOT/$_rvslot/.meta"; rmdir "$LOCKROOT/$_rvslot" 2>/dev/null; }; rm -f "$WAITDIR/$$" 2>/dev/null; exit "$_rc"; }',
+    'trap _rvcleanup EXIT',
+    "trap 'exit 129' HUP",
+    "trap 'exit 130' INT",
+    "trap 'exit 143' TERM",
     '[ "$WAIT" -gt 0 ] || [ -n "$DEADLINE" ] && {',
     metaShell
       ? `  printf '%s\\n' "$PRIORITY" > "$WAITDIR/$$" && printf '%s\\n' ${metaShell} >> "$WAITDIR/$$"`
@@ -2463,15 +2470,21 @@ export function hostLockShell(opts: {
     '  echo "[lock] the deadline had already passed before this host could attempt to acquire a slot"',
     `  exit ${HOST_LOCK_TIMEOUT_EXIT}`,
     "}",
-    '_rvslot=""',
     "_rvwaited=0",
     'while [ -z "$_rvslot" ]; do',
+    // A remote shell whose ssh/session parent vanished is reparented (usually
+    // to pid 1). Checking the live PPID catches that even when HUP is ignored.
+    '  _rvactual_parent=$(ps -o ppid= -p "$$" 2>/dev/null | tr -d " ")',
+    '  [ -n "$_rvactual_parent" ] && [ "$_rvactual_parent" = "$_rvparent" ] || { echo "[lock] parent session ended while waiting"; exit 143; }',
+    '  if { [ -n "$DEADLINE" ] && [ "$(date +%s)" -ge "$DEADLINE" ]; } || { [ -z "$DEADLINE" ] && [ "$WAIT" -gt 0 ] && [ "$_rvwaited" -ge "$WAIT" ]; }; then echo "[lock] timed out after ${_rvwaited}s waiting for a free slot on this host — another repoos check is still running"; exit ${HOST_LOCK_TIMEOUT_EXIT}; fi',
     "  _defer=0",
     '  if [ "$WAIT" -gt 0 ] || [ -n "$DEADLINE" ]; then',
     '  for _wf in "$WAITDIR"/*; do',
     '    [ -f "$_wf" ] || continue',
     '    _wpid=$(basename "$_wf")',
     '    [ "$_wpid" = "$$" ] && continue',
+    '    case "$_wpid" in ""|*[!0-9]*) continue ;; esac',
+    '    if ! kill -0 "$_wpid" 2>/dev/null; then rm -f "$_wf" 2>/dev/null || true; continue; fi',
     "    _opri=0",
     '    IFS= read -r _opri < "$_wf" || _opri=0',
     '    case "$_opri" in ""|*[!0-9]*) _opri=0 ;; esac',
@@ -2481,13 +2494,21 @@ export function hostLockShell(opts: {
     "    fi",
     "  done",
     '  if [ "$_defer" -eq 1 ]; then',
-    "    sleep 5",
-    "    _rvwaited=$((_rvwaited+5))",
+    '    _rvsleep=5',
+    '    if [ -n "$DEADLINE" ]; then _rvleft=$(($(date +%s) >= DEADLINE ? 0 : DEADLINE - $(date +%s))); else _rvleft=$((WAIT-_rvwaited)); fi',
+    '    [ "$_rvleft" -lt "$_rvsleep" ] && _rvsleep=$_rvleft',
+    '    [ "$_rvsleep" -gt 0 ] && sleep "$_rvsleep"',
+    '    _rvwaited=$((_rvwaited+_rvsleep))',
     "    continue",
     "  fi",
     "  fi",
     // Coordinate slot creation with the reaper's short host-wide lease.
-    '  while ! mkdir "$LOCKROOT/.acquire-gate" 2>/dev/null; do sleep 1; done',
+    '  while ! mkdir "$LOCKROOT/.acquire-gate" 2>/dev/null; do',
+    '    _rvactual_parent=$(ps -o ppid= -p "$$" 2>/dev/null | tr -d " ")',
+    '    [ -n "$_rvactual_parent" ] && [ "$_rvactual_parent" = "$_rvparent" ] || exit 143',
+    '    if { [ -n "$DEADLINE" ] && [ "$(date +%s)" -ge "$DEADLINE" ]; } || { [ -z "$DEADLINE" ] && [ "$WAIT" -gt 0 ] && [ "$_rvwaited" -ge "$WAIT" ]; }; then exit ${HOST_LOCK_TIMEOUT_EXIT}; fi',
+    '    sleep 1; _rvwaited=$((_rvwaited+1))',
+    '  done',
     '  if [ -d "$LOCKROOT/.reaping" ]; then rmdir "$LOCKROOT/.acquire-gate" 2>/dev/null || true; sleep 1; continue; fi',
     // Host-wide cap = min(this caller's limit, every occupied slot's limit).
     // Scan all slot indices (HOSTMAX), not just 0..SLOTS-1, so a caller with
@@ -2545,8 +2566,11 @@ export function hostLockShell(opts: {
     // heartbeat for ${stale} minutes belongs to a dead holder — break it.
     `  find "$LOCKROOT" -mindepth 1 -maxdepth 1 -type d -mmin +${stale} -exec rm -rf {} + 2>/dev/null || true`,
     `  find "$LOCKROOT" -mindepth 1 -maxdepth 1 -type f -mmin +${stale} -exec rm -f {} + 2>/dev/null || true`,
-    "  sleep 5",
-    "  _rvwaited=$((_rvwaited+5))",
+    '  _rvsleep=5',
+    '  if [ -n "$DEADLINE" ]; then _rvleft=$(($(date +%s) >= DEADLINE ? 0 : DEADLINE - $(date +%s))); else _rvleft=$((WAIT-_rvwaited)); fi',
+    '  [ "$_rvleft" -lt "$_rvsleep" ] && _rvsleep=$_rvleft',
+    '  [ "$_rvsleep" -gt 0 ] && sleep "$_rvsleep"',
+    '  _rvwaited=$((_rvwaited+_rvsleep))',
     "done",
     'echo "[lock] slot $_rvslot acquired after ${_rvwaited}s"',
     // Heartbeat: refresh this slot's dir while we live, so staleness means
@@ -2571,11 +2595,6 @@ export function hostLockShell(opts: {
     // for up to a full heartbeat interval after every run.
     "_rvbeat >/dev/null 2>&1 &",
     "_rvhb=$!",
-    '_rvcleanup() { _rc=$?; kill "$_rvhb" 2>/dev/null; rm -f "$LOCKROOT/$_rvslot/.limit" "$LOCKROOT/$_rvslot/.meta"; rmdir "$LOCKROOT/$_rvslot" 2>/dev/null; rm -f "$WAITDIR/$$" 2>/dev/null; exit $_rc; }',
-    "trap _rvcleanup EXIT",
-    "trap 'exit 129' HUP",
-    "trap 'exit 130' INT",
-    "trap 'exit 143' TERM",
     opts.inner,
   ];
   return script.join("\n");
