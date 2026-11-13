@@ -2,7 +2,7 @@
 id: "1084"
 title: "Easter eggs bundle: task drawer status cards (one at a time, spacing, stray info icon)"
 type: feature
-status: active
+status: review
 priority: p3
 area: web
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-task-drawer-status-ca
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-10T04:51:24Z"
-updated_at: "2026-11-13T14:30:03Z"
+updated_at: "2026-11-13T15:28:58Z"
 ---
 ## Problem
 The task drawer (screenshot, #1070 after a failed Move to done) stacks a red close-out failure card on top of a yellow "Waiting for you" review card. Several things are wrong:
@@ -49,3 +49,4 @@ On #1086 the board and pipeline cards showed 'Checks · checking review · 9m 46
 - 2026-11-13T14:29:59Z · cli_override, model_override
 - 2026-11-13T14:30:02Z · status inbox→ready
 - 2026-11-13T14:30:03Z · status ready→active, needs_input, branch
+- 2026-11-13T15:28:58Z · status active→review
