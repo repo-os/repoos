@@ -101,3 +101,4 @@ Start from `src/server/review.ts` (`reviewMission`, the "Earlier passes and the 
 - 2026-11-13T07:14:12Z · CTO nudge: held — handoff gate is running
 - 2026-11-13T07:41:43Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-13T07:41:44Z · message_queued at 2026-11-13T07:41:44.322Z
+- 2026-11-13T07:41:44Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
