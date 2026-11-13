@@ -39,3 +39,4 @@ See src/server/release-email.ts (renderReleaseEmail). Keep zero runtime dependen
 - 2026-11-13T12:22:41Z · status active→review
 - 2026-11-13T12:22:41Z · note: Task body is underspecified: missing sections: Desired UX
 - 2026-11-13T12:22:41Z · message_queued at 2026-11-13T12:22:41.493Z
+- 2026-11-13T12:22:41Z · note: shots: skipped — the diff (7 changed paths) touches no capture target's globs — no UI change to capture
