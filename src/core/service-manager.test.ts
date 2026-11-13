@@ -85,9 +85,17 @@ describe("generateUnit", () => {
     process.env.PATH = "/home/test/.local/bin:/usr/bin";
     try {
       const unit = generateUnit({
-        id: "test", root: "/tmp/project", port: 7171, platform: "systemd",
-        label: "com.repoos.serve.test", autoStart: false, status: "stopped",
-        lastHealthCheck: null, healthError: null, createdAt: "", updatedAt: "",
+        id: "test",
+        root: "/tmp/project",
+        port: 7171,
+        platform: "systemd",
+        label: "com.repoos.serve.test",
+        autoStart: false,
+        status: "stopped",
+        lastHealthCheck: null,
+        healthError: null,
+        createdAt: "",
+        updatedAt: "",
       });
       expect(unit).toContain('Environment="PATH=/home/test/.local/bin:/usr/bin"');
     } finally {

@@ -361,15 +361,21 @@ WantedBy=default.target
 function missingConfiguredAgentCli(root: string, path: string): string | undefined {
   const config = loadConfig(root);
   const executableByCli: Record<string, string> = {
-    "claude code": "claude", "github copilot": "copilot", "qwen code": "qwen",
-    antigravity: "agy", kiro: "kiro-cli", opencode: "opencode",
+    "claude code": "claude",
+    "github copilot": "copilot",
+    "qwen code": "qwen",
+    antigravity: "agy",
+    kiro: "kiro-cli",
+    opencode: "opencode",
   };
   for (const agent of config.agents ?? []) {
     if (!agent.enabled) continue;
     const command = executableByCli[agent.cli] ?? agent.cli;
     try {
       execFileSync("which", [command], {
-        encoding: "utf8", timeout: 5000, stdio: ["ignore", "pipe", "ignore"],
+        encoding: "utf8",
+        timeout: 5000,
+        stdio: ["ignore", "pipe", "ignore"],
         env: { ...process.env, PATH: path },
       });
     } catch {
