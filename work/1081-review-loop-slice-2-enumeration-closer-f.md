@@ -143,3 +143,4 @@ Start from `src/server/review.ts` (`reviewMission`, the "Earlier passes and the 
 - 2026-11-13T11:25:21Z · CTO nudge: held — handoff gate is running
 - 2026-11-13T11:33:28Z · CTO nudge: held — handoff gate is running
 - 2026-11-13T11:57:03Z · message_queued at 2026-11-13T11:57:03.318Z
+- 2026-11-13T11:57:03Z · handoff failed · handoff recovery attempted · finalization failed
