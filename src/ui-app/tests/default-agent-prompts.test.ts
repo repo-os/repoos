@@ -46,6 +46,7 @@ describe("built-in role prompts (#0872)", () => {
   it("gives the reviewer the class-enumeration, earlier-report, evidence and merge checks", () => {
     const reviewer = promptFor("reviewer");
     expect(reviewer).toContain("WHOLE CLASS");
+    expect(reviewer).toContain("Do not stop at the first instance");
     expect(reviewer).toMatch(/grep the diff and the files it touches/);
     expect(reviewer).toMatch(/newest earlier review reports/);
     expect(reviewer).toMatch(/never re-report a fixed item as new/i);
@@ -77,6 +78,7 @@ describe("built-in role prompts (#0872)", () => {
     expect(engineer).toMatch(/base branch's copy of the task file/);
     expect(engineer).toMatch(/Never move your own task out of `active`/);
     expect(engineer).toMatch(/split into a held human task/);
+    expect(engineer).toContain("self-review the change against that same checklist");
   });
 
   it("gives the PM the task-body, board, story, dependency, bundle and human-step rules", () => {
@@ -418,6 +420,12 @@ describe("review blocking bar, freeze and accepted scope (#1080)", () => {
   it("omits the accepted-scope block when the body has no such section", () => {
     const mission = reviewMission(task(), reviewer, root, "main", config(root));
     expect(mission).not.toContain("AUTHORITATIVE");
+  });
+
+  it("keeps engineer handoff instructions out of the reviewer mission", () => {
+    const mission = reviewMission(task(), reviewer, root, "main", config(root));
+    expect(mission).not.toContain("Before handoff, self-review");
+    expect(mission).not.toContain("before requesting review");
   });
 
   it("keeps the full-bar enumeration wording out of the frozen and light prompts", () => {

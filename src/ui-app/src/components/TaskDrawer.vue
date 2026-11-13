@@ -7179,8 +7179,9 @@ watch(
               </template>
             </template>
             <p class="review-hint">Findings only — you decide whether this task is done.</p>
-            <p v-if="reviewHistoryRows.length" class="review-hint">
-              Round {{ taskRounds.review }} of ~4 · review history is recorded above.
+            <p v-if="reviewHistoryRows.length" class="review-hint review-round-guidance">
+              Round {{ taskRounds.review }} of ~{{ review?.freezeAfterPasses ?? 4 }} · review
+              history is recorded above.
             </p>
           </section>
 

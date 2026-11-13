@@ -941,7 +941,6 @@ export function reviewMission(
     suggestionsHeading,
     "Improvements worth making. Say so plainly when there are none.",
     "",
-    "Before handoff, self-review the change against the same checklist used for review: acceptance criteria, sibling paths, callers, config/schema/docs/test registrations, fallback sides, and the complete bug class. Fix every applicable finding before requesting review.",
   );
   return parts.join("\n");
 }

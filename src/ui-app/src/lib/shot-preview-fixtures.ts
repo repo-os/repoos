@@ -1932,12 +1932,16 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
       });
       break;
     case "drawer:reviewPasses": {
-      ensureFixtureTask(repo, "review", { branch: "feat/shot-fixture" });
+      ensureFixtureTask(repo, "review", {
+        branch: "feat/shot-fixture",
+        extra: { review_passes: 2, review_rounds: 2 },
+      });
       const latestAt = "2026-11-02T10:00:00.000Z";
       const olderAt = "2026-11-01T10:00:00.000Z";
       repo.reviews[SHOT_PREVIEW_FIXTURE_TASK_ID] = {
         running: false,
         enabled: true,
+        freezeAfterPasses: 4,
         lines: [],
         report: {
           id: SHOT_PREVIEW_FIXTURE_TASK_ID,
@@ -1958,6 +1962,7 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
             agent: "reviewer",
             cli: "cursor",
             model: "composer",
+            findingClasses: ["scope-gap"],
           },
           {
             pass: 2,
@@ -1967,6 +1972,7 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
             agent: "reviewer",
             cli: "codex",
             model: "gpt-5",
+            findingClasses: ["scope-gap", "edge-case"],
           },
         ],
       };
