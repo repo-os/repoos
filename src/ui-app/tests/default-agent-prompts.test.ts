@@ -570,6 +570,7 @@ describe("review blocking bar, freeze and accepted scope (#1080)", () => {
   it("keeps the engineer handoff sentence well formed", () => {
     const engineer = promptFor("engineer");
     expect(engineer).toMatch(/instead of patching one\. A new config key needs a Settings control/);
+    expect(engineer).toContain("self-review the change against that same checklist");
     expect(engineer).not.toMatch(/Before handoff, A new/);
   });
 
@@ -578,6 +579,13 @@ describe("review blocking bar, freeze and accepted scope (#1080)", () => {
       "## Bugs\nNone found\n\n## Suggestions (non-blocking)\n- Add a helper for the retry.\n",
     );
     expect(sections.suggestions).toContain("Add a helper for the retry.");
+  });
+
+  it("does not count the class enumeration closer as a bug", () => {
+    const sections = extractReviewReportSections(
+      "## Bugs\n- The fallback crashes for an empty response.\nNo further findings of this class were found after grepping: callers, fallback branches and tests\n",
+    );
+    expect(sections.bugs).toBe("- The fallback crashes for an empty response.");
   });
 
   it("exposes the freeze setting in the schema, supported keys and loader", () => {

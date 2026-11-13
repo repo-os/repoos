@@ -81,6 +81,12 @@ HEAD), it simply waits: use **Refresh evidence** in the Changes tab (or
 `repoos verify <id>`) to re-capture on the current HEAD, then **Review again**
 in the UI or `repoos review again <id>`.
 
+After four completed review passes, non-blocking suggestions can be filed as a
+separate task with **Create follow-up task** in the review panel or
+`repoos review followup <id>`. RepoOS never creates that task without this
+explicit action. The panel labels progress as “round N of ~4” and keeps the
+individual pass history available above the report.
+
 A second exception is **`EVIDENCE-GAP-ONLY`**: the code is acceptable but
 handoff shots or verification are missing or unusable (not stale). The task stays
 in `review`, automatic re-capture runs without counting a review round, and after

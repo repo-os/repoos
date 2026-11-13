@@ -72,6 +72,7 @@ import { humanStepFlagDetail } from "../../core/human-step-decision.js";
 import { runHumanStepDecisionCheck } from "../human-step-decision.js";
 import { HumanStepSplitError, splitHumanStepTask } from "../human-step-split.js";
 import { humanTaskGuideWarning } from "../../core/task-underspecified.js";
+import { extractReviewReportSections } from "../../core/review-report-sections.js";
 import { isHoldActive } from "../../core/task-selection.js";
 import { holdBlocksEngineer } from "../hold-guard.js";
 import { relaunchEngineerOnActiveTask } from "../engineer-launch.js";
@@ -4027,6 +4028,29 @@ export const getTaskReview: RouteHandler = (ctx, _req, res, params) => {
     history: reviews.listPasses(id),
     lines: reviews.session(id),
   });
+};
+
+/** Create a follow-up only after an explicit human action (#1081). */
+export const createReviewFollowup: RouteHandler = async (ctx, _req, res, params) => {
+  const task = ctx.index.getTask(params.param1);
+  if (!task) return json(res, 404, { error: `Task #${params.param1} not found` });
+  const report = ctx.reviews.read(task.id);
+  if (Number(task.extra?.review_passes ?? 0) < 4) {
+    return json(res, 409, { error: "Follow-up tasks are available after the four-pass review freeze" });
+  }
+  const suggestions = report ? extractReviewReportSections(report.markdown).suggestions : undefined;
+  if (!suggestions) return json(res, 400, { error: "The latest review has no non-blocking suggestions" });
+  const created = ctx.repoos.createTask({
+    title: `Follow-up: ${task.title}`,
+    type: task.type,
+    area: task.area,
+    priority: "p3",
+    dependsOn: [task.id],
+    body: `## Findings from review of #${task.id}\n\n${suggestions}\n`,
+    createdBy: resolveApiCreator(undefined),
+  });
+  ctx.index.applyFileChange(created.absPath);
+  return json(res, 201, { ok: true, task: created });
 };
 
 /** Read-only body for one numbered review pass (#0995 E4). */

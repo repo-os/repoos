@@ -932,12 +932,16 @@ export function reviewMission(
     "Concrete defects, each with the file and what goes wrong.",
     "List what you checked under ## Edge cases or its own heading, never under ## Bugs",
     "(unordered bullets after `None found` in Bugs are parsed as commentary, not findings).",
+    "End this section with exactly one line: `No further findings of this class were found after grepping: <list>`.",
+    "The list names the sibling paths, callers, config/schema/docs/test registrations and fallback sides you searched.",
     "",
     "## Edge cases",
     "Cases worth checking that the change may not handle.",
     "",
     suggestionsHeading,
     "Improvements worth making. Say so plainly when there are none.",
+    "",
+    "Before handoff, self-review the change against the same checklist used for review: acceptance criteria, sibling paths, callers, config/schema/docs/test registrations, fallback sides, and the complete bug class. Fix every applicable finding before requesting review.",
   );
   return parts.join("\n");
 }

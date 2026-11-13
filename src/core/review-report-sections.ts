@@ -169,7 +169,10 @@ export function isEmptyReviewSection(text: string | null | undefined): boolean {
 function sectionContent(sectionLines: Record<string, string[]>): Record<string, string> {
   const sections: Record<string, string> = {};
   for (const [key, lines] of Object.entries(sectionLines)) {
-    const content = lines.join("\n").trim();
+    const content = lines
+      .filter((line) => !/^\s*No further findings of this class were found after grepping:/i.test(line))
+      .join("\n")
+      .trim();
     if (!content) continue;
     // Relevance is a one-line label, not a findings list: keep any substantive
     // text and only drop an explicit "none" value.

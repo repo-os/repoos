@@ -440,6 +440,7 @@ import {
   startPreview,
   stopPreview,
   getTaskReview,
+  createReviewFollowup,
   getTaskReviewPass,
   getTaskEngineeringReports,
   getTaskEngineeringReport,
@@ -4103,6 +4104,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("POST", /^\/api\/tasks\/([^/]+)\/preview$/, startPreview);
   router.register("POST", /^\/api\/tasks\/([^/]+)\/preview\/stop$/, stopPreview);
   router.register("GET", /^\/api\/tasks\/([^/]+)\/review$/, getTaskReview);
+  router.register("POST", /^\/api\/tasks\/([^/]+)\/review\/followup$/, createReviewFollowup);
   router.register("GET", /^\/api\/tasks\/([^/]+)\/engineering-reports$/, getTaskEngineeringReports);
   router.register(
     "GET",

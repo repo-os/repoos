@@ -147,7 +147,7 @@ const GROUPS: readonly CommandGroup[] = [
       },
       {
         name: "review",
-        usage: "review <id> [--wait] [--json] [--port N] · review cancel <id> · review again <id>",
+        usage: "review <id> [--wait] [--json] [--port N] · review cancel <id> · review again <id> · review followup <id>",
         desc: "Request review synchronously (PATCH status=review; waits for handoff)",
         flags: "--wait · --json · --port",
       },
@@ -155,6 +155,12 @@ const GROUPS: readonly CommandGroup[] = [
         name: "review again",
         usage: "review again <id> [--json] [--port N]",
         desc: "Start a fresh review run on a task already in review (POST /api/tasks/:id/review/again)",
+        flags: "--json · --port",
+      },
+      {
+        name: "review followup",
+        usage: "review followup <id> [--json] [--port N]",
+        desc: "Create a follow-up task from the latest non-blocking review suggestions",
         flags: "--json · --port",
       },
       {

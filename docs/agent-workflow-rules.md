@@ -479,3 +479,6 @@ cannot tell from the code alone:
   `git checkout main -- <them>` before merging. Anything but the task's own
   file is drift that will pollute another task's record. Background:
   `docs/close-out-pipeline.md`.
+# Review convergence (#1081)
+
+Review reports enumerate the complete class of each bug and close `## Bugs` with a grep summary. The parser ignores that closing line. Engineers self-review using the same checklist before handoff. After four completed passes, humans may create a separate follow-up task from non-blocking suggestions with `repoos review followup <id>`; this is an explicit action and never files work automatically.

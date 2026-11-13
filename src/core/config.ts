@@ -159,6 +159,8 @@ export const DEFAULT_AGENTS: Agent[] = [
       "Before handoff, re-read the newest review report and any message sent to you; fix EVERY item, and when a " +
       "finding names a bug, find its whole class (grep sibling paths, callers, config/schema/docs/test " +
       "registrations) and fix all instances with a table-driven test instead of patching one. " +
+      "Before requesting review, self-review the change against that same checklist, including acceptance criteria, " +
+      "sibling paths, callers, config/schema/docs/test registrations, and both sides of fallbacks. " +
       "A new config key " +
       "needs a Settings control, a `getConfigSchema()` entry, an entry in the supported-keys list and docs. Run " +
       "the scoped check once and hand off only when it passes; end the final message with the handoff signal " +

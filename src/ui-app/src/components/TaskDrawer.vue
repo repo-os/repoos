@@ -3472,6 +3472,25 @@ function reviewAgentLabel(value: string): string {
 const reviewHtml = computed(() =>
   displayedReviewReport.value ? renderMarkdown(displayedReviewReport.value.markdown) : "",
 );
+const creatingReviewFollowup = ref(false);
+const reviewFollowupCreated = ref(false);
+const reviewSuggestionsPresent = computed(() =>
+  Boolean(displayedReviewReport.value?.markdown.match(/## Suggestions(?: \([^\n]*\))?\s*\n(?!\s*(?:None found|None|No suggestions)\s*$)[\s\S]*\S/i)),
+);
+const reviewFrozen = computed(() => taskRounds.value.review >= 4);
+async function createReviewFollowup(): Promise<void> {
+  if (!ui.active || creatingReviewFollowup.value || !reviewSuggestionsPresent.value) return;
+  creatingReviewFollowup.value = true;
+  try {
+    const result = await api<{ task: { id: string } }>(`/api/tasks/${ui.active.id}/review/followup`, { method: "POST" });
+    reviewFollowupCreated.value = true;
+    notices.push({ kind: "success", message: `Created follow-up task #${result.task.id}` });
+  } catch (error) {
+    repo.onError(error);
+  } finally {
+    creatingReviewFollowup.value = false;
+  }
+}
 
 /** True when a new review is in progress while a previous report is still
  *  shown. The old report is kept for context but must be flagged as stale —
@@ -7087,9 +7106,18 @@ watch(
                 <div class="md-card review-card">
                   <div class="md-rendered" v-html="reviewHtml"></div>
                 </div>
+                <Button
+                  v-if="reviewSuggestionsPresent && reviewFrozen && selectedReviewPassIsLatest && !reviewStale"
+                  variant="secondary"
+                  :disabled="creatingReviewFollowup || reviewFollowupCreated"
+                  @click="createReviewFollowup"
+                >
+                  {{ reviewFollowupCreated ? "Follow-up created" : creatingReviewFollowup ? "Creating…" : "Create follow-up task" }}
+                </Button>
               </template>
             </template>
             <p class="review-hint">Findings only — you decide whether this task is done.</p>
+            <p v-if="reviewHistoryRows.length" class="review-hint">Round {{ taskRounds.review }} of ~4 · review history is recorded above.</p>
           </section>
 
           <section v-else class="review-pane review-chat-pane" role="tabpanel">
