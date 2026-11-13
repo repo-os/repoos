@@ -41,3 +41,4 @@ No user-facing change: checks on unrelated tasks stop failing with a jsdom teard
 - 2026-11-13T12:13:28Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-13T12:22:36Z · note: ui verification passed: 1 shot captured with clean console
 - 2026-11-13T12:22:38Z · status active→review
+- 2026-11-13T12:22:38Z · message_queued at 2026-11-13T12:22:38.599Z
