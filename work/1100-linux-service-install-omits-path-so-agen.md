@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 735166
-last_close_out_gate_at: "2026-11-13T06:30:58.622Z"
 id: "1100"
 title: Linux service install omits PATH so agent CLIs fail with spawn ENOENT
 type: bug
-status: review
+status: done
 priority: p1
 area: core
+merged_commit: 374db7710820c3e894058cba0c61117371a8abeb
 assigned_to: ai
 created_by: t@t
 branch: feat/linux-service-install-omits-path-so-agen
@@ -14,6 +13,8 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-13T01:24:51Z"
 updated_at: "2026-11-13T06:30:58Z"
+last_close_out_gate_ms: 735166
+last_close_out_gate_at: "2026-11-13T06:30:58.622Z"
 review_passes: 1
 ---
 ## Problem

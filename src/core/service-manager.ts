@@ -325,12 +325,18 @@ function systemdUnitPath(label: string): string {
   return join(homedir(), ".config", "systemd", "user", `${label}.service`);
 }
 
-function generateUnit(entry: ServiceEntry): string {
+export function generateUnit(entry: ServiceEntry): string {
   const { bin, needsCliEntry } = repoosBinary();
   const cliEntry = compiledCliEntry();
   const execStart = needsCliEntry
     ? `${bin} ${cliEntry} serve --port ${String(entry.port)} --host 127.0.0.1 --quiet`
     : `${bin} serve --port ${String(entry.port)} --host 127.0.0.1 --quiet`;
+  // systemd does not inherit the installing shell's environment. Quote the
+  // value as a systemd assignment and double percent signs (unit specifiers).
+  const servicePath = (process.env.PATH ?? "/usr/local/bin:/usr/bin:/bin")
+    .replaceAll("\\", "\\\\")
+    .replaceAll('"', '\\"')
+    .replaceAll("%", "%%");
 
   // Always default.target for user units — multi-user.target is a system
   // target and silently ignored for --user services. Auto-start is controlled
@@ -343,12 +349,41 @@ After=network.target
 Type=simple
 WorkingDirectory=${entry.root}
 ExecStart=${execStart}
+Environment="PATH=${servicePath}"
 Restart=on-failure
 RestartSec=10
 
 [Install]
 WantedBy=default.target
 `;
+}
+
+function missingConfiguredAgentCli(root: string, path: string): string | undefined {
+  const config = loadConfig(root);
+  const executableByCli: Record<string, string> = {
+    "claude code": "claude",
+    "github copilot": "copilot",
+    "qwen code": "qwen",
+    antigravity: "agy",
+    kiro: "kiro-cli",
+    cursor: "cursor-agent",
+    opencode: "opencode",
+  };
+  for (const agent of config.agents ?? []) {
+    if (!agent.enabled) continue;
+    const command = executableByCli[agent.cli] ?? agent.cli;
+    try {
+      execFileSync("which", [command], {
+        encoding: "utf8",
+        timeout: 5000,
+        stdio: ["ignore", "pipe", "ignore"],
+        env: { ...process.env, PATH: path },
+      });
+    } catch {
+      return `Configured agent CLI \`${command}\` was not found on the service PATH: ${path || "(empty)"}. Add it to PATH and retry service install.`;
+    }
+  }
+  return undefined;
 }
 
 // ── OS interaction ───────────────────────────────────────────────────────────
@@ -758,6 +793,9 @@ export async function installService(
       return { ok: false, error: `Failed to load LaunchAgent: ${result.stderr}` };
     }
   } else {
+    const path = process.env.PATH ?? "/usr/local/bin:/usr/bin:/bin";
+    const missingCli = missingConfiguredAgentCli(entry.root, path);
+    if (missingCli) return { ok: false, error: missingCli };
     const unit = generateUnit(entry);
     const dest = systemdUnitPath(label);
     if (!existsSync(dirname(dest))) {
