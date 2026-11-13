@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-task-drawer-status-ca
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-10T04:51:24Z"
-updated_at: "2026-11-13T15:13:27Z"
+updated_at: "2026-11-13T15:13:28Z"
 ---
 ## Problem
 The task drawer (screenshot, #1070 after a failed Move to done) stacks a red close-out failure card on top of a yellow "Waiting for you" review card. Several things are wrong:
@@ -74,3 +74,4 @@ On #1086 the board and pipeline cards showed 'Checks · checking review · 9m 46
 - 2026-11-13T15:13:19Z · message_queued at 2026-11-13T15:13:19.507Z
 - 2026-11-13T15:13:19Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-13T15:13:27Z · body
+- 2026-11-13T15:13:28Z · CTO nudge: held — an undelivered message is already queued
