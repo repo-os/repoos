@@ -12,7 +12,7 @@ branch: feat/linux-service-install-omits-path-so-agen
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-13T01:24:51Z"
-updated_at: "2026-11-13T06:30:58Z"
+updated_at: "2026-11-13T06:31:26Z"
 last_close_out_gate_ms: 735166
 last_close_out_gate_at: "2026-11-13T06:30:58.622Z"
 review_passes: 1
@@ -49,4 +49,4 @@ Look at the service install code that writes the systemd unit and the engineer l
 - 2026-11-13T03:41:12Z · note: review pass 1: good to go
 - 2026-11-13T04:41:00Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-13T06:30:58Z · close-out gate completed in 735s
-
+- 2026-11-13T06:31:26Z · status done→done, release:success
