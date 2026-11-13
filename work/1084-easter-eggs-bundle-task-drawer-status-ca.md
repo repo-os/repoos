@@ -12,7 +12,6 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-10T04:51:24Z"
 updated_at: "2026-11-13T15:26:30Z"
-check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-13T15:23:12.527Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Drawer close-out failure in light appearance (target \"default\"): highlight .drawer-done-error matched nothing on /work?task=1084&tab=changes (http://127.0.0.1:38527/work?shotState=drawer:statusChecksFailed)"
 ---
 ## Problem
@@ -76,3 +75,4 @@ On #1086 the board and pipeline cards showed 'Checks · checking review · 9m 46
 - 2026-11-13T15:23:12Z · message_delivered: 1 message(s)
 - 2026-11-13T15:23:50Z · body
 - 2026-11-13T15:26:30Z · body
+
