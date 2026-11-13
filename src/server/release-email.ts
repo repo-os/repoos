@@ -33,20 +33,34 @@ import {
 export const RELEASE_EMAIL_LOG_FILE = "release-emails.json";
 const UNSUBSCRIBE_FILE = "release-email-unsubscribes.json";
 
-function readUnsubscribeState(config: RepoOSConfig): { tokens: Record<string, string>; unsubscribed: string[] } {
+function readUnsubscribeState(config: RepoOSConfig): {
+  tokens: Record<string, string>;
+  unsubscribed: string[];
+} {
   try {
-    const value = JSON.parse(readFileSync(join(config.root, config.cacheDir ?? ".repoos", UNSUBSCRIBE_FILE), "utf8"));
+    const value = JSON.parse(
+      readFileSync(join(config.root, config.cacheDir ?? ".repoos", UNSUBSCRIBE_FILE), "utf8"),
+    );
     return { tokens: value.tokens ?? {}, unsubscribed: value.unsubscribed ?? [] };
-  } catch { return { tokens: {}, unsubscribed: [] }; }
+  } catch {
+    return { tokens: {}, unsubscribed: [] };
+  }
 }
 
-function writeUnsubscribeState(config: RepoOSConfig, state: { tokens: Record<string, string>; unsubscribed: string[] }): void {
+function writeUnsubscribeState(
+  config: RepoOSConfig,
+  state: { tokens: Record<string, string>; unsubscribed: string[] },
+): void {
   const dir = join(config.root, config.cacheDir ?? ".repoos");
   writeFileSync(join(dir, `${UNSUBSCRIBE_FILE}.tmp`), JSON.stringify(state, null, 2), "utf8");
   renameSync(join(dir, `${UNSUBSCRIBE_FILE}.tmp`), join(dir, UNSUBSCRIBE_FILE));
 }
 
-export function createReleaseUnsubscribeUrl(config: RepoOSConfig, address: string, origin: string): string {
+export function createReleaseUnsubscribeUrl(
+  config: RepoOSConfig,
+  address: string,
+  origin: string,
+): string {
   const state = readUnsubscribeState(config);
   const token = randomBytes(24).toString("hex");
   state.tokens[token] = address;
@@ -132,14 +146,23 @@ function repositoryLinks(config: RepoOSConfig, tag: string): { label: string; hr
   let base: URL;
   try {
     base = new URL(raw.includes("://") ? raw : `https://github.com/${raw}`);
-  } catch { return []; }
+  } catch {
+    return [];
+  }
   if (base.protocol !== "https:" && base.protocol !== "http:") return [];
   const path = base.pathname.endsWith("/") ? base.pathname.slice(0, -1) : base.pathname;
   const github = base.hostname.toLowerCase() === "github.com";
-  const release = github ? `${path}/releases/tag/${encodeURIComponent(tag)}` : `${path}/-/releases/tag/${encodeURIComponent(tag)}`;
-  const changelog = github ? `${path}/blob/${encodeURIComponent(tag)}/CHANGELOG.md` : `${path}/-/blob/${encodeURIComponent(tag)}/CHANGELOG.md`;
+  const release = github
+    ? `${path}/releases/tag/${encodeURIComponent(tag)}`
+    : `${path}/-/releases/tag/${encodeURIComponent(tag)}`;
+  const changelog = github
+    ? `${path}/blob/${encodeURIComponent(tag)}/CHANGELOG.md`
+    : `${path}/-/blob/${encodeURIComponent(tag)}/CHANGELOG.md`;
   return [
-    { label: github ? "Release on GitHub" : "Release page", href: new URL(release, base.origin).href },
+    {
+      label: github ? "Release on GitHub" : "Release page",
+      href: new URL(release, base.origin).href,
+    },
     { label: "Changelog", href: new URL(changelog, base.origin).href },
   ];
 }
@@ -149,7 +172,12 @@ function groupedNotes(markdown: string): { features: string[]; fixes: string[]; 
   let section: keyof typeof groups = "other";
   for (const line of markdown.split(/\r?\n/)) {
     const heading = line.match(/^#{1,6}\s+(.+)$/)?.[1]?.toLowerCase() ?? "";
-    if (heading) section = /feature|added|new/.test(heading) ? "features" : /fix|bug|repair/.test(heading) ? "fixes" : "other";
+    if (heading)
+      section = /feature|added|new/.test(heading)
+        ? "features"
+        : /fix|bug|repair/.test(heading)
+          ? "fixes"
+          : "other";
     else if (/^\s*[-*]\s+/.test(line) || line.trim()) groups[section].push(line);
   }
   return groups;
@@ -274,9 +302,18 @@ export function renderReleaseEmail(
     `<h1 style="margin: 0 0 8px; font-size: 24px;">${escapeHtml(subject)}</h1>`,
     `<p style="margin: 0 0 24px; color: #666; font-size: 14px;">Released ${escapeHtml(entry.date)}${prerelease ? " · prerelease" : ""}</p>`,
     `<h2 style="margin: 0 0 8px; font-size: 18px;">Release notes</h2>`,
-    ...([ ["Features", groups.features], ["Fixes", groups.fixes], ["Other", groups.other] ] as const)
+    ...(
+      [
+        ["Features", groups.features],
+        ["Fixes", groups.fixes],
+        ["Other", groups.other],
+      ] as const
+    )
       .filter(([, lines]) => lines.length)
-      .map(([title, lines]) => `<h3 style="margin: 16px 0 6px; font-size: 16px;">${title}</h3>${markdownToHtml(lines.join("\n"))}`),
+      .map(
+        ([title, lines]) =>
+          `<h3 style="margin: 16px 0 6px; font-size: 16px;">${title}</h3>${markdownToHtml(lines.join("\n"))}`,
+      ),
     notes ? "" : `<p>No release notes were written for this release.</p>`,
     `<h2 style="margin: 24px 0 8px; font-size: 18px;">Known issues</h2>`,
     knownIssues ? markdownToHtml(knownIssues) : `<p>None recorded.</p>`,
@@ -284,7 +321,9 @@ export function renderReleaseEmail(
       ? `<h2 style="margin: 24px 0 8px; font-size: 18px;">Links</h2><ul>${linkHtml}</ul>`
       : "",
     upgradeHtml,
-    context.unsubscribeUrl ? `<p style="margin-top: 24px; font-size: 12px;"><a href="${escapeHtml(context.unsubscribeUrl)}">Unsubscribe from release emails</a></p>` : "",
+    context.unsubscribeUrl
+      ? `<p style="margin-top: 24px; font-size: 12px;"><a href="${escapeHtml(context.unsubscribeUrl)}">Unsubscribe from release emails</a></p>`
+      : "",
     `<p style="margin-top: 32px; color: #999; font-size: 12px;">You are receiving this because you are on the ${escapeHtml(project)} release list.</p>`,
     `</div>`,
   ].join("\n");
@@ -294,8 +333,15 @@ export function renderReleaseEmail(
     `Released ${entry.date}${prerelease ? " (prerelease)" : ""}`,
     "",
     "RELEASE NOTES",
-    ...([ ["FEATURES", groups.features], ["FIXES", groups.fixes], ["OTHER", groups.other] ] as const)
-      .filter(([, lines]) => lines.length).flatMap(([title, lines]) => [title, markdownToText(lines.join("\n")), ""]),
+    ...(
+      [
+        ["FEATURES", groups.features],
+        ["FIXES", groups.fixes],
+        ["OTHER", groups.other],
+      ] as const
+    )
+      .filter(([, lines]) => lines.length)
+      .flatMap(([title, lines]) => [title, markdownToText(lines.join("\n")), ""]),
     notes ? "" : "No release notes were written for this release.",
     "",
     "KNOWN ISSUES",
@@ -307,7 +353,8 @@ export function renderReleaseEmail(
   if (context.upgradeCommand) {
     textParts.push("", `To upgrade: ${context.upgradeCommand}`);
   }
-  if (context.unsubscribeUrl) textParts.push("", `Unsubscribe from release emails: ${context.unsubscribeUrl}`);
+  if (context.unsubscribeUrl)
+    textParts.push("", `Unsubscribe from release emails: ${context.unsubscribeUrl}`);
   textParts.push("", `You are receiving this because you are on the ${project} release list.`);
   return { subject, html, text: textParts.join("\n") };
 }
@@ -521,9 +568,15 @@ function surfaceRecord(config: RepoOSConfig, record: ReleaseEmailRecord): void {
 // ---------------------------------------------------------------------------
 
 /** The recipients who should get the release email now: configured minus already sent. */
-function pendingRecipients(config: RepoOSConfig, email: ReleaseEmailConfig, sentTo: readonly string[]): string[] {
+function pendingRecipients(
+  config: RepoOSConfig,
+  email: ReleaseEmailConfig,
+  sentTo: readonly string[],
+): string[] {
   const unsubscribed = readUnsubscribeState(config).unsubscribed;
-  return (email.to ?? []).filter((address) => !sentTo.includes(address) && !unsubscribed.includes(address));
+  return (email.to ?? []).filter(
+    (address) => !sentTo.includes(address) && !unsubscribed.includes(address),
+  );
 }
 
 /**

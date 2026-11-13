@@ -267,7 +267,13 @@ describe("renderReleaseEmail", () => {
   });
 
   it("groups release notes into features, fixes, and other sections", () => {
-    const out = renderReleaseEmail(makeConfig(), entry({ notes: "## Features\n- New dashboard\n## Fixes\n- Corrected export\n## Other\n- Updated docs" }));
+    const out = renderReleaseEmail(
+      makeConfig(),
+      entry({
+        notes:
+          "## Features\n- New dashboard\n## Fixes\n- Corrected export\n## Other\n- Updated docs",
+      }),
+    );
     expect(out.html).toContain("<h3");
     expect(out.html.indexOf("Features")).toBeLessThan(out.html.indexOf("Fixes"));
     expect(out.html.indexOf("Fixes")).toBeLessThan(out.html.indexOf("Other"));
@@ -277,14 +283,23 @@ describe("renderReleaseEmail", () => {
   });
 
   it("builds release and changelog links for a non-GitHub repository URL", () => {
-    const out = renderReleaseEmail(makeConfig({}, { repository: "https://codeberg.org/team/project" }), entry());
+    const out = renderReleaseEmail(
+      makeConfig({}, { repository: "https://codeberg.org/team/project" }),
+      entry(),
+    );
     expect(out.html).toContain("https://codeberg.org/team/project/-/releases/tag/v0.6.0");
     expect(out.html).toContain("https://codeberg.org/team/project/-/blob/v0.6.0/CHANGELOG.md");
   });
 
   it("creates a recipient-specific unsubscribe token and suppresses that recipient", () => {
-    const url = createReleaseUnsubscribeUrl(makeConfig(), "team-a@example.test", "https://app.example.test");
-    expect(url).toMatch(/^https:\/\/app\.example\.test\/api\/release\/email\/unsubscribe\?token=[a-f0-9]+$/);
+    const url = createReleaseUnsubscribeUrl(
+      makeConfig(),
+      "team-a@example.test",
+      "https://app.example.test",
+    );
+    expect(url).toMatch(
+      /^https:\/\/app\.example\.test\/api\/release\/email\/unsubscribe\?token=[a-f0-9]+$/,
+    );
     const token = new URL(url).searchParams.get("token")!;
     expect(unsubscribeReleaseEmail(makeConfig(), token)).toBe(true);
     expect(unsubscribeReleaseEmail(makeConfig(), token)).toBe(false);

@@ -535,11 +535,10 @@ export const sendReleaseEmailNow: RouteHandler = async (ctx, req, res) => {
     return json(res, 400, { error: "version is required" });
   }
   try {
-    const record = await resendReleaseEmail(
-      ctx.config,
-      body.version.trim(),
-      { ...releaseEmailContext(ctx.config), publicOrigin: requestOrigin(req) },
-    );
+    const record = await resendReleaseEmail(ctx.config, body.version.trim(), {
+      ...releaseEmailContext(ctx.config),
+      publicOrigin: requestOrigin(req),
+    });
     return json(res, 200, { ok: record.status === "sent", record });
   } catch (err) {
     return json(res, 409, { error: err instanceof Error ? err.message : String(err) });
@@ -557,7 +556,11 @@ export const unsubscribeReleaseEmailRoute: RouteHandler = (ctx, req, res) => {
   const token = new URL(req.url ?? "/", "http://localhost").searchParams.get("token") ?? "";
   const ok = unsubscribeReleaseEmail(ctx.config, token);
   res.writeHead(ok ? 200 : 404, { "Content-Type": "text/html; charset=utf-8" });
-  res.end(ok ? "<p>Release emails have been turned off for this address.</p>" : "<p>This unsubscribe link is invalid or has already been used.</p>");
+  res.end(
+    ok
+      ? "<p>Release emails have been turned off for this address.</p>"
+      : "<p>This unsubscribe link is invalid or has already been used.</p>",
+  );
 };
 
 /**
