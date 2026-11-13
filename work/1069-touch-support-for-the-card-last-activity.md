@@ -76,3 +76,4 @@ Likely best done as part of the planned mobile rewrite; check that first and fol
 - 2026-11-13T15:10:55Z · body
 - 2026-11-13T15:13:16Z · note: ui verification passed: 1 of 1 shot captured with clean console
 - 2026-11-13T15:13:17Z · status active→review
+- 2026-11-13T15:13:17Z · message_queued at 2026-11-13T15:13:17.504Z
