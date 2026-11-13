@@ -18,6 +18,7 @@ import {
   getReleaseEmailRecord,
   previewReleaseEmail,
   resendReleaseEmail,
+  unsubscribeReleaseEmail,
   type ReleaseEmailContext,
 } from "../release-email.js";
 import { readReleaseHistory } from "../release-history.js";
@@ -537,12 +538,26 @@ export const sendReleaseEmailNow: RouteHandler = async (ctx, req, res) => {
     const record = await resendReleaseEmail(
       ctx.config,
       body.version.trim(),
-      releaseEmailContext(ctx.config),
+      { ...releaseEmailContext(ctx.config), publicOrigin: requestOrigin(req) },
     );
     return json(res, 200, { ok: record.status === "sent", record });
   } catch (err) {
     return json(res, 409, { error: err instanceof Error ? err.message : String(err) });
   }
+};
+
+function requestOrigin(req: IncomingMessage): string {
+  const host = req.headers?.host ?? "localhost";
+  const protocol = host.startsWith("localhost") || host.startsWith("127.0.0.1") ? "http" : "https";
+  return `${protocol}://${host}`;
+}
+
+/** Public one-click unsubscribe link; the random token identifies one address. */
+export const unsubscribeReleaseEmailRoute: RouteHandler = (ctx, req, res) => {
+  const token = new URL(req.url ?? "/", "http://localhost").searchParams.get("token") ?? "";
+  const ok = unsubscribeReleaseEmail(ctx.config, token);
+  res.writeHead(ok ? 200 : 404, { "Content-Type": "text/html; charset=utf-8" });
+  res.end(ok ? "<p>Release emails have been turned off for this address.</p>" : "<p>This unsubscribe link is invalid or has already been used.</p>");
 };
 
 /**

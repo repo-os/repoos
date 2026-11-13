@@ -87,6 +87,7 @@ const FILE_CLI_MATCHERS: Matcher[] = [
   exact("GET", "/api/check-plan"),
   // `repoos release email --preview <version>` (#1092).
   exact("GET", "/api/release/email/preview"),
+  exact("GET", "/api/release/email/unsubscribe"),
   // `repoos schedule …` (#0093): task schedule definitions under schedules/.
   exact("GET", "/api/reminders"),
   exact("POST", "/api/reminders"),
