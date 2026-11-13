@@ -72,3 +72,4 @@ On #1086 the board and pipeline cards showed 'Checks · checking review · 9m 46
 - 2026-11-13T14:33:47Z · body
 - 2026-11-13T14:42:44Z · body
 - 2026-11-13T15:13:19Z · message_queued at 2026-11-13T15:13:19.507Z
+- 2026-11-13T15:13:19Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
