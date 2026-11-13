@@ -2,7 +2,7 @@
 id: "1093"
 title: "Release email: send-to-self test"
 type: chore
-status: active
+status: review
 priority: p3
 area: server
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/release-email-send-to-self-test
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-11T05:28:23Z"
-updated_at: "2026-11-13T10:27:46Z"
+updated_at: "2026-11-13T10:29:06Z"
 dev_error_count: 1
 ---
 ## Problem
@@ -49,3 +49,4 @@ See src/server/email.ts and src/server/release-email.ts. Do not put any real key
 - 2026-11-13T10:20:21Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-13T10:24:24Z · body
 - 2026-11-13T10:27:46Z · body
+- 2026-11-13T10:29:06Z · status active→review
