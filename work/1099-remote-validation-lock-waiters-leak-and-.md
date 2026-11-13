@@ -40,3 +40,4 @@ The lock script is generated in the remote validation lock code (search for `.re
 - 2026-11-13T01:05:17Z · body
 - 2026-11-13T01:07:00Z · status active→review
 - 2026-11-13T01:07:00Z · message_queued at 2026-11-13T01:07:00.138Z
+- 2026-11-13T01:07:00Z · note: shots: skipped — the diff (4 changed paths) touches no capture target's globs — no UI change to capture
