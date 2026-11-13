@@ -8,8 +8,10 @@ area: core
 assigned_to: ai
 created_by: t@t
 branch: ""
+cli_override: codex
+model_override: gpt-6-luna
 created_at: "2026-11-13T01:24:51Z"
-updated_at: "2026-11-13T02:49:28Z"
+updated_at: "2026-11-13T02:49:29Z"
 ---
 ## Problem
 
@@ -28,3 +30,4 @@ Look at the service install code that writes the systemd unit and the engineer l
 ## Activity
 
 - 2026-11-13T01:24:51Z · created · t@t
+- 2026-11-13T02:49:29Z · cli_override, model_override
