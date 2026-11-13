@@ -24,6 +24,7 @@ import {
   reapOrphan,
   queryLaunchdStatus,
   repoosBinary,
+  generateUnit,
   type ServiceEntry,
 } from "./service-manager.js";
 import { compiledCliEntry } from "./serve-lock-flags.js";
@@ -75,6 +76,23 @@ describe("detectPlatform", () => {
   it("returns a valid platform", () => {
     const platform = detectPlatform();
     expect(["launchd", "systemd"]).toContain(platform);
+  });
+});
+
+describe("generateUnit", () => {
+  it("records the installing PATH in a systemd user unit", () => {
+    const previous = process.env.PATH;
+    process.env.PATH = "/home/test/.local/bin:/usr/bin";
+    try {
+      const unit = generateUnit({
+        id: "test", root: "/tmp/project", port: 7171, platform: "systemd",
+        label: "com.repoos.serve.test", autoStart: false, status: "stopped",
+        lastHealthCheck: null, healthError: null, createdAt: "", updatedAt: "",
+      });
+      expect(unit).toContain('Environment="PATH=/home/test/.local/bin:/usr/bin"');
+    } finally {
+      process.env.PATH = previous;
+    }
   });
 });
 
