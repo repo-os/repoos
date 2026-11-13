@@ -12,7 +12,7 @@ branch: feat/tighten-ispreviewprocess-s-custom-comman
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-09-16T02:09:23Z"
-updated_at: "2026-11-12T19:06:46Z"
+updated_at: "2026-11-13T00:45:38Z"
 last_close_out_gate_ms: 1479363
 last_close_out_gate_at: "2026-11-12T19:06:32.514Z"
 review_passes: 1
@@ -87,3 +87,4 @@ subtly wrong fix here risks killing processes it shouldn't.
 - 2026-11-12T18:36:55Z · note: review pass 1: good to go
 - 2026-11-12T19:06:32Z · close-out gate completed in 1479s
 - 2026-11-12T19:06:46Z · status done→done, release:success
+- 2026-11-13T00:45:38Z · message_dropped: 1 queued message(s) discarded — task is done
