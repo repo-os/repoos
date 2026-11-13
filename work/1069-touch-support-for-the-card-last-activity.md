@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 317082
-last_close_out_gate_at: "2026-11-13T16:33:04.774Z"
 id: "1069"
 title: Touch support for the card last-activity popover (fold into the mobile rewrite)
 type: chore
-status: review
+status: done
 priority: p3
 area: web
+merged_commit: a9275988e8ba879c0f9eb49bd9c8e1ed1a603a0c
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/touch-support-for-the-card-last-activity
@@ -14,6 +13,8 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-09T03:34:05Z"
 updated_at: "2026-11-13T16:33:04Z"
+last_close_out_gate_ms: 317082
+last_close_out_gate_at: "2026-11-13T16:33:04.774Z"
 review_passes: 1
 last_check_failure: "repoos check at 2026-11-13T15:03:45.326Z: repoos check failed: ui verification failed (2 issue(s)): [missing-target] Board card activity recency popover (target \"default\"): waitFor [data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]: waitFor: Timeout 5000ms exceeded. on /work (http://127.0.0.1:45027/work?shotState=board%3AactiveCoding); [missing-target] Board card activity recency popover (target \"default\"): hover [data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]: hover: Timeout 5000ms exceeded. on /work (http://127.0.… (truncated)"
 ---

@@ -79,6 +79,76 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
+function touchPointer(type: string, target: Element): Event {
+  const event = new Event(type, { bubbles: true, cancelable: true });
+  Object.defineProperty(event, "pointerType", { value: "touch" });
+  target.dispatchEvent(event);
+  return event;
+}
+
+function touchTip(text: string): HTMLButtonElement {
+  const button = document.createElement("button");
+  button.setAttribute("data-touch-tip", "");
+  button.setAttribute("data-tip", text);
+  document.body.appendChild(button);
+  return button;
+}
+
+describe("opt-in touch tooltip gestures (#1069)", () => {
+  it("opens on a tap and suppresses only the opted-in trigger click", () => {
+    const trigger = touchTip("Active 1m ago");
+    const clicked = vi.fn();
+    trigger.addEventListener("click", clicked);
+    touchPointer("pointerdown", trigger);
+    touchPointer("pointerup", trigger);
+    trigger.click();
+    expect(document.querySelector(".app-tooltip.show")?.textContent).toBe("Active 1m ago");
+    expect(clicked).not.toHaveBeenCalled();
+    trigger.remove();
+  });
+
+  it("opens on a long press and suppresses the resulting trigger click", () => {
+    const trigger = touchTip("Active 1m ago");
+    const clicked = vi.fn();
+    trigger.addEventListener("click", clicked);
+    touchPointer("pointerdown", trigger);
+    vi.advanceTimersByTime(500);
+    expect(document.querySelector(".app-tooltip.show")?.textContent).toBe("Active 1m ago");
+    touchPointer("pointerup", trigger);
+    trigger.click();
+    expect(clicked).not.toHaveBeenCalled();
+    trigger.remove();
+  });
+
+  it("does not open when the touch is cancelled before long press", () => {
+    const trigger = touchTip("Active 1m ago");
+    touchPointer("pointerdown", trigger);
+    vi.advanceTimersByTime(400);
+    touchPointer("pointercancel", trigger);
+    vi.advanceTimersByTime(200);
+    expect(document.querySelector(".app-tooltip.show")).toBeNull();
+    trigger.remove();
+  });
+
+  it("dismisses a pinned tooltip without swallowing another host's click", () => {
+    const trigger = touchTip("Active 1m ago");
+    touchPointer("pointerdown", trigger);
+    touchPointer("pointerup", trigger);
+    const other = document.createElement("button");
+    other.setAttribute("data-tip", "Other tooltip");
+    const clicked = vi.fn();
+    other.addEventListener("click", clicked);
+    document.body.appendChild(other);
+    touchPointer("pointerdown", other);
+    touchPointer("pointerup", other);
+    other.click();
+    expect(document.querySelector(".app-tooltip.show")).toBeNull();
+    expect(clicked).toHaveBeenCalledOnce();
+    trigger.remove();
+    other.remove();
+  });
+});
+
 describe("TaskCard activity recency (#1058)", () => {
   it("shows coding without inline active recency and puts it on data-tip", async () => {
     const repo = useRepoStore();
