@@ -8,8 +8,10 @@ area: web
 assigned_to: ai
 created_by: t@t
 branch: ""
+cli_override: codex
+model_override: gpt-6-luna
 created_at: "2026-11-13T07:11:46Z"
-updated_at: "2026-11-13T11:28:29Z"
+updated_at: "2026-11-13T11:55:17Z"
 ---
 ## Problem
 repoos check intermittently fails with `ReferenceError: Element is not defined`. It appears in the agent logs of #1062, #1075, #1078 and #1081, tasks that touch unrelated code. The likely source is a jsdom MutationObserver callback delivered in a microtask after the environment is torn down (activity-motion-coordinator.test.ts and the overlay-occlusion code from #1062). #1081's engineer worked around it by stubbing the global Element in that test; that was reverted.
@@ -30,3 +32,4 @@ No user-facing change: checks on unrelated tasks stop failing with a jsdom teard
 - 2026-11-13T07:11:46Z · needs_input
 - 2026-11-13T07:11:54Z · body: Desired UX (added)
 - 2026-11-13T11:28:29Z · needs_input
+- 2026-11-13T11:55:17Z · cli_override, model_override
