@@ -12,7 +12,7 @@ branch: feat/release-email-rich-templates
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-11T05:28:26Z"
-updated_at: "2026-11-13T14:40:49Z"
+updated_at: "2026-11-13T14:52:17Z"
 last_close_out_gate_ms: 743795
 last_close_out_gate_at: "2026-11-13T14:40:34.596Z"
 review_passes: 1
@@ -48,3 +48,4 @@ See src/server/release-email.ts (renderReleaseEmail). Keep zero runtime dependen
 - 2026-11-13T14:30:06Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-13T14:40:34Z · close-out gate completed in 744s
 - 2026-11-13T14:40:49Z · status done→done, release:success
+- 2026-11-13T14:52:17Z · message_dropped: 1 queued message(s) discarded — task is done
