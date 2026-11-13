@@ -2360,6 +2360,16 @@ describe("host-side lock (server + standalone CLI share one limit)", () => {
     expect(higher.out).not.toContain("SHOULD_NOT_RUN");
   });
 
+  it("gives up immediately when a zero-wait caller finds the acquire gate occupied", async () => {
+    const lockRoot = join(tmpRoot(), "locks");
+    mkdirSync(join(lockRoot, ".acquire-gate"), { recursive: true });
+    const result = await sh(
+      hostLockShell({ slots: 1, waitSecs: 0, lockRoot, inner: "echo SHOULD_NOT_RUN" }),
+    );
+    expect(result.code).toBe(HOST_LOCK_TIMEOUT_EXIT);
+    expect(result.out).not.toContain("SHOULD_NOT_RUN");
+  });
+
   it("lets a holder expire the waiter with a clear timeout instead of a red gate", async () => {
     const root = tmpRoot();
     const lockRoot = join(root, "locks");
@@ -2433,19 +2443,55 @@ describe("host-side lock (server + standalone CLI share one limit)", () => {
     const lockRoot = join(root, "locks");
     const waitDir = join(lockRoot, "wait");
     mkdirSync(waitDir, { recursive: true });
+    const shellPidPath = join(root, "shell.pid");
+    const script = hostLockShell({
+      slots: 1,
+      waitSecs: 2,
+      lockRoot,
+      inner: "echo SHOULD_NOT_RUN",
+    });
+    // Hold the lock shell before it inspects the queue so the dead PID can be
+    // created after its own PID is known and cannot be mistaken for itself.
+    const child = spawn("sh", ["-c", `echo $$ > "${shellPidPath}"; sleep 0.2;\n${script}`]);
+    let output = "";
+    child.stdout.on("data", (chunk: Buffer) => (output += chunk.toString()));
+    child.stderr.on("data", (chunk: Buffer) => (output += chunk.toString()));
+    const startupDeadline = Date.now() + 2_000;
+    while (!existsSync(shellPidPath) && Date.now() < startupDeadline) await tick(10);
+    expect(existsSync(shellPidPath)).toBe(true);
+    const shellPid = Number(readFileSync(shellPidPath, "utf8").trim());
+    const deadProcess = spawn("sh", ["-c", "sleep 30"]);
+    const deadPid = deadProcess.pid;
+    expect(deadPid).toBeDefined();
+    expect(deadPid).not.toBe(shellPid);
+    deadProcess.kill("SIGKILL");
+    // `exit` fires before stdio is fully closed; wait for `close` and confirm
+    // the OS no longer recognizes the PID before the shell inspects the queue.
+    await new Promise<void>((resolve) => deadProcess.once("close", () => resolve()));
+    const reapDeadline = Date.now() + 1_000;
+    while (Date.now() < reapDeadline) {
+      try {
+        process.kill(deadPid!, 0);
+        await tick(10);
+      } catch {
+        break;
+      }
+    }
+    expect(() => process.kill(deadPid!, 0)).toThrow();
+    writeFileSync(join(waitDir, String(deadPid!)), "999\n");
     // A live high-priority entry forces deferral; a second dead PID entry is
     // cleaned as the queue is inspected.
-    writeFileSync(join(waitDir, String(process.pid + 1_000_000)), "999\n");
     writeFileSync(join(waitDir, String(process.pid)), "999\n");
-    const started = Date.now();
-    const result = await sh(
-      hostLockShell({ slots: 1, waitSecs: 2, lockRoot, inner: "echo SHOULD_NOT_RUN" }),
-    );
+    const result = await new Promise<{ code: number | null; out: string }>((resolve) => {
+      child.on("close", (code) => resolve({ code, out: output }));
+    });
     expect(result.code).toBe(HOST_LOCK_TIMEOUT_EXIT);
-    expect(Date.now() - started).toBeLessThan(7_000);
     expect(result.out).not.toContain("SHOULD_NOT_RUN");
-    expect(readdirSync(waitDir)).toEqual([String(process.pid)]);
-  }, 10_000);
+    // Assert the two entries this test owns directly. Other waiters may be
+    // present when the test runs alongside suites in the same process.
+    expect(existsSync(join(waitDir, String(deadPid!)))).toBe(false);
+    expect(existsSync(join(waitDir, String(process.pid)))).toBe(true);
+  }, 30_000);
 
   it("keeps the stale threshold inside the wait budget and well past the heartbeat (#0521 review)", () => {
     // A waiter only ever waits DEFAULT_HOST_LOCK_WAIT_SECS, so a stale

@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 923475
-last_close_out_gate_at: "2026-11-13T11:21:46.345Z"
 id: "1101"
 title: "Flaky test: remote-host-pool 'times out while deferred and removes stale dead-pid queue entries' fails under load (from #1099)"
 type: bug
-status: review
+status: done
 priority: p2
 area: server
+merged_commit: f53f7827944985caa4e9e48994d7667483030c48
 assigned_to: ai
 created_by: t@t
 branch: feat/flaky-test-remote-host-pool-times-out-wh
@@ -14,6 +13,8 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-13T05:55:54Z"
 updated_at: "2026-11-13T11:21:46Z"
+last_close_out_gate_ms: 923475
+last_close_out_gate_at: "2026-11-13T11:21:46.345Z"
 review_passes: 1
 ---
 ## Problem
