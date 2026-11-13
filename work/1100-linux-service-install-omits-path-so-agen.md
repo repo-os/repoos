@@ -2,7 +2,7 @@
 id: "1100"
 title: Linux service install omits PATH so agent CLIs fail with spawn ENOENT
 type: bug
-status: inbox
+status: ready
 priority: p1
 area: core
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: ""
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-13T01:24:51Z"
-updated_at: "2026-11-13T02:49:29Z"
+updated_at: "2026-11-13T02:49:31Z"
 ---
 ## Problem
 
@@ -31,3 +31,4 @@ Look at the service install code that writes the systemd unit and the engineer l
 
 - 2026-11-13T01:24:51Z · created · t@t
 - 2026-11-13T02:49:29Z · cli_override, model_override
+- 2026-11-13T02:49:31Z · status inbox→ready
