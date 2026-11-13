@@ -11,7 +11,7 @@ branch: feat/linux-service-install-omits-path-so-agen
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-13T01:24:51Z"
-updated_at: "2026-11-13T03:40:11Z"
+updated_at: "2026-11-13T03:41:12Z"
 ---
 ## Problem
 
@@ -42,3 +42,4 @@ Look at the service install code that writes the systemd unit and the engineer l
 - 2026-11-13T03:40:11Z · status active→review
 - 2026-11-13T03:40:11Z · message_queued at 2026-11-13T03:40:11.579Z
 - 2026-11-13T03:40:11Z · note: shots: skipped — the diff (7 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-11-13T03:41:12Z · note: review pass 1: good to go
