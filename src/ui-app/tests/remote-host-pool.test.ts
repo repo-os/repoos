@@ -2435,13 +2435,13 @@ describe("host-side lock (server + standalone CLI share one limit)", () => {
     // A live high-priority entry forces deferral; a second dead PID entry is
     // cleaned as the queue is inspected.
     writeFileSync(join(waitDir, String(process.pid + 1_000_000)), "999\n");
-    writeFileSync(join(waitDir, String(process.pid)), "0\n");
+    writeFileSync(join(waitDir, String(process.pid)), "999\n");
     const started = Date.now();
     const result = await sh(hostLockShell({ slots: 1, waitSecs: 2, lockRoot, inner: "echo SHOULD_NOT_RUN" }));
     expect(result.code).toBe(HOST_LOCK_TIMEOUT_EXIT);
     expect(Date.now() - started).toBeLessThan(7_000);
     expect(result.out).not.toContain("SHOULD_NOT_RUN");
-    expect(readdirSync(waitDir)).toEqual([]);
+    expect(readdirSync(waitDir)).toEqual([String(process.pid)]);
   }, 10_000);
 
   it("keeps the stale threshold inside the wait budget and well past the heartbeat (#0521 review)", () => {
