@@ -2,7 +2,7 @@
 id: "1081"
 title: "Review loop slice 2: enumeration closer, follow-up tasks, convergence report, Land anyway override"
 type: feature
-status: active
+status: review
 priority: p2
 area: [server, core]
 depends_on: ["1080"]
@@ -12,7 +12,7 @@ branch: feat/review-loop-slice-2-enumeration-closer-f
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-09T13:59:41Z"
-updated_at: "2026-11-13T10:40:33Z"
+updated_at: "2026-11-13T10:40:34Z"
 last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
 last_handoff_failure_sha: 10ee45f27ba6be7df508ee5061460da93d3d2207
 dev_error_count: 6
@@ -126,3 +126,4 @@ Start from `src/server/review.ts` (`reviewMission`, the "Earlier passes and the 
 - 2026-11-13T10:35:35Z · body
 - 2026-11-13T10:38:34Z · CTO nudge: held — handoff gate is running
 - 2026-11-13T10:40:33Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
+- 2026-11-13T10:40:34Z · status active→review
