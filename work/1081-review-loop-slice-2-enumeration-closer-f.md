@@ -85,3 +85,4 @@ Start from `src/server/review.ts` (`reviewMission`, the "Earlier passes and the 
 - 2026-11-13T05:59:12Z · CTO nudge: held — handoff gate is running
 - 2026-11-13T06:18:44Z · body
 - 2026-11-13T06:23:35Z · message_queued at 2026-11-13T06:23:35.276Z
+- 2026-11-13T06:23:35Z · handoff failed · task-file handoff failed at check · repoos check failed: ReferenceError: Element is not defined
