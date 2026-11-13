@@ -3165,6 +3165,25 @@
   line-clamp: 3;
   overflow: hidden;
 }
+.tc-agent-failure-raw,
+.agent-failure-raw {
+  margin-top: 6px;
+  color: var(--txt-dim);
+  font-size: 11px;
+}
+.tc-agent-failure-raw summary,
+.agent-failure-raw summary {
+  cursor: pointer;
+}
+.tc-agent-failure-raw pre,
+.agent-failure-raw pre {
+  max-width: 100%;
+  margin: 5px 0 0;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  color: var(--txt-dim);
+  font: 11px/1.4 var(--font-mono);
+}
 .diagnostic-details-affordance {
   display: inline-block;
   margin-top: 2px;

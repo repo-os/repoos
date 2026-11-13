@@ -60,6 +60,7 @@ import ChecksProgressDisplay from "./ChecksProgressDisplay.vue";
 import { formatDuration } from "../lib/time";
 import { useNow } from "../composables/useNow";
 import { isHoldActive, taskIsHeld } from "../../../core/task-selection.js";
+import { splitAgentFailureDetail } from "../../../core/agent-failure.js";
 import { Clock3 } from "lucide-vue-next";
 
 const holdNow = useNow();
@@ -1012,7 +1013,16 @@ const needsInputDetailLine = computed<string | null>(() => {
   const t = props.task;
   if (!needsInputSurfaces(t)) return null;
   const hasQuestions = (t.questions?.length ?? 0) > 0;
-  return formatNeedsInputDetailForDisplay(t.needsInputReason, t.needsInputDetail, hasQuestions);
+  const detail = formatNeedsInputDetailForDisplay(
+    t.needsInputReason,
+    t.needsInputDetail,
+    hasQuestions,
+  );
+  return detail ? splitAgentFailureDetail(detail).summary : null;
+});
+const needsInputRawFailure = computed(() => {
+  const detail = props.task.needsInputDetail;
+  return detail ? splitAgentFailureDetail(detail).raw : null;
 });
 const needsInputDetailClamp = computed(() =>
   needsInputDetailUsesLineClamp(
@@ -2023,6 +2033,10 @@ async function openDebuggerFromError(): Promise<void> {
             >{{ needsInputDetailLine }}</span
           >
         </button>
+        <details v-if="needsInputRawFailure" class="tc-agent-failure-raw" @click.stop>
+          <summary>Raw CLI error</summary>
+          <pre>{{ needsInputRawFailure }}</pre>
+        </details>
       </div>
     </div>
 

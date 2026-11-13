@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 597784
-last_close_out_gate_at: "2026-11-13T05:53:53.521Z"
 id: "1098"
 title: "Surface why an agent failed (expired auth, unavailable model) on the task card and in a notification, not only in the activity log"
 type: feature
-status: review
+status: done
 priority: p2
 area: [web, server, core]
+merged_commit: 119902eeeba6c0f2ab1e2a6adfa4fe83c0658e95
 assigned_to: ai
 created_by: t@t
 branch: feat/surface-why-an-agent-failed-expired-auth
@@ -14,6 +13,8 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-12T05:35:20Z"
 updated_at: "2026-11-13T05:53:53Z"
+last_close_out_gate_ms: 597784
+last_close_out_gate_at: "2026-11-13T05:53:53.521Z"
 review_passes: 6
 review_rounds: 2
 last_check_failure: "repoos check at 2026-11-12T16:42:50.789Z: repoos check failed: tests — tests/pre-review-remote-gate.test.ts > standalone `repoos check` remote failure (#0520) > exits non-zero AND records the failure for the Checks surface when the runner is unusable — at tests/pre-review-remote-gate.test.ts:486:26 — AssertionError: expected +0 to be 1 // Object.is equality"

@@ -17,6 +17,7 @@ import {
 } from "../core/agent-run-tmpdir.js";
 import { agentSilenceCountsAsStalled } from "../core/active-task-card.js";
 import { copilotAutoTierModelArgs, enrichAgentFailureDetail } from "../core/copilot-auto-tier.js";
+import { formatAgentFailure } from "../core/agent-failure.js";
 import {
   patternKillWarning,
   processGroupKillSupported,
@@ -81,7 +82,12 @@ import {
   scrapeProviderFailure,
 } from "../core/agent-run-health.js";
 import { sanitizeSpawnArgs, stripNulBytes } from "../core/spawn-args.js";
-import { notifyAttentionAfterSession, notifyAttentionAgentStalled } from "./attention-notify.js";
+import {
+  notifyAttentionAfterSession,
+  notifyAttentionAgentStalled,
+  notifyAttentionAgentFailure,
+  clearAttentionAgentFailure,
+} from "./attention-notify.js";
 import { taskWorkLink } from "./board-events.js";
 import { parseTaskAreas } from "../core/areas.js";
 import { commitTaskFile, fileCommittedClean, gitOutputAsync } from "../core/git.js";
@@ -5486,6 +5492,7 @@ export function recordOneShotSession(
     notifyAttentionAfterSession(loadConfig(repoRoot), {
       sessionId,
       taskId: opts.taskId ?? null,
+      codingAgent: agent.cli,
       status: result.ok ? "finished" : "errored",
       errorReason,
       endedAt,
@@ -9729,6 +9736,7 @@ export class AgentRunner {
       notifyAttentionAfterSession(this.config, {
         sessionId: finalSessionId,
         taskId: taskId || null,
+        codingAgent,
         status,
         errorReason,
         endedAt,
@@ -10087,6 +10095,7 @@ export class AgentRunner {
         exitedCleanly || interruptedForQueue,
       );
     }
+    if (exitedCleanly && session?.cli) clearAttentionAgentFailure(session.cli);
     // #0507: last chance to see a `repoos mv <own id> review` that landed in
     // the same tick the process exited — checkStalls() polls on a timer, so
     // without this a handoff requested moments before the end of the turn
@@ -10744,7 +10753,8 @@ export class AgentRunner {
    * (see `sysLineDescribesFailure`), then a generic fallback.
    */
   private lastFailureLine(session: Session | undefined): string {
-    const wrap = (text: string) => enrichAgentFailureDetail(text, session?.cli);
+    const wrap = (text: string) =>
+      formatAgentFailure(enrichAgentFailureDetail(text, session?.cli), session?.cli);
     if (session?.permissionDenial) {
       return `permission problem, not a code failure: ${session.permissionDenial}`;
     }
@@ -10865,11 +10875,12 @@ export class AgentRunner {
       const engine = session?.engine && session.engine !== "plain" ? ` (${session.engine})` : "";
       let detail =
         detailOverride != null
-          ? enrichAgentFailureDetail(detailOverride, session?.cli)
+          ? formatAgentFailure(enrichAgentFailureDetail(detailOverride, session?.cli), session?.cli)
           : this.hasPendingHandoff(taskId) || handoffFinalizationWasInterrupted(session)
             ? HANDOFF_FINALIZATION_INTERRUPTED_DETAIL
             : this.lastFailureLine(session);
       let reason = needsInputReason;
+      if (session?.cli) notifyAttentionAgentFailure(session.cli, detail);
       if (reason === "dev-error" && isProviderFailureReason(detail)) {
         reason = "provider-failure";
       }
