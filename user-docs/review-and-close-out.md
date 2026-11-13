@@ -81,9 +81,9 @@ HEAD), it simply waits: use **Refresh evidence** in the Changes tab (or
 `repoos verify <id>`) to re-capture on the current HEAD, then **Review again**
 in the UI or `repoos review again <id>`.
 
-After four completed review passes, non-blocking suggestions can be filed as a
-separate task with **Create follow-up task** in the review panel or
-`repoos review followup <id>`. RepoOS never creates that task without this
+After the configured freeze threshold (four completed passes by default),
+non-blocking suggestions can be filed as a separate task with **Create follow-up
+task** in the review panel or `repoos review followup <id>`. RepoOS never creates that task without this
 explicit action. The panel labels progress as “round N of ~4” and keeps the
 individual pass history, including the finding classes, available above the
 report.
