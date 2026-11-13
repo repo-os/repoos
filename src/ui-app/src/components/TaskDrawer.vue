@@ -6034,6 +6034,7 @@ watch(
             v-if="ui.active.status === 'review' && repo.doneErrorFor(ui.active.id)"
             class="drawer-done-error"
             mode="panel"
+            :hide-help="true"
             :message="repo.doneErrorFor(ui.active.id)!.message"
             :step="repo.doneErrorFor(ui.active.id)!.step"
             :conflicts="repo.doneErrorFor(ui.active.id)!.conflicts"
