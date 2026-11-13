@@ -9,6 +9,7 @@
  * `data-tip`, so dynamic titles stay correct.
  */
 const SHOW_DELAY_MS = 350;
+const LONG_PRESS_MS = 500;
 const GAP = 8;
 const MARGIN = 8;
 
@@ -21,11 +22,76 @@ export function installTooltips(): void {
 
   let target: HTMLElement | null = null;
   let timer: number | undefined;
+  let touchTarget: HTMLElement | null = null;
+  let touchTimer: number | undefined;
+  let longPressShown = false;
+  let suppressClickTarget: HTMLElement | null = null;
 
   const hide = () => {
     window.clearTimeout(timer);
     target = null;
     tip.classList.remove("show");
+  };
+
+  const clearTouchGesture = () => {
+    window.clearTimeout(touchTimer);
+    touchTarget = null;
+    longPressShown = false;
+  };
+
+  const optedTouchTarget = (event: Event): HTMLElement | null => {
+    const el = (event.target as Element | null)?.closest?.<HTMLElement>("[data-touch-tip]");
+    return el && (el.hasAttribute("title") || el.hasAttribute("data-tip")) ? el : null;
+  };
+
+  const pointerDown = (event: PointerEvent) => {
+    if (event.pointerType !== "touch") {
+      hide();
+      return;
+    }
+    const el = optedTouchTarget(event);
+    // Every pointerdown dismisses an existing pinned tooltip. Only explicitly
+    // opted-in recency triggers arm a gesture or suppress their own click.
+    hide();
+    clearTouchGesture();
+    suppressClickTarget = null;
+    if (!el) return;
+    touchTarget = el;
+    const text = textFor(el);
+    if (!text) return;
+    touchTimer = window.setTimeout(() => {
+      if (touchTarget !== el) return;
+      longPressShown = true;
+      show(el);
+    }, LONG_PRESS_MS);
+  };
+
+  const pointerUp = (event: PointerEvent) => {
+    if (event.pointerType !== "touch" || !touchTarget) return;
+    const el = touchTarget;
+    window.clearTimeout(touchTimer);
+    const endedOnTarget = (event.target as Element | null)?.closest?.("[data-touch-tip]") === el;
+    if (endedOnTarget) {
+      if (!longPressShown) show(el);
+      suppressClickTarget = el;
+    }
+    clearTouchGesture();
+  };
+
+  const pointerCancel = (event: PointerEvent) => {
+    if (event.pointerType !== "touch") return;
+    clearTouchGesture();
+    suppressClickTarget = null;
+    hide();
+  };
+
+  const suppressOptedClick = (event: MouseEvent) => {
+    if (!suppressClickTarget) return;
+    const el = suppressClickTarget;
+    suppressClickTarget = null;
+    if ((event.target as Element | null)?.closest?.("[data-touch-tip]") !== el) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
   };
 
   const textFor = (el: HTMLElement): string => {
@@ -78,7 +144,10 @@ export function installTooltips(): void {
   document.addEventListener("focusin", enter);
   document.addEventListener("mouseout", leave);
   document.addEventListener("focusout", hide);
-  document.addEventListener("pointerdown", hide, true);
+  document.addEventListener("pointerdown", pointerDown, true);
+  document.addEventListener("pointerup", pointerUp, true);
+  document.addEventListener("pointercancel", pointerCancel, true);
+  document.addEventListener("click", suppressOptedClick, true);
   document.addEventListener("scroll", hide, true);
   window.addEventListener("blur", hide);
 }
