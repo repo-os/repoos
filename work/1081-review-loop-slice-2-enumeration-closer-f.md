@@ -3,6 +3,9 @@ id: "1081"
 title: "Review loop slice 2: enumeration closer, follow-up tasks, convergence report, Land anyway override"
 type: feature
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "2026-11-13T04:09:15.205995Z ERROR codex_models_manager::manager: failed to refresh available models: Connection failed: error sending request"
 priority: p2
 area: [server, core]
 depends_on: ["1080"]
@@ -12,7 +15,9 @@ branch: feat/review-loop-slice-2-enumeration-closer-f
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-09T13:59:41Z"
-updated_at: "2026-11-13T04:09:12Z"
+updated_at: "2026-11-13T04:09:25Z"
+dev_error_count: 1
+engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-13T04:09:25.253Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 Slice 1 of #1080 adds the automatic freeze after `review.freezeAfterPasses`, the lighter bar for P3 and Easter-eggs tasks, and authoritative accepted-scope sections. It does not yet make the review loop converge on its own. Three things remain: reviewers still stop at the first instance of a bug class, remaining non-blocking findings are not turned into follow-up tasks, and the human has no way to accept known, non-blocking risk instead of looping again. Tasks still take 10-15 rounds (#1058, #1060, #1061).
@@ -49,3 +54,5 @@ Start from `src/server/review.ts` (`reviewMission`, the "Earlier passes and the 
 - 2026-11-13T04:05:30Z · message_delivered: 1 message(s)
 - 2026-11-13T04:05:41Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The scoped gate remains blocked: both remote runs failed on the same orphaned-lock recovery test in `remote-host-pool.test.ts`. The full test file passed locally (167/167), but that does not clear the remote failure. I’m leaving task #1081… · stderr: (empty)
 - 2026-11-13T04:09:12Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-13T04:09:25Z · agent exited with an error (codex) · 2026-11-13T04:09:15.205995Z ERROR codex_models_manager::manager: failed to refresh available models: Connection failed: error sending request
+- 2026-11-13T04:09:25Z · engineer crash recovery: resuming codex + gpt-6-luna (1/3 crashes in 30m) · 2026-11-13T04:09:15.205995Z ERROR codex_models_manager::manager: failed to refresh available models: Connection failed: error sending request
