@@ -2,7 +2,7 @@
 id: "1099"
 title: Remote validation lock waiters leak and never time out
 type: feature
-status: inbox
+status: ready
 priority: p1
 area: core
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: ""
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-12T19:01:43Z"
-updated_at: "2026-11-13T00:45:33Z"
+updated_at: "2026-11-13T00:45:35Z"
 ---
 ## Problem
 
@@ -34,3 +34,4 @@ The lock script is generated in the remote validation lock code (search for `.re
 
 - 2026-11-12T19:01:43Z · created · t@t
 - 2026-11-13T00:45:33Z · cli_override, model_override
+- 2026-11-13T00:45:35Z · status inbox→ready
