@@ -5,11 +5,11 @@ type: bug
 status: inbox
 priority: p1
 area: core
-assigned_to: ""
+assigned_to: ai
 created_by: t@t
 branch: ""
 created_at: "2026-11-13T01:24:51Z"
-updated_at: "2026-11-13T01:24:51Z"
+updated_at: "2026-11-13T02:49:28Z"
 ---
 ## Problem
 
