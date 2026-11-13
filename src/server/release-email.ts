@@ -22,6 +22,7 @@ import { randomBytes } from "node:crypto";
 import { join } from "node:path";
 import type { RepoOSConfig, ReleaseEmailConfig } from "../core/types.js";
 import { projectDisplayName } from "../core/config.js";
+import { webOrigin } from "./notifications/link.js";
 import { readReleaseHistory, type ReleaseHistoryEntry } from "./release-history.js";
 import { emailProviderConfigured, sendEmail } from "./email.js";
 import {
@@ -555,8 +556,9 @@ async function sendAndRecord(
   const sentTo = accepted;
   const failures: string[] = [];
   for (const to of targets) {
-    const recipientContext = context.publicOrigin
-      ? { ...context, unsubscribeUrl: createReleaseUnsubscribeUrl(config, to, context.publicOrigin) }
+    const origin = webOrigin(config, context.publicOrigin);
+    const recipientContext = origin
+      ? { ...context, unsubscribeUrl: createReleaseUnsubscribeUrl(config, to, origin) }
       : context;
     const message = renderReleaseEmail(config, entry, recipientContext);
     const result = await sendEmail(
