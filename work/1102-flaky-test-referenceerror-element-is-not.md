@@ -1,4 +1,6 @@
 ---
+last_close_out_gate_ms: 520887
+last_close_out_gate_at: "2026-11-13T14:49:39.053Z"
 id: "1102"
 title: "Flaky test: 'ReferenceError: Element is not defined' in jsdom tests fails checks for unrelated tasks (seen on #1062, #1075, #1078, #1081)"
 type: bug
@@ -11,7 +13,7 @@ branch: feat/flaky-test-referenceerror-element-is-not
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-13T07:11:46Z"
-updated_at: "2026-11-13T14:30:06Z"
+updated_at: "2026-11-13T14:49:39Z"
 review_passes: 1
 ---
 ## Problem
@@ -45,3 +47,5 @@ No user-facing change: checks on unrelated tasks stop failing with a jsdom teard
 - 2026-11-13T12:22:38Z · message_queued at 2026-11-13T12:22:38.599Z
 - 2026-11-13T12:23:10Z · note: review pass 1: good to go
 - 2026-11-13T14:30:06Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-13T14:49:39Z · close-out gate completed in 521s
+
