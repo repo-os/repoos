@@ -13,8 +13,6 @@ model_override: composer-2.5
 created_at: "2026-11-14T17:35:18Z"
 updated_at: "2026-11-14T19:24:49Z"
 review_passes: 1
-last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
-last_handoff_failure_sha: 486a057eb2d4ee42c9a23a32d7016f707c45e2f7
 handoff_signal_retry_count: 2
 ---
 ## Problem
@@ -70,3 +68,4 @@ Related: #1120 (Hub app redesign, runs in parallel, touches mobile/src only) and
 - 2026-11-14T19:19:54Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
 - 2026-11-14T19:24:48Z · note: review pass 1: good to go
 - 2026-11-14T19:24:49Z · message_queued at 2026-11-14T19:24:49.618Z
+
