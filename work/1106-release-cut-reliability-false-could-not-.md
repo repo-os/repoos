@@ -46,3 +46,4 @@ Start from src/server/release.ts (`cutNewRelease`, phases `pushing_main`, `check
 - 2026-11-14T05:58:01Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-14T05:59:13Z · body
 - 2026-11-14T06:01:22Z · status active→review
+- 2026-11-14T06:01:22Z · message_queued at 2026-11-14T06:01:22.704Z
