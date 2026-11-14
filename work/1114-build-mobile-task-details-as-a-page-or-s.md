@@ -1,6 +1,4 @@
 ---
-check_retry_count: 2
-last_check_failure: "repoos check at 2026-11-14T15:22:47.288Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Mobile task detail page (target \"default\"): highlight [data-testid=\"mobile-task-detail\"] matched nothing on /work?task=9999 (http://127.0.0.1:35655/work?shotState=card:noChanges)"
 id: "1114"
 title: Build mobile task details as a page or sheet
 type: feature
@@ -14,7 +12,9 @@ branch: feat/build-mobile-task-details-as-a-page-or-s
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T09:10:53Z"
-updated_at: "2026-11-14T15:22:46Z"
+updated_at: "2026-11-14T15:23:22Z"
+check_retry_count: 2
+last_check_failure: "repoos check at 2026-11-14T15:22:47.288Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Mobile task detail page (target \"default\"): highlight [data-testid=\"mobile-task-detail\"] matched nothing on /work?task=9999 (http://127.0.0.1:35655/work?shotState=card:noChanges)"
 ---
 ## Problem
 The desktop task drawer shares a narrow viewport with the Work board and its tabs/actions are cramped on phones.
@@ -64,4 +64,4 @@ Read ADR 0011 and coordinate with #1113's route and queue state. Follow shared d
 - 2026-11-14T15:22:42Z · note: ui verification failed: ui verification failed (1 issue(s)): [missing-target] Mobile task detail page (target "default"): highlight [data-testid="mobile-task-detail"] matched nothing on /work?task=9999 (http://127.0.0.1:35655/work?shotState=card:noChanges)
 - 2026-11-14T15:22:43Z · message_queued at 2026-11-14T15:22:43.174Z
 - 2026-11-14T15:22:46Z · message_delivered: 1 message(s)
-
+- 2026-11-14T15:23:22Z · note: adopted orphaned engineer pid 61829
