@@ -2,7 +2,7 @@
 id: "1112"
 title: Build the web app mobile navigation and bottom bar
 type: feature
-status: inbox
+status: ready
 human_step_decision: agent
 human_step_decision_key: 0c4974e5
 priority: p1
@@ -13,7 +13,7 @@ branch: ""
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T09:10:42Z"
-updated_at: "2026-11-14T11:03:51Z"
+updated_at: "2026-11-14T11:03:53Z"
 ---
 ## Problem
 RepoOS's single SPA has no phone-specific navigation composition. Desktop chrome and scattered narrow CSS do not provide a coherent phone shell.
@@ -45,3 +45,4 @@ Read ADR 0011, docs/mobile-architecture.md and UI conventions. This task builds 
 - 2026-11-14T09:17:07Z · body: Notes for AI (added 1, removed 1)
 - 2026-11-14T09:22:33Z · needs_input
 - 2026-11-14T11:03:51Z · cli_override, model_override
+- 2026-11-14T11:03:53Z · status inbox→ready
