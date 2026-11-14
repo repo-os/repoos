@@ -12,7 +12,7 @@ branch: feat/easter-eggs-bundle-task-drawer-status-ca
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-10T04:51:24Z"
-updated_at: "2026-11-13T16:27:40Z"
+updated_at: "2026-11-14T03:28:48Z"
 last_close_out_gate_ms: 971253
 last_close_out_gate_at: "2026-11-13T16:27:23.425Z"
 review_passes: 1
@@ -87,3 +87,4 @@ On #1086 the board and pipeline cards showed 'Checks · checking review · 9m 46
 - 2026-11-13T15:29:59Z · note: review pass 1: good to go
 - 2026-11-13T16:27:23Z · close-out gate completed in 971s
 - 2026-11-13T16:27:40Z · status done→done, release:success
+- 2026-11-14T03:28:48Z · message_dropped: 1 queued message(s) discarded — task is done
