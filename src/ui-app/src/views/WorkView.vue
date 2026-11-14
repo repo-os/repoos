@@ -34,6 +34,7 @@ import SelectValue from "../components/ui/select/value.vue";
 import SelectViewport from "../components/ui/select/viewport.vue";
 import IntegrationStatusBar from "../components/IntegrationStatusBar.vue";
 import MobileWorkQueue from "../components/MobileWorkQueue.vue";
+import MobileTaskDetail from "../components/MobileTaskDetail.vue";
 import {
   applyShotPreviewFixture,
   isShotPreviewCaptureActive,
@@ -52,6 +53,7 @@ const config = useConfigStore();
 const route = useRoute();
 const { workDir } = storeToRefs(repo);
 const { isNarrow } = useResponsiveLayout();
+const mobileTaskSelected = computed(() => isNarrow.value && typeof route.query.task === "string");
 
 const columnLabels = computed(() => config.columnLabels);
 const DRAFT_COL = computed(() => draftColumnWithLabel(columnLabels.value));
@@ -105,8 +107,11 @@ watch(
 );
 watch(
   () => route.query.task,
-  (v) => {
-    if (typeof v !== "string" || !v) return;
+  (v, previous) => {
+    if (typeof v !== "string" || !v) {
+      if (isNarrow.value && typeof previous === "string" && !ui.isNew) ui.close();
+      return;
+    }
     void openFromTaskParam(v);
   },
   { immediate: true },
@@ -148,12 +153,15 @@ async function openFromTaskParam(raw: string): Promise<void> {
     // Fixture-only id during capture — never request a missing task from the API.
     return;
   } else {
+    ui.activeDetailLoading = true;
     try {
       ui.open(await api<Task>(`/api/tasks/${encodeURIComponent(id)}`));
     } catch {
       // Unknown id — leave the param in place so the broken link stays
       // inspectable, matching the settings ?focus= handler's give-up behavior.
       return;
+    } finally {
+      ui.activeDetailLoading = false;
     }
   }
   // #0755: a deep-linked tab wins over the status default set by `open`, so
@@ -171,7 +179,9 @@ async function openFromTaskParam(raw: string): Promise<void> {
       ui.debugView = "status";
     }
   }
-  await clearTaskParam();
+  // On narrow screens the task query is the detail-page route. Keeping it in
+  // history lets browser Back return to the still-mounted queue and its state.
+  if (!isNarrow.value) await clearTaskParam();
 }
 
 // ── #0290 Keyboard navigation over the board ─────────────────────────────
@@ -358,7 +368,8 @@ function openHeld(task: Task): void {
 </script>
 
 <template>
-  <MobileWorkQueue v-if="isNarrow" />
+  <MobileWorkQueue v-if="isNarrow" v-show="!mobileTaskSelected" />
+  <MobileTaskDetail v-if="mobileTaskSelected" />
   <div v-else class="work-page">
     <div
       class="work-header"
