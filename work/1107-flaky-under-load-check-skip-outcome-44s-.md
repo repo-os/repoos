@@ -1,0 +1,34 @@
+---
+id: "1107"
+title: "Flaky under load: check-skip-outcome (44s) and engineer-resources heavySlots fail full release checks"
+type: feature
+status: inbox
+priority: p2
+area: [core, tests]
+assigned_to: ""
+created_by: t@t
+branch: ""
+created_at: "2026-11-14T07:26:27Z"
+updated_at: "2026-11-14T07:26:27Z"
+---
+## Problem
+Two tests failed the full check during the v0.5.83 release (2026-11-14) only because the machine was loaded, and both pass alone:
+1. `src/ui-app/tests/engineer-resources.test.ts` > "shares heavySlots across five engineers from two checkouts" took 2.6s and failed in the first release attempt; it passes in 1.5s alone.
+2. `src/ui-app/tests/check-skip-outcome.test.ts` > "cmdCheck — the skipped outcome (#0592) > records a failed release-profile run and its failed step" took 44s under load and was recorded as failed.
+Each failure cost a release attempt (about 15 minutes) and forced a rerun.
+
+## Desired UX
+The full check is deterministic regardless of machine load. A test that spawns processes or waits on real time uses event-based waits and fixtures with no tight wall-clock assertions, or a justified, bounded timeout, so a release gate does not flip with load.
+
+## Acceptance criteria
+1. Reproduce each failure under load (for example with the suite running in parallel, or `REPOOS_STRICT_TIMING` unset with a CPU hog) and record the cause in the task report.
+2. Remove the race or the wall-clock dependence in each test; do not simply raise a timeout without saying why that is safe.
+3. Both tests pass 20 times in a row under load and alone.
+4. No change to production behaviour unless the test exposed a real bug (then say so).
+
+## Notes for AI
+Read docs/debugging-check-failures.md first. Precedents: #1101 and #1102 (flaky tests filed from load-related failures). Prefer removing the race over reconciling environments.
+
+## Activity
+
+- 2026-11-14T07:26:27Z · created · t@t
