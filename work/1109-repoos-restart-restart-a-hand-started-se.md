@@ -2,7 +2,7 @@
 id: "1109"
 title: "repoos restart: restart a hand-started server, or say clearly why it cannot"
 type: feature
-status: active
+status: review
 priority: p3
 area: [server, cli]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/repoos-restart-restart-a-hand-started-se
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T08:27:36Z"
-updated_at: "2026-11-14T08:28:06Z"
+updated_at: "2026-11-14T08:43:58Z"
 ---
 ## Problem
 `repoos restart` refused to restart a server that was started by hand with `just serve` (nohup, parented by pid 1): "pid has no row in launchctl list but is parented by pid 1 — it may be an externally supervised server, but its launchd label could not be determined", then suggested killing it manually. #1091 was meant to restart the running server "whether hand-run, supervised or a managed service". A nohup-started server is hand-run, so the human had to kill and respawn it themselves.
@@ -35,3 +35,4 @@ Start from the #1091 restart implementation and `src/core/supervisor-detect.ts`.
 - 2026-11-14T08:28:03Z · cli_override, model_override
 - 2026-11-14T08:28:05Z · status inbox→ready
 - 2026-11-14T08:28:06Z · status ready→active, branch
+- 2026-11-14T08:43:58Z · status active→review
