@@ -11,7 +11,7 @@ branch: feat/task-drawer-move-to-done-fails-instantly
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-14T16:14:26Z"
-updated_at: "2026-11-14T18:02:34Z"
+updated_at: "2026-11-14T18:03:51Z"
 handoff_signal_retry_count: 2
 dev_error_count: 4
 deferred_handoff_resume_count: 1
@@ -96,3 +96,4 @@ Related: #1081 (introduced the reason parameter) and the audit that missed this.
 - 2026-11-14T18:02:24Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
 - 2026-11-14T18:02:25Z · note: handoff requested (cli)
 - 2026-11-14T18:02:34Z · CTO nudge: held — handoff gate is running
+- 2026-11-14T18:03:51Z · message_delivered: 3 message(s)
