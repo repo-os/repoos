@@ -2,17 +2,17 @@
 id: "1114"
 title: Build mobile task details as a page or sheet
 type: feature
-status: ready
+status: active
 priority: p1
 area: web
 depends_on: ["1113"]
 assigned_to: ai
 created_by: t@t
-branch: ""
+branch: feat/build-mobile-task-details-as-a-page-or-s
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T09:10:53Z"
-updated_at: "2026-11-14T15:04:30Z"
+updated_at: "2026-11-14T15:04:32Z"
 ---
 ## Problem
 The desktop task drawer shares a narrow viewport with the Work board and its tabs/actions are cramped on phones.
@@ -38,3 +38,4 @@ Read ADR 0011 and coordinate with #1113's route and queue state. Follow shared d
 - 2026-11-14T09:22:35Z · needs_input
 - 2026-11-14T15:04:27Z · cli_override, model_override
 - 2026-11-14T15:04:30Z · status inbox→ready
+- 2026-11-14T15:04:32Z · status ready→active, branch
