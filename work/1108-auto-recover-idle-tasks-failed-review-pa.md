@@ -73,3 +73,4 @@ Start from src/server/task-watchdog.ts and the review pipeline in src/server/age
 - 2026-11-14T11:21:49Z · CTO nudge: held — handoff gate is running
 - 2026-11-14T11:31:58Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
 - 2026-11-14T11:31:59Z · status active→review
+- 2026-11-14T11:31:59Z · message_queued at 2026-11-14T11:31:59.172Z
