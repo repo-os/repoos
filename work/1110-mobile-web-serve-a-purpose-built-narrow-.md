@@ -14,7 +14,7 @@ branch: feat/mobile-web-serve-a-purpose-built-narrow-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T09:06:53Z"
-updated_at: "2026-11-14T10:52:44Z"
+updated_at: "2026-11-14T11:03:57Z"
 last_close_out_gate_ms: 61303
 last_close_out_gate_at: "2026-11-14T10:52:40.891Z"
 review_passes: 2
@@ -78,3 +78,4 @@ Read docs/mobile-ux-strategy.md, docs/mobile-architecture.md and docs/agent-ui-a
 - 2026-11-14T10:47:02Z · note: review pass 3: good to go
 - 2026-11-14T10:52:40Z · close-out gate completed in 61s
 - 2026-11-14T10:52:44Z · status done→done, release:success
+- 2026-11-14T11:03:57Z · message_dropped: 1 queued message(s) discarded — task is done
