@@ -44,3 +44,4 @@ Build on #1098 (src/core/agent-failure.ts, `splitAgentFailureDetail`). Related: 
 - 2026-11-14T18:02:32Z · status inbox→ready
 - 2026-11-14T18:44:56Z · status ready→active, branch
 - 2026-11-14T18:53:53Z · message_queued at 2026-11-14T18:53:53.155Z
+- 2026-11-14T18:53:53Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
