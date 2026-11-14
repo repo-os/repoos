@@ -1,5 +1,4 @@
 ---
-handoff_signal_retry_count: 1
 id: "1117"
 title: "Full check is slow: measure where the time goes and speed it up without weakening the gate"
 type: feature
@@ -12,7 +11,8 @@ branch: feat/full-check-is-slow-measure-where-the-tim
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T12:33:14Z"
-updated_at: "2026-11-14T15:00:33Z"
+updated_at: "2026-11-14T15:08:26Z"
+handoff_signal_retry_count: 1
 ---
 ## Problem
 The full `repoos check` and the close-out gate take 15 to 20 minutes, and the board has reported "checks are slow lately: 9 of the last 10" for hours on 2026-11-14. Slow checks also fail more often under load: they cost three release attempts, a flaky-test task (#1107) and a failed handoff (#1108) in one day. Known heavy files from the release run: `src/ui-app/tests/dev-targets.test.ts` 145s, `remote-host-pool.test.ts` 59s, `agent-review.test.ts` 35s, `handoff.test.ts` 25s, `agent-contract.test.ts` 22s, `task-watchdog.test.ts` 20s. Close-out gates took 987s (#1109) and 1155s (#1107).
@@ -49,4 +49,4 @@ Read docs/debugging-check-failures.md and the [[check.steps]] plan in repoos.tom
 - 2026-11-14T14:37:52Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The report draft now includes before/after full-check phases, all six named files, the baseline top 15 files and cases, test outcomes, and the reason the test phase improved 21.3% rather than 25%. I’m cleaning out the temporary timing logs… · stderr: Reading additional input from stdin... 2026-11-14T14:36:56.874377Z ERROR codex_core::tools::router: error=exec_command failed: CreateProcess { message: "Rejected(\"`/bin/zsh -lc 'rm -f .repoos/task1117-working.patch .repoos/task1117-suite1.log .repoos/task1117-suite2.log .repoos/task1117-suite3.log .repoos/task1117-su…
 - 2026-11-14T14:37:52Z · message_delivered: 3 message(s)
 - 2026-11-14T15:00:33Z · body
-
+- 2026-11-14T15:08:26Z · CTO nudge: held — handoff gate is running
