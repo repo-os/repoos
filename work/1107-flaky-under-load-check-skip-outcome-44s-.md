@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-11-14T08:01:27Z"
-review_passes: 1
+last_close_out_gate_ms: 1154664
+last_close_out_gate_at: "2026-11-14T08:51:33.112Z"
 id: "1107"
 title: "Flaky under load: check-skip-outcome (44s) and engineer-resources heavySlots fail full release checks"
 type: feature
@@ -13,6 +13,8 @@ branch: feat/flaky-under-load-check-skip-outcome-44s-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T07:26:27Z"
+updated_at: "2026-11-14T08:51:33Z"
+review_passes: 1
 ---
 ## Problem
 Two tests failed the full check during the v0.5.83 release (2026-11-14) only because the machine was loaded, and both pass alone:
@@ -43,4 +45,5 @@ Read docs/debugging-check-failures.md first. Precedents: #1101 and #1102 (flaky 
 - 2026-11-14T07:59:41Z · message_queued at 2026-11-14T07:59:41.035Z
 - 2026-11-14T07:59:41Z · note: shots: skipped — the diff (3 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-14T08:01:27Z · note: review pass 1: good to go
+- 2026-11-14T08:51:33Z · close-out gate completed in 1155s
 
