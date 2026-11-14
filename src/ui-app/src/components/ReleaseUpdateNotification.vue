@@ -41,6 +41,7 @@ const restartOpen = ref(false);
 const releaseRun = ref<{ state: string; phase: string | null } | null>(null);
 const restartFixtureActive = ref(false);
 let restartStatusTimer: ReturnType<typeof setInterval> | null = null;
+let releaseRunTimer: ReturnType<typeof setInterval> | null = null;
 const dismissed = ref(false);
 const open = ref(false);
 const copied = ref(false);
@@ -139,13 +140,17 @@ onMounted(async () => {
     releaseRun.value = { state: "running", phase: null };
   }
   if (!restartFixture) {
-    const runTimer = setInterval(async () => {
-      try { releaseRun.value = await api("/api/release/run"); }
-      catch { releaseRun.value = { state: "running", phase: null }; }
+    releaseRunTimer = setInterval(async () => {
+      try {
+        releaseRun.value = await api("/api/release/run");
+      } catch {
+        releaseRun.value = { state: "running", phase: null };
+      }
     }, 3000);
-    onUnmounted(() => clearInterval(runTimer));
   }
-  watch(restartStatus, (status) => { if (status?.restartPending) restartOpen.value = true; });
+  watch(restartStatus, (status) => {
+    if (status?.restartPending) restartOpen.value = true;
+  });
   if (!restartFixture)
     restartStatusTimer = setInterval(async () => {
       try {
@@ -263,12 +268,16 @@ async function copyRestartCommand(): Promise<void> {
   if (copiedTimer) clearTimeout(copiedTimer);
   copied.value = ok;
   copyFailed.value = !ok;
-  copiedTimer = setTimeout(() => { copied.value = false; copyFailed.value = false; }, 2000);
+  copiedTimer = setTimeout(() => {
+    copied.value = false;
+    copyFailed.value = false;
+  }, 2000);
 }
 
 onUnmounted(() => {
   if (copiedTimer) clearTimeout(copiedTimer);
   if (restartStatusTimer) clearInterval(restartStatusTimer);
+  if (releaseRunTimer) clearInterval(releaseRunTimer);
 });
 </script>
 
@@ -276,27 +285,71 @@ onUnmounted(() => {
   <Teleport to="body">
     <Dialog v-model:open="restartOpen">
       <DialogOverlay />
-      <DialogContent v-if="restartNoticeVisible" class="am-modal release-update-modal" data-test-id="installed-restart-notice">
+      <DialogContent
+        v-if="restartNoticeVisible"
+        class="am-modal release-update-modal"
+        data-test-id="installed-restart-notice"
+      >
         <div class="release-update-modal-head">
           <DialogTitle>RepoOS v{{ restartStatus.installedVersion }} is installed</DialogTitle>
-          <DialogClose class="release-update-close" aria-label="Dismiss restart notice" @click="dismissRestartNotice"><X class="size-[17px]" /></DialogClose>
+          <DialogClose
+            class="release-update-close"
+            aria-label="Dismiss restart notice"
+            @click="dismissRestartNotice"
+            ><X class="size-[17px]"
+          /></DialogClose>
         </div>
         <DialogDescription class="release-update-description">
-          This server is still running v{{ restartStatus.runningVersion }}. {{ restartStatus.activeWork.agents }} agents and {{ restartStatus.activeWork.checks }} checks running. Restart now briefly interrupts work; see <a href="https://github.com/repo-os/repoos/issues/214">#0214</a> for how agents resume.
+          This server is still running v{{ restartStatus.runningVersion }}.
+          {{ restartStatus.activeWork.agents }} agents and
+          {{ restartStatus.activeWork.checks }} checks running. Restart now briefly interrupts work;
+          see <a href="https://github.com/repo-os/repoos/issues/214">#0214</a> for how agents
+          resume.
         </DialogDescription>
         <div class="release-update-actions">
           <template v-if="restartStatus.supervised">
             <template v-if="!restartStatus.restartWhenIdlePending">
-              <Button size="sm" :disabled="restartPendingAction" @click="void restartInstalled()">Restart now</Button>
-              <Button size="sm" variant="ghost" :disabled="restartPendingAction" @click="void restartInstalled(true)">Restart when idle</Button>
+              <Button size="sm" :disabled="restartPendingAction" @click="void restartInstalled()"
+                >Restart now</Button
+              >
+              <Button
+                size="sm"
+                variant="ghost"
+                :disabled="restartPendingAction"
+                @click="void restartInstalled(true)"
+                >Restart when idle</Button
+              >
             </template>
-            <template v-else><span role="status">Restart is waiting for agents, reviews and checks to finish.</span><Button size="sm" variant="ghost" :disabled="restartPendingAction" @click="void restartInstalled(false, true)">Cancel</Button></template>
+            <template v-else
+              ><span role="status"
+                >Restart is waiting for agents, reviews and checks to finish.</span
+              ><Button
+                size="sm"
+                variant="ghost"
+                :disabled="restartPendingAction"
+                @click="void restartInstalled(false, true)"
+                >Cancel</Button
+              ></template
+            >
           </template>
           <div v-else class="release-update-manual">
-            <p class="release-update-muted">This server is not supervised. Copy the command and run it in a terminal to restart safely.</p>
+            <p class="release-update-muted">
+              This server is not supervised. Copy the command and run it in a terminal to restart
+              safely.
+            </p>
             <code class="release-update-code">{{ restartStatus.manualCommand }}</code>
-            <Button size="sm" variant="ghost" :aria-label="copied ? 'Copied restart command' : 'Copy restart command'" @click="void copyRestartCommand()"><Check v-if="copied" class="size-[14px]" /><Copy v-else class="size-[14px]" />{{ copied ? "Copied" : "Copy restart command" }}</Button>
-            <p v-if="copyFailed" class="release-update-muted" role="status">Couldn’t copy automatically — select the command above and copy it.</p>
+            <Button
+              size="sm"
+              variant="ghost"
+              :aria-label="copied ? 'Copied restart command' : 'Copy restart command'"
+              @click="void copyRestartCommand()"
+              ><Check v-if="copied" class="size-[14px]" /><Copy v-else class="size-[14px]" />{{
+                copied ? "Copied" : "Copy restart command"
+              }}</Button
+            >
+            <p v-if="copyFailed" class="release-update-muted" role="status">
+              Couldn’t copy automatically — select the command above and copy it.
+            </p>
           </div>
         </div>
       </DialogContent>
@@ -406,7 +459,11 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
-.release-update-manual { display: grid; gap: 10px; width: 100%; }
+.release-update-manual {
+  display: grid;
+  gap: 10px;
+  width: 100%;
+}
 .release-update-modal {
   width: min(520px, calc(100vw - 40px));
   max-height: min(680px, calc(100vh - 40px));
