@@ -12,7 +12,7 @@ branch: feat/finish-touch-affordances-across-mobile-s
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-14T09:11:01Z"
-updated_at: "2026-11-14T18:30:31Z"
+updated_at: "2026-11-14T18:31:00Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-14T18:05:30.510Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 review_passes: 2
@@ -47,9 +47,9 @@ On screens below 720px the floating heads (Ross, CTO, Debugger) must not reserve
 "route": "/work",
 "highlight": ".mobile-more-sheet",
 "steps": [
-  {
-    "click": ".tab[aria-haspopup=\"dialog\"]"
-  }
+{
+  "click": ".tab[aria-haspopup=\"dialog\"]"
+}
 ],
 "viewportWidth": 390
 },
@@ -66,21 +66,21 @@ On screens below 720px the floating heads (Ross, CTO, Debugger) must not reserve
 "route": "/work?task=9999",
 "highlight": ".floating-head-panel",
 "steps": [
-  {
-    "waitFor": "[data-testid=\"mobile-task-detail\"]"
-  },
-  {
-    "click": ".tab[aria-haspopup=\"dialog\"]"
-  },
-  {
-    "waitFor": "[data-test-id=\"mobile-more-open-cto\"]"
-  },
-  {
-    "click": "[data-test-id=\"mobile-more-open-cto\"]"
-  },
-  {
-    "waitFor": ".floating-head-panel"
-  }
+{
+  "waitFor": "[data-testid=\"mobile-task-detail\"]"
+},
+{
+  "click": ".tab[aria-haspopup=\"dialog\"]"
+},
+{
+  "waitFor": "[data-test-id=\"mobile-more-open-cto\"]"
+},
+{
+  "click": "[data-test-id=\"mobile-more-open-cto\"]"
+},
+{
+  "waitFor": ".floating-head-panel"
+}
 ],
 "state": "drawer:landableNarrow",
 "viewportWidth": 390
@@ -91,21 +91,21 @@ On screens below 720px the floating heads (Ross, CTO, Debugger) must not reserve
 "route": "/work",
 "highlight": ".floating-heads .stack",
 "steps": [
-  {
-    "click": ".tabbar a.tab[href=\"/settings\"]"
-  },
-  {
-    "waitFor": "[data-test-id=\"floating-heads-setting\"]"
-  },
-  {
-    "click": "[data-test-id=\"floating-heads-setting\"] [aria-label=\"Show floating agent buttons\"]"
-  },
-  {
-    "click": ".tabbar a.tab[href=\"/work\"]"
-  },
-  {
-    "waitFor": ".floating-heads .stack"
-  }
+{
+  "click": ".tabbar a.tab[href=\"/settings\"]"
+},
+{
+  "waitFor": "[data-test-id=\"floating-heads-setting\"]"
+},
+{
+  "click": "[data-test-id=\"floating-heads-setting\"] [aria-label=\"Show floating agent buttons\"]"
+},
+{
+  "click": ".tabbar a.tab[href=\"/work\"]"
+},
+{
+  "waitFor": ".floating-heads .stack"
+}
 ],
 "viewportWidth": 390
 }
@@ -181,3 +181,4 @@ On screens below 720px the floating heads (Ross, CTO, Debugger) must not reserve
 - 2026-11-14T18:10:54Z · message_delivered: 1 message(s)
 - 2026-11-14T18:11:57Z · body
 - 2026-11-14T18:30:31Z · body
+- 2026-11-14T18:31:00Z · message_queued at 2026-11-14T18:31:00.937Z
