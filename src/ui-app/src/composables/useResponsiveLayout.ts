@@ -5,6 +5,7 @@ export function useResponsiveLayout() {
   const isNarrow = ref(false);
   let query: MediaQueryList | undefined;
   let listeningForResize = false;
+  let listeningForLegacyChange = false;
 
   const sync = (): void => {
     isNarrow.value = query?.matches ?? window.innerWidth < 720;
@@ -19,9 +20,12 @@ export function useResponsiveLayout() {
       sync();
       if (typeof query.addEventListener === "function") {
         query.addEventListener("change", sync);
+      } else if (typeof query.addListener === "function") {
+        // Older WebViews may expose the legacy MediaQueryList listener API.
+        query.addListener(sync);
+        listeningForLegacyChange = true;
       } else {
-        // Older WebViews and lightweight test doubles expose matchMedia without
-        // MediaQueryList change events; keep the same breakpoint via resize.
+        // Lightweight test doubles may omit both MediaQueryList APIs.
         onResize();
         window.addEventListener("resize", onResize);
         listeningForResize = true;
@@ -35,6 +39,7 @@ export function useResponsiveLayout() {
     if (typeof query?.removeEventListener === "function") {
       query.removeEventListener("change", sync);
     }
+    if (listeningForLegacyChange) query?.removeListener?.(sync);
     if (listeningForResize || !query) window.removeEventListener("resize", onResize);
   });
 
