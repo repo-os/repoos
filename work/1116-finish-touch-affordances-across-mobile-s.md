@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-14T18:05:30.510Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 updated_at: "2026-11-14T18:05:28Z"
 review_passes: 2
 id: "1116"
@@ -170,4 +172,5 @@ On screens below 720px the floating heads (Ross, CTO, Debugger) must not reserve
 - 2026-11-14T18:05:27Z · note: shots: failed — browser capture cancelled
 - 2026-11-14T18:05:27Z · message_queued at 2026-11-14T18:05:27.491Z
 - 2026-11-14T18:05:28Z · note: review pass 2: good to go
+
 
