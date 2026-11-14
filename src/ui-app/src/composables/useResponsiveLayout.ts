@@ -32,7 +32,9 @@ export function useResponsiveLayout() {
     }
   });
   onUnmounted(() => {
-    query?.removeEventListener("change", sync);
+    if (typeof query?.removeEventListener === "function") {
+      query.removeEventListener("change", sync);
+    }
     if (listeningForResize || !query) window.removeEventListener("resize", onResize);
   });
 
