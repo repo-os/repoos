@@ -12,8 +12,6 @@ cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-14T17:35:18Z"
 updated_at: "2026-11-14T18:49:53Z"
-last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (appeared: docs/phone-deploy.md, mobile/README.md, scripts/deploy-phone.ts, scripts/lib/hub-phone-deploy.ts, scripts/lib/launch-component.ts, src/ui-app/tests/hub-phone-deploy.test.ts, mobile/android/app/src/debug/, src/ui-app/tests/hub-android-debug-label.test.ts) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
-last_handoff_failure_sha: 5ca6d4767f7f9393cad5e284c71161d00067cd5b
 handoff_signal_retry_count: 2
 ---
 ## Problem
@@ -60,3 +58,4 @@ Related: #1120 (Hub app redesign, runs in parallel, touches mobile/src only) and
 - 2026-11-14T18:31:00Z · message_delivered: 2 message(s)
 - 2026-11-14T18:35:44Z · handoff failed · task-file handoff failed at check · the worktree changed while the gate was running (appeared: docs/phone-deploy.md, mobile/README.md, scripts/deploy-phone.ts, scripts/lib/hub-phone-deploy.ts, scripts/lib/launch-component.ts, src/ui-app/tests/hub-phone-deploy.test.ts, mobile/android/app/src/debug/, src/ui-app/tests/hub-android-debug-label.test.ts) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
 - 2026-11-14T18:49:53Z · note: handoff requested (cli)
+
