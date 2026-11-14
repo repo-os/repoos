@@ -1,13 +1,12 @@
 ---
-last_close_out_gate_ms: 177335
-last_close_out_gate_at: "2026-11-14T14:49:37.236Z"
 id: "1113"
 title: Build a single-column mobile Work queue
 type: feature
-status: review
+status: done
 priority: p1
 area: web
 depends_on: ["1112"]
+merged_commit: ccb6d97deb8f8a8227577c964a207cff0f0d6754
 assigned_to: ai
 created_by: t@t
 branch: feat/build-a-single-column-mobile-work-queue
@@ -15,6 +14,8 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T09:10:48Z"
 updated_at: "2026-11-14T14:49:37Z"
+last_close_out_gate_ms: 177335
+last_close_out_gate_at: "2026-11-14T14:49:37.236Z"
 review_passes: 1
 last_check_failure: "repoos check at 2026-11-14T13:50:32.893Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Single-column mobile Work queue (target \"default\"): highlight [data-testid=\"mobile-work-queue\"] matched nothing on /work (http://127.0.0.1:46519/work)"
 ---

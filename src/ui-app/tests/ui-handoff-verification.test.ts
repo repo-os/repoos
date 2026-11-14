@@ -16,6 +16,7 @@ import {
   runUiHandoffGate,
   importRemoteVerification,
   taskUiVerificationMode,
+  uiHandoffCaptureViewport,
   type UiHandoffGateDeps,
 } from "../../server/ui-handoff-gate.js";
 import * as shotCapture from "../../server/shot-capture.js";
@@ -41,6 +42,16 @@ describe("UI handoff verification gate (#0680)", () => {
     vi.restoreAllMocks();
     resetPreviewVerificationSlot();
     for (const t of temps.splice(0)) rmSync(t, { recursive: true, force: true });
+  });
+
+  it("captures declared shots at their requested viewport and keeps verification widths for overflow checks", () => {
+    expect(
+      uiHandoffCaptureViewport({ viewportWidth: 390, viewportHeight: 844 }, [1024, 375]),
+    ).toEqual({
+      width: 390,
+      height: 844,
+    });
+    expect(uiHandoffCaptureViewport({}, [1024, 375])).toEqual({ width: 1024, height: 800 });
   });
 
   it("uses an existing manual shot as the refresh plan when no declaration or path plan exists", async () => {

@@ -218,6 +218,7 @@ async function runUISmokeTest(): Promise<void> {
     await assertNoHorizontalOverflow("docs", `${server.url}/repo`);
 
     // Navigate to work page and click +New Task
+    await page.setViewportSize({ width: 1280, height: 900 });
     await page.evaluate(() => {
       const navItems = document.querySelectorAll(".nav-item");
       for (const item of Array.from(navItems)) {

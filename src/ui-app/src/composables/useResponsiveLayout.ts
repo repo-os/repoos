@@ -16,14 +16,22 @@ export function useResponsiveLayout() {
     if (typeof window.matchMedia === "function") {
       query = window.matchMedia("(max-width: 719.98px)");
       sync();
-      query.addEventListener("change", sync);
+      if (typeof query.addEventListener === "function") {
+        query.addEventListener("change", sync);
+      } else {
+        query.addListener?.(sync);
+      }
     } else {
       onResize();
       window.addEventListener("resize", onResize);
     }
   });
   onUnmounted(() => {
-    query?.removeEventListener("change", sync);
+    if (query && typeof query.removeEventListener === "function") {
+      query.removeEventListener("change", sync);
+    } else {
+      query?.removeListener?.(sync);
+    }
     window.removeEventListener("resize", onResize);
   });
 
