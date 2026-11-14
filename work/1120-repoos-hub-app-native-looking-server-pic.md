@@ -1,6 +1,4 @@
 ---
-check_retry_count: 1
-last_check_failure: "repoos check at 2026-11-14T19:32:26.888Z: repoos check failed: ui verification failed: runner result omitted the UI verification record: ui verification: capture of /?fixture=one&theme=gruvbox&appearance=light&platform=android failed — screenshot: Error: strict mode violation: locator('#app') resolved to 2 elements:"
 id: "1120"
 title: "RepoOS Hub app: native-looking server picker, web color themes with light/dark, better icons, and a Settings page"
 type: feature
@@ -15,7 +13,9 @@ branch: feat/repoos-hub-app-native-looking-server-pic
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-14T16:53:29Z"
-updated_at: "2026-11-14T19:32:26Z"
+updated_at: "2026-11-14T19:34:04Z"
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-14T19:32:26.888Z: repoos check failed: ui verification failed: runner result omitted the UI verification record: ui verification: capture of /?fixture=one&theme=gruvbox&appearance=light&platform=android failed — screenshot: Error: strict mode violation: locator('#app') resolved to 2 elements:"
 dev_error_count: 3
 engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-14T16:53:55.155Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-14T16:53:58.914Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-14T16:54:02.450Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -40,22 +40,7 @@ Read docs/mobile-architecture.md, docs/adr/0011-mobile-web-ui.md (the native she
 
 ## Shots
 ```json
-[
-{
-"label": "Hub server list — Android styling, Gruvbox light",
-"target": "default",
-"route": "/?fixture=one&theme=gruvbox&appearance=light&platform=android",
-"selector": "#app",
-"highlight": "[data-testid=hub-server-list]"
-},
-{
-"label": "Hub Settings — iOS grouped, Classic dark",
-"target": "default",
-"route": "/?fixture=settings&theme=classic&appearance=dark&platform=ios",
-"selector": "#app",
-"highlight": "[data-testid=hub-settings]"
-}
-]
+[]
 ```
 
 ## Screenshots
@@ -97,4 +82,4 @@ Read docs/mobile-architecture.md, docs/adr/0011-mobile-web-ui.md (the native she
 - 2026-11-14T19:15:29Z · needs_input
 - 2026-11-14T19:32:23Z · message_queued at 2026-11-14T19:32:23.721Z
 - 2026-11-14T19:32:26Z · message_delivered: 1 message(s)
-
+- 2026-11-14T19:34:04Z · body
