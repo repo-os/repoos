@@ -2,8 +2,10 @@
 import { computed, nextTick, onBeforeUnmount, ref, watch } from "vue";
 import { navFromConfig } from "../nav";
 import { useConfigStore } from "../stores/config";
+import { useFloatingHeadsPreference } from "../composables/useFloatingHeadsPreference.js";
 
 const config = useConfigStore();
+const { visible: floatingHeadsVisible } = useFloatingHeadsPreference();
 const open = ref(false);
 const moreButton = ref<HTMLButtonElement | null>(null);
 const nav = computed(() => navFromConfig(config.data));
@@ -18,9 +20,18 @@ const secondary = computed(() =>
     .filter((item) => item.id !== "work" && item.id !== "settings")
     .map((item) => (item.id === "dashboard" ? { ...item, label: "Activity" } : item)),
 );
+const agentShortcuts = [
+  { id: "cto", label: "Open CTO", event: "repoos:open-cto" },
+  { id: "ross", label: "Open Ross", event: "repoos:open-ross" },
+  { id: "debugger", label: "Open Debugger", event: "repoos:open-debugger" },
+];
 
 function openSearch(): void {
   window.dispatchEvent(new Event("repoos:open-search"));
+}
+function openAgent(eventName: string): void {
+  window.dispatchEvent(new Event(eventName));
+  open.value = false;
 }
 function onKeydown(event: KeyboardEvent): void {
   if (event.key === "Escape" && open.value) {
@@ -85,6 +96,19 @@ window.addEventListener("keydown", onKeydown);
             <span>{{ item.label }}</span>
             <span class="mobile-more-arrow" aria-hidden="true">›</span>
           </RouterLink>
+          <template v-if="!floatingHeadsVisible">
+            <button
+              v-for="agent in agentShortcuts"
+              :key="agent.id"
+              type="button"
+              class="mobile-more-link mobile-more-agent-link"
+              @click="openAgent(agent.event)"
+            >
+              <span class="mobile-more-icon" aria-hidden="true">✦</span>
+              <span>{{ agent.label }}</span>
+              <span class="mobile-more-arrow" aria-hidden="true">›</span>
+            </button>
+          </template>
         </nav>
       </section>
     </div>

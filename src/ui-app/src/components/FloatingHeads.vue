@@ -7,10 +7,12 @@ import { useUiStore } from "../stores/ui";
 import RepoGuideChat from "./RepoGuideChat.vue";
 import CTOPanel from "./CTOPanel.vue";
 import DebuggerChat from "./DebuggerChat.vue";
+import { useFloatingHeadsPreference } from "../composables/useFloatingHeadsPreference.js";
 
 const repo = useRepoStore();
 const config = useConfigStore();
 const ui = useUiStore();
+const { visible } = useFloatingHeadsPreference();
 const { health } = storeToRefs(repo);
 /** Managed previews need the launcher visible even when an agent is off in config. */
 const isPreviewBuild = computed(() => health.value?.isPreviewBuild ?? false);
@@ -47,12 +49,22 @@ const openDebugger = () => {
   ui.close();
   activeHead.value = "debugger";
 };
-onMounted(() => window.addEventListener("repoos:open-debugger", openDebugger));
-onBeforeUnmount(() => window.removeEventListener("repoos:open-debugger", openDebugger));
+const openCto = () => (activeHead.value = "cto");
+const openRoss = () => (activeHead.value = "ross");
+onMounted(() => {
+  window.addEventListener("repoos:open-debugger", openDebugger);
+  window.addEventListener("repoos:open-cto", openCto);
+  window.addEventListener("repoos:open-ross", openRoss);
+});
+onBeforeUnmount(() => {
+  window.removeEventListener("repoos:open-debugger", openDebugger);
+  window.removeEventListener("repoos:open-cto", openCto);
+  window.removeEventListener("repoos:open-ross", openRoss);
+});
 </script>
 
 <template>
-  <div class="floating-heads" :class="{ 'any-open': activeHead }">
+  <div v-if="visible" class="floating-heads" :class="{ 'any-open': activeHead }">
     <CTOPanel :open="activeHead === 'cto'" @close="activeHead = null" />
     <RepoGuideChat :open="activeHead === 'ross'" @close="activeHead = null" />
     <DebuggerChat :open="activeHead === 'debugger'" @close="activeHead = null" />

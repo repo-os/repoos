@@ -2431,4 +2431,35 @@ a.rel-channel-name:hover {
   max-height: 320px;
   overflow: auto;
 }
+
+@media (max-width: 719.98px) {
+  .releases-page {
+    min-width: 0;
+  }
+  .rel-head {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .rel-head-actions,
+  .rel-next-actions,
+  .rel-email-actions {
+    justify-content: flex-start;
+  }
+  .rel-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+  .rel-actions :deep(button),
+  .rel-email-actions :deep(button) {
+    min-height: 44px;
+  }
+  .rel-provider-meta,
+  .rel-current-meta,
+  .rel-context,
+  .rel-blockers {
+    overflow-wrap: anywhere;
+  }
+}
 </style>
