@@ -47,3 +47,4 @@ Start from src/server/release.ts (`cutNewRelease`, phases `pushing_main`, `check
 - 2026-11-14T05:59:13Z · body
 - 2026-11-14T06:01:22Z · status active→review
 - 2026-11-14T06:01:22Z · message_queued at 2026-11-14T06:01:22.704Z
+- 2026-11-14T06:01:22Z · note: shots: skipped — the diff (8 changed paths) touches no capture target's globs — no UI change to capture
