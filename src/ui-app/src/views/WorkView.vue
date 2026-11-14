@@ -15,6 +15,7 @@ import type { Column, SortOrder } from "../stores/repo";
 import { useUiStore } from "../stores/ui";
 import { useConfigStore } from "../stores/config";
 import { useBoardKeyboardNav } from "../composables/useBoardKeyboardNav";
+import { useResponsiveLayout } from "../composables/useResponsiveLayout";
 import {
   collapseAllEmpty,
   expandAll,
@@ -32,6 +33,7 @@ import SelectTrigger from "../components/ui/select/trigger.vue";
 import SelectValue from "../components/ui/select/value.vue";
 import SelectViewport from "../components/ui/select/viewport.vue";
 import IntegrationStatusBar from "../components/IntegrationStatusBar.vue";
+import MobileWorkQueue from "../components/MobileWorkQueue.vue";
 import {
   applyShotPreviewFixture,
   isShotPreviewCaptureActive,
@@ -49,6 +51,7 @@ const ui = useUiStore();
 const config = useConfigStore();
 const route = useRoute();
 const { workDir } = storeToRefs(repo);
+const { isNarrow } = useResponsiveLayout();
 
 const columnLabels = computed(() => config.columnLabels);
 const DRAFT_COL = computed(() => draftColumnWithLabel(columnLabels.value));
@@ -355,7 +358,8 @@ function openHeld(task: Task): void {
 </script>
 
 <template>
-  <div class="work-page">
+  <MobileWorkQueue v-if="isNarrow" />
+  <div v-else class="work-page">
     <div
       class="work-header"
       style="
