@@ -13,7 +13,7 @@ branch: feat/repoos-hub-app-native-looking-server-pic
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-14T16:53:29Z"
-updated_at: "2026-11-14T17:18:53Z"
+updated_at: "2026-11-14T17:23:23Z"
 dev_error_count: 3
 engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-14T16:53:55.155Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-14T16:53:58.914Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-14T16:54:02.450Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -79,3 +79,4 @@ Read docs/mobile-architecture.md, docs/adr/0011-mobile-web-ui.md (the native she
 - 2026-11-14T17:07:45Z · body
 - 2026-11-14T17:18:53Z · message_queued at 2026-11-14T17:18:53.181Z
 - 2026-11-14T17:18:53Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-14T17:23:23Z · queued message undelivered for 5m and the engineer produced no output — ending the turn so it is delivered
