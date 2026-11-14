@@ -1,0 +1,35 @@
+---
+id: "1108"
+title: "Auto-recover idle tasks: failed review pass and undelivered engineer message leave a task stuck for an hour"
+type: feature
+status: inbox
+priority: p2
+area: [server, core]
+assigned_to: ""
+created_by: t@t
+branch: ""
+created_at: "2026-11-14T08:27:35Z"
+updated_at: "2026-11-14T08:27:35Z"
+---
+## Problem
+On 2026-11-14 two tasks sat idle until a human noticed:
+1. #1106: review pass 1 failed with "no usable report" (an agent error, not a verdict). The task went to needs_input and waited about an hour for a manual `repoos review again`.
+2. #1103 (and later #1106): after "review pass 2: needs some work" the engineer message was queued ("message_overdue: still queued after 60m without being delivered") and no engineer was running. The task stayed in review with no one working on it until a manual `review again`.
+The board showed these as "review" with no clear sign that nothing was happening.
+
+## Desired UX
+A failed review pass (agent error, no usable report) is retried automatically a bounded number of times (for example 2) before it asks for human input. When a review sends a task back for fixes and the queued message is not delivered within a few minutes because no engineer is running, RepoOS restarts the engineer on the same worktree. After the bounds are exhausted the card says exactly what is stuck and why, not just "review".
+
+## Acceptance criteria
+1. A review pass that ends with "failed — no usable report" triggers an automatic retry up to a configurable bound, each retry logged in task activity; after the bound the task shows needs_input with the reason.
+2. A queued engineer message older than a configurable threshold with no live engineer restarts the engineer (respecting hold, pause, assigned_to human and the pressure guard) and logs it.
+3. Neither path fires for held, paused or human-assigned tasks; tests cover each exclusion.
+4. Settings UI controls for the new settings per AGENTS.md (getConfigSchema + Settings tab, with a test).
+5. Documented in docs/ and user-docs/.
+
+## Notes for AI
+Start from src/server/task-watchdog.ts and the review pipeline in src/server/agent-review*.ts; the watchdog already handles stuck engineers (see #0888). Do not widen it to act on tasks in closing-out. Every LLM call site must keep recording usage.
+
+## Activity
+
+- 2026-11-14T08:27:35Z · created · t@t
