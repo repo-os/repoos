@@ -3,6 +3,9 @@ id: "1113"
 title: Build a single-column mobile Work queue
 type: feature
 status: inbox
+needs_input: true
+needs_input_reason: underspecified
+needs_input_detail: "missing sections: Desired UX, Notes for AI"
 priority: p1
 area: web
 depends_on: ["1111"]
@@ -10,7 +13,7 @@ assigned_to: ai
 created_by: t@t
 branch: ""
 created_at: "2026-11-14T09:10:48Z"
-updated_at: "2026-11-14T09:10:48Z"
+updated_at: "2026-11-14T09:10:51Z"
 ---
 ## Problem
 The desktop Work board uses dense multi-column scanning and pointer-oriented interactions. It is difficult to scan and operate on a phone.
@@ -30,3 +33,4 @@ Below the mobile breakpoint, Work is a readable vertical task queue with obvious
 ## Activity
 
 - 2026-11-14T09:10:48Z · created · t@t
+- 2026-11-14T09:10:51Z · needs_input
