@@ -12,7 +12,6 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T01:19:52Z"
 updated_at: "2026-11-14T05:23:17Z"
-check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-14T05:01:25.504Z: repoos check failed: ui verification failed (4 issue(s)): [request] HTTP 404 for http://127.0.0.1:44283/api/tasks/9999/review/keep-check (http://127.0.0.1:44283/api/tasks/9999/review/keep-check); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:44283/api/tasks/9999/review/keep-check); [request] HTTP 404 for http://127.0.0.1:44283/api/tasks/9999/review/keep-check (http://127.0.0.1:44283/api/tasks/9999/review/keep-check); [request] Failed t… (truncated)"
 review_rounds: 1
 review_passes: 1
@@ -85,3 +84,4 @@ Start from the close-out failure card component and `repoos landable` review-loc
 - 2026-11-14T05:21:39Z · body
 - 2026-11-14T05:23:01Z · note: adopted orphaned engineer pid 47344
 - 2026-11-14T05:23:17Z · status active→review
+
