@@ -2,7 +2,7 @@
 id: "1106"
 title: "Release cut reliability: false 'Could not push main' failure, remote-host git errors, and test time bombs"
 type: feature
-status: active
+status: review
 priority: p2
 area: [server, core]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/release-cut-reliability-false-could-not-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T05:18:12Z"
-updated_at: "2026-11-14T05:59:13Z"
+updated_at: "2026-11-14T06:01:22Z"
 ---
 ## Problem
 Cutting v0.5.83 (2026-11-14) took six attempts. Four distinct causes, all in the release path:
@@ -45,3 +45,4 @@ Start from src/server/release.ts (`cutNewRelease`, phases `pushing_main`, `check
 - 2026-11-14T05:58:01Z · message_queued at 2026-11-14T05:58:01.299Z
 - 2026-11-14T05:58:01Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-14T05:59:13Z · body
+- 2026-11-14T06:01:22Z · status active→review
