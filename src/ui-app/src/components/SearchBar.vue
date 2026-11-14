@@ -10,6 +10,10 @@ function openOverlay(): void {
   overlayOpen.value = true;
 }
 
+function onOpenSearch(): void {
+  openOverlay();
+}
+
 function onGlobalKey(e: KeyboardEvent): void {
   if (route.name === "repo" || route.name === "settings") return;
   if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
@@ -20,8 +24,12 @@ function onGlobalKey(e: KeyboardEvent): void {
 
 onMounted(() => {
   window.addEventListener("keydown", onGlobalKey);
+  window.addEventListener("repoos:open-search", onOpenSearch);
 });
-onBeforeUnmount(() => window.removeEventListener("keydown", onGlobalKey));
+onBeforeUnmount(() => {
+  window.removeEventListener("keydown", onGlobalKey);
+  window.removeEventListener("repoos:open-search", onOpenSearch);
+});
 </script>
 
 <template>
