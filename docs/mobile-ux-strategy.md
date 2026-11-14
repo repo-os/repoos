@@ -1,9 +1,18 @@
 # RepoOS mobile UX strategy
 
+> **Partially superseded:** The connected-server shell and screen-composition
+> direction below is superseded by [ADR 0011: Mobile web UI](adr/0011-mobile-web-ui.md).
+> The Capacitor host shell, multi-server picker, lock screen, and isolated
+> WebView security boundary remain as described in
+> [mobile-architecture.md](./mobile-architecture.md). Inside a connected
+> server, the server-served web app provides the narrow-screen composition.
+
 This document extends [`mobile-architecture.md`](./mobile-architecture.md).
 That document defines the native shell, security boundary, and multi-server
-picker. This document defines how the user experiences a connected server
-inside the native iOS and Android app.
+picker. This document originally defined the connected-server experience
+inside the native iOS and Android app; that composition is superseded by ADR
+0011. The host shell remains responsible for choosing and isolating servers,
+while each server's own web UI is responsible for its responsive presentation.
 
 ## Product direction
 
