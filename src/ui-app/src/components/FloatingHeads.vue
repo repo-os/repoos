@@ -7,31 +7,23 @@ import { useUiStore } from "../stores/ui";
 import RepoGuideChat from "./RepoGuideChat.vue";
 import CTOPanel from "./CTOPanel.vue";
 import DebuggerChat from "./DebuggerChat.vue";
+import { useFloatingHeadsPreference } from "../composables/useFloatingHeadsPreference.js";
+import { floatingHeadEnabled, type FloatingHeadId } from "../lib/floating-head-agents.js";
 
 const repo = useRepoStore();
 const config = useConfigStore();
 const ui = useUiStore();
+const { visible } = useFloatingHeadsPreference();
 const { health } = storeToRefs(repo);
 /** Managed previews need the launcher visible even when an agent is off in config. */
 const isPreviewBuild = computed(() => health.value?.isPreviewBuild ?? false);
 
-function agentEnabled(head: string): boolean {
-  if (isPreviewBuild.value) return true;
-  if (head === "cto") {
-    return config.agents.some((a) => a.name.toLowerCase() === "cto" && a.enabled);
-  }
-  if (head === "ross") {
-    return config.agents.some(
-      (a) =>
-        (a.name.toLowerCase() === "ross" || a.name.toLowerCase() === "repoos guide") && a.enabled,
-    );
-  }
-  if (head === "debugger") {
-    const data = config.data as Record<string, unknown> | null;
-    const agents = data?.builtInAgents as Record<string, { enabled?: boolean }> | undefined;
-    return Boolean(agents?.debugger?.enabled);
-  }
-  return false;
+function agentEnabled(head: FloatingHeadId): boolean {
+  return floatingHeadEnabled(head, {
+    agents: config.agents,
+    configData: config.data as Record<string, unknown> | null,
+    previewBuild: isPreviewBuild.value,
+  });
 }
 
 const activeHead = ref<string | null>(null);
@@ -40,15 +32,24 @@ function toggle(head: string) {
   activeHead.value = activeHead.value === head ? null : head;
 }
 
-const openDebugger = () => {
-  // Keep the task drawer from remaining open when the Debugger is activated;
-  // agent panels share the same drawer shell and should not stack with the
-  // task drawer at the same time.
+/** Agent panels share the drawer shell — close any open task drawer first. */
+function openHead(head: FloatingHeadId): void {
   ui.close();
-  activeHead.value = "debugger";
-};
-onMounted(() => window.addEventListener("repoos:open-debugger", openDebugger));
-onBeforeUnmount(() => window.removeEventListener("repoos:open-debugger", openDebugger));
+  activeHead.value = head;
+}
+const openDebugger = () => openHead("debugger");
+const openCto = () => openHead("cto");
+const openRoss = () => openHead("ross");
+onMounted(() => {
+  window.addEventListener("repoos:open-debugger", openDebugger);
+  window.addEventListener("repoos:open-cto", openCto);
+  window.addEventListener("repoos:open-ross", openRoss);
+});
+onBeforeUnmount(() => {
+  window.removeEventListener("repoos:open-debugger", openDebugger);
+  window.removeEventListener("repoos:open-cto", openCto);
+  window.removeEventListener("repoos:open-ross", openRoss);
+});
 </script>
 
 <template>
@@ -57,7 +58,7 @@ onBeforeUnmount(() => window.removeEventListener("repoos:open-debugger", openDeb
     <RepoGuideChat :open="activeHead === 'ross'" @close="activeHead = null" />
     <DebuggerChat :open="activeHead === 'debugger'" @close="activeHead = null" />
 
-    <div class="stack">
+    <div v-if="visible" class="stack">
       <button
         v-if="agentEnabled('debugger')"
         class="head-btn"
@@ -171,7 +172,7 @@ onBeforeUnmount(() => window.removeEventListener("repoos:open-debugger", openDeb
   }
 }
 
-@media (max-width: 760px) {
+@media (max-width: 719.98px) {
   .floating-heads {
     right: 12px;
   }
