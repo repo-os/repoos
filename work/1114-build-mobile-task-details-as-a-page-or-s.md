@@ -13,7 +13,7 @@ branch: feat/build-mobile-task-details-as-a-page-or-s
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T09:10:53Z"
-updated_at: "2026-11-14T16:13:15Z"
+updated_at: "2026-11-14T16:14:15Z"
 last_close_out_gate_ms: 134477
 last_close_out_gate_at: "2026-11-14T16:12:58.179Z"
 review_passes: 2
@@ -108,3 +108,4 @@ Read ADR 0011 and coordinate with #1113's route and queue state. Follow shared d
 - 2026-11-14T15:59:41Z · note: review pass 2: good to go
 - 2026-11-14T16:12:58Z · close-out gate completed in 134s
 - 2026-11-14T16:13:15Z · status done→done, release:success
+- 2026-11-14T16:14:15Z · message_dropped: 1 queued message(s) discarded — task is done
