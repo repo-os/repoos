@@ -43,3 +43,4 @@ Read docs/debugging-check-failures.md. Precedents: #1099, #1101, #1107. Related 
 - 2026-11-14T14:16:49Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-14T14:21:49Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-14T14:28:57Z · status active→review
+- 2026-11-14T14:28:57Z · message_queued at 2026-11-14T14:28:57.248Z
