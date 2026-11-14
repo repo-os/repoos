@@ -101,7 +101,9 @@ async function loadConflict(): Promise<void> {
   conflictLoading.value = true;
   try {
     await repo.loadMergeConflict(props.task.id);
-    if (repo.doneErrorFor(props.task.id)?.conflicts.length) await checkKeepReview();
+    const latest = repo.mergeConflicts[props.task.id];
+    if (latest?.ok && !latest.conflicted) await checkKeepReview();
+    else keepReviewSafe.value = false;
   } finally {
     conflictLoading.value = false;
   }

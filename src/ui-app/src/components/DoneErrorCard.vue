@@ -67,7 +67,7 @@ const keepReviewSafe = ref(false);
 const keepReviewBusy = ref(false);
 let keepReviewPoll: ReturnType<typeof setInterval> | undefined;
 async function checkKeepReview(): Promise<void> {
-  if (!props.taskId || !props.conflicts?.length || props.stale) return;
+  if (!props.taskId || props.stale) return;
   try {
     const result = await api<{ safe?: boolean }>(`/api/tasks/${props.taskId}/review/keep-check`);
     keepReviewSafe.value = result.safe === true;

@@ -36,6 +36,23 @@ afterEach(() => {
 });
 
 describe("DoneErrorCard (card mode — the compact board surface)", () => {
+  it("checks for a safe kept verdict when a failure has no conflict paths", async () => {
+    const calls: string[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        calls.push(url);
+        return { ok: true, status: 200, json: async () => ({ safe: true }) };
+      }),
+    );
+    const wrapper = mount(DoneErrorCard, {
+      props: { message: "review lock does not match branch HEAD", conflicts: [], taskId: "1103" },
+    });
+    await flush();
+    expect(calls).toContain("/api/tasks/1103/review/keep-check");
+    expect(wrapper.text()).toContain("Keep review verdict and merge");
+  });
+
   it("clamps the message and never expands inline", async () => {
     stubOverflow(true);
     const long = "conflict in src/components/ReallyLongComponentName.ts ".repeat(12);
