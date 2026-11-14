@@ -114,6 +114,15 @@ onMounted(async () => {
     fixtureState === "release:restartPendingLight" || fixtureState === "release:restartPendingDark";
   if (restartFixture) {
     restartFixtureActive.value = true;
+    release.value = {
+      currentVersion: "0.5.78",
+      latestVersion: "0.5.79",
+      available: false,
+      releaseNotes: null,
+      releaseUrl: null,
+      installKind: "source",
+      upgradeCommand: "just upgrade",
+    };
     restartStatus.value = {
       restartPending: true,
       restartWhenIdlePending: false,
@@ -161,10 +170,12 @@ onMounted(async () => {
       }
     }, 3000);
   if (applyShotFixture()) return;
-  try {
-    release.value = await api<AvailableRelease>("/api/release/available");
-  } catch {
-    // Update checks are optional and must never interrupt the application.
+  if (!restartFixture) {
+    try {
+      release.value = await api<AvailableRelease>("/api/release/available");
+    } catch {
+      // Update checks are optional and must never interrupt the application.
+    }
   }
   // A capture can mount before `/api/health` reports the preview build, so the
   // real fetch above may have landed first with `available: false`. Re-check
