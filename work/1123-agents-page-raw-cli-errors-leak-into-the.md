@@ -107,3 +107,4 @@ Build on #1098 (src/core/agent-failure.ts, `splitAgentFailureDetail`). Related: 
 - 2026-11-14T19:43:29Z · body
 - 2026-11-14T19:45:31Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
 - 2026-11-14T19:45:32Z · status active→review
+- 2026-11-14T19:45:32Z · message_queued at 2026-11-14T19:45:32.551Z
