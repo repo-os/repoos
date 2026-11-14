@@ -291,11 +291,12 @@ export default class {
     const realBin = join(rootA, "real-bin");
     mkdirSync(realBin, { recursive: true });
     const runLog = join(rootA, "runs.log");
+    const releaseFile = join(rootA, "release-heavy-jobs");
     writeFileSync(
       join(realBin, "vitest"),
       `#!/bin/sh
 printf 'start %s\\n' "$$" >> "$REPOOS_TEST_RUN_LOG"
-sleep 0.2
+while [ ! -e "$REPOOS_TEST_RELEASE_FILE" ]; do sleep 0.05; done
 printf 'end %s\\n' "$$" >> "$REPOOS_TEST_RUN_LOG"
 `,
     );
@@ -339,7 +340,11 @@ printf 'end %s\\n' "$$" >> "$REPOOS_TEST_RUN_LOG"
         { shim: shimB!, cwd: rootB },
       ];
       for (const engineer of engineers) {
-        const env: NodeJS.ProcessEnv = { ...process.env, REPOOS_TEST_RUN_LOG: runLog };
+        const env: NodeJS.ProcessEnv = {
+          ...process.env,
+          REPOOS_TEST_RUN_LOG: runLog,
+          REPOOS_TEST_RELEASE_FILE: releaseFile,
+        };
         // A parent `repoos check` sets these so its own test workers do not
         // take a second slot. These children are the jobs under test.
         delete env.REPOOS_HEAVY_SLOT_HELD;
@@ -365,28 +370,24 @@ printf 'end %s\\n' "$$" >> "$REPOOS_TEST_RUN_LOG"
         );
       }
 
-      let peak = 0;
-      let sawQueue = false;
+      // The fake jobs remain alive until explicitly released. This removes
+      // the old 200ms overlap window, which could disappear while the host was
+      // descheduled and make a valid two-slot run look serial.
       const deadline = Date.now() + 15_000;
-      while (settled < 5 && Date.now() < deadline) {
-        if (existsSync(runLog)) {
-          let running = 0;
-          for (const line of readFileSync(runLog, "utf8").split("\n")) {
-            if (line.startsWith("start ")) running++;
-            if (line.startsWith("end ")) running = Math.max(0, running - 1);
-            peak = Math.max(peak, running);
-          }
-        }
-        const counts = heavyJobCounts(sharedLockRoot);
-        sawQueue ||= counts.queued > 0;
+      let counts = heavyJobCounts(sharedLockRoot);
+      while ((counts.running !== 2 || counts.queued !== 3) && Date.now() < deadline) {
         await new Promise((resolve) => setTimeout(resolve, 25));
+        counts = heavyJobCounts(sharedLockRoot);
+      }
+      expect(counts).toEqual({ running: 2, queued: 3 });
+      writeFileSync(releaseFile, "release\n");
+      while (settled < 5 && Date.now() < deadline) {
+        if (settled < 5) await new Promise((resolve) => setTimeout(resolve, 25));
       }
 
       if (settled < 5) throw new Error(`only ${settled}/5 fake heavy jobs exited`);
       const codes = await Promise.all(completions);
       expect(codes).toEqual([0, 0, 0, 0, 0]);
-      expect(peak).toBe(2);
-      expect(sawQueue).toBe(true);
       expect(readFileSync(runLog, "utf8").match(/^start /gm)).toHaveLength(5);
       expect(heavyJobCounts(sharedLockRoot)).toEqual({
         running: 0,
@@ -398,5 +399,5 @@ printf 'end %s\\n' "$$" >> "$REPOOS_TEST_RUN_LOG"
       }
       await Promise.allSettled(completions);
     }
-  }, 20_000);
+  }, 30_000);
 });
