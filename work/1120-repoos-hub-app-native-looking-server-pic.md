@@ -3,6 +3,8 @@ id: "1120"
 title: "RepoOS Hub app: native-looking server picker, web color themes with light/dark, better icons, and a Settings page"
 type: feature
 status: active
+needs_input: true
+needs_input_reason: needs-human-step
 human_step_override: Cleared needs-human-step flag (sticky until acceptance criteria change)
 human_step_override_key: f531bd01
 priority: p2
@@ -95,3 +97,4 @@ Read docs/mobile-architecture.md, docs/adr/0011-mobile-web-ui.md (the native she
 - 2026-11-14T19:50:04Z · body
 - 2026-11-14T19:51:58Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-14T19:51:58Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: Checking worktree state and finishing verification so we can hand off. · stderr: (empty)
+- 2026-11-14T19:51:58Z · needs_input
