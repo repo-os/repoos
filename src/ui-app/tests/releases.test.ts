@@ -843,7 +843,9 @@ describe("feature releases", () => {
     try {
       await flushPromises();
       expect(document.body.querySelector("[data-test-id=installed-restart-notice]")).not.toBeNull();
-      document.body.querySelector<HTMLElement>(".overlay")?.click();
+      document.body.querySelector<HTMLElement>(".overlay")?.dispatchEvent(
+        new PointerEvent("pointerdown", { bubbles: true, cancelable: true, pointerId: 1 }),
+      );
       await flushPromises();
       expect(localStorage.getItem(dismissedKey)).toBe("0.5.79");
       expect(document.body.querySelector("[data-test-id=installed-restart-notice]")).toBeNull();
