@@ -168,3 +168,4 @@ Read docs/mobile-architecture.md, docs/adr/0011-mobile-web-ui.md (the native she
 - 2026-11-14T23:00:03Z · body
 - 2026-11-14T23:03:53Z · CTO nudge: held — handoff gate is running
 - 2026-11-14T23:14:58Z · body
+- 2026-11-14T23:15:03Z · note: handoff requested (cli)
