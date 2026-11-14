@@ -128,6 +128,13 @@ supervisor, run `repoos restart` from a terminal. The CLI also prints a reminder
 after `repoos upgrade` when it can identify a server that is still on the old
 version.
 
+The restart notice explains which version is installed and which version the
+server is still running. When the server is not supervised, it shows the exact
+restart command with **Copy restart command**. Opening the available-update
+dialog shows the release notes in a scrollable area, so long notes remain
+readable without making the dialog extend past the screen. These controls are
+implemented in `src/ui-app/src/components/ReleaseUpdateNotification.vue`.
+
 RepoOS runs on **Bun** when it's available and falls back to **Node.js 20.6.0 or newer**
 otherwise — see
 [Configuration → Worktrees and runtime](/configuration#worktrees-and-runtime)
