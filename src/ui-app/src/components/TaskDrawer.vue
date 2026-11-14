@@ -2394,10 +2394,7 @@ async function moveToDone(reason?: string): Promise<void> {
   doingDone.value = true;
   startDoneTimer();
   try {
-    await repo.completeTask(
-      ui.active,
-      landAnywayReason ? { landAnywayReason } : {},
-    );
+    await repo.completeTask(ui.active, landAnywayReason ? { landAnywayReason } : {});
     // The close-out pipeline just started — show its live progress instead
     // of a now-stale task drawer.
     ui.close();
