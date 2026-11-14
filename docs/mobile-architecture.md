@@ -1,5 +1,13 @@
 # RepoOS mobile hub — architecture & WebView compatibility
 
+> **Direction update (ADR 0011):** For connected-server screens, the native
+> screen-composition direction documented here is superseded by the
+> [purpose-built mobile web UI](adr/0011-mobile-web-ui.md): RepoOS serves one
+> SPA with a narrow-screen composition in the browser and in the host WebView.
+> The Capacitor host remains responsible for server selection, the lock screen,
+> and the isolated WebView security boundary; this document's security and
+> compatibility findings continue to apply.
+
 Task #0297. This doc is the acceptance-criterion deliverable for "documents
 WebView compatibility results for RepoOS auth and the chosen Capacitor
 architecture."

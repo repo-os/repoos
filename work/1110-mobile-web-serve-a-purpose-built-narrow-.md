@@ -1,14 +1,13 @@
 ---
-last_close_out_gate_ms: 61303
-last_close_out_gate_at: "2026-11-14T10:52:40.891Z"
 id: "1110"
 title: "Mobile web: serve a purpose-built narrow-screen UI instead of the stretched desktop layout (ADR and first slices)"
 type: feature
-status: review
+status: done
 human_step_decision: agent
 human_step_decision_key: 22f77011
 priority: p1
 area: [web, docs]
+merged_commit: ab3f5ace51c0b6a47bef923e4f97b9a1cada685f
 assigned_to: ai
 created_by: t@t
 branch: feat/mobile-web-serve-a-purpose-built-narrow-
@@ -16,6 +15,8 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T09:06:53Z"
 updated_at: "2026-11-14T10:52:40Z"
+last_close_out_gate_ms: 61303
+last_close_out_gate_at: "2026-11-14T10:52:40.891Z"
 review_passes: 2
 ---
 ## Problem
