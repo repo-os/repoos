@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: ""
 created_at: "2026-11-14T02:26:21Z"
-updated_at: "2026-11-14T02:32:24Z"
+updated_at: "2026-11-14T02:43:03Z"
 ---
 ## Problem
 Two rough edges in the "RepoOS vX is installed" restart notice (#1075, `ReleaseUpdateNotification.vue`):
@@ -30,9 +30,10 @@ Two rough edges in the "RepoOS vX is installed" restart notice (#1075, `ReleaseU
 Small, p3, easter-egg sized. Start from `src/ui-app/src/components/ReleaseUpdateNotification.vue` and the restart status the server returns (`restartStatus.supervised`, `manualCommand`).
 
 ## Styling alignment
-The restart notice (a floating banner, not a dialog) uses bespoke scoped CSS: 12px/11px hard-coded font sizes and 9px 11px padding in a 430px card with a violet tint. Standard dialogs and drawers use the shared shell (head 18px 22px, body 20px 22px, DialogTitle at 18px bold, width up to 560px). Decide whether it stays a compact toast (then use the toast tokens and match other toasts) or becomes a real dialog on the shared components, and remove the hard-coded px sizes either way. Add as acceptance criterion 5.
+Decision (Nick): the restart notice becomes a real dialog built on the shared dialog components (DialogContent/DialogTitle/DialogDescription, .am-modal shell, standard head/body padding and type scale), not a toast. It carries too much content for a toast: version, running version, work counts, #0214 link, restart actions and the unsupervised hint. Toasts stay for short, simple notifications. Remove the bespoke banner CSS and hard-coded px font sizes. Add as acceptance criterion 5: it renders with the shared dialog classes, and the dismiss/Escape/focus behaviour matches other dialogs.
 
 ## Activity
 
 - 2026-11-14T02:26:21Z · created · t@t
 - 2026-11-14T02:32:24Z · body: Styling alignment (added)
+- 2026-11-14T02:43:03Z · body: Styling alignment (added 1, removed 1)
