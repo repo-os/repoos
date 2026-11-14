@@ -15,7 +15,7 @@ branch: feat/finish-touch-affordances-across-mobile-s
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T09:11:01Z"
-updated_at: "2026-11-14T16:48:50Z"
+updated_at: "2026-11-14T16:48:52Z"
 dev_error_count: 3
 engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-14T16:48:44.625Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-14T16:48:47.710Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-14T16:48:50.937Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -96,3 +96,4 @@ On screens below 720px the floating heads (Ross, CTO, Debugger) must not reserve
 - 2026-11-14T16:48:48Z · message_queued at 2026-11-14T16:48:48.789Z
 - 2026-11-14T16:48:50Z · agent exited with an error (codex) · Reading additional input from stdin...
 - 2026-11-14T16:48:50Z · engineer crash recovery: surfaced instead of switching — a human-set task override (codex + gpt-6-luna) is pinned, so RepoOS did not replace it (3/3 crashes in 30m)
+- 2026-11-14T16:48:52Z · CTO nudge: held — an undelivered message is already queued
