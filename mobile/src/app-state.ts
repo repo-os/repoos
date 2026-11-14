@@ -15,6 +15,7 @@ import {
   saveAppearanceMode,
   saveDesignTheme,
   syncNativeChrome,
+  mirrorThemePrefs,
   type AppearanceMode,
   type DesignThemeId,
 } from "./theme";
@@ -48,12 +49,7 @@ export async function init(): Promise<void> {
   lockSupported.value = lockProbe.supported;
   designTheme.value = themePrefs.design;
   appearanceMode.value = themePrefs.appearanceMode;
-  try {
-    localStorage.setItem("repoos.hub.uiTheme", themePrefs.design);
-    localStorage.setItem("repoos.hub.appearance", themePrefs.appearanceMode);
-  } catch {
-    /* boot mirror best-effort */
-  }
+  mirrorThemePrefs(themePrefs.design, themePrefs.appearanceMode);
   applyThemesToDocument(themePrefs.design, themePrefs.appearanceMode);
   await syncNativeChrome(themePrefs.design, themePrefs.appearanceMode);
   loaded.value = true;

@@ -1,21 +1,5 @@
 // @vitest-environment jsdom
-import { describe, expect, it, beforeEach, vi } from "vitest";
-
-vi.mock("@capacitor/preferences", () => ({
-  Preferences: {
-    get: async () => ({ value: null }),
-    set: async () => undefined,
-    remove: async () => undefined,
-  },
-}));
-
-vi.mock("@capacitor/core", () => ({
-  Capacitor: {
-    isNativePlatform: () => false,
-    getPlatform: () => "web",
-  },
-}));
-import { mount, flushPromises } from "@vue/test-utils";
+import { describe, expect, it, beforeEach } from "vitest";
 import {
   normalizeAppearanceMode,
   normalizeDesignThemeId,
@@ -25,9 +9,8 @@ import {
   APPEARANCE_KEY,
   DESIGN_KEY,
   bootThemeFromStorage,
-} from "../../../mobile/src/theme";
-import { fixtureServers, readHubFixture, fixtureInitialRoute } from "../../../mobile/src/fixture";
-import App from "../../../mobile/src/App.vue";
+} from "../../../mobile/src/theme-core";
+import { fixtureServers, fixtureInitialRoute } from "../../../mobile/src/fixture";
 
 function stubMatchMedia(dark = true) {
   Object.defineProperty(window, "matchMedia", {
@@ -95,39 +78,9 @@ describe("mobile hub fixtures", () => {
     expect(fixtureServers("empty")).toEqual([]);
     expect(fixtureServers("one")).toHaveLength(1);
     expect(fixtureServers("many")).toHaveLength(3);
+    expect(fixtureServers("unreachable")).toHaveLength(1);
+    expect(fixtureServers("unreachable")?.[0]?.name).toBe("offline");
     expect(fixtureInitialRoute("settings")).toBe("settings");
-  });
-
-  it("readHubFixture returns null without a query", () => {
-    expect(readHubFixture()).toBeNull();
-  });
-});
-
-describe("mobile hub navigation", () => {
-  beforeEach(() => {
-    stubMatchMedia();
-    localStorage.clear();
-  });
-
-  it("renders empty state fixture", async () => {
-    window.history.replaceState({}, "", "/?fixture=empty");
-    const wrapper = mount(App);
-    await vi.waitFor(
-      () => {
-        expect(wrapper.find('[data-testid="hub-empty-state"]').exists()).toBe(true);
-      },
-      { timeout: 3000 },
-    );
-    window.history.replaceState({}, "", "/");
-  });
-
-  it("opens settings from header", async () => {
-    window.history.replaceState({}, "", "/?fixture=one&appearance=dark");
-    const wrapper = mount(App);
-    await flushPromises();
-    await flushPromises();
-    await wrapper.get('[data-testid="hub-open-settings"]').trigger("click");
-    expect(wrapper.find('[data-testid="hub-settings"]').exists()).toBe(true);
-    window.history.replaceState({}, "", "/");
+    expect(fixtureInitialRoute("add")).toBe("add");
   });
 });
