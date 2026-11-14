@@ -11,7 +11,7 @@ branch: feat/auto-recover-idle-tasks-failed-review-pa
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T08:27:35Z"
-updated_at: "2026-11-14T11:16:49Z"
+updated_at: "2026-11-14T11:19:30Z"
 handoff_signal_retry_count: 1
 ---
 ## Problem
