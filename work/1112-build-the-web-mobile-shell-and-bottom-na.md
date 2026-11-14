@@ -13,7 +13,7 @@ branch: feat/build-the-web-app-mobile-navigation-and-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T09:10:42Z"
-updated_at: "2026-11-14T11:14:13Z"
+updated_at: "2026-11-14T11:15:03Z"
 ---
 ## Problem
 RepoOS's single SPA has no phone-specific navigation composition. Desktop chrome and scattered narrow CSS do not provide a coherent phone shell.
@@ -36,6 +36,18 @@ Below 720 CSS px, users get a purpose-built mobile shell with bottom navigation 
 ## Notes for AI
 Read ADR 0011, docs/mobile-architecture.md and UI conventions. This task builds navigation inside the server-served web app, not the Capacitor host shell. Preserve the native host's server picker, lock screen and isolated WebView security boundary. Keep Work queue, detail, Settings redesign and broad touch audit in their separate follow-up tasks. Reuse current route definitions and feature-gated navigation.
 
+## Shots
+```json
+[
+{
+  "label": "Mobile navigation destinations",
+  "target": "default",
+  "route": "/work",
+  "highlight": ".tabbar"
+}
+]
+```
+
 ## Activity
 
 - 2026-11-14T09:10:42Z · created · t@t
@@ -49,3 +61,4 @@ Read ADR 0011, docs/mobile-architecture.md and UI conventions. This task builds 
 - 2026-11-14T11:03:55Z · status ready→active, branch
 - 2026-11-14T11:11:57Z · body
 - 2026-11-14T11:14:13Z · body
+- 2026-11-14T11:15:03Z · body
