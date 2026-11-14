@@ -60,3 +60,4 @@ Start from src/server/release.ts (`cutNewRelease`, phases `pushing_main`, `check
 - 2026-11-14T07:14:56Z · note: adopted orphaned engineer pid 58222
 - 2026-11-14T07:20:26Z · body
 - 2026-11-14T07:21:42Z · status active→review
+- 2026-11-14T07:21:42Z · note: shots: skipped — the diff (10 changed paths) touches no capture target's globs — no UI change to capture
