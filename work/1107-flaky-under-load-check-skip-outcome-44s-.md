@@ -5,11 +5,13 @@ type: feature
 status: inbox
 priority: p2
 area: [core, tests]
-assigned_to: ""
+assigned_to: ai
 created_by: t@t
 branch: ""
+cli_override: codex
+model_override: gpt-6-luna
 created_at: "2026-11-14T07:26:27Z"
-updated_at: "2026-11-14T07:26:27Z"
+updated_at: "2026-11-14T07:53:55Z"
 ---
 ## Problem
 Two tests failed the full check during the v0.5.83 release (2026-11-14) only because the machine was loaded, and both pass alone:
@@ -32,3 +34,4 @@ Read docs/debugging-check-failures.md first. Precedents: #1101 and #1102 (flaky 
 ## Activity
 
 - 2026-11-14T07:26:27Z · created · t@t
+- 2026-11-14T07:53:55Z · cli_override, model_override
