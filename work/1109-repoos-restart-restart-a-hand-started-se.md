@@ -12,7 +12,7 @@ branch: feat/repoos-restart-restart-a-hand-started-se
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T08:27:36Z"
-updated_at: "2026-11-14T09:22:12Z"
+updated_at: "2026-11-14T10:18:47Z"
 last_close_out_gate_ms: 986909
 last_close_out_gate_at: "2026-11-14T09:21:18.002Z"
 review_passes: 1
@@ -48,3 +48,4 @@ Start from the #1091 restart implementation and `src/core/supervisor-detect.ts`.
 - 2026-11-14T08:44:44Z · note: review pass 1: good to go
 - 2026-11-14T09:21:18Z · close-out gate completed in 987s
 - 2026-11-14T09:22:12Z · status done→done, release:success
+- 2026-11-14T10:18:47Z · message_dropped: 1 queued message(s) discarded — task is done
