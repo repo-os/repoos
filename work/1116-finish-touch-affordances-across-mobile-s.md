@@ -12,7 +12,7 @@ branch: feat/finish-touch-affordances-across-mobile-s
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-14T09:11:01Z"
-updated_at: "2026-11-14T17:21:21Z"
+updated_at: "2026-11-14T17:23:52Z"
 dev_error_count: 5
 ---
 ## Problem
@@ -130,3 +130,4 @@ On screens below 720px the floating heads (Ross, CTO, Debugger) must not reserve
 - 2026-11-14T17:05:15Z · body
 - 2026-11-14T17:15:26Z · body
 - 2026-11-14T17:21:21Z · body
+- 2026-11-14T17:23:52Z · CTO nudge: held — handoff gate is running
