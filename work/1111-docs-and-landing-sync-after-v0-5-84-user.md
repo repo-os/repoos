@@ -2,7 +2,7 @@
 id: "1111"
 title: "Docs and landing sync after v0.5.84: user-docs, docs site, landing page and llms files"
 type: feature
-status: active
+status: review
 priority: p2
 area: [docs, landing]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/docs-and-landing-sync-after-v0-5-84-user
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T09:08:28Z"
-updated_at: "2026-11-14T09:16:11Z"
+updated_at: "2026-11-14T09:19:09Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -43,3 +43,4 @@ Follow docs/agents-md-size.md: do not grow AGENTS.md. Put findings in the engine
 - 2026-11-14T09:15:46Z · note: review pass 1: needs some work
 - 2026-11-14T09:15:46Z · message_delivered: 1 message(s)
 - 2026-11-14T09:15:46Z · status review→active
+- 2026-11-14T09:19:09Z · status active→review
