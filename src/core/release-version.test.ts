@@ -16,8 +16,11 @@ function testFiles(dir: string): string[] {
 
 describe("installed upgrade version check", () => {
   it("does not hardcode the current package version in test fixtures", () => {
-    const current = (JSON.parse(readFileSync("package.json", "utf8")) as { version: string }).version;
-    const exactVersion = new RegExp(`(["'])${current.replace(/[.*+?^${}()|[\\]\\]/g, "\\$&")}(?:\\1)`);
+    const current = (JSON.parse(readFileSync("package.json", "utf8")) as { version: string })
+      .version;
+    const exactVersion = new RegExp(
+      `(["'])${current.replace(/[.*+?^${}()|[\\]\\]/g, "\\$&")}(?:\\1)`,
+    );
     const offenders = testFiles("src")
       .filter((file) => exactVersion.test(readFileSync(file, "utf8")))
       .map((file) => file.replace(`${process.cwd()}/`, ""));

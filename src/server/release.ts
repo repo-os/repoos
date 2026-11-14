@@ -949,143 +949,148 @@ export async function cutNewRelease(
     }
   }
   if (!mainPushed) {
-  // Rebuild first. `repoos check`'s first gate is a src/-vs-dist/ staleness
-  // check — any edit or `bun run fmt` since the operator's last build (or a
-  // background agent's work) trips it and aborts the whole release. The release
-  // artifact is built fresh by CI from the tag anyway, so a stale local dist is
-  // irrelevant to what ships; building here makes the gate a non-issue and also
-  // confirms the tree actually compiles before any ref is pushed.
-  onProgress?.("building", "Rebuilding (bun run build)…");
-  const build = await exec("bun", ["run", "build"], config.root, 600_000);
-  if (build.code !== 0)
-    return failAfterBump(
-      captureOutput(build.stdout, build.stderr) ||
-        (build.error?.message.includes("ENOENT")
-          ? "Could not run `bun run build` — is bun on PATH?"
-          : "`bun run build` failed."),
-    );
-  // Remote Validation Runner (docs/remote-validation.md): hand the expensive
-  // half of the gate — `bun install` + `bun run build` + `bun run test` — to a
-  // disposable cloud VM, which is where `repoos check` flakes under local
-  // memory pressure. Only when the operator has opted releases in
-  // (`remoteValidation.useForReleases`), since close-out's runner is unattended
-  // but a release is watched live in the modal and a ~1-2 min remote-provision
-  // delay reads as a regression there. On a remote pass, the LOCAL `repoos
-  // check` below runs only the cheap static guards + UI smoke (REPOOS_SKIP_TESTS=1).
-  // A transient infra failure fails the release unless `remoteValidation.fallbackToLocal`
-  // is set (then we drop to the full local gate); a real remote test failure is
-  // non-retryable — fix it and cut again. Close-out's resume-from-check flow has
-  // no release analogue, so neither transient case auto-retries.
-  let remoteGateOutcome: Awaited<ReturnType<typeof runRemotePreReviewGate>> = { kind: "skip" };
-  const rv = config.remoteValidation;
-  if (remoteValidator && rv?.enabled && rv.useForReleases) {
-    onProgress?.("checking", "Running remote validation on the runner…");
-    remoteGateOutcome = await runRemotePreReviewGate({
-      config,
-      remoteValidator,
-      worktreePath: config.root,
-      taskId: "release",
-      phase: "release",
-      kind: "release",
-      onChunk: (chunk) => onProgress?.("checking", chunk),
-    });
-    if (remoteGateOutcome.kind === "fail") {
-      const infra = remoteGateOutcome.retryable;
+    // Rebuild first. `repoos check`'s first gate is a src/-vs-dist/ staleness
+    // check — any edit or `bun run fmt` since the operator's last build (or a
+    // background agent's work) trips it and aborts the whole release. The release
+    // artifact is built fresh by CI from the tag anyway, so a stale local dist is
+    // irrelevant to what ships; building here makes the gate a non-issue and also
+    // confirms the tree actually compiles before any ref is pushed.
+    onProgress?.("building", "Rebuilding (bun run build)…");
+    const build = await exec("bun", ["run", "build"], config.root, 600_000);
+    if (build.code !== 0)
       return failAfterBump(
-        infra
-          ? `Remote validation unavailable (infrastructure): ${remoteGateOutcome.detail} — the release was not cut.`
-          : `Remote validation failed: ${remoteGateOutcome.detail}`,
+        captureOutput(build.stdout, build.stderr) ||
+          (build.error?.message.includes("ENOENT")
+            ? "Could not run `bun run build` — is bun on PATH?"
+            : "`bun run build` failed."),
       );
+    // Remote Validation Runner (docs/remote-validation.md): hand the expensive
+    // half of the gate — `bun install` + `bun run build` + `bun run test` — to a
+    // disposable cloud VM, which is where `repoos check` flakes under local
+    // memory pressure. Only when the operator has opted releases in
+    // (`remoteValidation.useForReleases`), since close-out's runner is unattended
+    // but a release is watched live in the modal and a ~1-2 min remote-provision
+    // delay reads as a regression there. On a remote pass, the LOCAL `repoos
+    // check` below runs only the cheap static guards + UI smoke (REPOOS_SKIP_TESTS=1).
+    // A transient infra failure fails the release unless `remoteValidation.fallbackToLocal`
+    // is set (then we drop to the full local gate); a real remote test failure is
+    // non-retryable — fix it and cut again. Close-out's resume-from-check flow has
+    // no release analogue, so neither transient case auto-retries.
+    let remoteGateOutcome: Awaited<ReturnType<typeof runRemotePreReviewGate>> = { kind: "skip" };
+    const rv = config.remoteValidation;
+    if (remoteValidator && rv?.enabled && rv.useForReleases) {
+      onProgress?.("checking", "Running remote validation on the runner…");
+      remoteGateOutcome = await runRemotePreReviewGate({
+        config,
+        remoteValidator,
+        worktreePath: config.root,
+        taskId: "release",
+        phase: "release",
+        kind: "release",
+        onChunk: (chunk) => onProgress?.("checking", chunk),
+      });
+      if (remoteGateOutcome.kind === "fail") {
+        const infra = remoteGateOutcome.retryable;
+        return failAfterBump(
+          infra
+            ? `Remote validation unavailable (infrastructure): ${remoteGateOutcome.detail} — the release was not cut.`
+            : `Remote validation failed: ${remoteGateOutcome.detail}`,
+        );
+      }
+      if (remoteGateOutcome.kind === "local-only" && !remoteGateOutcome.skipTests) {
+        onProgress?.(
+          "checking",
+          "Remote validation unavailable — falling back to the full local gate…",
+        );
+      }
     }
-    if (remoteGateOutcome.kind === "local-only" && !remoteGateOutcome.skipTests) {
-      onProgress?.(
-        "checking",
-        "Remote validation unavailable — falling back to the full local gate…",
+    // The same gate used for task close-out, before any remote ref is changed.
+    onProgress?.("checking", "Running repoos check — this usually takes a few minutes.");
+    const checkEnv: NodeJS.ProcessEnv = {
+      ...process.env,
+      // The rebuild above already refreshed dist/ (and its build marker), and
+      // `bun run build` is staleness-aware now (#0377), so check's own "Full
+      // build" step skips itself — no private skip env flag needed.
+      ...checkEnvAfterRemoteGate(remoteGateOutcome, config),
+      // Identify the caller to the check-run history (#0564): a release-phase
+      // run, no task attached.
+      REPOOS_CHECK_PHASE: "release",
+      REPOOS_CHECK_STORE_ROOT: config.root,
+    };
+    const checkArgs = spawnedRepoosCheckArgs(config, remoteGateOutcome);
+    // The gate runs through this project's own freshly built CLI — but only
+    // when the project actually ships one (#0780). A project whose package.json
+    // `bin` points at dist/cli/index.js (RepoOS itself) must have produced it
+    // with the rebuild above; anything else (a docs site, a native app's
+    // companion UI, …) never builds that file, so requiring it would fail every
+    // release. Those projects run the same `repoos check` plan through the
+    // globally linked CLI instead — the same fallback the close-out gate uses —
+    // with the project's own repoos.toml as the plan source either way.
+    const cliExpected = expectsOwnCliRepo(config.root);
+    const localCli = join(config.root, "dist", "cli", "index.js");
+    let check: CommandResult;
+    if (cliExpected) {
+      if (!existsSync(localCli)) {
+        return failAfterBump(
+          "dist/cli/index.js is missing even though this project's package.json bin points at it — " +
+            "check that `bun run build` produces the CLI and rebuild. The release was not cut.",
+        );
+      }
+      check = await exec(
+        process.execPath,
+        [localCli, "check", ...checkArgs],
+        config.root,
+        600_000,
+        checkEnv,
       );
+    } else {
+      check = await exec("repoos", ["check", ...checkArgs], config.root, 600_000, checkEnv);
+      if (check.code !== 0 && check.error?.message.includes("ENOENT")) {
+        return failAfterBump(
+          "Could not run `repoos check` — is repoos on PATH? The release was not cut.",
+        );
+      }
     }
-  }
-  // The same gate used for task close-out, before any remote ref is changed.
-  onProgress?.("checking", "Running repoos check — this usually takes a few minutes.");
-  const checkEnv: NodeJS.ProcessEnv = {
-    ...process.env,
-    // The rebuild above already refreshed dist/ (and its build marker), and
-    // `bun run build` is staleness-aware now (#0377), so check's own "Full
-    // build" step skips itself — no private skip env flag needed.
-    ...checkEnvAfterRemoteGate(remoteGateOutcome, config),
-    // Identify the caller to the check-run history (#0564): a release-phase
-    // run, no task attached.
-    REPOOS_CHECK_PHASE: "release",
-    REPOOS_CHECK_STORE_ROOT: config.root,
-  };
-  const checkArgs = spawnedRepoosCheckArgs(config, remoteGateOutcome);
-  // The gate runs through this project's own freshly built CLI — but only
-  // when the project actually ships one (#0780). A project whose package.json
-  // `bin` points at dist/cli/index.js (RepoOS itself) must have produced it
-  // with the rebuild above; anything else (a docs site, a native app's
-  // companion UI, …) never builds that file, so requiring it would fail every
-  // release. Those projects run the same `repoos check` plan through the
-  // globally linked CLI instead — the same fallback the close-out gate uses —
-  // with the project's own repoos.toml as the plan source either way.
-  const cliExpected = expectsOwnCliRepo(config.root);
-  const localCli = join(config.root, "dist", "cli", "index.js");
-  let check: CommandResult;
-  if (cliExpected) {
-    if (!existsSync(localCli)) {
-      return failAfterBump(
-        "dist/cli/index.js is missing even though this project's package.json bin points at it — " +
-          "check that `bun run build` produces the CLI and rebuild. The release was not cut.",
-      );
+    if (check.code !== 0)
+      return failAfterBump(captureOutput(check.stdout, check.stderr) || "repoos check failed.");
+    status = await getReleaseStatus(config, exec);
+    if ((!status.ready || status.tag !== tag) && !status.clean) {
+      // A routine settings save or task-file bookkeeping write can land during
+      // the multi-minute build+check window and flip `clean` false. Checkpoint
+      // that safe churn rather than aborting a release that's ready to push.
+      if (await checkpointSafeChurn(config, exec)) status = await getReleaseStatus(config, exec);
     }
-    check = await exec(
-      process.execPath,
-      [localCli, "check", ...checkArgs],
-      config.root,
-      600_000,
-      checkEnv,
-    );
-  } else {
-    check = await exec("repoos", ["check", ...checkArgs], config.root, 600_000, checkEnv);
-    if (check.code !== 0 && check.error?.message.includes("ENOENT")) {
-      return failAfterBump(
-        "Could not run `repoos check` — is repoos on PATH? The release was not cut.",
-      );
-    }
-  }
-  if (check.code !== 0)
-    return failAfterBump(captureOutput(check.stdout, check.stderr) || "repoos check failed.");
-  status = await getReleaseStatus(config, exec);
-  if ((!status.ready || status.tag !== tag) && !status.clean) {
-    // A routine settings save or task-file bookkeeping write can land during
-    // the multi-minute build+check window and flip `clean` false. Checkpoint
-    // that safe churn rather than aborting a release that's ready to push.
-    if (await checkpointSafeChurn(config, exec)) status = await getReleaseStatus(config, exec);
-  }
-  if (!status.ready || status.tag !== tag)
-    return failAfterBump("Repository state changed while release checks ran.");
+    if (!status.ready || status.tag !== tag)
+      return failAfterBump("Repository state changed while release checks ran.");
   }
   onProgress?.("pushing_main", `Pushing ${status.branch}…`);
   if (!mainPushed) {
-  const pushedMain = await exec(
-    "git",
-    ["push", release.remote ?? "origin", status.branch],
-    config.root,
-    120_000,
-  );
-  if (pushedMain.code !== 0) {
-    // A transport can drop its acknowledgement after the server accepted the
-    // update. Compare the advertised remote ref with our exact HEAD before
-    // reporting failure; equality proves the push landed safely.
-    const remote = release.remote ?? "origin";
-    const head = await exec("git", ["rev-parse", "HEAD"], config.root);
-    const advertised = await exec("git", ["ls-remote", remote, `refs/heads/${status.branch}`], config.root, 30_000);
-    const remoteSha = advertised.code === 0 ? advertised.stdout.trim().split(/\s+/)[0] : "";
-    if (head.code !== 0 || !remoteSha || head.stdout.trim() !== remoteSha) {
-      return failAfterBump(
-        captureOutput(pushedMain.stdout, pushedMain.stderr) || `Could not push ${status.branch}.`,
+    const pushedMain = await exec(
+      "git",
+      ["push", release.remote ?? "origin", status.branch],
+      config.root,
+      120_000,
+    );
+    if (pushedMain.code !== 0) {
+      // A transport can drop its acknowledgement after the server accepted the
+      // update. Compare the advertised remote ref with our exact HEAD before
+      // reporting failure; equality proves the push landed safely.
+      const remote = release.remote ?? "origin";
+      const head = await exec("git", ["rev-parse", "HEAD"], config.root);
+      const advertised = await exec(
+        "git",
+        ["ls-remote", remote, `refs/heads/${status.branch}`],
+        config.root,
+        30_000,
       );
+      const remoteSha = advertised.code === 0 ? advertised.stdout.trim().split(/\s+/)[0] : "";
+      if (head.code !== 0 || !remoteSha || head.stdout.trim() !== remoteSha) {
+        return failAfterBump(
+          captureOutput(pushedMain.stdout, pushedMain.stderr) || `Could not push ${status.branch}.`,
+        );
+      }
     }
-  }
-  mainPushed = true;
+    mainPushed = true;
   }
   onProgress?.("tagging", `Creating annotated tag ${tag}…`);
   const trimmedNotes = releaseNotes;
