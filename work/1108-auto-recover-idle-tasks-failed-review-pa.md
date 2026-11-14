@@ -2,16 +2,16 @@
 id: "1108"
 title: "Auto-recover idle tasks: failed review pass and undelivered engineer message leave a task stuck for an hour"
 type: feature
-status: ready
+status: active
 priority: p2
 area: [server, core]
 assigned_to: ai
 created_by: t@t
-branch: ""
+branch: feat/auto-recover-idle-tasks-failed-review-pa
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T08:27:35Z"
-updated_at: "2026-11-14T08:27:41Z"
+updated_at: "2026-11-14T08:27:42Z"
 ---
 ## Problem
 On 2026-11-14 two tasks sat idle until a human noticed:
@@ -37,3 +37,4 @@ Start from src/server/task-watchdog.ts and the review pipeline in src/server/age
 - 2026-11-14T08:27:35Z · created · t@t
 - 2026-11-14T08:27:40Z · cli_override, model_override
 - 2026-11-14T08:27:41Z · status inbox→ready
+- 2026-11-14T08:27:42Z · status ready→active, branch
