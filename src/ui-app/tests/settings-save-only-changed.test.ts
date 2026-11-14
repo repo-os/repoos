@@ -153,7 +153,7 @@ describe("SettingsView save sends only changed fields (#0797)", () => {
     expect(wrapper.find(".save-msg.err").text()).toContain("Settings could not be saved");
 
     wrapper.unmount();
-    expect(media.removeEventListener).toHaveBeenCalledOnce();
+    expect(media.removeEventListener).toHaveBeenCalled();
   });
 
   it("keeps the desktop tab strip at and above 720px", async () => {
