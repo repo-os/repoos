@@ -11,7 +11,7 @@ branch: feat/auto-recover-idle-tasks-failed-review-pa
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T08:27:35Z"
-updated_at: "2026-11-14T11:12:00Z"
+updated_at: "2026-11-14T11:16:49Z"
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -68,3 +68,4 @@ Start from src/server/task-watchdog.ts and the review pipeline in src/server/age
 - 2026-11-14T11:01:49Z · CTO nudge: held — handoff gate is running
 - 2026-11-14T11:12:00Z · handoff failed · remote validation failed: test failure: tests/remote-host-pool.test.ts > host-side lock (server + standalone CLI share one limit) > lets a holder expire the waiter with a clear timeout instead of a red gate on bee — fix it in the feature branch and re-run the gate
 - 2026-11-14T11:12:00Z · message_queued at 2026-11-14T11:12:00.162Z
+- 2026-11-14T11:16:49Z · CTO nudge: held — an undelivered message is already queued
