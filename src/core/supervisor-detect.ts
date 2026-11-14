@@ -214,6 +214,7 @@ function detectDarwinSupervisor(
   }
 
   let listed = parseLaunchctlListForPid(listOut, pid);
+  let domainLookupFailed = false;
   if (!listed) {
     // A non-root `launchctl list` only shows the caller's own domain, so a
     // LaunchDaemon in the `system` domain (the Kamrai case) never appears.
@@ -232,6 +233,7 @@ function detectDarwinSupervisor(
         if (listed) break;
       } catch {
         /* domain not printable by this user — try the next one */
+        domainLookupFailed = true;
       }
     }
   }
@@ -257,13 +259,14 @@ function detectDarwinSupervisor(
   // nonexistent one, so a "print succeeded" check proves nothing.
   const ppid = readPpid(pid, execFile);
   if (ppid === 1) {
-    // A launchd-owned process we could not label. We can stop it, but naming a
-    // kickstart target would be a guess, so say so plainly.
+    // Detached hand-started processes (for example `nohup repoos serve`) are
+    // reparented to pid 1 too. If launchctl list and the accessible service
+    // domains had no row, pid 1 alone is not evidence of supervision.
+    if (!domainLookupFailed) return { kind: "none" };
     return {
       kind: "uncertain",
       reason:
-        `pid ${pid} has no row in \`launchctl list\` but is parented by pid 1 — ` +
-        `it may be an externally supervised server, but its launchd label could not be determined`,
+        `pid ${pid} has no row in \`launchctl list\`; launchd domain lookup was incomplete and its parent is pid 1 — ownership is unknown`,
     };
   }
   if (ppid !== null && ppid > 1) {

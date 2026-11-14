@@ -17,6 +17,7 @@ const PATH_LABEL: Record<RestartPath, string> = {
 export async function cmdRestart(argv: string[]): Promise<void> {
   let portFilter: number | undefined;
   const whenIdle = argv.includes("--when-idle");
+  const force = argv.includes("--force");
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === "--port" || argv[i] === "-p") {
       const raw = argv[++i];
@@ -31,14 +32,14 @@ export async function cmdRestart(argv: string[]): Promise<void> {
   }
 
   const { root } = boardRoot();
-  if (whenIdle) {
+  if (whenIdle || !force) {
     const server = await locateRepoServer(root, { portFilter });
     if (!server) {
       console.error(c.red("  ✗ No running RepoOS server found to wait on."));
       process.exitCode = 1;
       return;
     }
-    console.log(c.dim("  Waiting for agents, reviews and checks to finish…"));
+    if (whenIdle) console.log(c.dim("  Waiting for agents, reviews and checks to finish…"));
     const host = server.host === "0.0.0.0" ? "127.0.0.1" : server.host;
     for (;;) {
       try {
@@ -52,7 +53,18 @@ export async function cmdRestart(argv: string[]): Promise<void> {
           typeof status.activeWork?.checks !== "number"
         )
           throw new Error("server returned an invalid update status");
-        if ((status.activeWork?.agents ?? 0) === 0 && (status.activeWork?.checks ?? 0) === 0) break;
+        const agents = status.activeWork?.agents ?? 0;
+        const checks = status.activeWork?.checks ?? 0;
+        if (agents === 0 && checks === 0) break;
+        if (!whenIdle) {
+          console.error(
+            c.red(
+              `  ✗ Restart refused while ${agents} engineer(s) and ${checks} check(s) are running. Wait for them to finish or pass --force.`,
+            ),
+          );
+          process.exitCode = 1;
+          return;
+        }
       } catch (error) {
         console.error(
           c.red(`  ✗ Could not confirm the server is idle: ${(error as Error).message}`),
