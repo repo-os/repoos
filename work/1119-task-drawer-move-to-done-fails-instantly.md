@@ -3,6 +3,9 @@ id: "1119"
 title: "Task drawer Move to done fails instantly: click event is sent as the land-anyway reason"
 type: feature
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: Failed to write file /Users/nick/code/nick/repoos-worktrees/feat/task-drawer-move-to-done-fails-instantly/src/ui-app/tests/task-drawer-landable.test.ts
 priority: p1
 area: web
 assigned_to: ai
@@ -11,7 +14,9 @@ branch: feat/task-drawer-move-to-done-fails-instantly
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T16:14:26Z"
-updated_at: "2026-11-14T16:45:38Z"
+updated_at: "2026-11-14T16:48:38Z"
+dev_error_count: 1
+engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-14T16:48:38.797Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 In the task drawer, clicking Move to done fails immediately with "Land anyway requires a reason of 1–1000 characters", before any close-out work starts. Cause: `src/ui-app/src/components/TaskDrawer.vue` binds the button as `@click="moveToDone"` (line about 5770), and Vue passes the click event as the first argument. `moveToDone(reason?: string)` (added by #1081 for the Land anyway override) treats the truthy event as a reason and calls `repo.completeTask(task, { landAnywayReason: <event> })`, which serialises to a non-string `landAnywayReason`; the server (`src/server/routes/tasks.ts`, done route) rejects it with a 400. Board-card Move to done (TaskCard.vue) and `repoos done` are unaffected. Present since #1081 landed, so in v0.5.83 and v0.5.84. Seen on #1117 on 2026-11-15.
@@ -39,3 +44,5 @@ Related: #1081 (introduced the reason parameter) and the audit that missed this.
 - 2026-11-14T16:15:39Z · held, held-reason, held-at
 - 2026-11-14T16:45:20Z · released
 - 2026-11-14T16:45:38Z · message_queued at 2026-11-14T16:45:38.602Z
+- 2026-11-14T16:48:38Z · agent exited with an error (codex) · Failed to write file /Users/nick/code/nick/repoos-worktrees/feat/task-drawer-move-to-done-fails-instantly/src/ui-app/tests/task-drawer-landable.test.ts
+- 2026-11-14T16:48:38Z · engineer crash recovery: resuming codex + gpt-6-luna (1/3 crashes in 30m) · Failed to write file /Users/nick/code/nick/repoos-worktrees/feat/task-drawer-move-to-done-fails-instantly/src/ui-app/tests/task-drawer-landable.test.ts
