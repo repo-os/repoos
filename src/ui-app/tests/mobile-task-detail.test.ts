@@ -68,7 +68,10 @@ describe("mobile task detail", () => {
     expect(wrapper.text()).toContain("A readable description.");
     expect(wrapper.text()).toContain("Start work");
     await wrapper.get(".mobile-detail-back").trigger("click");
-    expect(replace).toHaveBeenCalledWith({ path: "/work", query: { status: "active", sort: "oldest" } });
+    expect(replace).toHaveBeenCalledWith({
+      path: "/work",
+      query: { status: "active", sort: "oldest" },
+    });
   });
 
   it("shows mutation errors and keeps the task available for retry", async () => {
