@@ -51,3 +51,4 @@ Read docs/debugging-check-failures.md and the [[check.steps]] plan in repoos.tom
 - 2026-11-14T15:00:33Z · body
 - 2026-11-14T15:08:26Z · CTO nudge: held — handoff gate is running
 - 2026-11-14T15:08:53Z · status active→review
+- 2026-11-14T15:08:53Z · message_queued at 2026-11-14T15:08:53.470Z
