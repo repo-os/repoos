@@ -11,7 +11,7 @@ branch: feat/auto-recover-idle-tasks-failed-review-pa
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T08:27:35Z"
-updated_at: "2026-11-14T10:59:10Z"
+updated_at: "2026-11-14T11:00:38Z"
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -33,6 +33,17 @@ A failed review pass (agent error, no usable report) is retried automatically a 
 ## Notes for AI
 Start from src/server/task-watchdog.ts and the review pipeline in src/server/agent-review*.ts; the watchdog already handles stuck engineers (see #0888). Do not widen it to act on tasks in closing-out. Every LLM call site must keep recording usage.
 
+## Shots
+```json
+[
+{
+  "label": "Idle task recovery settings",
+  "target": "default",
+  "route": "/settings?tab=general&section=automation"
+}
+]
+```
+
 ## Activity
 
 - 2026-11-14T08:27:35Z · created · t@t
@@ -53,3 +64,4 @@ Start from src/server/task-watchdog.ts and the review pipeline in src/server/age
 - 2026-11-14T10:21:49Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-14T10:26:49Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-14T10:59:10Z · body
+- 2026-11-14T11:00:38Z · body
