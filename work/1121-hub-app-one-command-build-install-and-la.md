@@ -2,7 +2,7 @@
 id: "1121"
 title: "Hub app: one-command build, install and launch on Nick's Android phone over Tailscale adb"
 type: feature
-status: active
+status: review
 priority: p2
 area: mobile
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/hub-app-one-command-build-install-and-la
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-14T17:35:18Z"
-updated_at: "2026-11-14T17:35:25Z"
+updated_at: "2026-11-14T18:49:53Z"
 ---
 ## Problem
 Getting a new RepoOS Hub Android build onto Nick's phone is manual (`just build-android`, then copy the APK). The Laisen project already has a working one-command flow (scripts/deploy-phone.sh on the thinkpad, with a Tiao version at ~/code/nick/reference/tiao/scripts/deploy-phone.sh) that builds the debug APK, connects over Tailscale + adb, installs, and launches. The Hub app should have the same.
@@ -37,3 +37,4 @@ Related: #1120 (Hub app redesign, runs in parallel, touches mobile/src only) and
 - 2026-11-14T17:35:22Z · cli_override, model_override
 - 2026-11-14T17:35:24Z · status inbox→ready
 - 2026-11-14T17:35:25Z · status ready→active, branch
+- 2026-11-14T18:49:53Z · status active→review
