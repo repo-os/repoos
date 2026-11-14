@@ -69,3 +69,4 @@ Read docs/mobile-ux-strategy.md, docs/mobile-architecture.md and docs/agent-ui-a
 - 2026-11-14T10:24:05Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: Handoff passed. Task #1110 is now in review, so no further work is needed in this turn. · stderr: Reading additional input from stdin... 2026-11-14T10:18:52.610480Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
 - 2026-11-14T10:44:49Z · note: handoff requested (cli)
 - 2026-11-14T10:45:42Z · status active→review
+- 2026-11-14T10:45:42Z · note: shots: skipped — 19 shots already captured — an engineer-made capture pre-empts the automatic one
