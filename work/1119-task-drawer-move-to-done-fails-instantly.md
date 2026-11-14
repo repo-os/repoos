@@ -11,7 +11,7 @@ branch: feat/task-drawer-move-to-done-fails-instantly
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-14T16:14:26Z"
-updated_at: "2026-11-14T17:36:53Z"
+updated_at: "2026-11-14T17:36:54Z"
 dev_error_count: 4
 engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-14T16:48:38.797Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-14T16:48:42.502Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-14T16:48:45.917Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-14T16:58:57.569Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -77,3 +77,4 @@ Related: #1081 (introduced the reason parameter) and the audit that missed this.
 - 2026-11-14T17:33:53Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-14T17:35:28Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-14T17:36:53Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-14T17:36:54Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: Investigating and fixing the failing `agent-review.test.ts` test. · stderr: Reading additional input from stdin... 2026-11-14T16:48:38.150688Z ERROR codex_core::tools::router: error=Exit code: 1 Wall time: 0 seconds Output: Failed to write file /Users/nick/code/nick/repoos-worktrees/feat/task-drawer-move-to-done-fails-instantly/src/ui-app/tests/task-drawer-landable.test.ts Reading additional …
