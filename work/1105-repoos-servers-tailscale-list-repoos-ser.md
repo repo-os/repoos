@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-14T03:46:10Z"
-review_passes: 2
 id: "1105"
 title: "repoos servers --tailscale: list RepoOS servers across the tailnet"
 type: feature
@@ -13,6 +11,8 @@ branch: feat/repoos-servers-tailscale-list-repoos-ser
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T03:22:32Z"
+updated_at: "2026-11-14T05:01:22Z"
+review_passes: 2
 review_rounds: 1
 ---
 ## Problem
@@ -50,4 +50,4 @@ Reuse `src/core/tailscale.ts` and `src/core/remote-hosts.ts`. Do not add a runti
 - 2026-11-14T03:45:35Z · message_queued at 2026-11-14T03:45:35.883Z
 - 2026-11-14T03:45:36Z · note: shots: skipped — Docs site skipped: no docs shot declared
 - 2026-11-14T03:46:10Z · note: review pass 2: good to go
-
+- 2026-11-14T05:01:22Z · message_overdue: still queued after 60m without being delivered
