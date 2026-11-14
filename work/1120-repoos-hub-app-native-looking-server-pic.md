@@ -3,8 +3,6 @@ id: "1120"
 title: "RepoOS Hub app: native-looking server picker, web color themes with light/dark, better icons, and a Settings page"
 type: feature
 status: active
-needs_input: true
-needs_input_reason: needs-human-step
 human_step_override: Cleared needs-human-step flag (sticky until acceptance criteria change)
 human_step_override_key: f531bd01
 priority: p2
@@ -15,7 +13,7 @@ branch: feat/repoos-hub-app-native-looking-server-pic
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-14T16:53:29Z"
-updated_at: "2026-11-14T20:15:02Z"
+updated_at: "2026-11-14T20:15:03Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-14T19:32:26.888Z: repoos check failed: ui verification failed: runner result omitted the UI verification record: ui verification: capture of /?fixture=one&theme=gruvbox&appearance=light&platform=android failed — screenshot: Error: strict mode violation: locator('#app') resolved to 2 elements:"
 dev_error_count: 3
@@ -105,3 +103,4 @@ Read docs/mobile-architecture.md, docs/adr/0011-mobile-web-ui.md (the native she
 - 2026-11-14T20:15:01Z · engineer stopped by request
 - 2026-11-14T20:15:01Z · needs_input
 - 2026-11-14T20:15:01Z · needs_input
+- 2026-11-14T20:15:03Z · needs_input
