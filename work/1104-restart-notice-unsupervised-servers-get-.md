@@ -81,3 +81,4 @@ Decision (Nick): the restart notice becomes a real dialog built on the shared di
 - 2026-11-14T03:52:05Z · CTO nudge: held — handoff gate is running
 - 2026-11-14T03:54:49Z · note: ui verification passed: 1 of 1 shot captured with clean console
 - 2026-11-14T03:54:50Z · status active→review
+- 2026-11-14T03:54:50Z · message_queued at 2026-11-14T03:54:50.747Z
