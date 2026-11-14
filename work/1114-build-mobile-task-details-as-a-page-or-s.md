@@ -9,8 +9,10 @@ depends_on: ["1113"]
 assigned_to: ai
 created_by: t@t
 branch: ""
+cli_override: codex
+model_override: gpt-6-luna
 created_at: "2026-11-14T09:10:53Z"
-updated_at: "2026-11-14T09:22:35Z"
+updated_at: "2026-11-14T15:04:27Z"
 ---
 ## Problem
 The desktop task drawer shares a narrow viewport with the Work board and its tabs/actions are cramped on phones.
@@ -34,3 +36,4 @@ Read ADR 0011 and coordinate with #1113's route and queue state. Follow shared d
 - 2026-11-14T09:10:55Z · needs_input
 - 2026-11-14T09:11:42Z · depends_on, body: Desired UX (added); Acceptance criteria (added 2, removed 2); Notes for AI (added); Desired outcome (removed)
 - 2026-11-14T09:22:35Z · needs_input
+- 2026-11-14T15:04:27Z · cli_override, model_override
