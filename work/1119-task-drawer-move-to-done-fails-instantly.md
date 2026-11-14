@@ -5,11 +5,13 @@ type: feature
 status: inbox
 priority: p1
 area: web
-assigned_to: ""
+assigned_to: ai
 created_by: t@t
 branch: ""
+cli_override: codex
+model_override: gpt-6-luna
 created_at: "2026-11-14T16:14:26Z"
-updated_at: "2026-11-14T16:14:26Z"
+updated_at: "2026-11-14T16:14:29Z"
 ---
 ## Problem
 In the task drawer, clicking Move to done fails immediately with "Land anyway requires a reason of 1–1000 characters", before any close-out work starts. Cause: `src/ui-app/src/components/TaskDrawer.vue` binds the button as `@click="moveToDone"` (line about 5770), and Vue passes the click event as the first argument. `moveToDone(reason?: string)` (added by #1081 for the Land anyway override) treats the truthy event as a reason and calls `repo.completeTask(task, { landAnywayReason: <event> })`, which serialises to a non-string `landAnywayReason`; the server (`src/server/routes/tasks.ts`, done route) rejects it with a 400. Board-card Move to done (TaskCard.vue) and `repoos done` are unaffected. Present since #1081 landed, so in v0.5.83 and v0.5.84. Seen on #1117 on 2026-11-15.
@@ -30,3 +32,4 @@ Related: #1081 (introduced the reason parameter) and the audit that missed this.
 ## Activity
 
 - 2026-11-14T16:14:26Z · created · t@t
+- 2026-11-14T16:14:29Z · cli_override, model_override
