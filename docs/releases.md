@@ -171,6 +171,20 @@ resumes from `building` → `checking` → push. Just click **Cut** again with t
 same version. (When the failed cut already rolled its bump back, the retry
 simply bumps again — same result.)
 
+If pushing the release branch reports an error, RepoOS checks the remote branch
+before deciding the cut failed. If the remote already points at this exact
+version-bump commit, it proceeds to tagging instead of rolling back or pushing
+the branch again. If the tag step then fails, retrying the same version reuses
+the successful gate only when the remote still advertises that exact commit and
+the commit subject is the expected release bump (`src/server/release.ts`,
+covered by `src/ui-app/tests/release-status.test.ts`). A configured remote
+release check reports its validation outcome and failing host in the check
+detail; transient infrastructure failure fails the cut unless
+`remoteValidation.fallbackToLocal` is enabled. A test in
+`src/ui-app/tests/update-status.test.ts` scans test sources to prevent hard-coded
+current package-version literals, which otherwise become stale at the next
+release.
+
 ### Safe-churn checkpoint
 
 `repoos check` takes minutes, and RepoOS is self-hosted — a routine settings

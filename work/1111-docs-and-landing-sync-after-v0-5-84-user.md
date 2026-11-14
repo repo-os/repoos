@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 73456
-last_close_out_gate_at: "2026-11-14T09:40:12.493Z"
 id: "1111"
 title: "Docs and landing sync after v0.5.84: user-docs, docs site, landing page and llms files"
 type: feature
-status: review
+status: done
 priority: p2
 area: [docs, landing]
+merged_commit: 24b42dbe0b1ac24c5dcb96a8a119f0c8508832a1
 assigned_to: ai
 created_by: t@t
 branch: feat/docs-and-landing-sync-after-v0-5-84-user
@@ -14,6 +13,8 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T09:08:28Z"
 updated_at: "2026-11-14T09:40:12Z"
+last_close_out_gate_ms: 73456
+last_close_out_gate_at: "2026-11-14T09:40:12.493Z"
 review_passes: 2
 review_rounds: 1
 ---

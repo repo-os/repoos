@@ -57,6 +57,17 @@ sites before anyone visits them. A failed deploy is reported but does not fail
 the release: the tag is already public, so retry that branch from the
 Deployments page.
 
+If a branch push reports an error after the remote accepted the release bump,
+RepoOS checks whether the configured remote now points to that exact bump
+commit. When it does, the cut continues to the tag step. If a later tag step
+fails, retrying the same version reuses the successful gate only while that
+exact release commit remains at the remote branch tip. With remote release
+validation enabled, the check detail identifies the failed host; transient
+runner failures fail the cut unless `remoteValidation.fallbackToLocal` is on.
+The implementation and regression coverage are in `src/server/release.ts`,
+`src/ui-app/tests/release-status.test.ts`, and
+`src/ui-app/tests/update-status.test.ts`.
+
 Tags with a suffix — `v1.2.0-beta.1`, `v1.2.0-rc.1` — are treated as
 **prereleases**: they're flagged as such on GitHub so `GET /releases/latest`
 never hands a prerelease to a stable user, and they don't hide the last stable
