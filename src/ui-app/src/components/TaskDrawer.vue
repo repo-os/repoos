@@ -2389,11 +2389,15 @@ const doneProgress = computed(() => {
 
 async function moveToDone(reason?: string): Promise<void> {
   if (!ui.active || review.value?.running || inPipeline.value) return;
+  const landAnywayReason = typeof reason === "string" ? reason.trim() : "";
   ui.saving = true;
   doingDone.value = true;
   startDoneTimer();
   try {
-    await repo.completeTask(ui.active, reason ? { landAnywayReason: reason } : {});
+    await repo.completeTask(
+      ui.active,
+      landAnywayReason ? { landAnywayReason } : {},
+    );
     // The close-out pipeline just started — show its live progress instead
     // of a now-stale task drawer.
     ui.close();
@@ -5767,7 +5771,7 @@ watch(
                           ? 'Checks are still running.'
                           : (landableFailureTitle ?? 'Merge readiness has not passed.')
                 "
-                @click="moveToDone"
+                @click="moveToDone()"
               >
                 <CheckCheck v-if="!doingDone" class="size-3.5" />
                 <ActivityIndicator v-else />

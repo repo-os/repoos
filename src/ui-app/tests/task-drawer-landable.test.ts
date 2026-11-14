@@ -151,6 +151,78 @@ afterEach(() => {
 });
 
 describe("task drawer landing pre-checks (#0867)", () => {
+  it("posts an empty body from Move to done and preserves typed Land anyway reasons", async () => {
+    const green = {
+      ok: true,
+      taskId: "0001",
+      landable: true,
+      checks: [],
+      summary: { pass: 6, warn: 0, fail: 0 },
+    };
+    const normalPinia = setup();
+    const normalFetch = vi.fn(async (url: string) => {
+      if (url.includes("/landable")) return json(green);
+      if (url.includes("/api/health"))
+        return json({ ok: true, root: "/tmp/repo", taskCount: 1, workDir: "work" });
+      if (url.includes("/api/index"))
+        return json({ tasks: [reviewTask({ id: "0001" })], counts: { ...EMPTY_COUNTS, review: 1 }, taskCount: 1 });
+      if (url.includes("/api/agents/running") || url.includes("/api/agents/queued")) return json({ tasks: [] });
+      if (url.endsWith("/review")) return json({ ok: true, running: false, enabled: true, review: null, lines: [] });
+      if (url.includes("/output")) return json({ ok: true, lines: [], stats: {} });
+      return json({ ok: true });
+    });
+    vi.stubGlobal("fetch", normalFetch);
+    const normalTask = reviewTask({ id: "0001" });
+    useUiStore().open(normalTask);
+    const router = createRouter({ history: createMemoryHistory(), routes: [] });
+    await router.push("/");
+    await router.isReady();
+    const normal = mount(TaskDrawer, { global: { plugins: [normalPinia, router], stubs: { teleport: true, Transition: true } } });
+    await flush();
+    await moveToDone(normal)!.trigger("click");
+    await flush();
+    const normalCall = normalFetch.mock.calls.find(([url]) => url === "/api/tasks/0001/done");
+    expect(normalCall?.[1]).toMatchObject({ method: "POST" });
+    expect(normalCall?.[1]).not.toHaveProperty("body");
+    normal.unmount();
+
+    // The override dialog is available only when the review verdict is the sole
+    // landing failure; its submission must retain the operator's text.
+    const overridePinia = setup();
+    const task = reviewTask({ id: "0002" });
+    const overrideLanding = {
+      ...green,
+      taskId: "0002",
+      landable: false,
+      checks: [{ id: "review-verdict", label: "Review verdict", status: "fail", detail: 'latest review verdict is "needs some work"' }],
+      summary: { pass: 5, warn: 0, fail: 1 },
+    };
+    const overrideFetch = vi.fn(async (url: string) => {
+      if (url.includes("/landable")) return json(overrideLanding);
+      if (url.includes("/api/health")) return json({ ok: true, root: "/tmp/repo", taskCount: 1, workDir: "work" });
+      if (url.includes("/api/index")) return json({ tasks: [task], counts: { ...EMPTY_COUNTS, review: 1 }, taskCount: 1 });
+      if (url.includes("/api/agents/running") || url.includes("/api/agents/queued")) return json({ tasks: [] });
+      if (url.endsWith("/review")) return json({ ok: true, running: false, enabled: true, review: null, lines: [] });
+      if (url.includes("/output")) return json({ ok: true, lines: [], stats: {} });
+      return json({ ok: true });
+    });
+    vi.stubGlobal("fetch", overrideFetch);
+    useUiStore().open(task);
+    const overrideRouter = createRouter({ history: createMemoryHistory(), routes: [] });
+    await overrideRouter.push("/");
+    await overrideRouter.isReady();
+    const override = mount(TaskDrawer, { global: { plugins: [overridePinia, overrideRouter], stubs: { teleport: true, Transition: true } } });
+    await flush();
+    await override.findAll("button").find((button) => button.text().includes("Land anyway"))!.trigger("click");
+    await flush();
+    await override.find('textarea[required]').setValue("Accepting the remaining review risk");
+    await override.findAll("button").filter((button) => button.text().includes("Land anyway")).at(-1)!.trigger("click");
+    await flush();
+    const overrideCall = overrideFetch.mock.calls.find(([url]) => url === "/api/tasks/0002/done");
+    expect(JSON.parse(String(overrideCall?.[1]?.body))).toEqual({ landAnywayReason: "Accepting the remaining review risk" });
+    override.unmount();
+  });
+
   it("shows the same checklist and explains the first failing check on Move to done", async () => {
     const pinia = setup();
     const wrapper = await mountDrawer(pinia, reviewTask(), FAILING);

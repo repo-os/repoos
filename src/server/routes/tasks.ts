@@ -1,6 +1,13 @@
 import type { Status, Agent, Task, RepoOSConfig } from "../../core/types.js";
 import type { RouteHandler, RouteContext } from "./types.js";
 import { json, readBody } from "./utils.js";
+
+export function landAnywayReasonError(value: unknown): string | null {
+  if (typeof value !== "string") return "Land anyway reason must be a string";
+  const reason = value.trim();
+  if (!reason || reason.length > 1000) return "Land anyway requires a reason of 1–1000 characters";
+  return null;
+}
 import { agentsForConfig, bookkeepingDirs } from "../../core/config.js";
 import {
   patchTaskFile,
@@ -3180,9 +3187,8 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
       typeof doneBody.landAnywayReason === "string" ? doneBody.landAnywayReason.trim() : "";
     if (doneBody.landAnywayReason !== undefined) {
       const report = reviews.read(id);
-      if (!landAnywayReason || landAnywayReason.length > 1000) {
-        return json(res, 400, { error: "Land anyway requires a reason of 1–1000 characters" });
-      }
+      const reasonError = landAnywayReasonError(doneBody.landAnywayReason);
+      if (reasonError) return json(res, 400, { error: reasonError });
       if (
         !report ||
         report.state !== "ok" ||

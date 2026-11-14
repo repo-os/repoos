@@ -3185,14 +3185,16 @@ export const useRepoStore = defineStore("repo", () => {
     t: Task,
     opts: { commitDirty?: boolean; landAnywayReason?: string } = {},
   ): Promise<DoneResult> {
+    const landAnywayReason =
+      typeof opts.landAnywayReason === "string" ? opts.landAnywayReason.trim() : "";
     const raw = await fetch(`/api/tasks/${t.id}/done`, {
       method: "POST",
-      ...(opts.commitDirty || opts.landAnywayReason
+      ...(opts.commitDirty || landAnywayReason
         ? {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               ...(opts.commitDirty ? { commitDirty: true } : {}),
-              ...(opts.landAnywayReason ? { landAnywayReason: opts.landAnywayReason } : {}),
+              ...(landAnywayReason ? { landAnywayReason } : {}),
             }),
           }
         : {}),
