@@ -12,7 +12,7 @@ branch: feat/finish-touch-affordances-across-mobile-s
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-14T09:11:01Z"
-updated_at: "2026-11-14T17:24:47Z"
+updated_at: "2026-11-14T17:26:09Z"
 review_rounds: 1
 review_passes: 1
 dev_error_count: 5
@@ -40,47 +40,66 @@ On screens below 720px the floating heads (Ross, CTO, Debugger) must not reserve
 ```json
 [
 {
-"label": "Phone More sheet with agent actions when heads are hidden",
-"target": "default",
-"route": "/work",
-"highlight": ".mobile-more-sheet",
-"steps": [
-{
-"click": ".tab[aria-haspopup=\"dialog\"]"
-}
-],
-"viewportWidth": 390
+  "label": "Phone More sheet with agent actions when heads are hidden",
+  "target": "default",
+  "route": "/work",
+  "highlight": ".mobile-more-sheet",
+  "steps": [
+    {
+      "click": ".tab[aria-haspopup=\"dialog\"]"
+    }
+  ],
+  "viewportWidth": 390
 },
 {
-"label": "Phone Settings with floating heads preference",
-"target": "default",
-"route": "/settings?tab=general&section=themes",
-"highlight": "[data-test-id=\"floating-heads-setting\"]",
-"viewportWidth": 390
+  "label": "Phone Settings with floating heads preference",
+  "target": "default",
+  "route": "/settings?tab=general&section=themes",
+  "highlight": "[data-test-id=\"floating-heads-setting\"]",
+  "viewportWidth": 390
 },
 {
-"label": "Phone Work with floating agent buttons enabled",
-"target": "default",
-"route": "/work",
-"highlight": ".floating-heads .stack",
-"steps": [
-{
-"click": ".tabbar a.tab[href=\"/settings\"]"
+  "label": "Phone Work with floating agent buttons enabled",
+  "target": "default",
+  "route": "/work",
+  "highlight": ".floating-heads .stack",
+  "steps": [
+    {
+      "click": ".tabbar a.tab[href=\"/settings\"]"
+    },
+    {
+      "waitFor": "[data-test-id=\"floating-heads-setting\"]"
+    },
+    {
+      "click": "[data-test-id=\"floating-heads-setting\"] [aria-label=\"Show floating agent buttons\"]"
+    },
+    {
+      "click": ".tabbar a.tab[href=\"/work\"]"
+    },
+    {
+      "waitMs": 300
+    }
+  ],
+  "viewportWidth": 390
 },
 {
-"waitFor": "[data-test-id=\"floating-heads-setting\"]"
-},
-{
-"click": "[data-test-id=\"floating-heads-setting\"] [aria-label=\"Show floating agent buttons\"]"
-},
-{
-"click": ".tabbar a.tab[href=\"/work\"]"
-},
-{
-"waitMs": 300
-}
-],
-"viewportWidth": 390
+  "label": "Phone CTO from More replaces open task detail",
+  "target": "default",
+  "route": "/work?task=9999",
+  "highlight": ".floating-head-panel",
+  "steps": [
+    {
+      "click": ".tab[aria-haspopup=\"dialog\"]"
+    },
+    {
+      "click": "[data-test-id=\"mobile-more-open-cto\"]"
+    },
+    {
+      "waitMs": 400
+    }
+  ],
+  "state": "drawer:landableNarrow",
+  "viewportWidth": 390
 }
 ]
 ```
@@ -140,3 +159,4 @@ On screens below 720px the floating heads (Ross, CTO, Debugger) must not reserve
 - 2026-11-14T17:24:44Z · message_delivered: 1 message(s)
 - 2026-11-14T17:24:45Z · status review→active
 - 2026-11-14T17:24:47Z · CTO nudge: held — remote validation is running
+- 2026-11-14T17:26:09Z · body
