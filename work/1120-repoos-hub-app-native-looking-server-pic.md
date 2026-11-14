@@ -19,7 +19,6 @@ updated_at: "2026-11-14T20:52:43Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-14T19:32:26.888Z: repoos check failed: ui verification failed: runner result omitted the UI verification record: ui verification: capture of /?fixture=one&theme=gruvbox&appearance=light&platform=android failed — screenshot: Error: strict mode violation: locator('#app') resolved to 2 elements:"
 dev_error_count: 3
-engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-14T16:53:55.155Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-14T16:53:58.914Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-14T16:54:02.450Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 The RepoOS Hub Capacitor shell (mobile/, iOS and Android) is bare bones. Nick's current Android build (screenshot attached) shows a single dark theme, a "Device lock" panel pushed inline above the server list, text-arrow reorder buttons and a pencil glyph that look like web controls, flat unstyled server cards, and a plain "+ Add server" button. It has no color themes and no light mode, and the icons are not the set used by the web app. The device lock and any future preferences have nowhere proper to live. (The screenshot also shows the old "RepoOS" title, so it is a build from before the September "RepoOS Hub" rename.)
