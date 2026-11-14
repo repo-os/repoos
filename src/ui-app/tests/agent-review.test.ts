@@ -320,6 +320,39 @@ async function withServer(fx: Fixture, fn: (server: ServerHandle) => Promise<voi
 }
 
 describe("agent review before human sign-off (#0101)", () => {
+  it("gates follow-up creation before the freeze and rejects Land anyway without an eligible review", async () => {
+    const report = [
+      "## Verdict",
+      "needs some work because a concrete bug remains.",
+      "",
+      "## Bugs",
+      "- **Class: fixture-blocker** — src/example.ts has a blocking defect.",
+      "No further findings of this class were found after grepping: src/example.ts",
+      "",
+      "## Suggestions",
+      "- Consider a follow-up improvement.",
+    ].join("\n");
+    const fx = makeFixture(`process.stdout.write(${JSON.stringify(report)} + "\\n");`);
+    await withServer(fx, async (server) => {
+      const task = await taskWithWorktree(server, fx, "Review action route gates");
+      await requestReview(server, task.id, task.absPath);
+      await waitForAsync(
+        async () => (await getReview(server, task.id)).review?.state === "ok",
+        "review report",
+      );
+      await waitForHandoffSlotReleased(server, task.id);
+      const followup = await api(server, "POST", `/api/tasks/${task.id}/review/followup`);
+      expect(followup.status).toBe(409);
+      expect(followup.body.error).toMatch(/after the 4-pass review freeze/);
+
+      const landAnyway = await api(server, "POST", `/api/tasks/${task.id}/done`, {
+        landAnywayReason: "Accept the remaining non-blocking risk",
+      });
+      expect(landAnyway.status).toBe(409);
+      expect(landAnyway.body.error).toMatch(/current needs-some-work review with no blocking Bugs/);
+    });
+  }, 90_000);
+
   it("reviews the implementation when a task lands in review and stores the report", async () => {
     const fx = makeFixture(printReport);
     await withServer(fx, async (server) => {

@@ -159,6 +159,8 @@ export const DEFAULT_AGENTS: Agent[] = [
       "Before handoff, re-read the newest review report and any message sent to you; fix EVERY item, and when a " +
       "finding names a bug, find its whole class (grep sibling paths, callers, config/schema/docs/test " +
       "registrations) and fix all instances with a table-driven test instead of patching one. " +
+      "Before requesting review, self-review the change against that same checklist, including acceptance criteria, " +
+      "sibling paths, callers, config/schema/docs/test registrations, and both sides of fallbacks. " +
       "A new config key " +
       "needs a Settings control, a `getConfigSchema()` entry, an entry in the supported-keys list and docs. Run " +
       "the scoped check once and hand off only when it passes; end the final message with the handoff signal " +
@@ -180,7 +182,7 @@ export const DEFAULT_AGENTS: Agent[] = [
       "Reviews a task the moment it lands in `review`: reads the diff in the task's worktree and reports bugs, edge cases, and suggestions for the human signing off. " +
       "When there are no bugs, write exactly `None found` under Bugs (no trailing period); list what you checked under Edge cases or its own heading, not under Bugs. " +
       "Use the same exact text for empty Edge cases or Suggestions. " +
-      "Report the WHOLE CLASS of every bug in one pass: name its class (lifecycle/teardown ordering, unhandled spawn errors, config-key registration, import/export path rewriting, fallback handling, and the like), grep the diff and the files it touches for every other instance — sibling paths, callers, config/schema/docs/test registrations, and both sides of a fallback — and list them all in this one report instead of holding findings for later rounds. " +
+      "Do not stop at the first instance: report the WHOLE CLASS of every bug in one pass. Name its class (lifecycle/teardown ordering, unhandled spawn errors, config-key registration, import/export path rewriting, fallback handling, and the like), grep the diff and the files it touches for every other instance — sibling paths, callers, config/schema/docs/test registrations, and both sides of a fallback — and list them all in this one report instead of holding findings for later rounds. " +
       "Read the newest earlier review reports for the task first (the committed reports under `work/reports/<id>/`, newest pass first; older passes may be in the cache's `reviews/<id>/`), verify each finding was actually fixed, and never re-report a fixed item as new. " +
       "Separate code defects from evidence-only gaps: when the code is sound but a capture is wrong or stale, say `EVIDENCE-GAP-ONLY` or `STALE-EVIDENCE-ONLY`, and check that each declared shot's target and route can really render its declared state. " +
       "Evidence alone never blocks: when the ONLY findings are stale, missing or wrong captures, the verdict is `good to go`, and you name the affected captures under Suggestions so the human can look. A capture that shows a real visual defect is a bug, not an evidence gap. " +

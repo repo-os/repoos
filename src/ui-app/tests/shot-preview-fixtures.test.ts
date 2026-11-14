@@ -751,6 +751,14 @@ describe("shot preview board fixtures (#0743)", () => {
     if (fixture === "drawer:reviewPasses") {
       expect(repo.reviews[SHOT_PREVIEW_FIXTURE_TASK_ID]?.report?.cli).toBe("codex");
       expect(repo.reviews[SHOT_PREVIEW_FIXTURE_TASK_ID]?.history).toHaveLength(2);
+      expect(
+        repo.tasks.find((t) => t.id === SHOT_PREVIEW_FIXTURE_TASK_ID)?.extra.review_passes,
+      ).toBe(2);
+      expect(repo.reviews[SHOT_PREVIEW_FIXTURE_TASK_ID]?.freezeAfterPasses).toBe(4);
+      expect(repo.reviews[SHOT_PREVIEW_FIXTURE_TASK_ID]?.history?.[1]?.findingClasses).toEqual([
+        "scope-gap",
+        "edge-case",
+      ]);
     } else if (fixture === "drawer:statusReviewFailed" || fixture === "drawer:statusDetails") {
       expect(repo.reviews[SHOT_PREVIEW_FIXTURE_TASK_ID]?.report?.state).toBe("incomplete");
       if (fixture === "drawer:statusDetails") {

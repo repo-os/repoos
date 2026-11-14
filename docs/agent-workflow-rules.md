@@ -142,11 +142,14 @@ enforces four rules:
   section (any heading starting `Accepted scope`) is quoted into the prompt; the
   items it lists, and anything it explicitly supersedes, are not blocking.
 
-Slice 1 covers only the rules above. Enumeration closers, engineer self-review,
-auto-filed follow-ups, the `Land anyway` override and the `round N of ~4`
-convergence display are slice 2, tracked as a follow-up task. Housekeeping
-failures that waste rounds are #1076 (stray other-task bookkeeping in branches)
-and #1061 (bookkeeping commits invalidating checks).
+Slice 2 adds a grep-summary closer to `## Bugs`, engineer self-review against
+the same checklist, an explicit follow-up action after the freeze, per-pass
+finding-class history and the `round N of ~4` display. `Land anyway` accepts
+only a current `needs some work` report with no blocking Bugs and no other
+failing landing check; it records the human's reason and still runs the normal
+close-out pipeline. Housekeeping failures that waste rounds are #1076
+(stray other-task bookkeeping in branches) and #1061 (bookkeeping commits
+invalidating checks); neither is handled by this feature.
 
 ## Definition of done: the check plan in detail
 
@@ -479,3 +482,6 @@ cannot tell from the code alone:
   `git checkout main -- <them>` before merging. Anything but the task's own
   file is drift that will pollute another task's record. Background:
   `docs/close-out-pipeline.md`.
+# Review convergence (#1081)
+
+Review reports enumerate the complete class of each bug, label findings with a stable class name, and close `## Bugs` with a grep summary. The parser ignores that closing line. Engineers self-review using the same checklist before handoff. The task drawer shows class labels per review pass. After four completed passes, humans may create a separate follow-up task from non-blocking suggestions with `repoos review followup <id>`; this is an explicit action and never files work automatically. “Land anyway” accepts only a current `needs some work` verdict with no blocking Bugs and no other failing landing check. It records the reason and still uses the normal close-out pipeline.

@@ -929,15 +929,18 @@ export function reviewMission(
     "(route/label) on its own line. Write `None` when not applicable.",
     "",
     "## Bugs",
-    "Concrete defects, each with the file and what goes wrong.",
+    "Concrete defects, each beginning with a stable class label in this exact form: `- **Class: <short class name>** — <file and what goes wrong>`. Reuse the same class name across passes.",
     "List what you checked under ## Edge cases or its own heading, never under ## Bugs",
     "(unordered bullets after `None found` in Bugs are parsed as commentary, not findings).",
+    "End this section with exactly one line: `No further findings of this class were found after grepping: <list>`.",
+    "The list names the sibling paths, callers, config/schema/docs/test registrations and fallback sides you searched.",
     "",
     "## Edge cases",
     "Cases worth checking that the change may not handle.",
     "",
     suggestionsHeading,
     "Improvements worth making. Say so plainly when there are none.",
+    "",
   );
   return parts.join("\n");
 }
