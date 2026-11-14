@@ -258,14 +258,26 @@ adopted process is *alive but silent*, nothing bounded a queued message. The CTO
 nudge deliberately holds on `message-queued` (another reminder would only queue
 behind it) and `restart-stalled-agent` refuses while `isRunning()` is true, so
 the board could say "an undelivered message is already queued" for hours. The
-watchdog now runs `recoverSilentEngineerQueues()` each tick: when the OLDEST
-queued message has waited past an hour **and** the engineer has produced no
-output, **and** no known long-running work child (check, tests, browser, remote
-validation) is alive in its process group, the turn is ended with a clear
+watchdog now runs `recoverSilentEngineerQueues()` each tick: when the oldest
+queued message has waited past `watchdog.queuedMessageRecoverMs` (3 minutes by
+default) **and** the engineer has produced no output, **and** no known
+long-running work child (check, tests, browser, remote validation) is alive in
+its process group, the turn is ended with a clear
 Activity line (`queued message undelivered for Nm … ending the turn so it is
 delivered`). Ending the turn is what delivers the queue, so the engineer resumes
-with the message. Paused, handing-off and phantom-runner cases keep their own
-owners. The pure decision table lives in `src/core/queued-message-recovery.ts`.
+with the message. If there is no live engineer instead, the same configured
+queue age triggers the active-without-engineer recovery path, which restarts the
+engineer in its existing worktree and tells it to read queued messages. Both
+paths skip held, paused and human-assigned tasks; the restart path also respects
+closing-out, handoff and worktree activity guards. Paused, handing-off and
+phantom-runner cases keep their own owners. The live-turn decision table lives
+in `src/core/queued-message-recovery.ts`.
+
+Review runs that exit without a usable report are retried up to
+`review.failedReportRetries` times (default 2). The retry count is persisted,
+each retry is recorded in the review log, and exhausted tasks receive
+`needs_input` with the failure reason. Held, paused and human-assigned tasks are
+not automatically retried or escalated by this path.
 
 ### Previews and second servers
 

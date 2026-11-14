@@ -44,24 +44,53 @@ describe("planActiveWithoutEngineerRecovery (#0993)", () => {
     expect(plan).toEqual({ action: "recover" });
   });
 
-  it("skips held and human-assigned tasks", () => {
+  it.each([
+    ["held", { held: true }],
+    ["paused", { paused: true }],
+    ["human-assigned", { humanAssigned: true }],
+  ])(
+    "skips %s tasks even when an overdue queued message would trigger recovery",
+    (_name, guard) => {
+      expect(
+        planActiveWithoutEngineerRecovery({
+          task: baseTask(),
+          now: Date.now(),
+          windowMs: 180_000,
+          running: false,
+          queued: false,
+          handoffInFlight: false,
+          pendingHandoff: false,
+          paused: false,
+          held: false,
+          humanAssigned: false,
+          closingOut: false,
+          stoppedByPerson: false,
+          idleMs: 180_001,
+          ...guard,
+        }).action,
+      ).toBe("skip");
+    },
+  );
+
+  it("recovers a task when its queued message age reaches the shorter recovery window", () => {
+    const queuedMessageRecoverMs = 180_000;
     expect(
       planActiveWithoutEngineerRecovery({
         task: baseTask(),
         now: Date.now(),
-        windowMs: DEFAULT_ACTIVE_WITHOUT_ENGINEER_RECOVER_MS,
+        windowMs: queuedMessageRecoverMs,
         running: false,
         queued: false,
         handoffInFlight: false,
         pendingHandoff: false,
         paused: false,
-        held: true,
+        held: false,
         humanAssigned: false,
         closingOut: false,
         stoppedByPerson: false,
-        idleMs: DEFAULT_ACTIVE_WITHOUT_ENGINEER_RECOVER_MS + 1,
-      }).action,
-    ).toBe("skip");
+        idleMs: queuedMessageRecoverMs,
+      }),
+    ).toEqual({ action: "recover" });
   });
 });
 

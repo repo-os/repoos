@@ -93,7 +93,7 @@ const RECOVERY_INSTRUCTION = [
 
 export async function recoverActiveTasksWithoutEngineer(
   deps: ActiveWithoutEngineerRecoveryDeps,
-  opts: { now?: number } = {},
+  opts: { now?: number; queuedMessageRecoverMs?: number } = {},
 ): Promise<void> {
   const { config, index, runner, logger } = deps;
   const now = opts.now ?? Date.now();
@@ -107,10 +107,19 @@ export async function recoverActiveTasksWithoutEngineer(
     const task = parseFresh(config, indexed);
     const signal = readEngineerCleanExitSignal(task.body);
     const idleMs = now - lastActivityAfterActive(task.body);
+    const queuedMessageAgeMs = runner.oldestQueuedMessageAgeMs?.(task.id) ?? null;
+    const queuedMessageThresholdMs = opts.queuedMessageRecoverMs;
+    const overdueQueuedMessage =
+      queuedMessageAgeMs !== null &&
+      queuedMessageThresholdMs !== undefined &&
+      queuedMessageAgeMs >= queuedMessageThresholdMs;
+    const recoveryWindowMs = overdueQueuedMessage
+      ? Math.min(windowMs, queuedMessageThresholdMs)
+      : windowMs;
     const plan = planActiveWithoutEngineerRecovery({
       task,
       now,
-      windowMs,
+      windowMs: recoveryWindowMs,
       running: runner.isRunning(task.id),
       queued: typeof runner.isQueued === "function" ? runner.isQueued(task.id) : false,
       handoffInFlight: runner.isHandoffInFlight(task.id),
@@ -120,7 +129,7 @@ export async function recoverActiveTasksWithoutEngineer(
       humanAssigned,
       closingOut: isTaskClosingOut(config.root, config.cacheDir, task.id),
       stoppedByPerson: signal.stoppedByPerson,
-      idleMs,
+      idleMs: overdueQueuedMessage ? Math.max(idleMs, queuedMessageAgeMs ?? 0) : idleMs,
     });
     if (plan.action === "skip") continue;
 
@@ -130,7 +139,10 @@ export async function recoverActiveTasksWithoutEngineer(
       continue;
     }
 
-    if (task.branch && (await hasRecentWorktreeActivity(config.root, task.branch, windowMs, now))) {
+    if (
+      task.branch &&
+      (await hasRecentWorktreeActivity(config.root, task.branch, recoveryWindowMs, now))
+    ) {
       continue;
     }
 
@@ -146,7 +158,9 @@ export async function recoverActiveTasksWithoutEngineer(
     writeTask(
       config,
       task,
-      `watchdog: restarting engineer after ${Math.round(idleMs / 60_000)}m with no live process`,
+      overdueQueuedMessage
+        ? `watchdog: restarting engineer because a queued message waited ${Math.max(1, Math.round(queuedMessageAgeMs / 60_000))}m with no live process`
+        : `watchdog: restarting engineer after ${Math.round(idleMs / 60_000)}m with no live process`,
     );
     index.applyFileChange(task.absPath, { guarded: true });
 

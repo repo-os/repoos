@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 288398
-last_close_out_gate_at: "2026-11-14T12:27:48.948Z"
 id: "1108"
 title: "Auto-recover idle tasks: failed review pass and undelivered engineer message leave a task stuck for an hour"
 type: feature
-status: review
+status: done
 priority: p2
 area: [server, core]
+merged_commit: 92c40cb797353a0db45b8bac0daa8cb11435f9f4
 assigned_to: ai
 created_by: t@t
 branch: feat/auto-recover-idle-tasks-failed-review-pa
@@ -14,6 +13,8 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T08:27:35Z"
 updated_at: "2026-11-14T12:27:48Z"
+last_close_out_gate_ms: 288398
+last_close_out_gate_at: "2026-11-14T12:27:48.948Z"
 review_passes: 2
 review_rounds: 1
 handoff_signal_retry_count: 1

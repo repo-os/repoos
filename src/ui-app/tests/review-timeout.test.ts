@@ -10,11 +10,14 @@ import {
   DEFAULT_REVIEW_TIMEOUT_MINUTES,
   MAX_REVIEW_TIMEOUT_MINUTES,
   ReviewManager,
+  canAutoRecoverFailedReview,
   classifyReviewRunFailure,
   formatReviewTimeout,
   reviewTimeoutMinutes,
   reviewTimeoutRetryAllowed,
   reviewTimeoutRetryAttempts,
+  reviewFailedReportRetryAllowed,
+  reviewFailedReportRetryAttempts,
 } from "../../server/review.js";
 
 const tempDirs: string[] = [];
@@ -60,6 +63,59 @@ describe("review timeout config (#1019)", () => {
       step: 1,
     });
     expect(SUPPORTED_TOML_KEYS).toContain("review.timeoutMinutes");
+    expect(getConfigSchema().find((f) => f.key === "review.failedReportRetries")).toMatchObject({
+      type: "number",
+      tier: "live",
+      default: 2,
+      min: 0,
+      max: 5,
+    });
+    expect(withToml("[review]\nfailedReportRetries = 3\n").review?.failedReportRetries).toBe(3);
+    expect(SUPPORTED_TOML_KEYS).toContain("review.failedReportRetries");
+    expect(
+      getConfigSchema().find((f) => f.key === "watchdog.queuedMessageRecoverMs"),
+    ).toMatchObject({
+      type: "number",
+      tier: "live",
+      restartRequired: false,
+      default: 180_000,
+      min: 60_000,
+    });
+    expect(
+      withToml("[watchdog]\nqueuedMessageRecoverMs = 240000\n").watchdog?.queuedMessageRecoverMs,
+    ).toBe(240_000);
+    expect(SUPPORTED_TOML_KEYS).toContain("watchdog.queuedMessageRecoverMs");
+  });
+});
+
+describe("failed-review recovery guards (#1108)", () => {
+  it.each([
+    ["held", { isHeld: true }, false],
+    ["paused", {}, true],
+    ["human assigned", { assignee: "human" }, false],
+    ["assigned_to human", { assignedTo: "human" }, false],
+  ])("does not auto-recover a %s task", (_label, overrides, paused) => {
+    expect(
+      canAutoRecoverFailedReview(
+        {
+          id: "0001",
+          isArchived: false,
+          assignee: "ai",
+          assignedTo: "ai",
+          ...overrides,
+        } as Task,
+        paused,
+      ),
+    ).toBe(false);
+  });
+
+  it("allows a normal task to retry a failed report", () => {
+    expect(
+      canAutoRecoverFailedReview(
+        { id: "0001", isArchived: false, assignee: "ai", assignedTo: "ai" } as Task,
+        false,
+      ),
+    ).toBe(true);
   });
 });
 
@@ -98,6 +154,18 @@ describe("review timeout classification (#1019)", () => {
     const retried = task({ review_timeout_retries: 1 });
     expect(reviewTimeoutRetryAttempts(retried)).toBe(1);
     expect(reviewTimeoutRetryAllowed(retried)).toBe(false);
+  });
+
+  it("keeps timeout and failed-report retry budgets independent", () => {
+    const timeoutSpent = task({ review_timeout_retries: 1 });
+    expect(reviewTimeoutRetryAllowed(timeoutSpent)).toBe(false);
+    expect(reviewFailedReportRetryAttempts(timeoutSpent)).toBe(0);
+    expect(reviewFailedReportRetryAllowed(timeoutSpent, 2)).toBe(true);
+
+    const failedReportsSpent = task({ review_failed_report_retries: 2 });
+    expect(reviewFailedReportRetryAllowed(failedReportsSpent, 2)).toBe(false);
+    expect(reviewTimeoutRetryAttempts(failedReportsSpent)).toBe(0);
+    expect(reviewTimeoutRetryAllowed(failedReportsSpent)).toBe(true);
   });
 
   it("persists the timeout flag for the Review tab and activity note", async () => {

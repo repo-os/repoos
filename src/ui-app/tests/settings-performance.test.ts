@@ -154,6 +154,25 @@ describe("Settings — resource-control rows (#0836, #0961)", () => {
     wrapper.unmount();
   });
 
+  it("renders failed-review and queued-message recovery controls in Automation", async () => {
+    routeState.query = { tab: "general", section: "automation" };
+    const config = useConfigStore();
+    await config.load();
+    const wrapper = mount(SettingsView, {
+      attachTo: document.body,
+      global: { plugins: [pinia] },
+    });
+    await flushPromises();
+
+    const section = wrapper.get('[data-settings-section="automation"]');
+    for (const key of ["review.failedReportRetries", "watchdog.queuedMessageRecoverMs"]) {
+      const row = section.find(`[id="setting-${key}"]`);
+      expect(row.exists(), key).toBe(true);
+      expect(row.find('input[type="number"]').exists(), key).toBe(true);
+    }
+    wrapper.unmount();
+  });
+
   it("renders the restart hint before the Task browser work control", async () => {
     const config = useConfigStore();
     await config.load();
