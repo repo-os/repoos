@@ -1,6 +1,4 @@
 ---
-check_retry_count: 1
-last_check_failure: "repoos check at 2026-11-14T15:45:05.215Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Mobile task detail page (target \"default\"): highlight [data-testid=\"mobile-task-detail\"] matched nothing on /work?task=9999 (http://127.0.0.1:34333/work?shotState=card:noChanges)"
 id: "1114"
 title: Build mobile task details as a page or sheet
 type: feature
@@ -14,7 +12,9 @@ branch: feat/build-mobile-task-details-as-a-page-or-s
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T09:10:53Z"
-updated_at: "2026-11-14T15:45:05Z"
+updated_at: "2026-11-14T15:45:45Z"
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-14T15:45:05.215Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Mobile task detail page (target \"default\"): highlight [data-testid=\"mobile-task-detail\"] matched nothing on /work?task=9999 (http://127.0.0.1:34333/work?shotState=card:noChanges)"
 ---
 ## Problem
 The desktop task drawer shares a narrow viewport with the Work board and its tabs/actions are cramped on phones.
@@ -36,13 +36,18 @@ Read ADR 0011 and coordinate with #1113's route and queue state. Follow shared d
 ```json
 [
 {
-"label": "Mobile task detail page",
-"target": "default",
-"route": "/work?task=9999",
-"highlight": "[data-testid=\"mobile-task-detail\"]",
-"state": "card:noChanges",
-"viewportWidth": 390,
-"viewportHeight": 844
+  "label": "Mobile task detail page",
+  "target": "default",
+  "route": "/work",
+  "highlight": "[data-testid=\"mobile-task-detail\"]",
+  "steps": [
+    {
+      "click": "[data-task-id=\"9999\"] .mobile-task-card"
+    }
+  ],
+  "state": "card:noChanges",
+  "viewportWidth": 390,
+  "viewportHeight": 844
 }
 ]
 ```
@@ -83,4 +88,4 @@ Read ADR 0011 and coordinate with #1113's route and queue state. Follow shared d
 - 2026-11-14T15:45:01Z · note: ui verification failed: ui verification failed (1 issue(s)): [missing-target] Mobile task detail page (target "default"): highlight [data-testid="mobile-task-detail"] matched nothing on /work?task=9999 (http://127.0.0.1:34333/work?shotState=card:noChanges)
 - 2026-11-14T15:45:02Z · message_queued at 2026-11-14T15:45:02.063Z
 - 2026-11-14T15:45:05Z · message_delivered: 1 message(s)
-
+- 2026-11-14T15:45:45Z · body
