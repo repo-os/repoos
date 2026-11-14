@@ -460,6 +460,34 @@ describe("queued-message recovery wiring (#1015)", () => {
       fx.clean();
     }
   });
+
+  it.each([
+    ["held", (body: string) => body.replace("assigned_to: ai", "assigned_to: ai\ntags: [hold]")],
+    ["human-assigned", (body: string) => body.replace("assigned_to: ai", "assigned_to: human")],
+  ])("does not offer a %s task for queued-message recovery", async (_label, updateTask) => {
+    const fx = makeFx(600_000);
+    writeFileSync(fx.taskPath, updateTask(taskMd(600_000)));
+    const index = new LiveIndex(fx.config);
+    index.refreshAll();
+    const id = parseTaskAt(fx).id;
+    const recovered: string[] = [];
+    const runner = {
+      hasQueuedMessages: () => true,
+      recoverSilentEngineerWithQueuedMessage: async (taskId: string) => {
+        recovered.push(taskId);
+        return true;
+      },
+    } as unknown as AgentRunner;
+    try {
+      const watchdog = new TaskWatchdog(fx.config, index, runner, 600_000);
+      await (
+        watchdog as unknown as { recoverSilentEngineerQueues(): Promise<void> }
+      ).recoverSilentEngineerQueues();
+      expect(recovered).toEqual([]);
+    } finally {
+      fx.clean();
+    }
+  });
 });
 
 describe("autoTransitionTarget", () => {

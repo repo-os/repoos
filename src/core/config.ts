@@ -3153,7 +3153,7 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       min: 60000,
       step: 60000,
       description:
-        "Minutes a queued engineer message may wait before RepoOS ends a silent engineer turn so the message is delivered. Default 3 minutes.",
+        "Minutes a queued engineer message may wait before RepoOS recovers delivery: it ends a live silent turn or restarts a missing engineer in the same worktree. Held, paused and human-assigned tasks are skipped. Default 3 minutes.",
     },
     {
       key: "watchdog.engineerCrashFailoverThreshold",

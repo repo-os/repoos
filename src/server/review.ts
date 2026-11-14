@@ -173,6 +173,17 @@ export type ReviewRunOptions = {
   trigger?: ReviewRunTrigger;
 };
 
+/** Automatic no-report retries must leave deliberately human-owned tasks alone. */
+export function canAutoRecoverFailedReview(task: Task, paused: boolean): boolean {
+  return (
+    !task.isArchived &&
+    task.assignee !== "human" &&
+    task.assignedTo.trim().toLowerCase() !== "human" &&
+    !isHoldActive(task) &&
+    !paused
+  );
+}
+
 /** Review failed only because handoff evidence is stale (#0766). */
 export function isStaleEvidenceOnlyReview(report: string, verdict: string | null): boolean {
   const section = reviewVerdictSection(report);
@@ -2020,6 +2031,7 @@ export class ReviewManager {
     const timeoutRetryScheduled = failure === "timeout" && this.canRetryTimedOutReview(task);
     const failedReportRetryScheduled =
       failure === "no-output" &&
+      !this.isAutoRecoveryExcluded(task) &&
       this.timeoutRetryAttempts(task) <
         Math.max(0, Math.min(5, Math.floor(this.config.review?.failedReportRetries ?? 2)));
     const error =
@@ -2126,10 +2138,8 @@ export class ReviewManager {
         if (
           !current ||
           current.status !== "review" ||
-          current.isArchived ||
-          current.assignee === "human" ||
-          current.needsInput ||
-          isHoldActive(current)
+          this.isAutoRecoveryExcluded(current) ||
+          current.needsInput
         )
           return;
         void this.run(current, { trigger: REVIEW_RUN_TRIGGERS.WATCHDOG_STUCK_REVIEW });
@@ -2161,6 +2171,7 @@ export class ReviewManager {
       state === "failed" &&
       !timeoutRetryScheduled &&
       !failedReportRetryScheduled &&
+      !this.isAutoRecoveryExcluded(task) &&
       !task.needsInput
     ) {
       try {
@@ -3224,6 +3235,11 @@ export class ReviewManager {
   private timeoutRetryAttempts(task: Pick<Task, "id" | "extra">): number {
     const inMemory = this.timeoutRetries.get(task.id);
     return inMemory !== undefined ? inMemory : reviewTimeoutRetryAttempts(task);
+  }
+
+  /** Automatic reviewer recovery is inert for tasks deliberately owned by a human. */
+  private isAutoRecoveryExcluded(task: Task): boolean {
+    return !canAutoRecoverFailedReview(task, this.runner?.isPaused(task.id) === true);
   }
 
   private canRetryTimedOutReview(task: Pick<Task, "id" | "extra">): boolean {
