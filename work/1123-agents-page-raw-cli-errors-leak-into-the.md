@@ -72,3 +72,4 @@ Build on #1098 (src/core/agent-failure.ts, `splitAgentFailureDetail`). Related: 
 - 2026-11-14T19:06:55Z · message_delivered: 1 message(s)
 - 2026-11-14T19:07:43Z · body
 - 2026-11-14T19:08:53Z · message_queued at 2026-11-14T19:08:53.084Z
+- 2026-11-14T19:08:53Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
