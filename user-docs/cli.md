@@ -600,7 +600,7 @@ manual command instead of claiming success. It never touches another repo's
 server and refuses when the pid belongs to another user (it never escalates to
 sudo).
 
-### `repoos servers [--json] [--prune]`
+### `repoos servers [--json] [--prune] [--tailscale]`
 
 Lists every control-plane `repoos serve` that registered itself under
 `~/.repoos/servers/` (one `<port>.json` per listener). Shows port, project
@@ -611,6 +611,15 @@ looks healthy (PID alive and `/api/health` reports the same root).
 `/api/health` is unreachable or reports a different root), then lists the rest.
 `--json` prints the same data for scripts. Preview servers and task worktree
 serves never register. The Hub uses the same registry to discover local servers.
+
+`--tailscale` adds servers from online Tailscale peers by running
+`repoos servers --json` over SSH. It uses `tailscale status --json` to discover
+peers, or the hosts configured under `remoteValidation.tailscaleHosts` if the
+Tailscale CLI is unavailable. Each host has a short timeout; failed hosts appear
+as `unreachable` with a reason, while the rest of the list is still shown. The
+JSON output includes a `host` field for every entry. If Tailscale is unavailable,
+the command says so and still prints local servers. `--prune` is local-only and
+cannot be combined with `--tailscale`.
 
 ### `repoos status [--json]`
 
