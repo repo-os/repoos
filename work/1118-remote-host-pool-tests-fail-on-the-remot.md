@@ -40,3 +40,4 @@ Read docs/debugging-check-failures.md. Precedents: #1099, #1101, #1107. Related 
 - 2026-11-14T13:19:14Z · engineer stopped by request
 - 2026-11-14T13:45:14Z · body
 - 2026-11-14T14:16:49Z · message_queued at 2026-11-14T14:16:49.748Z
+- 2026-11-14T14:16:49Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
