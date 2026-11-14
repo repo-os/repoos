@@ -12,7 +12,7 @@ branch: feat/build-a-single-column-mobile-work-queue
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T09:10:48Z"
-updated_at: "2026-11-14T13:45:50Z"
+updated_at: "2026-11-14T13:46:49Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-14T13:42:08.530Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Single-column mobile Work queue (target \"default\"): highlight [data-testid=\"mobile-work-queue\"] matched nothing on /work (http://127.0.0.1:34977/work)"
 ---
@@ -65,3 +65,4 @@ Read ADR 0011 and the shell contract in #1112. Inspect and reuse the existing ta
 - 2026-11-14T13:42:40Z · message_delivered: 1 message(s)
 - 2026-11-14T13:43:04Z · body
 - 2026-11-14T13:45:50Z · body
+- 2026-11-14T13:46:49Z · CTO nudge: held — handoff gate is running
