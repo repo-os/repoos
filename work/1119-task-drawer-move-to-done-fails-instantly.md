@@ -3,9 +3,6 @@ id: "1119"
 title: "Task drawer Move to done fails instantly: click event is sent as the land-anyway reason"
 type: feature
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: Reading additional input from stdin...
 priority: p1
 area: web
 assigned_to: ai
@@ -14,7 +11,7 @@ branch: feat/task-drawer-move-to-done-fails-instantly
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T16:14:26Z"
-updated_at: "2026-11-14T16:48:42Z"
+updated_at: "2026-11-14T16:48:43Z"
 dev_error_count: 2
 engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-14T16:48:38.797Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-14T16:48:42.502Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -50,3 +47,4 @@ Related: #1081 (introduced the reason parameter) and the audit that missed this.
 - 2026-11-14T16:48:39Z · message_delivered: 1 message(s)
 - 2026-11-14T16:48:42Z · agent exited with an error (codex) · Reading additional input from stdin...
 - 2026-11-14T16:48:42Z · engineer crash recovery: resuming codex + gpt-6-luna (2/3 crashes in 30m) · Reading additional input from stdin...
+- 2026-11-14T16:48:43Z · needs_input
