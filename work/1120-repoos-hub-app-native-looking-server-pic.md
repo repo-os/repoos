@@ -3,8 +3,6 @@ id: "1120"
 title: "RepoOS Hub app: native-looking server picker, web color themes with light/dark, better icons, and a Settings page"
 type: feature
 status: active
-needs_input: true
-needs_input_reason: needs-human-step
 human_step_override: Cleared needs-human-step flag (sticky until acceptance criteria change)
 human_step_override_key: f531bd01
 priority: p2
@@ -134,3 +132,4 @@ Read docs/mobile-architecture.md, docs/adr/0011-mobile-web-ui.md (the native she
 - 2026-11-14T21:44:55Z · engineer stopped by request
 - 2026-11-14T21:44:56Z · needs_input
 - 2026-11-14T21:44:56Z · needs_input
+- 2026-11-14T21:44:57Z · needs_input
