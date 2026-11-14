@@ -12,7 +12,7 @@ branch: feat/repoos-servers-tailscale-list-repoos-ser
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T03:22:32Z"
-updated_at: "2026-11-14T05:20:18Z"
+updated_at: "2026-11-14T05:38:10Z"
 last_close_out_gate_ms: 638016
 last_close_out_gate_at: "2026-11-14T05:20:02.401Z"
 review_passes: 2
@@ -56,3 +56,4 @@ Reuse `src/core/tailscale.ts` and `src/core/remote-hosts.ts`. Do not add a runti
 - 2026-11-14T05:01:22Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-14T05:20:02Z · close-out gate completed in 638s
 - 2026-11-14T05:20:18Z · status done→done, release:success
+- 2026-11-14T05:38:10Z · message_dropped: 1 queued message(s) discarded — task is done
