@@ -123,3 +123,4 @@ Read docs/mobile-architecture.md, docs/adr/0011-mobile-web-ui.md (the native she
 - 2026-11-14T21:18:53Z · message_queued at 2026-11-14T21:18:53.265Z
 - 2026-11-14T21:18:53Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-14T21:22:00Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-14T21:22:00Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: Canonical shots are already `[]`. Restoring an accidental `repoos.toml` edit, then running the check and requesting handoff. · stderr: (empty)
