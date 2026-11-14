@@ -2,7 +2,7 @@
 id: "1115"
 title: Build a mobile Settings composition
 type: feature
-status: active
+status: review
 priority: p1
 area: web
 depends_on: ["1112"]
@@ -12,7 +12,7 @@ branch: feat/build-a-mobile-settings-composition
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T09:10:57Z"
-updated_at: "2026-11-14T14:52:38Z"
+updated_at: "2026-11-14T15:07:05Z"
 close_out_repair_count: 1
 review_passes: 1
 last_check_failure: "repoos check at 2026-11-14T13:38:26.548Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Mobile Settings section navigation (target \"default\"): highlight .settings-mobile-nav matched nothing on /settings?tab=general (http://127.0.0.1:33599/settings?tab=general)"
@@ -72,3 +72,4 @@ Read ADR 0011 and reuse existing Settings tabs, config schema and shared dialog/
 - 2026-11-14T14:52:16Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-14T14:52:18Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-14T14:52:38Z · message_delivered: 1 message(s)
+- 2026-11-14T15:07:05Z · status active→review
