@@ -166,3 +166,4 @@ Read docs/mobile-architecture.md, docs/adr/0011-mobile-web-ui.md (the native she
 - 2026-11-14T22:29:31Z · watchdog: restarting engineer because a queued message waited 3m with no live process
 - 2026-11-14T22:29:32Z · message_delivered: 1 message(s)
 - 2026-11-14T22:38:53Z · message_queued at 2026-11-14T22:38:53.308Z
+- 2026-11-14T22:38:53Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
