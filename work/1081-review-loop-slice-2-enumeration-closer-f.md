@@ -12,7 +12,7 @@ branch: feat/review-loop-slice-2-enumeration-closer-f
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-09T13:59:41Z"
-updated_at: "2026-11-13T14:30:05Z"
+updated_at: "2026-11-14T01:14:31Z"
 review_passes: 2
 last_check_failure: "repoos check at 2026-11-13T11:57:06.465Z: repoos check failed: tests — tests/handoff-unification.test.ts > the runner finalizes a `repoos mv review` request at turn end (#0507) > ignores a marker left behind by an earlier turn — at check tests/handoff-unification.test.ts:156:50 — Error: timeout: the turn ends"
 review_rounds: 1
