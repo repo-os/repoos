@@ -12,7 +12,7 @@ branch: feat/finish-touch-affordances-across-mobile-s
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-14T09:11:01Z"
-updated_at: "2026-11-14T18:02:52Z"
+updated_at: "2026-11-14T18:05:27Z"
 review_rounds: 1
 review_passes: 1
 dev_error_count: 5
@@ -167,3 +167,4 @@ On screens below 720px the floating heads (Ross, CTO, Debugger) must not reserve
 - 2026-11-14T17:42:39Z · message_delivered: 1 message(s)
 - 2026-11-14T18:02:12Z · body
 - 2026-11-14T18:02:52Z · status active→review
+- 2026-11-14T18:05:27Z · note: shots: failed — browser capture cancelled
