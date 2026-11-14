@@ -76,6 +76,32 @@ function git({
 }
 
 describe("git-tag release status", () => {
+  it("continues to tagging when a failed push nevertheless updated remote main", async () => {
+    const cfg = config();
+    const calls: string[] = [];
+    const runner: ReleaseCommandRunner = async (command, args) => {
+      const key = args.join(" ");
+      calls.push(`${command} ${key}`);
+      if (command !== "git") return { code: 0, stdout: "check passed", stderr: "" };
+      if (key === "push origin main") {
+        // The fake remote accepts the ref update, then the client loses its
+        // acknowledgement and exits nonzero.
+        return { code: 128, stdout: "", stderr: "fatal: the remote end hung up unexpectedly" };
+      }
+      if (key === "ls-remote origin refs/heads/main")
+        return { code: 0, stdout: "abc123\trefs/heads/main\n", stderr: "" };
+      if (["add", "commit", "push"].includes(args[0]) || (args[0] === "tag" && args[1] === "-a"))
+        return { code: 0, stdout: "", stderr: "" };
+      return git()("git", args, cfg.root);
+    };
+
+    const result = await cutNewRelease(cfg, "1.2.4", "v1.2.4", runner);
+
+    expect(result.ok).toBe(true);
+    expect(calls).toContain("git ls-remote origin refs/heads/main");
+    expect(calls).toContain("git push origin v1.2.4");
+  });
+
   it("is invisible when no repository opts in", async () => {
     const status = await getReleaseStatus({ ...config(), release: undefined }, git());
     expect(status).toMatchObject({ enabled: false, ready: false });
@@ -440,6 +466,33 @@ describe("release gate CLI selection (#0780)", () => {
   function writeManifest(cfg: RepoOSConfig, manifest: Record<string, unknown>): void {
     writeFileSync(join(cfg.root, "package.json"), JSON.stringify(manifest));
   }
+
+  it("resumes at tagging when the release commit is already the advertised main head", async () => {
+    const cfg = config();
+    writeManifest(cfg, { version: "1.2.4" });
+    const calls: string[] = [];
+    const result = await cutNewRelease(
+      cfg,
+      "1.2.4",
+      "v1.2.4",
+      releaseRunner(cfg, calls, {
+        gitOverrides: {
+          "log origin/main..HEAD --format=%s": { code: 0, stdout: "", stderr: "" },
+          "log -1 --format=%s": { code: 0, stdout: "release: v1.2.4\n", stderr: "" },
+          "ls-remote origin refs/heads/main": {
+            code: 0,
+            stdout: "abc123\trefs/heads/main\n",
+            stderr: "",
+          },
+        },
+      }),
+    );
+
+    expect(result.ok).toBe(true);
+    expect(calls).not.toContain("bun run build");
+    expect(calls.some((call) => call.includes("check"))).toBe(false);
+    expect(calls).toContain("git push origin v1.2.4");
+  });
 
   it("detects a bin target pointing at dist/cli/index.js", () => {
     const stringBin = config();

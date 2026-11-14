@@ -137,6 +137,16 @@ const FAST = {
 };
 
 describe("classifyRemoteExecFailure (#0745)", () => {
+  it("classifies git exit 128 as a host problem, not a test failure", () => {
+    const cls = classifyRemoteExecFailure({
+      code: 128,
+      output: "fatal: could not read from remote repository",
+      timedOut: false,
+    });
+    expect(cls.kind).toBe("infra");
+    expect(cls.transient).toBe(true);
+  });
+
   it("treats EACCES during install as infra without a gate exit marker", () => {
     const cls = classifyRemoteExecFailure({
       code: 4,
@@ -151,6 +161,15 @@ describe("classifyRemoteExecFailure (#0745)", () => {
       code: 1,
       timedOut: false,
       output: "[validate] gate exit 1\nFAIL src/a.test.ts > x\n",
+    });
+    expect(cls).toMatchObject({ kind: "test", transient: false, markHostDegraded: false });
+  });
+
+  it("keeps a gate failure classified as test when output also contains a git fatal", () => {
+    const cls = classifyRemoteExecFailure({
+      code: 128,
+      timedOut: false,
+      output: "fatal: could not read from remote repository\n[validate] gate exit 128\n",
     });
     expect(cls).toMatchObject({ kind: "test", transient: false, markHostDegraded: false });
   });

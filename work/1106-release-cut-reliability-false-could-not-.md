@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-14T07:22:35Z"
-review_passes: 2
 id: "1106"
 title: "Release cut reliability: false 'Could not push main' failure, remote-host git errors, and test time bombs"
 type: feature
@@ -13,7 +11,7 @@ branch: feat/release-cut-reliability-false-could-not-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T05:18:12Z"
-review_rounds: 1
+updated_at: "2026-11-14T06:01:22Z"
 ---
 ## Problem
 Cutting v0.5.83 (2026-11-14) took six attempts. Four distinct causes, all in the release path:
@@ -41,26 +39,4 @@ Start from src/server/release.ts (`cutNewRelease`, phases `pushing_main`, `check
 - 2026-11-14T05:18:19Z · cli_override, model_override
 - 2026-11-14T05:18:21Z · status inbox→ready
 - 2026-11-14T05:18:23Z · status ready→active, branch
-- 2026-11-14T05:23:01Z · note: adopted orphaned engineer pid 3425
-- 2026-11-14T05:27:52Z · body
-- 2026-11-14T05:49:44Z · body
-- 2026-11-14T05:58:01Z · message_queued at 2026-11-14T05:58:01.299Z
-- 2026-11-14T05:58:01Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-14T05:59:13Z · body
 - 2026-11-14T06:01:22Z · status active→review
-- 2026-11-14T06:01:22Z · message_queued at 2026-11-14T06:01:22.704Z
-- 2026-11-14T06:01:22Z · note: shots: skipped — the diff (8 changed paths) touches no capture target's globs — no UI change to capture
-- 2026-11-14T06:01:40Z · note: review pass 1: failed — no usable report
-- 2026-11-14T06:01:40Z · needs_input
-- 2026-11-14T07:10:06Z · needs_input (review-failed) cleared for review again by human
-- 2026-11-14T07:12:11Z · note: review pass 2: needs some work
-- 2026-11-14T07:12:11Z · message_overdue: still queued after 60m without being delivered
-- 2026-11-14T07:12:11Z · message_delivered: 1 message(s)
-- 2026-11-14T07:12:12Z · status review→active
-- 2026-11-14T07:14:56Z · note: adopted orphaned engineer pid 58222
-- 2026-11-14T07:20:26Z · body
-- 2026-11-14T07:21:42Z · status active→review
-- 2026-11-14T07:21:42Z · note: shots: skipped — the diff (10 changed paths) touches no capture target's globs — no UI change to capture
-- 2026-11-14T07:22:12Z · message_queued at 2026-11-14T07:22:12.154Z
-- 2026-11-14T07:22:35Z · note: review pass 3: good to go
-
