@@ -2,7 +2,7 @@
 id: "1115"
 title: Build a mobile Settings composition
 type: feature
-status: active
+status: review
 priority: p1
 area: web
 depends_on: ["1112"]
@@ -12,7 +12,7 @@ branch: feat/build-a-mobile-settings-composition
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T09:10:57Z"
-updated_at: "2026-11-14T13:19:10Z"
+updated_at: "2026-11-14T13:44:40Z"
 ---
 ## Problem
 Settings uses desktop navigation and dense grouped controls that become cramped on narrow screens.
@@ -39,3 +39,4 @@ Read ADR 0011 and reuse existing Settings tabs, config schema and shared dialog/
 - 2026-11-14T13:19:03Z · cli_override, model_override
 - 2026-11-14T13:19:08Z · status inbox→ready
 - 2026-11-14T13:19:10Z · status ready→active, branch
+- 2026-11-14T13:44:40Z · status active→review
