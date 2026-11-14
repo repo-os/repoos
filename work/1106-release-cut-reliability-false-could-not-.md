@@ -3,6 +3,9 @@ id: "1106"
 title: "Release cut reliability: false 'Could not push main' failure, remote-host git errors, and test time bombs"
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-failed
+needs_input_detail: "the cursor agent exited without output: Error: [internal] read EADDRNOTAVAIL"
 priority: p2
 area: [server, core]
 assigned_to: ai
@@ -49,3 +52,4 @@ Start from src/server/release.ts (`cutNewRelease`, phases `pushing_main`, `check
 - 2026-11-14T06:01:22Z · message_queued at 2026-11-14T06:01:22.704Z
 - 2026-11-14T06:01:22Z · note: shots: skipped — the diff (8 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-14T06:01:40Z · note: review pass 1: failed — no usable report
+- 2026-11-14T06:01:40Z · needs_input
