@@ -1,10 +1,15 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, ref, watch } from "vue";
+import { storeToRefs } from "pinia";
 import { navFromConfig } from "../nav";
 import { useConfigStore } from "../stores/config";
+import { useRepoStore } from "../stores/repo";
 import { useFloatingHeadsPreference } from "../composables/useFloatingHeadsPreference.js";
+import { floatingHeadEnabled, type FloatingHeadId } from "../lib/floating-head-agents.js";
 
 const config = useConfigStore();
+const repo = useRepoStore();
+const { health } = storeToRefs(repo);
 const { visible: floatingHeadsVisible } = useFloatingHeadsPreference();
 const open = ref(false);
 const moreButton = ref<HTMLButtonElement | null>(null);
@@ -20,11 +25,21 @@ const secondary = computed(() =>
     .filter((item) => item.id !== "work" && item.id !== "settings")
     .map((item) => (item.id === "dashboard" ? { ...item, label: "Activity" } : item)),
 );
-const agentShortcuts = [
+const agentShortcuts: { id: FloatingHeadId; label: string; event: string }[] = [
   { id: "cto", label: "Open CTO", event: "repoos:open-cto" },
   { id: "ross", label: "Open Ross", event: "repoos:open-ross" },
   { id: "debugger", label: "Open Debugger", event: "repoos:open-debugger" },
 ];
+const previewBuild = computed(() => health.value?.isPreviewBuild ?? false);
+const visibleAgentShortcuts = computed(() =>
+  agentShortcuts.filter((agent) =>
+    floatingHeadEnabled(agent.id, {
+      agents: config.agents,
+      configData: config.data as Record<string, unknown> | null,
+      previewBuild: previewBuild.value,
+    }),
+  ),
+);
 
 function openSearch(): void {
   window.dispatchEvent(new Event("repoos:open-search"));
@@ -98,10 +113,11 @@ window.addEventListener("keydown", onKeydown);
           </RouterLink>
           <template v-if="!floatingHeadsVisible">
             <button
-              v-for="agent in agentShortcuts"
+              v-for="agent in visibleAgentShortcuts"
               :key="agent.id"
               type="button"
               class="mobile-more-link mobile-more-agent-link"
+              :data-test-id="`mobile-more-open-${agent.id}`"
               @click="openAgent(agent.event)"
             >
               <span class="mobile-more-icon" aria-hidden="true">✦</span>
