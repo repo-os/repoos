@@ -52,3 +52,4 @@ Read docs/debugging-check-failures.md and the [[check.steps]] plan in repoos.tom
 - 2026-11-14T15:08:26Z · CTO nudge: held — handoff gate is running
 - 2026-11-14T15:08:53Z · status active→review
 - 2026-11-14T15:08:53Z · message_queued at 2026-11-14T15:08:53.470Z
+- 2026-11-14T15:08:53Z · note: shots: skipped — the diff (5 changed paths) touches no capture target's globs — no UI change to capture
