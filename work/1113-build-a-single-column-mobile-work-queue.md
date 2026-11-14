@@ -12,7 +12,7 @@ branch: feat/build-a-single-column-mobile-work-queue
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T09:10:48Z"
-updated_at: "2026-11-14T13:37:31Z"
+updated_at: "2026-11-14T13:41:49Z"
 ---
 ## Problem
 The desktop Work board uses dense multi-column scanning and pointer-oriented interactions. It is difficult to scan and operate on a phone.
@@ -55,3 +55,4 @@ Read ADR 0011 and the shell contract in #1112. Inspect and reuse the existing ta
 - 2026-11-14T13:23:22Z · body
 - 2026-11-14T13:32:39Z · body
 - 2026-11-14T13:37:31Z · body
+- 2026-11-14T13:41:49Z · CTO nudge: held — handoff gate is running
