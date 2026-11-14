@@ -11,7 +11,7 @@ branch: feat/github-copilot-agent-support-the-new-mod
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-14T17:41:02Z"
-updated_at: "2026-11-14T17:54:57Z"
+updated_at: "2026-11-14T17:56:39Z"
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -35,15 +35,15 @@ Read work/1088-*.md and src/core/copilot-auto-tier.ts first. Copilot usage is bi
 ```json
 [
 {
-  "label": "GitHub Copilot named models in picker",
-  "target": "default",
-  "route": "/agents",
-  "highlight": ".agents-page-title",
-  "steps": [
-    {
-      "click": "button:has-text(\"Coding agents\")"
-    }
-  ]
+"label": "GitHub Copilot named models in picker",
+"target": "default",
+"route": "/agents",
+"highlight": ".agents-page-title",
+"steps": [
+  {
+    "click": "button:has-text(\"Coding agents\")"
+  }
+]
 }
 ]
 ```
@@ -62,3 +62,4 @@ Read work/1088-*.md and src/core/copilot-auto-tier.ts first. Copilot usage is bi
 - 2026-11-14T17:46:27Z · message_queued at 2026-11-14T17:46:27.053Z
 - 2026-11-14T17:48:53Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-14T17:54:57Z · body
+- 2026-11-14T17:56:39Z · queued message undelivered for 10m and the engineer produced no output — ending the turn so it is delivered
