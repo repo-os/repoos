@@ -76,11 +76,13 @@ import {
   type ActivityAnimationStyle,
 } from "../../../core/activity-animation.js";
 import type { ConfigField } from "../types";
+import { useResponsiveLayout } from "../composables/useResponsiveLayout";
 
 const config = useConfigStore();
 const ui = useUiStore();
 const repo = useRepoStore();
 const notifications = useNotificationsStore();
+const { isNarrow } = useResponsiveLayout();
 // Canonical list from the store (0606): task attention types plus the
 // release-event kinds, each with its label + description defined beside it.
 const notificationTypes: NotificationType[] = NOTIFICATION_TYPES;
@@ -1208,6 +1210,19 @@ onUnmounted(() => {
     />
 
     <!-- Tab strip -->
+    <nav v-if="isNarrow" class="settings-mobile-nav" aria-label="Settings sections">
+      <button
+        v-for="tab in TABS"
+        :key="tab.id"
+        type="button"
+        class="settings-mobile-nav-btn"
+        :class="{ active: activeTab === tab.id }"
+        :aria-current="activeTab === tab.id ? 'page' : undefined"
+        @click="setTab(tab.id)"
+      >
+        {{ tab.label }}
+      </button>
+    </nav>
     <div ref="tablistRef" class="settings-tabs" role="tablist" aria-label="Settings sections">
       <button
         v-for="(tab, idx) in TABS"

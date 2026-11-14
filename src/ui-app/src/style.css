@@ -9724,6 +9724,9 @@
   outline-offset: -2px;
   border-radius: 4px 4px 0 0;
 }
+.settings-mobile-nav {
+  display: none;
+}
 
 /* settings sections (#0800): named, linkable anchors inside a tab */
 .settings-section {
@@ -10077,6 +10080,95 @@
 }
 .toml-card {
   padding: 0 18px;
+}
+@media (max-width: 719.98px) {
+  .settings-page {
+    min-width: 0;
+    overflow-x: clip;
+    padding-inline: 14px;
+  }
+  .settings-mobile-nav {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    margin: 0 0 18px;
+    padding: 12px;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: var(--panel-solid);
+  }
+  .settings-mobile-nav-btn {
+    min-width: 0;
+    min-height: 44px;
+    padding: 9px 10px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: transparent;
+    color: var(--txt-dim);
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    text-align: left;
+    overflow-wrap: anywhere;
+    cursor: pointer;
+  }
+  .settings-mobile-nav-btn.active {
+    border-color: var(--cyan);
+    background: color-mix(in srgb, var(--cyan) 10%, var(--panel-solid));
+    color: var(--cyan);
+  }
+  .settings-mobile-nav-btn:focus-visible {
+    outline: 2px solid var(--cyan);
+    outline-offset: 2px;
+  }
+  .settings-tabs {
+    display: none;
+  }
+  .settings-page .page-header {
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .settings-page .page-header-actions {
+    max-width: 100%;
+    flex-wrap: wrap;
+  }
+  .settings-page .page-desc,
+  .settings-page .save-msg {
+    overflow-wrap: anywhere;
+  }
+  .settings-page .setting-row {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .settings-page .setting-info,
+  .settings-page .setting-input,
+  .settings-page .setting-input > *,
+  .settings-page .duration-field {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+  .settings-page .setting-row .setting-input input,
+  .settings-page .setting-row .setting-input button {
+    min-height: 44px;
+  }
+  .settings-page .settings-section-nav {
+    gap: 8px;
+  }
+  .settings-page .settings-section-chip {
+    min-height: 40px;
+    padding: 8px 12px;
+    white-space: normal;
+  }
+  .settings-page .activity-animation-controls {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .settings-page .activity-animation-preview {
+    max-width: 100%;
+    flex-wrap: wrap;
+  }
 }
 @media (max-width: 760px) {
   /* five tabs don't fit a phone: scroll the strip instead of clipping the

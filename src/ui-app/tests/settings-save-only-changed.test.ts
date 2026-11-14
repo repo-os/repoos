@@ -118,6 +118,52 @@ afterEach(() => {
 });
 
 describe("SettingsView save sends only changed fields (#0797)", () => {
+  it("uses the mobile section navigation below 720px and keeps save errors visible", async () => {
+    let onChange: ((event: MediaQueryListEvent) => void) | undefined;
+    const media = {
+      matches: true,
+      addEventListener: vi.fn((_event: string, callback: (event: MediaQueryListEvent) => void) => {
+        onChange = callback;
+      }),
+      removeEventListener: vi.fn(),
+    } as unknown as MediaQueryList;
+    vi.stubGlobal("matchMedia", vi.fn(() => media));
+    await loadSettingsConfig();
+    const config = useConfigStore();
+    vi.spyOn(config, "save").mockImplementation(async () => {
+      config.error = "Settings could not be saved";
+      throw new Error(config.error);
+    });
+
+    const wrapper = await mountSettings();
+    await flushPromises();
+    expect(wrapper.find(".settings-mobile-nav").exists()).toBe(true);
+    expect(wrapper.find(".settings-tabs").exists()).toBe(true);
+    expect(wrapper.findAll(".settings-mobile-nav-btn")).toHaveLength(7);
+    expect(document.getElementById("setting-maxActiveTasks")).not.toBeNull();
+
+    await wrapper.findAll(".settings-mobile-nav-btn")[1]!.trigger("click");
+    expect(routeState.query.tab).toBe("notifications");
+    expect(wrapper.find(".settings-mobile-nav-btn.active").text()).toBe("Notifications");
+    await wrapper.findAll(".settings-mobile-nav-btn")[0]!.trigger("click");
+    await activityAnimationSelect(wrapper).setValue("cursor-scan-pulse");
+    await vi.waitFor(() => expect(config.error).toBe("Settings could not be saved"), {
+      timeout: 3000,
+    });
+    expect(wrapper.find(".save-msg.err").text()).toContain("Settings could not be saved");
+
+    wrapper.unmount();
+    expect(media.removeEventListener).toHaveBeenCalledOnce();
+  });
+
+  it("keeps the desktop tab strip at and above 720px", async () => {
+    await loadSettingsConfig();
+    const wrapper = await mountSettings();
+    expect(wrapper.find(".settings-mobile-nav").exists()).toBe(false);
+    expect(wrapper.find('[role="tablist"] .settings-tab-btn').exists()).toBe(true);
+    wrapper.unmount();
+  });
+
   it("auto-save omits unchanged number fields when only activity animation changes", async () => {
     await loadSettingsConfig();
     const config = useConfigStore();
