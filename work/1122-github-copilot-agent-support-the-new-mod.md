@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 2
 id: "1122"
 title: "GitHub Copilot agent: support the new model picker (GPT-6 Luna, GPT-6.1 Terra, Haiku 5.5 ...) with real --model ids"
 type: feature
@@ -12,7 +13,6 @@ cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-14T17:41:02Z"
 updated_at: "2026-11-14T18:18:27Z"
-handoff_signal_retry_count: 1
 ---
 ## Problem
 The `github copilot` agent is effectively unusable. #1088 (landed 2026-11-11) mapped the retired Auto `efficiency` tier to `balance` and made tier errors readable, but the only model RepoOS knows for it is `default`, and the allowlist entry in repoos.toml is still paused ("Waiting for model list fix"). The Copilot CLI (1.0.109) now offers a model picker (screenshot attached) with GPT-5.6 Terra (default), GPT-6 Luna, Claude Sonnet 5.5, GPT-6.1 Terra, Gemini 4 Hydrogen, Claude Haiku 5.5, Grok 4.7, Kimi K3 and others, with per-model reasoning levels. RepoOS cannot select any of them. There is no non-interactive command that lists model ids (#1088 found `copilot -p "models"` only asks the model). `copilot --model <model>` and `--reasoning-effort <none|minimal|low|medium|high|xhigh|max>` exist.
@@ -67,3 +67,4 @@ Read work/1088-*.md and src/core/copilot-auto-tier.ts first. Copilot usage is bi
 - 2026-11-14T18:13:24Z · queued message undelivered for 5m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-14T18:13:24Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: no assistant message · stderr: (empty)
 - 2026-11-14T18:18:27Z · message_queued at 2026-11-14T18:18:27.514Z
+
