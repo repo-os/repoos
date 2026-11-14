@@ -11,7 +11,7 @@ branch: feat/restart-notice-unsupervised-servers-get-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T02:26:21Z"
-updated_at: "2026-11-14T03:29:16Z"
+updated_at: "2026-11-14T03:31:14Z"
 ---
 ## Problem
 Two rough edges in the "RepoOS vX is installed" restart notice (#1075, `ReleaseUpdateNotification.vue`):
@@ -34,6 +34,19 @@ Small, p3, easter-egg sized. Start from `src/ui-app/src/components/ReleaseUpdate
 ## Styling alignment
 Decision (Nick): the restart notice becomes a real dialog built on the shared dialog components (DialogContent/DialogTitle/DialogDescription, .am-modal shell, standard head/body padding and type scale), not a toast. It carries too much content for a toast: version, running version, work counts, #0214 link, restart actions and the unsupervised hint. Toasts stay for short, simple notifications. Remove the bespoke banner CSS and hard-coded px font sizes. Add as acceptance criterion 5: it renders with the shared dialog classes, and the dismiss/Escape/focus behaviour matches other dialogs.
 
+## Shots
+```json
+[
+{
+  "label": "Installed release restart dialog",
+  "target": "default",
+  "route": "/",
+  "highlight": "[data-test-id=\"installed-restart-notice\"]",
+  "state": "release:restartPendingLight"
+}
+]
+```
+
 ## Activity
 
 - 2026-11-14T02:26:21Z · created · t@t
@@ -43,3 +56,4 @@ Decision (Nick): the restart notice becomes a real dialog built on the shared di
 - 2026-11-14T03:28:50Z · status inbox→ready
 - 2026-11-14T03:28:52Z · status ready→active, branch
 - 2026-11-14T03:29:16Z · message_queued at 2026-11-14T03:29:16.905Z
+- 2026-11-14T03:31:14Z · body
