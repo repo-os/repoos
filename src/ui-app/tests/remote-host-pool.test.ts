@@ -2374,11 +2374,12 @@ describe("host-side lock (server + standalone CLI share one limit)", () => {
     const root = tmpRoot();
     const lockRoot = join(root, "locks");
     const marks = join(root, "marks.log");
+    const releaseHolder = join(root, "release-holder");
     const holder = hostLockShell({
       slots: 1,
       waitSecs: 30,
       lockRoot,
-      inner: `echo start >> "${marks}" && sleep 2 && echo end >> "${marks}"`,
+      inner: `echo start >> "${marks}" && while [ ! -f "${releaseHolder}" ]; do sleep 0.1; done && echo end >> "${marks}"`,
     });
     const waiter = hostLockShell({
       slots: 1,
@@ -2396,9 +2397,16 @@ describe("host-side lock (server + standalone CLI share one limit)", () => {
     }
     expect(readFileSync(marks, "utf8")).toContain("start");
 
-    const timedOut = await sh(waiter);
-    expect(timedOut.code).toBe(HOST_LOCK_TIMEOUT_EXIT);
-    expect(timedOut.out).toContain("[lock] timed out");
+    let timedOut: Awaited<ReturnType<typeof sh>>;
+    try {
+      timedOut = await sh(waiter);
+    } finally {
+      // Keep the holder alive until the waiter has definitively observed the
+      // occupied slot, independent of runner scheduling or remote load.
+      writeFileSync(releaseHolder, "release\n");
+    }
+    expect(timedOut!.code).toBe(HOST_LOCK_TIMEOUT_EXIT);
+    expect(timedOut!.out).toContain("[lock] timed out");
     expect((await held).code).toBe(0);
     // The waiter never ran the gate; the holder's slot was released afterwards.
     expect(readFileSync(marks, "utf8").trim().split("\n")).toEqual(["start", "end"]);
