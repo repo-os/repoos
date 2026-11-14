@@ -153,3 +153,4 @@ Read docs/mobile-architecture.md, docs/adr/0011-mobile-web-ui.md (the native she
 - 2026-11-14T22:44:59Z · body
 - 2026-11-14T22:48:53Z · CTO nudge: held — handoff gate is running
 - 2026-11-14T22:50:05Z · note: ui verification failed: ui verification failed (3 issue(s)): [missing-target] Hub server list (Android, Gruvbox dark) (target "default"): highlight [data-testid="hub-server-list"] matched nothing on /?fixture=many&platform=android&theme=gruvbox&appearance=dark (http://127.0.0.1:44347/?fixture=many&platform=android&theme=gruvbox&appearance=dark); [missing-target] Hub Settings (iOS, Jelly light) (target "default"): highlight [data-testid="hub-settings"] matched nothing on /?fixture=settings&platfo
+- 2026-11-14T22:50:05Z · message_queued at 2026-11-14T22:50:05.311Z
