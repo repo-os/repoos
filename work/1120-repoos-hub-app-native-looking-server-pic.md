@@ -13,7 +13,7 @@ branch: feat/repoos-hub-app-native-looking-server-pic
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-14T16:53:29Z"
-updated_at: "2026-11-14T20:15:04Z"
+updated_at: "2026-11-14T20:21:53Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-14T19:32:26.888Z: repoos check failed: ui verification failed: runner result omitted the UI verification record: ui verification: capture of /?fixture=one&theme=gruvbox&appearance=light&platform=android failed — screenshot: Error: strict mode violation: locator('#app') resolved to 2 elements:"
 dev_error_count: 3
@@ -40,7 +40,24 @@ Read docs/mobile-architecture.md, docs/adr/0011-mobile-web-ui.md (the native she
 
 ## Shots
 ```json
-[]
+[
+{
+  "label": "Hub server list (Android, dark classic)",
+  "target": "default",
+  "route": "/?fixture=many&platform=android&appearance=dark&theme=classic",
+  "highlight": "[data-testid=\"hub-server-list\"]",
+  "viewportWidth": 390,
+  "viewportHeight": 844
+},
+{
+  "label": "Hub Settings (iOS, light gruvbox)",
+  "target": "default",
+  "route": "/?fixture=settings&platform=ios&appearance=light&theme=gruvbox",
+  "highlight": "[data-testid=\"hub-settings\"]",
+  "viewportWidth": 390,
+  "viewportHeight": 844
+}
+]
 ```
 
 ## Screenshots
@@ -105,3 +122,4 @@ Read docs/mobile-architecture.md, docs/adr/0011-mobile-web-ui.md (the native she
 - 2026-11-14T20:15:01Z · needs_input
 - 2026-11-14T20:15:03Z · needs_input
 - 2026-11-14T20:15:04Z · message_delivered: 1 message(s)
+- 2026-11-14T20:21:53Z · body
