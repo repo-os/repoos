@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "1117"
 title: "Full check is slow: measure where the time goes and speed it up without weakening the gate"
 type: feature
@@ -48,3 +49,4 @@ Read docs/debugging-check-failures.md and the [[check.steps]] plan in repoos.tom
 - 2026-11-14T14:37:52Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The report draft now includes before/after full-check phases, all six named files, the baseline top 15 files and cases, test outcomes, and the reason the test phase improved 21.3% rather than 25%. I’m cleaning out the temporary timing logs… · stderr: Reading additional input from stdin... 2026-11-14T14:36:56.874377Z ERROR codex_core::tools::router: error=exec_command failed: CreateProcess { message: "Rejected(\"`/bin/zsh -lc 'rm -f .repoos/task1117-working.patch .repoos/task1117-suite1.log .repoos/task1117-suite2.log .repoos/task1117-suite3.log .repoos/task1117-su…
 - 2026-11-14T14:37:52Z · message_delivered: 3 message(s)
 - 2026-11-14T15:00:33Z · body
+
