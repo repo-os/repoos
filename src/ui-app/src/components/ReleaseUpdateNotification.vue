@@ -37,8 +37,11 @@ const restartStatus = ref<{
   manualCommand: string;
 } | null>(null);
 const restartPendingAction = ref(false);
+const restartOpen = ref(false);
+const releaseRun = ref<{ state: string; phase: string | null } | null>(null);
 const restartFixtureActive = ref(false);
 let restartStatusTimer: ReturnType<typeof setInterval> | null = null;
+let releaseRunTimer: ReturnType<typeof setInterval> | null = null;
 const dismissed = ref(false);
 const open = ref(false);
 const copied = ref(false);
@@ -52,9 +55,11 @@ const updatesCheckEnabled = computed(() => {
 const visible = computed(
   () => updatesCheckEnabled.value && !!release.value?.available && !dismissed.value,
 );
-const restartNoticeVisible = computed(
+const restartNoticeEligible = computed(
   () =>
     restartStatus.value?.restartPending &&
+    releaseRun.value?.state !== "running" &&
+    release.value?.latestVersion === restartStatus.value?.installedVersion &&
     (restartFixtureActive.value ||
       (() => {
         try {
@@ -66,6 +71,7 @@ const restartNoticeVisible = computed(
         }
       })()),
 );
+const restartNoticeVisible = computed(() => restartOpen.value && restartNoticeEligible.value);
 const notesHtml = computed(() =>
   release.value?.releaseNotes ? renderMarkdown(release.value.releaseNotes) : "",
 );
@@ -108,6 +114,15 @@ onMounted(async () => {
     fixtureState === "release:restartPendingLight" || fixtureState === "release:restartPendingDark";
   if (restartFixture) {
     restartFixtureActive.value = true;
+    release.value = {
+      currentVersion: "0.5.78",
+      latestVersion: "0.5.79",
+      available: false,
+      releaseNotes: null,
+      releaseUrl: null,
+      installKind: "source",
+      upgradeCommand: "just upgrade",
+    };
     restartStatus.value = {
       restartPending: true,
       restartWhenIdlePending: false,
@@ -117,6 +132,7 @@ onMounted(async () => {
       supervised: true,
       manualCommand: "repoos restart",
     };
+    releaseRun.value = { state: "idle", phase: null };
     document.documentElement.dataset.theme = fixtureState.endsWith("Dark") ? "dark" : "light";
   }
   if (!restartFixture) {
@@ -126,6 +142,27 @@ onMounted(async () => {
       /* optional */
     }
   }
+  try {
+    releaseRun.value = await api("/api/release/run");
+  } catch {
+    releaseRun.value = { state: "running", phase: null };
+  }
+  if (!restartFixture) {
+    releaseRunTimer = setInterval(async () => {
+      try {
+        releaseRun.value = await api("/api/release/run");
+      } catch {
+        releaseRun.value = { state: "running", phase: null };
+      }
+    }, 3000);
+  }
+  watch(
+    restartNoticeEligible,
+    (eligible) => {
+      restartOpen.value = eligible;
+    },
+    { immediate: true },
+  );
   if (!restartFixture)
     restartStatusTimer = setInterval(async () => {
       try {
@@ -135,10 +172,12 @@ onMounted(async () => {
       }
     }, 3000);
   if (applyShotFixture()) return;
-  try {
-    release.value = await api<AvailableRelease>("/api/release/available");
-  } catch {
-    // Update checks are optional and must never interrupt the application.
+  if (!restartFixture) {
+    try {
+      release.value = await api<AvailableRelease>("/api/release/available");
+    } catch {
+      // Update checks are optional and must never interrupt the application.
+    }
   }
   // A capture can mount before `/api/health` reports the preview build, so the
   // real fetch above may have landed first with `available: false`. Re-check
@@ -178,6 +217,11 @@ function dismissRestartNotice(): void {
   } catch {
     /* dismissal lasts until reload */
   }
+}
+
+function updateRestartDialogOpen(nextOpen: boolean): void {
+  restartOpen.value = nextOpen;
+  if (!nextOpen && restartStatus.value?.restartPending) dismissRestartNotice();
 }
 
 // The preview capture mounts this component before App's own fixture pass runs
@@ -237,70 +281,95 @@ async function copyCommand(): Promise<void> {
   }, 2000);
 }
 
+async function copyRestartCommand(): Promise<void> {
+  const command = restartStatus.value?.manualCommand ?? "";
+  const ok = command !== "" && (await copyToClipboard(command));
+  if (copiedTimer) clearTimeout(copiedTimer);
+  copied.value = ok;
+  copyFailed.value = !ok;
+  copiedTimer = setTimeout(() => {
+    copied.value = false;
+    copyFailed.value = false;
+  }, 2000);
+}
+
 onUnmounted(() => {
   if (copiedTimer) clearTimeout(copiedTimer);
   if (restartStatusTimer) clearInterval(restartStatusTimer);
+  if (releaseRunTimer) clearInterval(releaseRunTimer);
 });
 </script>
 
 <template>
   <Teleport to="body">
-    <section
-      v-if="restartNoticeVisible"
-      class="release-update-banner"
-      role="status"
-      data-test-id="installed-restart-notice"
-      data-overlay-layer="floating"
-    >
-      <span class="release-update-mark"><ArrowUpRight class="size-[15px]" /></span>
-      <span class="release-update-copy">
-        <strong>RepoOS v{{ restartStatus.installedVersion }} is installed</strong>
-        <span
-          >This server is still running v{{ restartStatus.runningVersion }}. Restart to use it.
+    <Dialog :open="restartOpen" @update:open="updateRestartDialogOpen">
+      <DialogOverlay />
+      <DialogContent
+        v-if="restartNoticeVisible"
+        class="am-modal release-update-modal"
+        data-test-id="installed-restart-notice"
+      >
+        <div class="release-update-modal-head">
+          <DialogTitle>RepoOS v{{ restartStatus.installedVersion }} is installed</DialogTitle>
+          <DialogClose class="release-update-close" aria-label="Dismiss restart notice"
+            ><X class="size-[17px]"
+          /></DialogClose>
+        </div>
+        <DialogDescription class="release-update-description">
+          This server is still running v{{ restartStatus.runningVersion }}.
           {{ restartStatus.activeWork.agents }} agents and
           {{ restartStatus.activeWork.checks }} checks running. Restart now briefly interrupts work;
           see <a href="https://github.com/repo-os/repoos/issues/214">#0214</a> for how agents
-          resume.</span
-        >
-      </span>
-      <Button
-        v-if="!restartStatus.restartWhenIdlePending"
-        size="sm"
-        :disabled="restartPendingAction || !restartStatus.supervised"
-        @click="void restartInstalled()"
-        >Restart now</Button
-      >
-      <Button
-        v-if="!restartStatus.restartWhenIdlePending"
-        size="sm"
-        variant="ghost"
-        :disabled="restartPendingAction || !restartStatus.supervised"
-        @click="void restartInstalled(true)"
-        >Restart when idle</Button
-      >
-      <template v-else
-        ><span role="status">Restart is waiting for agents, reviews and checks to finish.</span
-        ><Button
-          size="sm"
-          variant="ghost"
-          :disabled="restartPendingAction"
-          @click="void restartInstalled(false, true)"
-          >Cancel</Button
-        ></template
-      >
-      <span v-if="!restartStatus.supervised" class="release-update-muted"
-        >This server is not supervised. Run <code>{{ restartStatus.manualCommand }}</code> in a
-        terminal to restart it safely.</span
-      >
-      <button
-        type="button"
-        class="release-update-dismiss"
-        aria-label="Dismiss restart notice"
-        @click="dismissRestartNotice"
-      >
-        <X class="size-[15px]" />
-      </button>
-    </section>
+          resume.
+        </DialogDescription>
+        <div class="release-update-actions">
+          <template v-if="restartStatus.supervised">
+            <template v-if="!restartStatus.restartWhenIdlePending">
+              <Button size="sm" :disabled="restartPendingAction" @click="void restartInstalled()"
+                >Restart now</Button
+              >
+              <Button
+                size="sm"
+                variant="ghost"
+                :disabled="restartPendingAction"
+                @click="void restartInstalled(true)"
+                >Restart when idle</Button
+              >
+            </template>
+            <template v-else
+              ><span role="status"
+                >Restart is waiting for agents, reviews and checks to finish.</span
+              ><Button
+                size="sm"
+                variant="ghost"
+                :disabled="restartPendingAction"
+                @click="void restartInstalled(false, true)"
+                >Cancel</Button
+              ></template
+            >
+          </template>
+          <div v-else class="release-update-manual">
+            <p class="release-update-muted">
+              This server is not supervised. Copy the command and run it in a terminal to restart
+              safely.
+            </p>
+            <code class="release-update-code">{{ restartStatus.manualCommand }}</code>
+            <Button
+              size="sm"
+              variant="ghost"
+              :aria-label="copied ? 'Copied restart command' : 'Copy restart command'"
+              @click="void copyRestartCommand()"
+              ><Check v-if="copied" class="size-[14px]" /><Copy v-else class="size-[14px]" />{{
+                copied ? "Copied" : "Copy restart command"
+              }}</Button
+            >
+            <p v-if="copyFailed" class="release-update-muted" role="status">
+              Couldn’t copy automatically — select the command above and copy it.
+            </p>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
     <div
       v-if="visible"
       class="release-update-banner"
@@ -406,86 +475,17 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
-.release-update-banner {
-  position: fixed;
-  z-index: 80;
-  top: calc(54px + 10px + var(--safe-top));
-  left: 50%;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px 10px;
-  width: min(430px, calc(100vw - 28px));
-  padding: 9px 34px 9px 11px;
-  transform: translateX(-50%);
-  border: 1px solid var(--violet-border-tint);
-  border-radius: 10px;
-  background: color-mix(in srgb, var(--panel-solid) 94%, var(--violet) 6%);
-  color: var(--txt);
-  text-align: left;
-  box-shadow: 0 12px 30px -16px rgba(0, 0, 0, 0.8);
-  cursor: pointer;
-}
-.release-update-mark {
+.release-update-manual {
   display: grid;
-  place-items: center;
-  flex: none;
-  color: var(--violet);
-}
-.release-update-copy {
-  display: grid;
-  gap: 1px;
-  /* Take the rest of the first row beside the mark so the message wraps in
-     the card instead of being squeezed by the buttons and hint (#1075). */
-  flex: 1 1 200px;
-  min-width: 0;
-}
-.release-update-banner > .release-update-muted {
-  flex: 1 1 100%;
-  min-width: 0;
-  overflow-wrap: anywhere;
-}
-.release-update-copy strong {
-  font-size: 12px;
-}
-.release-update-copy span {
-  /* Use the full-contrast text token, not --txt-dim: the banner background is
-     a violet-tinted panel mix, and gruvbox-light's --txt-dim only reaches
-     4.39:1 on it (the rendered contrast audit caught this). */
-  color: var(--txt);
-  font-size: 11px;
-}
-.release-update-arrow {
-  color: var(--txt-dim);
-  flex: none;
-}
-.release-update-dismiss,
-.release-update-close {
-  display: grid;
-  place-items: center;
-  color: var(--txt-dim);
-  background: transparent;
-  border: 0;
-  cursor: pointer;
-}
-.release-update-dismiss {
-  padding: 3px;
-  border-radius: 5px;
-}
-.release-update-banner > .release-update-dismiss {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-}
-.release-update-dismiss:hover,
-.release-update-close:hover {
-  color: var(--txt);
-  background: var(--nav-hover-bg);
+  gap: 10px;
+  width: 100%;
 }
 .release-update-modal {
+  display: flex;
+  flex-direction: column;
   width: min(520px, calc(100vw - 40px));
   max-height: min(680px, calc(100vh - 40px));
-  overflow: auto;
+  overflow: hidden;
   padding: 24px;
   border: 1px solid var(--border-bright);
   border-radius: 16px;
@@ -571,6 +571,9 @@ onUnmounted(() => {
   margin: 8px 0 0;
 }
 .release-update-notes {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
   border-top: 1px solid var(--border);
   padding-top: 16px;
 }
@@ -581,7 +584,18 @@ onUnmounted(() => {
   line-height: 1.55;
 }
 .release-update-markdown :deep(p) {
-  margin: 0 0 8px;
+  margin: 0 0 12px;
+}
+.release-update-markdown :deep(ul),
+.release-update-markdown :deep(ol) {
+  margin: 0 0 12px;
+  padding-left: 1.5em;
+}
+.release-update-markdown :deep(li) {
+  margin: 0 0 6px;
+}
+.release-update-markdown :deep(li:last-child) {
+  margin-bottom: 0;
 }
 .release-update-markdown :deep(a) {
   color: var(--cyan);
@@ -597,9 +611,6 @@ onUnmounted(() => {
   margin-top: 22px;
 }
 @media (max-width: 560px) {
-  .release-update-banner {
-    top: calc(8px + var(--safe-top));
-  }
   .release-update-modal {
     padding: 20px;
   }
