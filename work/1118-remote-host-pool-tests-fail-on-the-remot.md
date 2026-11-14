@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-11-14T14:29:51Z"
-review_passes: 1
+last_close_out_gate_ms: 910675
+last_close_out_gate_at: "2026-11-14T15:22:43.923Z"
 id: "1118"
 title: "remote-host-pool tests fail on the remote host (bee) but pass locally: find the load or host dependence"
 type: feature
@@ -13,6 +13,8 @@ branch: feat/remote-host-pool-tests-fail-on-the-remot
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T12:33:15Z"
+updated_at: "2026-11-14T15:22:43Z"
+review_passes: 1
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -47,4 +49,5 @@ Read docs/debugging-check-failures.md. Precedents: #1099, #1101, #1107. Related 
 - 2026-11-14T14:28:57Z · message_queued at 2026-11-14T14:28:57.248Z
 - 2026-11-14T14:28:57Z · note: shots: skipped — the diff (3 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-14T14:29:51Z · note: review pass 1: good to go
+- 2026-11-14T15:22:43Z · close-out gate completed in 911s
 
