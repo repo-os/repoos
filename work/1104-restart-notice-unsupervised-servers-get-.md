@@ -65,3 +65,4 @@ Decision (Nick): the restart notice becomes a real dialog built on the shared di
 - 2026-11-14T03:45:27Z · body
 - 2026-11-14T03:46:10Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-14T03:46:10Z · message_queued at 2026-11-14T03:46:10.287Z
+- 2026-11-14T03:46:10Z · ↻ resuming engineer to read queued message
