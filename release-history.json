@@ -1,6 +1,13 @@
 {
   "releases": [
     {
+      "version": "0.5.85",
+      "tag": "v0.5.85",
+      "date": "2026-11-14",
+      "notes": "- **A phone-friendly RepoOS in the browser.** Below 720px wide, RepoOS now serves a layout built for phones: a bottom tab bar (Work, Search, More, Settings) with a More sheet, a single-column Work queue with a New task button, status filter and sort, a task detail page, and a mobile Settings view. Desktop is unchanged, and the same layout works in a phone browser, as a home-screen app and inside the native shell. The design is recorded in ADR 0011 (#1110, #1112, #1113, #1114, #1115).\n- **Move to done works again from the task drawer.** Since the \"Land anyway\" option arrived, the drawer's Move to done button was refused instantly with \"Land anyway requires a reason of 1–1000 characters\". Clicking it from the board card was never affected. The drawer button now works, with regression tests (hotfix on main).\n- **Stuck tasks recover on their own.** A failed review pass is retried automatically, and when a message to an engineer sits undelivered with no engineer running, the engineer is restarted (#1108).\n- **`repoos restart` handles a hand-started server,** or says clearly why it cannot (#1109).\n- **Faster, steadier checks.** The full check's tests step is about 20% faster, and several tests that failed only under load or on a remote host were fixed: `remote-host-pool` on the remote check host, `check-skip-outcome` and `engineer-resources` (#1117, #1118, #1107).\n- **Docs and the landing page match the last release.** User docs, the docs site and the llms files were checked against the new commands and screens (#1111).",
+      "knownIssues": "- On a phone, the floating head icons still reserve a side column and the touch fixes for Releases and Activity are not finished; both are in progress (#1116).\n- If a task drawer was already open before the upgrade, reload the page so the fixed Move to done button is used."
+    },
+    {
       "version": "0.5.84",
       "tag": "v0.5.84",
       "date": "2026-11-14",
