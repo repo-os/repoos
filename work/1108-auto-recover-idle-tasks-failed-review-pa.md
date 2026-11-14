@@ -2,7 +2,7 @@
 id: "1108"
 title: "Auto-recover idle tasks: failed review pass and undelivered engineer message leave a task stuck for an hour"
 type: feature
-status: active
+status: review
 priority: p2
 area: [server, core]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/auto-recover-idle-tasks-failed-review-pa
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T08:27:35Z"
-updated_at: "2026-11-14T12:10:38Z"
+updated_at: "2026-11-14T12:10:39Z"
 review_rounds: 1
 review_passes: 1
 handoff_signal_retry_count: 1
@@ -82,3 +82,4 @@ Start from src/server/task-watchdog.ts and the review pipeline in src/server/age
 - 2026-11-14T11:33:51Z · CTO nudge: held — remote validation is running
 - 2026-11-14T12:02:34Z · body
 - 2026-11-14T12:10:38Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
+- 2026-11-14T12:10:39Z · status active→review
