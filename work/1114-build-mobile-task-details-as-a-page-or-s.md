@@ -12,7 +12,7 @@ branch: feat/build-mobile-task-details-as-a-page-or-s
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T09:10:53Z"
-updated_at: "2026-11-14T15:16:03Z"
+updated_at: "2026-11-14T15:16:07Z"
 ---
 ## Problem
 The desktop task drawer shares a narrow viewport with the Work board and its tabs/actions are cramped on phones.
@@ -55,3 +55,4 @@ Read ADR 0011 and coordinate with #1113's route and queue state. Follow shared d
 - 2026-11-14T15:11:43Z · body
 - 2026-11-14T15:16:03Z · note: ui verification failed: ui verification failed (3 issue(s)): [request] HTTP 404 for http://127.0.0.1:40047/api/tasks/9999 (http://127.0.0.1:40047/api/tasks/9999); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:40047/api/tasks/9999); [missing-target] Mobile task detail page (target "default"): highlight [data-testid="mobile-task-detail"] matched nothing on /work?task=9999&state=card:noChanges (http://127.0.0.1:40047/work?task=9999&state=
 - 2026-11-14T15:16:03Z · message_queued at 2026-11-14T15:16:03.980Z
+- 2026-11-14T15:16:07Z · message_delivered: 1 message(s)
