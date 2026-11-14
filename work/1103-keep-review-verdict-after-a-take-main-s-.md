@@ -11,7 +11,7 @@ branch: feat/keep-review-verdict-after-a-take-main-s-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T01:19:52Z"
-updated_at: "2026-11-14T04:37:27Z"
+updated_at: "2026-11-14T04:40:01Z"
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-11-14T04:00:36.431Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
@@ -38,11 +38,11 @@ Start from the close-out failure card component and `repoos landable` review-loc
 ```json
 [
 {
-  "label": "Close-out failure card action context",
-  "target": "default",
-  "route": "/work",
-  "highlight": ".done-error",
-  "state": "card:doneError"
+"label": "Close-out failure card action context",
+"target": "default",
+"route": "/work",
+"highlight": ".done-error",
+"state": "card:doneError"
 }
 ]
 ```
@@ -65,3 +65,4 @@ Start from the close-out failure card component and `repoos landable` review-loc
 - 2026-11-14T04:18:11Z · body
 - 2026-11-14T04:35:43Z · body
 - 2026-11-14T04:37:27Z · body
+- 2026-11-14T04:40:01Z · note: ui verification passed: 1 of 1 shot captured with clean console
