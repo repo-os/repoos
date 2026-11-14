@@ -3,9 +3,6 @@ id: "1116"
 title: Finish touch affordances across mobile surfaces
 type: feature
 status: inbox
-needs_input: true
-needs_input_reason: underspecified
-needs_input_detail: "missing sections: Desired UX, Notes for AI"
 priority: p1
 area: web
 depends_on: ["1112", "1114", "1115"]
@@ -13,7 +10,7 @@ assigned_to: ai
 created_by: t@t
 branch: ""
 created_at: "2026-11-14T09:11:01Z"
-updated_at: "2026-11-14T09:11:47Z"
+updated_at: "2026-11-14T09:22:40Z"
 ---
 ## Problem
 Some existing surfaces still depend on hover or small pointer controls. The last-activity popover work in #1069 is complete, but its behavior needs to be included in the narrow-screen experience.
@@ -36,3 +33,4 @@ Read ADR 0011. #1069 is already complete and should not be reopened by default; 
 - 2026-11-14T09:11:01Z · created · t@t
 - 2026-11-14T09:11:02Z · needs_input
 - 2026-11-14T09:11:47Z · depends_on, body: Desired UX (added); Acceptance criteria (added 5, removed 5); Notes for AI (added); Desired outcome (removed)
+- 2026-11-14T09:22:40Z · needs_input
