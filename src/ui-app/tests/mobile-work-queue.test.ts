@@ -49,6 +49,15 @@ function task(
     agentOverride: null,
     cliOverride: null,
     modelOverride: null,
+    git: {
+      branchExists: false,
+      worktreeExists: false,
+      lastCommit: null,
+      lastCommitAt: null,
+      worktreePath: null,
+      dirty: false,
+    },
+    preview: null,
   } as Task;
 }
 
@@ -138,13 +147,11 @@ describe("mobile Work queue", () => {
   it("keeps the desktop board composition when the responsive layout is wide", async () => {
     vi.stubGlobal(
       "matchMedia",
-      vi
-        .fn()
-        .mockReturnValue({
-          matches: false,
-          addEventListener: vi.fn(),
-          removeEventListener: vi.fn(),
-        }),
+      vi.fn().mockReturnValue({
+        matches: false,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      }),
     );
     const wrapper = mount(WorkView, {
       global: {
