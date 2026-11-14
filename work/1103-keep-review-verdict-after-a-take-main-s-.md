@@ -11,8 +11,9 @@ branch: feat/keep-review-verdict-after-a-take-main-s-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T01:19:52Z"
-updated_at: "2026-11-14T03:55:25Z"
+updated_at: "2026-11-14T04:00:36Z"
 handoff_signal_retry_count: 2
+engineer_stall_resume_log: "[{\"at\":\"2026-11-14T04:00:36.431Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
 ## Problem
 After a close-out merge conflict is resolved by merging main into the task branch, the branch tip moves, the review lock sha no longer matches, and `repoos landable` fails with "Review lock". The human must wait for a full re-review even when the resolution only took main's side of a file (e.g. a comment wording clash, #1081) and added nothing new to judge.
@@ -47,3 +48,4 @@ Start from the close-out failure card component and `repoos landable` review-loc
 - 2026-11-14T03:42:06Z · CTO action: restart-stalled-agent (fresh) · agent exited without emitting the handoff signal
 - 2026-11-14T03:42:56Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: I couldn’t complete task #1103. The worktree currently contains only an untracked classifier and two focused tests; the server route, review lock re-pin, task history entry, CLI command, and UI action are not implemented. I did not run the… · stderr: Reading additional input from stdin...
 - 2026-11-14T03:55:25Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: I could not complete task #1103, so I’m not emitting the handoff signal. The build passed, but `REPOOS_CHECK_CHANGED=main repoos check` failed remotely: 123 test files passed, and one test in `agent-review.test.ts` expected HTTP 409 but re… · stderr: (empty)
+- 2026-11-14T04:00:36Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 1/3
