@@ -40,9 +40,9 @@ Read work/1088-*.md and src/core/copilot-auto-tier.ts first. Copilot usage is bi
 "route": "/agents",
 "highlight": ".agents-page-title",
 "steps": [
-  {
-    "click": "button:has-text(\"Coding agents\")"
-  }
+{
+  "click": "button:has-text(\"Coding agents\")"
+}
 ]
 }
 ]
@@ -63,3 +63,4 @@ Read work/1088-*.md and src/core/copilot-auto-tier.ts first. Copilot usage is bi
 - 2026-11-14T17:48:53Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-14T17:54:57Z · body
 - 2026-11-14T17:56:39Z · queued message undelivered for 10m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-14T17:56:39Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: Breaking a circular import between the Copilot modules. · stderr: (empty)
