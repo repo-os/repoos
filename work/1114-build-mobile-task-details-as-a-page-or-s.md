@@ -12,7 +12,7 @@ branch: feat/build-mobile-task-details-as-a-page-or-s
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T09:10:53Z"
-updated_at: "2026-11-14T15:47:02Z"
+updated_at: "2026-11-14T15:49:39Z"
 last_check_failure: "repoos check at 2026-11-14T15:45:05.215Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Mobile task detail page (target \"default\"): highlight [data-testid=\"mobile-task-detail\"] matched nothing on /work?task=9999 (http://127.0.0.1:34333/work?shotState=card:noChanges)"
 ---
 ## Problem
@@ -40,9 +40,9 @@ Read ADR 0011 and coordinate with #1113's route and queue state. Follow shared d
 "route": "/work",
 "highlight": "[data-testid=\"mobile-task-detail\"]",
 "steps": [
-  {
-    "click": "[data-task-id=\"9999\"] .mobile-task-card"
-  }
+{
+  "click": "[data-task-id=\"9999\"] .mobile-task-card"
+}
 ],
 "state": "card:noChanges",
 "viewportWidth": 390,
@@ -89,4 +89,4 @@ Read ADR 0011 and coordinate with #1113's route and queue state. Follow shared d
 - 2026-11-14T15:45:05Z · message_delivered: 1 message(s)
 - 2026-11-14T15:45:45Z · body
 - 2026-11-14T15:47:02Z · body
-
+- 2026-11-14T15:49:39Z · note: ui verification passed: 1 of 1 shot captured with clean console
