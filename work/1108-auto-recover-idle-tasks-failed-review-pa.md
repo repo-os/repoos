@@ -11,7 +11,7 @@ branch: feat/auto-recover-idle-tasks-failed-review-pa
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T08:27:35Z"
-updated_at: "2026-11-14T08:48:46Z"
+updated_at: "2026-11-14T08:51:36Z"
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -42,3 +42,4 @@ Start from src/server/task-watchdog.ts and the review pipeline in src/server/age
 - 2026-11-14T08:30:00Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: I couldn’t complete Task #1108 in this turn. I inspected the existing watchdog and review flow, but made no implementation changes and did not write the engineering report draft. The required `REPOOS_CHECK_CHANGED=main repoos check` has no… · stderr: Reading additional input from stdin... 2026-11-14T08:28:08.367080Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out 2026-11-14T08:28:08.397521Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out 2026-11-14T08:29:56.132208Z ERROR codex_co…
 - 2026-11-14T08:48:46Z · message_queued at 2026-11-14T08:48:46.398Z
 - 2026-11-14T08:48:46Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-14T08:51:36Z · CTO nudge: held — an undelivered message is already queued
