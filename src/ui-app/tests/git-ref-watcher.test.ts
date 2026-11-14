@@ -41,19 +41,22 @@ describe("Git ref watches", () => {
       const changed = vi.fn();
       watcher.setGitSignal(changed);
       watcher.start();
-      // Let native fs.watch subscriptions enter the event loop before the write.
-      await new Promise<void>((resolve) => setImmediate(resolve));
+      // Give native fs.watch registrations a turn to reach the OS before the
+      // one-time write. A single setImmediate can run before subscriptions are
+      // active on a busy worker, losing the only event this test emits.
+      await new Promise<void>((resolve) => setTimeout(resolve, 50));
       writeFileSync(join(refs, "topic"), "new tip\n");
-      await waitFor(() => changed.mock.calls.length > 0, "nested ref changed", 3000);
+      await waitFor(() => changed.mock.calls.length > 0, "nested ref changed");
       expect(changed).toHaveBeenCalled();
 
       changed.mockClear();
       mkdirSync(join(refs, "new-namespace"));
-      await waitFor(() => changed.mock.calls.length > 0, "new ref directory watched", 3000);
+      await waitFor(() => changed.mock.calls.length > 0, "new ref directory watched");
       changed.mockClear();
       writeFileSync(join(refs, "new-namespace", "topic"), "another tip\n");
-      await waitFor(() => changed.mock.calls.length > 0, "new nested ref changed", 3000);
+      await waitFor(() => changed.mock.calls.length > 0, "new nested ref changed");
       expect(changed).toHaveBeenCalled();
     },
+    60_000,
   );
 });

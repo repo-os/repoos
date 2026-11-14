@@ -41,6 +41,8 @@ export interface MemoryReadings extends MemoryStatsReadings {
   loadPerCpu: number;
   availableMemRatio: number;
   totalMemBytes: number;
+  /** Optional injected CPU-idle sample; live probes use the platform sampler. */
+  cpuIdlePercent?: number | null;
 }
 
 /** Injectable seam so tests use fake pressure inputs, never the real machine. */
