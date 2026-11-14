@@ -12,10 +12,10 @@ depends_on: ["1112", "1114", "1115"]
 assigned_to: ai
 created_by: t@t
 branch: feat/finish-touch-affordances-across-mobile-s
-cli_override: codex
-model_override: gpt-6-luna
+cli_override: cursor
+model_override: composer-2.5
 created_at: "2026-11-14T09:11:01Z"
-updated_at: "2026-11-14T17:02:13Z"
+updated_at: "2026-11-14T17:03:58Z"
 dev_error_count: 5
 engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-14T16:48:44.625Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-14T16:48:47.710Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-14T16:48:50.937Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-14T16:51:57.676Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-14T17:02:13.291Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -104,3 +104,4 @@ On screens below 720px the floating heads (Ross, CTO, Debugger) must not reserve
 - 2026-11-14T17:02:08Z · watchdog: restarting engineer after 10m with no live process
 - 2026-11-14T17:02:13Z · agent exited with an error (codex) · Reading additional input from stdin...
 - 2026-11-14T17:02:13Z · engineer crash recovery: surfaced instead of switching — a human-set task override (codex + gpt-6-luna) is pinned, so RepoOS did not replace it (5/3 crashes in 30m)
+- 2026-11-14T17:03:58Z · cli_override, model_override
