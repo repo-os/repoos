@@ -13,7 +13,7 @@ branch: feat/build-a-single-column-mobile-work-queue
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T09:10:48Z"
-updated_at: "2026-11-14T14:51:50Z"
+updated_at: "2026-11-14T14:52:16Z"
 last_close_out_gate_ms: 177335
 last_close_out_gate_at: "2026-11-14T14:49:37.236Z"
 review_passes: 1
@@ -79,3 +79,4 @@ Read ADR 0011 and the shell contract in #1112. Inspect and reuse the existing ta
 - 2026-11-14T14:01:44Z · note: review pass 1: good to go
 - 2026-11-14T14:49:37Z · close-out gate completed in 177s
 - 2026-11-14T14:51:50Z · status done→done, release:success
+- 2026-11-14T14:52:16Z · message_dropped: 1 queued message(s) discarded — task is done
