@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { collectTailnetServers, parseTailnetPeers, cmdServers } from "./servers.js";
+import { collectTailnetServers, parseTailnetPeers, cmdServers, serversSshArgs } from "./servers.js";
 import * as registry from "../core/server-registry.js";
 
 describe("repoos servers --tailscale", () => {
@@ -20,7 +20,7 @@ describe("repoos servers --tailscale", () => {
   });
 
   it("lists local and remote entries with hosts, continuing after a timed out peer", async () => {
-    const remoteExec = vi.fn(async (host: string) => {
+    const remoteExec = vi.fn(async (host: string, _user: string) => {
       if (host === "slow") throw new Error("Command timed out");
       return JSON.stringify({ servers: [{ port: 7171, projectName: "remote", valid: true }] });
     });
@@ -41,6 +41,7 @@ describe("repoos servers --tailscale", () => {
       { host: "slow", unreachable: true, reason: "timed out" },
     ]);
     expect(remoteExec).toHaveBeenCalledTimes(2);
+    expect(remoteExec).toHaveBeenCalledWith("fast", "root", 4_000);
   });
 
   it("falls back to configured hosts when the Tailscale CLI is unavailable", async () => {
@@ -53,6 +54,33 @@ describe("repoos servers --tailscale", () => {
     });
     expect(result.tailscaleUnavailable).toBe(true);
     expect(result.servers).toEqual([]);
+  });
+
+  it("uses configured per-host users and the global Tailscale user in SSH targets", async () => {
+    const remoteExec = vi.fn(async () => JSON.stringify({ servers: [] }));
+    const result = await collectTailnetServers([], {
+      tailscaleStatus: async () =>
+        JSON.stringify({
+          Peer: {
+            a: { HostName: "bee", Online: true },
+            b: { HostName: "mini", Online: true },
+          },
+        }),
+      remoteHosts: [{ host: "bee", user: "operator" }],
+      remoteValidation: { tailscaleUser: "nick" },
+      remoteExec,
+    });
+    expect(result.servers).toEqual([]);
+    expect(remoteExec).toHaveBeenCalledWith("bee", "operator", 4_000);
+    expect(remoteExec).toHaveBeenCalledWith("mini", "nick", 4_000);
+    expect(serversSshArgs("bee", "operator", 4_000)).toEqual([
+      "-o",
+      "BatchMode=yes",
+      "-o",
+      "ConnectTimeout=4",
+      "operator@bee",
+      "repoos servers --json",
+    ]);
   });
 
   it("refuses --prune --tailscale before touching the local or remote registries", async () => {
