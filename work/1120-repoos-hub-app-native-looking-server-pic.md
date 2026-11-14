@@ -2,7 +2,7 @@
 id: "1120"
 title: "RepoOS Hub app: native-looking server picker, web color themes with light/dark, better icons, and a Settings page"
 type: feature
-status: active
+status: review
 needs_input: true
 needs_input_reason: needs-human-step
 needs_input_detail: "Acceptance criteria mention a real device, physical hardware, accounts, credentials, or third-party registration — split that verification into a separate human-only task. (matched: on-device verification, device verification — \"Theme and mode persist on the device (Capacitor Preferences) and apply before first paint (no flash).\")"
@@ -14,7 +14,7 @@ branch: feat/repoos-hub-app-native-looking-server-pic
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T16:53:29Z"
-updated_at: "2026-11-14T16:53:49Z"
+updated_at: "2026-11-14T23:34:01Z"
 ---
 ## Problem
 The RepoOS Hub Capacitor shell (mobile/, iOS and Android) is bare bones. Nick's current Android build (screenshot attached) shows a single dark theme, a "Device lock" panel pushed inline above the server list, text-arrow reorder buttons and a pencil glyph that look like web controls, flat unstyled server cards, and a plain "+ Add server" button. It has no color themes and no light mode, and the icons are not the set used by the web app. The device lock and any future preferences have nowhere proper to live. (The screenshot also shows the old "RepoOS" title, so it is a build from before the September "RepoOS Hub" rename.)
@@ -48,3 +48,4 @@ Read docs/mobile-architecture.md, docs/adr/0011-mobile-web-ui.md (the native she
 - 2026-11-14T16:53:46Z · cli_override, model_override
 - 2026-11-14T16:53:48Z · status inbox→ready
 - 2026-11-14T16:53:49Z · status ready→active, branch
+- 2026-11-14T23:34:01Z · status active→review
