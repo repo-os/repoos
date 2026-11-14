@@ -70,10 +70,10 @@ const filterCol = computed<Column | null>(() => {
 });
 
 // ── #0345 Deep-linking: /work?task=<id> opens that task's drawer and
-// ?task=new opens the new-task panel. The param is cleared once the panel
-// opens (the same router.replace clear pattern as the settings ?focus=
-// handler) so a refresh doesn't re-open it, and any other query keys (e.g.
-// ?status=) are preserved. A link that arrives through the login round-trip
+// ?task=new opens the new-task panel. On desktop the task param is cleared
+// once the drawer opens; on narrow screens it stays in history as the detail
+// page route so Back returns to the queue. Other query keys (e.g. ?status=)
+// are preserved. A link that arrives through the login round-trip
 // survives end-to-end: the router guard redirects with redirect=to.fullPath
 // and LoginView restores the full path after sign-in.
 //
