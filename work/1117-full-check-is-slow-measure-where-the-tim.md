@@ -43,3 +43,4 @@ Read docs/debugging-check-failures.md and the [[check.steps]] plan in repoos.tom
 - 2026-11-14T14:03:02Z · body
 - 2026-11-14T14:30:58Z · body
 - 2026-11-14T14:37:52Z · handoff_deferred: 2 queued message(s) must be read before review
+- 2026-11-14T14:37:52Z · message_queued at 2026-11-14T14:37:52.392Z
