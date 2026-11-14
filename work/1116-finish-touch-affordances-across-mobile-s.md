@@ -3,6 +3,9 @@ id: "1116"
 title: Finish touch affordances across mobile surfaces
 type: feature
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "2026-11-14T16:48:44.184052Z ERROR codex_core::session: failed to record rollout items: thread 01a1daf0-15e0-7cb1-894e-558d66c98cec not found"
 priority: p1
 area: web
 depends_on: ["1112", "1114", "1115"]
@@ -12,7 +15,9 @@ branch: feat/finish-touch-affordances-across-mobile-s
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T09:11:01Z"
-updated_at: "2026-11-14T16:44:09Z"
+updated_at: "2026-11-14T16:48:44Z"
+dev_error_count: 1
+engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-14T16:48:44.625Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 Some existing surfaces still depend on hover or small pointer controls. The last-activity popover work in #1069 is complete, but its behavior needs to be included in the narrow-screen experience.
@@ -37,23 +42,23 @@ On screens below 720px the floating heads (Ross, CTO, Debugger) must not reserve
 ```json
 [
 {
-  "label": "Phone More sheet with agent actions when heads are hidden",
-  "target": "default",
-  "route": "/work",
-  "highlight": ".mobile-more-sheet",
-  "steps": [
-    {
-      "click": ".tab[aria-haspopup=\"dialog\"]"
-    }
-  ],
-  "viewportWidth": 390
+"label": "Phone More sheet with agent actions when heads are hidden",
+"target": "default",
+"route": "/work",
+"highlight": ".mobile-more-sheet",
+"steps": [
+{
+  "click": ".tab[aria-haspopup=\"dialog\"]"
+}
+],
+"viewportWidth": 390
 },
 {
-  "label": "Phone Settings with floating heads preference",
-  "target": "default",
-  "route": "/settings",
-  "highlight": "[data-test-id=\"floating-heads-setting\"]",
-  "viewportWidth": 390
+"label": "Phone Settings with floating heads preference",
+"target": "default",
+"route": "/settings",
+"highlight": "[data-test-id=\"floating-heads-setting\"]",
+"viewportWidth": 390
 }
 ]
 ```
@@ -82,3 +87,5 @@ On screens below 720px the floating heads (Ross, CTO, Debugger) must not reserve
 - 2026-11-14T16:42:08Z · watchdog: restarting engineer because a queued message waited 3m with no live process
 - 2026-11-14T16:42:09Z · message_delivered: 1 message(s)
 - 2026-11-14T16:44:09Z · body
+- 2026-11-14T16:48:44Z · agent exited with an error (codex) · 2026-11-14T16:48:44.184052Z ERROR codex_core::session: failed to record rollout items: thread 01a1daf0-15e0-7cb1-894e-558d66c98cec not found
+- 2026-11-14T16:48:44Z · engineer crash recovery: resuming codex + gpt-6-luna (1/3 crashes in 30m) · 2026-11-14T16:48:44.184052Z ERROR codex_core::session: failed to record rollout items: thread 01a1daf0-15e0-7cb1-894e-558d66c98cec not found
