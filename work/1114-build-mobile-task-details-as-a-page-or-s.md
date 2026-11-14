@@ -101,3 +101,4 @@ Read ADR 0011 and coordinate with #1113's route and queue state. Follow shared d
 - 2026-11-14T15:58:21Z · CTO nudge: held — handoff gate is running
 - 2026-11-14T15:58:43Z · note: ui verification passed: 1 of 1 shot captured with clean console
 - 2026-11-14T15:58:44Z · status active→review
+- 2026-11-14T15:58:44Z · message_queued at 2026-11-14T15:58:44.123Z
