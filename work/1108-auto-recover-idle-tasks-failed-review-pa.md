@@ -12,7 +12,7 @@ branch: feat/auto-recover-idle-tasks-failed-review-pa
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T08:27:35Z"
-updated_at: "2026-11-14T12:28:04Z"
+updated_at: "2026-11-14T12:33:25Z"
 last_close_out_gate_ms: 288398
 last_close_out_gate_at: "2026-11-14T12:27:48.948Z"
 review_passes: 2
@@ -90,3 +90,4 @@ Start from src/server/task-watchdog.ts and the review pipeline in src/server/age
 - 2026-11-14T12:11:30Z · note: review pass 2: good to go
 - 2026-11-14T12:27:48Z · close-out gate completed in 288s
 - 2026-11-14T12:28:04Z · status done→done, release:success
+- 2026-11-14T12:33:25Z · message_dropped: 1 queued message(s) discarded — task is done
