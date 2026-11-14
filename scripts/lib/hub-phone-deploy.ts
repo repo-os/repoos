@@ -7,6 +7,7 @@ export const APP_ID_BASE = "org.repoos.mobile";
 export const APP_ID_SUFFIX = ".dev";
 export const ACTIVITY_CLASS = "org.repoos.mobile.MainActivity";
 export const APP_ID = `${APP_ID_BASE}${APP_ID_SUFFIX}`;
+export const APP_DISPLAY_NAME = "RepoOS Hub Dev";
 export const SCAN_FROM = 30_000;
 export const SCAN_TO = 49_999;
 
@@ -117,10 +118,7 @@ export async function tryConnect(
   return isDeviceReady(adbExec, serial);
 }
 
-export async function findConnectedSerial(
-  adbExec: AdbExec,
-  ip: string,
-): Promise<string | null> {
+export async function findConnectedSerial(adbExec: AdbExec, ip: string): Promise<string | null> {
   const { stdout } = await adbExec(["devices"]);
   for (const line of stdout.split("\n")) {
     const parts = line.trim().split(/\s+/);
@@ -214,15 +212,9 @@ export function defaultAdbExec(adbBin: string): AdbExec {
     });
 }
 
-export async function runHubPhoneDeploy(
-  flags: DeployFlags,
-  deps: DeployDeps,
-): Promise<void> {
+export async function runHubPhoneDeploy(flags: DeployFlags, deps: DeployDeps): Promise<void> {
   const configPath = phoneConfigPath(deps.homeDir);
-  const apk = join(
-    deps.repoRoot,
-    "mobile/android/app/build/outputs/apk/debug/app-debug.apk",
-  );
+  const apk = join(deps.repoRoot, "mobile/android/app/build/outputs/apk/debug/app-debug.apk");
   const activity = hubLaunchComponent(APP_ID, ACTIVITY_CLASS);
 
   let saved = "";
@@ -250,13 +242,7 @@ export async function runHubPhoneDeploy(
     deps.die(`no APK at ${apk} (run without --no-build)`);
   }
 
-  const serial = await connectToPhone(
-    deps,
-    ip,
-    port,
-    flags.scan,
-    deps.scanOpenTcpPorts,
-  );
+  const serial = await connectToPhone(deps, ip, port, flags.scan, deps.scanOpenTcpPorts);
   if (!serial) {
     deps.die(unreachableMessage(ip, configPath));
   }
@@ -271,7 +257,7 @@ export async function runHubPhoneDeploy(
     serial,
   });
   const model = modelOut.stdout.replace(/\r/g, "").trim();
-  deps.log(`installing on ${serial}${model ? ` (${model})` : ""}`);
+  deps.log(`installing ${APP_ID} (${APP_DISPLAY_NAME}) on ${serial}${model ? ` (${model})` : ""}`);
 
   const install = await deps.adbExec(["install", "-r", "-d", apk], { serial });
   const installText = `${install.stdout}\n${install.stderr}`;

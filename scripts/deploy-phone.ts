@@ -54,7 +54,6 @@ function readHelp(): string {
     .replace(/^ \* ?/gm, "");
 }
 
-
 function log(msg: string): void {
   console.log(`\x1b[36m[deploy-phone]\x1b[0m ${msg}`);
 }
@@ -74,15 +73,19 @@ async function commandExists(name: string): Promise<boolean> {
 
 async function scanOpenTcpPorts(ip: string, from: number, to: number): Promise<number[]> {
   if (await commandExists("nmap")) {
-    const ports = await scanWithNmap(ip, from, to, (cmd, args) =>
-      new Promise((resolve) => {
-        const child = spawn(cmd, args, { stdio: ["ignore", "pipe", "ignore"] });
-        let stdout = "";
-        child.stdout?.on("data", (c) => {
-          stdout += String(c);
-        });
-        child.on("close", (code) => resolve({ stdout, exitCode: code ?? 1 }));
-      }),
+    const ports = await scanWithNmap(
+      ip,
+      from,
+      to,
+      (cmd, args) =>
+        new Promise((resolve) => {
+          const child = spawn(cmd, args, { stdio: ["ignore", "pipe", "ignore"] });
+          let stdout = "";
+          child.stdout?.on("data", (c) => {
+            stdout += String(c);
+          });
+          child.on("close", (code) => resolve({ stdout, exitCode: code ?? 1 }));
+        }),
     );
     if (ports.length) return ports;
   }
@@ -120,7 +123,9 @@ async function buildApk(): Promise<void> {
       stdio: "inherit",
       env: process.env,
     });
-    child.on("close", (code) => (code === 0 ? resolve() : reject(new Error("build-android failed"))));
+    child.on("close", (code) =>
+      code === 0 ? resolve() : reject(new Error("build-android failed")),
+    );
   });
 }
 

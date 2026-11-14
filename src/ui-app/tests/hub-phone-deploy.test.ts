@@ -45,9 +45,10 @@ describe("resolvePhoneTarget", () => {
   });
 
   it("uses REPOOS_HUB_PHONE_PORT with saved IP", () => {
-    expect(
-      resolvePhoneTarget({ REPOOS_HUB_PHONE_PORT: "43100" }, "10.0.0.3:old"),
-    ).toEqual({ ip: "10.0.0.3", port: "43100" });
+    expect(resolvePhoneTarget({ REPOOS_HUB_PHONE_PORT: "43100" }, "10.0.0.3:old")).toEqual({
+      ip: "10.0.0.3",
+      port: "43100",
+    });
   });
 
   it("falls back to saved config", () => {
@@ -64,7 +65,9 @@ describe("resolvePhoneTarget", () => {
 });
 
 function makeRecordingAdb(
-  handlers: Array<(args: string[], serial?: string) => { stdout: string; stderr: string; exitCode: number }>,
+  handlers: Array<
+    (args: string[], serial?: string) => { stdout: string; stderr: string; exitCode: number }
+  >,
 ): AdbExec {
   let i = 0;
   return async (args, opts) => {
@@ -139,7 +142,8 @@ describe("connectToPhone", () => {
         if (target?.endsWith(":43210")) ready.add(target);
         return { stdout: "connected\n", stderr: "", exitCode: 0 };
       }
-      if (args[0] === "devices") return { stdout: "List of devices attached\n", stderr: "", exitCode: 0 };
+      if (args[0] === "devices")
+        return { stdout: "List of devices attached\n", stderr: "", exitCode: 0 };
       return { stdout: "", stderr: "", exitCode: 0 };
     };
     const serial = await connectToPhone(
@@ -220,7 +224,8 @@ describe("runHubPhoneDeploy", () => {
     const deps = baseDeps({
       adbExec: async (args) => {
         if (args[0] === "get-state") return { stdout: "offline\n", stderr: "", exitCode: 1 };
-        if (args[0] === "devices") return { stdout: "List of devices attached\n", stderr: "", exitCode: 0 };
+        if (args[0] === "devices")
+          return { stdout: "List of devices attached\n", stderr: "", exitCode: 0 };
         return { stdout: "", stderr: "", exitCode: 0 };
       },
     });

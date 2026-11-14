@@ -37,7 +37,7 @@ The Tailscale IP is stable; the Wireless debugging port changes when Android res
 
 ## Debug vs release application id
 
-Debug builds use `applicationIdSuffix ".dev"` in `mobile/android/app/build.gradle`, so the installed package is **`org.repoos.mobile.dev`** and sits beside a release **`org.repoos.mobile`** install. Release builds are unchanged.
+Debug builds use `applicationIdSuffix ".dev"` in `mobile/android/app/build.gradle`, so the installed package is **`org.repoos.mobile.dev`** and sits beside a release **`org.repoos.mobile`** install. Release builds are unchanged. The debug variant overrides `app_name` and `title_activity_main` in `app/src/debug/res/values/strings.xml` to **RepoOS Hub Dev**; release strings in `src/main` stay **RepoOS Hub**. `just deploy-phone` logs the app id and label when installing.
 
 The launch component is always fully qualified: `org.repoos.mobile.dev/org.repoos.mobile.MainActivity` (not a leading-dot `.MainActivity`, which would resolve against the suffixed id and fail).
 
