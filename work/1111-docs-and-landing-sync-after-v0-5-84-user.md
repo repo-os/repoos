@@ -36,3 +36,4 @@ Follow docs/agents-md-size.md: do not grow AGENTS.md. Put findings in the engine
 - 2026-11-14T09:08:35Z · status inbox→ready
 - 2026-11-14T09:08:37Z · status ready→active, branch
 - 2026-11-14T09:14:48Z · status active→review
+- 2026-11-14T09:14:48Z · message_queued at 2026-11-14T09:14:48.306Z
