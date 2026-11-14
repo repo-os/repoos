@@ -11,7 +11,7 @@ branch: feat/remote-host-pool-tests-fail-on-the-remot
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T12:33:15Z"
-updated_at: "2026-11-14T12:33:29Z"
+updated_at: "2026-11-14T12:36:12Z"
 ---
 ## Problem
 Tests in `src/ui-app/tests/remote-host-pool.test.ts` fail under load or on the remote validation host and pass when run alone. Two cases on 2026-11-14: (1) #1101 "times out while deferred and removes stale dead-pid queue entries" (fixed earlier); (2) "host-side lock (server + standalone CLI share one limit) > lets a holder expire the waiter with a clear timeout instead of a red gate on bee" failed #1108's handoff with "remote validation failed: test failure ... on bee", yet passed 12 of 12 in the task worktree. A handoff gate that fails for host reasons wastes about 15 minutes per rerun.
@@ -34,3 +34,4 @@ Read docs/debugging-check-failures.md. Precedents: #1099, #1101, #1107. Related 
 - 2026-11-14T12:33:26Z · cli_override, model_override
 - 2026-11-14T12:33:28Z · status inbox→ready
 - 2026-11-14T12:33:29Z · status ready→active, branch
+- 2026-11-14T12:36:12Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: I couldn’t complete the task’s acceptance criteria, so I’m leaving it active and **not** requesting handoff. - The reported holder/waiter test passed once in isolation. I did not reproduce the remote-host failure or establish a host-depend… · stderr: Reading additional input from stdin... 2026-11-14T12:36:11.932747Z ERROR codex_core::session: failed to record rollout items: thread 01a1da0c-73d6-7212-ac89-a7c7cd898e8d not found
