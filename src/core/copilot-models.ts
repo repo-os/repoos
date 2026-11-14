@@ -12,11 +12,7 @@
  */
 
 /** Named models RepoOS exposes and forwards as `copilot --model <id>`. */
-export const COPILOT_NAMED_MODELS = [
-  "gpt-6-luna",
-  "gpt-6.1-terra",
-  "claude-haiku-5.5",
-] as const;
+export const COPILOT_NAMED_MODELS = ["gpt-6-luna", "gpt-6.1-terra", "claude-haiku-5.5"] as const;
 
 /** Every Copilot model id offered in the Agents model picker (Auto + named). */
 export const COPILOT_MODEL_IDS = [
@@ -75,9 +71,7 @@ export function copilotModelReasoningHint(model: string): string | null {
 export function formatUnsupportedCopilotReasoning(model: string, level: string): string {
   const levels = copilotReasoningLevels(model);
   const valid =
-    levels && levels.length > 0
-      ? levels.join(", ")
-      : ALL_CLI_REASONING_LEVELS.join(", ");
+    levels && levels.length > 0 ? levels.join(", ") : ALL_CLI_REASONING_LEVELS.join(", ");
   return (
     `Reasoning effort "${level}" is not supported for GitHub Copilot model "${model}". ` +
     `Valid levels for this model: ${valid}.`

@@ -8,10 +8,7 @@
  * and may suggest alternatives in error text — do not treat tier ids as a closed list.
  */
 
-import {
-  formatCopilotModelFailure,
-  formatCopilotReasoningFailure,
-} from "./copilot-models.js";
+import { formatCopilotModelFailure, formatCopilotReasoningFailure } from "./copilot-models.js";
 
 const COPILOT_AUTO_TIER_CLI_ID: Record<string, string> = {
   default: "balance",

@@ -42,14 +42,15 @@ describe("copilot named model args", () => {
 
 describe("copilot failure enrichment", () => {
   it("maps model unavailable errors", () => {
-    const msg = formatCopilotModelFailure('Execution failed: Model "gpt-5.6-sol" is not available.');
+    const msg = formatCopilotModelFailure(
+      'Execution failed: Model "gpt-5.6-sol" is not available.',
+    );
     expect(msg).toContain("gpt-5.6-sol");
     expect(msg).toContain("Agents page");
   });
 
   it("maps reasoning unsupported errors", () => {
-    const raw =
-      'Error: Reasoning effort "none" is not supported for model "claude-haiku-5.5".';
+    const raw = 'Error: Reasoning effort "none" is not supported for model "claude-haiku-5.5".';
     expect(formatCopilotReasoningFailure(raw)).toContain("claude-haiku-5.5");
     expect(formatCopilotReasoningFailure(raw)).toContain("low");
   });

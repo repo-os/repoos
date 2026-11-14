@@ -332,8 +332,7 @@ describe("model-aware driver commands", () => {
   });
 
   it("maps unsupported Copilot reasoning to plain English", () => {
-    const raw =
-      'Error: Reasoning effort "minimal" is not supported for model "gpt-6-luna".';
+    const raw = 'Error: Reasoning effort "minimal" is not supported for model "gpt-6-luna".';
     expect(oneShotFailureDetail(raw, "", "github copilot")).toContain("gpt-6-luna");
     expect(oneShotFailureDetail(raw, "", "github copilot")).toContain("minimal");
   });

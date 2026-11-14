@@ -753,7 +753,7 @@ models = ["opencode-go/deepseek-v4.1-flash", "opencode-go/glm-5.3-flash", "openc
 pausedModels = [{ model = "opencode-go/mimo-v2.6-flash" }, { model = "opencode-go/glm-5.3-flash" }, { model = "opencode-go/deepseek-v4.1-flash" }]
 [[budget.allowlist]]
 cli = "github copilot"
-models = ["default"]
+models = ["default", "copilot-auto-efficiency", "copilot-auto-balance", "copilot-auto-intelligence", "gpt-6-luna", "gpt-6.1-terra", "claude-haiku-5.5"]
 paused = true
 pausedReason = "Waiting for model list fix"
 [[budget.allowlist]]
