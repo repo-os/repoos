@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 
 const root = resolve(__dirname, "../src");
 const tabs = readFileSync(resolve(root, "components/MobileTabs.vue"), "utf8");
+const heads = readFileSync(resolve(root, "components/FloatingHeads.vue"), "utf8");
 const css = readFileSync(resolve(root, "style.css"), "utf8");
 const statusBar = readFileSync(resolve(root, "components/IntegrationStatusBar.vue"), "utf8");
 
@@ -15,6 +16,9 @@ describe("mobile touch affordances", () => {
     expect(tabs).toContain('event: "repoos:open-cto"');
     expect(tabs).toContain('event: "repoos:open-ross"');
     expect(tabs).toContain('event: "repoos:open-debugger"');
+    expect(heads).toMatch(
+      /<CTOPanel[\s\S]*<RepoGuideChat[\s\S]*<DebuggerChat[\s\S]*<div v-if="visible" class="stack"/,
+    );
     expect(css).toMatch(/\.mobile-more-link\s*\{[^}]*min-height:\s*52px/s);
     expect(css).toMatch(/\.mobile-more-agent-link\s*\{[^}]*width:\s*100%/s);
   });

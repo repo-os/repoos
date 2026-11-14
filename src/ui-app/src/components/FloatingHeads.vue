@@ -64,12 +64,12 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div v-if="visible" class="floating-heads" :class="{ 'any-open': activeHead }">
+  <div class="floating-heads" :class="{ 'any-open': activeHead }">
     <CTOPanel :open="activeHead === 'cto'" @close="activeHead = null" />
     <RepoGuideChat :open="activeHead === 'ross'" @close="activeHead = null" />
     <DebuggerChat :open="activeHead === 'debugger'" @close="activeHead = null" />
 
-    <div class="stack">
+    <div v-if="visible" class="stack">
       <button
         v-if="agentEnabled('debugger')"
         class="head-btn"
