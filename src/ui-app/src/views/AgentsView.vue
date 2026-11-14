@@ -89,12 +89,8 @@ const configuredLastRunAgentNames = computed(() => {
 });
 const agentLastRunsHiddenCount = computed(
   () =>
-    filterAgentLastRuns(
-      agentLastRuns.value,
-      configuredLastRunAgentNames.value,
-      Date.now(),
-      false,
-    ).hiddenCount,
+    filterAgentLastRuns(agentLastRuns.value, configuredLastRunAgentNames.value, Date.now(), false)
+      .hiddenCount,
 );
 const filteredAgentLastRuns = computed(() => {
   const { visible, hiddenCount } = filterAgentLastRuns(

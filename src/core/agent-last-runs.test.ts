@@ -11,7 +11,10 @@ describe("filterAgentLastRuns", () => {
   const now = Date.parse("2026-11-15T12:00:00.000Z");
   const recentAt = new Date(now - 2 * 24 * 60 * 60 * 1000).toISOString();
   const staleAt = new Date(now - 30 * 24 * 60 * 60 * 1000).toISOString();
-  const names = buildConfiguredAgentLastRunNames(["engineer", "reviewer"], ["debugger", "docs-debt"]);
+  const names = buildConfiguredAgentLastRunNames(
+    ["engineer", "reviewer"],
+    ["debugger", "docs-debt"],
+  );
 
   const rows: AgentLastRunRow[] = [
     { name: "engineer", status: "ok", at: recentAt, taskId: "1", reason: null },

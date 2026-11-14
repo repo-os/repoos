@@ -40,22 +40,22 @@ describe("classifyAgentFailure", () => {
     ],
     ["opencode", "HTTP 402 Payment Required", "out-of-credit"],
     ["opencode", "insufficient credit on this account", "out-of-credit"],
-    ["antigravity", 'AGY_ERROR: {"short_error":"RESOURCE_EXHAUSTED (code 429)", "detail":"…"}', "usage-limit"],
-    ["cursor", "Individual quota reached for this model", "usage-limit"],
-    ["Claude Code", "too many requests — try again later", "usage-limit"],
     [
-      "cursor",
-      "usage limit reached. Resets in 95h12m41s",
+      "antigravity",
+      'AGY_ERROR: {"short_error":"RESOURCE_EXHAUSTED (code 429)", "detail":"…"}',
       "usage-limit",
     ],
+    ["cursor", "Individual quota reached for this model", "usage-limit"],
+    ["Claude Code", "too many requests — try again later", "usage-limit"],
+    ["cursor", "usage limit reached. Resets in 95h12m41s", "usage-limit"],
   ])("classifies provider billing/limit text for %s", (cli, text, id) => {
     expect(classifyAgentFailure(text, cli)?.id).toBe(id);
   });
 
   it("includes Resets in timing for quota exhaustion", () => {
-    expect(classifyAgentFailure("RESOURCE_EXHAUSTED Resets in 95h12m41s", "antigravity")?.summary).toBe(
-      "Antigravity hit a provider quota or rate limit. Resets in 95h12m41s.",
-    );
+    expect(
+      classifyAgentFailure("RESOURCE_EXHAUSTED Resets in 95h12m41s", "antigravity")?.summary,
+    ).toBe("Antigravity hit a provider quota or rate limit. Resets in 95h12m41s.");
   });
 
   it("wraps known failures with a CLI disclosure tail", () => {
@@ -67,8 +67,7 @@ describe("classifyAgentFailure", () => {
   });
 
   it("uses a generic fallback for JSON blobs instead of showing them as the summary", () => {
-    const blob =
-      'AGY_ERROR: {"short_error":"RESOURCE_EXHAUSTED (code 429)","detail":"quota"}';
+    const blob = 'AGY_ERROR: {"short_error":"RESOURCE_EXHAUSTED (code 429)","detail":"quota"}';
     const formatted = formatAgentFailure(blob, "antigravity");
     const parts = splitAgentFailureDetail(formatted);
     expect(parts.summary).not.toContain("{");
@@ -92,7 +91,7 @@ describe("classifyAgentFailure", () => {
   });
 
   it("falls back to cli name for multi-line opaque output", () => {
-    const formatted = formatAgentFailure("line one\n{\"json\":true}\nline three", "opencode");
+    const formatted = formatAgentFailure('line one\n{"json":true}\nline three', "opencode");
     expect(splitAgentFailureDetail(formatted).summary).toBe(
       "OpenCode exited with an error. Open Raw CLI error for details.",
     );

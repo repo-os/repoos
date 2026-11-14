@@ -158,5 +158,8 @@ export function formatAgentFailure(detail: string, cli = ""): string {
 export function splitAgentFailureDetail(detail: string): { summary: string; raw: string | null } {
   const marker = detail.lastIndexOf(CLI_DETAIL_MARKER);
   if (marker < 0 || !detail.endsWith(")")) return { summary: detail, raw: null };
-  return { summary: detail.slice(0, marker), raw: detail.slice(marker + CLI_DETAIL_MARKER.length, -1) };
+  return {
+    summary: detail.slice(0, marker),
+    raw: detail.slice(marker + CLI_DETAIL_MARKER.length, -1),
+  };
 }
