@@ -78,3 +78,4 @@ Decision (Nick): the restart notice becomes a real dialog built on the shared di
 - 2026-11-14T03:51:05Z · message_queued at 2026-11-14T03:51:05.613Z
 - 2026-11-14T03:51:05Z · ↻ resuming engineer to read queued message
 - 2026-11-14T03:51:05Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: I’ll add the modal scroll containment and release-note list spacing, update task #1104’s acceptance criteria through RepoOS, add a focused assertion, and rerun the scoped check before requesting handoff again. · stderr: (empty)
+- 2026-11-14T03:51:05Z · message_delivered: 2 message(s)
