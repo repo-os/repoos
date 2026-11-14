@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-14T09:15:46Z"
+review_passes: 1
 id: "1111"
 title: "Docs and landing sync after v0.5.84: user-docs, docs site, landing page and llms files"
 type: feature
@@ -11,7 +13,6 @@ branch: feat/docs-and-landing-sync-after-v0-5-84-user
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T09:08:28Z"
-updated_at: "2026-11-14T09:15:46Z"
 ---
 ## Problem
 Several user-facing changes landed after v0.5.83 (and in v0.5.84) and the public surfaces may not mention them or may contradict them: user-docs (the docs.repoos.org source), the docs site build, the repoos.org landing page (landing/), and the generated llms.txt / llms-full.txt files. No one has checked.
@@ -39,3 +40,4 @@ Follow docs/agents-md-size.md: do not grow AGENTS.md. Put findings in the engine
 - 2026-11-14T09:14:48Z · message_queued at 2026-11-14T09:14:48.306Z
 - 2026-11-14T09:14:48Z · note: shots: skipped — Docs site skipped: no docs shot declared
 - 2026-11-14T09:15:46Z · note: review pass 1: needs some work
+
