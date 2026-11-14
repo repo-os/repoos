@@ -127,7 +127,10 @@ describe("SettingsView save sends only changed fields (#0797)", () => {
       }),
       removeEventListener: vi.fn(),
     } as unknown as MediaQueryList;
-    vi.stubGlobal("matchMedia", vi.fn(() => media));
+    vi.stubGlobal(
+      "matchMedia",
+      vi.fn(() => media),
+    );
     await loadSettingsConfig();
     const config = useConfigStore();
     vi.spyOn(config, "save").mockImplementation(async () => {
