@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import { Plus, RotateCw } from "lucide-vue-next";
 import { useRepoStore } from "../stores/repo";
 import { useUiStore } from "../stores/ui";
@@ -15,6 +16,8 @@ import SelectViewport from "./ui/select/viewport.vue";
 
 const repo = useRepoStore();
 const ui = useUiStore();
+const route = useRoute();
+const router = useRouter();
 const statuses = ["all", "draft", "inbox", "ready", "active", "review", "done"] as const;
 const status = ref<(typeof statuses)[number]>("all");
 const sort = ref<"newest" | "oldest">("newest");
@@ -49,7 +52,10 @@ async function retryLoad(): Promise<void> {
 }
 
 function openTask(task: Task): void {
-  void ui.openTask(task);
+  void router.push({
+    path: "/work",
+    query: { ...route.query, task: task.id },
+  });
 }
 </script>
 
@@ -129,7 +135,7 @@ function openTask(task: Task): void {
         <Button variant="outline" @click="resetQueue">Show all tasks</Button>
       </div>
       <ul v-else>
-        <li v-for="task in tasks" :key="task.id">
+        <li v-for="task in tasks" :key="task.id" :data-task-id="task.id">
           <button class="mobile-task-card" type="button" @click="openTask(task)">
             <span class="mobile-task-topline">
               <span class="mobile-task-number">#{{ task.id }}</span>

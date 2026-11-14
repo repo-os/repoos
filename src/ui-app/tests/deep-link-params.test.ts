@@ -141,6 +141,20 @@ afterEach(() => {
 });
 
 describe("work ?task= deep-link (#0345)", () => {
+  it("keeps a task deep link on the mobile layout before mount hooks run", async () => {
+    useRepoStore().tasks = [makeTask("0340")];
+    setRouteQuery({ status: "ready", sort: "oldest", task: "0340", tab: "details" });
+    vi.stubGlobal("matchMedia", vi.fn().mockReturnValue({ matches: true }));
+    api.mockResolvedValue(makeTask("0340"));
+    const wrapper = mount(WorkView, { global: { stubs: WORK_STUBS } });
+    await flushPromises();
+
+    expect(useUiStore().active?.id).toBe("0340");
+    expect(replaceSpy).not.toHaveBeenCalled();
+    expect(routeQuery).toEqual({ status: "ready", sort: "oldest", task: "0340", tab: "details" });
+    wrapper.unmount();
+  });
+
   it("?task=<id> opens that task's drawer and clears the param", async () => {
     useRepoStore().tasks = [makeTask("0340"), makeTask("0341", "active")];
     setRouteQuery({ task: "0340" });
