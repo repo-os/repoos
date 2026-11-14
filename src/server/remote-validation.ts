@@ -1414,6 +1414,20 @@ export function classifyRemoteExecFailure(run: {
           : "bundle/transport error";
     return { kind: "infra", transient: true, markHostDegraded: true, cause };
   }
+  // Exit 128 is commonly git's fatal transport/ref error. It can occur while
+  // preparing a remote bundle, before any test gate has started.
+  if (
+    /fatal: (?:could not|unable to|cannot) (?:read|access|connect|fetch|push)|fatal:.*(?:git|repository|remote)/i.test(
+      output,
+    )
+  ) {
+    return {
+      kind: "infra",
+      transient: true,
+      markHostDegraded: true,
+      cause: "git transport or host error before the gate",
+    };
+  }
   if (/setup failed/i.test(output) && !remoteRunHasGateExit(output)) {
     return {
       kind: "infra",

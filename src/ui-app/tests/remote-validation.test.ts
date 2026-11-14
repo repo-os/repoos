@@ -137,6 +137,16 @@ const FAST = {
 };
 
 describe("classifyRemoteExecFailure (#0745)", () => {
+  it("classifies git exit 128 as a host problem, not a test failure", () => {
+    const cls = classifyRemoteExecFailure({
+      code: 128,
+      output: "fatal: could not read from remote repository",
+      timedOut: false,
+    });
+    expect(cls.kind).toBe("infra");
+    expect(cls.transient).toBe(true);
+  });
+
   it("treats EACCES during install as infra without a gate exit marker", () => {
     const cls = classifyRemoteExecFailure({
       code: 4,

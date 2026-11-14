@@ -742,6 +742,21 @@ export async function cutNewRelease(
   // Set once `pushing_main` succeeds — the bump is public from then on, so a
   // later failure must never rewrite it away.
   let mainPushed = false;
+  // A previous run can have completed the gate and pushed main, then failed
+  // while creating/pushing the tag. Reuse that gate result only when the
+  // remote advertises the exact current commit.
+  if (preexistingBump) {
+    const head = await exec("git", ["rev-parse", "HEAD"], config.root);
+    const remote = release.remote ?? "origin";
+    const advertised = await exec(
+      "git",
+      ["ls-remote", remote, `refs/heads/${status.branch}`],
+      config.root,
+      30_000,
+    );
+    const remoteSha = advertised.code === 0 ? advertised.stdout.trim().split(/\s+/)[0] : "";
+    if (head.code === 0 && remoteSha && head.stdout.trim() === remoteSha) mainPushed = true;
+  }
   /**
    * Fail after the version bump was committed. A failure before `pushing_main`
    * leaves the bump as a local-only commit: roll it back when it is still
@@ -933,6 +948,7 @@ export async function cutNewRelease(
       surfacesCommittedThisRun = true;
     }
   }
+  if (!mainPushed) {
   // Rebuild first. `repoos check`'s first gate is a src/-vs-dist/ staleness
   // check — any edit or `bun run fmt` since the operator's last build (or a
   // background agent's work) trips it and aborts the whole release. The release
@@ -1046,7 +1062,9 @@ export async function cutNewRelease(
   }
   if (!status.ready || status.tag !== tag)
     return failAfterBump("Repository state changed while release checks ran.");
+  }
   onProgress?.("pushing_main", `Pushing ${status.branch}…`);
+  if (!mainPushed) {
   const pushedMain = await exec(
     "git",
     ["push", release.remote ?? "origin", status.branch],
@@ -1054,11 +1072,21 @@ export async function cutNewRelease(
     120_000,
   );
   if (pushedMain.code !== 0) {
-    return failAfterBump(
-      captureOutput(pushedMain.stdout, pushedMain.stderr) || `Could not push ${status.branch}.`,
-    );
+    // A transport can drop its acknowledgement after the server accepted the
+    // update. Compare the advertised remote ref with our exact HEAD before
+    // reporting failure; equality proves the push landed safely.
+    const remote = release.remote ?? "origin";
+    const head = await exec("git", ["rev-parse", "HEAD"], config.root);
+    const advertised = await exec("git", ["ls-remote", remote, `refs/heads/${status.branch}`], config.root, 30_000);
+    const remoteSha = advertised.code === 0 ? advertised.stdout.trim().split(/\s+/)[0] : "";
+    if (head.code !== 0 || !remoteSha || head.stdout.trim() !== remoteSha) {
+      return failAfterBump(
+        captureOutput(pushedMain.stdout, pushedMain.stderr) || `Could not push ${status.branch}.`,
+      );
+    }
   }
   mainPushed = true;
+  }
   onProgress?.("tagging", `Creating annotated tag ${tag}…`);
   const trimmedNotes = releaseNotes;
   // `--cleanup=verbatim` keeps Markdown headings ("# " lines) verbatim.
