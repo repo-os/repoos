@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-14T14:01:45Z"
+review_passes: 1
 id: "1113"
 title: Build a single-column mobile Work queue
 type: feature
@@ -12,7 +14,6 @@ branch: feat/build-a-single-column-mobile-work-queue
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T09:10:48Z"
-updated_at: "2026-11-14T14:01:44Z"
 last_check_failure: "repoos check at 2026-11-14T13:50:32.893Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Single-column mobile Work queue (target \"default\"): highlight [data-testid=\"mobile-work-queue\"] matched nothing on /work (http://127.0.0.1:46519/work)"
 ---
 ## Problem
@@ -73,3 +74,4 @@ Read ADR 0011 and the shell contract in #1112. Inspect and reuse the existing ta
 - 2026-11-14T14:00:45Z · status active→review
 - 2026-11-14T14:00:45Z · message_queued at 2026-11-14T14:00:45.522Z
 - 2026-11-14T14:01:44Z · note: review pass 1: good to go
+
