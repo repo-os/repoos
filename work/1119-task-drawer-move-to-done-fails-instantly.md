@@ -11,7 +11,7 @@ branch: feat/task-drawer-move-to-done-fails-instantly
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-14T16:14:26Z"
-updated_at: "2026-11-14T17:24:04Z"
+updated_at: "2026-11-14T17:26:53Z"
 dev_error_count: 4
 engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-14T16:48:38.797Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-14T16:48:42.502Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-14T16:48:45.917Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-14T16:58:57.569Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -65,3 +65,4 @@ Related: #1081 (introduced the reason parameter) and the audit that missed this.
 - 2026-11-14T17:23:53Z · message_queued at 2026-11-14T17:23:53.134Z
 - 2026-11-14T17:23:53Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-14T17:24:04Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-14T17:26:53Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
