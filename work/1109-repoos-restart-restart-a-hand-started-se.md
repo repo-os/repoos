@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 986909
-last_close_out_gate_at: "2026-11-14T09:21:18.002Z"
 id: "1109"
 title: "repoos restart: restart a hand-started server, or say clearly why it cannot"
 type: feature
-status: review
+status: done
 priority: p3
 area: [server, cli]
+merged_commit: 28d5253e5d10c39d2ec061676ddcac9f00aff4fb
 assigned_to: ai
 created_by: t@t
 branch: feat/repoos-restart-restart-a-hand-started-se
@@ -14,6 +13,8 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T08:27:36Z"
 updated_at: "2026-11-14T09:21:18Z"
+last_close_out_gate_ms: 986909
+last_close_out_gate_at: "2026-11-14T09:21:18.002Z"
 review_passes: 1
 ---
 ## Problem
