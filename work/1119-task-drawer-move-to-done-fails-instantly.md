@@ -2,7 +2,7 @@
 id: "1119"
 title: "Task drawer Move to done fails instantly: click event is sent as the land-anyway reason"
 type: feature
-status: review
+status: active
 priority: p1
 area: web
 assigned_to: ai
