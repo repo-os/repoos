@@ -578,6 +578,13 @@ ${printReport}`,
 
   it("clears needs_input immediately when Review again is clicked (#0565)", async () => {
     const fx = makeFixture(`process.stderr.write("boom\\n"); process.exit(3);`);
+    // This test covers the manual retry action after the task is surfaced to a
+    // human. Disable automatic failed-report retries so it exercises that
+    // exhausted-retries state deterministically.
+    writeFileSync(
+      join(fx.root, "repoos.toml"),
+      "[pressureGuard]\nenabled = false\n\n[review]\nfailedReportRetries = 0\n",
+    );
     await withServer(fx, async (server) => {
       const task = await taskWithWorktree(server, fx, "Review again clears banner");
       await requestReview(server, task.id, task.absPath);

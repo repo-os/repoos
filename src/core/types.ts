@@ -2008,6 +2008,8 @@ export interface ScheduledTasksConfig {
 
 /** Task watchdog configuration (#0180). */
 export interface WatchdogConfig {
+  /** Queued engineer message age before silent-turn recovery. Default 3 minutes. */
+  queuedMessageRecoverMs?: number;
   /** Whether the watchdog runs. Default true. */
   enabled?: boolean;
   /**
@@ -2091,6 +2093,8 @@ export interface ReviewVerificationConfig {
  * from the auto-bounce `review-rounds-exhausted` backstop.
  */
 export interface ReviewConfig {
+  /** Automatic retries after a reviewer exits without a usable report. Default 2. */
+  failedReportRetries?: number;
   /** Completed passes before the repeated-class summary and human flag. Default 5. */
   humanFlagAfterPasses?: number;
   /**

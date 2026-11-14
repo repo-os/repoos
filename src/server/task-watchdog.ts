@@ -572,7 +572,10 @@ export class TaskWatchdog {
           logger: (this.logger ?? { task: () => {} }) as Logger,
           launch: this.launch,
         },
-        { now: stalenessNow },
+        {
+          now: stalenessNow,
+          queuedMessageRecoverMs: this.config.watchdog?.queuedMessageRecoverMs,
+        },
       );
       // The `active` status is scanned for the dead/stalled ENGINEER shape
       // (#0180). The `review` status is scanned too (#0286): a task whose
@@ -612,7 +615,7 @@ export class TaskWatchdog {
     if (typeof this.runner.recoverSilentEngineerWithQueuedMessage !== "function") return;
     for (const task of this.index.getTasks("active")) {
       if (task.isArchived || task.needsInput || isHoldActive(task)) continue;
-      if (task.assignee === "human") continue;
+      if (task.assignee === "human" || task.assignedTo.trim().toLowerCase() === "human") continue;
       if (
         typeof this.runner.hasQueuedMessages === "function" &&
         !this.runner.hasQueuedMessages(task.id)
@@ -620,7 +623,10 @@ export class TaskWatchdog {
         continue;
       }
       try {
-        await this.runner.recoverSilentEngineerWithQueuedMessage(task.id);
+        await this.runner.recoverSilentEngineerWithQueuedMessage(
+          task.id,
+          this.config.watchdog?.queuedMessageRecoverMs,
+        );
       } catch (error) {
         console.error(
           `[repoos] watchdog: queued-message recovery failed for #${task.id}: ${(error as Error).message}`,
