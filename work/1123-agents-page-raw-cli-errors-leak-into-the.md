@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-14T19:46:34Z"
+review_passes: 1
 id: "1123"
 title: "Agents page: raw CLI errors leak into the Default agents last-runs list; classify more failures and hide stale rows"
 type: feature
@@ -11,7 +13,6 @@ branch: feat/agents-page-raw-cli-errors-leak-into-the
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-14T18:02:14Z"
-updated_at: "2026-11-14T19:46:34Z"
 ---
 ## Problem
 On Agents > Agents > Default agents, the "last runs" list (`agentLastRuns` in src/ui-app/src/views/AgentsView.vue, from `GET /api/agents/last-runs` in src/server/server.ts) prints raw CLI output as if it were the message. Seen 2026-11-15 (screenshot attached): the debugger row shows "opencode exited with code 1: > build · deepseek-ai/DeepSeek-V4.1-Flash Error: You need positive balance to do inference. Please add balance manually or setup top-up", and the antigravity rows show a full `AGY_ERROR: {"short_error":"RESOURCE_EXHAUSTED (code 429)...` JSON blob. Only one row (opencode kimi) got the new treatment from #1098: a plain sentence plus a collapsed "Raw CLI error" disclosure.
@@ -109,3 +110,4 @@ Build on #1098 (src/core/agent-failure.ts, `splitAgentFailureDetail`). Related: 
 - 2026-11-14T19:45:32Z · status active→review
 - 2026-11-14T19:45:32Z · message_queued at 2026-11-14T19:45:32.551Z
 - 2026-11-14T19:46:34Z · note: review pass 1: good to go
+
