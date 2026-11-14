@@ -9,8 +9,10 @@ depends_on: ["1112"]
 assigned_to: ai
 created_by: t@t
 branch: ""
+cli_override: codex
+model_override: gpt-6-luna
 created_at: "2026-11-14T09:10:48Z"
-updated_at: "2026-11-14T09:22:34Z"
+updated_at: "2026-11-14T13:18:48Z"
 ---
 ## Problem
 The desktop Work board uses dense multi-column scanning and pointer-oriented interactions. It is difficult to scan and operate on a phone.
@@ -35,3 +37,4 @@ Read ADR 0011 and the shell contract in #1112. Inspect and reuse the existing ta
 - 2026-11-14T09:10:51Z · needs_input
 - 2026-11-14T09:11:40Z · depends_on, body: Desired UX (added); Acceptance criteria (added 6, removed 6); Notes for AI (added); Desired outcome (removed)
 - 2026-11-14T09:22:34Z · needs_input
+- 2026-11-14T13:18:48Z · cli_override, model_override
