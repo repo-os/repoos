@@ -13,7 +13,7 @@ branch: feat/repoos-hub-app-native-looking-server-pic
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-14T16:53:29Z"
-updated_at: "2026-11-14T22:14:29Z"
+updated_at: "2026-11-14T22:18:53Z"
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-11-14T21:07:45.909Z: repoos check failed: ui verification failed (2 issue(s)): [missing-target] Hub server list (Android, dark classic) (target \"default\"): highlight [data-testid=\"hub-server-list\"] matched nothing on /?fixture=many&platform=android&appearance=dark&theme=classic (http://127.0.0.1:41679/?fixture=many&platform=android&appearance=dark&theme=classic); [missing-target] Hub Settings (iOS, light gruvbox) (target \"default\"): highlight [data-testid=\"hub-settings\"] matched nothing on /?fixture=settings&platfor… (truncated)"
 dev_error_count: 3
@@ -159,3 +159,4 @@ Read docs/mobile-architecture.md, docs/adr/0011-mobile-web-ui.md (the native she
 - 2026-11-14T21:57:00Z · body
 - 2026-11-14T21:57:14Z · body
 - 2026-11-14T22:14:29Z · body
+- 2026-11-14T22:18:53Z · CTO nudge: held — handoff gate is running
