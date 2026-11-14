@@ -745,8 +745,9 @@ export async function cutNewRelease(
   // A previous run can have completed the gate and pushed main, then failed
   // while creating/pushing the tag. Reuse that gate result only when the
   // remote advertises the exact current commit.
-  if (preexistingBump) {
+  if (status.version === version) {
     const head = await exec("git", ["rev-parse", "HEAD"], config.root);
+    const subject = await exec("git", ["log", "-1", "--format=%s"], config.root);
     const remote = release.remote ?? "origin";
     const advertised = await exec(
       "git",
@@ -755,7 +756,18 @@ export async function cutNewRelease(
       30_000,
     );
     const remoteSha = advertised.code === 0 ? advertised.stdout.trim().split(/\s+/)[0] : "";
-    if (head.code === 0 && remoteSha && head.stdout.trim() === remoteSha) mainPushed = true;
+    // `origin/main..HEAD` is empty after the push, so it cannot identify a
+    // previously pushed bump. Require the release commit subject as well as
+    // exact ref equality before reusing the passed gate on a retry.
+    if (
+      head.code === 0 &&
+      subject.code === 0 &&
+      subject.stdout.trim() === bumpSubject &&
+      remoteSha &&
+      head.stdout.trim() === remoteSha
+    ) {
+      mainPushed = true;
+    }
   }
   /**
    * Fail after the version bump was committed. A failure before `pushing_main`

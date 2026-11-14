@@ -1417,6 +1417,7 @@ export function classifyRemoteExecFailure(run: {
   // Exit 128 is commonly git's fatal transport/ref error. It can occur while
   // preparing a remote bundle, before any test gate has started.
   if (
+    !remoteRunHasGateExit(output) &&
     /fatal: (?:could not|unable to|cannot) (?:read|access|connect|fetch|push)|fatal:.*(?:git|repository|remote)/i.test(
       output,
     )

@@ -467,6 +467,33 @@ describe("release gate CLI selection (#0780)", () => {
     writeFileSync(join(cfg.root, "package.json"), JSON.stringify(manifest));
   }
 
+  it("resumes at tagging when the release commit is already the advertised main head", async () => {
+    const cfg = config();
+    writeManifest(cfg, { version: "1.2.4" });
+    const calls: string[] = [];
+    const result = await cutNewRelease(
+      cfg,
+      "1.2.4",
+      "v1.2.4",
+      releaseRunner(cfg, calls, {
+        gitOverrides: {
+          "log origin/main..HEAD --format=%s": { code: 0, stdout: "", stderr: "" },
+          "log -1 --format=%s": { code: 0, stdout: "release: v1.2.4\n", stderr: "" },
+          "ls-remote origin refs/heads/main": {
+            code: 0,
+            stdout: "abc123\trefs/heads/main\n",
+            stderr: "",
+          },
+        },
+      }),
+    );
+
+    expect(result.ok).toBe(true);
+    expect(calls).not.toContain("bun run build");
+    expect(calls.some((call) => call.includes("check"))).toBe(false);
+    expect(calls).toContain("git push origin v1.2.4");
+  });
+
   it("detects a bin target pointing at dist/cli/index.js", () => {
     const stringBin = config();
     writeManifest(stringBin, { version: "1.0.0", bin: "dist/cli/index.js" });

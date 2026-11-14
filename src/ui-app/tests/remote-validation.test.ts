@@ -165,6 +165,15 @@ describe("classifyRemoteExecFailure (#0745)", () => {
     expect(cls).toMatchObject({ kind: "test", transient: false, markHostDegraded: false });
   });
 
+  it("keeps a gate failure classified as test when output also contains a git fatal", () => {
+    const cls = classifyRemoteExecFailure({
+      code: 128,
+      timedOut: false,
+      output: "fatal: could not read from remote repository\n[validate] gate exit 128\n",
+    });
+    expect(cls).toMatchObject({ kind: "test", transient: false, markHostDegraded: false });
+  });
+
   it("treats ssh timeout as unreachable infra", () => {
     const cls = classifyRemoteExecFailure({
       code: 255,
