@@ -13,7 +13,7 @@ branch: feat/repoos-hub-app-native-looking-server-pic
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-14T16:53:29Z"
-updated_at: "2026-11-14T21:44:58Z"
+updated_at: "2026-11-14T21:57:00Z"
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-11-14T21:07:45.909Z: repoos check failed: ui verification failed (2 issue(s)): [missing-target] Hub server list (Android, dark classic) (target \"default\"): highlight [data-testid=\"hub-server-list\"] matched nothing on /?fixture=many&platform=android&appearance=dark&theme=classic (http://127.0.0.1:41679/?fixture=many&platform=android&appearance=dark&theme=classic); [missing-target] Hub Settings (iOS, light gruvbox) (target \"default\"): highlight [data-testid=\"hub-settings\"] matched nothing on /?fixture=settings&platfor… (truncated)"
 dev_error_count: 3
@@ -39,7 +39,34 @@ Read docs/mobile-architecture.md, docs/adr/0011-mobile-web-ui.md (the native she
 
 ## Shots
 ```json
-[]
+[
+{
+  "label": "Hub server list (Android, Gruvbox dark)",
+  "route": "/?fixture=many&platform=android&theme=gruvbox&appearance=dark",
+  "highlight": "[data-testid=\"hub-server-list\"]",
+  "viewportWidth": 390,
+  "viewportHeight": 844
+},
+{
+  "label": "Hub Settings (iOS, Jelly light)",
+  "route": "/?fixture=settings&platform=ios&theme=jelly&appearance=light",
+  "highlight": "[data-testid=\"hub-settings\"]",
+  "steps": [
+    {
+      "click": "[data-testid=\"hub-open-settings\"]"
+    }
+  ],
+  "viewportWidth": 390,
+  "viewportHeight": 844
+},
+{
+  "label": "Hub empty state (Android, Classic dark)",
+  "route": "/?fixture=empty&platform=android&theme=classic&appearance=dark",
+  "highlight": "[data-testid=\"hub-empty-state\"]",
+  "viewportWidth": 390,
+  "viewportHeight": 844
+}
+]
 ```
 
 ## Screenshots
@@ -134,3 +161,4 @@ Read docs/mobile-architecture.md, docs/adr/0011-mobile-web-ui.md (the native she
 - 2026-11-14T21:44:56Z · needs_input
 - 2026-11-14T21:44:57Z · needs_input
 - 2026-11-14T21:44:58Z · message_delivered: 1 message(s)
+- 2026-11-14T21:57:00Z · body
