@@ -2,7 +2,7 @@
 id: "1105"
 title: "repoos servers --tailscale: list RepoOS servers across the tailnet"
 type: feature
-status: review
+status: active
 priority: p2
 area: [server, core]
 assigned_to: ai
@@ -12,6 +12,7 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T03:22:32Z"
 updated_at: "2026-11-14T03:40:24Z"
+review_rounds: 1
 review_passes: 1
 ---
 ## Problem
@@ -43,3 +44,4 @@ Reuse `src/core/tailscale.ts` and `src/core/remote-hosts.ts`. Do not add a runti
 - 2026-11-14T03:38:46Z · note: shots: skipped — Docs site skipped: no docs shot declared
 - 2026-11-14T03:40:24Z · note: review pass 1: needs some work
 - 2026-11-14T03:40:24Z · message_delivered: 1 message(s)
+- 2026-11-14T03:40:24Z · status review→active
