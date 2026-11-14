@@ -66,3 +66,4 @@ Read ADR 0011 and the shell contract in #1112. Inspect and reuse the existing ta
 - 2026-11-14T13:45:50Z · body
 - 2026-11-14T13:46:49Z · CTO nudge: held — handoff gate is running
 - 2026-11-14T13:50:29Z · note: ui verification failed: ui verification failed (1 issue(s)): [missing-target] Single-column mobile Work queue (target "default"): highlight [data-testid="mobile-work-queue"] matched nothing on /work (http://127.0.0.1:46519/work)
+- 2026-11-14T13:50:29Z · message_queued at 2026-11-14T13:50:29.740Z
