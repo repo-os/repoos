@@ -3,6 +3,8 @@ import { mkdtempSync, rmSync, writeFileSync, mkdirSync, rmdirSync } from "node:f
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Readable } from "node:stream";
+import { createServer } from "node:http";
+import type { AddressInfo } from "node:net";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import type { RouteContext } from "../../server/routes/types.js";
 import {
@@ -14,6 +16,7 @@ import type { RepoOSConfig } from "../../core/types.js";
 import { loadConfig, parseReleaseEmailConfig } from "../../core/config.js";
 import {
   deliverCutReleaseEmail,
+  createReleaseUnsubscribeUrl,
   escapeHtml,
   getReleaseEmailRecord,
   isPrereleaseVersion,
@@ -24,6 +27,7 @@ import {
   resendReleaseEmail,
   startCutReleaseEmail,
   waitForPublishedRelease,
+  unsubscribeReleaseEmail,
   type ReleaseEmailDeps,
 } from "../../server/release-email.js";
 import { readReleaseHistory, type ReleaseHistoryEntry } from "../../server/release-history.js";
@@ -132,6 +136,63 @@ function publishedResponse(): Response {
   });
 }
 
+describe("deliverCutReleaseEmail Resend wiring", () => {
+  it("posts one correctly addressed Resend message per recipient to a local endpoint", async () => {
+    const requests: Array<{
+      headers: Record<string, string | string[] | undefined>;
+      body: unknown;
+    }> = [];
+    const server = createServer((req, res) => {
+      const chunks: Buffer[] = [];
+      req.on("data", (chunk: Buffer) => chunks.push(chunk));
+      req.on("end", () => {
+        requests.push({
+          headers: req.headers,
+          body: JSON.parse(Buffer.concat(chunks).toString("utf8")),
+        });
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end('{"id":"local-test"}');
+      });
+    });
+    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+    const localUrl = `http://127.0.0.1:${(server.address() as AddressInfo).port}/emails`;
+    const config = makeConfig();
+    const fetchLocalResend = ((input: RequestInfo | URL, init?: RequestInit) => {
+      expect(String(input)).toBe("https://api.resend.com/emails");
+      return fetch(localUrl, init);
+    }) as typeof fetch;
+
+    try {
+      const record = await deliverCutReleaseEmail(
+        config,
+        entry(),
+        {},
+        { fetchImpl: fetchLocalResend },
+      );
+
+      expect(record?.status).toBe("sent");
+      expect(record?.sentTo).toEqual(RECIPIENTS);
+      expect(requests).toHaveLength(RECIPIENTS.length);
+      expect(requests.map(({ headers }) => headers.authorization)).toEqual(
+        RECIPIENTS.map(() => `Bearer ${FAKE_KEY}`),
+      );
+      expect(requests.map(({ body }) => body)).toEqual(
+        RECIPIENTS.map((to) => ({
+          from: `RepoOS <${FAKE_FROM}>`,
+          to: [to],
+          subject: "RepoOS v0.6.0 is out",
+          html: expect.any(String),
+          text: expect.any(String),
+        })),
+      );
+    } finally {
+      await new Promise<void>((resolve, reject) =>
+        server.close((error) => (error ? reject(error) : resolve())),
+      );
+    }
+  });
+});
+
 describe("isPrereleaseVersion", () => {
   it("flags beta, canary and rc tags and passes stable versions", () => {
     expect(isPrereleaseVersion("0.6.0-beta.1")).toBe(true);
@@ -203,6 +264,45 @@ describe("renderReleaseEmail", () => {
     expect(withRepo.html).toContain("https://github.com/repo-os/repoos/releases/tag/v0.6.0");
     expect(withRepo.html).toContain("https://github.com/repo-os/repoos/blob/v0.6.0/CHANGELOG.md");
     expect(withRepo.text).toContain("Release on GitHub: https://github.com/repo-os/repoos");
+  });
+
+  it("groups release notes into features, fixes, and other sections", () => {
+    const out = renderReleaseEmail(
+      makeConfig(),
+      entry({
+        notes:
+          "## Features\n- New dashboard\n## Fixes\n- Corrected export\n## Other\n- Updated docs",
+      }),
+    );
+    expect(out.html).toContain("<h3");
+    expect(out.html.indexOf("Features")).toBeLessThan(out.html.indexOf("Fixes"));
+    expect(out.html.indexOf("Fixes")).toBeLessThan(out.html.indexOf("Other"));
+    expect(out.html).toContain("New dashboard");
+    expect(out.html).toContain("Corrected export");
+    expect(out.html).toContain("Updated docs");
+  });
+
+  it("builds release and changelog links for a non-GitHub repository URL", () => {
+    const out = renderReleaseEmail(
+      makeConfig({}, { repository: "https://codeberg.org/team/project" }),
+      entry(),
+    );
+    expect(out.html).toContain("https://codeberg.org/team/project/-/releases/tag/v0.6.0");
+    expect(out.html).toContain("https://codeberg.org/team/project/-/blob/v0.6.0/CHANGELOG.md");
+  });
+
+  it("creates a recipient-specific unsubscribe token and suppresses that recipient", () => {
+    const url = createReleaseUnsubscribeUrl(
+      makeConfig(),
+      "team-a@example.test",
+      "https://app.example.test",
+    );
+    expect(url).toMatch(
+      /^https:\/\/app\.example\.test\/api\/release\/email\/unsubscribe\?token=[a-f0-9]+$/,
+    );
+    const token = new URL(url).searchParams.get("token")!;
+    expect(unsubscribeReleaseEmail(makeConfig(), token)).toBe(true);
+    expect(unsubscribeReleaseEmail(makeConfig(), token)).toBe(false);
   });
 
   it("shows the upgrade command only when one is supplied", () => {

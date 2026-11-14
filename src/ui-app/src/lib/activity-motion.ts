@@ -55,9 +55,9 @@ function onOcclusionEvent(): void {
 }
 
 function nodeTouchesOverlayLayer(node: Node): boolean {
-  // MutationObserver callbacks can run after jsdom has torn down its globals.
-  // Use the node type instead of the global Element constructor so a late
-  // callback is harmless when `Element` is no longer defined.
+  // MutationObserver deliveries can outlive jsdom's window during worker
+  // teardown. Avoid the realm global (`Element`), which may already be gone;
+  // the node's DOM type and methods remain available on the queued record.
   if (node.nodeType !== 1) return false;
   const element = node as Element;
   if (element.hasAttribute(OVERLAY_LAYER_ATTR)) return true;

@@ -2,19 +2,20 @@
 id: "1098"
 title: "Surface why an agent failed (expired auth, unavailable model) on the task card and in a notification, not only in the activity log"
 type: feature
-status: active
+status: done
 priority: p2
 area: [web, server, core]
+merged_commit: 119902eeeba6c0f2ab1e2a6adfa4fe83c0658e95
 assigned_to: ai
 created_by: t@t
 branch: feat/surface-why-an-agent-failed-expired-auth
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-12T05:35:20Z"
-updated_at: "2026-11-13T02:38:32Z"
-last_handoff_failure_fingerprint: "check|repoos check failed: tests — tests/handoff-unification.test.ts > the runner finalizes a `repoos mv review` request at turn end (#0507) > ignores a marker left behind by an earlier turn — at check tests/handoff-unification.test.ts:156:50 — Error: timeout: the turn ends"
-last_handoff_failure_sha: 1d8580e59488533a22962294050c61990436f9d4
-review_passes: 5
+updated_at: "2026-11-13T06:23:35Z"
+last_close_out_gate_ms: 597784
+last_close_out_gate_at: "2026-11-13T05:53:53.521Z"
+review_passes: 6
 review_rounds: 2
 last_check_failure: "repoos check at 2026-11-12T16:42:50.789Z: repoos check failed: tests — tests/pre-review-remote-gate.test.ts > standalone `repoos check` remote failure (#0520) > exits non-zero AND records the failure for the Checks surface when the runner is unusable — at tests/pre-review-remote-gate.test.ts:486:26 — AssertionError: expected +0 to be 1 // Object.is equality"
 handoff_signal_retry_count: 2
@@ -140,3 +141,13 @@ Related code: src/core/copilot-auto-tier.ts and enrichAgentFailureDetail in src/
 - 2026-11-13T02:38:32Z · message_queued at 2026-11-13T02:38:32.022Z
 - 2026-11-13T02:38:32Z · handoff failed · task-file handoff failed at check · repoos check failed: tests — tests/handoff-unification.test.ts > the runner finalizes a `repoos mv review` request at turn end (#0507) > ignores a marker left behind by an earlier turn — at check tests/handoff-unification.test.ts:156:50 — Error: timeout: the turn ends
 - 2026-11-13T02:38:32Z · message_delivered: 3 message(s)
+- 2026-11-13T02:52:59Z · body
+- 2026-11-13T02:54:12Z · CTO nudge: held — handoff gate is running
+- 2026-11-13T02:59:23Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
+- 2026-11-13T02:59:24Z · status active→review
+- 2026-11-13T02:59:25Z · message_queued at 2026-11-13T02:59:25.056Z
+- 2026-11-13T03:01:47Z · note: review pass 6: good to go
+- 2026-11-13T04:09:11Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-13T05:53:53Z · close-out gate completed in 598s
+- 2026-11-13T05:54:39Z · status done→done, release:success
+- 2026-11-13T06:23:35Z · message_dropped: 1 queued message(s) discarded — task is done

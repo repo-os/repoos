@@ -174,6 +174,7 @@ export function assembleAttentionFeed(deps: AttentionFeedDeps): AttentionFeed {
     board?.recentFailures.map((r) => ({
       sessionId: r.sessionId,
       taskId: r.taskId ?? null,
+      codingAgent: r.codingAgent ?? null,
       errorReason: r.errorReason,
       startedAt: r.startedAt,
     })) ?? [];

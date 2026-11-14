@@ -214,6 +214,8 @@ import { closeOutPending, createJobCoordinator, type JobCoordinator } from "./in
 import { createCloseOutOutcomeStore } from "./close-out-outcome.js";
 import { createAttentionEventStore } from "./attention-events.js";
 import { createCtoActionRateStore } from "./cto-action-rates.js";
+import { getRepoOSDb } from "../core/db.js";
+import { formatAgentFailure } from "../core/agent-failure.js";
 import { runCtoMonitorSafeActions } from "./cto-actions.js";
 import {
   notifyAttentionProcessSignalFailure,
@@ -290,6 +292,7 @@ import {
   getUnpushedReleaseNotes,
   runRelease,
   sendReleaseEmailNow,
+  unsubscribeReleaseEmailRoute,
 } from "./routes/release.js";
 import { getDeployments, postDeploy } from "./routes/deployments.js";
 import {
@@ -3632,6 +3635,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("GET", "/api/release/email", getReleaseEmail);
   router.register("GET", "/api/release/email/preview", getReleaseEmailPreview);
   router.register("POST", "/api/release/email/send", sendReleaseEmailNow);
+  router.register("GET", "/api/release/email/unsubscribe", unsubscribeReleaseEmailRoute);
   router.register("GET", "/api/deployments", getDeployments);
   router.register("POST", "/api/deployments/deploy", postDeploy);
   // Dev targets (#0747): list/start/stop/restart a user-declared target. The
@@ -4181,6 +4185,24 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
 
   // Agent routes
   router.register("GET", "/api/agents/running", runningAgents);
+  router.register("GET", "/api/agents/last-runs", (_ctx, _req, res) => {
+    const rows = getRepoOSDb(config.root)?.getAgentLastRuns() ?? [];
+    return json(res, 200, {
+      agents: rows.map((row) => {
+        const reason =
+          row.status === "errored" && row.errorReason
+            ? formatAgentFailure(row.errorReason, row.codingAgent ?? "")
+            : null;
+        return {
+          name: row.agent,
+          status: row.status,
+          at: row.startedAt,
+          taskId: row.taskId,
+          reason,
+        };
+      }),
+    });
+  });
   router.register("GET", "/api/agents/queued", queuedAgents);
   router.register("GET", "/api/agents/detect", detectInstalledAgents);
   router.register("GET", "/api/agents/detect/stream", streamDetectAgents);
@@ -4373,6 +4395,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           // break delivery, and one that drops the route handler's secret check
           // would expose the repo to the open internet.
           "/api/telegram/webhook/",
+          "/api/release/email/unsubscribe",
         ];
         const PUBLIC_PATHS = ["/login", "/manifest.webmanifest"];
         const isPublicRoute =

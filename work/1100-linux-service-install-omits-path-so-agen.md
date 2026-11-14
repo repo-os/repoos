@@ -2,16 +2,20 @@
 id: "1100"
 title: Linux service install omits PATH so agent CLIs fail with spawn ENOENT
 type: bug
-status: active
+status: done
 priority: p1
 area: core
+merged_commit: 374db7710820c3e894058cba0c61117371a8abeb
 assigned_to: ai
 created_by: t@t
 branch: feat/linux-service-install-omits-path-so-agen
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-13T01:24:51Z"
-updated_at: "2026-11-13T02:49:32Z"
+updated_at: "2026-11-13T06:35:59Z"
+last_close_out_gate_ms: 735166
+last_close_out_gate_at: "2026-11-13T06:30:58.622Z"
+review_passes: 1
 ---
 ## Problem
 
@@ -33,3 +37,17 @@ Look at the service install code that writes the systemd unit and the engineer l
 - 2026-11-13T02:49:29Z · cli_override, model_override
 - 2026-11-13T02:49:31Z · status inbox→ready
 - 2026-11-13T02:49:32Z · status ready→active, branch
+- 2026-11-13T03:03:30Z · body
+- 2026-11-13T03:29:12Z · message_queued at 2026-11-13T03:29:12.046Z
+- 2026-11-13T03:29:12Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-13T03:30:21Z · body
+- 2026-11-13T03:34:11Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-13T03:39:12Z · body
+- 2026-11-13T03:40:11Z · status active→review
+- 2026-11-13T03:40:11Z · message_queued at 2026-11-13T03:40:11.579Z
+- 2026-11-13T03:40:11Z · note: shots: skipped — the diff (7 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-11-13T03:41:12Z · note: review pass 1: good to go
+- 2026-11-13T04:41:00Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-13T06:30:58Z · close-out gate completed in 735s
+- 2026-11-13T06:31:26Z · status done→done, release:success
+- 2026-11-13T06:35:59Z · message_dropped: 1 queued message(s) discarded — task is done

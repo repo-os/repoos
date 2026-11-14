@@ -2,17 +2,20 @@
 id: "1094"
 title: "Release email: rich templates"
 type: feature
-status: inbox
-needs_input: true
-needs_input_reason: underspecified
-needs_input_detail: "missing sections: Desired UX"
+status: done
 priority: p3
 area: [web, server]
+merged_commit: 5ad8dc919c0f17881533b7d93238aa2aaa9e7893
 assigned_to: ai
 created_by: njachowski@gmail.com
-branch: ""
+branch: feat/release-email-rich-templates
+cli_override: codex
+model_override: gpt-6-luna
 created_at: "2026-11-11T05:28:26Z"
-updated_at: "2026-11-11T07:43:59Z"
+updated_at: "2026-11-13T14:52:17Z"
+last_close_out_gate_ms: 743795
+last_close_out_gate_at: "2026-11-13T14:40:34.596Z"
+review_passes: 1
 ---
 ## Problem
 The first release-email cut (#1071) renders one plain HTML and text pair. The spec asked for grouped release notes, per-recipient unsubscribe and links that work for non-GitHub hosts. None of these fit the first cut, so they are filed here.
@@ -31,3 +34,18 @@ See src/server/release-email.ts (renderReleaseEmail). Keep zero runtime dependen
 - 2026-11-11T05:28:26Z · created · njachowski@gmail.com
 - 2026-11-11T05:28:27Z · needs_input
 - 2026-11-11T05:28:40Z · body: Problem (added); Acceptance criteria (added); Notes for AI (added)
+- 2026-11-13T11:55:47Z · cli_override, model_override
+- 2026-11-13T11:56:01Z · status inbox→ready
+- 2026-11-13T11:56:06Z · status ready→active, needs_input, branch
+- 2026-11-13T12:13:27Z · body
+- 2026-11-13T12:20:35Z · body
+- 2026-11-13T12:22:40Z · CTO nudge: held — handoff gate is running
+- 2026-11-13T12:22:41Z · status active→review
+- 2026-11-13T12:22:41Z · note: Task body is underspecified: missing sections: Desired UX
+- 2026-11-13T12:22:41Z · message_queued at 2026-11-13T12:22:41.493Z
+- 2026-11-13T12:22:41Z · note: shots: skipped — the diff (7 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-11-13T12:23:24Z · note: review pass 1: good to go
+- 2026-11-13T14:30:06Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-13T14:40:34Z · close-out gate completed in 744s
+- 2026-11-13T14:40:49Z · status done→done, release:success
+- 2026-11-13T14:52:17Z · message_dropped: 1 queued message(s) discarded — task is done

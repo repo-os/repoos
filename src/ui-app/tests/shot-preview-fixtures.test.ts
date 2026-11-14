@@ -504,7 +504,8 @@ describe("shot preview board fixtures (#0743)", () => {
     expect(task, "card:agentFailed seeds the fixture task").toBeTruthy();
     expect(task!.status).toBe("active");
     expect(task!.needsInputReason).toBe("dev-error");
-    expect(task!.needsInputDetail).toContain("Could not create the task worktree");
+    expect(task!.needsInputDetail).toContain("is signed out");
+    expect(task!.needsInputDetail).toContain("(CLI: Authentication required");
     expect(task!.git.dirty).toBe(true);
   });
 

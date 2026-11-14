@@ -56,12 +56,12 @@ import { useNoticesStore } from "../stores/notices";
 import { renderMarkdown } from "../lib/markdown";
 import { annotateAttachmentCloudUploads } from "../lib/attachment-cloud-markdown";
 import { fmtFullDateTime, fmtShortDateTime, fmtTime, formatDuration, relTime } from "../lib/time";
+import { useNow } from "../composables/useNow";
 import { fmtTokens } from "../lib/format";
 import { api, JSON_OPTS } from "../api";
 import { checkRunSkipped } from "../../../core/check-skip.js";
 import { extractReviewReportSections } from "../../../core/review-report-sections.js";
 import { PRIORITIES, TASK_TYPES } from "../../../core/types.js";
-import { useNow } from "../composables/useNow";
 import {
   integrationActiveCopy,
   integrationQueuedCopy,
@@ -97,6 +97,7 @@ import {
   resolveNeedsInputReasonKey,
   STALE_REVIEW_DEV_ERROR_BANNER,
 } from "../lib/needs-input-ui";
+import { splitAgentFailureDetail } from "../../../core/agent-failure.js";
 import Button from "./ui/button.vue";
 import Input from "./ui/input.vue";
 import ActivityIndicator from "./ActivityIndicator.vue";
@@ -567,15 +568,10 @@ const lastDurableCheck = computed(() => {
 });
 
 /** Ticks once a second while a check runs, so the elapsed time stays live. */
-const checkNow = ref(Date.now());
-let checkTick: ReturnType<typeof setInterval> | undefined;
+const checkNow = useNow();
 let checkRowsTimer: ReturnType<typeof setInterval> | undefined;
 
 function stopCheckLoops(): void {
-  if (checkTick) {
-    clearInterval(checkTick);
-    checkTick = undefined;
-  }
   if (checkRowsTimer) {
     clearInterval(checkRowsTimer);
     checkRowsTimer = undefined;
@@ -588,8 +584,6 @@ function startCheckLoops(taskId: string): void {
   void repo.refreshTaskChecks(taskId, { remoteOnly: true });
   void repo.refreshHandoffStatus(taskId);
   void repo.refreshLocalCheckSlots();
-  checkNow.value = Date.now();
-  checkTick = setInterval(() => (checkNow.value = Date.now()), 1000);
   checkRowsTimer = setInterval(() => {
     void refreshCheckRows(taskId);
     void repo.refreshHandoffStatus(taskId);
@@ -3328,11 +3322,16 @@ function openSkillSuggestion(): void {
 const activeNeedsInputQuestions = computed(() => (ui.active?.questions?.length ?? 0) > 0);
 const activeNeedsInputDetailLine = computed(() => {
   if (!ui.active) return null;
-  return formatNeedsInputDetailForDisplay(
+  const detail = formatNeedsInputDetailForDisplay(
     ui.active.needsInputReason,
     ui.active.needsInputDetail,
     activeNeedsInputQuestions.value,
   );
+  return detail ? splitAgentFailureDetail(detail).summary : null;
+});
+const activeNeedsInputRawFailure = computed(() => {
+  const detail = ui.active?.needsInputDetail;
+  return detail ? splitAgentFailureDetail(detail).raw : null;
 });
 
 /**
@@ -3361,6 +3360,7 @@ const showAgentQuestionsBanner = computed(() => {
 const drawerWaitingCardVisible = computed(() => {
   const task = ui.active;
   if (!task || !needsInputSurfaces(task)) return false;
+  if (handoffError.value || repo.doneErrorFor(task.id)) return false;
   if (showAgentQuestionsBanner.value) return true;
   return Boolean(
     !handoffBusy.value &&
@@ -6100,6 +6100,7 @@ watch(
             v-if="ui.active.status === 'review' && repo.doneErrorFor(ui.active.id)"
             class="drawer-done-error"
             mode="panel"
+            :hide-help="true"
             :message="repo.doneErrorFor(ui.active.id)!.message"
             :step="repo.doneErrorFor(ui.active.id)!.step"
             :conflicts="repo.doneErrorFor(ui.active.id)!.conflicts"
@@ -6129,7 +6130,15 @@ watch(
           <!-- Critical status lives above the tabs so it is visible no matter
              which tab is open — a "needs input" / "reviewer crashed" message
              buried in one tab is a message the human never sees. -->
-          <div v-if="showAgentQuestionsBanner && ui.active" class="drawer-critical">
+          <div
+            v-if="
+              showAgentQuestionsBanner &&
+              ui.active &&
+              !handoffError &&
+              !repo.doneErrorFor(ui.active.id)
+            "
+            class="drawer-critical"
+          >
             <div class="questions-for-you-banner" role="region" aria-label="Questions for you">
               <div class="questions-for-you-head">
                 <span class="questions-for-you-badge">Questions for you</span>
@@ -6199,6 +6208,10 @@ watch(
                   }}</span>
                   <span class="diagnostic-details-affordance">Details</span>
                 </button>
+                <details v-if="activeNeedsInputRawFailure" class="agent-failure-raw">
+                  <summary>Raw CLI error</summary>
+                  <pre>{{ activeNeedsInputRawFailure }}</pre>
+                </details>
                 <div class="agent-waiting-actions">
                   <Button
                     v-if="needsInputPrimary && !staleNeedsInputOnReview"
@@ -8398,6 +8411,12 @@ watch(
   line-height: 1.35;
   text-align: left;
   cursor: pointer;
+}
+
+.drawer-done-error {
+  width: calc(100% - 44px);
+  margin: 8px 22px;
+  box-sizing: border-box;
 }
 
 .drawer-status-summary.is-compact {

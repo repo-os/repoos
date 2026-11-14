@@ -88,6 +88,7 @@ const FILE_CLI_MATCHERS: Matcher[] = [
   exact("GET", "/api/check-plan"),
   // `repoos release email --preview <version>` (#1092).
   exact("GET", "/api/release/email/preview"),
+  exact("GET", "/api/release/email/unsubscribe"),
   // `repoos schedule …` (#0093): task schedule definitions under schedules/.
   exact("GET", "/api/reminders"),
   exact("POST", "/api/reminders"),
@@ -199,6 +200,8 @@ const UI_ONLY_MATCHERS: Matcher[] = [
   // the registry, never from a client path.
   re("POST", /^\/api\/project-environments\/([^/]+)\/open-in-editor$/.source),
   exact("GET", "/api/agents/queued"),
+  // Agents page: latest run status and failure reason for each agent.
+  exact("GET", "/api/agents/last-runs"),
   exact("GET", "/api/agents/detect"),
   exact("GET", "/api/agents/detect/stream"),
   exact("POST", "/api/agents/updates"),

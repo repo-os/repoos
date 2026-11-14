@@ -1711,7 +1711,8 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
       });
       break;
     case "card:agentFailed":
-      // #0997 — an engineer that stopped with a concrete cause. The card must
+      // #0997/#1098 — an engineer that stopped with a concrete cause (a signed-out
+      // CLI, shown as plain-language guidance plus a Raw CLI error disclosure). The card must
       // hover and act on that reason, and its dirty worktree makes "Restart
       // work" open the restart confirmation.
       ensureFixtureTask(repo, "active", {
@@ -1719,7 +1720,7 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
         needsInput: true,
         needsInputReason: "dev-error",
         needsInputDetail:
-          "crash recovery could not start the engineer: Could not create the task worktree: not a git repository",
+          "Cursor is signed out. Re-authenticate Cursor on this computer. (CLI: Authentication required. Please run `cursor-agent login`)",
         git: {
           branchExists: true,
           worktreeExists: true,
