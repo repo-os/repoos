@@ -12,7 +12,7 @@ branch: feat/docs-and-landing-sync-after-v0-5-84-user
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T09:08:28Z"
-updated_at: "2026-11-14T09:40:12Z"
+updated_at: "2026-11-14T09:40:18Z"
 last_close_out_gate_ms: 73456
 last_close_out_gate_at: "2026-11-14T09:40:12.493Z"
 review_passes: 2
@@ -51,4 +51,4 @@ Follow docs/agents-md-size.md: do not grow AGENTS.md. Put findings in the engine
 - 2026-11-14T09:19:10Z · note: shots: skipped — Docs site skipped: no docs shot declared
 - 2026-11-14T09:19:42Z · note: review pass 2: good to go
 - 2026-11-14T09:40:12Z · close-out gate completed in 73s
-
+- 2026-11-14T09:40:18Z · status done→done, release:success
