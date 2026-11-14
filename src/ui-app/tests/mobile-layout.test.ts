@@ -63,4 +63,45 @@ describe("mobile app layout", () => {
     expect(ids).toContain("repo");
     expect(ids).toContain("dashboard");
   });
+
+  it("defaults floating heads off on phones and on at desktop widths, with a device override", async () => {
+    localStorage.removeItem("repoos-floating-heads-visible");
+    const media = { matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn() };
+    vi.stubGlobal(
+      "matchMedia",
+      vi.fn(() => media),
+    );
+    vi.resetModules();
+    const { useFloatingHeadsPreference } =
+      await import("../src/composables/useFloatingHeadsPreference");
+    let preference!: ReturnType<typeof useFloatingHeadsPreference>;
+    const wrapper = mount(
+      defineComponent({
+        setup() {
+          preference = useFloatingHeadsPreference();
+          return () => h("div");
+        },
+      }),
+    );
+    expect(preference.visible.value).toBe(false);
+    preference.setVisible(true);
+    expect(preference.visible.value).toBe(true);
+    expect(localStorage.getItem("repoos-floating-heads-visible")).toBe("true");
+    wrapper.unmount();
+
+    localStorage.removeItem("repoos-floating-heads-visible");
+    (media as { matches: boolean }).matches = false;
+    vi.resetModules();
+    const desktop = await import("../src/composables/useFloatingHeadsPreference");
+    const desktopWrapper = mount(
+      defineComponent({
+        setup() {
+          preference = desktop.useFloatingHeadsPreference();
+          return () => h("div");
+        },
+      }),
+    );
+    expect(preference.visible.value).toBe(true);
+    desktopWrapper.unmount();
+  });
 });

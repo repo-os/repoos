@@ -1,13 +1,12 @@
 ---
-last_close_out_gate_ms: 2423122
-last_close_out_gate_at: "2026-11-14T18:46:44.016Z"
 id: "1116"
 title: Finish touch affordances across mobile surfaces
 type: feature
-status: review
+status: done
 priority: p1
 area: web
 depends_on: ["1112", "1114", "1115"]
+merged_commit: ef69819c6b0eb65ebf6ad595e13f707bfd56b4cf
 assigned_to: ai
 created_by: t@t
 branch: feat/finish-touch-affordances-across-mobile-s
@@ -15,6 +14,8 @@ cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-14T09:11:01Z"
 updated_at: "2026-11-14T18:46:44Z"
+last_close_out_gate_ms: 2423122
+last_close_out_gate_at: "2026-11-14T18:46:44.016Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-14T18:05:30.510Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 review_passes: 2

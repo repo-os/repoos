@@ -61,7 +61,10 @@ describe("standard page height and floating controls", () => {
       /@media \(max-width: 760px\)[\s\S]*?:root\s*\{[^}]*--floating-head-size:\s*46px/s,
     );
     expect(css).toMatch(
-      /@media \(max-width: 760px\)[\s\S]*?\.main\s*\{[^}]*padding:\s*18px 16px 0;[^}]*padding-inline-end:\s*max\(16px,\s*var\(--page-inline-end-inset\)\)/s,
+      /@media \(max-width: 719\.98px\)[\s\S]*?#app\s*\{[^}]*--page-inline-end-inset:\s*0px/s,
+    );
+    expect(css).toMatch(
+      /@media \(max-width: 719\.98px\)[\s\S]*?\.main\s*\{[^}]*padding:\s*18px 16px 0;[^}]*padding-inline-end:\s*16px/s,
     );
     expect(floatingHeads).toMatch(/\.stack\s*\{[^}]*gap:\s*var\(--floating-head-gap\)/s);
     expect(floatingHeads).toMatch(

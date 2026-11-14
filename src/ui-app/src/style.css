@@ -1729,6 +1729,16 @@
   gap: 9px;
   font-family: "JetBrains Mono", monospace;
 }
+@media (max-width: 719.98px) {
+  .feed-msg {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .feed-meta {
+    flex-wrap: wrap;
+    line-height: 1.5;
+  }
+}
 .feed-empty {
   padding: 40px 17px;
   text-align: center;
@@ -9527,13 +9537,14 @@
     --floating-head-size: 46px;
     --floating-head-bottom: calc(74px + var(--safe-bot));
     --floating-head-inline-offset: 12px;
+    --page-inline-end-inset: 0px;
   }
   .sidebar {
     display: none;
   }
   .main {
     padding: 18px 16px 0;
-    padding-inline-end: max(16px, var(--page-inline-end-inset));
+    padding-inline-end: 16px;
   }
   .tabbar {
     display: flex;
@@ -9635,6 +9646,14 @@
   color: var(--txt);
   font-size: 14px;
   text-decoration: none;
+}
+.mobile-more-agent-link {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
 }
 .mobile-more-link:last-child {
   border-bottom: 0;

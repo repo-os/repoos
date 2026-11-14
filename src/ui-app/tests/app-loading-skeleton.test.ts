@@ -64,7 +64,7 @@ describe("repo loading skeleton", () => {
     expect(styles).not.toMatch(/\.main\s*>\s*\.page-fade-leave-active\s*\{/);
     expect(styles).not.toContain("page-fade");
     expect(styles).toMatch(
-      /@media \(max-width: 760px\)\s*\{[\s\S]*?\.main\s*\{[^}]*padding:\s*18px 16px 0;[^}]*padding-inline-end:\s*max\(16px,\s*var\(--page-inline-end-inset\)\);/,
+      /@media \(max-width: 719\.98px\)\s*\{[\s\S]*?\.main\s*\{[^}]*padding:\s*18px 16px 0;[^}]*padding-inline-end:\s*16px;/,
     );
   });
 
