@@ -11,7 +11,7 @@ branch: feat/mobile-web-serve-a-purpose-built-narrow-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T09:06:53Z"
-updated_at: "2026-11-14T09:06:59Z"
+updated_at: "2026-11-14T09:09:47Z"
 ---
 ## Problem
 On narrow screens RepoOS serves the desktop UI squeezed by scattered `@media (max-width)` rules (22 files in src/ui-app/src, 18 in style.css alone). It works but feels hacky: dense columns, hover-only affordances, small controls, desktop chrome. The existing mobile docs (docs/mobile-ux-strategy.md, docs/mobile-architecture.md) and tasks #0300, #0302, #0303, #0304 assume a native iOS/Android shell instead. The product direction from Nick is that mobile stays on the **web app**: the same SPA, but on narrow screens it serves a mobile-friendly design built for phones.
@@ -35,3 +35,4 @@ Read docs/mobile-ux-strategy.md, docs/mobile-architecture.md and docs/agent-ui-a
 - 2026-11-14T09:06:56Z · cli_override, model_override
 - 2026-11-14T09:06:58Z · status inbox→ready
 - 2026-11-14T09:06:59Z · status ready→active, branch
+- 2026-11-14T09:09:47Z · message_queued at 2026-11-14T09:09:47.874Z
