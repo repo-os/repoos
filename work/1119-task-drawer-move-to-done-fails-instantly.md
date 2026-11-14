@@ -11,7 +11,7 @@ branch: feat/task-drawer-move-to-done-fails-instantly
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-14T16:14:26Z"
-updated_at: "2026-11-14T18:06:22Z"
+updated_at: "2026-11-14T18:08:49Z"
 handoff_signal_retry_count: 2
 dev_error_count: 4
 ---
@@ -97,3 +97,4 @@ Related: #1081 (introduced the reason parameter) and the audit that missed this.
 - 2026-11-14T18:02:34Z · CTO nudge: held — handoff gate is running
 - 2026-11-14T18:03:51Z · message_delivered: 3 message(s)
 - 2026-11-14T18:06:22Z · note: ui verification passed: 1 shot captured with clean console
+- 2026-11-14T18:08:49Z · engineer stopped by request
