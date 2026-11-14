@@ -5,11 +5,11 @@ type: feature
 status: inbox
 priority: p3
 area: [web, server]
-assigned_to: ""
+assigned_to: ai
 created_by: t@t
 branch: ""
 created_at: "2026-11-14T02:26:21Z"
-updated_at: "2026-11-14T02:26:21Z"
+updated_at: "2026-11-14T02:32:24Z"
 ---
 ## Problem
 Two rough edges in the "RepoOS vX is installed" restart notice (#1075, `ReleaseUpdateNotification.vue`):
@@ -29,6 +29,10 @@ Two rough edges in the "RepoOS vX is installed" restart notice (#1075, `ReleaseU
 ## Notes for AI
 Small, p3, easter-egg sized. Start from `src/ui-app/src/components/ReleaseUpdateNotification.vue` and the restart status the server returns (`restartStatus.supervised`, `manualCommand`).
 
+## Styling alignment
+The restart notice (a floating banner, not a dialog) uses bespoke scoped CSS: 12px/11px hard-coded font sizes and 9px 11px padding in a 430px card with a violet tint. Standard dialogs and drawers use the shared shell (head 18px 22px, body 20px 22px, DialogTitle at 18px bold, width up to 560px). Decide whether it stays a compact toast (then use the toast tokens and match other toasts) or becomes a real dialog on the shared components, and remove the hard-coded px sizes either way. Add as acceptance criterion 5.
+
 ## Activity
 
 - 2026-11-14T02:26:21Z · created · t@t
+- 2026-11-14T02:32:24Z · body: Styling alignment (added)
