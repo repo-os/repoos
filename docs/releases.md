@@ -75,6 +75,13 @@ moves through these phases:
 | `tagging`      | `git tag -a v<x> --cleanup=verbatim -m "Release v<x>" -m "<notes>"` — the second `-m` always carries the release notes (supplied, or a deterministic fallback from commit subjects), so the tag body is never empty |
 | `pushing_tag`  | `git push <remote> v<x>` — this is what triggers CI |
 
+If a main push reports an error, RepoOS checks the remote's advertised branch
+SHA before failing. When it equals local `HEAD`, the push is treated as
+successful and tagging continues. If a later tag step fails, retrying the same
+version checks that exact SHA first; when the remote already has it, RepoOS
+reuses the prior successful gate and resumes at tagging instead of rerunning
+the build and checks.
+
 If any phase fails, the run stops with `state: "failed"`, the phase it failed
 in, and the full command output. Nothing after the failure point ran — in
 particular, a failure at or before `checking` means **no ref was pushed**. A

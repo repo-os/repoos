@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 930754
-last_close_out_gate_at: "2026-11-14T07:40:09.760Z"
 id: "1106"
 title: "Release cut reliability: false 'Could not push main' failure, remote-host git errors, and test time bombs"
 type: feature
-status: review
+status: done
 priority: p2
 area: [server, core]
+merged_commit: 6640b0cb7d573168b7bda43d7c9967559a127162
 assigned_to: ai
 created_by: t@t
 branch: feat/release-cut-reliability-false-could-not-
@@ -14,6 +13,8 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T05:18:12Z"
 updated_at: "2026-11-14T07:40:09Z"
+last_close_out_gate_ms: 930754
+last_close_out_gate_at: "2026-11-14T07:40:09.760Z"
 review_passes: 2
 review_rounds: 1
 ---
