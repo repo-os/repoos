@@ -51,3 +51,4 @@ Related: #1120 (Hub app redesign, runs in parallel, touches mobile/src only) and
 - 2026-11-14T18:06:12Z · message_queued at 2026-11-14T18:06:12.460Z
 - 2026-11-14T18:08:49Z · message_delivered: 1 message(s)
 - 2026-11-14T18:10:54Z · queued message undelivered for 10m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-14T18:10:54Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: Updating the build step to match `just build-android`, then running the full check. · stderr: (empty)
