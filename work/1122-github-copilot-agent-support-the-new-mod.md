@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "1122"
 title: "GitHub Copilot agent: support the new model picker (GPT-6 Luna, GPT-6.1 Terra, Haiku 5.5 ...) with real --model ids"
 type: feature
@@ -42,3 +43,4 @@ Read work/1088-*.md and src/core/copilot-auto-tier.ts first. Copilot usage is bi
 - 2026-11-14T17:41:10Z · status inbox→ready
 - 2026-11-14T17:41:12Z · status ready→active, branch
 - 2026-11-14T17:46:27Z · message_queued at 2026-11-14T17:46:27.053Z
+
