@@ -12,7 +12,7 @@ branch: feat/build-a-mobile-settings-composition
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T09:10:57Z"
-updated_at: "2026-11-14T13:21:14Z"
+updated_at: "2026-11-14T13:30:27Z"
 ---
 ## Problem
 Settings uses desktop navigation and dense grouped controls that become cramped on narrow screens.
@@ -34,16 +34,16 @@ Read ADR 0011 and reuse existing Settings tabs, config schema and shared dialog/
 ```json
 [
 {
-  "label": "Mobile Settings section navigation",
-  "target": "default",
-  "route": "/settings?tab=general",
-  "highlight": ".settings-mobile-nav"
+"label": "Mobile Settings section navigation",
+"target": "default",
+"route": "/settings?tab=general",
+"highlight": ".settings-mobile-nav"
 },
 {
-  "label": "Desktop Settings navigation",
-  "target": "default",
-  "route": "/settings?tab=general",
-  "highlight": ".settings-tabs"
+"label": "Desktop Settings navigation",
+"target": "default",
+"route": "/settings?tab=general",
+"highlight": ".settings-tabs"
 }
 ]
 ```
@@ -58,3 +58,4 @@ Read ADR 0011 and reuse existing Settings tabs, config schema and shared dialog/
 - 2026-11-14T13:19:08Z · status inbox→ready
 - 2026-11-14T13:19:10Z · status ready→active, branch
 - 2026-11-14T13:21:14Z · body
+- 2026-11-14T13:30:27Z · body
