@@ -12,7 +12,7 @@ branch: feat/build-a-mobile-settings-composition
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T09:10:57Z"
-updated_at: "2026-11-14T15:01:50Z"
+updated_at: "2026-11-14T15:03:41Z"
 close_out_repair_count: 1
 review_passes: 1
 last_check_failure: "repoos check at 2026-11-14T13:38:26.548Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Mobile Settings section navigation (target \"default\"): highlight .settings-mobile-nav matched nothing on /settings?tab=general (http://127.0.0.1:33599/settings?tab=general)"
@@ -76,3 +76,4 @@ Read ADR 0011 and reuse existing Settings tabs, config schema and shared dialog/
 - 2026-11-14T15:00:19Z · note: ui verification passed: 1 of 1 shot captured with clean console
 - 2026-11-14T15:00:20Z · message_queued at 2026-11-14T15:00:20.220Z
 - 2026-11-14T15:01:50Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-14T15:03:41Z · watchdog: restarting engineer because a queued message waited 3m with no live process
