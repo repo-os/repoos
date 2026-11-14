@@ -11,7 +11,7 @@ branch: feat/remote-host-pool-tests-fail-on-the-remot
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T12:33:15Z"
-updated_at: "2026-11-14T13:34:19Z"
+updated_at: "2026-11-14T13:35:00Z"
 handoff_signal_retry_count: 1
 ---
 ## Problem
