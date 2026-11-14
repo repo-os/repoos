@@ -65,3 +65,4 @@ Read work/1088-*.md and src/core/copilot-auto-tier.ts first. Copilot usage is bi
 - 2026-11-14T18:08:51Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-14T18:08:53Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-14T18:13:24Z · queued message undelivered for 5m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-14T18:13:24Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: no assistant message · stderr: (empty)
