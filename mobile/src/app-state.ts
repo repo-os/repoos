@@ -4,33 +4,91 @@
  * one screen and a handful of fields; a full store is overkill.
  */
 import { ref, computed } from "vue";
-import type { ServerEntry, LockSettings } from "./types";
+import type { ServerEntry, LockSettings, ReachabilityState } from "./types";
 import * as store from "./store";
 import { validateServer, originOf } from "./reachability";
 import { probeDeviceLock } from "./lock";
+import { fixtureServers, readHubFixture } from "./fixture";
+import {
+  applyThemesToDocument,
+  loadThemePrefs,
+  saveAppearanceMode,
+  saveDesignTheme,
+  syncNativeChrome,
+  type AppearanceMode,
+  type DesignThemeId,
+} from "./theme";
 
 export const servers = ref<ServerEntry[]>([]);
 export const selectedId = ref<string | null>(null);
 export const lockSettings = ref<LockSettings>({ enabled: false, scope: "reopen" });
 export const lockSupported = ref(false);
 export const loaded = ref(false);
+export const designTheme = ref<DesignThemeId>("classic");
+export const appearanceMode = ref<AppearanceMode>("system");
+export const reachability = ref<Record<string, ReachabilityState>>({});
 
 export const selected = computed<ServerEntry | null>(
   () => servers.value.find((s) => s.id === selectedId.value) ?? null,
 );
 
 export async function init(): Promise<void> {
-  const [srv, sel, lock, lockProbe] = await Promise.all([
+  const [srv, sel, lock, lockProbe, themePrefs] = await Promise.all([
     store.loadServers(),
     store.loadSelectedId(),
     store.loadLock(),
     probeDeviceLock(),
+    loadThemePrefs(),
   ]);
-  servers.value = srv;
+  const fixture = readHubFixture();
+  const fixtureList = fixtureServers(fixture);
+  servers.value = fixtureList ?? srv;
   selectedId.value = sel;
   lockSettings.value = lock;
   lockSupported.value = lockProbe.supported;
+  designTheme.value = themePrefs.design;
+  appearanceMode.value = themePrefs.appearanceMode;
+  try {
+    localStorage.setItem("repoos.hub.uiTheme", themePrefs.design);
+    localStorage.setItem("repoos.hub.appearance", themePrefs.appearanceMode);
+  } catch {
+    /* boot mirror best-effort */
+  }
+  applyThemesToDocument(themePrefs.design, themePrefs.appearanceMode);
+  await syncNativeChrome(themePrefs.design, themePrefs.appearanceMode);
   loaded.value = true;
+  void refreshReachability();
+}
+
+export async function setDesignTheme(id: DesignThemeId): Promise<void> {
+  designTheme.value = id;
+  applyThemesToDocument(id, appearanceMode.value);
+  await Promise.all([saveDesignTheme(id), syncNativeChrome(id, appearanceMode.value)]);
+}
+
+export async function setAppearanceMode(mode: AppearanceMode): Promise<void> {
+  appearanceMode.value = mode;
+  applyThemesToDocument(designTheme.value, mode);
+  await Promise.all([saveAppearanceMode(mode), syncNativeChrome(designTheme.value, mode)]);
+}
+
+export async function refreshReachability(): Promise<void> {
+  if (readHubFixture() === "unreachable") {
+    for (const s of servers.value) reachability.value[s.id] = "unreachable";
+    return;
+  }
+  if (readHubFixture() && readHubFixture() !== "unreachable") {
+    for (const s of servers.value) reachability.value[s.id] = "reachable";
+    return;
+  }
+  const ids = servers.value.map((s) => s.id);
+  for (const id of ids) reachability.value[id] = "checking";
+  await Promise.all(
+    servers.value.map(async (s) => {
+      const res = await validateServer(s.url);
+      reachability.value[s.id] = res.ok ? "reachable" : "unreachable";
+    }),
+  );
 }
 
 function uuid(): string {
@@ -88,6 +146,17 @@ export async function removeServer(id: string): Promise<void> {
     selectedId.value = null;
     await store.saveSelectedId(null);
   }
+  await persist();
+}
+
+export async function moveServer(id: string, toIndex: number): Promise<void> {
+  const idx = servers.value.findIndex((s) => s.id === id);
+  if (idx < 0 || toIndex < 0 || toIndex >= servers.value.length || idx === toIndex) return;
+  const arr = servers.value.slice();
+  const [moved] = arr.splice(idx, 1);
+  arr.splice(toIndex, 0, moved);
+  arr.forEach((s, i) => (s.order = i));
+  servers.value = arr;
   await persist();
 }
 

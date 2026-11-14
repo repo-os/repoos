@@ -1,66 +1,78 @@
 <script setup lang="ts">
 import { onMounted, ref, computed } from "vue";
+import { Settings } from "lucide-vue-next";
 import {
   init,
   servers,
-  selected,
+  selectedId,
   selectServer,
   addServer,
   removeServer,
   renameServer,
-  reorderServer,
+  moveServer,
   setLock,
   lockSettings,
   lockSupported,
   loaded,
+  designTheme,
+  appearanceMode,
+  reachability,
+  setDesignTheme,
+  setAppearanceMode,
 } from "./app-state";
 import { openServer, onBrowserEvents } from "./browser";
 import { verifyWithDeviceLock } from "./lock";
 import type { ServerEntry } from "./types";
+import HubLogo from "./components/HubLogo.vue";
+import ServerListView from "./components/ServerListView.vue";
+import SettingsView from "./components/SettingsView.vue";
+import AddServerView from "./components/AddServerView.vue";
+import BottomSheet from "./components/BottomSheet.vue";
+import LockOverlay from "./components/LockOverlay.vue";
+import { resolveShellPlatform } from "./platform";
+import { fixtureInitialRoute, readHubFixture } from "./fixture";
+import { impactHeavy } from "./haptics";
+import type { AppearanceMode, DesignThemeId } from "./theme";
 
-const mode = ref<"picker" | "add" | "edit">("picker");
-const editingId = ref<string | null>(null);
+type Route = "picker" | "settings" | "add" | "edit";
 
-// ── add/edit form state ────────────────────────────────────────────────
+const route = ref<Route>("picker");
+const sheetServer = ref<ServerEntry | null>(null);
+const sheetName = ref("");
+
 const formName = ref("");
 const formUrl = ref("");
 const formBusy = ref(false);
 const formError = ref("");
 const formValidating = ref(false);
 
-// ── lock gate state ─────────────────────────────────────────────────────
 const lockOpen = ref(false);
-const lockStagingId = ref<string | null>(null);
+const platform = ref(resolveShellPlatform());
+const appVersion = "0.1.0";
 
-const showSettings = ref(false);
-const lockScope = ref<"reopen" | "server">("reopen");
-
-const hasServers = computed(() => servers.value.length > 0);
-const isEmpty = computed(() => loaded.value && !hasServers.value);
+const sheetOpen = computed(() => sheetServer.value !== null);
 
 onMounted(async () => {
+  document.documentElement.classList.add(`platform-${platform.value}`);
+  const fx = readHubFixture();
+  const initial = fixtureInitialRoute(fx);
+  if (initial === "settings") route.value = "settings";
+  if (initial === "add") route.value = "add";
+
   await init();
-  onBrowserEvents({
-    closed: () => {
-      /* returning to picker */
-    },
-  });
-  // If a lock is enabled at reopen scope, gate on launch.
+  onBrowserEvents({ closed: () => undefined });
   if (lockSettings.value.enabled && lockSettings.value.scope === "reopen") {
     await gateLock(null);
   }
 });
 
-async function gateLock(serverId: string | null): Promise<boolean> {
-  if (!lockSettings.value.enabled) return true;
-  lockStagingId.value = serverId;
+async function gateLock(_serverId: string | null): Promise<boolean> {
   lockOpen.value = true;
   const ok = await verifyWithDeviceLock("Unlock RepoOS Hub to continue");
   lockOpen.value = false;
   return ok;
 }
 
-// ── picker actions ──────────────────────────────────────────────────────
 async function onSelect(server: ServerEntry) {
   if (lockSettings.value.enabled && lockSettings.value.scope === "server") {
     const ok = await gateLock(server.id);
@@ -70,269 +82,168 @@ async function onSelect(server: ServerEntry) {
   await openServer(server.url);
 }
 
+function openSettings() {
+  route.value = "settings";
+}
+
 function startAdd() {
   formName.value = "";
   formUrl.value = "";
   formError.value = "";
-  mode.value = "add";
+  route.value = "add";
 }
 
-function startEdit(server: ServerEntry) {
-  editingId.value = server.id;
-  formName.value = server.name;
-  formUrl.value = server.url;
+function openSheet(server: ServerEntry) {
+  sheetServer.value = server;
+  sheetName.value = server.name;
+}
+
+function closeSheet() {
+  sheetServer.value = null;
+}
+
+function backToPicker() {
+  route.value = "picker";
   formError.value = "";
-  mode.value = "edit";
 }
 
-function cancelForm() {
-  mode.value = "picker";
-  editingId.value = null;
-  formError.value = "";
-}
-
-async function submitForm() {
+async function submitAdd() {
   formError.value = "";
   if (!formUrl.value.trim()) {
     formError.value = "Enter a server URL.";
     return;
   }
-  if (mode.value === "add") {
-    formBusy.value = true;
-    formValidating.value = true;
-    const res = await addServer(formName.value, formUrl.value);
-    formValidating.value = false;
-    formBusy.value = false;
-    if (res.error) {
-      formError.value = res.error;
-      return;
-    }
-    mode.value = "picker";
-  } else {
-    if (editingId.value) await renameServer(editingId.value, formName.value);
-    mode.value = "picker";
-    editingId.value = null;
+  formBusy.value = true;
+  formValidating.value = true;
+  const res = await addServer(formName.value, formUrl.value);
+  formValidating.value = false;
+  formBusy.value = false;
+  if (res.error) {
+    formError.value = res.error;
+    return;
   }
+  route.value = "picker";
 }
 
-async function removeEditing() {
-  if (!editingId.value) return;
-  await removeServer(editingId.value);
-  mode.value = "picker";
-  editingId.value = null;
-  formError.value = "";
+async function saveSheet() {
+  if (!sheetServer.value) return;
+  await renameServer(sheetServer.value.id, sheetName.value);
+  closeSheet();
 }
 
-// ── lock settings ───────────────────────────────────────────────────────
-function toggleLock() {
-  lockSettings.value.enabled = !lockSettings.value.enabled;
-  persistLock();
+async function deleteSheet() {
+  if (!sheetServer.value) return;
+  await removeServer(sheetServer.value.id);
+  void impactHeavy();
+  closeSheet();
 }
-function setScope(scope: "reopen" | "server") {
-  lockScope.value = scope;
+
+async function onReorder(id: string, toIndex: number) {
+  await moveServer(id, toIndex);
+}
+
+async function onDesignTheme(id: DesignThemeId) {
+  await setDesignTheme(id);
+}
+
+async function onAppearanceMode(mode: AppearanceMode) {
+  await setAppearanceMode(mode);
+}
+
+async function onLockEnabled(enabled: boolean) {
+  lockSettings.value.enabled = enabled;
+  await setLock({ ...lockSettings.value });
+}
+
+async function onLockScope(scope: "reopen" | "server") {
   lockSettings.value.scope = scope;
-  persistLock();
-}
-async function persistLock() {
-  await setLock({ enabled: lockSettings.value.enabled, scope: lockSettings.value.scope });
+  await setLock({ ...lockSettings.value });
 }
 </script>
 
 <template>
-  <div class="shell">
-    <!-- ── App header ─────────────────────────────────────────────── -->
-    <header class="topbar">
+  <div class="shell" :class="`platform-${platform}`">
+    <header v-if="route === 'picker'" class="topbar">
       <div class="brand">
-        <svg class="logo" width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <path
-            d="M12 2L4 7v10l8 5 8-5V7l-8-5z"
-            stroke="#39e0ff"
-            stroke-width="2"
-            stroke-linejoin="round"
-          />
-          <path
-            d="M12 7v10M8 9.5v5M16 9.5v5"
-            stroke="#9d7bff"
-            stroke-width="1.5"
-            stroke-linecap="round"
-          />
-        </svg>
+        <HubLogo />
         <span class="brand-name">RepoOS Hub</span>
       </div>
       <button
-        class="icon-btn"
+        type="button"
+        class="icon-touch"
         :disabled="!loaded"
         aria-label="Settings"
-        @click="showSettings = !showSettings"
+        data-testid="hub-open-settings"
+        @click="openSettings"
       >
-        ⚙
+        <Settings :size="22" stroke-width="2" />
       </button>
     </header>
 
-    <!-- ── Lock gate overlay ──────────────────────────────────────── -->
-    <div v-if="lockOpen" class="lock-overlay">
-      <div class="lock-card">
-        <div class="lock-icon" aria-hidden="true">🔒</div>
-        <div class="lock-title">RepoOS Hub is locked</div>
-        <div class="lock-sub">Authenticate with your device to continue.</div>
-      </div>
-    </div>
+    <LockOverlay :open="lockOpen" />
 
-    <!-- ── Settings sheet ─────────────────────────────────────────── -->
-    <div v-if="showSettings" class="settings">
-      <div class="section-title">Device lock</div>
-      <p class="hint">
-        Optionally require biometrics or your device passcode before reopening the app or a selected
-        server. This is separate from each server's own sign-in.
-      </p>
-      <label class="row">
-        <span class="row-label">Enable device lock</span>
-        <button
-          class="switch"
-          :class="{ on: lockSettings.enabled }"
-          role="switch"
-          :aria-checked="lockSettings.enabled"
-          @click="toggleLock"
-        >
-          <span class="knob"></span>
-        </button>
-      </label>
-      <template v-if="lockSettings.enabled">
-        <label class="row">
-          <span class="row-label">Lock on</span>
-          <select
-            class="select"
-            :value="lockSettings.scope"
-            @change="setScope(($event.target as HTMLSelectElement).value as 'reopen' | 'server')"
-          >
-            <option value="reopen">Reopening the app</option>
-            <option value="server">Opening a server</option>
-          </select>
-        </label>
-        <p v-if="!lockSupported" class="warn">
-          Biometrics aren't available on this device — the lock will be skipped.
-        </p>
-      </template>
-      <button class="link" @click="showSettings = false">Close</button>
-    </div>
+    <main class="main-pane">
+      <ServerListView
+        v-if="route === 'picker'"
+        :servers="servers"
+        :selected-id="selectedId"
+        :reachability="reachability"
+        :loaded="loaded"
+        :platform="platform"
+        @select="onSelect"
+        @add="startAdd"
+        @edit="openSheet"
+        @reorder="onReorder"
+      />
 
-    <!-- ── Picker / empty state ───────────────────────────────────── -->
-    <main v-if="mode === 'picker'" class="content">
-      <div v-if="!loaded" class="center muted">Loading…</div>
+      <SettingsView
+        v-else-if="route === 'settings'"
+        :design-theme="designTheme"
+        :appearance-mode="appearanceMode"
+        :lock="lockSettings"
+        :lock-supported="lockSupported"
+        :platform="platform"
+        :app-version="appVersion"
+        @back="backToPicker"
+        @update:design-theme="onDesignTheme"
+        @update:appearance-mode="onAppearanceMode"
+        @update:lock-enabled="onLockEnabled"
+        @update:lock-scope="onLockScope"
+      />
 
-      <div v-else-if="isEmpty" class="center">
-        <svg
-          class="hero-logo"
-          width="56"
-          height="56"
-          viewBox="0 0 24 24"
-          fill="none"
-          aria-hidden="true"
-        >
-          <path
-            d="M12 2L4 7v10l8 5 8-5V7l-8-5z"
-            stroke="#39e0ff"
-            stroke-width="2"
-            stroke-linejoin="round"
-          />
-          <path
-            d="M12 7v10M8 9.5v5M16 9.5v5"
-            stroke="#9d7bff"
-            stroke-width="1.5"
-            stroke-linecap="round"
-          />
-        </svg>
-        <h1 class="hero-title">Add your first server</h1>
-        <p class="hero-sub">
-          Enter the address of a self-hosted RepoOS instance. It's saved on this device only — never
-          sent anywhere.
-        </p>
-        <button class="primary" @click="startAdd">+ Add server</button>
-      </div>
-
-      <ul v-else class="server-list">
-        <li
-          v-for="(server, i) in servers"
-          :key="server.id"
-          class="server-item"
-          :class="{ selected: selected?.id === server.id }"
-        >
-          <button class="server-main" @click="onSelect(server)">
-            <span class="server-avatar" aria-hidden="true">{{
-              server.name.slice(0, 1).toUpperCase()
-            }}</span>
-            <span class="server-meta">
-              <span class="server-name">{{ server.name }}</span>
-              <span class="server-url">{{ server.url.replace("https://", "") }}</span>
-            </span>
-            <span class="chevron" aria-hidden="true">›</span>
-          </button>
-          <div class="server-actions">
-            <button
-              class="icon-btn sm"
-              :disabled="i === 0"
-              aria-label="Move up"
-              @click="reorderServer(server.id, -1)"
-            >
-              ↑
-            </button>
-            <button
-              class="icon-btn sm"
-              :disabled="i === servers.length - 1"
-              aria-label="Move down"
-              @click="reorderServer(server.id, 1)"
-            >
-              ↓
-            </button>
-            <button class="icon-btn sm" aria-label="Edit" @click="startEdit(server)">✎</button>
-          </div>
-        </li>
-      </ul>
-
-      <button v-if="hasServers" class="primary block" @click="startAdd">+ Add server</button>
+      <AddServerView
+        v-else-if="route === 'add'"
+        mode="add"
+        :name="formName"
+        :url="formUrl"
+        :busy="formBusy"
+        :validating="formValidating"
+        :error="formError"
+        :platform="platform"
+        @back="backToPicker"
+        @update:name="(v) => (formName = v)"
+        @update:url="(v) => (formUrl = v)"
+        @submit="submitAdd"
+      />
     </main>
 
-    <!-- ── Add / edit form ────────────────────────────────────────── -->
-    <main v-else class="content">
-      <h1 class="form-title">{{ mode === "add" ? "Add server" : "Edit server" }}</h1>
-      <label class="field">
+    <BottomSheet
+      :open="sheetOpen"
+      title="Edit server"
+      @close="closeSheet"
+    >
+      <label class="field sheet-field">
         <span class="field-label">Display name</span>
-        <input
-          v-model="formName"
-          type="text"
-          placeholder="dev"
-          autocomplete="off"
-          enterkeyhint="done"
-        />
+        <input v-model="sheetName" type="text" autocomplete="off" />
       </label>
-      <label class="field">
-        <span class="field-label">Server URL (HTTPS)</span>
-        <input
-          v-model="formUrl"
-          type="url"
-          placeholder="https://dev.repoos.org"
-          inputmode="url"
-          autocapitalize="none"
-          autocorrect="off"
-          spellcheck="false"
-          enterkeyhint="go"
-        />
-      </label>
-      <p v-if="formError" class="form-error">{{ formError }}</p>
-      <p v-if="mode === 'edit'" class="hint">
-        URL can't be changed here — delete and re-add to point elsewhere.
-      </p>
-
-      <div class="form-actions">
-        <template v-if="mode === 'edit'">
-          <button class="ghost danger" @click="removeEditing">Delete server</button>
-          <span class="form-actions-spacer"></span>
-        </template>
-        <button class="ghost" @click="cancelForm">Cancel</button>
-        <button class="primary" :disabled="formBusy" @click="submitForm">
-          {{ formValidating ? "Checking…" : mode === "add" ? "Save" : "Done" }}
+      <p v-if="sheetServer" class="hint">{{ sheetServer.url }}</p>
+      <div class="sheet-actions">
+        <button type="button" class="btn-ghost danger" data-testid="hub-sheet-delete" @click="deleteSheet">
+          Delete
         </button>
+        <span class="spacer" />
+        <button type="button" class="btn-primary" data-testid="hub-sheet-save" @click="saveSheet">Save</button>
       </div>
-    </main>
+    </BottomSheet>
   </div>
 </template>

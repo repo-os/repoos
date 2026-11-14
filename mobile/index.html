@@ -6,9 +6,57 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no"
     />
-    <meta name="theme-color" content="#0c0f14" />
+    <meta name="theme-color" content="#070a12" />
     <meta name="color-scheme" content="dark" />
     <title>RepoOS Hub</title>
+    <script>
+      (function () {
+        var DESIGN_KEY = "repoos.hub.uiTheme";
+        var APPEARANCE_KEY = "repoos.hub.appearance";
+        var THEMES = {
+          classic: { dark: "#070a12", light: "#f4f6fb" },
+          clear: { dark: "#0a0c10", light: "#f6f8fc" },
+          "gen z": { dark: "#0d0b14", light: "#faf8ff" },
+          jelly: { dark: "#0a0e18", light: "#f5f7ff" },
+          gruvbox: { dark: "#282828", light: "#fbf1c7" },
+          catppuccin: { dark: "#1e1e2e", light: "#eff1f5" },
+          solarized: { dark: "#002b36", light: "#fdf6e3" },
+          hypercolor: { dark: "#0a0a0a", light: "#f8f8f8" },
+        };
+        var params = new URLSearchParams(location.search);
+        function read(key) {
+          try {
+            return localStorage.getItem(key);
+          } catch (e) {
+            return null;
+          }
+        }
+        var design = (params.get("theme") || read(DESIGN_KEY) || "classic").toLowerCase();
+        if (design === "gen z") design = "gen z";
+        var mode = (params.get("appearance") || params.get("mode") || read(APPEARANCE_KEY) || "system")
+          .toLowerCase();
+        var resolved =
+          mode === "light"
+            ? "light"
+            : mode === "dark"
+              ? "dark"
+              : matchMedia("(prefers-color-scheme: light)").matches
+                ? "light"
+                : "dark";
+        var root = document.documentElement;
+        root.dataset.uiTheme = design;
+        root.dataset.theme = resolved;
+        root.style.colorScheme = resolved;
+        var palette = THEMES[design] || THEMES.classic;
+        var color = palette[resolved] || palette.dark;
+        var meta = document.querySelector('meta[name="theme-color"]');
+        if (meta) meta.setAttribute("content", color);
+        var scheme = document.querySelector('meta[name="color-scheme"]');
+        if (scheme) scheme.setAttribute("content", resolved);
+        root.style.background = "var(--bg, " + color + ")";
+        root.style.color = resolved === "light" ? "#1e2130" : "#e7ecf7";
+      })();
+    </script>
   </head>
   <body>
     <div id="app"></div>
