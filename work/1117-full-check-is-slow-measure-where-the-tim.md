@@ -2,7 +2,7 @@
 id: "1117"
 title: "Full check is slow: measure where the time goes and speed it up without weakening the gate"
 type: feature
-status: review
+status: active
 priority: p2
 area: [core, tests]
 assigned_to: ai
@@ -12,6 +12,7 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T12:33:14Z"
 updated_at: "2026-11-14T15:09:33Z"
+review_rounds: 1
 review_passes: 1
 handoff_signal_retry_count: 1
 ---
@@ -56,3 +57,4 @@ Read docs/debugging-check-failures.md and the [[check.steps]] plan in repoos.tom
 - 2026-11-14T15:08:53Z · note: shots: skipped — the diff (5 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-14T15:09:33Z · note: review pass 1: needs some work
 - 2026-11-14T15:09:33Z · message_delivered: 1 message(s)
+- 2026-11-14T15:09:33Z · status review→active
