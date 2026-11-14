@@ -39,3 +39,4 @@ Reuse `src/core/tailscale.ts` and `src/core/remote-hosts.ts`. Do not add a runti
 - 2026-11-14T03:37:55Z · body
 - 2026-11-14T03:38:46Z · status active→review
 - 2026-11-14T03:38:46Z · message_queued at 2026-11-14T03:38:46.699Z
+- 2026-11-14T03:38:46Z · note: shots: skipped — Docs site skipped: no docs shot declared
