@@ -135,7 +135,7 @@ function openTask(task: Task): void {
         <Button variant="outline" @click="resetQueue">Show all tasks</Button>
       </div>
       <ul v-else>
-        <li v-for="task in tasks" :key="task.id">
+        <li v-for="task in tasks" :key="task.id" :data-task-id="task.id">
           <button class="mobile-task-card" type="button" @click="openTask(task)">
             <span class="mobile-task-topline">
               <span class="mobile-task-number">#{{ task.id }}</span>

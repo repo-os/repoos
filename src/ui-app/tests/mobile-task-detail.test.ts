@@ -89,7 +89,7 @@ describe("mobile task details", () => {
         },
       },
     });
-    await wrapper.get(".mobile-task-card").trigger("click");
+    await wrapper.get('[data-task-id="0042"] .mobile-task-card').trigger("click");
     expect(nav.push).toHaveBeenCalledWith({
       path: "/work",
       query: { task: "0042", status: "active" },
