@@ -12,7 +12,7 @@ branch: feat/remote-host-pool-tests-fail-on-the-remot
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T12:33:15Z"
-updated_at: "2026-11-14T15:22:46Z"
+updated_at: "2026-11-14T15:23:19Z"
 last_close_out_gate_ms: 910675
 last_close_out_gate_at: "2026-11-14T15:22:43.923Z"
 review_passes: 1
@@ -52,3 +52,4 @@ Read docs/debugging-check-failures.md. Precedents: #1099, #1101, #1107. Related 
 - 2026-11-14T14:29:51Z · note: review pass 1: good to go
 - 2026-11-14T15:22:43Z · close-out gate completed in 911s
 - 2026-11-14T15:22:46Z · message_dropped: 1 queued message(s) discarded — task is done
+- 2026-11-14T15:23:19Z · status done→done, release:success
