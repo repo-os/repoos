@@ -2,7 +2,7 @@
 id: "1103"
 title: Keep review verdict after a take-main's-side merge-conflict fix
 type: feature
-status: active
+status: review
 priority: p2
 area: [web, server]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/keep-review-verdict-after-a-take-main-s-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T01:19:52Z"
-updated_at: "2026-11-14T03:28:46Z"
+updated_at: "2026-11-14T04:40:02Z"
 ---
 ## Problem
 After a close-out merge conflict is resolved by merging main into the task branch, the branch tip moves, the review lock sha no longer matches, and `repoos landable` fails with "Review lock". The human must wait for a full re-review even when the resolution only took main's side of a file (e.g. a comment wording clash, #1081) and added nothing new to judge.
@@ -41,3 +41,4 @@ Start from the close-out failure card component and `repoos landable` review-loc
 - 2026-11-14T03:28:38Z · cli_override, model_override
 - 2026-11-14T03:28:45Z · status inbox→ready
 - 2026-11-14T03:28:46Z · status ready→active, branch
+- 2026-11-14T04:40:02Z · status active→review
