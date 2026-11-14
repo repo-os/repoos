@@ -5,6 +5,17 @@ pipeline from `release-history.json`; the newest entry is also the GitHub
 release body. The full discussion of each change lives in the release notes
 and on GitHub.
 
+## [v0.5.85] - 2026-11-14
+
+- **A phone-friendly RepoOS in the browser.** Below 720px wide, RepoOS now serves a layout built for phones: a bottom tab bar (Work, Search, More, Settings) with a More sheet, a single-column Work queue with a New task button, status filter and sort, a task detail page, and a mobile Settings view. Desktop is unchanged, and the same layout works in a phone browser, as a home-screen app and inside the native shell. The design is recorded in ADR 0011 (#1110, #1112, #1113, #1114, #1115).
+- **Move to done works again from the task drawer.** Since the "Land anyway" option arrived, the drawer's Move to done button was refused instantly with "Land anyway requires a reason of 1–1000 characters". Clicking it from the board card was never affected. The drawer button now works, with regression tests (hotfix on main).
+- **Stuck tasks recover on their own.** A failed review pass is retried automatically, and when a message to an engineer sits undelivered with no engineer running, the engineer is restarted (#1108).
+- **`repoos restart` handles a hand-started server,** or says clearly why it cannot (#1109).
+- **Faster, steadier checks.** The full check's tests step is about 20% faster, and several tests that failed only under load or on a remote host were fixed: `remote-host-pool` on the remote check host, `check-skip-outcome` and `engineer-resources` (#1117, #1118, #1107).
+- **Docs and the landing page match the last release.** User docs, the docs site and the llms files were checked against the new commands and screens (#1111).
+
+[Release on GitHub](https://github.com/repo-os/repoos/releases/tag/v0.5.85)
+
 ## [v0.5.84] - 2026-11-14
 
 - **Landing after a merge-conflict fix is faster.** When a conflict is resolved by taking main's side only, a "Keep review verdict and merge" button on the failed close-out card and the Debug tab (and `repoos review keep <id>`) re-pins the review to the new branch tip and merges, instead of waiting for a full re-review (#1103).

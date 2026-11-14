@@ -341,15 +341,17 @@ describe("agent review before human sign-off (#0101)", () => {
         "review report",
       );
       await waitForHandoffSlotReleased(server, task.id);
-      const followup = await api(server, "POST", `/api/tasks/${task.id}/review/followup`);
-      expect(followup.status).toBe(409);
-      expect(followup.body.error).toMatch(/after the 4-pass review freeze/);
-
+      // Exercise the land-anyway guard before auto-bounce can move the task to
+      // `active` (full-suite load on remote validators widens that window).
       const landAnyway = await api(server, "POST", `/api/tasks/${task.id}/done`, {
         landAnywayReason: "Accept the remaining non-blocking risk",
       });
       expect(landAnyway.status).toBe(409);
       expect(landAnyway.body.error).toMatch(/current needs-some-work review with no blocking Bugs/);
+
+      const followup = await api(server, "POST", `/api/tasks/${task.id}/review/followup`);
+      expect(followup.status).toBe(409);
+      expect(followup.body.error).toMatch(/after the 4-pass review freeze/);
     });
   }, 90_000);
 

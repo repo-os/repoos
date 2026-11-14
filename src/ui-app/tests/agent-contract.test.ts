@@ -30,8 +30,11 @@ if (sub === "run") {
   process.stdout.write(JSON.stringify({ type: "step_start", sessionID: "sess-123", part: { type: "step_start" } }) + "\\n");
   process.stdout.write(JSON.stringify({ type: "text", sessionID: "sess-123", part: { type: "text", text: "OK" } }) + "\\n");
   process.stdout.write(JSON.stringify({ type: "step_finish", sessionID: "sess-123", part: { type: "step_finish" } }) + "\\n");
-  // Stay alive briefly so the cancellation probe can SIGTERM us mid-run.
-  setTimeout(() => process.exit(0), 1000);
+  // One-shot probes exit as soon as their complete stream is written. The
+  // cancellation probe stays alive until signalled, so it still exercises a
+  // live run without adding a one-second delay to every one-shot.
+  if (process.env.REPOOS_AGENT_CONTRACT_CANCEL_PROBE === "1") setInterval(() => {}, 1000);
+  else process.exit(0);
   return;
 }
 process.stdout.write("unknown subcommand: " + sub + "\\n");
@@ -54,8 +57,8 @@ if (args[0] === "--help") { process.stdout.write("Usage: crush [command]\\n\\nCo
 if (args[0] === "models") { process.stdout.write("aihubmix/DeepSeek-V3\\nopencode-go/big-pickle\\n"); process.exit(0); }
 if (args[0] === "run") {
   process.stdout.write("OK\\n");
-  // Stay alive briefly so the cancellation probe can signal us mid-run.
-  setTimeout(() => process.exit(0), 1000);
+  if (process.env.REPOOS_AGENT_CONTRACT_CANCEL_PROBE === "1") setInterval(() => {}, 1000);
+  else process.exit(0);
   return;
 }
 process.stdout.write("unknown subcommand: " + args[0] + "\\n");
@@ -84,8 +87,8 @@ if (args.includes("--mode")) {
   process.stdout.write(JSON.stringify({ type: "message_update", assistantMessageEvent: { type: "text_end", contentIndex: 0, content: "OK" } }) + "\\n");
   process.stdout.write(JSON.stringify({ type: "message_end", message: { role: "assistant", content: [{ type: "text", text: "OK" }] } }) + "\\n");
   process.stdout.write(JSON.stringify({ type: "turn_end" }) + "\\n");
-  // Stay alive briefly so the cancellation probe can SIGTERM us mid-run.
-  setTimeout(() => process.exit(0), 1000);
+  if (process.env.REPOOS_AGENT_CONTRACT_CANCEL_PROBE === "1") setInterval(() => {}, 1000);
+  else process.exit(0);
   return;
 }
 process.stdout.write("unknown subcommand: " + args[0] + "\\n");
@@ -114,8 +117,8 @@ if (args[0] === "exec") {
   process.stdout.write(rec("run.output.delta", { kind: "run_output_delta", text: "OK" }));
   process.stdout.write(rec("run.usage", { kind: "run_usage", models: [{ model: "muse-spark-1.3", input_tokens: 28767, cached_tokens: 0, output_tokens: 19, calls: 1 }] }));
   process.stdout.write(rec("run.terminal.completed", { kind: "run_terminal", terminal: "completed", text: "OK" }));
-  // Stay alive briefly so the cancellation probe can SIGTERM us mid-run.
-  setTimeout(() => process.exit(0), 1000);
+  if (process.env.REPOOS_AGENT_CONTRACT_CANCEL_PROBE === "1") setInterval(() => {}, 1000);
+  else process.exit(0);
   return;
 }
 process.stdout.write("unknown subcommand: " + args[0] + "\\n");

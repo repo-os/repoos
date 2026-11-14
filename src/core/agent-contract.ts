@@ -1424,6 +1424,7 @@ export async function runAdapterContract(
     try {
       const cancelProc = spawn(binary, sanitizeSpawnArgs(runArgs).args, {
         cwd: workDir,
+        env: { ...process.env, REPOOS_AGENT_CONTRACT_CANCEL_PROBE: "1" },
         stdio: ["ignore", "pipe", "pipe"],
         shell: needsShell,
       });

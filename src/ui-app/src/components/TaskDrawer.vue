@@ -2387,14 +2387,17 @@ const doneProgress = computed(() => {
   return doingDone.value && doneTicks.value > 0 ? `${base} ${doneTicks.value}s` : base;
 });
 
-async function moveToDone(reason?: string): Promise<void> {
+async function moveToDone(reason?: unknown): Promise<void> {
   if (!ui.active || review.value?.running || inPipeline.value) return;
-  const landAnywayReason = typeof reason === "string" ? reason.trim() : "";
+  // Only the Land anyway dialog supplies a reason, and only as text. A stray
+  // click event here used to be sent as the reason and the server refused it.
+  const landAnywayReason = typeof reason === "string" && reason.trim() ? reason : undefined;
   ui.saving = true;
   doingDone.value = true;
   startDoneTimer();
   try {
     await repo.completeTask(ui.active, landAnywayReason ? { landAnywayReason } : {});
+
     // The close-out pipeline just started — show its live progress instead
     // of a now-stale task drawer.
     ui.close();

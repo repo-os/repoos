@@ -1,18 +1,21 @@
 ---
-updated_at: "2026-11-14T15:44:24Z"
-review_passes: 2
 id: "1117"
 title: "Full check is slow: measure where the time goes and speed it up without weakening the gate"
 type: feature
-status: review
+status: done
 priority: p2
 area: [core, tests]
+merged_commit: 360e56ecaa1b15db4d23388b06f6d95616af6749
 assigned_to: ai
 created_by: t@t
 branch: feat/full-check-is-slow-measure-where-the-tim
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T12:33:14Z"
+updated_at: "2026-11-14T16:22:14Z"
+last_close_out_gate_ms: 492642
+last_close_out_gate_at: "2026-11-14T16:21:54.053Z"
+review_passes: 2
 review_rounds: 1
 handoff_signal_retry_count: 1
 ---
@@ -64,4 +67,5 @@ Read docs/debugging-check-failures.md and the [[check.steps]] plan in repoos.tom
 - 2026-11-14T15:43:21Z · note: shots: skipped — the diff (7 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-14T15:43:50Z · message_queued at 2026-11-14T15:43:50.930Z
 - 2026-11-14T15:44:24Z · note: review pass 2: good to go
-
+- 2026-11-14T16:21:54Z · close-out gate completed in 493s
+- 2026-11-14T16:22:14Z · status done→done, release:success
