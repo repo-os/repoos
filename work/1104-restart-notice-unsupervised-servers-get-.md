@@ -2,7 +2,7 @@
 id: "1104"
 title: "Restart notice: unsupervised servers get a copy-command button, and it ignores an in-flight release bump"
 type: feature
-status: review
+status: active
 priority: p3
 area: [web, server]
 assigned_to: ai
@@ -12,6 +12,7 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T02:26:21Z"
 updated_at: "2026-11-14T03:55:49Z"
+review_rounds: 1
 review_passes: 1
 ---
 ## Problem
@@ -85,3 +86,4 @@ Decision (Nick): the restart notice becomes a real dialog built on the shared di
 - 2026-11-14T03:54:50Z · message_queued at 2026-11-14T03:54:50.747Z
 - 2026-11-14T03:55:49Z · note: review pass 1: needs some work
 - 2026-11-14T03:55:49Z · message_delivered: 1 message(s)
+- 2026-11-14T03:55:49Z · status review→active
