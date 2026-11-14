@@ -2,7 +2,7 @@
 id: "1121"
 title: "Hub app: one-command build, install and launch on Nick's Android phone over Tailscale adb"
 type: feature
-status: review
+status: active
 priority: p2
 area: mobile
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/hub-app-one-command-build-install-and-la
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-14T17:35:18Z"
-updated_at: "2026-11-14T18:15:54Z"
+updated_at: "2026-11-14T18:15:55Z"
 handoff_signal_retry_count: 2
 ---
 ## Problem
