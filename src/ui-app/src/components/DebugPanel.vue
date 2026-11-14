@@ -64,7 +64,9 @@ async function checkKeepReview(): Promise<void> {
   try {
     const result = await api<{ safe?: boolean }>(`/api/tasks/${props.task.id}/review/keep-check`);
     keepReviewSafe.value = result.safe === true;
-  } catch { keepReviewSafe.value = false; }
+  } catch {
+    keepReviewSafe.value = false;
+  }
 }
 async function keepReviewAndMerge(): Promise<void> {
   if (keepReviewBusy.value) return;
@@ -73,8 +75,11 @@ async function keepReviewAndMerge(): Promise<void> {
     await repo.keepReviewAndMerge(props.task);
     ui.close();
     ui.expandIntegrationBar();
-  } catch (error) { repo.onError(error); }
-  finally { keepReviewBusy.value = false; }
+  } catch (error) {
+    repo.onError(error);
+  } finally {
+    keepReviewBusy.value = false;
+  }
 }
 const conflictCount = computed(
   () =>
@@ -800,7 +805,13 @@ watch([() => ui.debugCheckFocus, () => repo.taskChecks[props.task.id]], applyDeb
             this branch's — resolve them in the task's worktree (merge main into the branch), then
             retry Move to done.
           </p>
-          <Button v-if="keepReviewSafe" variant="outline" size="sm" :disabled="keepReviewBusy" @click="keepReviewAndMerge">
+          <Button
+            v-if="keepReviewSafe"
+            variant="outline"
+            size="sm"
+            :disabled="keepReviewBusy"
+            @click="keepReviewAndMerge"
+          >
             {{ keepReviewBusy ? "Keeping verdict…" : "Keep review verdict and merge" }}
           </Button>
         </section>

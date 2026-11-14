@@ -35,7 +35,8 @@ export async function classifyTakeMainReviewMerge(
     return refuse("branch tip is not a two-parent merge commit");
   const [mainSha] = fields.slice(2);
   const ancestor = await git.isAncestor(worktree, reviewedSha, fields[1]);
-  if (ancestor !== true) return refuse("reviewed commit is not an ancestor of the merge's task-side parent");
+  if (ancestor !== true)
+    return refuse("reviewed commit is not an ancestor of the merge's task-side parent");
   const changed = await git.runGit(worktree, ["diff", "--name-only", "-z", reviewedSha, headSha]);
   if (changed.status !== 0) return refuse("could not compare reviewed and merged trees");
   const paths = changed.stdout.split("\0").filter(Boolean);

@@ -79,7 +79,9 @@ onMounted(() => {
   void checkKeepReview();
   keepReviewPoll = setInterval(() => void checkKeepReview(), 4000);
 });
-onBeforeUnmount(() => { if (keepReviewPoll) clearInterval(keepReviewPoll); });
+onBeforeUnmount(() => {
+  if (keepReviewPoll) clearInterval(keepReviewPoll);
+});
 
 const tldr = computed(() => props.tldr?.trim() || props.summary?.trim() || undefined);
 

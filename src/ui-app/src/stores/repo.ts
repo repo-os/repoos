@@ -3799,7 +3799,9 @@ export const useRepoStore = defineStore("repo", () => {
 
   /** Keep a provably unchanged review verdict, then enqueue the normal close-out. */
   async function keepReviewAndMerge(t: Task): Promise<void> {
-    const result = await api<{ ok: boolean; error?: string }>(`/api/tasks/${t.id}/review/keep`, { method: "POST" });
+    const result = await api<{ ok: boolean; error?: string }>(`/api/tasks/${t.id}/review/keep`, {
+      method: "POST",
+    });
     if (!result.ok) throw new Error(result.error ?? "could not keep review verdict");
     await completeTask(t);
   }
