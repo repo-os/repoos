@@ -134,6 +134,7 @@ onMounted(async () => {
       /* optional */
     }
   }
+  if (restartStatus.value?.restartPending) restartOpen.value = true;
   try {
     releaseRun.value = await api("/api/release/run");
   } catch {

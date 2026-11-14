@@ -13,6 +13,7 @@ import {
 } from "../../commands/upgrade";
 import { SHOT_PREVIEW_APPLIED_ATTR } from "../../core/shot-fixtures.js";
 import ReleaseUpdateNotification from "../src/components/ReleaseUpdateNotification.vue";
+import * as clipboard from "../src/lib/clipboard";
 import { useConfigStore } from "../src/stores/config";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -646,6 +647,104 @@ describe("feature releases", () => {
       { ...base, id: "4", status: "review", releasedAt: "2026-03-01T00:00:00Z" },
     ]);
     expect(releases.map((item) => item.id)).toEqual(["3", "1"]);
+  });
+
+  it("copies the manual restart command for an unsupervised server", async () => {
+    const copy = vi.spyOn(clipboard, "copyToClipboard").mockResolvedValue(true);
+    const fetchMock = vi.fn().mockImplementation((path: string) => {
+      const payload = String(path).includes("update-status")
+        ? {
+            restartPending: true,
+            restartWhenIdlePending: false,
+            runningVersion: "0.5.78",
+            installedVersion: "0.5.79",
+            activeWork: { agents: 0, checks: 0 },
+            supervised: false,
+            manualCommand: "just serve",
+          }
+        : String(path).includes("release/run")
+          ? { state: "idle", phase: null }
+          : {
+              currentVersion: "0.5.79",
+              latestVersion: "0.5.79",
+              available: false,
+              releaseNotes: null,
+              releaseUrl: null,
+              installKind: "source",
+              upgradeCommand: "just upgrade",
+            };
+      return Promise.resolve(
+        new Response(JSON.stringify(payload), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
+      );
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const wrapper = mount(ReleaseUpdateNotification, { attachTo: document.body });
+    try {
+      await flushPromises();
+      expect(document.body.querySelector("[data-test-id=installed-restart-notice]")).not.toBeNull();
+      expect(
+        [...document.body.querySelectorAll("button")].some(
+          (item) => item.textContent?.trim() === "Restart now",
+        ),
+      ).toBe(false);
+      const button = [...document.body.querySelectorAll("button")].find((item) =>
+        item.textContent?.includes("Copy restart command"),
+      );
+      expect(button).toBeDefined();
+      button!.click();
+      await flushPromises();
+      expect(copy).toHaveBeenCalledWith("just serve");
+      expect(document.body.textContent).toContain("Copied");
+    } finally {
+      wrapper.unmount();
+      vi.unstubAllGlobals();
+      copy.mockRestore();
+    }
+  });
+
+  it("hides the restart notice while a release run is active", async () => {
+    const fetchMock = vi.fn().mockImplementation((path: string) => {
+      const payload = String(path).includes("update-status")
+        ? {
+            restartPending: true,
+            restartWhenIdlePending: false,
+            runningVersion: "0.5.78",
+            installedVersion: "0.5.79",
+            activeWork: { agents: 0, checks: 0 },
+            supervised: true,
+            manualCommand: "repoos restart",
+          }
+        : String(path).includes("release/run")
+          ? { state: "running", phase: "building" }
+          : {
+              currentVersion: "0.5.79",
+              latestVersion: "0.5.79",
+              available: false,
+              releaseNotes: null,
+              releaseUrl: null,
+              installKind: "source",
+              upgradeCommand: "just upgrade",
+            };
+      return Promise.resolve(
+        new Response(JSON.stringify(payload), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
+      );
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const wrapper = mount(ReleaseUpdateNotification, { attachTo: document.body });
+    try {
+      await flushPromises();
+      expect(document.body.querySelector("[data-test-id=installed-restart-notice]")).toBeNull();
+      expect(document.body.textContent).not.toContain("0.5.79 is installed");
+    } finally {
+      wrapper.unmount();
+      vi.unstubAllGlobals();
+    }
   });
 
   it("bounds the dashboard history", () => {
