@@ -2,7 +2,7 @@
 id: "1114"
 title: Build mobile task details as a page or sheet
 type: feature
-status: active
+status: review
 priority: p1
 area: web
 depends_on: ["1113"]
@@ -41,7 +41,7 @@ Read ADR 0011 and coordinate with #1113's route and queue state. Follow shared d
 "highlight": "[data-testid=\"mobile-task-detail\"]",
 "steps": [
 {
-  "click": "[data-task-id=\"9999\"] .mobile-task-card"
+"click": "[data-task-id=\"9999\"] .mobile-task-card"
 }
 ],
 "state": "card:noChanges",
@@ -90,3 +90,4 @@ Read ADR 0011 and coordinate with #1113's route and queue state. Follow shared d
 - 2026-11-14T15:45:45Z · body
 - 2026-11-14T15:47:02Z · body
 - 2026-11-14T15:49:39Z · note: ui verification passed: 1 of 1 shot captured with clean console
+- 2026-11-14T15:49:39Z · status active→review
