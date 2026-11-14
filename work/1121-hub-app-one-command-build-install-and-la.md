@@ -1,5 +1,4 @@
 ---
-handoff_signal_retry_count: 1
 id: "1121"
 title: "Hub app: one-command build, install and launch on Nick's Android phone over Tailscale adb"
 type: feature
@@ -12,7 +11,8 @@ branch: feat/hub-app-one-command-build-install-and-la
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-14T17:35:18Z"
-updated_at: "2026-11-14T17:53:57Z"
+updated_at: "2026-11-14T17:57:10Z"
+handoff_signal_retry_count: 1
 ---
 ## Problem
 Getting a new RepoOS Hub Android build onto Nick's phone is manual (`just build-android`, then copy the APK). The Laisen project already has a working one-command flow (scripts/deploy-phone.sh on the thinkpad, with a Tiao version at ~/code/nick/reference/tiao/scripts/deploy-phone.sh) that builds the debug APK, connects over Tailscale + adb, installs, and launches. The Hub app should have the same.
@@ -44,4 +44,4 @@ Related: #1120 (Hub app redesign, runs in parallel, touches mobile/src only) and
 - 2026-11-14T17:46:54Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: Implementing TypeScript deploy scripts, tests, Gradle debug suffix, justfile recipe, and docs. · stderr: (empty)
 - 2026-11-14T17:48:53Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-14T17:53:57Z · message_queued at 2026-11-14T17:53:57.407Z
-
+- 2026-11-14T17:57:10Z · message_delivered: 1 message(s)
