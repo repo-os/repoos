@@ -11,7 +11,7 @@ branch: feat/docs-and-landing-sync-after-v0-5-84-user
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T09:08:28Z"
-updated_at: "2026-11-14T09:19:10Z"
+updated_at: "2026-11-14T09:19:42Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -46,3 +46,4 @@ Follow docs/agents-md-size.md: do not grow AGENTS.md. Put findings in the engine
 - 2026-11-14T09:19:09Z · status active→review
 - 2026-11-14T09:19:09Z · message_queued at 2026-11-14T09:19:09.787Z
 - 2026-11-14T09:19:10Z · note: shots: skipped — Docs site skipped: no docs shot declared
+- 2026-11-14T09:19:42Z · note: review pass 2: good to go
