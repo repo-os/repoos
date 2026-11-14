@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-14T13:38:26.548Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Mobile Settings section navigation (target \"default\"): highlight .settings-mobile-nav matched nothing on /settings?tab=general (http://127.0.0.1:33599/settings?tab=general)"
 id: "1115"
 title: Build a mobile Settings composition
 type: feature
@@ -64,3 +66,4 @@ Read ADR 0011 and reuse existing Settings tabs, config schema and shared dialog/
 - 2026-11-14T13:38:22Z · note: ui verification failed: ui verification failed (1 issue(s)): [missing-target] Mobile Settings section navigation (target "default"): highlight .settings-mobile-nav matched nothing on /settings?tab=general (http://127.0.0.1:33599/settings?tab=general)
 - 2026-11-14T13:38:23Z · message_queued at 2026-11-14T13:38:23.061Z
 - 2026-11-14T13:38:26Z · message_delivered: 1 message(s)
+
