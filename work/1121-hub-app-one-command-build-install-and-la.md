@@ -11,7 +11,7 @@ branch: feat/hub-app-one-command-build-install-and-la
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-14T17:35:18Z"
-updated_at: "2026-11-14T18:15:55Z"
+updated_at: "2026-11-14T18:18:53Z"
 handoff_signal_retry_count: 2
 ---
 ## Problem
@@ -54,3 +54,4 @@ Related: #1120 (Hub app redesign, runs in parallel, touches mobile/src only) and
 - 2026-11-14T18:10:54Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: Updating the build step to match `just build-android`, then running the full check. · stderr: (empty)
 - 2026-11-14T18:15:54Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
 - 2026-11-14T18:15:55Z · note: handoff requested (cli)
+- 2026-11-14T18:18:53Z · CTO nudge: held — handoff gate is running
