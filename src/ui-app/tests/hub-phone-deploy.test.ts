@@ -136,7 +136,7 @@ describe("connectToPhone", () => {
       }
       if (args[0] === "connect") {
         const target = args[1];
-        if (target) ready.add(target);
+        if (target?.endsWith(":43210")) ready.add(target);
         return { stdout: "connected\n", stderr: "", exitCode: 0 };
       }
       if (args[0] === "devices") return { stdout: "List of devices attached\n", stderr: "", exitCode: 0 };

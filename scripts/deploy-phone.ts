@@ -114,14 +114,13 @@ function probeTcp(host: string, port: number): Promise<boolean> {
 }
 
 async function buildApk(): Promise<void> {
-  const androidDir = join(repoRoot, "mobile/android");
   await new Promise<void>((resolve, reject) => {
-    const child = spawn("./gradlew", ["--quiet", "assembleDebug"], {
-      cwd: androidDir,
+    const child = spawn("just", ["build-android"], {
+      cwd: repoRoot,
       stdio: "inherit",
       env: process.env,
     });
-    child.on("close", (code) => (code === 0 ? resolve() : reject(new Error("gradle failed"))));
+    child.on("close", (code) => (code === 0 ? resolve() : reject(new Error("build-android failed"))));
   });
 }
 
