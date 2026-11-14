@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: t@t
 branch: ""
 created_at: "2026-11-14T01:19:52Z"
-updated_at: "2026-11-14T01:19:53Z"
+updated_at: "2026-11-14T01:19:56Z"
 ---
 ## Problem
 After a close-out merge conflict is resolved by merging main into the task branch, the branch tip moves, the review lock sha no longer matches, and `repoos landable` fails with "Review lock". The human must wait for a full re-review even when the resolution only took main's side of a file (e.g. a comment wording clash, #1081) and added nothing new to judge.
@@ -30,7 +30,11 @@ On the close-out failure card (merge conflict) and the Debug tab, after the conf
 ## Notes
 Related to the narrow conflict resolution allowlist in `src/server/conflict-resolution.ts`; do not widen that allowlist. Add the CLI command to the API route parity list.
 
+## Notes for AI
+Start from the close-out failure card component and `repoos landable` review-lock check. Reuse the existing merge-base/merge-tree helpers in src/core/git.ts rather than shelling out ad hoc.
+
 ## Activity
 
 - 2026-11-14T01:19:52Z · created · t@t
 - 2026-11-14T01:19:53Z · needs_input
+- 2026-11-14T01:19:56Z · body: Notes for AI (added)
