@@ -38,3 +38,4 @@ Related: #1120 (Hub app redesign, runs in parallel, touches mobile/src only) and
 - 2026-11-14T17:35:24Z · status inbox→ready
 - 2026-11-14T17:35:25Z · status ready→active, branch
 - 2026-11-14T17:43:53Z · message_queued at 2026-11-14T17:43:53.125Z
+- 2026-11-14T17:43:53Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
