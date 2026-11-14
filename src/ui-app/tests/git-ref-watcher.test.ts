@@ -15,6 +15,30 @@ afterEach(() => {
   }
 });
 
+async function writeUntilObserved(
+  write: () => void,
+  observed: () => boolean,
+  label: string,
+): Promise<void> {
+  const deadline = Date.now() + 5_000;
+  while (!observed()) {
+    write();
+    const remaining = deadline - Date.now();
+    if (remaining <= 0) throw new Error(`timed out waiting for ${label}`);
+    try {
+      // Each write is followed by an event wait long enough for the watcher's
+      // debounce. If native registration is still pending, another write gives
+      // it a fresh observable change instead of relying on a setup sleep.
+      await waitFor(observed, label, Math.min(250, remaining));
+    } catch (error) {
+      if (!(error instanceof Error) || !error.message.includes(`timed out waiting for ${label}`)) {
+        throw error;
+      }
+      if (Date.now() >= deadline) throw error;
+    }
+  }
+}
+
 describe("Git ref watches", () => {
   it.each(["checkout", "linked worktree"])(
     "observes shared nested refs from a %s",
@@ -41,12 +65,12 @@ describe("Git ref watches", () => {
       const changed = vi.fn();
       watcher.setGitSignal(changed);
       watcher.start();
-      // Give native fs.watch registrations a turn to reach the OS before the
-      // one-time write. A single setImmediate can run before subscriptions are
-      // active on a busy worker, losing the only event this test emits.
-      await new Promise<void>((resolve) => setTimeout(resolve, 50));
-      writeFileSync(join(refs, "topic"), "new tip\n");
-      await waitFor(() => changed.mock.calls.length > 0, "nested ref changed");
+      let tip = 0;
+      await writeUntilObserved(
+        () => writeFileSync(join(refs, "topic"), `new tip ${++tip}\n`),
+        () => changed.mock.calls.length > 0,
+        "nested ref changed",
+      );
       expect(changed).toHaveBeenCalled();
 
       changed.mockClear();

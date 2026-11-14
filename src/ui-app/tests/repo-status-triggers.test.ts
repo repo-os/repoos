@@ -50,6 +50,27 @@ function config(root: string): RepoOSConfig {
   } as RepoOSConfig;
 }
 
+async function mutateUntilSignaled(
+  mutate: () => void,
+  label: string,
+  isSignaled: () => boolean,
+): Promise<void> {
+  const deadline = Date.now() + 5_000;
+  while (!isSignaled()) {
+    mutate();
+    const remaining = deadline - Date.now();
+    if (remaining <= 0) throw new Error(`timed out waiting for ${label}`);
+    try {
+      await waitFor(isSignaled, label, Math.min(250, remaining));
+    } catch (error) {
+      if (!(error instanceof Error) || !error.message.includes(`timed out waiting for ${label}`)) {
+        throw error;
+      }
+      if (Date.now() >= deadline) throw error;
+    }
+  }
+}
+
 /** A one-commit repo with a tracked file OUTSIDE the watched `work/` tree. */
 function makeRepo(): string {
   const root = mkdtempSync(join(tmpdir(), "repoos-repo-status-trig-"));
@@ -92,9 +113,16 @@ describe("WorkWatcher git-state signal (#0584 trigger 1)", () => {
 
   it("signals on a write under the watched work directory", async () => {
     start();
-    writeFileSync(join(root, "work", "0001-x.md"), '---\nid: "0001"\n---\nupdated\n');
-
-    await waitFor(() => signals > 0, "git signal from a work/ write", 10_000);
+    let revision = 0;
+    await mutateUntilSignaled(
+      () =>
+        writeFileSync(
+          join(root, "work", "0001-x.md"),
+          `---\nid: "0001"\n---\nrevision ${++revision}\n`,
+        ),
+      "git signal from a work/ write",
+      () => signals > 0,
+    );
     expect(signals).toBeGreaterThanOrEqual(1);
   });
 
@@ -112,6 +140,18 @@ describe("WorkWatcher git-state signal (#0584 trigger 1)", () => {
     git(root, ["checkout", "-q", "-b", "feat/other"]);
     git(root, ["checkout", "-q", "-"]);
     start();
+
+    let revision = 0;
+    await mutateUntilSignaled(
+      () =>
+        writeFileSync(
+          join(root, "work", "0001-x.md"),
+          `---\nid: "0001"\n---\nwatch ready ${++revision}\n`,
+        ),
+      "work watcher readiness",
+      () => signals > 0,
+    );
+    signals = 0;
 
     git(root, ["checkout", "feat/other"]);
     await waitFor(() => signals > 0, "git signal from a checkout", 10_000);
