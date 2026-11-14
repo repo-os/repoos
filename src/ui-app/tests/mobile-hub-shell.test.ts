@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, expect, it, beforeEach, vi } from "vitest";
+import { describe, expect, it, beforeEach } from "vitest";
 import {
   normalizeAppearanceMode,
   normalizeDesignThemeId,
@@ -9,33 +9,11 @@ import {
   APPEARANCE_KEY,
   DESIGN_KEY,
   bootThemeFromStorage,
+  mirrorThemePrefs,
 } from "../../../mobile/src/theme-core";
 import { fixtureServers, fixtureInitialRoute, readHubFixture } from "../../../mobile/src/fixture";
-import { loadThemePrefs, saveAppearanceMode, saveDesignTheme } from "../../../mobile/src/theme";
 import { loadConfig } from "../../core/config.js";
 import { resolveShotTargets } from "../../core/shot-targets.js";
-
-const prefStore = new Map<string, string>();
-
-vi.mock("@capacitor/preferences", () => ({
-  Preferences: {
-    get: vi.fn(async ({ key }: { key: string }) => ({
-      value: prefStore.get(key) ?? null,
-    })),
-    set: vi.fn(async ({ key, value }: { key: string; value: string }) => {
-      prefStore.set(key, value);
-    }),
-  },
-}));
-
-vi.mock("@capacitor/core", () => ({
-  Capacitor: { isNativePlatform: () => false },
-}));
-
-vi.mock("@capacitor/status-bar", () => ({
-  StatusBar: { setStyle: vi.fn(), setBackgroundColor: vi.fn() },
-  Style: { Light: "LIGHT", Dark: "DARK" },
-}));
 
 function stubMatchMedia(dark = true) {
   Object.defineProperty(window, "matchMedia", {
@@ -62,7 +40,6 @@ describe("mobile hub theme", () => {
   beforeEach(() => {
     stubMatchMedia();
     localStorage.clear();
-    prefStore.clear();
     document.documentElement.removeAttribute("data-ui-theme");
     document.documentElement.removeAttribute("data-theme");
   });
@@ -91,6 +68,18 @@ describe("mobile hub theme", () => {
     expect(document.documentElement.dataset.theme).toBe("light");
   });
 
+  it("mirrors design and appearance mode for Preferences-backed persistence", () => {
+    mirrorThemePrefs("solarized", "dark");
+    expect(localStorage.getItem(DESIGN_KEY)).toBe("solarized");
+    expect(localStorage.getItem(APPEARANCE_KEY)).toBe("dark");
+    const boot = bootThemeFromStorage();
+    expect(boot.design).toBe("solarized");
+    expect(boot.appearanceMode).toBe("dark");
+    applyThemesToDocument(boot.design, boot.appearanceMode);
+    expect(document.documentElement.dataset.uiTheme).toBe("solarized");
+    expect(document.documentElement.dataset.theme).toBe("dark");
+  });
+
   it("lists every web design theme the shell exposes", () => {
     expect(DESIGN_THEMES.map((t) => t.id)).toEqual([
       "classic",
@@ -102,24 +91,6 @@ describe("mobile hub theme", () => {
       "solarized",
       "hypercolor",
     ]);
-  });
-});
-
-describe("mobile hub theme persistence (Preferences)", () => {
-  beforeEach(() => {
-    stubMatchMedia();
-    localStorage.clear();
-    prefStore.clear();
-  });
-
-  it("loads and saves design theme and appearance mode", async () => {
-    await saveDesignTheme("solarized");
-    await saveAppearanceMode("dark");
-    const prefs = await loadThemePrefs();
-    expect(prefs.design).toBe("solarized");
-    expect(prefs.appearanceMode).toBe("dark");
-    expect(localStorage.getItem(DESIGN_KEY)).toBe("solarized");
-    expect(localStorage.getItem(APPEARANCE_KEY)).toBe("dark");
   });
 });
 
