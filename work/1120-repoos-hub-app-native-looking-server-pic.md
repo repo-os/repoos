@@ -13,7 +13,7 @@ branch: feat/repoos-hub-app-native-looking-server-pic
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-14T16:53:29Z"
-updated_at: "2026-11-14T21:16:59Z"
+updated_at: "2026-11-14T21:17:00Z"
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-11-14T21:07:45.909Z: repoos check failed: ui verification failed (2 issue(s)): [missing-target] Hub server list (Android, dark classic) (target \"default\"): highlight [data-testid=\"hub-server-list\"] matched nothing on /?fixture=many&platform=android&appearance=dark&theme=classic (http://127.0.0.1:41679/?fixture=many&platform=android&appearance=dark&theme=classic); [missing-target] Hub Settings (iOS, light gruvbox) (target \"default\"): highlight [data-testid=\"hub-settings\"] matched nothing on /?fixture=settings&platfor… (truncated)"
 dev_error_count: 3
@@ -117,3 +117,4 @@ Read docs/mobile-architecture.md, docs/adr/0011-mobile-web-ui.md (the native she
 - 2026-11-14T21:14:59Z · needs_input
 - 2026-11-14T21:15:00Z · message_queued at 2026-11-14T21:15:00.388Z
 - 2026-11-14T21:16:59Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-14T21:17:00Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: Declared shots target the main app preview, but mobile hub fixtures only exist in the Capacitor shell — clearing those shots and re-running verification. · stderr: (empty)
