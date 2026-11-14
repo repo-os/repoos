@@ -12,7 +12,7 @@ branch: feat/build-a-mobile-settings-composition
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T09:10:57Z"
-updated_at: "2026-11-14T13:19:10Z"
+updated_at: "2026-11-14T13:21:14Z"
 ---
 ## Problem
 Settings uses desktop navigation and dense grouped controls that become cramped on narrow screens.
@@ -30,6 +30,24 @@ Settings below the mobile breakpoint has a single-column, touch-friendly layout 
 ## Notes for AI
 Read ADR 0011 and reuse existing Settings tabs, config schema and shared dialog/form conventions. Keep this scoped to Settings; shell navigation is delivered by #1112.
 
+## Shots
+```json
+[
+{
+  "label": "Mobile Settings section navigation",
+  "target": "default",
+  "route": "/settings?tab=general",
+  "highlight": ".settings-mobile-nav"
+},
+{
+  "label": "Desktop Settings navigation",
+  "target": "default",
+  "route": "/settings?tab=general",
+  "highlight": ".settings-tabs"
+}
+]
+```
+
 ## Activity
 
 - 2026-11-14T09:10:57Z · created · t@t
@@ -39,3 +57,4 @@ Read ADR 0011 and reuse existing Settings tabs, config schema and shared dialog/
 - 2026-11-14T13:19:03Z · cli_override, model_override
 - 2026-11-14T13:19:08Z · status inbox→ready
 - 2026-11-14T13:19:10Z · status ready→active, branch
+- 2026-11-14T13:21:14Z · body
