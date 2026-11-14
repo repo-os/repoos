@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-14T04:42:04Z"
+review_passes: 1
 id: "1103"
 title: Keep review verdict after a take-main's-side merge-conflict fix
 type: feature
@@ -11,7 +13,6 @@ branch: feat/keep-review-verdict-after-a-take-main-s-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T01:19:52Z"
-updated_at: "2026-11-14T04:42:04Z"
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-11-14T04:00:36.431Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
@@ -69,3 +70,4 @@ Start from the close-out failure card component and `repoos landable` review-loc
 - 2026-11-14T04:40:02Z · status active→review
 - 2026-11-14T04:40:02Z · message_queued at 2026-11-14T04:40:02.390Z
 - 2026-11-14T04:42:04Z · note: review pass 1: needs some work
+
