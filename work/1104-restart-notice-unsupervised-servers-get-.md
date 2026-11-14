@@ -12,6 +12,7 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T02:26:21Z"
 updated_at: "2026-11-14T03:46:10Z"
+deferred_handoff_resume_count: 1
 ---
 ## Problem
 Two rough edges in the "RepoOS vX is installed" restart notice (#1075, `ReleaseUpdateNotification.vue`):
