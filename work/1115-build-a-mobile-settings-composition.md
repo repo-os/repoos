@@ -1,4 +1,5 @@
 ---
+close_out_repair_count: 1
 id: "1115"
 title: Build a mobile Settings composition
 type: feature
@@ -69,3 +70,4 @@ Read ADR 0011 and reuse existing Settings tabs, config schema and shared dialog/
 - 2026-11-14T14:52:16Z · status review→active
 - 2026-11-14T14:52:16Z · note: close-out repair: merge-conflict
 - 2026-11-14T14:52:16Z · message_overdue: still queued after 60m without being delivered
+
