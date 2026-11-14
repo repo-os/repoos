@@ -71,3 +71,4 @@ Read ADR 0011 and the shell contract in #1112. Inspect and reuse the existing ta
 - 2026-11-14T13:57:36Z · body
 - 2026-11-14T14:00:44Z · note: ui verification passed: 1 of 1 shot captured with clean console
 - 2026-11-14T14:00:45Z · status active→review
+- 2026-11-14T14:00:45Z · message_queued at 2026-11-14T14:00:45.522Z
