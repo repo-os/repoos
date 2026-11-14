@@ -12,7 +12,7 @@ branch: feat/finish-touch-affordances-across-mobile-s
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T09:11:01Z"
-updated_at: "2026-11-14T16:23:36Z"
+updated_at: "2026-11-14T16:23:54Z"
 ---
 ## Problem
 Some existing surfaces still depend on hover or small pointer controls. The last-activity popover work in #1069 is complete, but its behavior needs to be included in the narrow-screen experience.
@@ -82,3 +82,4 @@ On screens below 720px the floating heads (Ross, CTO, Debugger) must not reserve
 - 2026-11-14T16:21:39Z · body
 - 2026-11-14T16:22:17Z · note: adopted orphaned engineer pid 34168
 - 2026-11-14T16:23:36Z · body
+- 2026-11-14T16:23:54Z · note: adopted orphaned engineer pid 34168
