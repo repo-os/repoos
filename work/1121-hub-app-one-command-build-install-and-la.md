@@ -11,7 +11,7 @@ branch: feat/hub-app-one-command-build-install-and-la
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-14T17:35:18Z"
-updated_at: "2026-11-14T17:59:09Z"
+updated_at: "2026-11-14T18:01:04Z"
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -47,3 +47,4 @@ Related: #1120 (Hub app redesign, runs in parallel, touches mobile/src only) and
 - 2026-11-14T17:57:10Z · message_delivered: 1 message(s)
 - 2026-11-14T17:59:09Z · queued message undelivered for 5m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-14T17:59:09Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: Updating the build step to match `just build-android`, then running the full check. · stderr: (empty)
+- 2026-11-14T18:01:04Z · message_queued at 2026-11-14T18:01:04.853Z
