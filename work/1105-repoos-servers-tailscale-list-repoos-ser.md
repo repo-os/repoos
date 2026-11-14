@@ -47,3 +47,4 @@ Reuse `src/core/tailscale.ts` and `src/core/remote-hosts.ts`. Do not add a runti
 - 2026-11-14T03:40:24Z · status review→active
 - 2026-11-14T03:44:34Z · body
 - 2026-11-14T03:45:35Z · status active→review
+- 2026-11-14T03:45:35Z · message_queued at 2026-11-14T03:45:35.883Z
