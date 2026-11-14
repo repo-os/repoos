@@ -3,9 +3,6 @@ id: "1115"
 title: Build a mobile Settings composition
 type: feature
 status: inbox
-needs_input: true
-needs_input_reason: underspecified
-needs_input_detail: "missing sections: Desired UX, Notes for AI"
 priority: p1
 area: web
 depends_on: ["1112"]
@@ -13,7 +10,7 @@ assigned_to: ai
 created_by: t@t
 branch: ""
 created_at: "2026-11-14T09:10:57Z"
-updated_at: "2026-11-14T09:11:44Z"
+updated_at: "2026-11-14T09:22:38Z"
 ---
 ## Problem
 Settings uses desktop navigation and dense grouped controls that become cramped on narrow screens.
@@ -36,3 +33,4 @@ Read ADR 0011 and reuse existing Settings tabs, config schema and shared dialog/
 - 2026-11-14T09:10:57Z · created · t@t
 - 2026-11-14T09:10:58Z · needs_input
 - 2026-11-14T09:11:44Z · depends_on, body: Desired UX (added); Acceptance criteria (added 3, removed 3); Notes for AI (added); Desired outcome (removed)
+- 2026-11-14T09:22:38Z · needs_input
