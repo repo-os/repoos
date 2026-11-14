@@ -11,7 +11,7 @@ branch: feat/release-cut-reliability-false-could-not-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T05:18:12Z"
-updated_at: "2026-11-14T06:01:22Z"
+updated_at: "2026-11-14T06:01:40Z"
 ---
 ## Problem
 Cutting v0.5.83 (2026-11-14) took six attempts. Four distinct causes, all in the release path:
@@ -48,3 +48,4 @@ Start from src/server/release.ts (`cutNewRelease`, phases `pushing_main`, `check
 - 2026-11-14T06:01:22Z · status active→review
 - 2026-11-14T06:01:22Z · message_queued at 2026-11-14T06:01:22.704Z
 - 2026-11-14T06:01:22Z · note: shots: skipped — the diff (8 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-11-14T06:01:40Z · note: review pass 1: failed — no usable report
