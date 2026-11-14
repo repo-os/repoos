@@ -3,6 +3,9 @@ id: "1119"
 title: "Task drawer Move to done fails instantly: click event is sent as the land-anyway reason"
 type: feature
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "engineer keeps crashing (4 in 30m): a human-set task override (codex + gpt-6-luna) is pinned, so RepoOS did not replace it. Review the crash detail and either fix the environment, change the override, or resume manually. If the conversation itself is poisoned (it repeats the same failure), reset it with `repoos start 1119 --fresh`."
 priority: p1
 area: web
 assigned_to: ai
@@ -11,9 +14,9 @@ branch: feat/task-drawer-move-to-done-fails-instantly
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T16:14:26Z"
-updated_at: "2026-11-14T16:58:53Z"
-dev_error_count: 3
-engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-14T16:48:38.797Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-14T16:48:42.502Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-14T16:48:45.917Z\",\"kind\":\"dev-error\"}]"
+updated_at: "2026-11-14T16:58:57Z"
+dev_error_count: 4
+engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-14T16:48:38.797Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-14T16:48:42.502Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-14T16:48:45.917Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-14T16:58:57.569Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 In the task drawer, clicking Move to done fails immediately with "Land anyway requires a reason of 1–1000 characters", before any close-out work starts. Cause: `src/ui-app/src/components/TaskDrawer.vue` binds the button as `@click="moveToDone"` (line about 5770), and Vue passes the click event as the first argument. `moveToDone(reason?: string)` (added by #1081 for the Land anyway override) treats the truthy event as a reason and calls `repo.completeTask(task, { landAnywayReason: <event> })`, which serialises to a non-string `landAnywayReason`; the server (`src/server/routes/tasks.ts`, done route) rejects it with a 400. Board-card Move to done (TaskCard.vue) and `repoos done` are unaffected. Present since #1081 landed, so in v0.5.83 and v0.5.84. Seen on #1117 on 2026-11-15.
@@ -51,3 +54,5 @@ Related: #1081 (introduced the reason parameter) and the audit that missed this.
 - 2026-11-14T16:48:45Z · agent exited with an error (codex) · Reading additional input from stdin...
 - 2026-11-14T16:48:45Z · engineer crash recovery: surfaced instead of switching — a human-set task override (codex + gpt-6-luna) is pinned, so RepoOS did not replace it (3/3 crashes in 30m)
 - 2026-11-14T16:58:53Z · watchdog: restarting engineer after 10m with no live process
+- 2026-11-14T16:58:57Z · agent exited with an error (codex) · Reading additional input from stdin...
+- 2026-11-14T16:58:57Z · engineer crash recovery: surfaced instead of switching — a human-set task override (codex + gpt-6-luna) is pinned, so RepoOS did not replace it (4/3 crashes in 30m)
