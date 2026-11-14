@@ -2,16 +2,16 @@
 id: "1118"
 title: "remote-host-pool tests fail on the remote host (bee) but pass locally: find the load or host dependence"
 type: feature
-status: ready
+status: active
 priority: p2
 area: [core, tests]
 assigned_to: ai
 created_by: t@t
-branch: ""
+branch: feat/remote-host-pool-tests-fail-on-the-remot
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T12:33:15Z"
-updated_at: "2026-11-14T12:33:28Z"
+updated_at: "2026-11-14T12:33:29Z"
 ---
 ## Problem
 Tests in `src/ui-app/tests/remote-host-pool.test.ts` fail under load or on the remote validation host and pass when run alone. Two cases on 2026-11-14: (1) #1101 "times out while deferred and removes stale dead-pid queue entries" (fixed earlier); (2) "host-side lock (server + standalone CLI share one limit) > lets a holder expire the waiter with a clear timeout instead of a red gate on bee" failed #1108's handoff with "remote validation failed: test failure ... on bee", yet passed 12 of 12 in the task worktree. A handoff gate that fails for host reasons wastes about 15 minutes per rerun.
@@ -33,3 +33,4 @@ Read docs/debugging-check-failures.md. Precedents: #1099, #1101, #1107. Related 
 - 2026-11-14T12:33:15Z · created · t@t
 - 2026-11-14T12:33:26Z · cli_override, model_override
 - 2026-11-14T12:33:28Z · status inbox→ready
+- 2026-11-14T12:33:29Z · status ready→active, branch
