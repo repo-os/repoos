@@ -2,16 +2,16 @@
 id: "1117"
 title: "Full check is slow: measure where the time goes and speed it up without weakening the gate"
 type: feature
-status: ready
+status: active
 priority: p2
 area: [core, tests]
 assigned_to: ai
 created_by: t@t
-branch: ""
+branch: feat/full-check-is-slow-measure-where-the-tim
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T12:33:14Z"
-updated_at: "2026-11-14T12:33:22Z"
+updated_at: "2026-11-14T12:33:23Z"
 ---
 ## Problem
 The full `repoos check` and the close-out gate take 15 to 20 minutes, and the board has reported "checks are slow lately: 9 of the last 10" for hours on 2026-11-14. Slow checks also fail more often under load: they cost three release attempts, a flaky-test task (#1107) and a failed handoff (#1108) in one day. Known heavy files from the release run: `src/ui-app/tests/dev-targets.test.ts` 145s, `remote-host-pool.test.ts` 59s, `agent-review.test.ts` 35s, `handoff.test.ts` 25s, `agent-contract.test.ts` 22s, `task-watchdog.test.ts` 20s. Close-out gates took 987s (#1109) and 1155s (#1107).
@@ -34,3 +34,4 @@ Read docs/debugging-check-failures.md and the [[check.steps]] plan in repoos.tom
 - 2026-11-14T12:33:14Z · created · t@t
 - 2026-11-14T12:33:20Z · cli_override, model_override
 - 2026-11-14T12:33:22Z · status inbox→ready
+- 2026-11-14T12:33:23Z · status ready→active, branch
