@@ -14,7 +14,7 @@ assigned_to: ai
 created_by: t@t
 branch: ""
 created_at: "2026-11-14T09:10:42Z"
-updated_at: "2026-11-14T09:17:06Z"
+updated_at: "2026-11-14T09:17:07Z"
 ---
 ## Problem
 RepoOS's single SPA has no phone-specific navigation composition. Desktop chrome and scattered narrow CSS do not provide a coherent phone shell.
@@ -35,7 +35,7 @@ Below 720 CSS px, users get a purpose-built mobile shell with bottom navigation 
 - Provide PWA install basics only as needed: valid manifest, icons, standalone display metadata and safe-area layout; do not implement offline mutations or a second native connected-server composition.
 
 ## Notes for AI
-Read ADR 0011 and UI conventions. Keep the change limited to the shell; Work queue, detail, Settings redesign and broad touch audit are separate tasks. Reuse the current route definitions and feature-gated navigation.
+Read ADR 0011, docs/mobile-architecture.md and UI conventions. This task builds navigation inside the server-served web app, not the Capacitor host shell. Preserve the native host's server picker, lock screen and isolated WebView security boundary. Keep Work queue, detail, Settings redesign and broad touch audit in their separate follow-up tasks. Reuse current route definitions and feature-gated navigation.
 
 ## Activity
 
@@ -43,3 +43,4 @@ Read ADR 0011 and UI conventions. Keep the change limited to the shell; Work que
 - 2026-11-14T09:10:44Z · needs_input
 - 2026-11-14T09:11:56Z · body: Desired UX (added); Acceptance criteria (added 7, removed 7); Notes for AI (added); Desired outcome (removed)
 - 2026-11-14T09:17:06Z · title, body: Acceptance criteria (added 4, removed 2)
+- 2026-11-14T09:17:07Z · body: Notes for AI (added 1, removed 1)
