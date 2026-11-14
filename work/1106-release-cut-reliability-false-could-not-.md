@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-11-14T07:22:35Z"
-review_passes: 2
+last_close_out_gate_ms: 930754
+last_close_out_gate_at: "2026-11-14T07:40:09.760Z"
 id: "1106"
 title: "Release cut reliability: false 'Could not push main' failure, remote-host git errors, and test time bombs"
 type: feature
@@ -13,6 +13,8 @@ branch: feat/release-cut-reliability-false-could-not-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T05:18:12Z"
+updated_at: "2026-11-14T07:40:09Z"
+review_passes: 2
 review_rounds: 1
 ---
 ## Problem
@@ -63,4 +65,5 @@ Start from src/server/release.ts (`cutNewRelease`, phases `pushing_main`, `check
 - 2026-11-14T07:21:42Z · note: shots: skipped — the diff (10 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-14T07:22:12Z · message_queued at 2026-11-14T07:22:12.154Z
 - 2026-11-14T07:22:35Z · note: review pass 3: good to go
+- 2026-11-14T07:40:09Z · close-out gate completed in 931s
 
