@@ -2,7 +2,7 @@
 id: "1108"
 title: "Auto-recover idle tasks: failed review pass and undelivered engineer message leave a task stuck for an hour"
 type: feature
-status: active
+status: review
 priority: p2
 area: [server, core]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/auto-recover-idle-tasks-failed-review-pa
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T08:27:35Z"
-updated_at: "2026-11-14T11:31:58Z"
+updated_at: "2026-11-14T11:31:59Z"
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -72,3 +72,4 @@ Start from src/server/task-watchdog.ts and the review pipeline in src/server/age
 - 2026-11-14T11:19:30Z · note: handoff requested (cli)
 - 2026-11-14T11:21:49Z · CTO nudge: held — handoff gate is running
 - 2026-11-14T11:31:58Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
+- 2026-11-14T11:31:59Z · status active→review
