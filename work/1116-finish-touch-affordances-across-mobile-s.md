@@ -3,9 +3,6 @@ id: "1116"
 title: Finish touch affordances across mobile surfaces
 type: feature
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "engineer keeps crashing (3 in 30m): a human-set task override (codex + gpt-6-luna) is pinned, so RepoOS did not replace it. Review the crash detail and either fix the environment, change the override, or resume manually. If the conversation itself is poisoned (it repeats the same failure), reset it with `repoos start 1116 --fresh`."
 priority: p1
 area: web
 depends_on: ["1112", "1114", "1115"]
@@ -15,7 +12,7 @@ branch: feat/finish-touch-affordances-across-mobile-s
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T09:11:01Z"
-updated_at: "2026-11-14T16:48:52Z"
+updated_at: "2026-11-14T16:51:53Z"
 dev_error_count: 3
 engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-14T16:48:44.625Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-14T16:48:47.710Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-14T16:48:50.937Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -97,3 +94,4 @@ On screens below 720px the floating heads (Ross, CTO, Debugger) must not reserve
 - 2026-11-14T16:48:50Z · agent exited with an error (codex) · Reading additional input from stdin...
 - 2026-11-14T16:48:50Z · engineer crash recovery: surfaced instead of switching — a human-set task override (codex + gpt-6-luna) is pinned, so RepoOS did not replace it (3/3 crashes in 30m)
 - 2026-11-14T16:48:52Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-14T16:51:53Z · watchdog: restarting engineer because a queued message waited 3m with no live process
