@@ -1,5 +1,7 @@
 import { Readable } from "node:stream";
 import type { ServerResponse } from "node:http";
+import { readFileSync, readdirSync } from "node:fs";
+import { join } from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
@@ -41,6 +43,28 @@ function request(body: unknown = {}): Readable {
 }
 
 describe("installed upgrade status and restart route", () => {
+  it("does not hardcode the current package version in test fixtures", () => {
+    const current = (JSON.parse(readFileSync("package.json", "utf8")) as { version: string })
+      .version;
+    const exactVersion = [`"${current}"`, `'${current}'`];
+    const scan = (dir: string): string[] =>
+      readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+        const path = join(dir, entry.name);
+        return entry.isDirectory()
+          ? scan(path)
+          : entry.isFile() && entry.name.endsWith(".test.ts")
+            ? [path]
+            : [];
+      });
+    const offenders = scan("src")
+      .filter((file) => {
+        const source = readFileSync(file, "utf8");
+        return exactVersion.some((literal) => source.includes(literal));
+      })
+      .map((file) => file.replace(`${process.cwd()}/`, ""));
+    expect(offenders).toEqual([]);
+  });
+
   beforeEach(() => {
     mocks.readInstallVersion.mockReturnValue("999.0.0");
     mocks.detectSupervisor.mockReturnValue({ kind: "none" });
