@@ -11,7 +11,7 @@ branch: feat/agents-page-raw-cli-errors-leak-into-the
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-14T18:02:14Z"
-updated_at: "2026-11-14T19:38:21Z"
+updated_at: "2026-11-14T19:38:53Z"
 ---
 ## Problem
 On Agents > Agents > Default agents, the "last runs" list (`agentLastRuns` in src/ui-app/src/views/AgentsView.vue, from `GET /api/agents/last-runs` in src/server/server.ts) prints raw CLI output as if it were the message. Seen 2026-11-15 (screenshot attached): the debugger row shows "opencode exited with code 1: > build · deepseek-ai/DeepSeek-V4.1-Flash Error: You need positive balance to do inference. Please add balance manually or setup top-up", and the antigravity rows show a full `AGY_ERROR: {"short_error":"RESOURCE_EXHAUSTED (code 429)...` JSON blob. Only one row (opencode kimi) got the new treatment from #1098: a plain sentence plus a collapsed "Raw CLI error" disclosure.
@@ -103,3 +103,4 @@ Build on #1098 (src/core/agent-failure.ts, `splitAgentFailureDetail`). Related: 
 - 2026-11-14T19:36:58Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: Implementing core failure classification, last-runs filtering, UI toggle, tests, and docs. · stderr: (empty)
 - 2026-11-14T19:36:58Z · message_delivered: 1 message(s)
 - 2026-11-14T19:38:21Z · body
+- 2026-11-14T19:38:53Z · CTO nudge: held — handoff gate is running
