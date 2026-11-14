@@ -2,7 +2,7 @@
 id: "1119"
 title: "Task drawer Move to done fails instantly: click event is sent as the land-anyway reason"
 type: feature
-status: active
+status: review
 priority: p1
 area: web
 assigned_to: ai
@@ -97,4 +97,4 @@ Related: #1081 (introduced the reason parameter) and the audit that missed this.
 - 2026-11-14T18:02:34Z · CTO nudge: held — handoff gate is running
 - 2026-11-14T18:03:51Z · message_delivered: 3 message(s)
 - 2026-11-14T18:06:22Z · note: ui verification passed: 1 shot captured with clean console
-- 2026-11-14T18:08:49Z · engineer stopped by request
+- 2026-11-14T18:08:49Z · status active→review
