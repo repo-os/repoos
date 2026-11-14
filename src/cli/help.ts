@@ -148,7 +148,7 @@ const GROUPS: readonly CommandGroup[] = [
       {
         name: "review",
         usage:
-          "review <id> [--wait] [--json] [--port N] · review cancel <id> · review again <id> · review followup <id>",
+          "review <id> [--wait] [--json] [--port N] · review cancel <id> · review again <id> · review keep <id> · review followup <id>",
         desc: "Request review synchronously (PATCH status=review; waits for handoff)",
         flags: "--wait · --json · --port",
       },

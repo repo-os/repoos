@@ -191,6 +191,7 @@ import { createCloseOutOutcomeStore } from "../close-out-outcome.js";
 import { resolvePipelineCheckPlan } from "../check-plan-info.js";
 import { loadDiffSnapshot } from "../diff-snapshot.js";
 import { computeMergeConflict } from "../merge-conflict.js";
+import { classifyTakeMainReviewMerge } from "../take-main-review.js";
 import { previewTargetOptions, type PreviewTargetOption } from "../preview.js";
 import {
   listStoryDefinitionsFromCommits,
@@ -212,6 +213,7 @@ import {
   clearWorktreeHandoffProtection,
   discardWorktreeHandoffChanges,
   readHandoffSnapshot,
+  readWorktreeReviewLock,
   refreshHandoffSnapshotFromWorktree,
   restoreWorktreeReviewLockAfterFailedCloseOut,
   verifyWorktreeHandoffIntegrity,
@@ -5199,6 +5201,34 @@ export const getTaskLandable: RouteHandler = async (ctx, _req, res, params) => {
   if (!task) return json(res, 404, { error: `Task #${id} not found` });
   const result = await gatherLandable(config, task, reviews.read(id));
   return json(res, 200, result);
+};
+
+/** Re-pin an existing clean verdict only when the post-review merge is provably take-main-only. */
+export const keepReviewVerdict: RouteHandler = async (ctx, _req, res, params) => {
+  const { config, index, reviews } = ctx;
+  const id = params.param1;
+  const task = index.getTask(id);
+  if (!task) return json(res, 404, { error: `Task #${id} not found` });
+  if (task.status !== "review" || !task.branch) return json(res, 409, { error: "task must be in review with a branch" });
+  if (reviews.isRunning(id)) return json(res, 409, { error: "a review is currently running" });
+  const lock = readWorktreeReviewLock(config.root, config.cacheDir ?? ".repoos", id);
+  const report = reviews.read(id);
+  if (!lock || !report || report.state !== "ok" || parseReviewVerdict(report.markdown) !== "good to go")
+    return json(res, 409, { error: "no current good-to-go review verdict and lock are available" });
+  const worker = getGitWorker(config.root);
+  const worktree = await worker.worktreePath(task.branch);
+  if (!worktree) return json(res, 409, { error: "task worktree is unavailable" });
+  const head = await worker.runGit(worktree, ["rev-parse", "HEAD"]);
+  if (head.status !== 0) return json(res, 409, { error: "could not read task branch HEAD" });
+  const headSha = head.stdout.trim();
+  if (lock.sha === headSha) return json(res, 409, { error: "review lock already matches the branch tip" });
+  const result = await classifyTakeMainReviewMerge(worker, worktree, lock.sha, headSha);
+  if (!result.safe) return json(res, 409, { error: result.reason, classification: result });
+  const refreshed = await refreshHandoffSnapshotFromWorktree(config, id, task.branch, worktree);
+  if (!refreshed.ok) return json(res, 409, { error: refreshed.reason });
+  patchTaskFile(config, task.absPath, { note: `kept review verdict after take-main-only merge; review lock ${lock.sha} → ${refreshed.sha}` });
+  index.applyFileChange(task.absPath, { guarded: true });
+  return json(res, 200, { ok: true, oldSha: lock.sha, newSha: refreshed.sha, paths: result.paths });
 };
 
 /**
