@@ -11,7 +11,7 @@ branch: feat/restart-notice-unsupervised-servers-get-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T02:26:21Z"
-updated_at: "2026-11-14T03:46:10Z"
+updated_at: "2026-11-14T03:47:42Z"
 ---
 ## Problem
 Two rough edges in the "RepoOS vX is installed" restart notice (#1075, `ReleaseUpdateNotification.vue`):
@@ -27,6 +27,9 @@ Two rough edges in the "RepoOS vX is installed" restart notice (#1075, `ReleaseU
 2. During a running or failed-and-rolled-back release, the notice does not claim the bumped version; a test covers the running phase.
 3. Supervised behavior and the existing restart-notice tests still pass.
 4. UI follows AGENTS.md conventions (no native tooltips or dialogs).
+5. The restart notice uses shared dialog classes, with dismiss, Escape and focus behavior matching other dialogs.
+6. In the newer-release modal, the modal is a flex column and only the release-notes section scrolls; a test asserts the scroll containment.
+7. Release-note paragraphs and list items retain visible spacing and list bullets.
 
 ## Notes for AI
 Small, p3, easter-egg sized. Start from `src/ui-app/src/components/ReleaseUpdateNotification.vue` and the restart status the server returns (`restartStatus.supervised`, `manualCommand`).
@@ -67,3 +70,4 @@ Decision (Nick): the restart notice becomes a real dialog built on the shared di
 - 2026-11-14T03:46:10Z · ↻ resuming engineer to read queued message
 - 2026-11-14T03:46:10Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The new component coverage now passes locally: it verifies the exact manual command reaches the clipboard and the button confirms success, and that a `building` release run suppresses the installed notice. The required RepoOS check is vali… · stderr: Reading additional input from stdin... 2026-11-14T03:30:12.452831Z ERROR codex_core::tools::router: error=apply_patch verification failed: Failed to find expected lines in /Users/nick/code/nick/repoos-worktrees/feat/restart-notice-unsupervised-servers-get-/src/ui-app/src/components/ReleaseUpdateNotification.vue: manua…
 - 2026-11-14T03:46:10Z · message_delivered: 2 message(s)
+- 2026-11-14T03:47:42Z · body: Acceptance criteria (added 3)
