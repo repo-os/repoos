@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-14T03:46:10Z"
+review_passes: 2
 id: "1105"
 title: "repoos servers --tailscale: list RepoOS servers across the tailnet"
 type: feature
@@ -11,9 +13,7 @@ branch: feat/repoos-servers-tailscale-list-repoos-ser
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T03:22:32Z"
-updated_at: "2026-11-14T03:46:10Z"
 review_rounds: 1
-review_passes: 1
 ---
 ## Problem
 `repoos servers` lists only the servers registered on the local machine (~/.repoos/servers). To see what is running on bee, thinkpad or mini, the human must ssh in and run it there.
@@ -50,3 +50,4 @@ Reuse `src/core/tailscale.ts` and `src/core/remote-hosts.ts`. Do not add a runti
 - 2026-11-14T03:45:35Z · message_queued at 2026-11-14T03:45:35.883Z
 - 2026-11-14T03:45:36Z · note: shots: skipped — Docs site skipped: no docs shot declared
 - 2026-11-14T03:46:10Z · note: review pass 2: good to go
+
