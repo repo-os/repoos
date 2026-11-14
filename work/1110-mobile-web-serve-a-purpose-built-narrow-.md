@@ -2,7 +2,7 @@
 id: "1110"
 title: "Mobile web: serve a purpose-built narrow-screen UI instead of the stretched desktop layout (ADR and first slices)"
 type: feature
-status: active
+status: review
 priority: p1
 area: [web, docs]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/mobile-web-serve-a-purpose-built-narrow-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T09:06:53Z"
-updated_at: "2026-11-14T09:19:11Z"
+updated_at: "2026-11-14T09:20:14Z"
 ---
 ## Problem
 RepoOS currently serves its desktop SPA on phones and relies on scattered `@media (max-width)` rules to squeeze desktop surfaces into a narrow viewport. The connected-server UI feels cramped, with dense columns, hover-only affordances, small controls and desktop chrome. The product direction is to keep mobile as the server's **web app**: the same SPA serves purpose-built narrow-screen layouts in a phone browser, in the Capacitor shell's isolated WebView, and as an installed home-screen web app. This changes the connected-server presentation only; the native Capacitor multi-server picker, lock screen and WebView isolation/security architecture remain in scope and valid.
@@ -55,3 +55,4 @@ Read docs/mobile-ux-strategy.md, docs/mobile-architecture.md and docs/agent-ui-a
 - 2026-11-14T09:18:16Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The ADR now retains the native picker, lock screen and WebView isolation, and says the same server-served narrow layout works in browser, Capacitor WebView and installed web app. I also restored `mobile-architecture.md` to its original con… · stderr: 2026-11-14T09:15:01.124481Z ERROR codex_core::tools::router: error=apply_patch verification failed: Failed to find expected lines in /Users/nick/code/nick/repoos-worktrees/feat/mobile-web-serve-a-purpose-built-narrow-/docs/adr/0011-mobile-web-ui.md: `mobile-ux-strategy.md`](../mobile-ux-strategy.md) and [`mobile-archi…
 - 2026-11-14T09:18:16Z · message_delivered: 4 message(s)
 - 2026-11-14T09:19:11Z · CTO nudge: held — handoff gate is running
+- 2026-11-14T09:20:14Z · status active→review
