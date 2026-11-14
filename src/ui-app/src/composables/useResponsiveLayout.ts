@@ -1,8 +1,18 @@
 import { onMounted, onUnmounted, readonly, ref } from "vue";
 
+function readIsNarrow(): boolean {
+  if (typeof window === "undefined") return false;
+  if (typeof window.matchMedia === "function") {
+    return window.matchMedia("(max-width: 719.98px)").matches;
+  }
+  return window.innerWidth < 720;
+}
+
 /** The phone shell follows available CSS width, including resize and rotation. */
 export function useResponsiveLayout() {
-  const isNarrow = ref(false);
+  // Resolve the initial viewport synchronously: immediate route watchers need
+  // the correct layout before onMounted runs (notably /work?task=<id> links).
+  const isNarrow = ref(readIsNarrow());
   let query: MediaQueryList | undefined;
   let listeningForResize = false;
   let listeningForLegacyChange = false;

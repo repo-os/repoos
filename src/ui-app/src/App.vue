@@ -44,6 +44,9 @@ const { isNarrow } = useResponsiveLayout();
 // full-viewport screen with no app chrome — the visitor isn't authenticated
 // yet, and the sidebar/topbar assume a signed-in session.
 const isPublicRoute = computed(() => route.meta.public === true || route.meta.fullscreen === true);
+const isMobileTaskDetail = computed(
+  () => isNarrow.value && route.path === "/work" && typeof route.query.task === "string",
+);
 const loadingKind = computed(() => loadingSkeletonKind(route.path));
 const loadingHeader = computed(() => loadingPageHeader(route.path));
 const showRepoSkeleton = ref(false);
@@ -197,8 +200,8 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <MobileTabs />
-      <TaskDrawer />
+      <MobileTabs v-if="!isMobileTaskDetail" />
+      <TaskDrawer v-if="!isMobileTaskDetail" />
       <TunnelDrawer />
       <RemoteValidationDrawer />
       <ToastPanel />
