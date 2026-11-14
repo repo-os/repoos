@@ -11,7 +11,7 @@ branch: feat/auto-recover-idle-tasks-failed-review-pa
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T08:27:35Z"
-updated_at: "2026-11-14T10:21:49Z"
+updated_at: "2026-11-14T10:26:49Z"
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -51,3 +51,4 @@ Start from src/server/task-watchdog.ts and the review pipeline in src/server/age
 - 2026-11-14T09:25:19Z · body
 - 2026-11-14T10:21:49Z · message_queued at 2026-11-14T10:21:49.662Z
 - 2026-11-14T10:21:49Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-14T10:26:49Z · CTO nudge: held — an undelivered message is already queued
