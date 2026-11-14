@@ -73,9 +73,6 @@ function readings(overrides: Partial<MemoryReadings> = {}): MemoryReadings {
     swapIoBytesPerSec: 0,
     pageoutBytesPerSec: 0,
     activityWindowSec: 30,
-    // Keep probe-backed snapshots independent of the machine running the
-    // suite. Tests that cover CPU pressure override this explicitly.
-    cpuIdlePercent: 100,
     ...overrides,
   };
 }

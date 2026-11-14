@@ -392,7 +392,7 @@ export function pressureSnapshot(
     runCommand,
   );
   return evaluatePressure(
-    { ...readings, cpuIdlePercent: readings.cpuIdlePercent ?? sampleCpuIdlePercent() },
+    { ...readings, cpuIdlePercent: sampleCpuIdlePercent() },
     pressureThresholds(config),
   );
 }
