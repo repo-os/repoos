@@ -11,7 +11,7 @@ branch: feat/restart-notice-unsupervised-servers-get-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T02:26:21Z"
-updated_at: "2026-11-14T04:12:05Z"
+updated_at: "2026-11-14T04:17:06Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -93,3 +93,4 @@ Decision (Nick): the restart notice becomes a real dialog built on the shared di
 - 2026-11-14T04:07:41Z · note: ui verification passed: 1 of 1 shot captured with clean console
 - 2026-11-14T04:07:42Z · message_queued at 2026-11-14T04:07:42.060Z
 - 2026-11-14T04:12:05Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-14T04:17:06Z · message_delivered: 1 message(s)
