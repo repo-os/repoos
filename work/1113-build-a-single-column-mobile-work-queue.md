@@ -2,7 +2,7 @@
 id: "1113"
 title: Build a single-column mobile Work queue
 type: feature
-status: inbox
+status: ready
 priority: p1
 area: web
 depends_on: ["1112"]
@@ -12,7 +12,7 @@ branch: ""
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T09:10:48Z"
-updated_at: "2026-11-14T13:18:48Z"
+updated_at: "2026-11-14T13:18:53Z"
 ---
 ## Problem
 The desktop Work board uses dense multi-column scanning and pointer-oriented interactions. It is difficult to scan and operate on a phone.
@@ -38,3 +38,4 @@ Read ADR 0011 and the shell contract in #1112. Inspect and reuse the existing ta
 - 2026-11-14T09:11:40Z · depends_on, body: Desired UX (added); Acceptance criteria (added 6, removed 6); Notes for AI (added); Desired outcome (removed)
 - 2026-11-14T09:22:34Z · needs_input
 - 2026-11-14T13:18:48Z · cli_override, model_override
+- 2026-11-14T13:18:53Z · status inbox→ready
