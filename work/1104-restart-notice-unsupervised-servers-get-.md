@@ -11,7 +11,7 @@ branch: feat/restart-notice-unsupervised-servers-get-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T02:26:21Z"
-updated_at: "2026-11-14T03:54:50Z"
+updated_at: "2026-11-14T03:55:49Z"
 ---
 ## Problem
 Two rough edges in the "RepoOS vX is installed" restart notice (#1075, `ReleaseUpdateNotification.vue`):
@@ -82,3 +82,4 @@ Decision (Nick): the restart notice becomes a real dialog built on the shared di
 - 2026-11-14T03:54:49Z · note: ui verification passed: 1 of 1 shot captured with clean console
 - 2026-11-14T03:54:50Z · status active→review
 - 2026-11-14T03:54:50Z · message_queued at 2026-11-14T03:54:50.747Z
+- 2026-11-14T03:55:49Z · note: review pass 1: needs some work
