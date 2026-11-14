@@ -11,7 +11,7 @@ branch: feat/github-copilot-agent-support-the-new-mod
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-14T17:41:02Z"
-updated_at: "2026-11-14T17:48:53Z"
+updated_at: "2026-11-14T17:54:57Z"
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -31,6 +31,23 @@ In Settings, the GitHub Copilot agent offers the real models the CLI accepts (at
 ## Notes for AI
 Read work/1088-*.md and src/core/copilot-auto-tier.ts first. Copilot usage is billed in Copilot AI credits, so keep probes minimal and never loop. Related: #0625 (live Copilot credit data), #0629 (Copilot provider external link only).
 
+## Shots
+```json
+[
+{
+  "label": "GitHub Copilot named models in picker",
+  "target": "default",
+  "route": "/agents",
+  "highlight": ".agents-page-title",
+  "steps": [
+    {
+      "click": "button:has-text(\"Coding agents\")"
+    }
+  ]
+}
+]
+```
+
 ## Screenshots
 
 ![59](/api/tasks/1122/attachments/att_6b52e009-ddc3-4b00-85c8-8a061a1db607.png)
@@ -44,3 +61,4 @@ Read work/1088-*.md and src/core/copilot-auto-tier.ts first. Copilot usage is bi
 - 2026-11-14T17:41:12Z · status ready→active, branch
 - 2026-11-14T17:46:27Z · message_queued at 2026-11-14T17:46:27.053Z
 - 2026-11-14T17:48:53Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-14T17:54:57Z · body
