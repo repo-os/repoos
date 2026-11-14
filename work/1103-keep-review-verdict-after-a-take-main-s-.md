@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 127211
-last_close_out_gate_at: "2026-11-14T07:14:38.563Z"
 id: "1103"
 title: Keep review verdict after a take-main's-side merge-conflict fix
 type: feature
-status: review
+status: done
 priority: p2
 area: [web, server]
+merged_commit: 6b3c0dee22f34ff082704fdbc1ada9dde1c4e749
 assigned_to: ai
 created_by: t@t
 branch: feat/keep-review-verdict-after-a-take-main-s-
@@ -14,6 +13,8 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T01:19:52Z"
 updated_at: "2026-11-14T07:14:38Z"
+last_close_out_gate_ms: 127211
+last_close_out_gate_at: "2026-11-14T07:14:38.563Z"
 review_passes: 3
 last_check_failure: "repoos check at 2026-11-14T05:01:25.504Z: repoos check failed: ui verification failed (4 issue(s)): [request] HTTP 404 for http://127.0.0.1:44283/api/tasks/9999/review/keep-check (http://127.0.0.1:44283/api/tasks/9999/review/keep-check); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:44283/api/tasks/9999/review/keep-check); [request] HTTP 404 for http://127.0.0.1:44283/api/tasks/9999/review/keep-check (http://127.0.0.1:44283/api/tasks/9999/review/keep-check); [request] Failed t… (truncated)"
 review_rounds: 1

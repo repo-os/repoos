@@ -40,6 +40,8 @@ const CONTROL_API_MATCHERS: Matcher[] = [
   // `repoos attention dismiss <id>` dismisses the task's needs-input event.
   re("POST", /^\/api\/tasks\/([^/]+)\/needs-input\/dismiss$/.source),
   re("POST", /^\/api\/tasks\/([^/]+)\/review\/again$/.source),
+  re("POST", /^\/api\/tasks\/([^/]+)\/review\/keep$/.source),
+  re("GET", /^\/api\/tasks\/([^/]+)\/review\/keep-check$/.source),
   re("POST", /^\/api\/tasks\/([^/]+)\/review\/followup$/.source),
   re("GET", /^\/api\/tasks\/([^/]+)\/landable$/.source),
   // `repoos summary <id>` generates or retries the post-merge summary (#1041).

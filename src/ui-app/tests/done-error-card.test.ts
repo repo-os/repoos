@@ -28,6 +28,7 @@ async function flush(): Promise<void> {
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  window.history.replaceState({}, "", "/");
   for (const key of ["scrollHeight", "clientHeight"] as const) {
     const desc = original[key];
     if (desc) Object.defineProperty(HTMLElement.prototype, key, desc);
@@ -36,6 +37,34 @@ afterEach(() => {
 });
 
 describe("DoneErrorCard (card mode — the compact board surface)", () => {
+  it("checks for a safe kept verdict when a failure has no conflict paths", async () => {
+    const calls: string[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        calls.push(url);
+        return { ok: true, status: 200, json: async () => ({ safe: true }) };
+      }),
+    );
+    const wrapper = mount(DoneErrorCard, {
+      props: { message: "review lock does not match branch HEAD", conflicts: [], taskId: "1103" },
+    });
+    await flush();
+    expect(calls).toContain("/api/tasks/1103/review/keep-check");
+    expect(wrapper.text()).toContain("Keep review verdict and merge");
+  });
+
+  it("skips server checks for the synthetic done-error shot task", async () => {
+    window.history.replaceState({}, "", "/work?shotState=card%3AdoneError");
+    const fetch = vi.fn();
+    vi.stubGlobal("fetch", fetch);
+    mount(DoneErrorCard, {
+      props: { message: "review lock does not match branch HEAD", conflicts: [], taskId: "9999" },
+    });
+    await flush();
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
   it("clamps the message and never expands inline", async () => {
     stubOverflow(true);
     const long = "conflict in src/components/ReallyLongComponentName.ts ".repeat(12);
@@ -113,9 +142,10 @@ describe("DoneErrorCard (card mode — the compact board surface)", () => {
     await flush();
 
     // Scoped to the task that raised the error — not the global `/api/debugger`.
-    expect(calls).toHaveLength(1);
-    expect(calls[0].url).toBe("/api/tasks/0356/debugger/message");
-    expect(String(calls[0].body?.text)).toContain("0356");
+    const debuggerCall = calls.find((call) => call.url === "/api/tasks/0356/debugger/message");
+    expect(debuggerCall).toBeDefined();
+    expect(calls.some((call) => call.url === "/api/tasks/0356/review/keep-check")).toBe(true);
+    expect(String(debuggerCall?.body?.text)).toContain("0356");
     // The parent opens this task's Debug tab; the card just signals it.
     expect(wrapper.emitted("open-debugger")).toHaveLength(1);
   });
@@ -271,7 +301,10 @@ describe("DoneErrorCard (auto-repair in flight — #0385)", () => {
     // to be the only recovery path.
     await fix.trigger("click");
     await flush();
-    expect(calls).toEqual(["/api/tasks/0385/debugger/message"]);
+    expect(calls).toEqual([
+      "/api/tasks/0385/review/keep-check",
+      "/api/tasks/0385/debugger/message",
+    ]);
     expect(wrapper.emitted("open-debugger")).toHaveLength(1);
   });
 
