@@ -12,7 +12,7 @@ branch: feat/keep-review-verdict-after-a-take-main-s-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T01:19:52Z"
-updated_at: "2026-11-14T07:14:38Z"
+updated_at: "2026-11-14T07:14:54Z"
 last_close_out_gate_ms: 127211
 last_close_out_gate_at: "2026-11-14T07:14:38.563Z"
 review_passes: 3
@@ -93,4 +93,4 @@ Start from the close-out failure card component and `repoos landable` review-loc
 - 2026-11-14T07:11:39Z · note: review pass 3: good to go
 - 2026-11-14T07:12:11Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-14T07:14:38Z · close-out gate completed in 127s
-
+- 2026-11-14T07:14:54Z · status done→done, release:success
