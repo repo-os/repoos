@@ -571,7 +571,7 @@ Prints the installed RepoOS version and build metadata.
 Stops this repo's server, identified by its own lockfile. It will not touch a
 server belonging to a different repo.
 
-### `repoos restart [--when-idle] [--port N]`
+### `repoos restart [--when-idle] [--force] [--port N]`
 
 Restarts this repo's control-plane server the way it was started:
 
@@ -587,10 +587,16 @@ Restarts this repo's control-plane server the way it was started:
 
 RepoOS identifies the supervisor from the live process (`launchctl list` on
 macOS, `systemctl status` on Linux) and only acts when it is sure: a launchd
-process whose label it cannot read is reported as unknown and refused, with the
-manual command to run, rather than guessed at.
+process whose label it cannot read after launchd domain checks fail is reported
+as unknown and refused, with the checks described and a manual command to run.
+A detached hand-started process can also be parented by pid 1; when launchd's
+accessible domains were checked successfully and contain no matching job,
+RepoOS treats it as hand-run and respawns it with the recorded port, host and
+restartable serve flags.
 
-`--when-idle` waits for agents, reviews and checks to finish before restarting.
+By default, restart refuses while engineers or checks are running. `--force`
+allows the restart to proceed anyway. `--when-idle` waits for engineers and
+checks to finish before restarting.
 
 The command prints which path it took, warns when engineer agents were running
 before it stops the server, and reports success only after `/api/health` answers

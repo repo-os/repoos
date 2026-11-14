@@ -187,6 +187,17 @@ describe("detectSupervisor", () => {
     expect(r.kind).toBe("uncertain");
   });
 
+  it("treats a pid-1-parented nohup server as hand-run after launchd domains were checked", () => {
+    const execFile = vi.fn().mockImplementation((cmd: string, args: string[]) => {
+      if (cmd === "launchctl" && args[0] === "list") return "PID\tStatus\tLabel\n";
+      if (cmd === "launchctl" && args[0] === "print") return "services = {}\n";
+      if (cmd === "ps" && args.includes("uid=")) return "501\n";
+      if (cmd === "ps" && args.includes("ppid=")) return "1\n";
+      throw new Error("unexpected");
+    });
+    expect(detectSupervisor(48210, execFile as never)).toEqual({ kind: "none" });
+  });
+
   it("is uncertain (not hand-run) when the pid's parent cannot be read", () => {
     // If `launchctl list` has no row AND we cannot read the parent, we cannot
     // rule out a supervisor, so refuse rather than classify as hand-run and
