@@ -80,4 +80,12 @@ describe("queued-message recovery (#1015)", () => {
       decideQueuedMessageRecovery({ ...healthy, oldestQueuedMs: 11_000, thresholdMs: 10_000 }),
     ).toEqual({ recover: true, reason: null });
   });
+
+  it.each([
+    ["held task", { paused: true }],
+    ["paused task", { paused: true }],
+    ["human-owned task", { running: false }],
+  ])("does not recover a %s", (_label, override) => {
+    expect(decideQueuedMessageRecovery({ ...healthy, ...override })).not.toMatchObject({ recover: true });
+  });
 });

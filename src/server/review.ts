@@ -110,6 +110,7 @@ import {
   REVIEW_RUN_TRIGGERS,
   type ReviewRunTrigger,
 } from "./review-automation.js";
+import { isHoldActive } from "../core/task-selection.js";
 import {
   hasOpenReviewFindings,
   reviewTreeIdentityForTask,
@@ -2017,6 +2018,8 @@ export class ReviewManager {
     const ok = failure === "ok";
     const timeoutText = formatReviewTimeout(timeoutMinutes);
     const timeoutRetryScheduled = failure === "timeout" && this.canRetryTimedOutReview(task);
+    const failedReportRetryScheduled = failure === "no-output" && this.timeoutRetryAttempts(task) <
+      Math.max(0, Math.min(5, Math.floor(this.config.review?.failedReportRetries ?? 2)));
     const error =
       failure === "timeout"
         ? `the ${agent.cli} agent timed out after ${timeoutText}`
@@ -2062,11 +2065,11 @@ export class ReviewManager {
     const state: ReviewReport["state"] = !hasReport ? "failed" : verdict ? "ok" : "incomplete";
     const timeoutRetryNote = timeoutRetryScheduled
       ? " An automatic retry will start shortly."
-      : ` The automatic retry did not produce a report either; raise review.timeoutMinutes or choose a faster reviewer model, then use Review again.`;
+        : ` The automatic retry did not produce a report either; raise review.timeoutMinutes or choose a faster reviewer model, then use Review again.`;
     const body = !hasReport
       ? failure === "timeout"
         ? `Review timed out after ${timeoutText} before it produced a report.${timeoutRetryNote}`
-        : `The review agent produced no report: ${error ?? "no report"}`
+        : `The review agent produced no report: ${error ?? "no report"}${failedReportRetryScheduled ? " An automatic retry will start shortly." : " Automatic retries are exhausted; human input is needed."}`
       : reportText;
     const treeIdentity = await reviewTreeIdentityForTask(this.config, task);
     const report: ReviewReport = {
@@ -2108,6 +2111,17 @@ export class ReviewManager {
         timeoutMinutes,
       });
       this.scheduleTimeoutRetry(task, timeoutMinutes);
+    } else if (failure === "no-output" && failedReportRetryScheduled) {
+      const attempts = this.timeoutRetryAttempts(task) + 1;
+      this.timeoutRetries.set(task.id, attempts);
+      this.persistReviewTimeoutRetries(task, attempts);
+      this.appendMarker(task.id, `↻ automatically retrying review — previous pass produced no usable report (attempt ${attempts} of ${this.config.review?.failedReportRetries ?? 2})`);
+      const timer = setTimeout(() => {
+        const current = this.index?.getTask(task.id) ?? task;
+        if (!current || current.status !== "review" || current.isArchived || current.assignee === "human" || current.needsInput || isHoldActive(current)) return;
+        void this.run(current, { trigger: REVIEW_RUN_TRIGGERS.WATCHDOG_STUCK_REVIEW });
+      }, 4_000);
+      timer.unref?.();
     } else if (failure === "timeout") {
       this.logger.task(task.id, "error", "review timed out after its automatic retry", {
         timeoutMinutes,
@@ -2130,7 +2144,7 @@ export class ReviewManager {
     // auto-bounce on and nothing for the engineer to act on, so bouncing would
     // just burn a round on silence. Escalate straight to a human, same as the
     // relevance-flag escalation below.
-    if (state === "failed" && !timeoutRetryScheduled && !task.needsInput) {
+    if (state === "failed" && !timeoutRetryScheduled && !failedReportRetryScheduled && !task.needsInput) {
       try {
         patchTaskFile(this.config, task.absPath, {
           needsInput: true,

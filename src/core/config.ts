@@ -304,6 +304,7 @@ export const DEFAULT_CONFIG: Omit<RepoOSConfig, "root"> = {
     mode: "observe",
   },
   watchdog: {
+    queuedMessageRecoverMs: 3 * 60 * 1000,
     enabled: true,
     stalenessMs: 5 * 60 * 1000,
     autoTransition: true,
@@ -379,6 +380,7 @@ export const DEFAULT_CONFIG: Omit<RepoOSConfig, "root"> = {
   // one task, the next report summarises the recurring bug classes and the task
   // is flagged for a human.
   review: {
+    failedReportRetries: 2,
     humanFlagAfterPasses: 5,
     freezeAfterPasses: 4,
     timeoutMinutes: 15,
@@ -2017,6 +2019,10 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
     if (typeof watchdogEnabled === "boolean") {
       cfg.watchdog = { ...cfg.watchdog, enabled: watchdogEnabled };
     }
+    const queuedMessageRecoverMs = parsed["watchdog.queuedMessageRecoverMs"];
+    if (typeof queuedMessageRecoverMs === "number" && Number.isFinite(queuedMessageRecoverMs) && queuedMessageRecoverMs >= 60_000) {
+      cfg.watchdog = { ...cfg.watchdog, queuedMessageRecoverMs: queuedMessageRecoverMs };
+    }
     const watchdogStaleness = parsed["watchdog.stalenessMs"];
     if (typeof watchdogStaleness === "number" && watchdogStaleness >= 60_000) {
       cfg.watchdog = { ...cfg.watchdog, stalenessMs: watchdogStaleness };
@@ -2624,6 +2630,7 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
     const reviewHumanFlag = reviewNumber(parsed["review.humanFlagAfterPasses"]);
     const reviewFreeze = reviewNumber(parsed["review.freezeAfterPasses"]);
     const reviewTimeout = reviewNumber(parsed["review.timeoutMinutes"]);
+    const failedReportRetries = reviewNumber(parsed["review.failedReportRetries"]);
     const review: ReviewConfig = { ...DEFAULT_CONFIG.review, ...cfg.review };
     let reviewConfigured = false;
     if (reviewHumanFlag !== undefined && Number.isFinite(reviewHumanFlag) && reviewHumanFlag >= 1) {
@@ -2636,6 +2643,10 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
     }
     if (reviewTimeout !== undefined && Number.isFinite(reviewTimeout) && reviewTimeout >= 1) {
       review.timeoutMinutes = Math.min(240, Math.floor(reviewTimeout));
+      reviewConfigured = true;
+    }
+    if (failedReportRetries !== undefined && Number.isFinite(failedReportRetries) && failedReportRetries >= 0) {
+      review.failedReportRetries = Math.min(5, Math.floor(failedReportRetries));
       reviewConfigured = true;
     }
     if (reviewConfigured) cfg.review = review;
@@ -3125,6 +3136,17 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         "and a notice is recorded.",
     },
     {
+      key: "watchdog.queuedMessageRecoverMs",
+      label: "Queued message recovery age",
+      type: "number",
+      tier: "live",
+      restartRequired: false,
+      default: DEFAULT_CONFIG.watchdog!.queuedMessageRecoverMs!,
+      min: 60000,
+      step: 60000,
+      description: "Minutes a queued engineer message may wait before RepoOS ends a silent engineer turn so the message is delivered. Default 3 minutes.",
+    },
+    {
       key: "watchdog.engineerCrashFailoverThreshold",
       label: "Engineer crashes before failover",
       type: "number",
@@ -3558,6 +3580,18 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         "Minutes one review pass may run before it is stopped. Default 15, maximum 240. Raise it for a " +
         "large diff on a slow model. A pass cut off by this limit is reported as a timeout, retried once " +
         "automatically, and only then flagged for a human.",
+    },
+    {
+      key: "review.failedReportRetries",
+      label: "Retry failed reviews",
+      type: "number",
+      tier: "live",
+      restartRequired: false,
+      default: DEFAULT_CONFIG.review!.failedReportRetries!,
+      min: 0,
+      max: 5,
+      step: 1,
+      description: "Automatic retries when the reviewer exits without a usable report. After the limit, the task needs human input. Default 2.",
     },
     {
       key: "maxConcurrentAgents",
@@ -4633,6 +4667,7 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "watchdog.autoTransition",
   "watchdog.phantomDetectMs",
   "watchdog.activeWithoutEngineerRecoverMs",
+  "watchdog.queuedMessageRecoverMs",
   "watchdog.engineerCrashFailoverThreshold",
   "watchdog.autoPauseOnUsageLimit",
   "watchdog.engineerCrashFailoverWindowMs",
@@ -4852,6 +4887,7 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "review.humanFlagAfterPasses",
   "review.freezeAfterPasses",
   "review.timeoutMinutes",
+  "review.failedReportRetries",
   // Remote validation
   "remoteValidation.enabled",
   "remoteValidation.provider",

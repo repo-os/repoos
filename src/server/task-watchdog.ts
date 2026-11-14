@@ -620,7 +620,7 @@ export class TaskWatchdog {
         continue;
       }
       try {
-        await this.runner.recoverSilentEngineerWithQueuedMessage(task.id);
+      await this.runner.recoverSilentEngineerWithQueuedMessage(task.id, this.config.watchdog?.queuedMessageRecoverMs);
       } catch (error) {
         console.error(
           `[repoos] watchdog: queued-message recovery failed for #${task.id}: ${(error as Error).message}`,
