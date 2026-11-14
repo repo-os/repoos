@@ -1,8 +1,4 @@
 ---
-check_retry_count: 1
-last_check_failure: "repoos check at 2026-11-14T18:05:30.510Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
-updated_at: "2026-11-14T18:05:28Z"
-review_passes: 2
 id: "1116"
 title: Finish touch affordances across mobile surfaces
 type: feature
@@ -16,6 +12,10 @@ branch: feat/finish-touch-affordances-across-mobile-s
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-14T09:11:01Z"
+updated_at: "2026-11-14T18:10:54Z"
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-14T18:05:30.510Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
+review_passes: 2
 review_rounds: 1
 dev_error_count: 5
 ---
@@ -172,5 +172,4 @@ On screens below 720px the floating heads (Ross, CTO, Debugger) must not reserve
 - 2026-11-14T18:05:27Z · note: shots: failed — browser capture cancelled
 - 2026-11-14T18:05:27Z · message_queued at 2026-11-14T18:05:27.491Z
 - 2026-11-14T18:05:28Z · note: review pass 2: good to go
-
-
+- 2026-11-14T18:10:54Z · message_delivered: 1 message(s)
