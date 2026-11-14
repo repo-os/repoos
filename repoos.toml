@@ -125,6 +125,9 @@ closeOut.gate = "reuse"
 scheduledTasks.enabled = true
 heavySlots = 3
 vitest.maxWorkers = 6
+release.email.enabled = true
+release.email.to = ["nick@repoos.org"]
+release.email.includePrereleases = true
 [[remoteValidation.tailscaleHosts]]
 host = "thinkpad"
 user = "nick"
