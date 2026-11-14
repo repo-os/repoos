@@ -12,7 +12,7 @@ branch: feat/build-mobile-task-details-as-a-page-or-s
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T09:10:53Z"
-updated_at: "2026-11-14T15:09:36Z"
+updated_at: "2026-11-14T15:11:43Z"
 ---
 ## Problem
 The desktop task drawer shares a narrow viewport with the Work board and its tabs/actions are cramped on phones.
@@ -34,10 +34,10 @@ Read ADR 0011 and coordinate with #1113's route and queue state. Follow shared d
 ```json
 [
 {
-  "label": "Mobile task detail page",
-  "target": "default",
-  "route": "/work?task=9999&state=card:noChanges",
-  "highlight": "[data-testid=\"mobile-task-detail\"]"
+"label": "Mobile task detail page",
+"target": "default",
+"route": "/work?task=9999&state=card:noChanges",
+"highlight": "[data-testid=\"mobile-task-detail\"]"
 }
 ]
 ```
@@ -52,3 +52,4 @@ Read ADR 0011 and coordinate with #1113's route and queue state. Follow shared d
 - 2026-11-14T15:04:30Z · status inbox→ready
 - 2026-11-14T15:04:32Z · status ready→active, branch
 - 2026-11-14T15:09:36Z · body
+- 2026-11-14T15:11:43Z · body
