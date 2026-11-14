@@ -10,8 +10,10 @@ area: web
 assigned_to: ai
 created_by: t@t
 branch: ""
+cli_override: codex
+model_override: gpt-6-luna
 created_at: "2026-11-14T09:10:42Z"
-updated_at: "2026-11-14T09:22:33Z"
+updated_at: "2026-11-14T11:03:51Z"
 ---
 ## Problem
 RepoOS's single SPA has no phone-specific navigation composition. Desktop chrome and scattered narrow CSS do not provide a coherent phone shell.
@@ -42,3 +44,4 @@ Read ADR 0011, docs/mobile-architecture.md and UI conventions. This task builds 
 - 2026-11-14T09:17:06Z · title, body: Acceptance criteria (added 4, removed 2)
 - 2026-11-14T09:17:07Z · body: Notes for AI (added 1, removed 1)
 - 2026-11-14T09:22:33Z · needs_input
+- 2026-11-14T11:03:51Z · cli_override, model_override
