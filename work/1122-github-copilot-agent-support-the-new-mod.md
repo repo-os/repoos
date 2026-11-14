@@ -2,7 +2,7 @@
 id: "1122"
 title: "GitHub Copilot agent: support the new model picker (GPT-6 Luna, GPT-6.1 Terra, Haiku 5.5 ...) with real --model ids"
 type: feature
-status: active
+status: review
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -72,4 +72,4 @@ Read work/1088-*.md and src/core/copilot-auto-tier.ts first. Copilot usage is bi
 - 2026-11-14T18:23:53Z · CTO nudge: held — handoff gate is running
 - 2026-11-14T18:33:07Z · message_delivered: 1 message(s)
 - 2026-11-14T18:34:36Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
-- 2026-11-14T18:34:37Z · engineer stopped by request
+- 2026-11-14T18:34:37Z · status active→review
