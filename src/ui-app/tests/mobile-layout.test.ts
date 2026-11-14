@@ -67,11 +67,13 @@ describe("mobile app layout", () => {
   it("defaults floating heads off on phones and on at desktop widths, with a device override", async () => {
     localStorage.removeItem("repoos-floating-heads-visible");
     const media = { matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn() };
-    vi.stubGlobal("matchMedia", vi.fn(() => media));
-    vi.resetModules();
-    const { useFloatingHeadsPreference } = await import(
-      "../src/composables/useFloatingHeadsPreference"
+    vi.stubGlobal(
+      "matchMedia",
+      vi.fn(() => media),
     );
+    vi.resetModules();
+    const { useFloatingHeadsPreference } =
+      await import("../src/composables/useFloatingHeadsPreference");
     let preference!: ReturnType<typeof useFloatingHeadsPreference>;
     const wrapper = mount(
       defineComponent({
