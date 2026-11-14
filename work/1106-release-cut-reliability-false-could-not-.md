@@ -3,9 +3,6 @@ id: "1106"
 title: "Release cut reliability: false 'Could not push main' failure, remote-host git errors, and test time bombs"
 type: feature
 status: review
-needs_input: true
-needs_input_reason: review-failed
-needs_input_detail: "the cursor agent exited without output: Error: [internal] read EADDRNOTAVAIL"
 priority: p2
 area: [server, core]
 assigned_to: ai
@@ -14,7 +11,7 @@ branch: feat/release-cut-reliability-false-could-not-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T05:18:12Z"
-updated_at: "2026-11-14T06:01:40Z"
+updated_at: "2026-11-14T07:10:06Z"
 ---
 ## Problem
 Cutting v0.5.83 (2026-11-14) took six attempts. Four distinct causes, all in the release path:
@@ -53,3 +50,4 @@ Start from src/server/release.ts (`cutNewRelease`, phases `pushing_main`, `check
 - 2026-11-14T06:01:22Z · note: shots: skipped — the diff (8 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-14T06:01:40Z · note: review pass 1: failed — no usable report
 - 2026-11-14T06:01:40Z · needs_input
+- 2026-11-14T07:10:06Z · needs_input (review-failed) cleared for review again by human
