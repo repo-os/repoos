@@ -597,14 +597,15 @@ export async function captureShotPage(
     }
     if (entry.selector) {
       const base = page.locator(entry.selector);
-      if (typeof base.count === "function") {
-        const n = await base.count();
+      const countable = base as unknown as { count?(): Promise<number> };
+      if (typeof countable.count === "function") {
+        const n = await countable.count();
         if (n === 0) {
           if (onSelectorMiss) onSelectorMiss(entry.selector, entry.route);
           return await page.screenshot({ fullPage: options.fullPage });
         }
       }
-      const element = (typeof base.first === "function" ? base.first() : base) as {
+      const element = (typeof base.first === "function" ? base.first() : base) as unknown as {
         screenshot(options: { fullPage?: boolean; timeout?: number }): Promise<Buffer>;
       };
       return await element.screenshot({
