@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-11-14T12:11:30Z"
-review_passes: 2
+last_close_out_gate_ms: 288398
+last_close_out_gate_at: "2026-11-14T12:27:48.948Z"
 id: "1108"
 title: "Auto-recover idle tasks: failed review pass and undelivered engineer message leave a task stuck for an hour"
 type: feature
@@ -13,6 +13,8 @@ branch: feat/auto-recover-idle-tasks-failed-review-pa
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T08:27:35Z"
+updated_at: "2026-11-14T12:27:48Z"
+review_passes: 2
 review_rounds: 1
 handoff_signal_retry_count: 1
 ---
@@ -85,4 +87,5 @@ Start from src/server/task-watchdog.ts and the review pipeline in src/server/age
 - 2026-11-14T12:10:39Z · status active→review
 - 2026-11-14T12:10:39Z · message_queued at 2026-11-14T12:10:39.629Z
 - 2026-11-14T12:11:30Z · note: review pass 2: good to go
+- 2026-11-14T12:27:48Z · close-out gate completed in 288s
 
