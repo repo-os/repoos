@@ -3181,13 +3181,19 @@ export const useRepoStore = defineStore("repo", () => {
    * in via `commitDirty`, the file list is stored per task and a
    * `DirtyCheckoutError` is thrown so the caller can show the confirmation modal.
    */
-  async function completeTask(t: Task, opts: { commitDirty?: boolean } = {}): Promise<DoneResult> {
+  async function completeTask(
+    t: Task,
+    opts: { commitDirty?: boolean; landAnywayReason?: string } = {},
+  ): Promise<DoneResult> {
     const raw = await fetch(`/api/tasks/${t.id}/done`, {
       method: "POST",
-      ...(opts.commitDirty
+      ...(opts.commitDirty || opts.landAnywayReason
         ? {
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ commitDirty: true }),
+            body: JSON.stringify({
+              ...(opts.commitDirty ? { commitDirty: true } : {}),
+              ...(opts.landAnywayReason ? { landAnywayReason: opts.landAnywayReason } : {}),
+            }),
           }
         : {}),
     });
@@ -3319,6 +3325,7 @@ export const useRepoStore = defineStore("repo", () => {
         ok: boolean;
         running: boolean;
         enabled: boolean;
+        freezeAfterPasses?: number;
         review: ReviewReport | null;
         history?: ReviewState["history"];
         lines?: AgentOutputEntry[];
@@ -3329,6 +3336,7 @@ export const useRepoStore = defineStore("repo", () => {
         [id]: {
           running: r.running,
           enabled: r.enabled,
+          freezeAfterPasses: r.freezeAfterPasses ?? 4,
           report: r.review,
           history: r.history ?? [],
           lines: r.lines ?? [],

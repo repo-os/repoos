@@ -610,6 +610,8 @@ export interface ReviewState {
   running: boolean;
   /** Whether the review agent is enabled on the Agents page. */
   enabled: boolean;
+  /** Completed passes before non-blocking suggestions may be filed. */
+  freezeAfterPasses?: number;
   /** The stored report, or null when none has been written yet. */
   report: ReviewReport | null;
   /** Numbered review pass summaries (#0680). */
@@ -624,6 +626,8 @@ export interface ReviewState {
     cli?: string;
     /** Reviewer model for this pass, when the run reported one. */
     model?: string;
+    /** Stable bug classes explicitly labeled by the reviewer. */
+    findingClasses?: string[];
   }>;
   /**
    * The reviewer conversation, kept separate from the engineer session (0110).

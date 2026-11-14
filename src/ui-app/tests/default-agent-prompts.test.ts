@@ -27,7 +27,10 @@ import {
   reviewPassesSoFar,
   reviewUsesLightBar,
 } from "../../server/review.js";
-import { extractReviewReportSections } from "../../core/review-report-sections.js";
+import {
+  extractReviewFindingClasses,
+  extractReviewReportSections,
+} from "../../core/review-report-sections.js";
 import {
   needsInputClearsOnNewEngineerRun,
   needsInputClearsOnSuccessfulReview,
@@ -43,6 +46,7 @@ describe("built-in role prompts (#0872)", () => {
   it("gives the reviewer the class-enumeration, earlier-report, evidence and merge checks", () => {
     const reviewer = promptFor("reviewer");
     expect(reviewer).toContain("WHOLE CLASS");
+    expect(reviewer).toContain("Do not stop at the first instance");
     expect(reviewer).toMatch(/grep the diff and the files it touches/);
     expect(reviewer).toMatch(/newest earlier review reports/);
     expect(reviewer).toMatch(/never re-report a fixed item as new/i);
@@ -74,6 +78,7 @@ describe("built-in role prompts (#0872)", () => {
     expect(engineer).toMatch(/base branch's copy of the task file/);
     expect(engineer).toMatch(/Never move your own task out of `active`/);
     expect(engineer).toMatch(/split into a held human task/);
+    expect(engineer).toContain("self-review the change against that same checklist");
   });
 
   it("gives the PM the task-body, board, story, dependency, bundle and human-step rules", () => {
@@ -417,6 +422,12 @@ describe("review blocking bar, freeze and accepted scope (#1080)", () => {
     expect(mission).not.toContain("AUTHORITATIVE");
   });
 
+  it("keeps engineer handoff instructions out of the reviewer mission", () => {
+    const mission = reviewMission(task(), reviewer, root, "main", config(root));
+    expect(mission).not.toContain("Before handoff, self-review");
+    expect(mission).not.toContain("before requesting review");
+  });
+
   it("keeps the full-bar enumeration wording out of the frozen and light prompts", () => {
     const full = reviewMission(task({ review_passes: 0 }), reviewer, root, "main", config(root));
     const light = reviewMission(
@@ -569,7 +580,9 @@ describe("review blocking bar, freeze and accepted scope (#1080)", () => {
 
   it("keeps the engineer handoff sentence well formed", () => {
     const engineer = promptFor("engineer");
-    expect(engineer).toMatch(/instead of patching one\. A new config key needs a Settings control/);
+    expect(engineer).toMatch(/instead of patching one\./);
+    expect(engineer).toMatch(/A new config key needs a Settings control/);
+    expect(engineer).toContain("self-review the change against that same checklist");
     expect(engineer).not.toMatch(/Before handoff, A new/);
   });
 
@@ -578,6 +591,21 @@ describe("review blocking bar, freeze and accepted scope (#1080)", () => {
       "## Bugs\nNone found\n\n## Suggestions (non-blocking)\n- Add a helper for the retry.\n",
     );
     expect(sections.suggestions).toContain("Add a helper for the retry.");
+  });
+
+  it("does not count the class enumeration closer as a bug", () => {
+    const sections = extractReviewReportSections(
+      "## Bugs\n- The fallback crashes for an empty response.\nNo further findings of this class were found after grepping: callers, fallback branches and tests\n",
+    );
+    expect(sections.bugs).toBe("- The fallback crashes for an empty response.");
+  });
+
+  it("extracts stable finding class labels for convergence history", () => {
+    expect(
+      extractReviewFindingClasses(
+        "## Bugs\n- **Class: retry cleanup** — src/retry.ts leaks the timer.\n- **Class: retry cleanup** — src/worker.ts leaves the lock.\nNo further findings of this class were found after grepping: callers and tests\n",
+      ),
+    ).toEqual(["retry cleanup"]);
   });
 
   it("exposes the freeze setting in the schema, supported keys and loader", () => {

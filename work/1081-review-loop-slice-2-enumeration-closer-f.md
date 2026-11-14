@@ -1,13 +1,12 @@
 ---
-last_close_out_gate_ms: 1222900
-last_close_out_gate_at: "2026-11-14T01:45:59.113Z"
 id: "1081"
 title: "Review loop slice 2: enumeration closer, follow-up tasks, convergence report, Land anyway override"
 type: feature
-status: review
+status: done
 priority: p2
 area: [server, core]
 depends_on: ["1080"]
+merged_commit: c6b4debc4a64db3aaaa03fc1a06a4d3711af1430
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/review-loop-slice-2-enumeration-closer-f
@@ -15,6 +14,8 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-09T13:59:41Z"
 updated_at: "2026-11-14T01:45:59Z"
+last_close_out_gate_ms: 1222900
+last_close_out_gate_at: "2026-11-14T01:45:59.113Z"
 review_passes: 2
 last_check_failure: "repoos check at 2026-11-13T11:57:06.465Z: repoos check failed: tests — tests/handoff-unification.test.ts > the runner finalizes a `repoos mv review` request at turn end (#0507) > ignores a marker left behind by an earlier turn — at check tests/handoff-unification.test.ts:156:50 — Error: timeout: the turn ends"
 review_rounds: 1
