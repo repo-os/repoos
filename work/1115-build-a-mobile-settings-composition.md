@@ -12,7 +12,7 @@ branch: feat/build-a-mobile-settings-composition
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T09:10:57Z"
-updated_at: "2026-11-14T13:38:22Z"
+updated_at: "2026-11-14T13:38:23Z"
 ---
 ## Problem
 Settings uses desktop navigation and dense grouped controls that become cramped on narrow screens.
@@ -62,3 +62,4 @@ Read ADR 0011 and reuse existing Settings tabs, config schema and shared dialog/
 - 2026-11-14T13:33:24Z · body
 - 2026-11-14T13:36:49Z · CTO nudge: held — handoff gate is running
 - 2026-11-14T13:38:22Z · note: ui verification failed: ui verification failed (1 issue(s)): [missing-target] Mobile Settings section navigation (target "default"): highlight .settings-mobile-nav matched nothing on /settings?tab=general (http://127.0.0.1:33599/settings?tab=general)
+- 2026-11-14T13:38:23Z · message_queued at 2026-11-14T13:38:23.061Z
