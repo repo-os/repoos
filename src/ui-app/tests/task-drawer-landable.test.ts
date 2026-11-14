@@ -106,7 +106,8 @@ async function mountDrawer(
   vi.stubGlobal("EventSource", FakeEventSource);
   vi.stubGlobal(
     "fetch",
-    vi.fn(async (url: string) => {
+    vi.fn(async (url: string, init?: RequestInit) => {
+      void init;
       if (url.includes("/landable")) return json(landableResponse);
       const passMatch = url.match(/\/review\/passes\/(\d+)/);
       if (passMatch) return json({ ok: true, review: passResponses[Number(passMatch[1])] ?? null });
@@ -160,7 +161,8 @@ describe("task drawer landing pre-checks (#0867)", () => {
       summary: { pass: 6, warn: 0, fail: 0 },
     };
     const normalPinia = setup();
-    const normalFetch = vi.fn(async (url: string) => {
+    const normalFetch = vi.fn(async (url: string, init?: RequestInit) => {
+      void init;
       if (url.includes("/landable")) return json(green);
       if (url.includes("/api/health"))
         return json({ ok: true, root: "/tmp/repo", taskCount: 1, workDir: "work" });
@@ -197,7 +199,8 @@ describe("task drawer landing pre-checks (#0867)", () => {
       checks: [{ id: "review-verdict", label: "Review verdict", status: "fail", detail: 'latest review verdict is "needs some work"' }],
       summary: { pass: 5, warn: 0, fail: 1 },
     };
-    const overrideFetch = vi.fn(async (url: string) => {
+    const overrideFetch = vi.fn(async (url: string, init?: RequestInit) => {
+      void init;
       if (url.includes("/landable")) return json(overrideLanding);
       if (url.includes("/api/health")) return json({ ok: true, root: "/tmp/repo", taskCount: 1, workDir: "work" });
       if (url.includes("/api/index")) return json({ tasks: [task], counts: { ...EMPTY_COUNTS, review: 1 }, taskCount: 1 });
@@ -320,7 +323,8 @@ describe("task drawer landing pre-checks (#0867)", () => {
     vi.stubGlobal("EventSource", FakeEventSource);
     vi.stubGlobal(
       "fetch",
-      vi.fn(async (url: string) => {
+      vi.fn(async (url: string, init?: RequestInit) => {
+      void init;
         if (url.includes("/api/health"))
           return json({ ok: true, root: "/tmp/repo", taskCount: 1, workDir: "work" });
         if (url.includes("/api/index"))
@@ -597,7 +601,8 @@ describe("review pass selection and identity (#1003)", () => {
       ],
       lines: [],
     });
-    const fetchMock = vi.fn(async (url: string) => {
+    const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
+      void init;
       if (url.includes("/review/passes/1")) return json({ ok: false, review: null });
       return json({ ok: true, review: latest });
     });
