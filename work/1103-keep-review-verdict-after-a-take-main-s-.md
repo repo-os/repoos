@@ -1,4 +1,6 @@
 ---
+last_close_out_gate_ms: 127211
+last_close_out_gate_at: "2026-11-14T07:14:38.563Z"
 id: "1103"
 title: Keep review verdict after a take-main's-side merge-conflict fix
 type: feature
@@ -11,7 +13,7 @@ branch: feat/keep-review-verdict-after-a-take-main-s-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T01:19:52Z"
-updated_at: "2026-11-14T07:12:11Z"
+updated_at: "2026-11-14T07:14:38Z"
 review_passes: 3
 last_check_failure: "repoos check at 2026-11-14T05:01:25.504Z: repoos check failed: ui verification failed (4 issue(s)): [request] HTTP 404 for http://127.0.0.1:44283/api/tasks/9999/review/keep-check (http://127.0.0.1:44283/api/tasks/9999/review/keep-check); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:44283/api/tasks/9999/review/keep-check); [request] HTTP 404 for http://127.0.0.1:44283/api/tasks/9999/review/keep-check (http://127.0.0.1:44283/api/tasks/9999/review/keep-check); [request] Failed t… (truncated)"
 review_rounds: 1
@@ -89,3 +91,5 @@ Start from the close-out failure card component and `repoos landable` review-loc
 - 2026-11-14T05:38:10Z · message_queued at 2026-11-14T05:38:10.506Z
 - 2026-11-14T07:11:39Z · note: review pass 3: good to go
 - 2026-11-14T07:12:11Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-14T07:14:38Z · close-out gate completed in 127s
+
