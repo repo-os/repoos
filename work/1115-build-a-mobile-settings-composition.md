@@ -12,7 +12,7 @@ branch: feat/build-a-mobile-settings-composition
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T09:10:57Z"
-updated_at: "2026-11-14T13:33:24Z"
+updated_at: "2026-11-14T13:36:49Z"
 ---
 ## Problem
 Settings uses desktop navigation and dense grouped controls that become cramped on narrow screens.
@@ -60,3 +60,4 @@ Read ADR 0011 and reuse existing Settings tabs, config schema and shared dialog/
 - 2026-11-14T13:21:14Z · body
 - 2026-11-14T13:30:27Z · body
 - 2026-11-14T13:33:24Z · body
+- 2026-11-14T13:36:49Z · CTO nudge: held — handoff gate is running
