@@ -5,11 +5,13 @@ type: feature
 status: inbox
 priority: p2
 area: [server, core]
-assigned_to: ""
+assigned_to: ai
 created_by: t@t
 branch: ""
+cli_override: codex
+model_override: gpt-6-luna
 created_at: "2026-11-14T08:27:35Z"
-updated_at: "2026-11-14T08:27:35Z"
+updated_at: "2026-11-14T08:27:40Z"
 ---
 ## Problem
 On 2026-11-14 two tasks sat idle until a human noticed:
@@ -33,3 +35,4 @@ Start from src/server/task-watchdog.ts and the review pipeline in src/server/age
 ## Activity
 
 - 2026-11-14T08:27:35Z · created · t@t
+- 2026-11-14T08:27:40Z · cli_override, model_override
