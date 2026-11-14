@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-14T15:19:16Z"
-review_passes: 2
 id: "1115"
 title: Build a mobile Settings composition
 type: feature
@@ -14,7 +12,9 @@ branch: feat/build-a-mobile-settings-composition
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T09:10:57Z"
+updated_at: "2026-11-14T15:07:05Z"
 close_out_repair_count: 1
+review_passes: 1
 last_check_failure: "repoos check at 2026-11-14T13:38:26.548Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Mobile Settings section navigation (target \"default\"): highlight .settings-mobile-nav matched nothing on /settings?tab=general (http://127.0.0.1:33599/settings?tab=general)"
 ---
 ## Problem
@@ -72,18 +72,4 @@ Read ADR 0011 and reuse existing Settings tabs, config schema and shared dialog/
 - 2026-11-14T14:52:16Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-14T14:52:18Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-14T14:52:38Z · message_delivered: 1 message(s)
-- 2026-11-14T14:57:39Z · body
-- 2026-11-14T15:00:19Z · note: ui verification passed: 1 of 1 shot captured with clean console
-- 2026-11-14T15:00:20Z · message_queued at 2026-11-14T15:00:20.220Z
-- 2026-11-14T15:01:50Z · CTO nudge: held — an undelivered message is already queued
-- 2026-11-14T15:03:41Z · watchdog: restarting engineer because a queued message waited 3m with no live process
-- 2026-11-14T15:03:42Z · message_delivered: 1 message(s)
-- 2026-11-14T15:04:03Z · note: handoff requested (cli)
-- 2026-11-14T15:04:35Z · CTO nudge: held — handoff gate is running
-- 2026-11-14T15:05:57Z · body
-- 2026-11-14T15:07:04Z · note: ui verification passed: 1 of 1 shot captured with clean console
 - 2026-11-14T15:07:05Z · status active→review
-- 2026-11-14T15:19:14Z · note: ui verification passed: 1 of 1 shot captured with clean console
-- 2026-11-14T15:19:15Z · message_queued at 2026-11-14T15:19:15.175Z
-- 2026-11-14T15:19:16Z · note: review pass 2: good to go
-
