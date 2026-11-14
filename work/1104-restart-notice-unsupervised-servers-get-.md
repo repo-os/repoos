@@ -94,3 +94,4 @@ Decision (Nick): the restart notice becomes a real dialog built on the shared di
 - 2026-11-14T04:07:42Z · message_queued at 2026-11-14T04:07:42.060Z
 - 2026-11-14T04:12:05Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-14T04:17:06Z · message_delivered: 1 message(s)
+- 2026-11-14T04:17:06Z · CTO action: restart-stalled-agent (fresh) · agent exited without emitting the handoff signal
