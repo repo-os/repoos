@@ -477,9 +477,11 @@ onUnmounted(() => {
   width: 100%;
 }
 .release-update-modal {
+  display: flex;
+  flex-direction: column;
   width: min(520px, calc(100vw - 40px));
   max-height: min(680px, calc(100vh - 40px));
-  overflow: auto;
+  overflow: hidden;
   padding: 24px;
   border: 1px solid var(--border-bright);
   border-radius: 16px;
@@ -565,6 +567,9 @@ onUnmounted(() => {
   margin: 8px 0 0;
 }
 .release-update-notes {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
   border-top: 1px solid var(--border);
   padding-top: 16px;
 }
@@ -575,7 +580,18 @@ onUnmounted(() => {
   line-height: 1.55;
 }
 .release-update-markdown :deep(p) {
-  margin: 0 0 8px;
+  margin: 0 0 12px;
+}
+.release-update-markdown :deep(ul),
+.release-update-markdown :deep(ol) {
+  margin: 0 0 12px;
+  padding-left: 1.5em;
+}
+.release-update-markdown :deep(li) {
+  margin: 0 0 6px;
+}
+.release-update-markdown :deep(li:last-child) {
+  margin-bottom: 0;
 }
 .release-update-markdown :deep(a) {
   color: var(--cyan);

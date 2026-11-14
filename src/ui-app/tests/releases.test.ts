@@ -13,6 +13,7 @@ import {
 } from "../../commands/upgrade";
 import { SHOT_PREVIEW_APPLIED_ATTR } from "../../core/shot-fixtures.js";
 import ReleaseUpdateNotification from "../src/components/ReleaseUpdateNotification.vue";
+import releaseUpdateNotificationSource from "../src/components/ReleaseUpdateNotification.vue?raw";
 import * as clipboard from "../src/lib/clipboard";
 import { useConfigStore } from "../src/stores/config";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -205,6 +206,58 @@ describe("feature releases", () => {
       await flushPromises();
       expect(document.body.querySelector(".release-update-banner")).not.toBeNull();
       expect(document.body.textContent).toContain("Upgrade to RepoOS 0.6.0");
+    } finally {
+      wrapper.unmount();
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("keeps release notes as the only scrolling region in the update modal", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockImplementation(
+        () =>
+          new Response(
+            JSON.stringify({
+              currentVersion: "0.5.46",
+              latestVersion: "0.6.0",
+              available: true,
+              releaseNotes: "## Highlights\n- First highlight\n- Second highlight",
+              releaseUrl: "https://github.com/repo-os/repoos/releases/tag/v0.6.0",
+              installKind: "standalone",
+              upgradeCommand: "repoos upgrade",
+            }),
+            { status: 200, headers: { "Content-Type": "application/json" } },
+          ),
+      ),
+    );
+    const wrapper = mount(ReleaseUpdateNotification, { attachTo: document.body });
+    try {
+      await flushPromises();
+      await document.body
+        .querySelector(".release-update-banner")!
+        .dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      await flushPromises();
+
+      const modal = document.body.querySelector<HTMLElement>(".release-update-modal")!;
+      const notes = modal.querySelector<HTMLElement>(".release-update-notes")!;
+      expect(modal.classList.contains("release-update-modal")).toBe(true);
+      expect(notes.parentElement).toBe(modal);
+      expect(modal.querySelector(".release-update-versions")).not.toBeNull();
+      expect(modal.querySelector("[data-test-id=release-upgrade-command]")).not.toBeNull();
+      expect(notes.querySelectorAll("li")).toHaveLength(2);
+      expect(releaseUpdateNotificationSource).toMatch(
+        /\.release-update-modal\s*\{[^}]*display:\s*flex/s,
+      );
+      expect(releaseUpdateNotificationSource).toMatch(
+        /\.release-update-modal\s*\{[^}]*overflow:\s*hidden/s,
+      );
+      expect(releaseUpdateNotificationSource).toMatch(
+        /\.release-update-notes\s*\{[^}]*min-height:\s*0[^}]*overflow-y:\s*auto/s,
+      );
+      expect(releaseUpdateNotificationSource).toMatch(
+        /\.release-update-markdown :deep\(li\)\s*\{[^}]*margin:\s*0 0 6px/s,
+      );
     } finally {
       wrapper.unmount();
       vi.unstubAllGlobals();
