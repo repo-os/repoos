@@ -3,6 +3,9 @@ id: "1120"
 title: "RepoOS Hub app: native-looking server picker, web color themes with light/dark, better icons, and a Settings page"
 type: feature
 status: active
+needs_input: true
+needs_input_reason: needs-human-step
+needs_input_detail: Reading additional input from stdin...
 human_step_override: Cleared needs-human-step flag (sticky until acceptance criteria change)
 human_step_override_key: f531bd01
 priority: p2
@@ -13,7 +16,8 @@ branch: feat/repoos-hub-app-native-looking-server-pic
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T16:53:29Z"
-updated_at: "2026-11-14T16:53:51Z"
+updated_at: "2026-11-14T16:53:55Z"
+dev_error_count: 1
 ---
 ## Problem
 The RepoOS Hub Capacitor shell (mobile/, iOS and Android) is bare bones. Nick's current Android build (screenshot attached) shows a single dark theme, a "Device lock" panel pushed inline above the server list, text-arrow reorder buttons and a pencil glyph that look like web controls, flat unstyled server cards, and a plain "+ Add server" button. It has no color themes and no light mode, and the icons are not the set used by the web app. The device lock and any future preferences have nowhere proper to live. (The screenshot also shows the old "RepoOS" title, so it is a build from before the September "RepoOS Hub" rename.)
@@ -48,3 +52,4 @@ Read docs/mobile-architecture.md, docs/adr/0011-mobile-web-ui.md (the native she
 - 2026-11-14T16:53:48Z · status inbox→ready
 - 2026-11-14T16:53:49Z · status ready→active, branch
 - 2026-11-14T16:53:51Z · needs_input
+- 2026-11-14T16:53:55Z · agent exited with an error (codex) · Reading additional input from stdin...
