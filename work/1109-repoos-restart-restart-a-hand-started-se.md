@@ -39,3 +39,4 @@ Start from the #1091 restart implementation and `src/core/supervisor-detect.ts`.
 - 2026-11-14T08:42:58Z · body
 - 2026-11-14T08:43:46Z · CTO nudge: held — handoff gate is running
 - 2026-11-14T08:43:58Z · status active→review
+- 2026-11-14T08:43:58Z · message_queued at 2026-11-14T08:43:58.348Z
