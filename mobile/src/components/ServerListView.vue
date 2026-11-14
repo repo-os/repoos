@@ -149,7 +149,12 @@ function toggleEdit() {
         </li>
       </ul>
 
-      <button type="button" class="btn-primary block" data-testid="hub-add-server" @click="emit('add')">
+      <button
+        type="button"
+        class="btn-primary block"
+        data-testid="hub-add-server"
+        @click="emit('add')"
+      >
         <Plus :size="18" stroke-width="2.5" />
         Add server
       </button>

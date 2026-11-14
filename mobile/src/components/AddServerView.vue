@@ -74,7 +74,13 @@ const emit = defineEmits<{
         </button>
         <span class="spacer" />
         <button type="button" class="btn-ghost" @click="emit('back')">Cancel</button>
-        <button type="button" class="btn-primary" :disabled="busy" data-testid="hub-save-server" @click="emit('submit')">
+        <button
+          type="button"
+          class="btn-primary"
+          :disabled="busy"
+          data-testid="hub-save-server"
+          @click="emit('submit')"
+        >
           {{ validating ? "Checking…" : mode === "add" ? "Save" : "Done" }}
         </button>
       </div>

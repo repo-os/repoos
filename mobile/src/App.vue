@@ -227,22 +227,25 @@ async function onLockScope(scope: "reopen" | "server") {
       />
     </main>
 
-    <BottomSheet
-      :open="sheetOpen"
-      title="Edit server"
-      @close="closeSheet"
-    >
+    <BottomSheet :open="sheetOpen" title="Edit server" @close="closeSheet">
       <label class="field sheet-field">
         <span class="field-label">Display name</span>
         <input v-model="sheetName" type="text" autocomplete="off" />
       </label>
       <p v-if="sheetServer" class="hint">{{ sheetServer.url }}</p>
       <div class="sheet-actions">
-        <button type="button" class="btn-ghost danger" data-testid="hub-sheet-delete" @click="deleteSheet">
+        <button
+          type="button"
+          class="btn-ghost danger"
+          data-testid="hub-sheet-delete"
+          @click="deleteSheet"
+        >
           Delete
         </button>
         <span class="spacer" />
-        <button type="button" class="btn-primary" data-testid="hub-sheet-save" @click="saveSheet">Save</button>
+        <button type="button" class="btn-primary" data-testid="hub-sheet-save" @click="saveSheet">
+          Save
+        </button>
       </div>
     </BottomSheet>
   </div>

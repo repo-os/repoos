@@ -4,13 +4,7 @@
  */
 import type { ServerEntry } from "./types";
 
-export type HubFixture =
-  | "empty"
-  | "one"
-  | "many"
-  | "unreachable"
-  | "settings"
-  | "add";
+export type HubFixture = "empty" | "one" | "many" | "unreachable" | "settings" | "add";
 
 const FIXTURE_SERVERS: Record<Exclude<HubFixture, "settings" | "add">, ServerEntry[]> = {
   empty: [],

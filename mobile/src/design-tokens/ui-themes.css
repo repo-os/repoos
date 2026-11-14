@@ -18,7 +18,8 @@
   --green: #4ef0a8;
   --red: #ff6b7d;
   --amber: #ffb454;
-  --body-gradient: radial-gradient(1000px 600px at 8% -8%, rgba(57, 224, 255, 0.1), transparent 60%),
+  --body-gradient:
+    radial-gradient(1000px 600px at 8% -8%, rgba(57, 224, 255, 0.1), transparent 60%),
     radial-gradient(1000px 700px at 100% 0%, rgba(157, 123, 255, 0.13), transparent 55%);
   --logo-shadow: 0 0 18px rgba(57, 224, 255, 0.35);
   --card-glow: 0 0 0 1px rgba(57, 224, 255, 0.16), 0 3.5px 14px -7px rgba(57, 224, 255, 0.4);
@@ -62,7 +63,8 @@
   --green: #147e54;
   --red: #c3384c;
   --amber: #936122;
-  --body-gradient: radial-gradient(1000px 600px at 8% -8%, rgba(6, 120, 179, 0.04), transparent 60%),
+  --body-gradient:
+    radial-gradient(1000px 600px at 8% -8%, rgba(6, 120, 179, 0.04), transparent 60%),
     radial-gradient(1000px 700px at 100% 0%, rgba(107, 63, 192, 0.05), transparent 55%);
   --logo-shadow: 0 2px 16px rgba(6, 120, 179, 0.15);
   --card-glow: 0 0 0 1px rgba(6, 120, 179, 0.06), 0 3.5px 14px -7px rgba(0, 0, 0, 0.06);
@@ -192,7 +194,8 @@
   --green: #4df2a7;
   --red: #ff6b8a;
   --amber: #ffb454;
-  --body-gradient: radial-gradient(700px 460px at 8% -6%, rgba(255, 93, 240, 0.14), transparent 60%),
+  --body-gradient:
+    radial-gradient(700px 460px at 8% -6%, rgba(255, 93, 240, 0.14), transparent 60%),
     radial-gradient(760px 480px at 104% -4%, rgba(181, 140, 255, 0.16), transparent 55%),
     radial-gradient(900px 600px at 50% 120%, rgba(62, 232, 255, 0.08), transparent 60%);
   --logo-shadow: 0 6px 20px -6px rgba(255, 93, 240, 0.5);
@@ -280,7 +283,8 @@
   --green: #5cf2b0;
   --red: #ff6aa8;
   --amber: #ffc36b;
-  --body-gradient: radial-gradient(720px 500px at 12% -8%, rgba(51, 230, 196, 0.16), transparent 60%),
+  --body-gradient:
+    radial-gradient(720px 500px at 12% -8%, rgba(51, 230, 196, 0.16), transparent 60%),
     radial-gradient(800px 520px at 106% -6%, rgba(255, 94, 180, 0.16), transparent 55%),
     radial-gradient(920px 620px at 50% 122%, rgba(127, 155, 255, 0.1), transparent 60%);
   --logo-shadow: 0 0 18px -4px rgba(51, 230, 196, 0.5), 0 6px 20px -8px rgba(255, 94, 180, 0.45);
@@ -368,7 +372,8 @@
   --green: #b8bb26;
   --red: #fc8172;
   --amber: #fabd2f;
-  --body-gradient: radial-gradient(900px 560px at 6% -10%, rgba(250, 189, 47, 0.07), transparent 62%),
+  --body-gradient:
+    radial-gradient(900px 560px at 6% -10%, rgba(250, 189, 47, 0.07), transparent 62%),
     radial-gradient(940px 620px at 102% -4%, rgba(211, 134, 155, 0.08), transparent 58%),
     radial-gradient(1000px 700px at 50% 118%, rgba(142, 192, 124, 0.05), transparent 62%);
   --logo-shadow: 0 0 16px -4px rgba(250, 189, 47, 0.28), 0 4px 14px -8px rgba(0, 0, 0, 0.6);
@@ -413,7 +418,8 @@
   --green: #64610b;
   --red: #9d0006;
   --amber: #82550e;
-  --body-gradient: radial-gradient(900px 560px at 6% -10%, rgba(181, 118, 20, 0.07), transparent 62%),
+  --body-gradient:
+    radial-gradient(900px 560px at 6% -10%, rgba(181, 118, 20, 0.07), transparent 62%),
     radial-gradient(940px 620px at 102% -4%, rgba(143, 63, 113, 0.06), transparent 58%);
   --logo-shadow: 0 2px 12px -4px rgba(120, 110, 100, 0.4);
   --card-glow: 0 0 0 1px rgba(60, 56, 54, 0.1), 0 4px 14px -9px rgba(60, 56, 54, 0.22);
@@ -457,7 +463,8 @@
   --green: #a6e3a1;
   --red: #f38ba8;
   --amber: #fab387;
-  --body-gradient: radial-gradient(1000px 620px at 6% -10%, #cba6f712, transparent 60%),
+  --body-gradient:
+    radial-gradient(1000px 620px at 6% -10%, #cba6f712, transparent 60%),
     radial-gradient(1060px 700px at 102% -6%, #f5c2e70f, transparent 58%),
     radial-gradient(900px 620px at 50% 116%, #89b4fa0d, transparent 62%);
   --logo-shadow: 0 2px 18px -6px #cba6f757;
@@ -502,7 +509,8 @@
   --green: #235717;
   --red: #9a0b2a;
   --amber: #833406;
-  --body-gradient: radial-gradient(1000px 620px at 6% -10%, #8839ef0d, transparent 60%),
+  --body-gradient:
+    radial-gradient(1000px 620px at 6% -10%, #8839ef0d, transparent 60%),
     radial-gradient(1060px 700px at 102% -6%, #ea76cb0b, transparent 58%),
     radial-gradient(900px 620px at 50% 116%, #1e66f50a, transparent 62%);
   --logo-shadow: 0 2px 18px -6px #8839ef42;
@@ -547,7 +555,8 @@
   --green: #52ffa8;
   --red: #ff4d8d;
   --amber: #ffc857;
-  --body-gradient: radial-gradient(760px 520px at 8% -10%, rgba(255, 77, 141, 0.18), transparent 62%),
+  --body-gradient:
+    radial-gradient(760px 520px at 8% -10%, rgba(255, 77, 141, 0.18), transparent 62%),
     radial-gradient(820px 560px at 104% -6%, rgba(95, 242, 255, 0.16), transparent 58%),
     radial-gradient(900px 620px at 50% 124%, rgba(169, 123, 255, 0.14), transparent 62%);
   --logo-shadow: 0 0 20px -2px rgba(255, 77, 141, 0.55), 0 6px 22px -8px rgba(95, 242, 255, 0.45);
@@ -592,7 +601,8 @@
   --green: #0d8454;
   --red: #ce1e75;
   --amber: #9d5f00;
-  --body-gradient: radial-gradient(760px 520px at 8% -10%, rgba(214, 31, 122, 0.1), transparent 62%),
+  --body-gradient:
+    radial-gradient(760px 520px at 8% -10%, rgba(214, 31, 122, 0.1), transparent 62%),
     radial-gradient(820px 560px at 104% -6%, rgba(0, 137, 168, 0.1), transparent 58%),
     radial-gradient(900px 620px at 50% 124%, rgba(109, 63, 224, 0.08), transparent 62%);
   --logo-shadow: 0 0 16px -4px rgba(214, 31, 122, 0.35), 0 6px 18px -10px rgba(0, 137, 168, 0.32);
@@ -637,7 +647,8 @@
   --green: #a4bf00;
   --red: #f2725d;
   --amber: #d39d3a;
-  --body-gradient: radial-gradient(1000px 620px at 6% -10%, #6c71c412, transparent 60%),
+  --body-gradient:
+    radial-gradient(1000px 620px at 6% -10%, #6c71c412, transparent 60%),
     radial-gradient(1060px 700px at 102% -6%, #268bd20f, transparent 58%),
     radial-gradient(900px 620px at 50% 116%, #3fd0c40d, transparent 62%);
   --logo-shadow: 0 2px 18px -6px #6c71c457;
@@ -682,7 +693,8 @@
   --green: #4a6b1b;
   --red: #9d3d2b;
   --amber: #845603;
-  --body-gradient: radial-gradient(1000px 620px at 6% -10%, #6c71c40d, transparent 60%),
+  --body-gradient:
+    radial-gradient(1000px 620px at 6% -10%, #6c71c40d, transparent 60%),
     radial-gradient(1060px 700px at 102% -6%, #268bd20f, transparent 58%),
     radial-gradient(900px 620px at 50% 116%, #2aa1980d, transparent 62%);
   --logo-shadow: 0 2px 18px -6px #6c71c457;

@@ -1,11 +1,7 @@
 <script setup lang="ts">
 import { ChevronLeft, Info, Lock, Palette } from "lucide-vue-next";
 import type { LockSettings } from "../types";
-import {
-  DESIGN_THEMES,
-  type AppearanceMode,
-  type DesignThemeId,
-} from "../theme";
+import { DESIGN_THEMES, type AppearanceMode, type DesignThemeId } from "../theme";
 
 const props = defineProps<{
   designTheme: DesignThemeId;
@@ -29,7 +25,6 @@ const appearanceOptions: { id: AppearanceMode; label: string }[] = [
   { id: "light", label: "Light" },
   { id: "dark", label: "Dark" },
 ];
-
 </script>
 
 <template>
@@ -56,14 +51,22 @@ const appearanceOptions: { id: AppearanceMode; label: string }[] = [
             data-testid="hub-theme-picker"
             :value="designTheme"
             @change="
-              emit('update:designTheme', ($event.target as HTMLSelectElement).value as DesignThemeId)
+              emit(
+                'update:designTheme',
+                ($event.target as HTMLSelectElement).value as DesignThemeId,
+              )
             "
           >
             <option v-for="t in DESIGN_THEMES" :key="t.id" :value="t.id">{{ t.label }}</option>
           </select>
         </label>
 
-        <div class="segmented" role="group" aria-label="Appearance" data-testid="hub-appearance-mode">
+        <div
+          class="segmented"
+          role="group"
+          aria-label="Appearance"
+          data-testid="hub-appearance-mode"
+        >
           <button
             v-for="opt in appearanceOptions"
             :key="opt.id"
@@ -134,8 +137,8 @@ const appearanceOptions: { id: AppearanceMode; label: string }[] = [
           <span class="kv-value" data-testid="hub-about-version">{{ appVersion }}</span>
         </div>
         <p class="hint about-note">
-          The app was renamed to <strong>RepoOS Hub</strong> in 2025 — a private client for your
-          own servers, not a hosted directory.
+          The app was renamed to <strong>RepoOS Hub</strong> in 2025 — a private client for your own
+          servers, not a hosted directory.
         </p>
       </section>
     </div>

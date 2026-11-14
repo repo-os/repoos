@@ -84,7 +84,10 @@ export function themeColorFor(design: DesignThemeId, appearance: ResolvedAppeara
   return THEME_COLOR[key] ?? THEME_COLOR[`classic-${appearance}`] ?? "#070a12";
 }
 
-export function applyThemesToDocument(design: DesignThemeId, mode: AppearanceMode): ResolvedAppearance {
+export function applyThemesToDocument(
+  design: DesignThemeId,
+  mode: AppearanceMode,
+): ResolvedAppearance {
   const el = document.documentElement;
   const appearance = resolveAppearance(mode);
   el.dataset.uiTheme = design;
