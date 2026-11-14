@@ -3,9 +3,6 @@ id: "1116"
 title: Finish touch affordances across mobile surfaces
 type: feature
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: Reading additional input from stdin...
 priority: p1
 area: web
 depends_on: ["1112", "1114", "1115"]
@@ -15,7 +12,7 @@ branch: feat/finish-touch-affordances-across-mobile-s
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T09:11:01Z"
-updated_at: "2026-11-14T16:48:47Z"
+updated_at: "2026-11-14T16:48:48Z"
 dev_error_count: 2
 engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-14T16:48:44.625Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-14T16:48:47.710Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -92,3 +89,4 @@ On screens below 720px the floating heads (Ross, CTO, Debugger) must not reserve
 - 2026-11-14T16:48:45Z · needs_input
 - 2026-11-14T16:48:47Z · agent exited with an error (codex) · Reading additional input from stdin...
 - 2026-11-14T16:48:47Z · engineer crash recovery: resuming codex + gpt-6-luna (2/3 crashes in 30m) · Reading additional input from stdin...
+- 2026-11-14T16:48:48Z · needs_input
