@@ -55,10 +55,9 @@ const updatesCheckEnabled = computed(() => {
 const visible = computed(
   () => updatesCheckEnabled.value && !!release.value?.available && !dismissed.value,
 );
-const restartNoticeVisible = computed(
+const restartNoticeEligible = computed(
   () =>
     restartStatus.value?.restartPending &&
-    restartOpen.value &&
     releaseRun.value?.state !== "running" &&
     release.value?.latestVersion === restartStatus.value?.installedVersion &&
     (restartFixtureActive.value ||
@@ -72,6 +71,7 @@ const restartNoticeVisible = computed(
         }
       })()),
 );
+const restartNoticeVisible = computed(() => restartOpen.value && restartNoticeEligible.value);
 const notesHtml = computed(() =>
   release.value?.releaseNotes ? renderMarkdown(release.value.releaseNotes) : "",
 );
@@ -132,7 +132,6 @@ onMounted(async () => {
       supervised: true,
       manualCommand: "repoos restart",
     };
-    restartOpen.value = true;
     releaseRun.value = { state: "idle", phase: null };
     document.documentElement.dataset.theme = fixtureState.endsWith("Dark") ? "dark" : "light";
   }
@@ -143,7 +142,6 @@ onMounted(async () => {
       /* optional */
     }
   }
-  if (restartStatus.value?.restartPending) restartOpen.value = true;
   try {
     releaseRun.value = await api("/api/release/run");
   } catch {
@@ -158,9 +156,13 @@ onMounted(async () => {
       }
     }, 3000);
   }
-  watch(restartStatus, (status) => {
-    if (status?.restartPending) restartOpen.value = true;
-  });
+  watch(
+    restartNoticeEligible,
+    (eligible) => {
+      restartOpen.value = eligible;
+    },
+    { immediate: true },
+  );
   if (!restartFixture)
     restartStatusTimer = setInterval(async () => {
       try {
@@ -215,6 +217,11 @@ function dismissRestartNotice(): void {
   } catch {
     /* dismissal lasts until reload */
   }
+}
+
+function updateRestartDialogOpen(nextOpen: boolean): void {
+  restartOpen.value = nextOpen;
+  if (!nextOpen && restartStatus.value?.restartPending) dismissRestartNotice();
 }
 
 // The preview capture mounts this component before App's own fixture pass runs
@@ -295,7 +302,7 @@ onUnmounted(() => {
 
 <template>
   <Teleport to="body">
-    <Dialog v-model:open="restartOpen">
+    <Dialog :open="restartOpen" @update:open="updateRestartDialogOpen">
       <DialogOverlay />
       <DialogContent
         v-if="restartNoticeVisible"
@@ -304,10 +311,7 @@ onUnmounted(() => {
       >
         <div class="release-update-modal-head">
           <DialogTitle>RepoOS v{{ restartStatus.installedVersion }} is installed</DialogTitle>
-          <DialogClose
-            class="release-update-close"
-            aria-label="Dismiss restart notice"
-            @click="dismissRestartNotice"
+          <DialogClose class="release-update-close" aria-label="Dismiss restart notice"
             ><X class="size-[17px]"
           /></DialogClose>
         </div>
