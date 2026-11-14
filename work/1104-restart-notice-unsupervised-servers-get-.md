@@ -11,7 +11,7 @@ branch: feat/restart-notice-unsupervised-servers-get-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T02:26:21Z"
-updated_at: "2026-11-14T03:47:42Z"
+updated_at: "2026-11-14T03:47:43Z"
 ---
 ## Problem
 Two rough edges in the "RepoOS vX is installed" restart notice (#1075, `ReleaseUpdateNotification.vue`):
@@ -71,3 +71,4 @@ Decision (Nick): the restart notice becomes a real dialog built on the shared di
 - 2026-11-14T03:46:10Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The new component coverage now passes locally: it verifies the exact manual command reaches the clipboard and the button confirms success, and that a `building` release run suppresses the installed notice. The required RepoOS check is vali… · stderr: Reading additional input from stdin... 2026-11-14T03:30:12.452831Z ERROR codex_core::tools::router: error=apply_patch verification failed: Failed to find expected lines in /Users/nick/code/nick/repoos-worktrees/feat/restart-notice-unsupervised-servers-get-/src/ui-app/src/components/ReleaseUpdateNotification.vue: manua…
 - 2026-11-14T03:46:10Z · message_delivered: 2 message(s)
 - 2026-11-14T03:47:42Z · body: Acceptance criteria (added 3)
+- 2026-11-14T03:47:43Z · message_queued at 2026-11-14T03:47:43.050Z
