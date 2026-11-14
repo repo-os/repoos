@@ -130,9 +130,10 @@ describe("DoneErrorCard (card mode — the compact board surface)", () => {
     await flush();
 
     // Scoped to the task that raised the error — not the global `/api/debugger`.
-    expect(calls).toHaveLength(1);
-    expect(calls[0].url).toBe("/api/tasks/0356/debugger/message");
-    expect(String(calls[0].body?.text)).toContain("0356");
+    const debuggerCall = calls.find((call) => call.url === "/api/tasks/0356/debugger/message");
+    expect(debuggerCall).toBeDefined();
+    expect(calls.some((call) => call.url === "/api/tasks/0356/review/keep-check")).toBe(true);
+    expect(String(debuggerCall?.body?.text)).toContain("0356");
     // The parent opens this task's Debug tab; the card just signals it.
     expect(wrapper.emitted("open-debugger")).toHaveLength(1);
   });
@@ -288,7 +289,10 @@ describe("DoneErrorCard (auto-repair in flight — #0385)", () => {
     // to be the only recovery path.
     await fix.trigger("click");
     await flush();
-    expect(calls).toEqual(["/api/tasks/0385/debugger/message"]);
+    expect(calls).toEqual([
+      "/api/tasks/0385/review/keep-check",
+      "/api/tasks/0385/debugger/message",
+    ]);
     expect(wrapper.emitted("open-debugger")).toHaveLength(1);
   });
 
