@@ -78,6 +78,17 @@ const AUTO_SETTLE_MS = 900;
 const PREVIEW_DISCONNECT_RE =
   /could not connect|ECONNREFUSED|net::ERR_CONNECTION|Connection refused/i;
 
+/** Capture at a shot's requested viewport; configured widths remain overflow checks. */
+export function uiHandoffCaptureViewport(
+  entry: Pick<CaptureEntry, "viewportWidth" | "viewportHeight">,
+  verificationWidths: number[],
+): { width: number; height: number } {
+  return {
+    width: entry.viewportWidth ?? verificationWidths[0] ?? 1024,
+    height: entry.viewportHeight ?? 800,
+  };
+}
+
 function isPreviewDisconnectError(err: unknown): boolean {
   return PREVIEW_DISCONNECT_RE.test((err as Error).message ?? "");
 }
@@ -532,7 +543,7 @@ async function captureEntryWithGate(
   collector.attach(page);
   const issues: PageGateIssue[] = [];
   try {
-    await page.setViewportSize({ width: viewports[0] ?? 1024, height: 800 });
+    await page.setViewportSize(uiHandoffCaptureViewport(entry, viewports));
     const png = await captureShotPage(
       page,
       pageUrl,
