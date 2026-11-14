@@ -11,7 +11,7 @@ branch: feat/task-drawer-move-to-done-fails-instantly
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-14T16:14:26Z"
-updated_at: "2026-11-14T18:09:36Z"
+updated_at: "2026-11-14T18:09:38Z"
 review_rounds: 1
 review_passes: 1
 handoff_signal_retry_count: 2
@@ -103,3 +103,4 @@ Related: #1081 (introduced the reason parameter) and the audit that missed this.
 - 2026-11-14T18:08:49Z · message_queued at 2026-11-14T18:08:49.653Z
 - 2026-11-14T18:09:36Z · note: review pass 1: needs some work
 - 2026-11-14T18:09:36Z · status review→active
+- 2026-11-14T18:09:38Z · CTO nudge: held — an undelivered message is already queued
