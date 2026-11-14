@@ -83,3 +83,4 @@ Build on #1098 (src/core/agent-failure.ts, `splitAgentFailureDetail`). Related: 
 - 2026-11-14T19:16:57Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: Implementing core failure classification, last-runs filtering, UI toggle, tests, and docs. · stderr: (empty)
 - 2026-11-14T19:17:19Z · message_delivered: 1 message(s)
 - 2026-11-14T19:18:53Z · message_queued at 2026-11-14T19:18:53.630Z
+- 2026-11-14T19:18:53Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
