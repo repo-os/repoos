@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "1121"
 title: "Hub app: one-command build, install and launch on Nick's Android phone over Tailscale adb"
 type: feature
@@ -43,3 +44,4 @@ Related: #1120 (Hub app redesign, runs in parallel, touches mobile/src only) and
 - 2026-11-14T17:46:54Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: Implementing TypeScript deploy scripts, tests, Gradle debug suffix, justfile recipe, and docs. · stderr: (empty)
 - 2026-11-14T17:48:53Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-14T17:53:57Z · message_queued at 2026-11-14T17:53:57.407Z
+
