@@ -54,3 +54,4 @@ Start from src/server/release.ts (`cutNewRelease`, phases `pushing_main`, `check
 - 2026-11-14T07:10:06Z · needs_input (review-failed) cleared for review again by human
 - 2026-11-14T07:12:11Z · note: review pass 2: needs some work
 - 2026-11-14T07:12:11Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-14T07:12:11Z · message_delivered: 1 message(s)
