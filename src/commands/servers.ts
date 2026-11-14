@@ -27,6 +27,42 @@ export interface ListedServer {
   [key: string]: unknown;
 }
 
+function localJsonRow(row: Awaited<ReturnType<typeof listValidatedServerRegistry>>[number]) {
+  return {
+    port: row.entry.port,
+    host: row.entry.host,
+    pid: row.entry.pid,
+    root: row.entry.root,
+    projectName: row.entry.projectName,
+    version: row.entry.version,
+    startedAt: row.entry.startedAt,
+    activeEngineers: row.entry.activeEngineers ?? 0,
+    engineersUpdatedAt: row.entry.engineersUpdatedAt ?? null,
+    uptimeSeconds: row.uptimeSeconds,
+    valid: row.valid,
+    staleReason: row.staleReason,
+    healthRoot: row.healthRoot,
+  };
+}
+
+function localStaleLabel(reason: string | null): string {
+  if (reason === "dead-pid") return "stale (dead pid)";
+  if (reason === "health-mismatch") return "stale (health root mismatch)";
+  if (reason === "unreachable") return "stale (health unreachable)";
+  return "stale";
+}
+
+function printLocalRow(row: Awaited<ReturnType<typeof listValidatedServerRegistry>>[number]): void {
+  const e = row.entry;
+  const status = row.valid ? c.green("ok") : c.yellow(localStaleLabel(row.staleReason));
+  const engineers =
+    typeof e.activeEngineers === "number" ? `  ${c.dim(`${e.activeEngineers} engineer(s)`)}` : "";
+  console.log(
+    `  ${c.cyan(String(e.port).padStart(5))}  ${status}  ${c.bold(e.projectName)}  ${c.dim(`pid ${e.pid}`)}  ${c.dim(formatUptime(row.uptimeSeconds))}${engineers}`,
+  );
+  console.log(`         ${c.dim(e.root)}`);
+}
+
 interface TailnetStatus {
   Self?: { HostName?: string; DNSName?: string };
   Peer?: Record<string, { HostName?: string; DNSName?: string; Online?: boolean }>;
@@ -164,7 +200,7 @@ export async function cmdServers(argv: string[]): Promise<void> {
     console.log(
       JSON.stringify(
         {
-          servers: result.servers,
+          servers: tailscale ? result.servers : localRows.map(localJsonRow),
           ...(pruned !== undefined ? { pruned } : {}),
           ...(result.tailscaleUnavailable ? { tailscaleUnavailable: true } : {}),
         },
@@ -184,6 +220,20 @@ export async function cmdServers(argv: string[]): Promise<void> {
         "  Tailscale CLI unavailable; showing configured hosts where reachable and local servers.",
       ),
     );
+  if (!tailscale && !prune && pruned === undefined) {
+    if (localRows.length === 0) {
+      console.log(c.dim("  No registered RepoOS servers."));
+      console.log(
+        c.dim("  Control-plane `repoos serve` processes register under ") +
+          c.cyan("~/.repoos/servers/") +
+          c.dim(" when listening."),
+      );
+      return;
+    }
+    console.log(c.bold("  Registered RepoOS servers:\n"));
+    for (const row of localRows) printLocalRow(row);
+    return;
+  }
   console.log(c.bold(tailscale ? "  RepoOS servers by host:\n" : "  Registered RepoOS servers:\n"));
   if (!result.servers.length) {
     console.log(c.dim("  No registered RepoOS servers."));
