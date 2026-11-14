@@ -419,9 +419,9 @@ const GROUPS: readonly CommandGroup[] = [
       },
       {
         name: "servers",
-        usage: "servers [--json] [--prune]",
-        desc: "List locally running RepoOS servers from ~/.repoos/servers",
-        flags: "--json · --prune",
+        usage: "servers [--json] [--prune] [--tailscale]",
+        desc: "List locally registered RepoOS servers, optionally across the tailnet",
+        flags: "--json · --prune · --tailscale",
       },
       {
         name: "service",

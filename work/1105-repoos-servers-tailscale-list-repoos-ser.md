@@ -11,9 +11,7 @@ branch: feat/repoos-servers-tailscale-list-repoos-ser
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T03:22:32Z"
-updated_at: "2026-11-14T05:01:22Z"
-review_passes: 2
-review_rounds: 1
+updated_at: "2026-11-14T03:38:46Z"
 ---
 ## Problem
 `repoos servers` lists only the servers registered on the local machine (~/.repoos/servers). To see what is running on bee, thinkpad or mini, the human must ssh in and run it there.
@@ -37,17 +35,4 @@ Reuse `src/core/tailscale.ts` and `src/core/remote-hosts.ts`. Do not add a runti
 - 2026-11-14T03:28:40Z · cli_override, model_override
 - 2026-11-14T03:28:56Z · status inbox→ready
 - 2026-11-14T03:28:57Z · status ready→active, branch
-- 2026-11-14T03:34:05Z · body
-- 2026-11-14T03:37:55Z · body
 - 2026-11-14T03:38:46Z · status active→review
-- 2026-11-14T03:38:46Z · message_queued at 2026-11-14T03:38:46.699Z
-- 2026-11-14T03:38:46Z · note: shots: skipped — Docs site skipped: no docs shot declared
-- 2026-11-14T03:40:24Z · note: review pass 1: needs some work
-- 2026-11-14T03:40:24Z · message_delivered: 1 message(s)
-- 2026-11-14T03:40:24Z · status review→active
-- 2026-11-14T03:44:34Z · body
-- 2026-11-14T03:45:35Z · status active→review
-- 2026-11-14T03:45:35Z · message_queued at 2026-11-14T03:45:35.883Z
-- 2026-11-14T03:45:36Z · note: shots: skipped — Docs site skipped: no docs shot declared
-- 2026-11-14T03:46:10Z · note: review pass 2: good to go
-- 2026-11-14T05:01:22Z · message_overdue: still queued after 60m without being delivered
