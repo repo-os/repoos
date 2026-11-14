@@ -118,3 +118,4 @@ Read docs/mobile-architecture.md, docs/adr/0011-mobile-web-ui.md (the native she
 - 2026-11-14T21:15:00Z · message_queued at 2026-11-14T21:15:00.388Z
 - 2026-11-14T21:16:59Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-14T21:17:00Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: Declared shots target the main app preview, but mobile hub fixtures only exist in the Capacitor shell — clearing those shots and re-running verification. · stderr: (empty)
+- 2026-11-14T21:17:00Z · message_delivered: 2 message(s)
