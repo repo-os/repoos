@@ -14,7 +14,6 @@ created_at: "2026-11-14T16:14:26Z"
 updated_at: "2026-11-14T17:57:11Z"
 handoff_signal_retry_count: 2
 dev_error_count: 4
-engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-14T16:48:38.797Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-14T16:48:42.502Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-14T16:48:45.917Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-14T16:58:57.569Z\",\"kind\":\"dev-error\"}]"
 deferred_handoff_resume_count: 1
 ---
 ## Problem
