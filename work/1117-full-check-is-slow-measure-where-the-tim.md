@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 492642
-last_close_out_gate_at: "2026-11-14T16:21:54.053Z"
 id: "1117"
 title: "Full check is slow: measure where the time goes and speed it up without weakening the gate"
 type: feature
-status: review
+status: done
 priority: p2
 area: [core, tests]
+merged_commit: 360e56ecaa1b15db4d23388b06f6d95616af6749
 assigned_to: ai
 created_by: t@t
 branch: feat/full-check-is-slow-measure-where-the-tim
@@ -14,6 +13,8 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T12:33:14Z"
 updated_at: "2026-11-14T16:21:54Z"
+last_close_out_gate_ms: 492642
+last_close_out_gate_at: "2026-11-14T16:21:54.053Z"
 review_passes: 2
 review_rounds: 1
 handoff_signal_retry_count: 1
