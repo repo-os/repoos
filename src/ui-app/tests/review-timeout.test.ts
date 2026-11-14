@@ -16,6 +16,8 @@ import {
   reviewTimeoutMinutes,
   reviewTimeoutRetryAllowed,
   reviewTimeoutRetryAttempts,
+  reviewFailedReportRetryAllowed,
+  reviewFailedReportRetryAttempts,
 } from "../../server/review.js";
 
 const tempDirs: string[] = [];
@@ -152,6 +154,18 @@ describe("review timeout classification (#1019)", () => {
     const retried = task({ review_timeout_retries: 1 });
     expect(reviewTimeoutRetryAttempts(retried)).toBe(1);
     expect(reviewTimeoutRetryAllowed(retried)).toBe(false);
+  });
+
+  it("keeps timeout and failed-report retry budgets independent", () => {
+    const timeoutSpent = task({ review_timeout_retries: 1 });
+    expect(reviewTimeoutRetryAllowed(timeoutSpent)).toBe(false);
+    expect(reviewFailedReportRetryAttempts(timeoutSpent)).toBe(0);
+    expect(reviewFailedReportRetryAllowed(timeoutSpent, 2)).toBe(true);
+
+    const failedReportsSpent = task({ review_failed_report_retries: 2 });
+    expect(reviewFailedReportRetryAllowed(failedReportsSpent, 2)).toBe(false);
+    expect(reviewTimeoutRetryAttempts(failedReportsSpent)).toBe(0);
+    expect(reviewTimeoutRetryAllowed(failedReportsSpent)).toBe(true);
   });
 
   it("persists the timeout flag for the Review tab and activity note", async () => {

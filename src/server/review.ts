@@ -258,6 +258,18 @@ export function reviewTimeoutRetryAllowed(task: Pick<Task, "extra">): boolean {
   return reviewTimeoutRetryAttempts(task) < 1;
 }
 
+/** Failed-report retries already spent on this task, independent of timeouts. */
+export function reviewFailedReportRetryAttempts(task: Pick<Task, "extra">): number {
+  const raw = task.extra?.review_failed_report_retries;
+  return typeof raw === "number" && Number.isFinite(raw) ? Math.max(0, Math.floor(raw)) : 0;
+}
+
+/** Whether another no-usable-report retry fits the configured bound. */
+export function reviewFailedReportRetryAllowed(task: Pick<Task, "extra">, maxRetries = 2): boolean {
+  const limit = Number.isFinite(maxRetries) ? Math.max(0, Math.min(5, Math.floor(maxRetries))) : 2;
+  return reviewFailedReportRetryAttempts(task) < limit;
+}
+
 /** Cap on the task spec quoted into the mission (keeps the prompt bounded). */
 const SPEC_CHARS = 6000;
 
@@ -1211,6 +1223,8 @@ export class ReviewManager {
    * has observed the write, so one timeout can never become a retry loop.
    */
   private readonly timeoutRetries = new Map<string, number>();
+  /** No-usable-report retries have their own persisted budget (#1108 review). */
+  private readonly failedReportRetries = new Map<string, number>();
   /** Tasks the status guard just put back in `review`, by timestamp. */
   private readonly reverted = new Map<string, number>();
   /** AgentRunner to send auto-bounce messages to the engineer session. */
@@ -2032,7 +2046,7 @@ export class ReviewManager {
     const failedReportRetryScheduled =
       failure === "no-output" &&
       !this.isAutoRecoveryExcluded(task) &&
-      this.timeoutRetryAttempts(task) <
+      this.failedReportRetryAttempts(task) <
         Math.max(0, Math.min(5, Math.floor(this.config.review?.failedReportRetries ?? 2)));
     const error =
       failure === "timeout"
@@ -2114,6 +2128,7 @@ export class ReviewManager {
     this.appendMarker(task.id, marker);
     if (state === "ok" || state === "incomplete") {
       this.resetReviewTimeoutRetries(task);
+      this.resetFailedReportRetries(task);
     }
     if (state === "ok") {
       this.logger.task(task.id, "info", "review completed");
@@ -2126,9 +2141,9 @@ export class ReviewManager {
       });
       this.scheduleTimeoutRetry(task, timeoutMinutes);
     } else if (failure === "no-output" && failedReportRetryScheduled) {
-      const attempts = this.timeoutRetryAttempts(task) + 1;
-      this.timeoutRetries.set(task.id, attempts);
-      this.persistReviewTimeoutRetries(task, attempts);
+      const attempts = this.failedReportRetryAttempts(task) + 1;
+      this.failedReportRetries.set(task.id, attempts);
+      this.persistFailedReportRetries(task, attempts);
       this.appendMarker(
         task.id,
         `↻ automatically retrying review — previous pass produced no usable report (attempt ${attempts} of ${this.config.review?.failedReportRetries ?? 2})`,
@@ -3237,6 +3252,11 @@ export class ReviewManager {
     return inMemory !== undefined ? inMemory : reviewTimeoutRetryAttempts(task);
   }
 
+  private failedReportRetryAttempts(task: Pick<Task, "id" | "extra">): number {
+    const inMemory = this.failedReportRetries.get(task.id);
+    return inMemory !== undefined ? inMemory : reviewFailedReportRetryAttempts(task);
+  }
+
   /** Automatic reviewer recovery is inert for tasks deliberately owned by a human. */
   private isAutoRecoveryExcluded(task: Task): boolean {
     return !canAutoRecoverFailedReview(task, this.runner?.isPaused(task.id) === true);
@@ -3275,6 +3295,34 @@ export class ReviewManager {
     const attempts = this.timeoutRetryAttempts(task);
     this.timeoutRetries.set(task.id, 0);
     if (attempts > 0) this.persistReviewTimeoutRetries(task, 0);
+  }
+
+  private resetFailedReportRetries(task: Task): void {
+    const attempts = this.failedReportRetryAttempts(task);
+    this.failedReportRetries.set(task.id, 0);
+    if (attempts > 0) this.persistFailedReportRetries(task, 0);
+  }
+
+  /** Best-effort durable no-usable-report retry counter, distinct from timeout retries. */
+  private persistFailedReportRetries(task: Task, retries: number): void {
+    try {
+      const raw = readFileSync(task.absPath, "utf8");
+      const doc = parseDocument(raw);
+      doc.data.review_failed_report_retries = retries;
+      doc.data.updated_at = utcTimestamp();
+      const keys = Object.keys(doc.data).filter(
+        (k) => k !== "review_failed_report_retries" && k !== "updated_at",
+      );
+      keys.unshift("updated_at", "review_failed_report_retries");
+      writeFileSync(task.absPath, serializeDocument(doc.data, `\n${doc.body}\n`, keys));
+      commitTaskFile(
+        this.config.root,
+        task.absPath,
+        `docs(${task.id}): ${retries ? "failed review retry" : "reset failed review retry"}`,
+      );
+    } catch {
+      /* best-effort — the in-memory guard still bounds the retries */
+    }
   }
 
   /** Best-effort durable timeout-retry counter (task frontmatter). */
