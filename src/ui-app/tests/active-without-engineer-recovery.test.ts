@@ -48,26 +48,29 @@ describe("planActiveWithoutEngineerRecovery (#0993)", () => {
     ["held", { held: true }],
     ["paused", { paused: true }],
     ["human-assigned", { humanAssigned: true }],
-  ])("skips %s tasks even when an overdue queued message would trigger recovery", (_name, guard) => {
-    expect(
-      planActiveWithoutEngineerRecovery({
-        task: baseTask(),
-        now: Date.now(),
-        windowMs: 180_000,
-        running: false,
-        queued: false,
-        handoffInFlight: false,
-        pendingHandoff: false,
-        paused: false,
-        held: false,
-        humanAssigned: false,
-        closingOut: false,
-        stoppedByPerson: false,
-        idleMs: 180_001,
-        ...guard,
-      }).action,
-    ).toBe("skip");
-  });
+  ])(
+    "skips %s tasks even when an overdue queued message would trigger recovery",
+    (_name, guard) => {
+      expect(
+        planActiveWithoutEngineerRecovery({
+          task: baseTask(),
+          now: Date.now(),
+          windowMs: 180_000,
+          running: false,
+          queued: false,
+          handoffInFlight: false,
+          pendingHandoff: false,
+          paused: false,
+          held: false,
+          humanAssigned: false,
+          closingOut: false,
+          stoppedByPerson: false,
+          idleMs: 180_001,
+          ...guard,
+        }).action,
+      ).toBe("skip");
+    },
+  );
 
   it("recovers a task when its queued message age reaches the shorter recovery window", () => {
     const queuedMessageRecoverMs = 180_000;

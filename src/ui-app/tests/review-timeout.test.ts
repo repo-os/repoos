@@ -70,7 +70,9 @@ describe("review timeout config (#1019)", () => {
     });
     expect(withToml("[review]\nfailedReportRetries = 3\n").review?.failedReportRetries).toBe(3);
     expect(SUPPORTED_TOML_KEYS).toContain("review.failedReportRetries");
-    expect(getConfigSchema().find((f) => f.key === "watchdog.queuedMessageRecoverMs")).toMatchObject({
+    expect(
+      getConfigSchema().find((f) => f.key === "watchdog.queuedMessageRecoverMs"),
+    ).toMatchObject({
       type: "number",
       tier: "live",
       restartRequired: false,
@@ -78,8 +80,7 @@ describe("review timeout config (#1019)", () => {
       min: 60_000,
     });
     expect(
-      withToml("[watchdog]\nqueuedMessageRecoverMs = 240000\n").watchdog
-        ?.queuedMessageRecoverMs,
+      withToml("[watchdog]\nqueuedMessageRecoverMs = 240000\n").watchdog?.queuedMessageRecoverMs,
     ).toBe(240_000);
     expect(SUPPORTED_TOML_KEYS).toContain("watchdog.queuedMessageRecoverMs");
   });
