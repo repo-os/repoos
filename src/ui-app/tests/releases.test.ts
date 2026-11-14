@@ -13,6 +13,8 @@ import {
 } from "../../commands/upgrade";
 import { SHOT_PREVIEW_APPLIED_ATTR } from "../../core/shot-fixtures.js";
 import ReleaseUpdateNotification from "../src/components/ReleaseUpdateNotification.vue";
+import releaseUpdateNotificationSource from "../src/components/ReleaseUpdateNotification.vue?raw";
+import * as clipboard from "../src/lib/clipboard";
 import { useConfigStore } from "../src/stores/config";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -204,6 +206,58 @@ describe("feature releases", () => {
       await flushPromises();
       expect(document.body.querySelector(".release-update-banner")).not.toBeNull();
       expect(document.body.textContent).toContain("Upgrade to RepoOS 0.6.0");
+    } finally {
+      wrapper.unmount();
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("keeps release notes as the only scrolling region in the update modal", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockImplementation(
+        () =>
+          new Response(
+            JSON.stringify({
+              currentVersion: "0.5.46",
+              latestVersion: "0.6.0",
+              available: true,
+              releaseNotes: "## Highlights\n- First highlight\n- Second highlight",
+              releaseUrl: "https://github.com/repo-os/repoos/releases/tag/v0.6.0",
+              installKind: "standalone",
+              upgradeCommand: "repoos upgrade",
+            }),
+            { status: 200, headers: { "Content-Type": "application/json" } },
+          ),
+      ),
+    );
+    const wrapper = mount(ReleaseUpdateNotification, { attachTo: document.body });
+    try {
+      await flushPromises();
+      await document.body
+        .querySelector(".release-update-banner")!
+        .dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      await flushPromises();
+
+      const modal = document.body.querySelector<HTMLElement>(".release-update-modal")!;
+      const notes = modal.querySelector<HTMLElement>(".release-update-notes")!;
+      expect(modal.classList.contains("release-update-modal")).toBe(true);
+      expect(notes.parentElement).toBe(modal);
+      expect(modal.querySelector(".release-update-versions")).not.toBeNull();
+      expect(modal.querySelector("[data-test-id=release-upgrade-command]")).not.toBeNull();
+      expect(notes.querySelectorAll("li")).toHaveLength(2);
+      expect(releaseUpdateNotificationSource).toMatch(
+        /\.release-update-modal\s*\{[^}]*display:\s*flex/s,
+      );
+      expect(releaseUpdateNotificationSource).toMatch(
+        /\.release-update-modal\s*\{[^}]*overflow:\s*hidden/s,
+      );
+      expect(releaseUpdateNotificationSource).toMatch(
+        /\.release-update-notes\s*\{[^}]*min-height:\s*0[^}]*overflow-y:\s*auto/s,
+      );
+      expect(releaseUpdateNotificationSource).toMatch(
+        /\.release-update-markdown :deep\(li\)\s*\{[^}]*margin:\s*0 0 6px/s,
+      );
     } finally {
       wrapper.unmount();
       vi.unstubAllGlobals();
@@ -646,6 +700,249 @@ describe("feature releases", () => {
       { ...base, id: "4", status: "review", releasedAt: "2026-03-01T00:00:00Z" },
     ]);
     expect(releases.map((item) => item.id)).toEqual(["3", "1"]);
+  });
+
+  it("copies the manual restart command for an unsupervised server", async () => {
+    const copy = vi.spyOn(clipboard, "copyToClipboard").mockResolvedValue(true);
+    const fetchMock = vi.fn().mockImplementation((path: string) => {
+      const payload = String(path).includes("update-status")
+        ? {
+            restartPending: true,
+            restartWhenIdlePending: false,
+            runningVersion: "0.5.78",
+            installedVersion: "0.5.79",
+            activeWork: { agents: 0, checks: 0 },
+            supervised: false,
+            manualCommand: "just serve",
+          }
+        : String(path).includes("release/run")
+          ? { state: "idle", phase: null }
+          : {
+              currentVersion: "0.5.79",
+              latestVersion: "0.5.79",
+              available: false,
+              releaseNotes: null,
+              releaseUrl: null,
+              installKind: "source",
+              upgradeCommand: "just upgrade",
+            };
+      return Promise.resolve(
+        new Response(JSON.stringify(payload), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
+      );
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const wrapper = mount(ReleaseUpdateNotification, { attachTo: document.body });
+    try {
+      await flushPromises();
+      expect(document.body.querySelector("[data-test-id=installed-restart-notice]")).not.toBeNull();
+      expect(
+        [...document.body.querySelectorAll("button")].some(
+          (item) => item.textContent?.trim() === "Restart now",
+        ),
+      ).toBe(false);
+      const button = [...document.body.querySelectorAll("button")].find((item) =>
+        item.textContent?.includes("Copy restart command"),
+      );
+      expect(button).toBeDefined();
+      button!.click();
+      await flushPromises();
+      expect(copy).toHaveBeenCalledWith("just serve");
+      expect(document.body.textContent).toContain("Copied");
+    } finally {
+      wrapper.unmount();
+      vi.unstubAllGlobals();
+      copy.mockRestore();
+    }
+  });
+
+  it("persists restart-notice dismissal when Escape closes the dialog", async () => {
+    const dismissedKey = "repoos.restartUpdate.dismissedVersion";
+    localStorage.removeItem(dismissedKey);
+    const fetchMock = vi.fn().mockImplementation((path: string) => {
+      const payload = String(path).includes("update-status")
+        ? {
+            restartPending: true,
+            restartWhenIdlePending: false,
+            runningVersion: "0.5.78",
+            installedVersion: "0.5.79",
+            activeWork: { agents: 0, checks: 0 },
+            supervised: true,
+            manualCommand: "repoos restart",
+          }
+        : String(path).includes("release/run")
+          ? { state: "idle", phase: null }
+          : {
+              currentVersion: "0.5.79",
+              latestVersion: "0.5.79",
+              available: false,
+              releaseNotes: null,
+              releaseUrl: null,
+              installKind: "source",
+              upgradeCommand: "just upgrade",
+            };
+      return Promise.resolve(
+        new Response(JSON.stringify(payload), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
+      );
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const wrapper = mount(ReleaseUpdateNotification, { attachTo: document.body });
+    try {
+      await flushPromises();
+      expect(document.body.querySelector("[data-test-id=installed-restart-notice]")).not.toBeNull();
+      document.body.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+      await flushPromises();
+      expect(localStorage.getItem(dismissedKey)).toBe("0.5.79");
+      expect(document.body.querySelector("[data-test-id=installed-restart-notice]")).toBeNull();
+    } finally {
+      wrapper.unmount();
+      vi.unstubAllGlobals();
+      localStorage.removeItem(dismissedKey);
+    }
+  });
+
+  it("persists restart-notice dismissal when the overlay closes the dialog", async () => {
+    const dismissedKey = "repoos.restartUpdate.dismissedVersion";
+    localStorage.removeItem(dismissedKey);
+    const fetchMock = vi.fn().mockImplementation((path: string) => {
+      const payload = String(path).includes("update-status")
+        ? {
+            restartPending: true,
+            restartWhenIdlePending: false,
+            runningVersion: "0.5.78",
+            installedVersion: "0.5.79",
+            activeWork: { agents: 0, checks: 0 },
+            supervised: true,
+            manualCommand: "repoos restart",
+          }
+        : String(path).includes("release/run")
+          ? { state: "idle", phase: null }
+          : {
+              currentVersion: "0.5.79",
+              latestVersion: "0.5.79",
+              available: false,
+              releaseNotes: null,
+              releaseUrl: null,
+              installKind: "source",
+              upgradeCommand: "just upgrade",
+            };
+      return Promise.resolve(
+        new Response(JSON.stringify(payload), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
+      );
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const wrapper = mount(ReleaseUpdateNotification, { attachTo: document.body });
+    try {
+      await flushPromises();
+      expect(document.body.querySelector("[data-test-id=installed-restart-notice]")).not.toBeNull();
+      document.body
+        .querySelector<HTMLElement>(".overlay")
+        ?.dispatchEvent(
+          new PointerEvent("pointerdown", { bubbles: true, cancelable: true, pointerId: 1 }),
+        );
+      await flushPromises();
+      expect(localStorage.getItem(dismissedKey)).toBe("0.5.79");
+      expect(document.body.querySelector("[data-test-id=installed-restart-notice]")).toBeNull();
+    } finally {
+      wrapper.unmount();
+      vi.unstubAllGlobals();
+      localStorage.removeItem(dismissedKey);
+    }
+  });
+
+  it("keeps a previously dismissed restart dialog closed while status keeps polling", async () => {
+    const dismissedKey = "repoos.restartUpdate.dismissedVersion";
+    localStorage.setItem(dismissedKey, "0.5.79");
+    const fetchMock = vi.fn().mockImplementation((path: string) => {
+      const payload = String(path).includes("update-status")
+        ? {
+            restartPending: true,
+            restartWhenIdlePending: false,
+            runningVersion: "0.5.78",
+            installedVersion: "0.5.79",
+            activeWork: { agents: 0, checks: 0 },
+            supervised: true,
+            manualCommand: "repoos restart",
+          }
+        : String(path).includes("release/run")
+          ? { state: "idle", phase: null }
+          : {
+              currentVersion: "0.5.79",
+              latestVersion: "0.5.79",
+              available: false,
+              releaseNotes: null,
+              releaseUrl: null,
+              installKind: "source",
+              upgradeCommand: "just upgrade",
+            };
+      return Promise.resolve(
+        new Response(JSON.stringify(payload), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
+      );
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const wrapper = mount(ReleaseUpdateNotification, { attachTo: document.body });
+    try {
+      await flushPromises();
+      expect(document.body.querySelector("[data-test-id=installed-restart-notice]")).toBeNull();
+      expect(document.body.querySelector(".overlay")).toBeNull();
+    } finally {
+      wrapper.unmount();
+      vi.unstubAllGlobals();
+      localStorage.removeItem(dismissedKey);
+    }
+  });
+
+  it("hides the restart notice while a release run is active", async () => {
+    const fetchMock = vi.fn().mockImplementation((path: string) => {
+      const payload = String(path).includes("update-status")
+        ? {
+            restartPending: true,
+            restartWhenIdlePending: false,
+            runningVersion: "0.5.78",
+            installedVersion: "0.5.79",
+            activeWork: { agents: 0, checks: 0 },
+            supervised: true,
+            manualCommand: "repoos restart",
+          }
+        : String(path).includes("release/run")
+          ? { state: "running", phase: "building" }
+          : {
+              currentVersion: "0.5.79",
+              latestVersion: "0.5.79",
+              available: false,
+              releaseNotes: null,
+              releaseUrl: null,
+              installKind: "source",
+              upgradeCommand: "just upgrade",
+            };
+      return Promise.resolve(
+        new Response(JSON.stringify(payload), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
+      );
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const wrapper = mount(ReleaseUpdateNotification, { attachTo: document.body });
+    try {
+      await flushPromises();
+      expect(document.body.querySelector("[data-test-id=installed-restart-notice]")).toBeNull();
+      expect(document.body.textContent).not.toContain("0.5.79 is installed");
+    } finally {
+      wrapper.unmount();
+      vi.unstubAllGlobals();
+    }
   });
 
   it("bounds the dashboard history", () => {

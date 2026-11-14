@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 138975
-last_close_out_gate_at: "2026-11-14T05:22:44.916Z"
 id: "1104"
 title: "Restart notice: unsupervised servers get a copy-command button, and it ignores an in-flight release bump"
 type: feature
-status: review
+status: done
 priority: p3
 area: [web, server]
+merged_commit: fe5f2c2e025137abefaa6c4031eb4baa08e524e7
 assigned_to: ai
 created_by: t@t
 branch: feat/restart-notice-unsupervised-servers-get-
@@ -14,6 +13,8 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T02:26:21Z"
 updated_at: "2026-11-14T05:22:44Z"
+last_close_out_gate_ms: 138975
+last_close_out_gate_at: "2026-11-14T05:22:44.916Z"
 review_rounds: 1
 review_passes: 1
 ---
