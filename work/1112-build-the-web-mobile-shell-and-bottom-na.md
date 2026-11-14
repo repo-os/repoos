@@ -3,6 +3,9 @@ id: "1112"
 title: Build the web mobile shell and bottom navigation
 type: feature
 status: inbox
+needs_input: true
+needs_input_reason: underspecified
+needs_input_detail: "missing sections: Desired UX, Notes for AI"
 human_step_decision: agent
 human_step_decision_key: 0c4974e5
 priority: p1
@@ -32,3 +35,4 @@ Below 720 CSS px, users get a purpose-built mobile shell with bottom navigation 
 ## Activity
 
 - 2026-11-14T09:10:42Z · created · t@t
+- 2026-11-14T09:10:44Z · needs_input
