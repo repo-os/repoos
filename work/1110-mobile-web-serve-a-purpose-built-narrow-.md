@@ -11,10 +11,10 @@ branch: feat/mobile-web-serve-a-purpose-built-narrow-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T09:06:53Z"
-updated_at: "2026-11-14T09:16:16Z"
+updated_at: "2026-11-14T09:16:36Z"
 ---
 ## Problem
-On narrow screens RepoOS serves the desktop UI squeezed by scattered `@media (max-width)` rules (22 files in src/ui-app/src, 18 in style.css alone). It works but feels hacky: dense columns, hover-only affordances, small controls, desktop chrome. The existing mobile docs (docs/mobile-ux-strategy.md, docs/mobile-architecture.md) and tasks #0300, #0302, #0303, #0304 assume a native iOS/Android shell instead. The product direction from Nick is that mobile stays on the **web app**: the same SPA, but on narrow screens it serves a mobile-friendly design built for phones.
+RepoOS currently serves its desktop SPA on phones and relies on scattered `@media (max-width)` rules to squeeze desktop surfaces into a narrow viewport. The connected-server UI feels cramped, with dense columns, hover-only affordances, small controls and desktop chrome. The product direction is to keep mobile as the server's **web app**: the same SPA serves purpose-built narrow-screen layouts in a phone browser, in the Capacitor shell's isolated WebView, and as an installed home-screen web app. This changes the connected-server presentation only; the native Capacitor multi-server picker, lock screen and WebView isolation/security architecture remain in scope and valid.
 
 ## Desired UX
 Open RepoOS in a phone browser (or add it to the home screen) and get a layout designed for a phone: a bottom navigation bar, a single-column Work queue with readable cards, task details as a full page or bottom sheet, large touch targets, no hover-only actions, and no horizontal scroll. Desktop is unchanged. Tablets get a sensible choice documented in the ADR.
@@ -44,3 +44,4 @@ Read docs/mobile-ux-strategy.md, docs/mobile-architecture.md and docs/agent-ui-a
 - 2026-11-14T09:13:58Z · message_delivered: 2 message(s)
 - 2026-11-14T09:16:16Z · body: Acceptance criteria (added 5, removed 5)
 - 2026-11-14T09:16:16Z · message_queued at 2026-11-14T09:16:16.143Z
+- 2026-11-14T09:16:36Z · body: Problem (added 1, removed 1)
