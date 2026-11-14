@@ -2,7 +2,7 @@
 id: "1106"
 title: "Release cut reliability: false 'Could not push main' failure, remote-host git errors, and test time bombs"
 type: feature
-status: review
+status: active
 priority: p2
 area: [server, core]
 assigned_to: ai
@@ -11,7 +11,8 @@ branch: feat/release-cut-reliability-false-could-not-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T05:18:12Z"
-updated_at: "2026-11-14T07:12:11Z"
+updated_at: "2026-11-14T07:12:12Z"
+review_rounds: 1
 review_passes: 1
 ---
 ## Problem
@@ -55,3 +56,4 @@ Start from src/server/release.ts (`cutNewRelease`, phases `pushing_main`, `check
 - 2026-11-14T07:12:11Z · note: review pass 2: needs some work
 - 2026-11-14T07:12:11Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-14T07:12:11Z · message_delivered: 1 message(s)
+- 2026-11-14T07:12:12Z · status review→active
