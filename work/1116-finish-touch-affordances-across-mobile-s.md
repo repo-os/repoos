@@ -9,8 +9,10 @@ depends_on: ["1112", "1114", "1115"]
 assigned_to: ai
 created_by: t@t
 branch: ""
+cli_override: codex
+model_override: gpt-6-luna
 created_at: "2026-11-14T09:11:01Z"
-updated_at: "2026-11-14T09:22:40Z"
+updated_at: "2026-11-14T16:03:44Z"
 ---
 ## Problem
 Some existing surfaces still depend on hover or small pointer controls. The last-activity popover work in #1069 is complete, but its behavior needs to be included in the narrow-screen experience.
@@ -34,3 +36,4 @@ Read ADR 0011. #1069 is already complete and should not be reopened by default; 
 - 2026-11-14T09:11:02Z · needs_input
 - 2026-11-14T09:11:47Z · depends_on, body: Desired UX (added); Acceptance criteria (added 5, removed 5); Notes for AI (added); Desired outcome (removed)
 - 2026-11-14T09:22:40Z · needs_input
+- 2026-11-14T16:03:44Z · cli_override, model_override
