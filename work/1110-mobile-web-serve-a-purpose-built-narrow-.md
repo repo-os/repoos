@@ -2,7 +2,7 @@
 id: "1110"
 title: "Mobile web: serve a purpose-built narrow-screen UI instead of the stretched desktop layout (ADR and first slices)"
 type: feature
-status: active
+status: review
 human_step_decision: agent
 human_step_decision_key: 22f77011
 priority: p1
@@ -13,7 +13,7 @@ branch: feat/mobile-web-serve-a-purpose-built-narrow-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T09:06:53Z"
-updated_at: "2026-11-14T10:44:49Z"
+updated_at: "2026-11-14T10:45:42Z"
 review_passes: 1
 ---
 ## Problem
@@ -68,3 +68,4 @@ Read docs/mobile-ux-strategy.md, docs/mobile-architecture.md and docs/agent-ui-a
 - 2026-11-14T10:18:47Z · message_delivered: 1 message(s)
 - 2026-11-14T10:24:05Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: Handoff passed. Task #1110 is now in review, so no further work is needed in this turn. · stderr: Reading additional input from stdin... 2026-11-14T10:18:52.610480Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
 - 2026-11-14T10:44:49Z · note: handoff requested (cli)
+- 2026-11-14T10:45:42Z · status active→review
