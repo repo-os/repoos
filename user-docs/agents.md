@@ -375,9 +375,11 @@ The allowlist is stored in `repoos.toml` as `[[budget.allowlist]]` rows; see
 ## Agent failure messages
 
 When an agent run fails because its CLI is signed out, its model is unavailable,
-its usage limit is reached, or it cannot reach the service, RepoOS shows a short
-plain-language explanation and a suggested next step on the task. The original
-CLI output remains available behind a disclosure on the task and in the agent
-transcript for diagnosis. Signed-out and unavailable-model failures also create
-one board bell notice per agent; a later successful run clears that notice. The
-Agents page shows each agent's last-run result and its explanation.
+it is out of provider credit, a quota or rate limit was hit, or it cannot reach
+the service, RepoOS shows a short plain-language explanation and a suggested next
+step on the task. Other failures get a one-line summary with the full CLI output
+behind a **Raw CLI error** disclosure. Signed-out and unavailable-model failures
+also create one board bell notice per agent; a later successful run clears that
+notice. On the **Default agents** tab, the last-runs list shows configured roles
+and built-ins from the last 14 days; use **Show older and other runs** for stale
+rows, removed roles, and model-routing one-shots.

@@ -6,6 +6,10 @@ import { useConfigStore, type ModelListNotice } from "../stores/config";
 import { useDocsStore } from "../stores/docs";
 import { api, JSON_OPTS } from "../api";
 import { splitAgentFailureDetail } from "../../../core/agent-failure.js";
+import {
+  buildConfiguredAgentLastRunNames,
+  filterAgentLastRuns,
+} from "../../../core/agent-last-runs.js";
 import { copyToClipboard } from "../lib/clipboard";
 import type {
   Agent,
@@ -57,6 +61,15 @@ interface AgentLastRun {
   reason: string | null;
 }
 const agentLastRuns = ref<AgentLastRun[]>([]);
+const showAllAgentLastRuns = ref(false);
+const BUILTIN_LAST_RUN_AGENT_IDS = [
+  "debugger",
+  "tech-debt",
+  "performance",
+  "architect",
+  "design",
+  "docs-debt",
+];
 async function loadAgentLastRuns(): Promise<void> {
   try {
     const result = await api<{ agents: AgentLastRun[] }>("/api/agents/last-runs");
@@ -64,6 +77,37 @@ async function loadAgentLastRuns(): Promise<void> {
   } catch {
     agentLastRuns.value = [];
   }
+}
+const configuredLastRunAgentNames = computed(() => {
+  const roleNames = localAgents.value.map((a) => a.name);
+  const builtIn = config.data?.builtInAgents;
+  const configuredBuiltIns =
+    builtIn && typeof builtIn === "object"
+      ? Object.keys(builtIn as Record<string, unknown>)
+      : BUILTIN_LAST_RUN_AGENT_IDS;
+  return buildConfiguredAgentLastRunNames(roleNames, configuredBuiltIns);
+});
+const agentLastRunsHiddenCount = computed(
+  () =>
+    filterAgentLastRuns(
+      agentLastRuns.value,
+      configuredLastRunAgentNames.value,
+      Date.now(),
+      false,
+    ).hiddenCount,
+);
+const filteredAgentLastRuns = computed(() => {
+  const { visible, hiddenCount } = filterAgentLastRuns(
+    agentLastRuns.value,
+    configuredLastRunAgentNames.value,
+    Date.now(),
+    showAllAgentLastRuns.value,
+  );
+  return { visible, hiddenCount };
+});
+function lastRunFailureParts(reason: string | null): { summary: string; raw: string | null } {
+  if (!reason) return { summary: "", raw: null };
+  return splitAgentFailureDetail(reason);
 }
 function lastRunStatusLabel(status: string): string {
   if (status === "errored") return "Failed";
@@ -814,9 +858,13 @@ onUnmounted(() => {
             Headless task-engine roles that run the roadmap. Toggle them on or off and pick their
             coding agent and model.
           </div>
-          <div v-if="agentLastRuns.length" class="agents-last-runs" data-testid="agents-last-runs">
+          <div
+            v-if="filteredAgentLastRuns.visible.length || filteredAgentLastRuns.hiddenCount"
+            class="agents-last-runs"
+            data-testid="agents-last-runs"
+          >
             <div
-              v-for="run in agentLastRuns"
+              v-for="run in filteredAgentLastRuns.visible"
               :key="run.name"
               class="agents-last-run"
               :data-status="run.status"
@@ -827,16 +875,34 @@ onUnmounted(() => {
                 {{ new Date(run.at).toLocaleString() }}</span
               >
               <span v-if="run.reason" class="agents-last-run-reason">{{
-                splitAgentFailureDetail(run.reason).summary
+                lastRunFailureParts(run.reason).summary
               }}</span>
               <details
-                v-if="run.reason && splitAgentFailureDetail(run.reason).raw"
+                v-if="run.reason && lastRunFailureParts(run.reason).raw"
                 class="agent-failure-raw"
               >
                 <summary>Raw CLI error</summary>
-                <pre>{{ splitAgentFailureDetail(run.reason).raw }}</pre>
+                <pre>{{ lastRunFailureParts(run.reason).raw }}</pre>
               </details>
             </div>
+            <button
+              v-if="agentLastRunsHiddenCount && !showAllAgentLastRuns"
+              type="button"
+              class="agents-last-runs-toggle"
+              data-testid="agents-last-runs-toggle"
+              @click="showAllAgentLastRuns = true"
+            >
+              Show older and other runs ({{ agentLastRunsHiddenCount }})
+            </button>
+            <button
+              v-else-if="showAllAgentLastRuns && agentLastRunsHiddenCount"
+              type="button"
+              class="agents-last-runs-toggle"
+              data-testid="agents-last-runs-toggle"
+              @click="showAllAgentLastRuns = false"
+            >
+              Show recent default agents only
+            </button>
           </div>
           <AgentCard
             v-for="a in sortedHeadlessAgents"
@@ -1279,6 +1345,20 @@ onUnmounted(() => {
 }
 .agents-last-run-reason {
   flex-basis: 100%;
+  color: var(--text);
+}
+.agents-last-runs-toggle {
+  justify-self: start;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--link, var(--cyan));
+  font-size: 12px;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.agents-last-runs-toggle:hover {
   color: var(--text);
 }
 </style>
