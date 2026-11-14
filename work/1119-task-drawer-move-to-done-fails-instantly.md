@@ -3,9 +3,6 @@ id: "1119"
 title: "Task drawer Move to done fails instantly: click event is sent as the land-anyway reason"
 type: feature
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "engineer keeps crashing (4 in 30m): a human-set task override (codex + gpt-6-luna) is pinned, so RepoOS did not replace it. Review the crash detail and either fix the environment, change the override, or resume manually. If the conversation itself is poisoned (it repeats the same failure), reset it with `repoos start 1119 --fresh`."
 priority: p1
 area: web
 assigned_to: ai
@@ -57,3 +54,4 @@ Related: #1081 (introduced the reason parameter) and the audit that missed this.
 - 2026-11-14T16:58:57Z · agent exited with an error (codex) · Reading additional input from stdin...
 - 2026-11-14T16:58:57Z · engineer crash recovery: surfaced instead of switching — a human-set task override (codex + gpt-6-luna) is pinned, so RepoOS did not replace it (4/3 crashes in 30m)
 - 2026-11-14T17:04:01Z · cli_override, model_override
+- 2026-11-14T17:04:01Z · needs_input
