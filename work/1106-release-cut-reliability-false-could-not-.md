@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-14T07:12:11Z"
+review_passes: 1
 id: "1106"
 title: "Release cut reliability: false 'Could not push main' failure, remote-host git errors, and test time bombs"
 type: feature
@@ -11,7 +13,6 @@ branch: feat/release-cut-reliability-false-could-not-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T05:18:12Z"
-updated_at: "2026-11-14T07:12:11Z"
 ---
 ## Problem
 Cutting v0.5.83 (2026-11-14) took six attempts. Four distinct causes, all in the release path:
@@ -52,3 +53,4 @@ Start from src/server/release.ts (`cutNewRelease`, phases `pushing_main`, `check
 - 2026-11-14T06:01:40Z · needs_input
 - 2026-11-14T07:10:06Z · needs_input (review-failed) cleared for review again by human
 - 2026-11-14T07:12:11Z · note: review pass 2: needs some work
+
