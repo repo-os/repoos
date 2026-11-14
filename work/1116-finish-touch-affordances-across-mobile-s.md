@@ -12,7 +12,7 @@ branch: feat/finish-touch-affordances-across-mobile-s
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T09:11:01Z"
-updated_at: "2026-11-14T16:27:54Z"
+updated_at: "2026-11-14T16:28:52Z"
 ---
 ## Problem
 Some existing surfaces still depend on hover or small pointer controls. The last-activity popover work in #1069 is complete, but its behavior needs to be included in the narrow-screen experience.
@@ -37,35 +37,35 @@ On screens below 720px the floating heads (Ross, CTO, Debugger) must not reserve
 ```json
 [
 {
-  "label": "Phone More sheet with agent actions when heads are hidden",
-  "target": "default",
-  "route": "/work",
-  "highlight": ".mobile-more-sheet",
-  "steps": [
-    {
-      "click": ".tab[aria-haspopup=\"dialog\"]"
-    }
-  ],
-  "viewportWidth": 390
+"label": "Phone More sheet with agent actions when heads are hidden",
+"target": "default",
+"route": "/work",
+"highlight": ".mobile-more-sheet",
+"steps": [
+  {
+    "click": ".tab[aria-haspopup=\"dialog\"]"
+  }
+],
+"viewportWidth": 390
 },
 {
-  "label": "Phone Settings with floating heads preference",
-  "target": "default",
-  "route": "/settings",
-  "highlight": "[data-test-id=\"floating-heads-setting\"]",
-  "viewportWidth": 390
+"label": "Phone Settings with floating heads preference",
+"target": "default",
+"route": "/settings",
+"highlight": "[data-test-id=\"floating-heads-setting\"]",
+"viewportWidth": 390
 },
 {
-  "label": "Phone floating heads shown after enabling preference",
-  "target": "default",
-  "route": "/settings",
-  "highlight": ".floating-heads",
-  "steps": [
-    {
-      "click": "[data-test-id=\"floating-heads-setting\"] button"
-    }
-  ],
-  "viewportWidth": 390
+"label": "Phone floating heads shown after enabling preference",
+"target": "default",
+"route": "/settings",
+"highlight": ".floating-heads",
+"steps": [
+  {
+    "click": "[data-test-id=\"floating-heads-setting\"] button"
+  }
+],
+"viewportWidth": 390
 }
 ]
 ```
@@ -88,3 +88,4 @@ On screens below 720px the floating heads (Ross, CTO, Debugger) must not reserve
 - 2026-11-14T16:23:54Z · note: adopted orphaned engineer pid 34168
 - 2026-11-14T16:26:55Z · body
 - 2026-11-14T16:27:54Z · body
+- 2026-11-14T16:28:52Z · CTO nudge: held — handoff gate is running
