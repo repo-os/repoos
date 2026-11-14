@@ -56,3 +56,4 @@ Related: #1081 (introduced the reason parameter) and the audit that missed this.
 - 2026-11-14T17:04:01Z · cli_override, model_override
 - 2026-11-14T17:04:01Z · needs_input
 - 2026-11-14T17:13:53Z · message_queued at 2026-11-14T17:13:53.084Z
+- 2026-11-14T17:13:53Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
