@@ -2,7 +2,7 @@
 id: "1104"
 title: "Restart notice: unsupervised servers get a copy-command button, and it ignores an in-flight release bump"
 type: feature
-status: active
+status: review
 priority: p3
 area: [web, server]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/restart-notice-unsupervised-servers-get-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T02:26:21Z"
-updated_at: "2026-11-14T03:28:52Z"
+updated_at: "2026-11-14T03:54:50Z"
 ---
 ## Problem
 Two rough edges in the "RepoOS vX is installed" restart notice (#1075, `ReleaseUpdateNotification.vue`):
@@ -42,3 +42,4 @@ Decision (Nick): the restart notice becomes a real dialog built on the shared di
 - 2026-11-14T03:28:39Z · cli_override, model_override
 - 2026-11-14T03:28:50Z · status inbox→ready
 - 2026-11-14T03:28:52Z · status ready→active, branch
+- 2026-11-14T03:54:50Z · status active→review
