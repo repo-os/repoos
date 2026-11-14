@@ -11,7 +11,7 @@ branch: feat/task-drawer-move-to-done-fails-instantly
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-14T16:14:26Z"
-updated_at: "2026-11-14T18:02:24Z"
+updated_at: "2026-11-14T18:02:25Z"
 handoff_signal_retry_count: 2
 dev_error_count: 4
 deferred_handoff_resume_count: 1
@@ -94,3 +94,4 @@ Related: #1081 (introduced the reason parameter) and the audit that missed this.
 - 2026-11-14T17:57:11Z · ↻ resuming engineer to read queued message
 - 2026-11-14T17:57:11Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: Implementation is complete on the branch; a remote scoped check is still running (~54/256 tests). Requesting handoff so RepoOS can finish verification and commit. · stderr: Reading additional input from stdin... 2026-11-14T16:48:38.150688Z ERROR codex_core::tools::router: error=Exit code: 1 Wall time: 0 seconds Output: Failed to write file /Users/nick/code/nick/repoos-worktrees/feat/task-drawer-move-to-done-fails-instantly/src/ui-app/tests/task-drawer-landable.test.ts Reading additional …
 - 2026-11-14T18:02:24Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-11-14T18:02:25Z · note: handoff requested (cli)
