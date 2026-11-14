@@ -12,7 +12,7 @@ branch: feat/finish-touch-affordances-across-mobile-s
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T09:11:01Z"
-updated_at: "2026-11-14T16:21:39Z"
+updated_at: "2026-11-14T16:22:17Z"
 ---
 ## Problem
 Some existing surfaces still depend on hover or small pointer controls. The last-activity popover work in #1069 is complete, but its behavior needs to be included in the narrow-screen experience.
@@ -43,7 +43,7 @@ On screens below 720px the floating heads (Ross, CTO, Debugger) must not reserve
 "highlight": ".mobile-more-sheet",
 "steps": [
 {
-  "click": ".tab[aria-haspopup=\"dialog\"]"
+"click": ".tab[aria-haspopup=\"dialog\"]"
 }
 ]
 },
@@ -60,7 +60,7 @@ On screens below 720px the floating heads (Ross, CTO, Debugger) must not reserve
 "highlight": ".floating-heads",
 "steps": [
 {
-  "click": "[data-test-id=\"floating-heads-setting\"] button"
+"click": "[data-test-id=\"floating-heads-setting\"] button"
 }
 ]
 }
@@ -80,3 +80,4 @@ On screens below 720px the floating heads (Ross, CTO, Debugger) must not reserve
 - 2026-11-14T16:17:56Z · body
 - 2026-11-14T16:18:09Z · body
 - 2026-11-14T16:21:39Z · body
+- 2026-11-14T16:22:17Z · note: adopted orphaned engineer pid 34168
