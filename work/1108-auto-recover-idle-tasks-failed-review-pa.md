@@ -11,7 +11,7 @@ branch: feat/auto-recover-idle-tasks-failed-review-pa
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T08:27:35Z"
-updated_at: "2026-11-14T12:10:39Z"
+updated_at: "2026-11-14T12:11:30Z"
 review_rounds: 1
 review_passes: 1
 handoff_signal_retry_count: 1
@@ -84,3 +84,4 @@ Start from src/server/task-watchdog.ts and the review pipeline in src/server/age
 - 2026-11-14T12:10:38Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
 - 2026-11-14T12:10:39Z · status active→review
 - 2026-11-14T12:10:39Z · message_queued at 2026-11-14T12:10:39.629Z
+- 2026-11-14T12:11:30Z · note: review pass 2: good to go
