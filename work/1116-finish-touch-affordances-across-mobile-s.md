@@ -12,7 +12,7 @@ branch: feat/finish-touch-affordances-across-mobile-s
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-14T09:11:01Z"
-updated_at: "2026-11-14T17:24:45Z"
+updated_at: "2026-11-14T17:24:47Z"
 review_rounds: 1
 review_passes: 1
 dev_error_count: 5
@@ -139,3 +139,4 @@ On screens below 720px the floating heads (Ross, CTO, Debugger) must not reserve
 - 2026-11-14T17:24:44Z · note: review pass 1: needs some work
 - 2026-11-14T17:24:44Z · message_delivered: 1 message(s)
 - 2026-11-14T17:24:45Z · status review→active
+- 2026-11-14T17:24:47Z · CTO nudge: held — remote validation is running
