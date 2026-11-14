@@ -62,3 +62,4 @@ Read docs/debugging-check-failures.md and the [[check.steps]] plan in repoos.tom
 - 2026-11-14T15:40:48Z · body
 - 2026-11-14T15:43:21Z · status active→review
 - 2026-11-14T15:43:21Z · note: shots: skipped — the diff (7 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-11-14T15:43:50Z · message_queued at 2026-11-14T15:43:50.930Z
