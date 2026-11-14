@@ -881,6 +881,33 @@ describe("captureShotPage highlight (#0603)", () => {
     expect(page.__screenshots).toEqual([0]);
   });
 
+  it("screenshots the first match when a selector resolves to multiple elements (#1120)", async () => {
+    const page = fakePage({ matches: 0 });
+    let cropped = false;
+    page.locator = () => {
+      const root = {
+        count: async () => 2,
+        screenshot: async () => {
+          cropped = true;
+          return Buffer.from("crop");
+        },
+        first() {
+          return root;
+        },
+      };
+      return root as unknown as ReturnType<ShotDriverPage["locator"]>;
+    };
+    const png = await captureShotPage(
+      page,
+      "http://x/",
+      { selector: "#app", route: "/" },
+      { waitMs: 0, fullPage: false },
+    );
+    expect(cropped).toBe(true);
+    expect(png).toEqual(Buffer.from("crop"));
+    expect(page.__screenshots).toEqual([]);
+  });
+
   it("still captures when the draw script throws (best-effort, #0603)", async () => {
     const page = fakePage({ matches: 0 });
     (page as unknown as { evaluate: () => Promise<void> }).evaluate = async () => {

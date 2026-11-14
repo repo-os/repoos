@@ -162,7 +162,7 @@ async function onLockScope(scope: "reopen" | "server") {
 </script>
 
 <template>
-  <div class="shell" :class="`platform-${platform}`">
+  <div class="shell" data-repoos-hub-shell :class="`platform-${platform}`">
     <header v-if="route === 'picker'" class="topbar">
       <div class="brand">
         <HubLogo />
