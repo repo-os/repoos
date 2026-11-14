@@ -31,7 +31,7 @@ describe("mobile touch affordances", () => {
       /@media \(max-width: 719\.98px\)[\s\S]*?\.main\s*\{[^}]*padding-inline-end:\s*16px/s,
     );
     expect(statusBar).toMatch(
-      /@media \(max-width: 760px\)[\s\S]*?\.ibar-wrap\s*\{[^}]*right:\s*12px/s,
+      /@media \(max-width: 719\.98px\)[\s\S]*?\.ibar-wrap\s*\{[^}]*right:\s*12px/s,
     );
     expect(css).toMatch(/--page-bottom-inset:\s*calc\(var\(--floating-head-stack-height\)/);
   });

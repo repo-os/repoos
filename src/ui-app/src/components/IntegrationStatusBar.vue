@@ -1180,7 +1180,7 @@ async function fileSetupTask(): Promise<void> {
    so the CTO/Ross buttons stay visible and tappable on top of it. The bar
    no longer touches the viewport edge, so give it a card look rather than
    the dock's top-border/upward-shadow treatment. */
-@media (max-width: 760px) {
+@media (max-width: 719.98px) {
   .ibar-wrap {
     /* Float over the content; mobile pages use the full available width. */
     right: 12px;
@@ -1198,7 +1198,7 @@ async function fileSetupTask(): Promise<void> {
 
 /* Desktop: float the bar as a content-sized, rounded panel near the bottom
    of the viewport instead of a full-bleed dock. */
-@media (min-width: 761px) {
+@media (min-width: 720px) {
   .ibar-wrap {
     left: 50%;
     right: auto;
