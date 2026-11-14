@@ -78,3 +78,4 @@ Read ADR 0011 and reuse existing Settings tabs, config schema and shared dialog/
 - 2026-11-14T15:01:50Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-14T15:03:41Z · watchdog: restarting engineer because a queued message waited 3m with no live process
 - 2026-11-14T15:03:42Z · message_delivered: 1 message(s)
+- 2026-11-14T15:04:03Z · note: handoff requested (cli)
