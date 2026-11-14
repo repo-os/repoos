@@ -18,7 +18,7 @@ model_override: gpt-6-luna
 created_at: "2026-11-14T16:53:29Z"
 updated_at: "2026-11-14T16:53:58Z"
 dev_error_count: 2
-engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-14T16:53:55.155Z\",\"kind\":\"dev-error\"}]"
+engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-14T16:53:55.155Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-14T16:53:58.914Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 The RepoOS Hub Capacitor shell (mobile/, iOS and Android) is bare bones. Nick's current Android build (screenshot attached) shows a single dark theme, a "Device lock" panel pushed inline above the server list, text-arrow reorder buttons and a pencil glyph that look like web controls, flat unstyled server cards, and a plain "+ Add server" button. It has no color themes and no light mode, and the icons are not the set used by the web app. The device lock and any future preferences have nowhere proper to live. (The screenshot also shows the old "RepoOS" title, so it is a build from before the September "RepoOS Hub" rename.)
@@ -55,3 +55,4 @@ Read docs/mobile-architecture.md, docs/adr/0011-mobile-web-ui.md (the native she
 - 2026-11-14T16:53:51Z · needs_input
 - 2026-11-14T16:53:55Z · agent exited with an error (codex) · Reading additional input from stdin...
 - 2026-11-14T16:53:55Z · engineer crash recovery: resuming codex + gpt-6-luna (1/3 crashes in 30m) · Reading additional input from stdin...
+- 2026-11-14T16:53:58Z · engineer crash recovery: resuming codex + gpt-6-luna (2/3 crashes in 30m) · Reading additional input from stdin...
