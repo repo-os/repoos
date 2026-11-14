@@ -11,7 +11,7 @@ branch: feat/hub-app-one-command-build-install-and-la
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-14T17:35:18Z"
-updated_at: "2026-11-14T17:57:10Z"
+updated_at: "2026-11-14T17:59:09Z"
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -45,3 +45,4 @@ Related: #1120 (Hub app redesign, runs in parallel, touches mobile/src only) and
 - 2026-11-14T17:48:53Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-14T17:53:57Z · message_queued at 2026-11-14T17:53:57.407Z
 - 2026-11-14T17:57:10Z · message_delivered: 1 message(s)
+- 2026-11-14T17:59:09Z · queued message undelivered for 5m and the engineer produced no output — ending the turn so it is delivered
