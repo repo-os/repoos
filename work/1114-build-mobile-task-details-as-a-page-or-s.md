@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-11-14T15:59:41Z"
-review_passes: 2
+last_close_out_gate_ms: 134477
+last_close_out_gate_at: "2026-11-14T16:12:58.179Z"
 id: "1114"
 title: Build mobile task details as a page or sheet
 type: feature
@@ -14,6 +14,8 @@ branch: feat/build-mobile-task-details-as-a-page-or-s
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T09:10:53Z"
+updated_at: "2026-11-14T16:12:58Z"
+review_passes: 2
 review_rounds: 1
 last_check_failure: "repoos check at 2026-11-14T15:45:05.215Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Mobile task detail page (target \"default\"): highlight [data-testid=\"mobile-task-detail\"] matched nothing on /work?task=9999 (http://127.0.0.1:34333/work?shotState=card:noChanges)"
 ---
@@ -103,4 +105,5 @@ Read ADR 0011 and coordinate with #1113's route and queue state. Follow shared d
 - 2026-11-14T15:58:44Z · status active→review
 - 2026-11-14T15:58:44Z · message_queued at 2026-11-14T15:58:44.123Z
 - 2026-11-14T15:59:41Z · note: review pass 2: good to go
+- 2026-11-14T16:12:58Z · close-out gate completed in 134s
 
