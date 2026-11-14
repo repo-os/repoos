@@ -4,6 +4,8 @@ import { onMounted, onUnmounted, readonly, ref } from "vue";
 export function useResponsiveLayout() {
   const isNarrow = ref(false);
   let query: MediaQueryList | undefined;
+  let listeningForResize = false;
+  let listeningForLegacyChange = false;
 
   const sync = (): void => {
     isNarrow.value = query?.matches ?? window.innerWidth < 720;
@@ -18,8 +20,15 @@ export function useResponsiveLayout() {
       sync();
       if (typeof query.addEventListener === "function") {
         query.addEventListener("change", sync);
+      } else if (typeof query.addListener === "function") {
+        // Older WebViews may expose the legacy MediaQueryList listener API.
+        query.addListener(sync);
+        listeningForLegacyChange = true;
       } else {
-        query.addListener?.(sync);
+        // Lightweight test doubles may omit both MediaQueryList APIs.
+        onResize();
+        window.addEventListener("resize", onResize);
+        listeningForResize = true;
       }
     } else {
       onResize();
@@ -27,12 +36,11 @@ export function useResponsiveLayout() {
     }
   });
   onUnmounted(() => {
-    if (query && typeof query.removeEventListener === "function") {
+    if (typeof query?.removeEventListener === "function") {
       query.removeEventListener("change", sync);
-    } else {
-      query?.removeListener?.(sync);
     }
-    window.removeEventListener("resize", onResize);
+    if (listeningForLegacyChange) query?.removeListener?.(sync);
+    if (listeningForResize || !query) window.removeEventListener("resize", onResize);
   });
 
   return { isNarrow: readonly(isNarrow) };

@@ -1,13 +1,12 @@
 ---
-last_close_out_gate_ms: 230842
-last_close_out_gate_at: "2026-11-14T15:29:36.759Z"
 id: "1115"
 title: Build a mobile Settings composition
 type: feature
-status: review
+status: done
 priority: p1
 area: web
 depends_on: ["1112"]
+merged_commit: c54457c8aa73fddf99ff504a36b7cbcc66df3503
 assigned_to: ai
 created_by: t@t
 branch: feat/build-a-mobile-settings-composition
@@ -15,6 +14,8 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T09:10:57Z"
 updated_at: "2026-11-14T15:29:36Z"
+last_close_out_gate_ms: 230842
+last_close_out_gate_at: "2026-11-14T15:29:36.759Z"
 review_passes: 2
 close_out_repair_count: 1
 last_check_failure: "repoos check at 2026-11-14T13:38:26.548Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Mobile Settings section navigation (target \"default\"): highlight .settings-mobile-nav matched nothing on /settings?tab=general (http://127.0.0.1:33599/settings?tab=general)"
