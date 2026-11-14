@@ -12,7 +12,7 @@ branch: feat/release-cut-reliability-false-could-not-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T05:18:12Z"
-updated_at: "2026-11-14T07:40:24Z"
+updated_at: "2026-11-14T07:54:00Z"
 last_close_out_gate_ms: 930754
 last_close_out_gate_at: "2026-11-14T07:40:09.760Z"
 review_passes: 2
@@ -68,3 +68,4 @@ Start from src/server/release.ts (`cutNewRelease`, phases `pushing_main`, `check
 - 2026-11-14T07:22:35Z · note: review pass 3: good to go
 - 2026-11-14T07:40:09Z · close-out gate completed in 931s
 - 2026-11-14T07:40:24Z · status done→done, release:success
+- 2026-11-14T07:54:00Z · message_dropped: 1 queued message(s) discarded — task is done
