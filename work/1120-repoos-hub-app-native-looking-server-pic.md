@@ -15,7 +15,7 @@ branch: feat/repoos-hub-app-native-looking-server-pic
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-14T16:53:29Z"
-updated_at: "2026-11-14T18:42:44Z"
+updated_at: "2026-11-14T18:48:53Z"
 dev_error_count: 3
 engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-14T16:53:55.155Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-14T16:53:58.914Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-14T16:54:02.450Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -90,3 +90,4 @@ Read docs/mobile-architecture.md, docs/adr/0011-mobile-web-ui.md (the native she
 - 2026-11-14T17:24:04Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-14T18:31:00Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-14T18:42:44Z · body
+- 2026-11-14T18:48:53Z · CTO nudge: held — handoff gate is running
