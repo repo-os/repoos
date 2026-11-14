@@ -11,7 +11,7 @@ branch: feat/hub-app-one-command-build-install-and-la
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-14T17:35:18Z"
-updated_at: "2026-11-14T18:08:49Z"
+updated_at: "2026-11-14T18:10:54Z"
 handoff_signal_retry_count: 2
 ---
 ## Problem
@@ -50,3 +50,4 @@ Related: #1120 (Hub app redesign, runs in parallel, touches mobile/src only) and
 - 2026-11-14T18:01:04Z · message_queued at 2026-11-14T18:01:04.853Z
 - 2026-11-14T18:06:12Z · message_queued at 2026-11-14T18:06:12.460Z
 - 2026-11-14T18:08:49Z · message_delivered: 1 message(s)
+- 2026-11-14T18:10:54Z · queued message undelivered for 10m and the engineer produced no output — ending the turn so it is delivered
