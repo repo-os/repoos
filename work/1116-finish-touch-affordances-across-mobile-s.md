@@ -133,3 +133,4 @@ On screens below 720px the floating heads (Ross, CTO, Debugger) must not reserve
 - 2026-11-14T17:23:52Z · CTO nudge: held — handoff gate is running
 - 2026-11-14T17:24:01Z · note: ui verification passed: 3 of 3 shots captured with clean console
 - 2026-11-14T17:24:02Z · status active→review
+- 2026-11-14T17:24:02Z · message_queued at 2026-11-14T17:24:02.187Z
