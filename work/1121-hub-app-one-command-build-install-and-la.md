@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-14T19:24:48Z"
+review_passes: 1
 id: "1121"
 title: "Hub app: one-command build, install and launch on Nick's Android phone over Tailscale adb"
 type: feature
@@ -11,7 +13,6 @@ branch: feat/hub-app-one-command-build-install-and-la
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-14T17:35:18Z"
-updated_at: "2026-11-14T19:24:48Z"
 last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
 last_handoff_failure_sha: 486a057eb2d4ee42c9a23a32d7016f707c45e2f7
 handoff_signal_retry_count: 2
@@ -68,3 +69,4 @@ Related: #1120 (Hub app redesign, runs in parallel, touches mobile/src only) and
 - 2026-11-14T19:16:46Z · note: shots: skipped — the diff (12 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-14T19:19:54Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
 - 2026-11-14T19:24:48Z · note: review pass 1: good to go
+
