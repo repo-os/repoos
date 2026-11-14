@@ -5,6 +5,19 @@ pipeline from `release-history.json`; the newest entry is also the GitHub
 release body. The full discussion of each change lives in the release notes
 and on GitHub.
 
+## [v0.5.83] - 2026-11-14
+
+- **Reviews converge on their own.** The reviewer now ends each bug list with a single "no further findings of this class" line, leftover non-blocking suggestions can be filed as a follow-up task in one click, the review panel shows "round N of ~4" with a per-task convergence history, and you can land a task anyway with a recorded reason when its checks pass (#1081). A review that says "None found" and then explains its checks no longer counts as listing blocking bugs (#1097).
+- **You can see why an agent failed.** Expired sign-in, an unavailable model or a missing CLI now shows a plain-language reason on the task card and in a notification, with the raw CLI error one click away (#1098). The default Copilot model no longer fails, and tier errors are explained (#1088).
+- **Release emails.** Any project with email configured can email its team when a release is published, with richer templates, a send-to-self test and a `repoos release email --preview <version>` command (#1071, #1094, #1093, #1092).
+- **Upgrades are easier to notice and apply.** The CLI and dashboard tell you when a newer RepoOS release exists (#1072), say when an installed upgrade is waiting for a restart and offer Restart now (#1075), and `repoos restart` restarts the server whether hand-run, supervised or a managed service (#1091).
+- **The server is harder to knock over.** An EPERM from `kill()` no longer crashes the server (#1079), remote validation lock waiters time out instead of leaking (#1099), the Linux service install keeps PATH so agent CLIs launch (#1100), and Docker/ssh failure handling on remote capture is more complete (#1068).
+- **Guardrails for landing.** WIP checkpoints and branch diffs refuse huge or build-output files (#1096), source changes committed then reverted during a check are caught (#1077), and human-assigned tasks require a step-by-step guide (#1074).
+- **Smaller fixes.** Drawer status cards show one at a time with fixed spacing (#1084), the Releases page no longer blames an unrelated failed workflow (#1090), a release in progress shows the activity animation (#1089), the card last-activity popover works on touch (#1069), per-view skeletons use the show-delay gate (#1078), the handoff waiting label shows in the drawer (#1087), and `isPreviewProcess` is stricter about orphaned custom commands (#0363).
+- **Flaky tests fixed.** The jsdom "Element is not defined" teardown failure (#1102) and a remote-host-pool queue test that failed under load (#1101) no longer fail unrelated tasks' checks.
+
+[Release on GitHub](https://github.com/repo-os/repoos/releases/tag/v0.5.83)
+
 ## [v0.5.82] - 2026-11-11
 
 ## Highlights
