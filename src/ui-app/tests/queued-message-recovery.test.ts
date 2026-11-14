@@ -86,6 +86,8 @@ describe("queued-message recovery (#1015)", () => {
     ["paused task", { paused: true }],
     ["human-owned task", { running: false }],
   ])("does not recover a %s", (_label, override) => {
-    expect(decideQueuedMessageRecovery({ ...healthy, ...override })).not.toMatchObject({ recover: true });
+    expect(decideQueuedMessageRecovery({ ...healthy, ...override })).not.toMatchObject({
+      recover: true,
+    });
   });
 });

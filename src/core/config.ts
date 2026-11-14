@@ -2020,7 +2020,11 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
       cfg.watchdog = { ...cfg.watchdog, enabled: watchdogEnabled };
     }
     const queuedMessageRecoverMs = parsed["watchdog.queuedMessageRecoverMs"];
-    if (typeof queuedMessageRecoverMs === "number" && Number.isFinite(queuedMessageRecoverMs) && queuedMessageRecoverMs >= 60_000) {
+    if (
+      typeof queuedMessageRecoverMs === "number" &&
+      Number.isFinite(queuedMessageRecoverMs) &&
+      queuedMessageRecoverMs >= 60_000
+    ) {
       cfg.watchdog = { ...cfg.watchdog, queuedMessageRecoverMs: queuedMessageRecoverMs };
     }
     const watchdogStaleness = parsed["watchdog.stalenessMs"];
@@ -2645,7 +2649,11 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
       review.timeoutMinutes = Math.min(240, Math.floor(reviewTimeout));
       reviewConfigured = true;
     }
-    if (failedReportRetries !== undefined && Number.isFinite(failedReportRetries) && failedReportRetries >= 0) {
+    if (
+      failedReportRetries !== undefined &&
+      Number.isFinite(failedReportRetries) &&
+      failedReportRetries >= 0
+    ) {
       review.failedReportRetries = Math.min(5, Math.floor(failedReportRetries));
       reviewConfigured = true;
     }
@@ -3144,7 +3152,8 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       default: DEFAULT_CONFIG.watchdog!.queuedMessageRecoverMs!,
       min: 60000,
       step: 60000,
-      description: "Minutes a queued engineer message may wait before RepoOS ends a silent engineer turn so the message is delivered. Default 3 minutes.",
+      description:
+        "Minutes a queued engineer message may wait before RepoOS ends a silent engineer turn so the message is delivered. Default 3 minutes.",
     },
     {
       key: "watchdog.engineerCrashFailoverThreshold",
@@ -3591,7 +3600,8 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       min: 0,
       max: 5,
       step: 1,
-      description: "Automatic retries when the reviewer exits without a usable report. After the limit, the task needs human input. Default 2.",
+      description:
+        "Automatic retries when the reviewer exits without a usable report. After the limit, the task needs human input. Default 2.",
     },
     {
       key: "maxConcurrentAgents",

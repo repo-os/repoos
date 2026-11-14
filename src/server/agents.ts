@@ -7657,7 +7657,10 @@ export class AgentRunner {
    * Returns true when the turn was ended. All the guards live in
    * {@link decideQueuedMessageRecovery}; the caller need not pre-filter.
    */
-  async recoverSilentEngineerWithQueuedMessage(taskId: string, thresholdMs?: number): Promise<boolean> {
+  async recoverSilentEngineerWithQueuedMessage(
+    taskId: string,
+    thresholdMs?: number,
+  ): Promise<boolean> {
     const entry = this.entries.get(taskId);
     if (!entry) return false;
     const state = await this.engineerProcessState(taskId);

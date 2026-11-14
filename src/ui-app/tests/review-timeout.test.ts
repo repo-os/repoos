@@ -61,7 +61,11 @@ describe("review timeout config (#1019)", () => {
     });
     expect(SUPPORTED_TOML_KEYS).toContain("review.timeoutMinutes");
     expect(getConfigSchema().find((f) => f.key === "review.failedReportRetries")).toMatchObject({
-      type: "number", tier: "live", default: 2, min: 0, max: 5,
+      type: "number",
+      tier: "live",
+      default: 2,
+      min: 0,
+      max: 5,
     });
     expect(withToml("[review]\nfailedReportRetries = 3\n").review?.failedReportRetries).toBe(3);
     expect(SUPPORTED_TOML_KEYS).toContain("review.failedReportRetries");
