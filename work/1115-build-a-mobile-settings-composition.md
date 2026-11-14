@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-11-14T13:45:42Z"
-review_passes: 1
 id: "1115"
 title: Build a mobile Settings composition
 type: feature
-status: review
+status: active
 priority: p1
 area: web
 depends_on: ["1112"]
@@ -14,6 +12,8 @@ branch: feat/build-a-mobile-settings-composition
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T09:10:57Z"
+updated_at: "2026-11-14T14:52:16Z"
+review_passes: 1
 last_check_failure: "repoos check at 2026-11-14T13:38:26.548Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Mobile Settings section navigation (target \"default\"): highlight .settings-mobile-nav matched nothing on /settings?tab=general (http://127.0.0.1:33599/settings?tab=general)"
 ---
 ## Problem
@@ -66,4 +66,5 @@ Read ADR 0011 and reuse existing Settings tabs, config schema and shared dialog/
 - 2026-11-14T13:44:40Z · status active→review
 - 2026-11-14T13:44:40Z · message_queued at 2026-11-14T13:44:40.630Z
 - 2026-11-14T13:45:42Z · note: review pass 1: good to go
-
+- 2026-11-14T14:52:16Z · status review→active
+- 2026-11-14T14:52:16Z · note: close-out repair: merge-conflict
