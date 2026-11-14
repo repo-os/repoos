@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-14T05:01:25.504Z: repoos check failed: ui verification failed (4 issue(s)): [request] HTTP 404 for http://127.0.0.1:44283/api/tasks/9999/review/keep-check (http://127.0.0.1:44283/api/tasks/9999/review/keep-check); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:44283/api/tasks/9999/review/keep-check); [request] HTTP 404 for http://127.0.0.1:44283/api/tasks/9999/review/keep-check (http://127.0.0.1:44283/api/tasks/9999/review/keep-check); [request] Failed t… (truncated)"
 id: "1103"
 title: Keep review verdict after a take-main's-side merge-conflict fix
 type: feature
@@ -77,3 +79,4 @@ Start from the close-out failure card component and `repoos landable` review-loc
 - 2026-11-14T05:01:22Z · note: ui verification failed: ui verification failed (4 issue(s)): [request] HTTP 404 for http://127.0.0.1:44283/api/tasks/9999/review/keep-check (http://127.0.0.1:44283/api/tasks/9999/review/keep-check); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:44283/api/tasks/9999/review/keep-check); [request] HTTP 404 for http://127.0.0.1:44283/api/tasks/9999/review/keep-check (http://127.0.0.1:44283/api/tasks/9999/review/keep-check); [request] Faile
 - 2026-11-14T05:01:22Z · message_queued at 2026-11-14T05:01:22.444Z
 - 2026-11-14T05:01:25Z · message_delivered: 1 message(s)
+
