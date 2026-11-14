@@ -14,7 +14,6 @@ model_override: composer-2.5
 created_at: "2026-11-14T09:11:01Z"
 updated_at: "2026-11-14T17:21:21Z"
 dev_error_count: 5
-engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-14T16:48:44.625Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-14T16:48:47.710Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-14T16:48:50.937Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-14T16:51:57.676Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-14T17:02:13.291Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 Some existing surfaces still depend on hover or small pointer controls. The last-activity popover work in #1069 is complete, but its behavior needs to be included in the narrow-screen experience.
@@ -45,7 +44,7 @@ On screens below 720px the floating heads (Ross, CTO, Debugger) must not reserve
 "highlight": ".mobile-more-sheet",
 "steps": [
 {
-  "click": ".tab[aria-haspopup=\"dialog\"]"
+"click": ".tab[aria-haspopup=\"dialog\"]"
 }
 ],
 "viewportWidth": 390
@@ -64,19 +63,19 @@ On screens below 720px the floating heads (Ross, CTO, Debugger) must not reserve
 "highlight": ".floating-heads .stack",
 "steps": [
 {
-  "click": ".tabbar a.tab[href=\"/settings\"]"
+"click": ".tabbar a.tab[href=\"/settings\"]"
 },
 {
-  "waitFor": "[data-test-id=\"floating-heads-setting\"]"
+"waitFor": "[data-test-id=\"floating-heads-setting\"]"
 },
 {
-  "click": "[data-test-id=\"floating-heads-setting\"] [aria-label=\"Show floating agent buttons\"]"
+"click": "[data-test-id=\"floating-heads-setting\"] [aria-label=\"Show floating agent buttons\"]"
 },
 {
-  "click": ".tabbar a.tab[href=\"/work\"]"
+"click": ".tabbar a.tab[href=\"/work\"]"
 },
 {
-  "waitMs": 300
+"waitMs": 300
 }
 ],
 "viewportWidth": 390
