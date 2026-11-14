@@ -3,9 +3,6 @@ id: "1114"
 title: Build mobile task details as a page or sheet
 type: feature
 status: inbox
-needs_input: true
-needs_input_reason: underspecified
-needs_input_detail: "missing sections: Desired UX, Notes for AI"
 priority: p1
 area: web
 depends_on: ["1113"]
@@ -13,7 +10,7 @@ assigned_to: ai
 created_by: t@t
 branch: ""
 created_at: "2026-11-14T09:10:53Z"
-updated_at: "2026-11-14T09:11:42Z"
+updated_at: "2026-11-14T09:22:35Z"
 ---
 ## Problem
 The desktop task drawer shares a narrow viewport with the Work board and its tabs/actions are cramped on phones.
@@ -36,3 +33,4 @@ Read ADR 0011 and coordinate with #1113's route and queue state. Follow shared d
 - 2026-11-14T09:10:53Z · created · t@t
 - 2026-11-14T09:10:55Z · needs_input
 - 2026-11-14T09:11:42Z · depends_on, body: Desired UX (added); Acceptance criteria (added 2, removed 2); Notes for AI (added); Desired outcome (removed)
+- 2026-11-14T09:22:35Z · needs_input
