@@ -181,3 +181,4 @@ Read docs/mobile-architecture.md, docs/adr/0011-mobile-web-ui.md (the native she
 - 2026-11-14T23:47:23Z · status review→active
 - 2026-11-14T23:49:33Z · body
 - 2026-11-14T23:58:53Z · message_queued at 2026-11-14T23:58:53.465Z
+- 2026-11-14T23:58:53Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
