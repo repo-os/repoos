@@ -628,9 +628,12 @@ This behavior is implemented in `src/commands/servers.ts` and covered by
 Keeps a completed review verdict when close-out was interrupted by a conflict
 that has since been resolved. RepoOS first checks that the reviewed tree and
 verdict are still current and that the conflict resolution did not change the
-reviewed result; it then continues through the normal close-out pipeline. It
-does not bypass checks or accept a stale verdict. The same guarded action is
-available as **Keep review verdict and merge** in the close-out error card.
+reviewed result, then refreshes the handoff snapshot and review lock. This
+command does not start close-out. After it succeeds, use `repoos done <id>` to
+start the normal close-out pipeline. It does not bypass checks or accept a stale
+verdict. The UI's **Keep review verdict and merge** action also starts
+close-out; the CLI command only keeps the verdict (`src/commands/control-api.ts`,
+`src/server/routes/tasks.ts`, and `src/ui-app/src/stores/repo.ts`).
 
 ### `repoos status [--json]`
 

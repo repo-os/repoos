@@ -96,11 +96,14 @@ landing failure. The guard is enforced in `src/server/routes/tasks.ts`.
 
 If close-out stopped on a merge conflict that you resolved without changing the
 reviewed result, the error card can offer **Keep review verdict and merge**.
-The guarded action verifies the verdict still applies to the current reviewed
-tree before continuing. From a terminal, use `repoos review keep <id>` for the
-same operation. It refuses stale or changed review evidence and does not skip
-the normal checks. The button and command are wired through
-`DoneErrorCard.vue`, `src/commands/control-api.ts`, and
+The guarded UI action verifies the verdict still applies to the current reviewed
+tree, then starts close-out. From a terminal, `repoos review keep <id>` performs
+only the guarded verdict keep: it refreshes the handoff snapshot and review
+lock, but does not start close-out. After it succeeds, run `repoos done <id>`
+to start the normal close-out pipeline. Both paths refuse stale or changed
+review evidence, and neither skips the normal checks. The UI sequence is
+implemented in `src/ui-app/src/stores/repo.ts`; the CLI request is in
+`src/commands/control-api.ts`, and the shared guard is in
 `src/server/routes/tasks.ts`.
 
 A second exception is **`EVIDENCE-GAP-ONLY`**: the code is acceptable but
