@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 1154664
-last_close_out_gate_at: "2026-11-14T08:51:33.112Z"
 id: "1107"
 title: "Flaky under load: check-skip-outcome (44s) and engineer-resources heavySlots fail full release checks"
 type: feature
-status: review
+status: done
 priority: p2
 area: [core, tests]
+merged_commit: 09b5007b62a4dca3d67cf1ec36b2e11488466d05
 assigned_to: ai
 created_by: t@t
 branch: feat/flaky-under-load-check-skip-outcome-44s-
@@ -14,6 +13,8 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T07:26:27Z"
 updated_at: "2026-11-14T08:51:33Z"
+last_close_out_gate_ms: 1154664
+last_close_out_gate_at: "2026-11-14T08:51:33.112Z"
 review_passes: 1
 ---
 ## Problem
