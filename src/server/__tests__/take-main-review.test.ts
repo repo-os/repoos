@@ -3,6 +3,9 @@ import { classifyTakeMainReviewMerge } from "../take-main-review.js";
 
 function gitFor(overrides: Record<string, { status: number; stdout: string }> = {}) {
   return {
+    async isAncestor(_cwd: string, ancestor: string, descendant: string) {
+      return overrides[`isAncestor ${ancestor} ${descendant}`]?.status === 0;
+    },
     async runGit(_cwd: string, args: string[]) {
       const key = args.join(" ");
       const result = overrides[key] ?? { status: 0, stdout: "" };
@@ -16,7 +19,7 @@ describe("classifyTakeMainReviewMerge", () => {
     const git = gitFor({
       "status --porcelain": { status: 0, stdout: "" },
       "rev-list --parents -n 1 head": { status: 0, stdout: "head reviewed main" },
-      "merge-base --is-ancestor reviewed reviewed": { status: 0, stdout: "" },
+      "isAncestor reviewed reviewed": { status: 0, stdout: "" },
       "diff --name-only -z reviewed head": { status: 0, stdout: "src/a.ts\0" },
       "rev-parse head:src/a.ts": { status: 0, stdout: "blob1\n" },
       "rev-parse main:src/a.ts": { status: 0, stdout: "blob1\n" },
@@ -29,7 +32,7 @@ describe("classifyTakeMainReviewMerge", () => {
     const git = gitFor({
       "status --porcelain": { status: 0, stdout: "" },
       "rev-list --parents -n 1 head": { status: 0, stdout: "head reviewed main" },
-      "merge-base --is-ancestor reviewed reviewed": { status: 0, stdout: "" },
+      "isAncestor reviewed reviewed": { status: 0, stdout: "" },
       "diff --name-only -z reviewed head": { status: 0, stdout: "src/a.ts\0" },
       "rev-parse head:src/a.ts": { status: 0, stdout: "branch blob\n" },
       "rev-parse main:src/a.ts": { status: 0, stdout: "main blob\n" },

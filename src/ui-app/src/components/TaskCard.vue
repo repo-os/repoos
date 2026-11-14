@@ -822,6 +822,14 @@ async function retryStalledPipeline(): Promise<void> {
   }
 }
 
+async function keepReviewAndMerge(): Promise<void> {
+  try {
+    await repo.keepReviewAndMerge(props.task);
+  } catch (err) {
+    repo.onError(err);
+  }
+}
+
 /** Live engineer evidence for card copy and interrupt guards (#1000). */
 const activeEngineerEvidence = computed(() =>
   activeEngineerCardHint({
@@ -2178,6 +2186,7 @@ async function openDebuggerFromError(): Promise<void> {
         @open-debugger="openDebuggerFromError"
         @dismiss="repo.dismissDoneError(task.id)"
         @refresh-install-retry="repo.refreshInstallAndRetryIntegration(task.id)"
+        @keep-review-and-merge="keepReviewAndMerge"
         @click.stop
       />
     </div>

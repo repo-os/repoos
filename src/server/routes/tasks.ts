@@ -5205,13 +5205,17 @@ export const getTaskLandable: RouteHandler = async (ctx, _req, res, params) => {
 
 /** Re-pin an existing clean verdict only when the post-review merge is provably take-main-only. */
 export const keepReviewVerdict: RouteHandler = async (ctx, _req, res, params) => {
-  const { config, index, reviews } = ctx;
+  const { config, index, reviews, closeOutLock, rootLock } = ctx;
   const id = params.param1;
   const task = index.getTask(id);
   if (!task) return json(res, 404, { error: `Task #${id} not found` });
   if (task.status !== "review" || !task.branch) return json(res, 409, { error: "task must be in review with a branch" });
+  if (closeOutLock.closingOut()) return json(res, 409, { error: "a close-out is active; wait for it to finish" });
   if (reviews.isRunning(id)) return json(res, 409, { error: "a review is currently running" });
+  if (!rootLock.acquire(id, "close-out")) return json(res, 409, { error: "a close-out or root operation is active; wait for it to finish" });
+  try {
   const lock = readWorktreeReviewLock(config.root, config.cacheDir ?? ".repoos", id);
+  if (!lock || lock.status !== "review") return json(res, 409, { error: "the review lock is not available for a verdict keep" });
   const report = reviews.read(id);
   if (!lock || !report || report.state !== "ok" || parseReviewVerdict(report.markdown) !== "good to go")
     return json(res, 409, { error: "no current good-to-go review verdict and lock are available" });
@@ -5229,6 +5233,29 @@ export const keepReviewVerdict: RouteHandler = async (ctx, _req, res, params) =>
   patchTaskFile(config, task.absPath, { note: `kept review verdict after take-main-only merge; review lock ${lock.sha} → ${refreshed.sha}` });
   index.applyFileChange(task.absPath, { guarded: true });
   return json(res, 200, { ok: true, oldSha: lock.sha, newSha: refreshed.sha, paths: result.paths });
+  } finally {
+    rootLock.release(id);
+  }
+};
+
+/** Read-only proof used to show the guarded keep-verdict action after conflict resolution. */
+export const checkKeepReviewVerdict: RouteHandler = async (ctx, _req, res, params) => {
+  const { config, index, reviews } = ctx;
+  const id = params.param1;
+  const task = index.getTask(id);
+  if (!task) return json(res, 404, { error: `Task #${id} not found` });
+  const lock = readWorktreeReviewLock(config.root, config.cacheDir ?? ".repoos", id);
+  const report = reviews.read(id);
+  if (task.status !== "review" || !task.branch || !lock || lock.status !== "review" || reviews.isRunning(id) || !report || report.state !== "ok" || parseReviewVerdict(report.markdown) !== "good to go")
+    return json(res, 200, { safe: false, reason: "no current good-to-go review verdict and lock are available" });
+  const worker = getGitWorker(config.root);
+  const worktree = await worker.worktreePath(task.branch);
+  if (!worktree) return json(res, 200, { safe: false, reason: "task worktree is unavailable" });
+  const head = await worker.runGit(worktree, ["rev-parse", "HEAD"]);
+  if (head.status !== 0) return json(res, 200, { safe: false, reason: "could not read task branch HEAD" });
+  const headSha = head.stdout.trim();
+  if (lock.sha === headSha) return json(res, 200, { safe: false, reason: "review lock already matches the branch tip" });
+  return json(res, 200, await classifyTakeMainReviewMerge(worker, worktree, lock.sha, headSha));
 };
 
 /**
