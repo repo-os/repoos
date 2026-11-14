@@ -11,7 +11,7 @@ branch: feat/auto-recover-idle-tasks-failed-review-pa
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T08:27:35Z"
-updated_at: "2026-11-14T11:00:38Z"
+updated_at: "2026-11-14T11:01:49Z"
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -37,9 +37,9 @@ Start from src/server/task-watchdog.ts and the review pipeline in src/server/age
 ```json
 [
 {
-  "label": "Idle task recovery settings",
-  "target": "default",
-  "route": "/settings?tab=general&section=automation"
+"label": "Idle task recovery settings",
+"target": "default",
+"route": "/settings?tab=general&section=automation"
 }
 ]
 ```
@@ -65,3 +65,4 @@ Start from src/server/task-watchdog.ts and the review pipeline in src/server/age
 - 2026-11-14T10:26:49Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-14T10:59:10Z · body
 - 2026-11-14T11:00:38Z · body
+- 2026-11-14T11:01:49Z · CTO nudge: held — handoff gate is running
