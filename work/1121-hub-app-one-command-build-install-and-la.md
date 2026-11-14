@@ -11,7 +11,7 @@ branch: feat/hub-app-one-command-build-install-and-la
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-14T17:35:18Z"
-updated_at: "2026-11-14T19:16:46Z"
+updated_at: "2026-11-14T19:19:54Z"
 handoff_signal_retry_count: 2
 ---
 ## Problem
@@ -64,3 +64,4 @@ Related: #1120 (Hub app redesign, runs in parallel, touches mobile/src only) and
 - 2026-11-14T19:14:13Z · body
 - 2026-11-14T19:16:45Z · status active→review
 - 2026-11-14T19:16:46Z · note: shots: skipped — the diff (12 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-11-14T19:19:54Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
