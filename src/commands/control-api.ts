@@ -479,6 +479,31 @@ export async function cmdReviewAgain(args: string[]): Promise<number> {
 }
 
 export async function cmdReview(args: string[]): Promise<number> {
+  if (args[0] === "keep") {
+    const { rest, opts, error } = parseCommonFlags(args.slice(1));
+    const id = rest[0];
+    if (error || !id) {
+      printErr(error ?? "Usage: repoos review keep <id> [--json] [--port N]");
+      return 1;
+    }
+    try {
+      const api = new RepoOsApi({ port: opts.port });
+      await ensureServer(api);
+      const res = await api.request("POST", `/api/tasks/${id}/review/keep`, {});
+      if (res.status < 200 || res.status >= 300)
+        throw new RepoOsApiError(
+          String(res.body.error ?? "keep review verdict refused"),
+          res.status,
+          res.body,
+        );
+      if (opts.json) printJson(res.body);
+      else console.log(c.green("  ✓ ") + c.dim(`kept review verdict for #${id}`));
+      return 0;
+    } catch (e) {
+      printErr((e as RepoOsApiError).message);
+      return 1;
+    }
+  }
   if (args[0] === "followup") {
     const { rest, opts, error } = parseCommonFlags(args.slice(1));
     const id = rest[0];

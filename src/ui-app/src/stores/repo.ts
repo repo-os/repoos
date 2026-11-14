@@ -3797,6 +3797,15 @@ export const useRepoStore = defineStore("repo", () => {
     }
   }
 
+  /** Keep a provably unchanged review verdict, then enqueue the normal close-out. */
+  async function keepReviewAndMerge(t: Task): Promise<void> {
+    const result = await api<{ ok: boolean; error?: string }>(`/api/tasks/${t.id}/review/keep`, {
+      method: "POST",
+    });
+    if (!result.ok) throw new Error(result.error ?? "could not keep review verdict");
+    await completeTask(t);
+  }
+
   /** Force-remove a worktree close-out kept, delete its merged branch, clear the flag. */
   async function clearKeptWorktree(id: string): Promise<Task> {
     const task = await api<Task>(`/api/tasks/${id}/clear-worktree`, { method: "POST" });
@@ -4680,6 +4689,7 @@ export const useRepoStore = defineStore("repo", () => {
     syncTaskBranch,
     sendMessage,
     reviewAgain,
+    keepReviewAndMerge,
     dismissNeedsInput,
     clearKeptWorktree,
     sendReviewMessage,

@@ -16,6 +16,7 @@ import type { RetryHint } from "../lib/retryHints";
 import type { CloseOutFailureAction } from "../lib/closeOutFailure";
 import { copyToClipboard } from "../lib/clipboard";
 import { fmtTime } from "../lib/time";
+import { shotPreviewSkipsServerBackedTaskRecord } from "../lib/shot-preview-fixtures";
 import ActivityIndicator from "./ActivityIndicator.vue";
 
 const props = withDefaults(
@@ -63,6 +64,32 @@ const props = withDefaults(
   }>(),
   { mode: "card" },
 );
+const keepReviewSafe = ref(false);
+const keepReviewBusy = ref(false);
+let keepReviewPoll: ReturnType<typeof setInterval> | undefined;
+async function checkKeepReview(): Promise<void> {
+  const taskId = props.taskId;
+  if (!taskId || props.stale) return;
+  if (
+    typeof window !== "undefined" &&
+    shotPreviewSkipsServerBackedTaskRecord(window.location, taskId)
+  ) {
+    return;
+  }
+  try {
+    const result = await api<{ safe?: boolean }>(`/api/tasks/${taskId}/review/keep-check`);
+    keepReviewSafe.value = result.safe === true;
+  } catch {
+    keepReviewSafe.value = false;
+  }
+}
+onMounted(() => {
+  void checkKeepReview();
+  keepReviewPoll = setInterval(() => void checkKeepReview(), 4000);
+});
+onBeforeUnmount(() => {
+  if (keepReviewPoll) clearInterval(keepReviewPoll);
+});
 
 const tldr = computed(() => props.tldr?.trim() || props.summary?.trim() || undefined);
 
@@ -105,6 +132,7 @@ const emit = defineEmits<{
   (e: "dismiss"): void;
   /** Refresh main's install and re-queue close-out (#0674). */
   (e: "refresh-install-retry"): void;
+  (e: "keep-review-and-merge"): void;
 }>();
 /**
  * Surface the redacted support bundle right on the failed-setup path: a failed
@@ -330,6 +358,16 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
         Refresh install and retry
       </button>
     </div>
+
+    <button
+      v-if="keepReviewSafe && taskId && !stale"
+      type="button"
+      class="done-error-support"
+      :disabled="keepReviewBusy || fixDisabled"
+      @click="emit('keep-review-and-merge')"
+    >
+      {{ keepReviewBusy ? "Keeping verdict…" : "Keep review verdict and merge" }}
+    </button>
 
     <button
       v-if="taskId && !collapsed"

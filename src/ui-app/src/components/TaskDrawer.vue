@@ -2420,6 +2420,21 @@ async function moveToDone(reason?: string): Promise<void> {
   }
 }
 
+async function keepReviewAndMerge(): Promise<void> {
+  if (!ui.active) return;
+  const task = ui.active;
+  ui.saving = true;
+  try {
+    await repo.keepReviewAndMerge(task);
+    ui.close();
+    ui.expandIntegrationBar();
+  } catch (err) {
+    repo.onError(err);
+  } finally {
+    ui.saving = false;
+  }
+}
+
 /** True while a Stop MTD request is in flight (#0459). */
 const stoppingDone = ref(false);
 
@@ -6118,6 +6133,7 @@ watch(
             :task-id="ui.active.id"
             :task-title="ui.active.title"
             @open-debugger="openDebuggerFromError"
+            @keep-review-and-merge="keepReviewAndMerge"
             @open-status-details="
               ui.activeTab = 'debug';
               ui.debugView = 'status';

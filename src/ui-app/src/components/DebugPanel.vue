@@ -26,6 +26,8 @@ import NoCheckPlanReminder from "./NoCheckPlanReminder.vue";
 import ActivityIndicator from "./ActivityIndicator.vue";
 import DiffFileViewer from "./DiffFileViewer.vue";
 import { localQueueHintForTask } from "../lib/local-queue-hint";
+import { api } from "../api";
+import { shotPreviewSkipsServerBackedTaskRecord } from "../lib/shot-preview-fixtures";
 
 const props = withDefaults(
   defineProps<{
@@ -57,6 +59,35 @@ const view = defineModel<"logs" | "debugger" | "conflict" | "status">("view", { 
  */
 const conflict = computed(() => repo.mergeConflicts[props.task.id]);
 const conflictLoading = ref(false);
+const keepReviewSafe = ref(false);
+const keepReviewBusy = ref(false);
+async function checkKeepReview(): Promise<void> {
+  if (
+    typeof window !== "undefined" &&
+    shotPreviewSkipsServerBackedTaskRecord(window.location, props.task.id)
+  ) {
+    return;
+  }
+  try {
+    const result = await api<{ safe?: boolean }>(`/api/tasks/${props.task.id}/review/keep-check`);
+    keepReviewSafe.value = result.safe === true;
+  } catch {
+    keepReviewSafe.value = false;
+  }
+}
+async function keepReviewAndMerge(): Promise<void> {
+  if (keepReviewBusy.value) return;
+  keepReviewBusy.value = true;
+  try {
+    await repo.keepReviewAndMerge(props.task);
+    ui.close();
+    ui.expandIntegrationBar();
+  } catch (error) {
+    repo.onError(error);
+  } finally {
+    keepReviewBusy.value = false;
+  }
+}
 const conflictCount = computed(
   () =>
     (conflict.value?.patch.match(/^@@ conflict /gm) ?? []).length ||
@@ -77,6 +108,9 @@ async function loadConflict(): Promise<void> {
   conflictLoading.value = true;
   try {
     await repo.loadMergeConflict(props.task.id);
+    const latest = repo.mergeConflicts[props.task.id];
+    if (latest?.ok && !latest.conflicted) await checkKeepReview();
+    else keepReviewSafe.value = false;
   } finally {
     conflictLoading.value = false;
   }
@@ -780,6 +814,15 @@ watch([() => ui.debugCheckFocus, () => repo.taskChecks[props.task.id]], applyDeb
             this branch's — resolve them in the task's worktree (merge main into the branch), then
             retry Move to done.
           </p>
+          <Button
+            v-if="keepReviewSafe"
+            variant="outline"
+            size="sm"
+            :disabled="keepReviewBusy"
+            @click="keepReviewAndMerge"
+          >
+            {{ keepReviewBusy ? "Keeping verdict…" : "Keep review verdict and merge" }}
+          </Button>
         </section>
         <p v-if="conflict && !conflict.ok" class="changes-empty">
           Couldn't check for conflicts: {{ conflict.error }}

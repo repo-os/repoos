@@ -452,6 +452,8 @@ import {
   dismissNeedsInput,
   clearKeptWorktree,
   reviewAgain,
+  keepReviewVerdict,
+  checkKeepReviewVerdict,
   reviewMessage,
   getCTO,
   ctoMessage,
@@ -4121,6 +4123,8 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("POST", /^\/api\/tasks\/([^/]+)\/needs-input\/dismiss$/, dismissNeedsInput);
   router.register("POST", /^\/api\/tasks\/([^/]+)\/clear-worktree$/, clearKeptWorktree);
   router.register("POST", /^\/api\/tasks\/([^/]+)\/review\/again$/, reviewAgain);
+  router.register("POST", /^\/api\/tasks\/([^/]+)\/review\/keep$/, keepReviewVerdict);
+  router.register("GET", /^\/api\/tasks\/([^/]+)\/review\/keep-check$/, checkKeepReviewVerdict);
   router.register("POST", /^\/api\/tasks\/([^/]+)\/review\/message$/, reviewMessage);
   router.register("GET", "/api/cto", getCTO);
   router.register("POST", "/api/cto/message", ctoMessage);
