@@ -5,11 +5,13 @@ type: feature
 status: inbox
 priority: p2
 area: [server, core]
-assigned_to: ""
+assigned_to: ai
 created_by: t@t
 branch: ""
+cli_override: codex
+model_override: gpt-6-luna
 created_at: "2026-11-14T03:22:32Z"
-updated_at: "2026-11-14T03:22:32Z"
+updated_at: "2026-11-14T03:28:40Z"
 ---
 ## Problem
 `repoos servers` lists only the servers registered on the local machine (~/.repoos/servers). To see what is running on bee, thinkpad or mini, the human must ssh in and run it there.
@@ -30,3 +32,4 @@ Reuse `src/core/tailscale.ts` and `src/core/remote-hosts.ts`. Do not add a runti
 ## Activity
 
 - 2026-11-14T03:22:32Z · created · t@t
+- 2026-11-14T03:28:40Z · cli_override, model_override
