@@ -412,10 +412,11 @@ onUnmounted(() => {
   top: calc(54px + 10px + var(--safe-top));
   left: 50%;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 10px;
+  gap: 8px 10px;
   width: min(430px, calc(100vw - 28px));
-  padding: 9px 11px;
+  padding: 9px 34px 9px 11px;
   transform: translateX(-50%);
   border: 1px solid var(--violet-border-tint);
   border-radius: 10px;
@@ -434,8 +435,15 @@ onUnmounted(() => {
 .release-update-copy {
   display: grid;
   gap: 1px;
-  flex: 1;
+  /* Take the rest of the first row beside the mark so the message wraps in
+     the card instead of being squeezed by the buttons and hint (#1075). */
+  flex: 1 1 200px;
   min-width: 0;
+}
+.release-update-banner > .release-update-muted {
+  flex: 1 1 100%;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 .release-update-copy strong {
   font-size: 12px;
@@ -463,6 +471,11 @@ onUnmounted(() => {
 .release-update-dismiss {
   padding: 3px;
   border-radius: 5px;
+}
+.release-update-banner > .release-update-dismiss {
+  position: absolute;
+  top: 8px;
+  right: 8px;
 }
 .release-update-dismiss:hover,
 .release-update-close:hover {
