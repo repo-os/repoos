@@ -16,6 +16,7 @@ import type { RetryHint } from "../lib/retryHints";
 import type { CloseOutFailureAction } from "../lib/closeOutFailure";
 import { copyToClipboard } from "../lib/clipboard";
 import { fmtTime } from "../lib/time";
+import { shotPreviewSkipsServerBackedTaskRecord } from "../lib/shot-preview-fixtures";
 import ActivityIndicator from "./ActivityIndicator.vue";
 
 const props = withDefaults(
@@ -67,9 +68,16 @@ const keepReviewSafe = ref(false);
 const keepReviewBusy = ref(false);
 let keepReviewPoll: ReturnType<typeof setInterval> | undefined;
 async function checkKeepReview(): Promise<void> {
-  if (!props.taskId || props.stale) return;
+  const taskId = props.taskId;
+  if (!taskId || props.stale) return;
+  if (
+    typeof window !== "undefined" &&
+    shotPreviewSkipsServerBackedTaskRecord(window.location, taskId)
+  ) {
+    return;
+  }
   try {
-    const result = await api<{ safe?: boolean }>(`/api/tasks/${props.taskId}/review/keep-check`);
+    const result = await api<{ safe?: boolean }>(`/api/tasks/${taskId}/review/keep-check`);
     keepReviewSafe.value = result.safe === true;
   } catch {
     keepReviewSafe.value = false;

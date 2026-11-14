@@ -27,6 +27,7 @@ import ActivityIndicator from "./ActivityIndicator.vue";
 import DiffFileViewer from "./DiffFileViewer.vue";
 import { localQueueHintForTask } from "../lib/local-queue-hint";
 import { api } from "../api";
+import { shotPreviewSkipsServerBackedTaskRecord } from "../lib/shot-preview-fixtures";
 
 const props = withDefaults(
   defineProps<{
@@ -61,6 +62,12 @@ const conflictLoading = ref(false);
 const keepReviewSafe = ref(false);
 const keepReviewBusy = ref(false);
 async function checkKeepReview(): Promise<void> {
+  if (
+    typeof window !== "undefined" &&
+    shotPreviewSkipsServerBackedTaskRecord(window.location, props.task.id)
+  ) {
+    return;
+  }
   try {
     const result = await api<{ safe?: boolean }>(`/api/tasks/${props.task.id}/review/keep-check`);
     keepReviewSafe.value = result.safe === true;

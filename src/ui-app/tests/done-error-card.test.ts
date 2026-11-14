@@ -28,6 +28,7 @@ async function flush(): Promise<void> {
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  window.history.replaceState({}, "", "/");
   for (const key of ["scrollHeight", "clientHeight"] as const) {
     const desc = original[key];
     if (desc) Object.defineProperty(HTMLElement.prototype, key, desc);
@@ -51,6 +52,17 @@ describe("DoneErrorCard (card mode — the compact board surface)", () => {
     await flush();
     expect(calls).toContain("/api/tasks/1103/review/keep-check");
     expect(wrapper.text()).toContain("Keep review verdict and merge");
+  });
+
+  it("skips server checks for the synthetic done-error shot task", async () => {
+    window.history.replaceState({}, "", "/work?shotState=card%3AdoneError");
+    const fetch = vi.fn();
+    vi.stubGlobal("fetch", fetch);
+    mount(DoneErrorCard, {
+      props: { message: "review lock does not match branch HEAD", conflicts: [], taskId: "9999" },
+    });
+    await flush();
+    expect(fetch).not.toHaveBeenCalled();
   });
 
   it("clamps the message and never expands inline", async () => {
