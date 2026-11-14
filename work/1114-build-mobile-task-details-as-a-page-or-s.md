@@ -12,7 +12,7 @@ branch: feat/build-mobile-task-details-as-a-page-or-s
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T09:10:53Z"
-updated_at: "2026-11-14T15:32:55Z"
+updated_at: "2026-11-14T15:34:27Z"
 last_check_failure: "repoos check at 2026-11-14T15:22:47.288Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Mobile task detail page (target \"default\"): highlight [data-testid=\"mobile-task-detail\"] matched nothing on /work?task=9999 (http://127.0.0.1:35655/work?shotState=card:noChanges)"
 ---
 ## Problem
@@ -35,16 +35,13 @@ Read ADR 0011 and coordinate with #1113's route and queue state. Follow shared d
 ```json
 [
 {
-"label": "Mobile task detail page",
-"target": "default",
-"route": "/work",
-"highlight": "[data-testid=\"mobile-task-detail\"]",
-"steps": [
-{
-"click": "[data-task-id=\"9999\"] .mobile-task-card"
-}
-],
-"state": "card:noChanges"
+  "label": "Mobile task detail page",
+  "target": "default",
+  "route": "/work?task=9999",
+  "highlight": "[data-testid=\"mobile-task-detail\"]",
+  "state": "card:noChanges",
+  "viewportWidth": 390,
+  "viewportHeight": 844
 }
 ]
 ```
@@ -77,3 +74,4 @@ Read ADR 0011 and coordinate with #1113's route and queue state. Follow shared d
 - 2026-11-14T15:29:52Z · message_queued at 2026-11-14T15:29:52.815Z
 - 2026-11-14T15:32:53Z · watchdog: restarting engineer because a queued message waited 3m with no live process
 - 2026-11-14T15:32:55Z · message_delivered: 1 message(s)
+- 2026-11-14T15:34:27Z · body
