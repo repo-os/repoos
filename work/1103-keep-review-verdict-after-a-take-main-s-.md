@@ -2,7 +2,7 @@
 id: "1103"
 title: Keep review verdict after a take-main's-side merge-conflict fix
 type: feature
-status: active
+status: review
 priority: p2
 area: [web, server]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/keep-review-verdict-after-a-take-main-s-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T01:19:52Z"
-updated_at: "2026-11-14T04:40:01Z"
+updated_at: "2026-11-14T04:40:02Z"
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-11-14T04:00:36.431Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
@@ -66,3 +66,4 @@ Start from the close-out failure card component and `repoos landable` review-loc
 - 2026-11-14T04:35:43Z · body
 - 2026-11-14T04:37:27Z · body
 - 2026-11-14T04:40:01Z · note: ui verification passed: 1 of 1 shot captured with clean console
+- 2026-11-14T04:40:02Z · status active→review
