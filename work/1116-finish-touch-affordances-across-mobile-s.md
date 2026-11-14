@@ -42,9 +42,9 @@ On screens below 720px the floating heads (Ross, CTO, Debugger) must not reserve
 "route": "/work",
 "highlight": ".mobile-more-sheet",
 "steps": [
-  {
-    "click": ".tab[aria-haspopup=\"dialog\"]"
-  }
+{
+  "click": ".tab[aria-haspopup=\"dialog\"]"
+}
 ]
 },
 {
@@ -59,9 +59,9 @@ On screens below 720px the floating heads (Ross, CTO, Debugger) must not reserve
 "route": "/settings",
 "highlight": ".floating-heads",
 "steps": [
-  {
-    "click": "[data-test-id=\"floating-heads-setting\"] button"
-  }
+{
+  "click": "[data-test-id=\"floating-heads-setting\"] button"
+}
 ]
 }
 ]
