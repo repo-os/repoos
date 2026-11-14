@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 638016
-last_close_out_gate_at: "2026-11-14T05:20:02.401Z"
 id: "1105"
 title: "repoos servers --tailscale: list RepoOS servers across the tailnet"
 type: feature
-status: review
+status: done
 priority: p2
 area: [server, core]
+merged_commit: 30479405e062e943c236331bd31bda5ea1cf7572
 assigned_to: ai
 created_by: t@t
 branch: feat/repoos-servers-tailscale-list-repoos-ser
@@ -14,6 +13,8 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T03:22:32Z"
 updated_at: "2026-11-14T05:20:02Z"
+last_close_out_gate_ms: 638016
+last_close_out_gate_at: "2026-11-14T05:20:02.401Z"
 review_passes: 2
 review_rounds: 1
 ---
