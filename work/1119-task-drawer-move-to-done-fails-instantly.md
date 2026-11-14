@@ -44,3 +44,4 @@ Related: #1081 (introduced the reason parameter) and the audit that missed this.
 - 2026-11-14T16:48:38Z · agent exited with an error (codex) · Failed to write file /Users/nick/code/nick/repoos-worktrees/feat/task-drawer-move-to-done-fails-instantly/src/ui-app/tests/task-drawer-landable.test.ts
 - 2026-11-14T16:48:38Z · engineer crash recovery: resuming codex + gpt-6-luna (1/3 crashes in 30m) · Failed to write file /Users/nick/code/nick/repoos-worktrees/feat/task-drawer-move-to-done-fails-instantly/src/ui-app/tests/task-drawer-landable.test.ts
 - 2026-11-14T16:48:39Z · needs_input
+- 2026-11-14T16:48:39Z · message_delivered: 1 message(s)
