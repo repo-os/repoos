@@ -13,7 +13,7 @@ branch: feat/repoos-hub-app-native-looking-server-pic
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-14T16:53:29Z"
-updated_at: "2026-11-14T17:07:45Z"
+updated_at: "2026-11-14T17:18:53Z"
 dev_error_count: 3
 engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-14T16:53:55.155Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-14T16:53:58.914Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-14T16:54:02.450Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -40,18 +40,18 @@ Read docs/mobile-architecture.md, docs/adr/0011-mobile-web-ui.md (the native she
 ```json
 [
 {
-  "label": "Hub server list — Android styling, Gruvbox light",
-  "target": "default",
-  "route": "/?fixture=one&theme=gruvbox&appearance=light&platform=android",
-  "selector": "#app",
-  "highlight": "[data-testid=hub-server-list]"
+"label": "Hub server list — Android styling, Gruvbox light",
+"target": "default",
+"route": "/?fixture=one&theme=gruvbox&appearance=light&platform=android",
+"selector": "#app",
+"highlight": "[data-testid=hub-server-list]"
 },
 {
-  "label": "Hub Settings — iOS grouped, Classic dark",
-  "target": "default",
-  "route": "/?fixture=settings&theme=classic&appearance=dark&platform=ios",
-  "selector": "#app",
-  "highlight": "[data-testid=hub-settings]"
+"label": "Hub Settings — iOS grouped, Classic dark",
+"target": "default",
+"route": "/?fixture=settings&theme=classic&appearance=dark&platform=ios",
+"selector": "#app",
+"highlight": "[data-testid=hub-settings]"
 }
 ]
 ```
@@ -77,3 +77,4 @@ Read docs/mobile-architecture.md, docs/adr/0011-mobile-web-ui.md (the native she
 - 2026-11-14T17:04:03Z · cli_override, model_override
 - 2026-11-14T17:04:04Z · needs_input
 - 2026-11-14T17:07:45Z · body
+- 2026-11-14T17:18:53Z · message_queued at 2026-11-14T17:18:53.181Z
