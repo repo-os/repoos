@@ -173,3 +173,4 @@ Read docs/mobile-architecture.md, docs/adr/0011-mobile-web-ui.md (the native she
 - 2026-11-14T23:33:26Z · body
 - 2026-11-14T23:34:01Z · status active→review
 - 2026-11-14T23:47:22Z · note: ui verification passed: 1 shot captured with clean console
+- 2026-11-14T23:47:22Z · message_queued at 2026-11-14T23:47:22.616Z
