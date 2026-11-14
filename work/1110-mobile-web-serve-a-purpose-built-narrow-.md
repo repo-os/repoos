@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-14T10:47:02Z"
+review_passes: 2
 id: "1110"
 title: "Mobile web: serve a purpose-built narrow-screen UI instead of the stretched desktop layout (ADR and first slices)"
 type: feature
@@ -13,8 +15,6 @@ branch: feat/mobile-web-serve-a-purpose-built-narrow-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T09:06:53Z"
-updated_at: "2026-11-14T10:47:02Z"
-review_passes: 1
 ---
 ## Problem
 RepoOS currently serves its desktop SPA on phones and relies on scattered `@media (max-width)` rules to squeeze desktop surfaces into a narrow viewport. The connected-server UI feels cramped, with dense columns, hover-only affordances, small controls and desktop chrome. The product direction is to keep mobile as the server's **web app**: the same SPA serves purpose-built narrow-screen layouts in a phone browser, in the Capacitor shell's isolated WebView, and as an installed home-screen web app. This changes the connected-server presentation only; the native Capacitor multi-server picker, lock screen and WebView isolation/security architecture remain in scope and valid.
@@ -73,3 +73,4 @@ Read docs/mobile-ux-strategy.md, docs/mobile-architecture.md and docs/agent-ui-a
 - 2026-11-14T10:45:42Z · message_queued at 2026-11-14T10:45:42.907Z
 - 2026-11-14T10:45:43Z · note: shots: skipped — 19 shots already captured — an engineer-made capture pre-empts the automatic one
 - 2026-11-14T10:47:02Z · note: review pass 3: good to go
+
