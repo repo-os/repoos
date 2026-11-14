@@ -168,3 +168,4 @@ On screens below 720px the floating heads (Ross, CTO, Debugger) must not reserve
 - 2026-11-14T18:02:12Z · body
 - 2026-11-14T18:02:52Z · status active→review
 - 2026-11-14T18:05:27Z · note: shots: failed — browser capture cancelled
+- 2026-11-14T18:05:27Z · message_queued at 2026-11-14T18:05:27.491Z
