@@ -1,14 +1,13 @@
 ---
-last_close_out_gate_ms: 656667
-last_close_out_gate_at: "2026-11-14T13:10:09.520Z"
 id: "1112"
 title: Build the web app mobile navigation and bottom bar
 type: feature
-status: review
+status: done
 human_step_decision: agent
 human_step_decision_key: fa45dc32
 priority: p1
 area: web
+merged_commit: f84ccc16210a264957be0460c5d31a800516e579
 assigned_to: ai
 created_by: t@t
 branch: feat/build-the-web-app-mobile-navigation-and-
@@ -16,6 +15,8 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T09:10:42Z"
 updated_at: "2026-11-14T13:10:09Z"
+last_close_out_gate_ms: 656667
+last_close_out_gate_at: "2026-11-14T13:10:09.520Z"
 review_passes: 1
 ---
 ## Problem
