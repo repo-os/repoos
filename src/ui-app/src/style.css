@@ -9636,17 +9636,29 @@
   font-size: 14px;
   text-decoration: none;
 }
-.mobile-more-link:last-child { border-bottom: 0; }
+.mobile-more-link:last-child {
+  border-bottom: 0;
+}
 .mobile-more-link:focus-visible,
 .tab:focus-visible {
   outline: 2px solid var(--cyan);
   outline-offset: -2px;
   border-radius: 10px;
 }
-.mobile-more-icon svg { width: 21px; height: 21px; display: block; }
-.mobile-more-arrow { margin-left: auto; color: var(--txt-faint); font-size: 22px; }
+.mobile-more-icon svg {
+  width: 21px;
+  height: 21px;
+  display: block;
+}
+.mobile-more-arrow {
+  margin-left: auto;
+  color: var(--txt-faint);
+  font-size: 22px;
+}
 @media (min-width: 720px) {
-  .mobile-more-layer { display: none; }
+  .mobile-more-layer {
+    display: none;
+  }
 }
 .empty-state {
   text-align: center;

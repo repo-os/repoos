@@ -9,11 +9,15 @@ const moreButton = ref<HTMLButtonElement | null>(null);
 const nav = computed(() => navFromConfig(config.data));
 const work = computed(() => nav.value.find((item) => item.id === "work")!);
 const settings = computed(() => nav.value.find((item) => item.id === "settings")!);
-const searchIcon = '<svg viewBox="0 0 24 24" fill="none"><circle cx="10.8" cy="10.8" r="6.8" stroke="currentColor" stroke-width="1.8"/><path d="m16 16 4.5 4.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
-const moreIcon = '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>';
-const secondary = computed(() => nav.value.filter((item) => item.id !== "work" && item.id !== "settings").map((item) =>
-  item.id === "dashboard" ? { ...item, label: "Activity" } : item,
-));
+const searchIcon =
+  '<svg viewBox="0 0 24 24" fill="none"><circle cx="10.8" cy="10.8" r="6.8" stroke="currentColor" stroke-width="1.8"/><path d="m16 16 4.5 4.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
+const moreIcon =
+  '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>';
+const secondary = computed(() =>
+  nav.value
+    .filter((item) => item.id !== "work" && item.id !== "settings")
+    .map((item) => (item.id === "dashboard" ? { ...item, label: "Activity" } : item)),
+);
 
 function openSearch(): void {
   window.dispatchEvent(new Event("repoos:open-search"));
@@ -56,8 +60,17 @@ window.addEventListener("keydown", onKeydown);
 
   <Teleport to="body">
     <div v-if="open" class="mobile-more-layer" data-overlay-layer="floating">
-      <button class="mobile-more-scrim" aria-label="Close navigation menu" @click="open = false"></button>
-      <section class="mobile-more-sheet" role="dialog" aria-modal="true" aria-labelledby="mobile-more-title">
+      <button
+        class="mobile-more-scrim"
+        aria-label="Close navigation menu"
+        @click="open = false"
+      ></button>
+      <section
+        class="mobile-more-sheet"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="mobile-more-title"
+      >
         <div class="mobile-more-grip" aria-hidden="true"></div>
         <h2 id="mobile-more-title">More</h2>
         <nav aria-label="More destinations">

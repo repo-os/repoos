@@ -16,15 +16,20 @@ describe("mobile app layout", () => {
       }),
       removeEventListener: vi.fn(),
     } as unknown as MediaQueryList;
-    vi.stubGlobal("matchMedia", vi.fn(() => media));
+    vi.stubGlobal(
+      "matchMedia",
+      vi.fn(() => media),
+    );
 
     let layout!: ReturnType<typeof useResponsiveLayout>;
-    const wrapper = mount(defineComponent({
-      setup() {
-        layout = useResponsiveLayout();
-        return () => h("div");
-      },
-    }));
+    const wrapper = mount(
+      defineComponent({
+        setup() {
+          layout = useResponsiveLayout();
+          return () => h("div");
+        },
+      }),
+    );
     expect(layout.isNarrow.value).toBe(true); // 719.98px and below
     (media as unknown as { matches: boolean }).matches = false; // 720px and above
     listener?.({ matches: false } as MediaQueryListEvent);
@@ -44,7 +49,15 @@ describe("mobile app layout", () => {
     const secondary = ids.filter((id) => !["work", "settings"].includes(id));
 
     expect(primary).toEqual(["work", "search", "more", "settings"]);
-    expect(secondary).toEqual(["dashboard", "inputs", "checks", "releases", "secrets", "agents", "repo"]);
+    expect(secondary).toEqual([
+      "dashboard",
+      "inputs",
+      "checks",
+      "releases",
+      "secrets",
+      "agents",
+      "repo",
+    ]);
     expect(navFromConfig({}).map((item) => item.id)).not.toContain("releases");
     expect(ids).toContain("agents");
     expect(ids).toContain("repo");
