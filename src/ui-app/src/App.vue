@@ -29,6 +29,7 @@ import {
   readShotPreviewFixtureFromLocation,
 } from "./lib/shot-preview-fixtures";
 import { useUiStore } from "./stores/ui";
+import { useResponsiveLayout } from "./composables/useResponsiveLayout";
 
 const route = useRoute();
 const repo = useRepoStore();
@@ -37,6 +38,7 @@ const config = useConfigStore();
 const auth = useAuthStore();
 const ui = useUiStore();
 const notices = useNoticesStore();
+const { isNarrow } = useResponsiveLayout();
 
 // Routes marked `public` (currently just /login) render as a standalone
 // full-viewport screen with no app chrome — the visitor isn't authenticated
@@ -167,7 +169,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div id="app">
+  <div id="app" :class="{ 'is-narrow': isNarrow }">
     <UiRecoveryBanner />
     <RouterView v-if="isPublicRoute" />
     <template v-else>
