@@ -1,4 +1,6 @@
 ---
+last_close_out_gate_ms: 656667
+last_close_out_gate_at: "2026-11-14T13:10:09.520Z"
 id: "1112"
 title: Build the web app mobile navigation and bottom bar
 type: feature
@@ -13,7 +15,7 @@ branch: feat/build-the-web-app-mobile-navigation-and-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T09:10:42Z"
-updated_at: "2026-11-14T12:33:25Z"
+updated_at: "2026-11-14T13:10:09Z"
 review_passes: 1
 ---
 ## Problem
@@ -69,3 +71,5 @@ Read ADR 0011, docs/mobile-architecture.md and UI conventions. This task builds 
 - 2026-11-14T11:18:28Z · message_queued at 2026-11-14T11:18:28.483Z
 - 2026-11-14T11:20:06Z · note: review pass 1: good to go
 - 2026-11-14T12:33:25Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-14T13:10:09Z · close-out gate completed in 657s
+
