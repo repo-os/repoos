@@ -11,7 +11,7 @@ branch: feat/remote-host-pool-tests-fail-on-the-remot
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T12:33:15Z"
-updated_at: "2026-11-14T12:43:22Z"
+updated_at: "2026-11-14T13:19:14Z"
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -37,3 +37,4 @@ Read docs/debugging-check-failures.md. Precedents: #1099, #1101, #1107. Related 
 - 2026-11-14T12:33:29Z · status ready→active, branch
 - 2026-11-14T12:36:12Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: I couldn’t complete the task’s acceptance criteria, so I’m leaving it active and **not** requesting handoff. - The reported holder/waiter test passed once in isolation. I did not reproduce the remote-host failure or establish a host-depend… · stderr: Reading additional input from stdin... 2026-11-14T12:36:11.932747Z ERROR codex_core::session: failed to record rollout items: thread 01a1da0c-73d6-7212-ac89-a7c7cd898e8d not found
 - 2026-11-14T12:43:22Z · body
+- 2026-11-14T13:19:14Z · engineer stopped by request
