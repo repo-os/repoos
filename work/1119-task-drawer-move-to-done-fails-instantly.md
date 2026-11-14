@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-14T18:09:36Z"
+review_passes: 1
 id: "1119"
 title: "Task drawer Move to done fails instantly: click event is sent as the land-anyway reason"
 type: feature
@@ -11,7 +13,6 @@ branch: feat/task-drawer-move-to-done-fails-instantly
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-14T16:14:26Z"
-updated_at: "2026-11-14T18:09:36Z"
 handoff_signal_retry_count: 2
 dev_error_count: 4
 ---
@@ -100,3 +101,4 @@ Related: #1081 (introduced the reason parameter) and the audit that missed this.
 - 2026-11-14T18:08:49Z · status active→review
 - 2026-11-14T18:08:49Z · message_queued at 2026-11-14T18:08:49.653Z
 - 2026-11-14T18:09:36Z · note: review pass 1: needs some work
+
