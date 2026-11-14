@@ -43,7 +43,7 @@ On screens below 720px the floating heads (Ross, CTO, Debugger) must not reserve
 "highlight": ".mobile-more-sheet",
 "steps": [
 {
-  "click": ".tab[aria-haspopup=\"dialog\"]"
+"click": ".tab[aria-haspopup=\"dialog\"]"
 }
 ],
 "viewportWidth": 390
@@ -62,7 +62,7 @@ On screens below 720px the floating heads (Ross, CTO, Debugger) must not reserve
 "highlight": ".floating-heads",
 "steps": [
 {
-  "click": "[data-test-id=\"floating-heads-setting\"] button"
+"click": "[data-test-id=\"floating-heads-setting\"] button"
 }
 ],
 "viewportWidth": 390
@@ -90,3 +90,4 @@ On screens below 720px the floating heads (Ross, CTO, Debugger) must not reserve
 - 2026-11-14T16:27:54Z · body
 - 2026-11-14T16:28:52Z · CTO nudge: held — handoff gate is running
 - 2026-11-14T16:39:03Z · handoff failed · remote validation failed: test failure: tests/page-height-browser.test.ts > full-height page scrollports (WebKit) > keeps pipeline controls outside the head stack at 320px, tests/page-height-browser.test.ts > full-height page scrollports (WebKit) > keeps pipeline controls outside the head stack at 390px, tests/page-height-browser.test.ts > full-height page scrollports (WebKit) > keeps pipeline controls outside the head stack at 760px on bee — fix it in the feature branch and re-run the gate
+- 2026-11-14T16:39:03Z · message_queued at 2026-11-14T16:39:03.715Z
