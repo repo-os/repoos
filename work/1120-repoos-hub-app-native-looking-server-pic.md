@@ -127,3 +127,4 @@ Read docs/mobile-architecture.md, docs/adr/0011-mobile-web-ui.md (the native she
 - 2026-11-14T21:22:00Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-14T21:22:00Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: Canonical shots are already `[]`. Restoring an accidental `repoos.toml` edit, then running the check and requesting handoff. · stderr: (empty)
 - 2026-11-14T21:22:00Z · needs_input
+- 2026-11-14T21:22:00Z · message_delivered: 1 message(s)
