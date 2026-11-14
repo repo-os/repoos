@@ -63,3 +63,4 @@ Read ADR 0011 and reuse existing Settings tabs, config schema and shared dialog/
 - 2026-11-14T13:42:02Z · body
 - 2026-11-14T13:44:39Z · note: ui verification passed: 1 of 1 shot captured with clean console
 - 2026-11-14T13:44:40Z · status active→review
+- 2026-11-14T13:44:40Z · message_queued at 2026-11-14T13:44:40.630Z
