@@ -45,9 +45,9 @@ On screens below 720px the floating heads (Ross, CTO, Debugger) must not reserve
 "route": "/work",
 "highlight": ".mobile-more-sheet",
 "steps": [
-  {
-    "click": ".tab[aria-haspopup=\"dialog\"]"
-  }
+{
+  "click": ".tab[aria-haspopup=\"dialog\"]"
+}
 ],
 "viewportWidth": 390
 },
@@ -64,21 +64,21 @@ On screens below 720px the floating heads (Ross, CTO, Debugger) must not reserve
 "route": "/work",
 "highlight": ".floating-heads .stack",
 "steps": [
-  {
-    "click": ".tabbar a.tab[href=\"/settings\"]"
-  },
-  {
-    "waitFor": "[data-test-id=\"floating-heads-setting\"]"
-  },
-  {
-    "click": "[data-test-id=\"floating-heads-setting\"] [aria-label=\"Show floating agent buttons\"]"
-  },
-  {
-    "click": ".tabbar a.tab[href=\"/work\"]"
-  },
-  {
-    "waitMs": 300
-  }
+{
+  "click": ".tabbar a.tab[href=\"/settings\"]"
+},
+{
+  "waitFor": "[data-test-id=\"floating-heads-setting\"]"
+},
+{
+  "click": "[data-test-id=\"floating-heads-setting\"] [aria-label=\"Show floating agent buttons\"]"
+},
+{
+  "click": ".tabbar a.tab[href=\"/work\"]"
+},
+{
+  "waitMs": 300
+}
 ],
 "viewportWidth": 390
 },
@@ -88,15 +88,15 @@ On screens below 720px the floating heads (Ross, CTO, Debugger) must not reserve
 "route": "/work?task=9999",
 "highlight": ".floating-head-panel",
 "steps": [
-  {
-    "click": ".tab[aria-haspopup=\"dialog\"]"
-  },
-  {
-    "click": "[data-test-id=\"mobile-more-open-cto\"]"
-  },
-  {
-    "waitMs": 400
-  }
+{
+  "click": ".tab[aria-haspopup=\"dialog\"]"
+},
+{
+  "click": "[data-test-id=\"mobile-more-open-cto\"]"
+},
+{
+  "waitMs": 400
+}
 ],
 "state": "drawer:landableNarrow",
 "viewportWidth": 390
@@ -161,3 +161,4 @@ On screens below 720px the floating heads (Ross, CTO, Debugger) must not reserve
 - 2026-11-14T17:24:47Z · CTO nudge: held — remote validation is running
 - 2026-11-14T17:26:09Z · body
 - 2026-11-14T17:35:28Z · message_queued at 2026-11-14T17:35:28.133Z
+- 2026-11-14T17:35:28Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
