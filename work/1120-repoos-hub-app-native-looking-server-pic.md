@@ -161,3 +161,4 @@ Read docs/mobile-architecture.md, docs/adr/0011-mobile-web-ui.md (the native she
 - 2026-11-14T22:14:29Z · body
 - 2026-11-14T22:18:53Z · CTO nudge: held — handoff gate is running
 - 2026-11-14T22:26:20Z · handoff failed · remote validation failed: test failure: tests/remote-host-pool.test.ts > host-side lock (server + standalone CLI share one limit) > lets a holder expire the waiter with a clear timeout instead of a red gate on bee — fix it in the feature branch and re-run the gate
+- 2026-11-14T22:26:20Z · message_queued at 2026-11-14T22:26:20.860Z
