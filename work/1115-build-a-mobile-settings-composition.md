@@ -1,0 +1,35 @@
+---
+id: "1115"
+title: Build a mobile Settings composition
+type: feature
+status: inbox
+needs_input: true
+needs_input_reason: underspecified
+needs_input_detail: "missing sections: Desired UX, Notes for AI"
+priority: p1
+area: web
+depends_on: ["1111"]
+assigned_to: ai
+created_by: t@t
+branch: ""
+created_at: "2026-11-14T09:10:57Z"
+updated_at: "2026-11-14T09:10:58Z"
+---
+## Problem
+Settings uses desktop navigation and dense grouped controls that become cramped on narrow screens.
+
+## Desired outcome
+Settings below the mobile breakpoint has a single-column, touch-friendly layout while preserving all existing configuration behavior.
+
+## Acceptance criteria
+- Provide narrow-screen Settings navigation and content in a dedicated mobile composition; preserve existing setting fields and save semantics.
+- Organize sections into a readable single column with labels and controls that wrap without horizontal page overflow.
+- Controls are comfortably touch-sized, keyboard accessible and do not rely on hover.
+- Reuse existing config schema, settings stores and save/error behavior; add no new raw-TOML-only user setting.
+- Preserve desktop Settings at/above the breakpoint.
+- Add coverage for narrow layout, navigation, save/error behavior and desktop unchanged behavior.
+
+## Activity
+
+- 2026-11-14T09:10:57Z · created · t@t
+- 2026-11-14T09:10:58Z · needs_input
