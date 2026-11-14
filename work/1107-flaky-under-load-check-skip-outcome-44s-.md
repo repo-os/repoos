@@ -11,7 +11,7 @@ branch: feat/flaky-under-load-check-skip-outcome-44s-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T07:26:27Z"
-updated_at: "2026-11-14T07:59:41Z"
+updated_at: "2026-11-14T08:01:27Z"
 ---
 ## Problem
 Two tests failed the full check during the v0.5.83 release (2026-11-14) only because the machine was loaded, and both pass alone:
@@ -41,3 +41,4 @@ Read docs/debugging-check-failures.md first. Precedents: #1101 and #1102 (flaky 
 - 2026-11-14T07:59:40Z · status active→review
 - 2026-11-14T07:59:41Z · message_queued at 2026-11-14T07:59:41.035Z
 - 2026-11-14T07:59:41Z · note: shots: skipped — the diff (3 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-11-14T08:01:27Z · note: review pass 1: good to go
