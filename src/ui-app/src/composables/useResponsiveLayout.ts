@@ -8,13 +8,24 @@ export function useResponsiveLayout() {
   const sync = (): void => {
     isNarrow.value = query?.matches ?? window.innerWidth < 720;
   };
+  const onResize = (): void => {
+    isNarrow.value = window.innerWidth < 720;
+  };
 
   onMounted(() => {
-    query = window.matchMedia("(max-width: 719.98px)");
-    sync();
-    query.addEventListener("change", sync);
+    if (typeof window.matchMedia === "function") {
+      query = window.matchMedia("(max-width: 719.98px)");
+      sync();
+      query.addEventListener("change", sync);
+    } else {
+      onResize();
+      window.addEventListener("resize", onResize);
+    }
   });
-  onUnmounted(() => query?.removeEventListener("change", sync));
+  onUnmounted(() => {
+    query?.removeEventListener("change", sync);
+    window.removeEventListener("resize", onResize);
+  });
 
   return { isNarrow: readonly(isNarrow) };
 }
