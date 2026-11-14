@@ -98,3 +98,4 @@ Related: #1081 (introduced the reason parameter) and the audit that missed this.
 - 2026-11-14T18:03:51Z · message_delivered: 3 message(s)
 - 2026-11-14T18:06:22Z · note: ui verification passed: 1 shot captured with clean console
 - 2026-11-14T18:08:49Z · status active→review
+- 2026-11-14T18:08:49Z · message_queued at 2026-11-14T18:08:49.653Z
