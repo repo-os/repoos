@@ -2,7 +2,7 @@
 id: "1116"
 title: Finish touch affordances across mobile surfaces
 type: feature
-status: active
+status: review
 priority: p1
 area: web
 depends_on: ["1112", "1114", "1115"]
@@ -12,7 +12,7 @@ branch: feat/finish-touch-affordances-across-mobile-s
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-14T09:11:01Z"
-updated_at: "2026-11-14T17:24:01Z"
+updated_at: "2026-11-14T17:24:02Z"
 dev_error_count: 5
 ---
 ## Problem
@@ -132,3 +132,4 @@ On screens below 720px the floating heads (Ross, CTO, Debugger) must not reserve
 - 2026-11-14T17:21:21Z · body
 - 2026-11-14T17:23:52Z · CTO nudge: held — handoff gate is running
 - 2026-11-14T17:24:01Z · note: ui verification passed: 3 of 3 shots captured with clean console
+- 2026-11-14T17:24:02Z · status active→review
