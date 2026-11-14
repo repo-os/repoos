@@ -57,3 +57,4 @@ Read docs/mobile-ux-strategy.md, docs/mobile-architecture.md and docs/agent-ui-a
 - 2026-11-14T09:19:11Z · CTO nudge: held — handoff gate is running
 - 2026-11-14T09:20:14Z · status active→review
 - 2026-11-14T09:20:15Z · note: shots: skipped — 19 shots already captured — an engineer-made capture pre-empts the automatic one
+- 2026-11-14T09:20:15Z · note: shots: skipped — 19 shots already captured — an engineer-made capture pre-empts the automatic one
