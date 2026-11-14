@@ -13,7 +13,6 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T09:10:53Z"
 updated_at: "2026-11-14T15:47:02Z"
-check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-14T15:45:05.215Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Mobile task detail page (target \"default\"): highlight [data-testid=\"mobile-task-detail\"] matched nothing on /work?task=9999 (http://127.0.0.1:34333/work?shotState=card:noChanges)"
 ---
 ## Problem
@@ -90,3 +89,4 @@ Read ADR 0011 and coordinate with #1113's route and queue state. Follow shared d
 - 2026-11-14T15:45:05Z · message_delivered: 1 message(s)
 - 2026-11-14T15:45:45Z · body
 - 2026-11-14T15:47:02Z · body
+
