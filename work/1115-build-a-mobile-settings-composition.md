@@ -13,7 +13,7 @@ branch: feat/build-a-mobile-settings-composition
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T09:10:57Z"
-updated_at: "2026-11-14T15:29:52Z"
+updated_at: "2026-11-14T15:30:04Z"
 last_close_out_gate_ms: 230842
 last_close_out_gate_at: "2026-11-14T15:29:36.759Z"
 review_passes: 2
@@ -91,3 +91,4 @@ Read ADR 0011 and reuse existing Settings tabs, config schema and shared dialog/
 - 2026-11-14T15:19:16Z · note: review pass 2: good to go
 - 2026-11-14T15:29:36Z · close-out gate completed in 231s
 - 2026-11-14T15:29:52Z · message_dropped: 1 queued message(s) discarded — task is done
+- 2026-11-14T15:30:04Z · status done→done, release:success
