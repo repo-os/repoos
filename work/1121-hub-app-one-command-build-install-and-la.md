@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
+last_handoff_failure_sha: 486a057eb2d4ee42c9a23a32d7016f707c45e2f7
 id: "1121"
 title: "Hub app: one-command build, install and launch on Nick's Android phone over Tailscale adb"
 type: feature
@@ -65,3 +67,4 @@ Related: #1120 (Hub app redesign, runs in parallel, touches mobile/src only) and
 - 2026-11-14T19:16:45Z · status active→review
 - 2026-11-14T19:16:46Z · note: shots: skipped — the diff (12 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-14T19:19:54Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
+
