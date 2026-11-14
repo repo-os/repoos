@@ -5,6 +5,15 @@ pipeline from `release-history.json`; the newest entry is also the GitHub
 release body. The full discussion of each change lives in the release notes
 and on GitHub.
 
+## [v0.5.84] - 2026-11-14
+
+- **Landing after a merge-conflict fix is faster.** When a conflict is resolved by taking main's side only, a "Keep review verdict and merge" button on the failed close-out card and the Debug tab (and `repoos review keep <id>`) re-pins the review to the new branch tip and merges, instead of waiting for a full re-review (#1103).
+- **See every RepoOS server on your tailnet.** `repoos servers --tailscale` lists the servers on this machine and on each reachable Tailscale peer in one table with a host column; unreachable hosts are shown as such and never fail the command (#1105).
+- **The restart notice is a proper dialog.** It now uses the shared dialog styling, offers a "Copy restart command" button on servers that are not supervised instead of dead buttons, and no longer announces a version while a release is still being cut. In the "newer release available" dialog, only the release notes scroll when they are long, and the notes keep list spacing (#1104).
+- **Releases are more reliable.** A push of main that actually succeeded is no longer reported as a failure, a retry after a pushed main resumes at tagging without re-running the full check, host and git errors on remote validation are labelled as host failures instead of test failures, and a guard flags tests that hardcode the current version number (#1106).
+
+[Release on GitHub](https://github.com/repo-os/repoos/releases/tag/v0.5.84)
+
 ## [v0.5.83] - 2026-11-14
 
 - **Reviews converge on their own.** The reviewer now ends each bug list with a single "no further findings of this class" line, leftover non-blocking suggestions can be filed as a follow-up task in one click, the review panel shows "round N of ~4" with a per-task convergence history, and you can land a task anyway with a recorded reason when its checks pass (#1081). A review that says "None found" and then explains its checks no longer counts as listing blocking bugs (#1097).
