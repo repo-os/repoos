@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "1103"
 title: Keep review verdict after a take-main's-side merge-conflict fix
 type: feature
@@ -42,3 +43,4 @@ Start from the close-out failure card component and `repoos landable` review-loc
 - 2026-11-14T03:28:45Z · status inbox→ready
 - 2026-11-14T03:28:46Z · status ready→active, branch
 - 2026-11-14T03:29:52Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: I haven’t implemented the task or run the required check, so I can’t request handoff. The key safety rule still needs a precise implementation: prove that the branch tip after the conflict resolution contains no changes beyond the reviewed… · stderr: Reading additional input from stdin...
+
