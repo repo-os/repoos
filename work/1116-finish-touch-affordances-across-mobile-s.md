@@ -13,7 +13,7 @@ branch: feat/finish-touch-affordances-across-mobile-s
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-14T09:11:01Z"
-updated_at: "2026-11-14T18:46:44Z"
+updated_at: "2026-11-14T18:47:18Z"
 last_close_out_gate_ms: 2423122
 last_close_out_gate_at: "2026-11-14T18:46:44.016Z"
 check_retry_count: 1
@@ -186,4 +186,4 @@ On screens below 720px the floating heads (Ross, CTO, Debugger) must not reserve
 - 2026-11-14T18:30:31Z · body
 - 2026-11-14T18:31:00Z · message_queued at 2026-11-14T18:31:00.937Z
 - 2026-11-14T18:46:44Z · close-out gate completed in 2423s
-
+- 2026-11-14T18:47:18Z · status done→done, release:success
