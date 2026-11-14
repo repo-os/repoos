@@ -1,0 +1,34 @@
+---
+id: "1121"
+title: "Hub app: one-command build, install and launch on Nick's Android phone over Tailscale adb"
+type: feature
+status: inbox
+priority: p2
+area: mobile
+assigned_to: ""
+created_by: t@t
+branch: ""
+created_at: "2026-11-14T17:35:18Z"
+updated_at: "2026-11-14T17:35:18Z"
+---
+## Problem
+Getting a new RepoOS Hub Android build onto Nick's phone is manual (`just build-android`, then copy the APK). The Laisen project already has a working one-command flow (scripts/deploy-phone.sh on the thinkpad, with a Tiao version at ~/code/nick/reference/tiao/scripts/deploy-phone.sh) that builds the debug APK, connects over Tailscale + adb, installs, and launches. The Hub app should have the same.
+
+## Desired UX
+`just deploy-phone` (flags `--no-build`, `--no-scan`) builds the debug APK in mobile/android, connects to the phone over Tailscale adb, installs it with `adb install -r -d`, force-stops, launches it, and prints the short commit. On failure it prints what to do on the phone (Tailscale connected, Wireless debugging on, the port) and how to retry.
+
+## Acceptance criteria
+1. Read the Laisen reference first (read-only: `ssh thinkpad`, then `cd ~/code/nick/laisen`: scripts/deploy-phone.sh, scripts/lib/launch-component.sh, scripts/test-deploy-phone.sh, repoos/docs/phone-deploy.md; Tiao version at ~/code/nick/reference/tiao/scripts/deploy-phone.sh). Reproduce its behaviour: target from env, then config file, then default; try the saved address, then other open adb ports already connected, then a scan of ports 30000-49999 (nmap if present, otherwise a socket scan) when scanning is allowed; wait about a second after `adb connect` before `adb get-state` must say `device`; save the last working address; `INSTALL_FAILED_UPDATE_INCOMPATIBLE` prints the one-time `adb uninstall <app id>` advice and stops.
+2. Follow this repo's conventions: write the script in TypeScript for Bun (`#!/usr/bin/env bun`, scripts/ folder) plus a `deploy-phone` recipe in the justfile in the mobile group, not bash. The launch component helper must produce the fully qualified `<application id>/<fully.qualified.MainActivity>` and reject relative or malformed activity classes, with a test.
+3. App identity: today the Android application id is org.repoos.mobile and the activity is org.repoos.mobile.MainActivity (mobile/android/app/build.gradle, AndroidManifest). Decide and document whether the debug build should get `applicationIdSuffix ".dev"` so it installs next to the release build like Laisen (recommended); if you add it, update the launch component, mobile/README.md and the justfile, and make sure the release build id does not change.
+4. The phone address is private: do NOT commit the phone IP, ports, pairing data or any secret. Read the target from `REPOOS_HUB_PHONE` (ip:port), `REPOOS_HUB_PHONE_PORT`, then `~/.config/repoos-hub/phone` (one line, `ip:port`, already present on this Mac with the stable Tailscale IP and an empty port); no default IP in the repo. Never commit APKs; confirm build outputs are gitignored.
+5. Tests with a fake `adb` (a script or injected runner) cover: connect to the saved address, fall back to another open port, the port scan finding the port, a failed connect with the clear instructions, the launch component, the update-incompatible message, and `--no-build`/`--no-scan`. They run without a phone, a JDK or the Android SDK.
+6. A short doc (mobile/README.md section or docs/phone-deploy.md) explains the one-time setup: `brew install --cask android-platform-tools` (adb), a JDK 17 or 21 and the Android SDK, the Tailscale name and the shared phone, the two connection modes (fixed port 5555 after a one-time `adb tcpip 5555`, or Wireless debugging with a random port that Android resets on network changes), the Tailscale warning-triangle gotcha (toggle Tailscale off and on), and what to do when the phone is unreachable. Mention that Wireless debugging allows one connection at a time, so a deploy from another machine can kick this one off.
+7. Hard limits: debug builds only; no release signing; never run `adb pair` or the USB `adb tcpip 5555` step, those are Nick's; do not run any real install. This task ends at tests passing and the doc. List in the report exactly what the first real install will replace (app id, and whether the suffix means it installs beside the existing app) so Nick can approve it.
+
+## Notes for AI
+Related: #1120 (Hub app redesign, runs in parallel, touches mobile/src only) and docs/previews.md (native preview targets can call the same script later). Keep this task to scripts, the justfile recipe, Gradle debug suffix (if chosen) and docs.
+
+## Activity
+
+- 2026-11-14T17:35:18Z · created · t@t
