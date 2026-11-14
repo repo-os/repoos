@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 910675
-last_close_out_gate_at: "2026-11-14T15:22:43.923Z"
 id: "1118"
 title: "remote-host-pool tests fail on the remote host (bee) but pass locally: find the load or host dependence"
 type: feature
-status: review
+status: done
 priority: p2
 area: [core, tests]
+merged_commit: 858a3c8463c51ae5efae11a456fccff475debf45
 assigned_to: ai
 created_by: t@t
 branch: feat/remote-host-pool-tests-fail-on-the-remot
@@ -14,6 +13,8 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T12:33:15Z"
 updated_at: "2026-11-14T15:22:43Z"
+last_close_out_gate_ms: 910675
+last_close_out_gate_at: "2026-11-14T15:22:43.923Z"
 review_passes: 1
 handoff_signal_retry_count: 1
 ---

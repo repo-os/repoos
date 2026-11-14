@@ -2379,7 +2379,7 @@ describe("host-side lock (server + standalone CLI share one limit)", () => {
       slots: 1,
       waitSecs: 30,
       lockRoot,
-      inner: `echo start >> "${marks}" && while [ ! -f "${releaseHolder}" ]; do sleep 0.1; done && echo end >> "${marks}"`,
+      inner: `echo start >> "${marks}" && printf 'HOLDER_STARTED\\n' && while [ ! -f "${releaseHolder}" ]; do sleep 0.1; done && echo end >> "${marks}"`,
     });
     const waiter = hostLockShell({
       slots: 1,
@@ -2387,23 +2387,45 @@ describe("host-side lock (server + standalone CLI share one limit)", () => {
       lockRoot,
       inner: `echo start >> "${marks}"`,
     });
-    const held = sh(holder);
-    // Sequence the race: the holder must actually hold the slot first, or the
-    // waiter would legitimately win it under a loaded test runner.
-    const grabDeadline = Date.now() + 5_000;
-    while (Date.now() < grabDeadline) {
-      if (existsSync(marks) && readFileSync(marks, "utf8").includes("start")) break;
-      await tick(20);
-    }
-    expect(readFileSync(marks, "utf8")).toContain("start");
-
+    let holderOutput = "";
+    let sawHolderStart = false;
+    let resolveHolderStart!: () => void;
+    let rejectHolderStart!: (error: Error) => void;
+    const holderStarted = new Promise<void>((resolve, reject) => {
+      resolveHolderStart = resolve;
+      rejectHolderStart = reject;
+    });
+    const holderProcess = spawn("sh", ["-c", holder]);
+    const held = new Promise<{ code: number | null; out: string }>((resolve) => {
+      holderProcess.stdout.on("data", (b: Buffer) => {
+        holderOutput += b.toString();
+        if (!sawHolderStart && holderOutput.includes("HOLDER_STARTED")) {
+          sawHolderStart = true;
+          resolveHolderStart();
+        }
+      });
+      holderProcess.stderr.on("data", (b: Buffer) => (holderOutput += b.toString()));
+      holderProcess.on("error", (error) => {
+        if (!sawHolderStart) rejectHolderStart(error);
+      });
+      holderProcess.on("close", (code) => {
+        if (!sawHolderStart)
+          rejectHolderStart(new Error(`holder exited before acquiring its slot: ${holderOutput}`));
+        resolve({ code, out: holderOutput });
+      });
+    });
+    // The marker is printed from the inner command after the slot is acquired
+    // and the start record is written. This avoids a wall-clock polling window
+    // that could expire before a loaded host schedules the child process.
     let timedOut: Awaited<ReturnType<typeof sh>>;
     try {
+      await holderStarted;
       timedOut = await sh(waiter);
     } finally {
       // Keep the holder alive until the waiter has definitively observed the
       // occupied slot, independent of runner scheduling or remote load.
       writeFileSync(releaseHolder, "release\n");
+      await held;
     }
     expect(timedOut!.code).toBe(HOST_LOCK_TIMEOUT_EXIT);
     expect(timedOut!.out).toContain("[lock] timed out");
