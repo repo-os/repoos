@@ -168,10 +168,18 @@ describe("MODEL_SOURCES registry", () => {
     expect(MODEL_SOURCES["github copilot"].supported).toBe(true);
   });
 
-  it("offers stable Copilot Auto tiers without guessing account-specific models", async () => {
+  it("offers Copilot Auto tiers and verified named models", async () => {
     await expect(MODEL_SOURCES["github copilot"].list({})).resolves.toEqual({
       supported: true,
-      models: ["default", "copilot-auto-balance", "copilot-auto-intelligence"],
+      models: [
+        "default",
+        "copilot-auto-efficiency",
+        "copilot-auto-balance",
+        "copilot-auto-intelligence",
+        "gpt-6-luna",
+        "gpt-6.1-terra",
+        "claude-haiku-5.5",
+      ],
       refreshable: false,
     });
   });

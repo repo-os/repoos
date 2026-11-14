@@ -24,6 +24,7 @@
 import { spawn, spawnSync } from "node:child_process";
 import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { copilotAutoTierModelArgs } from "./copilot-auto-tier.js";
+import { copilotNamedModelArgs } from "./copilot-models.js";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -694,7 +695,7 @@ const COPILOT_CONTRACT: ContractCommandTemplates = {
   modelArgs: (model) => {
     const auto = copilotAutoTierModelArgs(model);
     if (auto.length) return auto;
-    return ["--model", model];
+    return copilotNamedModelArgs(model);
   },
   run: (_dir, prompt) => [
     "-p",
@@ -901,8 +902,8 @@ export const DEFAULT_PROBE_MODELS: Record<string, string> = {
   "claude code": "claude-haiku-4-5-20251001",
   codex: "gpt-5.6-luna",
   antigravity: "gemini-3.8-flash-low",
-  // `default` maps to Auto · Balance; `copilot-auto-efficiency` remains a persisted alias (#1088).
-  "github copilot": "default",
+  // Cheap named probe; Auto tiers remain the default pin (#1088 / #1122).
+  "github copilot": "gpt-6-luna",
   pi: "openrouter/z-ai/glm-5.3-flash",
   muse: "muse-spark-1.3",
 };

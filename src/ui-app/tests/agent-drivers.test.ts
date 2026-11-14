@@ -318,6 +318,26 @@ describe("model-aware driver commands", () => {
     expect(command.args).toEqual(expect.arrayContaining(["--model", "auto", "--auto-tier", tier]));
   });
 
+  it("pins low reasoning for named Copilot models", () => {
+    const command = promptCommand({ ...agent("github copilot"), model: "gpt-6-luna" }, "ping");
+    expect(command.args).toEqual(
+      expect.arrayContaining(["--model", "gpt-6-luna", "--reasoning-effort", "low"]),
+    );
+  });
+
+  it("maps Copilot model unavailable failures to plain English", () => {
+    const raw = 'Execution failed: Model "gpt-6-luna" is not available.';
+    expect(oneShotFailureDetail(raw, "", "github copilot")).toContain("gpt-6-luna");
+    expect(oneShotFailureDetail(raw, "", "github copilot")).toContain("Agents page");
+  });
+
+  it("maps unsupported Copilot reasoning to plain English", () => {
+    const raw =
+      'Error: Reasoning effort "minimal" is not supported for model "gpt-6-luna".';
+    expect(oneShotFailureDetail(raw, "", "github copilot")).toContain("gpt-6-luna");
+    expect(oneShotFailureDetail(raw, "", "github copilot")).toContain("minimal");
+  });
+
   it("does not suggest the tier that just failed (balance unavailable)", () => {
     const raw =
       "Auto preference `balance` is unavailable for this account. Set --auto-tier to balance or intelligence.";
