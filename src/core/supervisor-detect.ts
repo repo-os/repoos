@@ -265,8 +265,7 @@ function detectDarwinSupervisor(
     if (!domainLookupFailed) return { kind: "none" };
     return {
       kind: "uncertain",
-      reason:
-        `pid ${pid} has no row in \`launchctl list\`; launchd domain lookup was incomplete and its parent is pid 1 — ownership is unknown`,
+      reason: `pid ${pid} has no row in \`launchctl list\`; launchd domain lookup was incomplete and its parent is pid 1 — ownership is unknown`,
     };
   }
   if (ppid !== null && ppid > 1) {
