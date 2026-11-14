@@ -1,0 +1,40 @@
+---
+id: "1120"
+title: "RepoOS Hub app: native-looking server picker, web color themes with light/dark, better icons, and a Settings page"
+type: feature
+status: inbox
+priority: p2
+area: mobile
+assigned_to: ai
+created_by: t@t
+branch: ""
+created_at: "2026-11-14T16:53:29Z"
+updated_at: "2026-11-14T16:53:30Z"
+---
+## Problem
+The RepoOS Hub Capacitor shell (mobile/, iOS and Android) is bare bones. Nick's current Android build (screenshot attached) shows a single dark theme, a "Device lock" panel pushed inline above the server list, text-arrow reorder buttons and a pencil glyph that look like web controls, flat unstyled server cards, and a plain "+ Add server" button. It has no color themes and no light mode, and the icons are not the set used by the web app. The device lock and any future preferences have nowhere proper to live. (The screenshot also shows the old "RepoOS" title, so it is a build from before the September "RepoOS Hub" rename.)
+
+## Desired UX
+The shell feels like a native app on each platform and matches the web app: the same color themes as the web UI plus light, dark and follow-system modes; polished server cards with a clear reachability indicator, large touch rows, and reorder and edit that feel native (long-press drag handle or edit mode, edit in a bottom sheet); a good empty state for a first run; better icons that match the web app (lucide); and Settings as its own page opened from the header, holding Appearance (theme, light/dark/system), Device lock, and About (version, rename note). The add-server flow is a proper page or sheet with inline validation (HTTPS-only, reachability check) as today.
+
+## Acceptance criteria
+1. Settings is its own page with a back affordance; it contains Appearance (theme picker using the web app theme set, and a light/dark/system switch), Device lock, and About. Device lock leaves the server list screen.
+2. Reuse the web app theme tokens (mobile/src/design-tokens and src/ui-app theme definitions) so every web theme works in the shell in both light and dark where the web app offers them; no hard-coded colors outside tokens; text contrast meets the same floor the web contrast audit uses. Theme and mode persist on the device (Capacitor Preferences) and apply before first paint (no flash).
+3. Server list: redesigned cards (avatar tile, name, host, reachability dot or label, chevron), native-feeling press states, safe-area padding, large touch targets, a drag-handle or edit-mode reorder instead of tiny arrow glyphs, edit and delete in a bottom sheet, and a first-run empty state with an obvious Add server action.
+4. Icons: replace text glyphs with lucide icons (same set as the web app, tree-shaken); update the app icon and splash only if the existing ones are inconsistent with the new look, otherwise leave them.
+5. Platform feel: Material-style details on Android (ripple, elevation, system bar theming through the status-bar plugin) and iOS-style details on iOS (large title, grouped lists), selected by platform, sharing components; use haptics sparingly (reorder, delete).
+6. Preserve every current behaviour: HTTPS-only add with reachability check, on-device-only storage, isolated WebView open, lock screen, minSdkVersion 26 notes; no new network calls; no new runtime dependencies beyond the icon set unless justified in the report.
+7. Tests for theme and mode persistence, the server list states (empty, one, many, unreachable), and Settings navigation; screenshots at phone size (390x844) for light and dark with at least two themes, Android and iOS styling, attached via repoos shot using the repoos-mobile-dev target (port 5174).
+8. Verification boundary: the engineer verifies in the browser dev target and with `just build-android` if the Android tools are present; installing on a real phone and iOS device testing are human steps. File the human install and device-check as a held human task (assigned to human) instead of claiming it.
+
+## Notes for AI
+Read docs/mobile-architecture.md, docs/adr/0011-mobile-web-ui.md (the native shell stays a thin picker and lock; the server-served web UI is the in-server experience) and mobile/README.md. Do not add RepoOS server screens to the shell. Keep the shell small and fast. Related tasks: #0300 (mobile testing, keep), #0302 and #0304 (likely rewrite or close per the ADR); do not edit them.
+
+## Screenshots
+
+![21f31e1d-image](/api/tasks/1120/attachments/att_7f3e2a85-0ca2-4bff-b79f-659408e2dacf.png)
+
+## Activity
+
+- 2026-11-14T16:53:29Z · created · t@t
+- 2026-11-14T16:53:30Z · screenshots
