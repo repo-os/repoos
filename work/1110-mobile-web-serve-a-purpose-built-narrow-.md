@@ -41,3 +41,4 @@ Read docs/mobile-ux-strategy.md, docs/mobile-architecture.md and docs/agent-ui-a
 - 2026-11-14T09:13:57Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-14T09:13:57Z · message_queued at 2026-11-14T09:13:57.575Z
 - 2026-11-14T09:13:57Z · ↻ resuming engineer to read queued message
+- 2026-11-14T09:13:57Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The scoped check passed. It treated this as a docs-only change, so formatting and task parsing ran while build, lint, tests and UI smoke were correctly skipped. I added task IDs to the ADR after that run, so I’m doing one final scoped chec… · stderr: Reading additional input from stdin...
