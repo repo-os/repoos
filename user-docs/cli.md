@@ -620,6 +620,17 @@ as `unreachable` with a reason, while the rest of the list is still shown. The
 JSON output includes a `host` field for every entry. If Tailscale is unavailable,
 the command says so and still prints local servers. `--prune` is local-only and
 cannot be combined with `--tailscale`.
+This behavior is implemented in `src/commands/servers.ts` and covered by
+`src/commands/servers.test.ts`.
+
+### `repoos review keep <id> [--json] [--port N]`
+
+Keeps a completed review verdict when close-out was interrupted by a conflict
+that has since been resolved. RepoOS first checks that the reviewed tree and
+verdict are still current and that the conflict resolution did not change the
+reviewed result; it then continues through the normal close-out pipeline. It
+does not bypass checks or accept a stale verdict. The same guarded action is
+available as **Keep review verdict and merge** in the close-out error card.
 
 ### `repoos status [--json]`
 

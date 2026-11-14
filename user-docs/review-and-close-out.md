@@ -92,7 +92,16 @@ When the latest current review says `needs some work`, has no blocking Bugs,
 and its verdict is the only failed landing check, the drawer offers **Land
 anyway**. Confirm it with a reason. RepoOS records that reason and still runs
 the normal checks and close-out pipeline; the action cannot override any other
-landing failure.
+landing failure. The guard is enforced in `src/server/routes/tasks.ts`.
+
+If close-out stopped on a merge conflict that you resolved without changing the
+reviewed result, the error card can offer **Keep review verdict and merge**.
+The guarded action verifies the verdict still applies to the current reviewed
+tree before continuing. From a terminal, use `repoos review keep <id>` for the
+same operation. It refuses stale or changed review evidence and does not skip
+the normal checks. The button and command are wired through
+`DoneErrorCard.vue`, `src/commands/control-api.ts`, and
+`src/server/routes/tasks.ts`.
 
 A second exception is **`EVIDENCE-GAP-ONLY`**: the code is acceptable but
 handoff shots or verification are missing or unusable (not stale). The task stays
