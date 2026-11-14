@@ -1,4 +1,6 @@
 ---
+last_close_out_gate_ms: 138975
+last_close_out_gate_at: "2026-11-14T05:22:44.916Z"
 id: "1104"
 title: "Restart notice: unsupervised servers get a copy-command button, and it ignores an in-flight release bump"
 type: feature
@@ -11,7 +13,7 @@ branch: feat/restart-notice-unsupervised-servers-get-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-14T02:26:21Z"
-updated_at: "2026-11-14T04:30:21Z"
+updated_at: "2026-11-14T05:22:44Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -101,3 +103,5 @@ Decision (Nick): the restart notice becomes a real dialog built on the shared di
 - 2026-11-14T04:30:20Z · note: ui verification passed: 1 of 1 shot captured with clean console
 - 2026-11-14T04:30:21Z · note: review pass 2: good to go
 - 2026-11-14T04:30:21Z · message_queued at 2026-11-14T04:30:21.716Z
+- 2026-11-14T05:22:44Z · close-out gate completed in 139s
+
