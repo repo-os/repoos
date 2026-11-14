@@ -3,7 +3,7 @@ import type { ServerResponse } from "node:http";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
-  readInstallVersion: vi.fn(() => "0.5.83"),
+  readInstallVersion: vi.fn(() => "999.0.0"),
   detectSupervisor: vi.fn(),
 }));
 vi.mock("../../commands/upgrade.js", () => ({
@@ -42,7 +42,7 @@ function request(body: unknown = {}): Readable {
 
 describe("installed upgrade status and restart route", () => {
   beforeEach(() => {
-    mocks.readInstallVersion.mockReturnValue("0.5.83");
+    mocks.readInstallVersion.mockReturnValue("999.0.0");
     mocks.detectSupervisor.mockReturnValue({ kind: "none" });
   });
 
@@ -53,7 +53,7 @@ describe("installed upgrade status and restart route", () => {
     expect(capture.body()).toMatchObject({
       restartPending: true,
       runningVersion: expect.any(String),
-      installedVersion: "0.5.83",
+      installedVersion: "999.0.0",
       activeWork: { agents: 1, checks: 0 },
       supervised: false,
     });
