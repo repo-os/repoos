@@ -4,6 +4,7 @@ import { onMounted, onUnmounted, readonly, ref } from "vue";
 export function useResponsiveLayout() {
   const isNarrow = ref(false);
   let query: MediaQueryList | undefined;
+  let listeningForResize = false;
 
   const sync = (): void => {
     isNarrow.value = query?.matches ?? window.innerWidth < 720;
@@ -16,7 +17,15 @@ export function useResponsiveLayout() {
     if (typeof window.matchMedia === "function") {
       query = window.matchMedia("(max-width: 719.98px)");
       sync();
-      query.addEventListener("change", sync);
+      if (typeof query.addEventListener === "function") {
+        query.addEventListener("change", sync);
+      } else {
+        // Older WebViews and lightweight test doubles expose matchMedia without
+        // MediaQueryList change events; keep the same breakpoint via resize.
+        onResize();
+        window.addEventListener("resize", onResize);
+        listeningForResize = true;
+      }
     } else {
       onResize();
       window.addEventListener("resize", onResize);
@@ -24,7 +33,7 @@ export function useResponsiveLayout() {
   });
   onUnmounted(() => {
     query?.removeEventListener("change", sync);
-    window.removeEventListener("resize", onResize);
+    if (listeningForResize || !query) window.removeEventListener("resize", onResize);
   });
 
   return { isNarrow: readonly(isNarrow) };
