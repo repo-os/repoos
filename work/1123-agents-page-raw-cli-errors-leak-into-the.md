@@ -11,8 +11,7 @@ branch: feat/agents-page-raw-cli-errors-leak-into-the
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-14T18:02:14Z"
-updated_at: "2026-11-14T21:07:42Z"
-review_passes: 1
+updated_at: "2026-11-14T19:45:32Z"
 ---
 ## Problem
 On Agents > Agents > Default agents, the "last runs" list (`agentLastRuns` in src/ui-app/src/views/AgentsView.vue, from `GET /api/agents/last-runs` in src/server/server.ts) prints raw CLI output as if it were the message. Seen 2026-11-15 (screenshot attached): the debugger row shows "opencode exited with code 1: > build · deepseek-ai/DeepSeek-V4.1-Flash Error: You need positive balance to do inference. Please add balance manually or setup top-up", and the antigravity rows show a full `AGY_ERROR: {"short_error":"RESOURCE_EXHAUSTED (code 429)...` JSON blob. Only one row (opencode kimi) got the new treatment from #1098: a plain sentence plus a collapsed "Raw CLI error" disclosure.
@@ -33,18 +32,6 @@ Each failed row says in one plain sentence what is wrong and what to do ("DeepIn
 ## Notes for AI
 Build on #1098 (src/core/agent-failure.ts, `splitAgentFailureDetail`). Related: the DeepInfra "No credits" pause in repoos.toml; do not change allowlist or budget settings.
 
-## Shots
-```json
-[
-{
-"label": "Default agents tab with last-runs filtering",
-"target": "default",
-"route": "/agents?tab=default",
-"highlight": ".agent-tab-panel .sec-label"
-}
-]
-```
-
 ## Screenshots
 
 ![60](/api/tasks/1123/attachments/att_9eea76a8-84c2-4c20-b6f8-7cf14184b2db.webp)
@@ -56,58 +43,4 @@ Build on #1098 (src/core/agent-failure.ts, `splitAgentFailureDetail`). Related: 
 - 2026-11-14T18:02:28Z · cli_override, model_override
 - 2026-11-14T18:02:32Z · status inbox→ready
 - 2026-11-14T18:44:56Z · status ready→active, branch
-- 2026-11-14T18:53:53Z · message_queued at 2026-11-14T18:53:53.155Z
-- 2026-11-14T18:53:53Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-14T18:56:54Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
-- 2026-11-14T18:56:55Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: Implementing core failure classification, last-runs filtering, UI toggle, tests, and docs. · stderr: (empty)
-- 2026-11-14T18:56:55Z · message_delivered: 1 message(s)
-- 2026-11-14T18:58:53Z · message_queued at 2026-11-14T18:58:53.076Z
-- 2026-11-14T18:58:53Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-14T19:01:55Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
-- 2026-11-14T19:01:55Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: Implementing core failure classification, last-runs filtering, UI toggle, tests, and docs. · stderr: (empty)
-- 2026-11-14T19:01:55Z · message_delivered: 1 message(s)
-- 2026-11-14T19:03:53Z · message_queued at 2026-11-14T19:03:53.269Z
-- 2026-11-14T19:03:53Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-14T19:06:55Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
-- 2026-11-14T19:06:55Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: Implementing core failure classification, last-runs filtering, UI toggle, tests, and docs. · stderr: (empty)
-- 2026-11-14T19:06:55Z · message_delivered: 1 message(s)
-- 2026-11-14T19:07:43Z · body
-- 2026-11-14T19:08:53Z · message_queued at 2026-11-14T19:08:53.084Z
-- 2026-11-14T19:08:53Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-14T19:11:55Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
-- 2026-11-14T19:11:55Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: Implementing core failure classification, last-runs filtering, UI toggle, tests, and docs. · stderr: (empty)
-- 2026-11-14T19:11:55Z · message_delivered: 1 message(s)
-- 2026-11-14T19:13:53Z · message_queued at 2026-11-14T19:13:53.269Z
-- 2026-11-14T19:13:53Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-14T19:16:48Z · CTO nudge: held — an undelivered message is already queued
-- 2026-11-14T19:16:57Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
-- 2026-11-14T19:16:57Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: Implementing core failure classification, last-runs filtering, UI toggle, tests, and docs. · stderr: (empty)
-- 2026-11-14T19:17:19Z · message_delivered: 1 message(s)
-- 2026-11-14T19:18:53Z · message_queued at 2026-11-14T19:18:53.630Z
-- 2026-11-14T19:18:53Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-14T19:21:57Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
-- 2026-11-14T19:21:58Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: Implementing core failure classification, last-runs filtering, UI toggle, tests, and docs. · stderr: (empty)
-- 2026-11-14T19:21:58Z · message_delivered: 1 message(s)
-- 2026-11-14T19:23:53Z · message_queued at 2026-11-14T19:23:53.412Z
-- 2026-11-14T19:23:53Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-14T19:27:27Z · queued message undelivered for 4m and the engineer produced no output — ending the turn so it is delivered
-- 2026-11-14T19:27:28Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: Implementing core failure classification, last-runs filtering, UI toggle, tests, and docs. · stderr: (empty)
-- 2026-11-14T19:27:28Z · message_delivered: 1 message(s)
-- 2026-11-14T19:28:53Z · message_queued at 2026-11-14T19:28:53.163Z
-- 2026-11-14T19:28:53Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-14T19:31:58Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
-- 2026-11-14T19:31:58Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: Implementing core failure classification, last-runs filtering, UI toggle, tests, and docs. · stderr: (empty)
-- 2026-11-14T19:31:58Z · message_delivered: 1 message(s)
-- 2026-11-14T19:33:53Z · message_queued at 2026-11-14T19:33:53.193Z
-- 2026-11-14T19:33:53Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-14T19:36:58Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
-- 2026-11-14T19:36:58Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: Implementing core failure classification, last-runs filtering, UI toggle, tests, and docs. · stderr: (empty)
-- 2026-11-14T19:36:58Z · message_delivered: 1 message(s)
-- 2026-11-14T19:38:21Z · body
-- 2026-11-14T19:38:53Z · CTO nudge: held — handoff gate is running
-- 2026-11-14T19:43:29Z · body
-- 2026-11-14T19:45:31Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
 - 2026-11-14T19:45:32Z · status active→review
-- 2026-11-14T19:45:32Z · message_queued at 2026-11-14T19:45:32.551Z
-- 2026-11-14T19:46:34Z · note: review pass 1: good to go
-- 2026-11-14T21:07:42Z · message_overdue: still queued after 60m without being delivered
