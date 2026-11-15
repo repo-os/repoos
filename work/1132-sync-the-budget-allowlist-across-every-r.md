@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/allowlist-groups-projects-that-opt-into-
 created_at: "2026-11-15T15:20:04Z"
-updated_at: "2026-11-15T19:37:15Z"
+updated_at: "2026-11-15T19:37:32Z"
 last_close_out_gate_ms: 1359721
 last_close_out_gate_at: "2026-11-15T19:37:15.344Z"
 review_passes: 2
@@ -92,4 +92,4 @@ Start from how `budget.allowlist` is read and merged today, `collectTailnetServe
 - 2026-11-15T19:07:36Z · handoff failed · remote validation failed: test failure: tests/remote-host-pool.test.ts > host-side lock (server + standalone CLI share one limit) > lets a holder expire the waiter with a clear timeout instead of a red gate on bee — fix it in the feature branch and re-run the gate
 - 2026-11-15T19:07:36Z · message_queued at 2026-11-15T19:07:36.627Z
 - 2026-11-15T19:37:15Z · close-out gate completed in 1360s
-
+- 2026-11-15T19:37:32Z · status done→done, release:success
