@@ -5,6 +5,7 @@
   "description": "docs.repoos.org — RepoOS documentation site (VitePress). Standalone sibling project; deployed on Cloudflare.",
   "type": "module",
   "scripts": {
+    "predev": "bun install --frozen-lockfile",
     "dev": "vitepress dev",
     "build": "vitepress build && bun scripts/check-llms.ts && bun scripts/check-ai-agents.ts",
     "check:llms": "bun scripts/check-llms.ts",
