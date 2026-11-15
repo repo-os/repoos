@@ -18,7 +18,7 @@
  * Diagnostics go to stderr.
  */
 import { existsSync, readdirSync } from "node:fs";
-import { basename, join, resolve } from "node:path";
+import { basename, delimiter, join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 
 type CommandResult = { status: number; stdout: string; stderr: string };
@@ -28,10 +28,21 @@ function fail(message: string): never {
   process.exit(1);
 }
 
+/** apksigner's launcher runs a bare `java`; honour JAVA_HOME when it is set. */
+function toolEnv(): NodeJS.ProcessEnv {
+  const env = { ...process.env };
+  const javaHome = process.env.JAVA_HOME?.trim();
+  if (javaHome) {
+    env.PATH = `${join(javaHome, "bin")}${delimiter}${env.PATH ?? ""}`;
+  }
+  return env;
+}
+
 function run(command: string, args: string[]): CommandResult {
   const result = spawnSync(command, args, {
     encoding: "utf8",
     maxBuffer: 16 * 1024 * 1024,
+    env: toolEnv(),
   });
   if (result.error) {
     fail(`could not run ${basename(command)}: ${result.error.message}`);
@@ -79,7 +90,7 @@ function findApksigner(): string {
 
   // Trust PATH only after an explicit SDK lookup: in CI that lookup is the
   // build-tools version Gradle actually used.
-  const onPath = spawnSync("apksigner", ["version"], { encoding: "utf8" });
+  const onPath = spawnSync("apksigner", ["version"], { encoding: "utf8", env: toolEnv() });
   if (!onPath.error && onPath.status === 0) return "apksigner";
 
   fail(
@@ -133,7 +144,7 @@ function tryKeystoreFingerprint(keystore: string, password: string, alias: strin
   const result = spawnSync(
     findKeytool(),
     ["-list", "-v", "-keystore", keystore, "-storepass", password, "-alias", alias],
-    { encoding: "utf8", maxBuffer: 16 * 1024 * 1024 },
+    { encoding: "utf8", maxBuffer: 16 * 1024 * 1024, env: toolEnv() },
   );
   if (result.error || result.status !== 0) return null;
   const match = /SHA256:\s*([0-9A-Fa-f:]+)/.exec(result.stdout ?? "");
