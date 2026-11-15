@@ -11,7 +11,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/mobile-web-task-detail-one-full-touch-de
 created_at: "2026-11-15T17:24:03Z"
-updated_at: "2026-11-15T20:09:56Z"
+updated_at: "2026-11-15T20:13:59Z"
 ---
 ## Problem
 On a phone (below 720px), a task has two different detail views:
@@ -59,22 +59,22 @@ On a phone there's a single task detail, whichever way it was opened (card, sear
 ```json
 [
 {
-  "label": "Phone Work detail: one drawer, Review failed state and every tab reachable",
-  "target": "default",
-  "route": "/work?task=9999&tab=review",
-  "highlight": ".drawer-tabs",
-  "state": "drawer:statusReviewFailedNarrow",
-  "viewportWidth": 390,
-  "viewportHeight": 844
+"label": "Phone Work detail: one drawer, Review failed state and every tab reachable",
+"target": "default",
+"route": "/work?task=9999&tab=review",
+"highlight": ".drawer-tabs",
+"state": "drawer:statusReviewFailedNarrow",
+"viewportWidth": 390,
+"viewportHeight": 844
 },
 {
-  "label": "Phone ?task=&tab=changes deep link lands on the Changes tab at 360px",
-  "target": "default",
-  "route": "/work?task=9999&tab=changes",
-  "highlight": ".drawer-tabs",
-  "state": "drawer:statusReviewFailedNarrow",
-  "viewportWidth": 360,
-  "viewportHeight": 800
+"label": "Phone ?task=&tab=changes deep link lands on the Changes tab at 360px",
+"target": "default",
+"route": "/work?task=9999&tab=changes",
+"highlight": ".drawer-tabs",
+"state": "drawer:statusReviewFailedNarrow",
+"viewportWidth": 360,
+"viewportHeight": 800
 }
 ]
 ```
@@ -93,3 +93,4 @@ On a phone there's a single task detail, whichever way it was opened (card, sear
 - 2026-11-15T19:49:12Z · status inbox→ready
 - 2026-11-15T19:49:13Z · status ready→active, branch
 - 2026-11-15T20:09:56Z · body
+- 2026-11-15T20:13:59Z · CTO nudge: held — handoff gate is running
