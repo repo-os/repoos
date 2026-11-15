@@ -1,3 +1,14 @@
+---
+id: summary
+title: summary
+type: feature
+status: inbox
+priority: p2
+area: general
+assigned_to: ai
+created_by: ""
+branch: ""
+---
 ## TL;DR
 
 Task #1132 shipped **allowlist groups**: a project can join a named group via
@@ -29,9 +40,9 @@ In plain terms: Nick's projects can now declare a shared allowlist group (for ex
 - **Engineering rounds:** 1 recorded engineering report (round 1), plus a round-2 fix commit (`3e00712`) addressing the pass-1 review finding. One engineer session.
 - **Review passes:** 2 — pass 1 `needs some work`, pass 2 `good to go`.
 - **Agents and models:**
-  - Engineer: `engineer` on `opencode-go/deepseek-v4.1-flash` (opencode), session started 16:58:18Z, elapsed 5549 s (1 h 32 min 29 s), 250,469 tokens, cost recorded as 0.21387466200000002 USD. No restarts or model swaps recorded.
-  - Reviewer: `reviewer` on `composer-2.5` (cursor), two sessions — 105 s (pass 1) and 45 s (pass 2). Tokens and cost for reviewer sessions: not recorded.
-  - Routing: three `Model router (openrouter)` sessions, model `unknown`, 1 s / 1 s / 0 s, tokens and cost not recorded.
+- Engineer: `engineer` on `opencode-go/deepseek-v4.1-flash` (opencode), session started 16:58:18Z, elapsed 5549 s (1 h 32 min 29 s), 250,469 tokens, cost recorded as 0.21387466200000002 USD. No restarts or model swaps recorded.
+- Reviewer: `reviewer` on `composer-2.5` (cursor), two sessions — 105 s (pass 1) and 45 s (pass 2). Tokens and cost for reviewer sessions: not recorded.
+- Routing: three `Model router (openrouter)` sessions, model `unknown`, 1 s / 1 s / 0 s, tokens and cost not recorded.
 - **Close-out gate:** completed in 1360 s (22 min 40 s), finishing 19:37:15Z.
 - **UI verification:** passed twice (18:03:16Z and 18:57:42Z), each "1 of 1 shot captured with clean console" with 1 shot warning.
 - **Linked tasks at close:** none recorded.

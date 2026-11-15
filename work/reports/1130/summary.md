@@ -1,3 +1,14 @@
+---
+id: summary
+title: summary
+type: feature
+status: inbox
+priority: p2
+area: general
+assigned_to: ai
+created_by: ""
+branch: ""
+---
 ## TL;DR
 
 Task #1130 fixed a p0 mobile-web bug where the Work page rendered the mobile task queue and the desktop board simultaneously, with the board painting over the mobile cards. Root cause was a Vue `v-else` chained to `MobileTaskDetail` instead of the narrow-layout branch, so "no task selected" also meant "render the desktop board". One engineer round restructured the conditional so only one layout mounts below the mobile breakpoint, hoisted the integration pipeline bar out of the desktop-only branch, and added a phone-width regression test. One review pass returned `good to go`; the task closed out cleanly with release success. No live phone or v0.5.87 server was available, so reproduction relied on component tests at 360/390/412px; main was confirmed affected by source inspection.
@@ -27,9 +38,9 @@ Regression coverage: a parameterized test mounts the real `WorkView` with a narr
 - **Engineering rounds:** 1 (round 1, 2026-11-15T15:25:13Z, plus one resumed turn to read queued messages).
 - **Review rounds:** 1 (pass 1, 2026-11-15T15:26:51Z, verdict `good to go`).
 - **Agents and models:**
-  - Engineer: `opencode-go/deepseek-v4.1-flash` — session elapsed 2759s (~46m), **181,278 tokens**, cost **$0.116830842**.
-  - Reviewer: `composer-2.5` — session elapsed 93s; tokens and cost not recorded.
-  - Model routing (openrouter router): two 1s sessions, model `unknown`; tokens and cost not recorded.
+- Engineer: `opencode-go/deepseek-v4.1-flash` — session elapsed 2759s (~46m), **181,278 tokens**, cost **$0.116830842**.
+- Reviewer: `composer-2.5` — session elapsed 93s; tokens and cost not recorded.
+- Model routing (openrouter router): two 1s sessions, model `unknown`; tokens and cost not recorded.
 - **Restarts or model swaps:** none recorded. One engineer *resume* occurred (the first turn ended cleanly without requesting handoff; see below), not a restart.
 - **Close-out:** gate completed in 114s; automated verification passed (browser console-error check on handoff evidence; guard negative-test evidence skipped — no check guard rules materially changed).
 

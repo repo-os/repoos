@@ -1,3 +1,14 @@
+---
+id: summary
+title: summary
+type: feature
+status: inbox
+priority: p2
+area: general
+assigned_to: ai
+created_by: ""
+branch: ""
+---
 ## TL;DR
 
 Task 1131 reworked the RepoOS Hub mobile server picker based on Nick's feedback after testing the #1127 build on his Nothing Phone (3a). The Edit/Done reorder toggle is gone — rows are now reordered by long-press-and-drag with haptics (350 ms hold, live reordering, persisted on drop). "Find servers on my tailnet" moved from the list header into the bottom action area above "Add server", and remains available in the empty state. Discovery against a server too old to have `GET /api/servers/tailnet` (like bee on v0.5.83) now shows a plain message naming the server and offering manual add, instead of "The server sent an unexpected reply." An unrelated but blocking fix rode along: a backtracking regex in the shared test harness stalled every vitest run. One review pass returned "good to go" (evidence-gap-only); the task merged cleanly as `cc01d288ca54a34f5e79bcbffabb1a7456caddff` and was released successfully.
@@ -20,9 +31,9 @@ Shipped, per the merged branch:
 - **Engineering rounds**: one recorded engineering round (Round 1, finalized at 16:50:15Z). The single engineer session spanned 7049 s (~1 h 57 m) from 14:39:38Z, but it was interrupted repeatedly (see below), so it is best described as one long session with several ended turns, not multiple dev rounds.
 - **Review rounds**: 1 pass — verdict "good to go" at 2026-11-15T16:51:17Z (reviewer session elapsed 59 s).
 - **Agents and models**:
-  - Engineer: agent `engineer`, model `opencode-go/deepseek-v4.1-flash`. Tokens 345,490; cost $0.175574064; status finished.
-  - Reviewer: agent `reviewer`, model `composer-2.5`. Tokens and cost not recorded.
-  - Model router (openrouter): two routing sessions, both ~instant (1 s and 0 s), model unknown.
+- Engineer: agent `engineer`, model `opencode-go/deepseek-v4.1-flash`. Tokens 345,490; cost $0.175574064; status finished.
+- Reviewer: agent `reviewer`, model `composer-2.5`. Tokens and cost not recorded.
+- Model router (openrouter): two routing sessions, both ~instant (1 s and 0 s), model unknown.
 - **Restarts**: the watchdog restarted the engineer twice (15:59:55Z and 16:13:40Z), both times because a queued message waited 3 m with no live process.
 - **Merge**: `cc01d288ca54a34f5e79bcbffabb1a7456caddff`; close-out ended with `release:success`.
 
