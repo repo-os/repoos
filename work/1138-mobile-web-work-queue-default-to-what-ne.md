@@ -11,7 +11,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/mobile-web-work-queue-default-to-what-ne
 created_at: "2026-11-15T17:24:06Z"
-updated_at: "2026-11-15T20:05:50Z"
+updated_at: "2026-11-15T20:07:24Z"
 ---
 ## Problem
 Nick: on a phone it's "really hard to find the right task and do anything normal". On main `23dc737`, the mobile Work queue (MobileWorkQueue.vue):
@@ -73,6 +73,11 @@ Nick: on a phone it's "really hard to find the right task and do anything normal
 ]
 ```
 
+## Verification
+- Scoped `repoos check --changed main` passes (format, lint, build, CSS/theme/color guards, UI smoke, rendered contrast).
+- `src/ui-app/tests/mobile-work-queue.test.ts` covers the grouped default view, search by id/title/area, priority/area/story/human chips, held/human reachability, `?status=` read and URL write-back, the 1,000-task card cap, and the empty/loading/error states.
+- The card bound is enforced and tested. The separate 300ms mid-range-phone timing target was not measured in this session; verify it in a CPU-throttled mobile browser profile.
+
 ## Screenshots
 
 ![360px: queue defaults to All statuses, 1065 tasks incl. 1035 done, no search](/api/tasks/1138/attachments/att_b78506c3-5dbe-4c4d-8f17-de54c90d274d.png)
@@ -88,3 +93,4 @@ Nick: on a phone it's "really hard to find the right task and do anything normal
 - 2026-11-15T20:00:08Z · body
 - 2026-11-15T20:02:09Z · body
 - 2026-11-15T20:05:50Z · body
+- 2026-11-15T20:07:24Z · body: Verification (added)
