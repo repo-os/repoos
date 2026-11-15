@@ -11,7 +11,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/mobile-web-work-queue-default-to-what-ne
 created_at: "2026-11-15T17:24:06Z"
-updated_at: "2026-11-15T19:58:16Z"
+updated_at: "2026-11-15T20:00:08Z"
 ---
 ## Problem
 Nick: on a phone it's "really hard to find the right task and do anything normal". On main `23dc737`, the mobile Work queue (MobileWorkQueue.vue):
@@ -55,3 +55,4 @@ Nick: on a phone it's "really hard to find the right task and do anything normal
 - 2026-11-15T19:49:18Z · status inbox→ready
 - 2026-11-15T19:49:20Z · status ready→active, branch
 - 2026-11-15T19:58:16Z · body
+- 2026-11-15T20:00:08Z · body
