@@ -36,3 +36,4 @@ Look at the worktree cleanup in the closeout path (the code behind `repoos done`
 - 2026-11-15T17:39:07Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-15T17:42:09Z · message_delivered: 1 message(s)
 - 2026-11-15T17:44:07Z · message_queued at 2026-11-15T17:44:07.298Z
+- 2026-11-15T17:44:07Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
