@@ -114,3 +114,4 @@ Smaller mobile issues found on main `23dc737` (Chromium mobile emulation; 360/39
 - 2026-11-15T22:42:42Z · body
 - 2026-11-15T22:45:36Z · note: ui verification passed: 3 of 3 shots captured with clean console
 - 2026-11-15T22:45:37Z · status active→review
+- 2026-11-15T22:45:37Z · message_queued at 2026-11-15T22:45:37.308Z
