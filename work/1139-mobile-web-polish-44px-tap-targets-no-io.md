@@ -10,7 +10,11 @@ assigned_to: ai
 created_by: t@t
 branch: feat/mobile-web-polish-44px-tap-targets-no-io
 created_at: "2026-11-15T17:24:09Z"
-updated_at: "2026-11-15T20:38:24Z"
+updated_at: "2026-11-15T22:13:23Z"
+handoff_signal_retry_count: 2
+dev_error_count: 1
+engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-11-15T21:27:51.683Z\",\"kind\":\"dev-error\"}]"
+engineer_stall_resume_log: "[{\"at\":\"2026-11-15T21:35:54.464Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
 ## Problem
 Smaller mobile issues found on main `23dc737` (Chromium mobile emulation; 360/390/412 portrait, 740/844 landscape, 768 tablet):
@@ -50,6 +54,36 @@ Smaller mobile issues found on main `23dc737` (Chromium mobile emulation; 360/39
 - #1133 is reworking the Agents page last-runs log. Coordinate so this only touches tab and target sizing.
 - Found in a box-side Playwright QA pass on 16 Nov. Screenshots attached.
 
+## Shots
+```json
+[
+{
+  "label": "Phone Work queue: 44px top-bar controls, no keyboard hint in the search pill",
+  "target": "default",
+  "route": "/work",
+  "highlight": ".topbar",
+  "viewportWidth": 390,
+  "viewportHeight": 844
+},
+{
+  "label": "Landscape phone: icon-only sidebar and a Work header that wraps instead of clipping",
+  "target": "default",
+  "route": "/work",
+  "highlight": ".work-header",
+  "viewportWidth": 740,
+  "viewportHeight": 360
+},
+{
+  "label": "Phone Agents page: sub-tabs wrap and controls meet the 44px floor",
+  "target": "default",
+  "route": "/agents",
+  "highlight": ".agent-tabs",
+  "viewportWidth": 390,
+  "viewportHeight": 844
+}
+]
+```
+
 ## Screenshots
 
 ![740x360 landscape: desktop board + sidebar, title wraps, toolbar clipped, bar over title](/api/tasks/1139/attachments/att_dfb31a2f-0418-4561-85a5-7dfc888c1e5d.png)
@@ -60,3 +94,19 @@ Smaller mobile issues found on main `23dc737` (Chromium mobile emulation; 360/39
 - 2026-11-15T17:24:09Z · screenshots
 - 2026-11-15T20:38:21Z · status inbox→ready
 - 2026-11-15T20:38:24Z · status ready→active, branch
+- 2026-11-15T20:54:48Z · body
+- 2026-11-15T21:08:44Z · body
+- 2026-11-15T21:27:51Z · note: stopped orphaned engineer pid 20251
+- 2026-11-15T21:27:51Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
+- 2026-11-15T21:27:51Z · engineer crash recovery: resuming opencode + opencode-go/deepseek-v4.1-flash (1/3 crashes in 30m) · the agent process exited with an error — open the task to see the full output. Open Raw CLI error for details. (CLI: the agent process exited with an error — open the task to see the full output)
+- 2026-11-15T21:27:54Z · needs_input
+- 2026-11-15T21:35:54Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 1/3
+- 2026-11-15T21:35:56Z · watchdog: automatic resume failed — This worktree already has a recorded live engineer for task #1139 (pid 27638)
+- 2026-11-15T21:40:56Z · body
+- 2026-11-15T21:46:18Z · body
+- 2026-11-15T21:47:48Z · body
+- 2026-11-15T21:51:06Z · body
+- 2026-11-15T21:55:53Z · body
+- 2026-11-15T22:06:39Z · watchdog: restarting engineer after 11m with no live process
+- 2026-11-15T22:11:58Z · body
+- 2026-11-15T22:13:23Z · body

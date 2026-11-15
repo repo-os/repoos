@@ -2,7 +2,7 @@
 id: "0576"
 title: Provision Developer ID certificate and store CI secrets for macOS Hub signing
 type: feature
-status: review
+status: done
 human_step_decision: human
 human_step_decision_key: 05f845c2
 human_step_override: Cleared needs-human-step flag (sticky until acceptance criteria change)
@@ -10,11 +10,14 @@ human_step_override_key: 05f845c2
 priority: p1
 area: macos
 story: MacOS Native App
+merged_commit: 848ea9ba4e9ea6f04c53d5bd9ddf18a1ba2c1f65
 assigned_to: ai
 created_by: ""
 branch: feat/provision-developer-id-certificate-and-s
 created_at: "2026-09-28T18:42:44Z"
-updated_at: "2026-11-15T19:49:09Z"
+updated_at: "2026-11-15T21:28:19Z"
+last_close_out_gate_ms: 70972
+last_close_out_gate_at: "2026-11-15T20:39:27.199Z"
 review_passes: 1
 ---
 Document the credentials and rotation runbook required for automated Developer ID signing and notarization of RepoOS Hub. An authorized maintainer performs the Apple Developer account and GitHub secret setup separately; this task's agent deliverable is the repository documentation and must not depend on access to, or claims about, those external account/device outcomes.
@@ -80,3 +83,8 @@ There is no UI change; maintainers can follow the runbook to provision and rotat
 - 2026-11-15T18:40:15Z · note: shots: skipped — the diff (3 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-15T18:40:47Z · note: review pass 1: good to go
 - 2026-11-15T19:49:09Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-15T20:38:27Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-15T20:39:27Z · close-out gate completed in 71s
+- 2026-11-15T20:39:31Z · status done→done, release:success
+- 2026-11-15T21:15:11Z · message_dropped: 1 queued message(s) discarded — task is done
+- 2026-11-15T21:28:19Z · message_dropped: 1 queued message(s) discarded — task is done

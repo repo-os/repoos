@@ -1,16 +1,18 @@
 ---
+updated_at: "2026-11-15T21:44:53Z"
+review_passes: 1
 id: "0579"
 title: Wire notarization and ticket stapling into the RepoOS Hub release workflow
 type: feature
-status: ready
+status: review
 priority: p1
 area: macos
 story: MacOS Native App
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/wire-notarization-and-ticket-stapling-in
 created_at: "2026-09-28T18:43:47Z"
-updated_at: "2026-10-07T16:09:27Z"
+handoff_signal_retry_count: 1
 ---
 After the release app and its DMG are signed as specified by #0578, the macOS Hub release job must submit the DMG to Apple's notary service, wait for approval, staple Apple's ticket to that same DMG, and verify the result before attaching it to a GitHub Release. This completes the distribution path needed for Gatekeeper to trust the downloaded artifact, including offline verification from the stapled ticket.
 
@@ -58,3 +60,12 @@ There is no UI change in this task: users receive a notarized, stapled DMG, whil
 - 2026-10-07T15:47:01Z · needs_input
 - 2026-10-07T16:08:42Z · needs_input
 - 2026-10-07T16:09:27Z · body: section Acceptance criteria
+- 2026-11-15T21:28:16Z · status ready→active, branch
+- 2026-11-15T21:36:05Z · body
+- 2026-11-15T21:37:02Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: Waiting for the scoped check to complete before requesting handoff. · stderr: (empty)
+- 2026-11-15T21:43:09Z · body
+- 2026-11-15T21:43:52Z · status active→review
+- 2026-11-15T21:43:52Z · message_queued at 2026-11-15T21:43:52.570Z
+- 2026-11-15T21:43:52Z · note: shots: skipped — the diff (4 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-11-15T21:44:53Z · note: review pass 1: good to go
+
