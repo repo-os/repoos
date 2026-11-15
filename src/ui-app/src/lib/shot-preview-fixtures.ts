@@ -1123,6 +1123,59 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
       // so the component reads this pin instead of racing its live fetch.
       pinnedAvailableRelease.value = shotFixtureAvailableRelease(fixture);
       break;
+    case "system:orphanedRuns":
+      // #1134 — the Control dashboard's run-process alert, including one
+      // still-running orphan and one already stopped.
+      repo.systemStats = {
+        machine: {
+          cpuCount: 8,
+          totalMem: 16 * 1024 ** 3,
+          freeMem: 1024 ** 3,
+          availableMem: 6 * 1024 ** 3,
+          loadavg: [1.1, 1.3, 1.2],
+          platform: "darwin",
+        },
+        totals: { cpuPercent: 12, memBytes: 4 * 1024 ** 3, memPercent: 25 },
+        processes: [],
+        serve: null,
+        repo: {
+          worktrees: 12,
+          trackedFiles: 1840,
+          linesOfCode: 263_400,
+          worktreeWarnThreshold: 20,
+        },
+        runProcesses: {
+          lastSweepAt: nowIso(),
+          orphans: [
+            {
+              pid: 4812,
+              taskId: "1134",
+              command: "node vitest run tests/mobile-work-queue.test.ts",
+              cpuTimeMs: 58 * 60_000,
+              cpuPercent: 61,
+              ageMs: 62 * 60_000,
+              matchedBy: "worktree-cwd",
+              survived: false,
+              at: nowIso(),
+            },
+            {
+              pid: 4813,
+              taskId: "1131",
+              command: "node vitest run --config vitest-min.config.mjs",
+              cpuTimeMs: 41 * 60_000,
+              cpuPercent: 54,
+              ageMs: 58 * 60_000,
+              matchedBy: "run-marker",
+              survived: true,
+              at: nowIso(),
+            },
+          ],
+        },
+        serverPid: 1000,
+        at: nowIso(),
+      };
+      pinnedSystemStats = repo.systemStats;
+      break;
     case "system:worktreeGc":
       repo.systemStats = {
         machine: {

@@ -23,9 +23,9 @@ import { formatAgentFailure } from "../core/agent-failure.js";
 import {
   patternKillWarning,
   processGroupKillSupported,
-  reapAgentTurnProcessGroup,
   signalProcessGroup,
 } from "../core/process-group.js";
+import { reapAgentTurnProcessTree, turnMarker } from "../core/run-processes.js";
 import {
   closeSync,
   existsSync,
@@ -365,6 +365,10 @@ export interface RunningAgentInfo {
   lastOutputAt?: string | null;
   /** Working directory the agent runs in (worktree path, or repo root). */
   workdir?: string;
+  /** This turn's run id, for the orphaned run-process reaper (#1134). */
+  runId?: string;
+  /** `REPOOS_TURN_MARKER` value inherited by every descendant (#1134). */
+  turnMarker?: string;
 }
 
 /** A turn that recently exited (#0540) — the `/agents` "recently finished" tail. */
@@ -6691,6 +6695,8 @@ export class AgentRunner {
         startedAt: e.startedAt,
         lastOutputAt: session?.lastOutputAt ?? null,
         workdir: e.workdir,
+        runId: e.runId,
+        turnMarker: turnMarker(this.config.root, id, e.runId),
       });
     }
     return out;
@@ -7819,6 +7825,10 @@ export class AgentRunner {
   }
 
   /** Record an activity entry in the task's activity log. Fail-soft. */
+  recordActivity(taskId: string, entry: string): void {
+    this.recordTaskActivity(taskId, entry);
+  }
+
   private recordTaskActivity(taskId: string, entry: string): void {
     if (process.env.REPOOS_PREVIEW_CHILD === "1") return;
     if (!this.getTask) return;
@@ -8040,6 +8050,9 @@ export class AgentRunner {
       // expected) would route to this exact run.
       if (!opts.review) agentEnv.REPOOS_TASK_ID = taskId;
       agentEnv.REPOOS_RUN_ID = runId;
+      // Inherited by every shell/test process the agent starts, including ones
+      // that leave the turn's process group (#1134).
+      agentEnv.REPOOS_TURN_MARKER = turnMarker(this.config.root, taskId, runId);
       if (this.apiUrl && !opts.review) agentEnv.REPOOS_API_URL = this.apiUrl;
       // Per-harness env (e.g. CRUSH_CLIENT_SERVER=0) applied last so it cannot
       // be clobbered by the lifecycle bookkeeping above.
@@ -10351,20 +10364,37 @@ export class AgentRunner {
     // Patch the main copy to match so the live board cannot drift silently.
     this.healBoardDivergence(taskId, entry, session);
     if (groupLeader) {
-      const leaked = reapAgentTurnProcessGroup(groupLeader);
-      if (leaked.length > 0 && session) {
-        this.recordEntry(taskId, session, "sys", {
-          type: "sys",
-          d:
-            `⚠ After this turn ended, ${leaked.length} process(es) escaped its process group ` +
-            `(PIDs: ${leaked.join(", ")}). They may need manual cleanup.`,
-        });
-      } else if (leaked.length > 0) {
-        this.appendLine(
-          taskId,
-          "sys",
-          `⚠ After this turn ended, ${leaked.length} process(es) escaped its process group (PIDs: ${leaked.join(", ")}).`,
-        );
+      // Kill the turn's process group AND anything that escaped it by calling
+      // setsid/setpgid or by being reparented to PID 1 (#1134). Tracking is by
+      // PID tree, worktree cwd and the run marker — never by process name.
+      const reaped = await reapAgentTurnProcessTree({
+        repoRoot: this.config.root,
+        leaderPid: groupLeader,
+        workdir: entry.workdir,
+        marker: entry.runId ? turnMarker(this.config.root, taskId, entry.runId) : null,
+        taskId,
+        // A cwd match must have started during this turn: a human dev server
+        // that predates it in the same worktree is not this turn's child.
+        maxCwdAgeMs:
+          Math.max(0, Date.now() - (Date.parse(entry.startedAt) || Date.now())) + 120_000,
+        graceMs: 750,
+      });
+      const leaked = reaped.survivors;
+      const escaped = reaped.processes.filter(
+        (process) => process.pid !== groupLeader && process.matchedBy !== "turn-tree",
+      );
+      if (leaked.length > 0) {
+        const message =
+          `⚠ After this turn ended, ${leaked.length} process(es) escaped its process group ` +
+          `(PIDs: ${leaked.join(", ")}). They may need manual cleanup.`;
+        if (session) this.recordEntry(taskId, session, "sys", { type: "sys", d: message });
+        else this.appendLine(taskId, "sys", message);
+      } else if (escaped.length > 0) {
+        const message =
+          `Stopped ${escaped.length} process(es) this turn spawned outside its process group ` +
+          `(PIDs: ${escaped.map((process) => process.pid).join(", ")}).`;
+        if (session) this.recordEntry(taskId, session, "sys", { type: "sys", d: message });
+        else this.appendLine(taskId, "sys", message);
       }
     }
     removeAgentRunTmpdir(this.config.root, this.config.cacheDir ?? ".repoos", entry.runId);
