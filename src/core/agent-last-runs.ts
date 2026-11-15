@@ -53,7 +53,9 @@ export function matchAgentRunSetup(
 ): AgentRunSetupMatch {
   const runCli = normalizeCodingAgent(run.codingAgent);
   const runModel = normalizeModelName(run.model);
-  if (!runCli && !runModel) return "unknown";
+  // Without both values we cannot judge the setup; show the run's own status
+  // rather than claiming it used a different one.
+  if (!runCli || !runModel) return "unknown";
   if (
     runCli === normalizeCodingAgent(current.cli) &&
     runModel === normalizeModelName(current.model)

@@ -47,6 +47,7 @@ describe("matchAgentRunSetup", () => {
   it("returns unknown when the response predates the CLI/model fields", () => {
     expect(matchAgentRunSetup({}, current)).toBe("unknown");
     expect(matchAgentRunSetup({ codingAgent: "", model: null }, current)).toBe("unknown");
+    expect(matchAgentRunSetup({ codingAgent: "opencode" }, current)).toBe("unknown");
   });
 });
 
