@@ -11,7 +11,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/mobile-web-task-detail-one-full-touch-de
 created_at: "2026-11-15T17:24:03Z"
-updated_at: "2026-11-15T21:43:37Z"
+updated_at: "2026-11-15T21:43:46Z"
 dev_error_count: 3
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-11-15T21:27:52.574Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -61,31 +61,31 @@ On a phone there's a single task detail, whichever way it was opened (card, sear
 ```json
 [
 {
-  "label": "Phone detail at 390px: Back to queue, 44px close, shared drawer header",
-  "target": "default",
-  "route": "/work?task=9999&tab=review",
-  "highlight": ".drawer-head",
-  "state": "drawer:statusReviewFailed",
-  "viewportWidth": 390,
-  "viewportHeight": 844
+"label": "Phone detail at 390px: Back to queue, 44px close, shared drawer header",
+"target": "default",
+"route": "/work?task=9999&tab=review",
+"highlight": ".drawer-head",
+"state": "drawer:statusReviewFailed",
+"viewportWidth": 390,
+"viewportHeight": 844
 },
 {
-  "label": "Review failed on the phone detail: status line plus Review again in the Review tab",
-  "target": "default",
-  "route": "/work?task=9999&tab=review",
-  "highlight": ".drawer-status-summary",
-  "state": "drawer:statusReviewFailed",
-  "viewportWidth": 390,
-  "viewportHeight": 844
+"label": "Review failed on the phone detail: status line plus Review again in the Review tab",
+"target": "default",
+"route": "/work?task=9999&tab=review",
+"highlight": ".drawer-status-summary",
+"state": "drawer:statusReviewFailed",
+"viewportWidth": 390,
+"viewportHeight": 844
 },
 {
-  "label": "360px: scrollable tab strip with Back and close on-screen, ?tab=changes selected",
-  "target": "default",
-  "route": "/work?task=9999&tab=changes",
-  "highlight": ".drawer-tabs",
-  "state": "drawer:landable",
-  "viewportWidth": 360,
-  "viewportHeight": 800
+"label": "360px: scrollable tab strip with Back and close on-screen, ?tab=changes selected",
+"target": "default",
+"route": "/work?task=9999&tab=changes",
+"highlight": ".drawer-tabs",
+"state": "drawer:landable",
+"viewportWidth": 360,
+"viewportHeight": 800
 }
 ]
 ```
@@ -130,3 +130,4 @@ On a phone there's a single task detail, whichever way it was opened (card, sear
 - 2026-11-15T21:33:51Z · body
 - 2026-11-15T21:41:34Z · body
 - 2026-11-15T21:43:37Z · body
+- 2026-11-15T21:43:46Z · body
