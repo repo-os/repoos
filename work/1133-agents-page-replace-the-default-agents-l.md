@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-15T18:52:41Z"
-review_passes: 1
 id: "1133"
 title: "Agents page: replace the Default agents last-runs log with a per-agent status dot"
 type: feature
@@ -11,6 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/agents-page-replace-the-default-agents-l
 created_at: "2026-11-15T15:20:08Z"
+updated_at: "2026-11-15T18:51:40Z"
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -115,68 +114,4 @@ The current list is `agentLastRuns` in src/ui-app/src/views/AgentsView.vue, fed 
 - 2026-11-15T17:44:07Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-15T17:44:24Z · queued message undelivered for 5m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-15T17:44:25Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 130) · last assistant: The captured shots show the old block is gone but no status dots, because the preview board has no recent runs. I'll add a deterministic preview fixture so the review shots actually demonstrate the new inline status. · stderr: (empty)
-- 2026-11-15T17:49:10Z · message_delivered: 1 message(s)
-- 2026-11-15T17:54:07Z · message_queued at 2026-11-15T17:54:07.419Z
-- 2026-11-15T17:54:07Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-15T17:57:10Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
-- 2026-11-15T17:57:10Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 130) · last assistant: The captured shots show the old block is gone but no status dots, because the preview board has no recent runs. I'll add a deterministic preview fixture so the review shots actually demonstrate the new inline status. · stderr: (empty)
-- 2026-11-15T17:57:10Z · message_delivered: 1 message(s)
-- 2026-11-15T17:59:07Z · message_queued at 2026-11-15T17:59:07.286Z
-- 2026-11-15T17:59:07Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-15T18:02:10Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
-- 2026-11-15T18:02:10Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 130) · last assistant: The captured shots show the old block is gone but no status dots, because the preview board has no recent runs. I'll add a deterministic preview fixture so the review shots actually demonstrate the new inline status. · stderr: (empty)
-- 2026-11-15T18:02:10Z · message_delivered: 1 message(s)
-- 2026-11-15T18:03:19Z · message_queued at 2026-11-15T18:03:19.237Z
-- 2026-11-15T18:03:19Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-15T18:04:06Z · CTO nudge: held — an undelivered message is already queued
-- 2026-11-15T18:06:40Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
-- 2026-11-15T18:06:40Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 130) · last assistant: The earlier local check run timed out while waiting on the remote validation runner. I'll re-run it in the background and monitor the log rather than blocking the turn. · stderr: (empty)
-- 2026-11-15T18:08:10Z · message_delivered: 1 message(s)
-- 2026-11-15T18:09:07Z · message_queued at 2026-11-15T18:09:07.331Z
-- 2026-11-15T18:09:07Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-15T18:09:27Z · CTO nudge: held — an undelivered message is already queued
-- 2026-11-15T18:12:10Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
-- 2026-11-15T18:12:10Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 130) · last assistant: The earlier local check run timed out while waiting on the remote validation runner. I'll re-run it in the background and monitor the log rather than blocking the turn. · stderr: (empty)
-- 2026-11-15T18:12:11Z · message_delivered: 1 message(s)
-- 2026-11-15T18:14:07Z · message_queued at 2026-11-15T18:14:07.311Z
-- 2026-11-15T18:14:07Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-15T18:17:10Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
-- 2026-11-15T18:17:10Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 130) · last assistant: The earlier local check run timed out while waiting on the remote validation runner. I'll re-run it in the background and monitor the log rather than blocking the turn. · stderr: (empty)
-- 2026-11-15T18:17:11Z · message_delivered: 1 message(s)
-- 2026-11-15T18:19:07Z · message_queued at 2026-11-15T18:19:07.300Z
-- 2026-11-15T18:19:07Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-15T18:22:10Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
-- 2026-11-15T18:22:10Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 130) · last assistant: The earlier local check run timed out while waiting on the remote validation runner. I'll re-run it in the background and monitor the log rather than blocking the turn. · stderr: (empty)
-- 2026-11-15T18:22:11Z · message_delivered: 1 message(s)
-- 2026-11-15T18:24:07Z · message_queued at 2026-11-15T18:24:07.310Z
-- 2026-11-15T18:24:07Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-15T18:27:10Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
-- 2026-11-15T18:27:10Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 130) · last assistant: The earlier local check run timed out while waiting on the remote validation runner. I'll re-run it in the background and monitor the log rather than blocking the turn. · stderr: (empty)
-- 2026-11-15T18:27:11Z · message_delivered: 1 message(s)
-- 2026-11-15T18:29:07Z · message_queued at 2026-11-15T18:29:07.489Z
-- 2026-11-15T18:29:07Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-15T18:30:32Z · CTO nudge: held — an undelivered message is already queued
-- 2026-11-15T18:33:55Z · queued message undelivered for 5m and the engineer produced no output — ending the turn so it is delivered
-- 2026-11-15T18:33:55Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 130) · last assistant: The remote validation runner failed one unrelated real-process test (`agent-serve-guard`) that passes locally; the server's own scoped re-check then passed. I'll run a local-tests gate explicitly for a clean result before handing off. · stderr: (empty)
-- 2026-11-15T18:37:10Z · message_delivered: 1 message(s)
-- 2026-11-15T18:39:07Z · message_queued at 2026-11-15T18:39:07.281Z
-- 2026-11-15T18:39:07Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-15T18:40:17Z · CTO nudge: held — an undelivered message is already queued
-- 2026-11-15T18:42:10Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
-- 2026-11-15T18:42:10Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 130) · last assistant: The remote validation runner failed one unrelated real-process test (`agent-serve-guard`) that passes locally; the server's own scoped re-check then passed. I'll run a local-tests gate explicitly for a clean result before handing off. · stderr: (empty)
-- 2026-11-15T18:42:10Z · message_delivered: 1 message(s)
-- 2026-11-15T18:43:44Z · message_queued at 2026-11-15T18:43:44.493Z
-- 2026-11-15T18:43:44Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-15T18:44:07Z · CTO nudge: held — an undelivered message is already queued
-- 2026-11-15T18:46:55Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
-- 2026-11-15T18:46:56Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 130) · last assistant: The remote validation runner failed one unrelated real-process test (`agent-serve-guard`) that passes locally; the server's own scoped re-check then passed. I'll run a local-tests gate explicitly for a clean result before handing off. · stderr: (empty)
-- 2026-11-15T18:46:56Z · message_delivered: 1 message(s)
-- 2026-11-15T18:49:07Z · message_queued at 2026-11-15T18:49:07.299Z
-- 2026-11-15T18:49:07Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-15T18:50:01Z · body
-- 2026-11-15T18:51:41Z · status active→review
-- 2026-11-15T18:51:41Z · note: shots: skipped — 2 shots already captured — an engineer-made capture pre-empts the automatic one
-- 2026-11-15T18:51:41Z · message_queued at 2026-11-15T18:51:41.391Z
-- 2026-11-15T18:51:41Z · note: shots: skipped — 2 shots already captured — an engineer-made capture pre-empts the automatic one
-- 2026-11-15T18:52:41Z · note: review pass 1: good to go
-
+- 2026-11-15T18:51:40Z · status active→review

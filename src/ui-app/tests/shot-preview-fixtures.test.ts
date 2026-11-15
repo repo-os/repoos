@@ -19,6 +19,7 @@ import {
   shotFixtureReleaseEmail,
   shotFixtureReleaseRun,
   shotFixtureSchedules,
+  shotFixtureAgentLastRuns,
   isShotPreviewSeededTaskId,
   shotPreviewSkipsEngineeringReportsFetch,
   shotPreviewSkipsIntegrationJobFetch,
@@ -139,6 +140,29 @@ describe("shot preview board fixtures (#0743)", () => {
       expect(row.nextRunPreview.length).toBeGreaterThan(0);
       expect(row.path).toContain(row.id);
     }
+  });
+
+  it("seeds inline last-run statuses for agents:lastRuns (#1133)", () => {
+    expect(shotFixtureAgentLastRuns(null, [])).toBeNull();
+    expect(shotFixtureAgentLastRuns("agents:scheduledSeeded", [])).toBeNull();
+    const rows = shotFixtureAgentLastRuns("agents:lastRuns", [
+      { name: "engineer", cli: "opencode", model: "glm-5.3-flash" },
+      { name: "pm", cli: "opencode", model: "glm-5.3-flash" },
+    ])!;
+    const byName = new Map(rows.map((row) => [row.name, row]));
+    expect(byName.get("engineer")).toMatchObject({
+      status: "errored",
+      codingAgent: "opencode",
+      model: "glm-5.3-flash",
+    });
+    expect(byName.get("engineer")!.reason).toContain("(CLI:");
+    expect(byName.get("pm")).toMatchObject({ status: "finished", reason: null });
+    // The reviewer row is from an older pair, so the capture shows "previous setup".
+    expect(byName.get("reviewer")).toMatchObject({
+      status: "errored",
+      codingAgent: "claude code",
+      model: "sonnet-4",
+    });
   });
 
   it("requires no dialog container for agents:scheduledSeeded (#1005)", () => {

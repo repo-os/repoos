@@ -17,11 +17,15 @@ import DialogDescription from "./ui/dialog/description.vue";
 import DialogOverlay from "./ui/dialog/overlay.vue";
 import DialogTitle from "./ui/dialog/title.vue";
 import AgentModelControl from "./AgentModelControl.vue";
+import AgentRunStatus from "./AgentRunStatus.vue";
+import type { AgentLastRunRow } from "../../../core/agent-last-runs.js";
 
 interface Props {
   agent: string;
   /** Chat-style agent: hide the schedule / run-now block; interaction happens via its floating head. */
   interactive?: boolean;
+  /** Latest run for this built-in, when one exists. */
+  lastRun?: AgentLastRunRow | null;
 }
 
 const props = defineProps<Props>();
@@ -312,6 +316,7 @@ async function runNow(): Promise<void> {
         <span class="agent-dot"></span>
         <span class="agent-name">{{ agentMeta.icon }} {{ agentMeta.name }}</span>
         <span class="agent-badge">built-in</span>
+        <AgentRunStatus :run="lastRun ?? null" :cli="effectiveCli" :model="effectiveModel" />
       </div>
       <Switch :checked="state.enabled" @update:checked="toggleEnabled" />
     </div>

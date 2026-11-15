@@ -1,6 +1,4 @@
-/** Agents page last-runs list: recency window and configured-agent filtering. */
-
-export const AGENT_LAST_RUN_RECENT_MS = 14 * 24 * 60 * 60 * 1000;
+/** Per-agent last-run status shown inline on the Agents page cards (#1133). */
 
 export interface AgentLastRunRow {
   name: string;
@@ -8,43 +6,106 @@ export interface AgentLastRunRow {
   at: string;
   taskId: string | null;
   reason: string | null;
+  /** Coding agent CLI recorded for the run; absent on older API responses. */
+  codingAgent?: string | null;
+  /** Model recorded for the run; absent on older API responses. */
+  model?: string | null;
 }
 
-/** Model-routing one-shots are not task-engine defaults — keep them out of the primary list. */
-export function isAuxiliaryRoutingAgent(name: string): boolean {
-  const n = name.trim();
-  return /^Model router\b/i.test(n) || /^Decision check\b/i.test(n);
+/** Does this run belong to the agent's current coding agent + model? */
+export type AgentRunSetupMatch = "current" | "previous" | "unknown";
+
+/** Visual tone for the status dot. */
+export type AgentRunTone = "ok" | "error" | "running" | "muted";
+
+const CLI_ALIASES: Record<string, string> = {
+  claude: "claude code",
+  "claude-code": "claude code",
+  copilot: "github copilot",
+  agy: "antigravity",
+  qwen: "qwen code",
+  "qwen-code": "qwen code",
+  "open-code": "opencode",
+  "open code": "opencode",
+};
+
+/** Compare CLI labels without caring about case, spacing or common aliases. */
+export function normalizeCodingAgent(cli: string | null | undefined): string {
+  const normalized = (cli ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/[_\s]+/g, " ");
+  return CLI_ALIASES[normalized] ?? normalized;
 }
 
-export function filterAgentLastRuns(
-  runs: AgentLastRunRow[],
-  configuredNames: ReadonlySet<string>,
-  nowMs: number,
-  showAll: boolean,
-): { visible: AgentLastRunRow[]; hiddenCount: number } {
-  const recentCutoff = nowMs - AGENT_LAST_RUN_RECENT_MS;
-  const primary: AgentLastRunRow[] = [];
-  const other: AgentLastRunRow[] = [];
+/** Model names are compared case-insensitively, with incidental spacing trimmed. */
+export function normalizeModelName(model: string | null | undefined): string {
+  return (model ?? "").trim().toLowerCase();
+}
 
-  for (const run of runs) {
-    const known = configuredNames.has(run.name.toLowerCase());
-    const recent = Date.parse(run.at) >= recentCutoff;
-    const routing = isAuxiliaryRoutingAgent(run.name);
-    if (known && recent && !routing) primary.push(run);
-    else other.push(run);
+/**
+ * A run from a different CLI/model than the agent now uses is a *previous
+ * setup* — useful history, but never the agent's current status.
+ */
+export function matchAgentRunSetup(
+  run: Pick<AgentLastRunRow, "codingAgent" | "model">,
+  current: { cli: string; model: string },
+): AgentRunSetupMatch {
+  const runCli = normalizeCodingAgent(run.codingAgent);
+  const runModel = normalizeModelName(run.model);
+  // Without both values we cannot judge the setup; show the run's own status
+  // rather than claiming it used a different one.
+  if (!runCli || !runModel) return "unknown";
+  if (
+    runCli === normalizeCodingAgent(current.cli) &&
+    runModel === normalizeModelName(current.model)
+  ) {
+    return "current";
   }
-
-  if (showAll) return { visible: [...primary, ...other], hiddenCount: 0 };
-  return { visible: primary, hiddenCount: other.length };
+  return "previous";
 }
 
-/** Names that count as configured agents for the Default agents last-runs panel. */
-export function buildConfiguredAgentLastRunNames(
-  roleNames: string[],
-  builtInAgentIds: string[],
-): Set<string> {
-  const names = new Set<string>();
-  for (const name of roleNames) names.add(name.toLowerCase());
-  for (const id of builtInAgentIds) names.add(id.toLowerCase());
-  return names;
+/** "opencode + glm-5.3-flash" — the pair a previous-setup label names. */
+export function describeAgentRunSetup(run: Pick<AgentLastRunRow, "codingAgent" | "model">): string {
+  const cli = (run.codingAgent ?? "").trim() || "unknown CLI";
+  const model = (run.model ?? "").trim() || "unknown model";
+  return `${cli} + ${model}`;
+}
+
+function statusWord(status: string): "failed" | "running" | "finished" {
+  switch (status.trim().toLowerCase()) {
+    case "errored":
+    case "failed":
+      return "failed";
+    case "active":
+    case "running":
+      return "running";
+    default:
+      return "finished";
+  }
+}
+
+/**
+ * Short inline label: "Failed 21:36", "Last run 21:40", or
+ * "Previous setup (opencode + glm-5.3-flash)".
+ */
+export function formatAgentRunLabel(
+  run: Pick<AgentLastRunRow, "status" | "codingAgent" | "model">,
+  match: AgentRunSetupMatch,
+  clock: string,
+): string {
+  if (match === "previous") return `Previous setup (${describeAgentRunSetup(run)})`;
+  const word = statusWord(run.status);
+  if (word === "failed") return `Failed ${clock}`;
+  if (word === "running") return `Running ${clock}`;
+  return `Last run ${clock}`;
+}
+
+/** Colour the dot by the run's outcome; previous setups stay muted. */
+export function agentRunTone(status: string, match: AgentRunSetupMatch): AgentRunTone {
+  if (match === "previous") return "muted";
+  const word = statusWord(status);
+  if (word === "failed") return "error";
+  if (word === "running") return "running";
+  return "ok";
 }

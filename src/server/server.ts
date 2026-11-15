@@ -4221,6 +4221,10 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           at: row.startedAt,
           taskId: row.taskId,
           reason,
+          // #1133 — the card compares these with the agent's current config so
+          // a run from an older CLI/model is never shown as its current status.
+          codingAgent: row.codingAgent,
+          model: row.model,
         };
       }),
     });

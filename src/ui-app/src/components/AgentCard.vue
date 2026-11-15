@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import type { Agent, ModelTestResult } from "../types";
+import type { AgentLastRunRow } from "../../../core/agent-last-runs.js";
 import { useConfigStore } from "../stores/config";
 import Button from "./ui/button.vue";
 import Input from "./ui/input.vue";
 import Switch from "./ui/switch.vue";
 import AgentModelControl from "./AgentModelControl.vue";
+import AgentRunStatus from "./AgentRunStatus.vue";
 import VoiceDictate from "./VoiceDictate.vue";
 import { ChevronDown, ChevronRight, Plus } from "lucide-vue-next";
 
@@ -23,6 +25,8 @@ const props = defineProps<{
   testing: boolean;
   testResult?: ModelTestResult;
   registerInstrRef: (el: HTMLTextAreaElement | null) => void;
+  /** Latest run for this role, when one exists. */
+  lastRun?: AgentLastRunRow | null;
 }>();
 
 const emit = defineEmits<{
@@ -62,6 +66,7 @@ function badgeLabel(): string | null {
         />
         <span v-else class="agent-name">{{ agent.name }}</span>
         <span v-if="badgeLabel()" class="agent-badge">{{ badgeLabel() }}</span>
+        <AgentRunStatus :run="lastRun ?? null" :cli="agent.cli" :model="agent.model" />
       </div>
       <div v-if="variant === 'custom'" style="display: flex; align-items: center; gap: 10px">
         <Button variant="ghost" size="sm" class="agent-remove" @click="emit('remove')">
