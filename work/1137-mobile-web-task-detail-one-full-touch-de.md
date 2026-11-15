@@ -11,7 +11,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/mobile-web-task-detail-one-full-touch-de
 created_at: "2026-11-15T17:24:03Z"
-updated_at: "2026-11-15T21:54:40Z"
+updated_at: "2026-11-15T21:57:06Z"
 dev_error_count: 3
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-11-15T21:27:52.574Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -134,3 +134,4 @@ On a phone there's a single task detail, whichever way it was opened (card, sear
 - 2026-11-15T21:49:00Z · body
 - 2026-11-15T21:54:39Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: test failure: tests/agent-serve-guard.test.ts > CLI rejection (real process) > rejects an agent's direct repoos serve and leaves the port free on bee — fix it in the feature branch and re-run the gate · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
 - 2026-11-15T21:54:40Z · note: handoff requested (cli)
+- 2026-11-15T21:57:06Z · note: ui verification failed: ui verification failed (1 issue(s)): [missing-target] 360px: scrollable tab strip with Back and close on-screen, ?tab=changes selected (target "default"): loading state detected: loading text "Loading full diff… this may take a momen" on /work?task=9999&tab=changes (http://127.0.0.1:38231/work?task=9999&tab=changes&shotState=drawer%3Alandable)
