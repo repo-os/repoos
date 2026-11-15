@@ -78,3 +78,4 @@ Reproduced on this branch (based on current main) at 360, 390 and 412 px by moun
 - 2026-11-15T15:25:11Z · note: ui verification passed: 2 of 2 shots captured with clean console
 - 2026-11-15T15:25:13Z · status active→review
 - 2026-11-15T15:25:14Z · note: Task body is underspecified: missing sections: Notes for AI
+- 2026-11-15T15:25:14Z · message_queued at 2026-11-15T15:25:14.449Z
