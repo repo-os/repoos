@@ -3,6 +3,9 @@ id: "1137"
 title: "Mobile web task detail: one full touch detail for every entry point (card view is a read-only stub; drawer tabs and close clipped)"
 type: bug
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: the agent process exited with an error — open the task to see the full output
 paths: [src/ui-app/src/components/MobileTaskDetail.vue, src/ui-app/src/App.vue, src/ui-app/src/components/TaskDrawer.vue]
 priority: p1
 area: web
@@ -11,9 +14,9 @@ assigned_to: ai
 created_by: t@t
 branch: feat/mobile-web-task-detail-one-full-touch-de
 created_at: "2026-11-15T17:24:03Z"
-updated_at: "2026-11-15T20:32:27Z"
-dev_error_count: 1
-engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-11-15T20:25:16.075Z\",\"kind\":\"dev-error\"}]"
+updated_at: "2026-11-15T20:35:07Z"
+dev_error_count: 2
+engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-11-15T20:25:16.075Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-11-15T20:35:07.691Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 On a phone (below 720px), a task has two different detail views:
@@ -66,15 +69,15 @@ On a phone there's a single task detail, whichever way it was opened (card, sear
 "route": "/work?task=9999&tab=review",
 "highlight": ".drawer-status-summary",
 "assert": [
-  {
-    "selector": ".drawer-mobile-back",
-    "label": "Back-to-queue control present"
-  },
-  {
-    "selector": ".drawer-tabs .tab-btn",
-    "label": "All drawer tabs present in the scrollable strip",
-    "minCount": 6
-  }
+{
+"selector": ".drawer-mobile-back",
+"label": "Back-to-queue control present"
+},
+{
+"selector": ".drawer-tabs .tab-btn",
+"label": "All drawer tabs present in the scrollable strip",
+"minCount": 6
+}
 ],
 "state": "drawer:statusReviewFailed",
 "viewportWidth": 390,
@@ -86,14 +89,14 @@ On a phone there's a single task detail, whichever way it was opened (card, sear
 "route": "/work?task=9999&tab=changes",
 "highlight": ".drawer-tabs",
 "assert": [
-  {
-    "selector": ".drawer-tabs",
-    "label": "Tab strip present"
-  },
-  {
-    "selector": ".drawer-mobile-back",
-    "label": "Back control present"
-  }
+{
+"selector": ".drawer-tabs",
+"label": "Tab strip present"
+},
+{
+"selector": ".drawer-mobile-back",
+"label": "Back control present"
+}
 ],
 "state": "drawer:statusReviewFailed",
 "viewportWidth": 360,
@@ -127,3 +130,6 @@ On a phone there's a single task detail, whichever way it was opened (card, sear
 - 2026-11-15T20:25:16Z · engineer crash recovery: resuming opencode + opencode-go/deepseek-v4.1-flash (1/3 crashes in 30m) · OpenCode exited with an error. Open Raw CLI error for details. (CLI: ✗ Server finalization stopped at check: remote validation failed: test failure: tests/agent-serve-guard.test.ts > CLI rejection (real process) > rejects an agent's dire…
 - 2026-11-15T20:25:17Z · needs_input
 - 2026-11-15T20:32:27Z · body
+- 2026-11-15T20:35:07Z · note: stopped orphaned engineer pid 91396
+- 2026-11-15T20:35:07Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
+- 2026-11-15T20:35:07Z · engineer crash recovery: resuming opencode + opencode-go/deepseek-v4.1-flash (2/3 crashes in 30m) · the agent process exited with an error — open the task to see the full output. Open Raw CLI error for details. (CLI: the agent process exited with an error — open the task to see the full output)
