@@ -1,6 +1,13 @@
 {
   "releases": [
     {
+      "version": "0.5.86",
+      "tag": "v0.5.86",
+      "date": "2026-11-15",
+      "notes": "## Highlights\n\n- **Phone screens finished.** Floating head icons no longer take a side column on phones (with a setting to hide them), and the touch fixes for Releases, Activity and other surfaces are complete (#1116).\n- **A redesigned RepoOS Hub app.** The Android and iOS server picker now looks native, with light and dark modes, color themes, better icons and a proper Settings page (#1120).\n- **One-command phone installs.** `just deploy-phone` builds the Hub app and installs it on your Android phone over Tailscale, as a separate \"RepoOS Hub Dev\" app that never replaces the release one (#1121).\n- **Clearer agent errors.** The Agents page no longer prints raw CLI output in the last-runs list: out-of-credit and rate-limit failures get plain sentences, other failures show a short summary with the raw text one click away, and old or removed agents are hidden behind a toggle (#1123).\n- **New GitHub Copilot models.** The Copilot agent can use the new model picker (GPT-6 Luna, GPT-6.1 Terra, Haiku 5.5) with the right model flags (#1122).\n- **Move to done fix.** Clicking Move to done in the task drawer no longer fails instantly with a \"reason of 1–1000 characters\" error, and similar button clicks were checked for the same mistake (#1119).",
+      "knownIssues": "- The new Copilot model ids still need adding to the `github copilot` entry in your Budget allowlist, which is paused (\"Waiting for model list fix\"), before agents can use them.\n- Landing sometimes fails on a few timing-sensitive tests on the remote runners (remote-host-pool, agent-review, pressure-guard); retrying usually works. A fix is in progress (#1125).\n- The new Hub screens have not been checked on a real phone yet."
+    },
+    {
       "version": "0.5.85",
       "tag": "v0.5.85",
       "date": "2026-11-14",

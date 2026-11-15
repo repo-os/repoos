@@ -5,6 +5,19 @@ pipeline from `release-history.json`; the newest entry is also the GitHub
 release body. The full discussion of each change lives in the release notes
 and on GitHub.
 
+## [v0.5.86] - 2026-11-15
+
+## Highlights
+
+- **Phone screens finished.** Floating head icons no longer take a side column on phones (with a setting to hide them), and the touch fixes for Releases, Activity and other surfaces are complete (#1116).
+- **A redesigned RepoOS Hub app.** The Android and iOS server picker now looks native, with light and dark modes, color themes, better icons and a proper Settings page (#1120).
+- **One-command phone installs.** `just deploy-phone` builds the Hub app and installs it on your Android phone over Tailscale, as a separate "RepoOS Hub Dev" app that never replaces the release one (#1121).
+- **Clearer agent errors.** The Agents page no longer prints raw CLI output in the last-runs list: out-of-credit and rate-limit failures get plain sentences, other failures show a short summary with the raw text one click away, and old or removed agents are hidden behind a toggle (#1123).
+- **New GitHub Copilot models.** The Copilot agent can use the new model picker (GPT-6 Luna, GPT-6.1 Terra, Haiku 5.5) with the right model flags (#1122).
+- **Move to done fix.** Clicking Move to done in the task drawer no longer fails instantly with a "reason of 1–1000 characters" error, and similar button clicks were checked for the same mistake (#1119).
+
+[Release on GitHub](https://github.com/repo-os/repoos/releases/tag/v0.5.86)
+
 ## [v0.5.85] - 2026-11-14
 
 - **A phone-friendly RepoOS in the browser.** Below 720px wide, RepoOS now serves a layout built for phones: a bottom tab bar (Work, Search, More, Settings) with a More sheet, a single-column Work queue with a New task button, status filter and sort, a task detail page, and a mobile Settings view. Desktop is unchanged, and the same layout works in a phone browser, as a home-screen app and inside the native shell. The design is recorded in ADR 0011 (#1110, #1112, #1113, #1114, #1115).
