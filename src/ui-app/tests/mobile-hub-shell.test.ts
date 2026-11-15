@@ -156,6 +156,13 @@ describe("mobile hub server list states", () => {
 });
 
 describe("mobile hub settings navigation", () => {
+  it("seeds the discovery fixture with a trusted server and import rows", () => {
+    setLocationSearch("?fixture=discover");
+    expect(readHubFixture()).toBe("discover");
+    expect(fixtureInitialRoute(readHubFixture())).toBe("discover");
+    expect(fixtureServers(readHubFixture())).toHaveLength(3);
+  });
+
   it("opens settings and add flows from fixture query params", () => {
     setLocationSearch("?fixture=settings");
     expect(fixtureInitialRoute(readHubFixture())).toBe("settings");

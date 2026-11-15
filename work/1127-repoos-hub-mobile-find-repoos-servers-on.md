@@ -1,18 +1,19 @@
 ---
-last_close_out_gate_ms: 149602
-last_close_out_gate_at: "2026-11-15T14:33:43.622Z"
 id: "1127"
 title: "RepoOS Hub mobile: find RepoOS servers on my tailnet via a trusted server"
 type: feature
-status: review
+status: done
 priority: p2
 area: [mobile, core]
 story: RepoOS Hub for Mobile
+merged_commit: cf98c717d7019a268d1d9a45957ec715b161d8fa
 assigned_to: ai
 created_by: t@t
 branch: feat/repoos-hub-mobile-find-repoos-servers-on
 created_at: "2026-11-15T12:54:17Z"
 updated_at: "2026-11-15T14:33:43Z"
+last_close_out_gate_ms: 149602
+last_close_out_gate_at: "2026-11-15T14:33:43.622Z"
 review_passes: 1
 ---
 ## Problem

@@ -1,32 +1,22 @@
 /** `repoos servers` — list registered RepoOS control-plane processes. */
-import { execFile } from "node:child_process";
-import { promisify } from "node:util";
 import { findRepoRoot, loadConfig } from "../core/config.js";
-import { remoteHostUser, resolveRemoteHosts } from "../core/remote-hosts.js";
-import type { RemoteValidationConfig, RemoteValidationHost } from "../core/types.js";
+import { resolveRemoteHosts } from "../core/remote-hosts.js";
 import {
   listValidatedServerRegistry,
   pruneStaleServerRegistryEntries,
 } from "../core/server-registry.js";
+import { collectTailnetServers, type ListedServer } from "../core/tailnet-servers.js";
 import { c } from "../cli/colors.js";
 
-const execFileAsync = promisify(execFile);
-const HOST_TIMEOUT_MS = 4_000;
-
-export interface ListedServer {
-  host: string;
-  port?: number;
-  pid?: number;
-  root?: string;
-  projectName?: string;
-  valid?: boolean;
-  uptimeSeconds?: number | null;
-  activeEngineers?: number;
-  staleReason?: string | null;
-  unreachable?: boolean;
-  reason?: string;
-  [key: string]: unknown;
-}
+// Re-exported for callers (and tests) that used to import these from the CLI
+// command before tailnet discovery moved into `src/core/tailnet-servers.ts` so
+// the server endpoint can share it.
+export {
+  collectTailnetServers,
+  parseTailnetPeers,
+  serversSshArgs,
+} from "../core/tailnet-servers.js";
+export type { ListedServer, RemoteExec } from "../core/tailnet-servers.js";
 
 function localJsonRow(row: Awaited<ReturnType<typeof listValidatedServerRegistry>>[number]) {
   return {
@@ -62,106 +52,6 @@ function printLocalRow(row: Awaited<ReturnType<typeof listValidatedServerRegistr
     `  ${c.cyan(String(e.port).padStart(5))}  ${status}  ${c.bold(e.projectName)}  ${c.dim(`pid ${e.pid}`)}  ${c.dim(formatUptime(row.uptimeSeconds))}${engineers}`,
   );
   console.log(`         ${c.dim(e.root)}`);
-}
-
-interface TailnetStatus {
-  Self?: { HostName?: string; DNSName?: string };
-  Peer?: Record<string, { HostName?: string; DNSName?: string; Online?: boolean }>;
-}
-
-export function parseTailnetPeers(json: string): string[] {
-  const status = JSON.parse(json) as TailnetStatus;
-  const self = (status.Self?.HostName ?? status.Self?.DNSName ?? "")
-    .replace(/\.$/, "")
-    .split(".")[0];
-  return [
-    ...new Set(
-      Object.values(status.Peer ?? {})
-        .filter((peer) => peer.Online !== false)
-        .map((peer) => (peer.HostName ?? peer.DNSName ?? "").replace(/\.$/, "").split(".")[0])
-        .filter((host) => host && host !== self),
-    ),
-  ];
-}
-
-type RemoteExec = (host: string, user: string, timeoutMs: number) => Promise<string>;
-
-export function serversSshArgs(host: string, user: string, timeoutMs: number): string[] {
-  return [
-    "-o",
-    "BatchMode=yes",
-    "-o",
-    `ConnectTimeout=${Math.ceil(timeoutMs / 1000)}`,
-    `${user}@${host}`,
-    "repoos servers --json",
-  ];
-}
-
-const defaultRemoteExec: RemoteExec = async (host, user, timeoutMs) => {
-  const { stdout } = await execFileAsync("ssh", serversSshArgs(host, user, timeoutMs), {
-    timeout: timeoutMs,
-    maxBuffer: 2 * 1024 * 1024,
-  });
-  return stdout.toString();
-};
-
-export async function collectTailnetServers(
-  local: ListedServer[],
-  options: {
-    tailscaleStatus?: () => Promise<string>;
-    configuredHosts?: string[];
-    remoteHosts?: RemoteValidationHost[];
-    remoteValidation?: RemoteValidationConfig;
-    remoteExec?: RemoteExec;
-    timeoutMs?: number;
-  } = {},
-): Promise<{ servers: ListedServer[]; tailscaleUnavailable: boolean }> {
-  let peers: string[] = [];
-  let tailscaleUnavailable = false;
-  try {
-    peers = parseTailnetPeers(
-      await (
-        options.tailscaleStatus ??
-        (async () => {
-          const { stdout } = await execFileAsync("tailscale", ["status", "--json"], {
-            timeout: 2_000,
-            maxBuffer: 2 * 1024 * 1024,
-          });
-          return stdout.toString();
-        })
-      )(),
-    );
-  } catch {
-    tailscaleUnavailable = true;
-    peers = options.configuredHosts ?? [];
-  }
-  const remoteExec = options.remoteExec ?? defaultRemoteExec;
-  const configuredByHost = new Map((options.remoteHosts ?? []).map((host) => [host.host, host]));
-  const remotes = await Promise.all(
-    peers.map(async (host): Promise<ListedServer[]> => {
-      try {
-        const hostConfig = configuredByHost.get(host) ?? { host };
-        const user = options.remoteValidation
-          ? remoteHostUser(options.remoteValidation, hostConfig)
-          : hostConfig.user?.trim() || "root";
-        const payload = JSON.parse(
-          await remoteExec(host, user, options.timeoutMs ?? HOST_TIMEOUT_MS),
-        ) as { servers?: Record<string, unknown>[] };
-        if (!Array.isArray(payload.servers)) throw new Error("remote response has no servers list");
-        return payload.servers.map((server) => ({ ...server, host }) as ListedServer);
-      } catch (error) {
-        const reason = error instanceof Error ? error.message : String(error);
-        return [
-          {
-            host,
-            unreachable: true,
-            reason: /timed? ?out|timeout/i.test(reason) ? "timed out" : reason,
-          },
-        ];
-      }
-    }),
-  );
-  return { servers: [...local, ...remotes.flat()], tailscaleUnavailable };
 }
 
 function formatUptime(seconds: number | null | undefined): string {

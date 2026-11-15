@@ -41,7 +41,7 @@ describe("repoos servers --tailscale", () => {
       { host: "slow", unreachable: true, reason: "timed out" },
     ]);
     expect(remoteExec).toHaveBeenCalledTimes(2);
-    expect(remoteExec).toHaveBeenCalledWith("fast", "root", 4_000);
+    expect(remoteExec).toHaveBeenCalledWith("fast", "root", 4_000, "repoos servers --json");
   });
 
   it("falls back to configured hosts when the Tailscale CLI is unavailable", async () => {
@@ -71,8 +71,8 @@ describe("repoos servers --tailscale", () => {
       remoteExec,
     });
     expect(result.servers).toEqual([]);
-    expect(remoteExec).toHaveBeenCalledWith("bee", "operator", 4_000);
-    expect(remoteExec).toHaveBeenCalledWith("mini", "nick", 4_000);
+    expect(remoteExec).toHaveBeenCalledWith("bee", "operator", 4_000, "repoos servers --json");
+    expect(remoteExec).toHaveBeenCalledWith("mini", "nick", 4_000, "repoos servers --json");
     expect(serversSshArgs("bee", "operator", 4_000)).toEqual([
       "-o",
       "BatchMode=yes",
