@@ -77,12 +77,14 @@ import {
 } from "../../../core/activity-animation.js";
 import type { ConfigField } from "../types";
 import { useResponsiveLayout } from "../composables/useResponsiveLayout";
+import { useFloatingHeadsPreference } from "../composables/useFloatingHeadsPreference.js";
 
 const config = useConfigStore();
 const ui = useUiStore();
 const repo = useRepoStore();
 const notifications = useNotificationsStore();
 const { isNarrow } = useResponsiveLayout();
+const floatingHeadsPreference = useFloatingHeadsPreference();
 // Canonical list from the store (0606): task attention types plus the
 // release-event kinds, each with its label + description defined beside it.
 const notificationTypes: NotificationType[] = NOTIFICATION_TYPES;
@@ -1335,6 +1337,20 @@ onUnmounted(() => {
                 <div class="setting-desc" style="padding: 4px 0 10px">
                   Star up to 3 favorites — starred themes appear in the sidebar quick switcher.
                   Click a theme to apply it.
+                </div>
+                <div class="setting-row" data-test-id="floating-heads-setting">
+                  <div class="setting-info">
+                    <div class="setting-label">Floating agent buttons</div>
+                    <div class="setting-desc">
+                      Show shortcuts for Ross, the CTO and Debugger over the page.
+                      <span v-if="isNarrow">They’re also available from More when hidden.</span>
+                    </div>
+                  </div>
+                  <Switch
+                    :checked="floatingHeadsPreference.visible.value"
+                    aria-label="Show floating agent buttons"
+                    @update:checked="floatingHeadsPreference.setVisible"
+                  />
                 </div>
               </div>
             </Card>

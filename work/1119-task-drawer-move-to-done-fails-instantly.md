@@ -2,18 +2,23 @@
 id: "1119"
 title: "Task drawer Move to done fails instantly: click event is sent as the land-anyway reason"
 type: feature
-status: active
+status: done
 priority: p1
 area: web
+merged_commit: 9a00025cdd387f76204f15a0519cd7fd46a5443f
 assigned_to: ai
 created_by: t@t
 branch: feat/task-drawer-move-to-done-fails-instantly
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-14T16:14:26Z"
-updated_at: "2026-11-14T17:38:53Z"
+updated_at: "2026-11-15T00:43:53Z"
+last_close_out_gate_ms: 166185
+last_close_out_gate_at: "2026-11-15T00:35:16.731Z"
+review_passes: 2
+review_rounds: 1
+handoff_signal_retry_count: 2
 dev_error_count: 4
-engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-14T16:48:38.797Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-14T16:48:42.502Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-14T16:48:45.917Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-14T16:58:57.569Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 In the task drawer, clicking Move to done fails immediately with "Land anyway requires a reason of 1–1000 characters", before any close-out work starts. Cause: `src/ui-app/src/components/TaskDrawer.vue` binds the button as `@click="moveToDone"` (line about 5770), and Vue passes the click event as the first argument. `moveToDone(reason?: string)` (added by #1081 for the Land anyway override) treats the truthy event as a reason and calls `repo.completeTask(task, { landAnywayReason: <event> })`, which serialises to a non-string `landAnywayReason`; the server (`src/server/routes/tasks.ts`, done route) rejects it with a 400. Board-card Move to done (TaskCard.vue) and `repoos done` are unaffected. Present since #1081 landed, so in v0.5.83 and v0.5.84. Seen on #1117 on 2026-11-15.
@@ -81,3 +86,34 @@ Related: #1081 (introduced the reason parameter) and the audit that missed this.
 - 2026-11-14T17:38:39Z · message_delivered: 1 message(s)
 - 2026-11-14T17:38:53Z · message_queued at 2026-11-14T17:38:53.168Z
 - 2026-11-14T17:38:53Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-14T17:41:14Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-14T17:42:38Z · queued message undelivered for 4m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-14T17:42:39Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: Investigating and fixing the failing `agent-review.test.ts` test. · stderr: Reading additional input from stdin... 2026-11-14T16:48:38.150688Z ERROR codex_core::tools::router: error=Exit code: 1 Wall time: 0 seconds Output: Failed to write file /Users/nick/code/nick/repoos-worktrees/feat/task-drawer-move-to-done-fails-instantly/src/ui-app/tests/task-drawer-landable.test.ts Reading additional …
+- 2026-11-14T17:47:57Z · message_queued at 2026-11-14T17:47:57.050Z
+- 2026-11-14T17:49:54Z · body
+- 2026-11-14T17:55:27Z · message_queued at 2026-11-14T17:55:27.414Z
+- 2026-11-14T17:56:39Z · message_delivered: 1 message(s)
+- 2026-11-14T17:57:10Z · handoff_deferred: 2 queued message(s) must be read before review
+- 2026-11-14T17:57:10Z · message_queued at 2026-11-14T17:57:10.840Z
+- 2026-11-14T17:57:11Z · ↻ resuming engineer to read queued message
+- 2026-11-14T17:57:11Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: Implementation is complete on the branch; a remote scoped check is still running (~54/256 tests). Requesting handoff so RepoOS can finish verification and commit. · stderr: Reading additional input from stdin... 2026-11-14T16:48:38.150688Z ERROR codex_core::tools::router: error=Exit code: 1 Wall time: 0 seconds Output: Failed to write file /Users/nick/code/nick/repoos-worktrees/feat/task-drawer-move-to-done-fails-instantly/src/ui-app/tests/task-drawer-landable.test.ts Reading additional …
+- 2026-11-14T18:02:24Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-11-14T18:02:25Z · note: handoff requested (cli)
+- 2026-11-14T18:02:34Z · CTO nudge: held — handoff gate is running
+- 2026-11-14T18:03:51Z · message_delivered: 3 message(s)
+- 2026-11-14T18:06:22Z · note: ui verification passed: 1 shot captured with clean console
+- 2026-11-14T18:08:49Z · status active→review
+- 2026-11-14T18:08:49Z · message_queued at 2026-11-14T18:08:49.653Z
+- 2026-11-14T18:09:36Z · note: review pass 1: needs some work
+- 2026-11-14T18:09:36Z · status review→active
+- 2026-11-14T18:09:38Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-14T18:13:24Z · message_delivered: 1 message(s)
+- 2026-11-14T18:38:16Z · body
+- 2026-11-14T18:41:56Z · note: ui verification passed: 1 shot captured with clean console (1 shot warning)
+- 2026-11-14T18:41:57Z · status active→review
+- 2026-11-14T18:41:58Z · message_queued at 2026-11-14T18:41:58.212Z
+- 2026-11-14T18:42:52Z · note: review pass 2: good to go
+- 2026-11-14T19:43:53Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-15T00:35:16Z · close-out gate completed in 166s
+- 2026-11-15T00:35:37Z · status done→done, release:success
+- 2026-11-15T00:43:53Z · message_dropped: 1 queued message(s) discarded — task is done

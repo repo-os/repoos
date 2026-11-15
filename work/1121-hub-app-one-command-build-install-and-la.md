@@ -1,8 +1,10 @@
 ---
+last_close_out_gate_ms: 712350
+last_close_out_gate_at: "2026-11-15T00:47:38.977Z"
 id: "1121"
 title: "Hub app: one-command build, install and launch on Nick's Android phone over Tailscale adb"
 type: feature
-status: active
+status: review
 priority: p2
 area: mobile
 assigned_to: ai
@@ -11,7 +13,9 @@ branch: feat/hub-app-one-command-build-install-and-la
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-14T17:35:18Z"
-updated_at: "2026-11-14T17:35:25Z"
+updated_at: "2026-11-15T00:47:38Z"
+review_passes: 1
+handoff_signal_retry_count: 2
 ---
 ## Problem
 Getting a new RepoOS Hub Android build onto Nick's phone is manual (`just build-android`, then copy the APK). The Laisen project already has a working one-command flow (scripts/deploy-phone.sh on the thinkpad, with a Tiao version at ~/code/nick/reference/tiao/scripts/deploy-phone.sh) that builds the debug APK, connects over Tailscale + adb, installs, and launches. The Hub app should have the same.
@@ -37,3 +41,35 @@ Related: #1120 (Hub app redesign, runs in parallel, touches mobile/src only) and
 - 2026-11-14T17:35:22Z · cli_override, model_override
 - 2026-11-14T17:35:24Z · status inbox→ready
 - 2026-11-14T17:35:25Z · status ready→active, branch
+- 2026-11-14T17:43:53Z · message_queued at 2026-11-14T17:43:53.125Z
+- 2026-11-14T17:43:53Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-14T17:46:53Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-14T17:46:54Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: Implementing TypeScript deploy scripts, tests, Gradle debug suffix, justfile recipe, and docs. · stderr: (empty)
+- 2026-11-14T17:48:53Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-14T17:53:57Z · message_queued at 2026-11-14T17:53:57.407Z
+- 2026-11-14T17:57:10Z · message_delivered: 1 message(s)
+- 2026-11-14T17:59:09Z · queued message undelivered for 5m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-14T17:59:09Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: Updating the build step to match `just build-android`, then running the full check. · stderr: (empty)
+- 2026-11-14T18:01:04Z · message_queued at 2026-11-14T18:01:04.853Z
+- 2026-11-14T18:06:12Z · message_queued at 2026-11-14T18:06:12.460Z
+- 2026-11-14T18:08:49Z · message_delivered: 1 message(s)
+- 2026-11-14T18:10:54Z · queued message undelivered for 10m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-14T18:10:54Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: Updating the build step to match `just build-android`, then running the full check. · stderr: (empty)
+- 2026-11-14T18:15:54Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-11-14T18:15:55Z · note: handoff requested (cli)
+- 2026-11-14T18:18:53Z · CTO nudge: held — handoff gate is running
+- 2026-11-14T18:31:00Z · message_delivered: 2 message(s)
+- 2026-11-14T18:35:44Z · handoff failed · task-file handoff failed at check · the worktree changed while the gate was running (appeared: docs/phone-deploy.md, mobile/README.md, scripts/deploy-phone.ts, scripts/lib/hub-phone-deploy.ts, scripts/lib/launch-component.ts, src/ui-app/tests/hub-phone-deploy.test.ts, mobile/android/app/src/debug/, src/ui-app/tests/hub-android-debug-label.test.ts) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
+- 2026-11-14T18:49:53Z · note: handoff requested (cli)
+- 2026-11-14T18:49:54Z · note: shots: skipped — the diff (12 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-11-14T18:59:55Z · watchdog: restarting engineer after 10m with no live process
+- 2026-11-14T19:03:53Z · CTO nudge: held — remote validation is running
+- 2026-11-14T19:14:13Z · body
+- 2026-11-14T19:16:45Z · status active→review
+- 2026-11-14T19:16:46Z · note: shots: skipped — the diff (12 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-11-14T19:19:54Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
+- 2026-11-14T19:24:48Z · note: review pass 1: good to go
+- 2026-11-14T19:24:49Z · message_queued at 2026-11-14T19:24:49.618Z
+- 2026-11-14T21:07:42Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-15T00:47:38Z · close-out gate completed in 712s
+

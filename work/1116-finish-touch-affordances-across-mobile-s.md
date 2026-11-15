@@ -2,19 +2,24 @@
 id: "1116"
 title: Finish touch affordances across mobile surfaces
 type: feature
-status: active
+status: done
 priority: p1
 area: web
 depends_on: ["1112", "1114", "1115"]
+merged_commit: ef69819c6b0eb65ebf6ad595e13f707bfd56b4cf
 assigned_to: ai
 created_by: t@t
 branch: feat/finish-touch-affordances-across-mobile-s
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-14T09:11:01Z"
-updated_at: "2026-11-14T17:38:52Z"
+updated_at: "2026-11-14T18:53:53Z"
+last_close_out_gate_ms: 2423122
+last_close_out_gate_at: "2026-11-14T18:46:44.016Z"
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-14T18:05:30.510Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
+review_passes: 2
 review_rounds: 1
-review_passes: 1
 dev_error_count: 5
 ---
 ## Problem
@@ -59,6 +64,31 @@ On screens below 720px the floating heads (Ross, CTO, Debugger) must not reserve
 "viewportWidth": 390
 },
 {
+"label": "Phone CTO from More replaces open task detail",
+"target": "default",
+"route": "/work?task=9999",
+"highlight": ".floating-head-panel",
+"steps": [
+{
+"waitFor": "[data-testid=\"mobile-task-detail\"]"
+},
+{
+"click": ".tab[aria-haspopup=\"dialog\"]"
+},
+{
+"waitFor": "[data-test-id=\"mobile-more-open-cto\"]"
+},
+{
+"click": "[data-test-id=\"mobile-more-open-cto\"]"
+},
+{
+"waitFor": ".floating-head-panel"
+}
+],
+"state": "drawer:landableNarrow",
+"viewportWidth": 390
+},
+{
 "label": "Phone Work with floating agent buttons enabled",
 "target": "default",
 "route": "/work",
@@ -77,28 +107,9 @@ On screens below 720px the floating heads (Ross, CTO, Debugger) must not reserve
 "click": ".tabbar a.tab[href=\"/work\"]"
 },
 {
-"waitMs": 300
+"waitFor": ".floating-heads .stack"
 }
 ],
-"viewportWidth": 390
-},
-{
-"label": "Phone CTO from More replaces open task detail",
-"target": "default",
-"route": "/work?task=9999",
-"highlight": ".floating-head-panel",
-"steps": [
-{
-"click": ".tab[aria-haspopup=\"dialog\"]"
-},
-{
-"click": "[data-test-id=\"mobile-more-open-cto\"]"
-},
-{
-"waitMs": 400
-}
-],
-"state": "drawer:landableNarrow",
 "viewportWidth": 390
 }
 ]
@@ -164,3 +175,16 @@ On screens below 720px the floating heads (Ross, CTO, Debugger) must not reserve
 - 2026-11-14T17:35:28Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-14T17:38:38Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-14T17:38:52Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-14T17:42:39Z · message_delivered: 1 message(s)
+- 2026-11-14T18:02:12Z · body
+- 2026-11-14T18:02:52Z · status active→review
+- 2026-11-14T18:05:27Z · note: shots: failed — browser capture cancelled
+- 2026-11-14T18:05:27Z · message_queued at 2026-11-14T18:05:27.491Z
+- 2026-11-14T18:05:28Z · note: review pass 2: good to go
+- 2026-11-14T18:10:54Z · message_delivered: 1 message(s)
+- 2026-11-14T18:11:57Z · body
+- 2026-11-14T18:30:31Z · body
+- 2026-11-14T18:31:00Z · message_queued at 2026-11-14T18:31:00.937Z
+- 2026-11-14T18:46:44Z · close-out gate completed in 2423s
+- 2026-11-14T18:47:18Z · status done→done, release:success
+- 2026-11-14T18:53:53Z · message_dropped: 1 queued message(s) discarded — task is done

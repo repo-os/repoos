@@ -2,7 +2,7 @@
 id: "1122"
 title: "GitHub Copilot agent: support the new model picker (GPT-6 Luna, GPT-6.1 Terra, Haiku 5.5 ...) with real --model ids"
 type: feature
-status: review
+status: active
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -11,7 +11,11 @@ branch: feat/github-copilot-agent-support-the-new-mod
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-14T17:41:02Z"
-updated_at: "2026-11-14T18:34:37Z"
+updated_at: "2026-11-15T01:10:04Z"
+last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/remote-host-pool.test.ts > host-side lock (server + standalone CLI share one limit) > breaks an orphaned lock dir within the wait budget instead of timing out on it (#0521 review) on mini — fix it in the feature branch and re-run the gate"
+last_handoff_failure_sha: 73fd1b282c52e6a95c1fc71bc6e032141453fd4f
+review_passes: 1
+handoff_signal_retry_count: 2
 ---
 ## Problem
 The `github copilot` agent is effectively unusable. #1088 (landed 2026-11-11) mapped the retired Auto `efficiency` tier to `balance` and made tier errors readable, but the only model RepoOS knows for it is `default`, and the allowlist entry in repoos.toml is still paused ("Waiting for model list fix"). The Copilot CLI (1.0.109) now offers a model picker (screenshot attached) with GPT-5.6 Terra (default), GPT-6 Luna, Claude Sonnet 5.5, GPT-6.1 Terra, Gemini 4 Hydrogen, Claude Haiku 5.5, Grok 4.7, Kimi K3 and others, with per-model reasoning levels. RepoOS cannot select any of them. There is no non-interactive command that lists model ids (#1088 found `copilot -p "models"` only asks the model). `copilot --model <model>` and `--reasoning-effort <none|minimal|low|medium|high|xhigh|max>` exist.
@@ -30,6 +34,18 @@ In Settings, the GitHub Copilot agent offers the real models the CLI accepts (at
 ## Notes for AI
 Read work/1088-*.md and src/core/copilot-auto-tier.ts first. Copilot usage is billed in Copilot AI credits, so keep probes minimal and never loop. Related: #0625 (live Copilot credit data), #0629 (Copilot provider external link only).
 
+## Shots
+```json
+[
+{
+"label": "GitHub Copilot named models in picker",
+"target": "default",
+"route": "/agents",
+"highlight": ".agents-page-title"
+}
+]
+```
+
 ## Screenshots
 
 ![59](/api/tasks/1122/attachments/att_6b52e009-ddc3-4b00-85c8-8a061a1db607.png)
@@ -41,4 +57,40 @@ Read work/1088-*.md and src/core/copilot-auto-tier.ts first. Copilot usage is bi
 - 2026-11-14T17:41:08Z · cli_override, model_override
 - 2026-11-14T17:41:10Z · status inbox→ready
 - 2026-11-14T17:41:12Z · status ready→active, branch
+- 2026-11-14T17:46:27Z · message_queued at 2026-11-14T17:46:27.053Z
+- 2026-11-14T17:48:53Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-14T17:54:57Z · body
+- 2026-11-14T17:56:39Z · queued message undelivered for 10m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-14T17:56:39Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: Breaking a circular import between the Copilot modules. · stderr: (empty)
+- 2026-11-14T17:59:24Z · message_delivered: 1 message(s)
+- 2026-11-14T17:59:41Z · body
+- 2026-11-14T18:08:51Z · message_queued at 2026-11-14T18:08:51.674Z
+- 2026-11-14T18:08:51Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-14T18:08:53Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-14T18:13:24Z · queued message undelivered for 5m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-14T18:13:24Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: no assistant message · stderr: (empty)
+- 2026-11-14T18:18:27Z · message_queued at 2026-11-14T18:18:27.514Z
+- 2026-11-14T18:23:39Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-11-14T18:23:40Z · note: handoff requested (cli)
+- 2026-11-14T18:23:53Z · CTO nudge: held — handoff gate is running
+- 2026-11-14T18:33:07Z · message_delivered: 1 message(s)
+- 2026-11-14T18:34:36Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
 - 2026-11-14T18:34:37Z · status active→review
+- 2026-11-14T18:34:37Z · message_queued at 2026-11-14T18:34:37.340Z
+- 2026-11-14T18:35:56Z · note: review pass 1: good to go
+- 2026-11-14T19:18:53Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-15T00:34:26Z · status review→active
+- 2026-11-15T00:34:28Z · message_delivered: 2 message(s)
+- 2026-11-15T00:43:53Z · message_queued at 2026-11-15T00:43:53.670Z
+- 2026-11-15T00:43:53Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-15T00:47:03Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-15T00:47:03Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: Restoring `repoos.toml` from main (close-out blocked config changes), updating the engineering report, and re-verifying. · stderr: (empty)
+- 2026-11-15T00:47:03Z · status active→review
+- 2026-11-15T00:47:03Z · message_delivered: 1 message(s)
+- 2026-11-15T00:47:04Z · note: handoff requested (cli)
+- 2026-11-15T00:48:53Z · CTO nudge: held — handoff gate is running
+- 2026-11-15T00:56:43Z · message_queued at 2026-11-15T00:56:43.276Z
+- 2026-11-15T00:56:43Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: tests/remote-host-pool.test.ts > host-side lock (server + standalone CLI share one limit) > breaks an orphaned lock dir within the wait budget instead of timing out on it (#0521 review) on mini — fix it in the feature branch and re-run the gate
+- 2026-11-15T00:58:53Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-15T01:05:20Z · queued message undelivered for 9m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-15T01:10:04Z · message_delivered: 1 message(s)

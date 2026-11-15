@@ -150,24 +150,33 @@ describe.skipIf(!existsSync(webkit.executablePath()))(
       },
     );
 
-    it.each([320, 390, 760])(
-      "keeps pipeline controls outside the head stack at %spx",
-      async (width) => {
-        const page = await browser.newPage({ viewport: { width, height: 620 } });
-        try {
-          await page.setContent(
-            `<style>${css}\n${componentCss}</style><div id="app"><div class="ibar-wrap"><div class="ibar"><div class="ibar-top">Pipeline<button class="ibar-toggle">⌃</button></div></div></div><div class="floating-heads"><div class="stack"><button class="head-btn">A</button><button class="head-btn">B</button><button class="head-btn">C</button></div></div></div>`,
-          );
-          const edges = await page.evaluate(() => ({
-            pipelineRight: document.querySelector(".ibar-wrap")!.getBoundingClientRect().right,
-            headsLeft: document.querySelector(".floating-heads")!.getBoundingClientRect().left,
-          }));
+    it.each([320, 390, 760])("keeps pipeline controls in the viewport at %spx", async (width) => {
+      const page = await browser.newPage({ viewport: { width, height: 620 } });
+      try {
+        await page.setContent(
+          `<style>${css}\n${componentCss}</style><div id="app"><div class="ibar-wrap"><div class="ibar"><div class="ibar-top">Pipeline<button class="ibar-toggle">⌃</button></div></div></div><div class="floating-heads"><div class="stack"><button class="head-btn">A</button><button class="head-btn">B</button><button class="head-btn">C</button></div></div></div>`,
+        );
+        const edges = await page.evaluate(() => ({
+          pipelineRight: document.querySelector(".ibar-wrap")!.getBoundingClientRect().right,
+          pipelineLeft: document.querySelector(".ibar-wrap")!.getBoundingClientRect().left,
+          headsLeft: document.querySelector(".floating-heads")!.getBoundingClientRect().left,
+          headsRight: document.querySelector(".floating-heads")!.getBoundingClientRect().right,
+          viewportWidth: window.innerWidth,
+        }));
+        expect(edges.pipelineLeft).toBeGreaterThanOrEqual(0);
+        expect(edges.pipelineRight).toBeLessThanOrEqual(edges.viewportWidth);
+        expect(edges.headsRight).toBeLessThanOrEqual(edges.viewportWidth);
+        if (width < 720) {
+          // Narrow composition deliberately lets the floating heads sit over
+          // the pipeline card; they no longer reserve a content column.
+          expect(edges.pipelineRight).toBeGreaterThan(edges.headsLeft);
+        } else {
           expect(edges.pipelineRight).toBeLessThan(edges.headsLeft);
-        } finally {
-          await page.close();
         }
-      },
-    );
+      } finally {
+        await page.close();
+      }
+    });
 
     for (const [width, height] of [
       [1280, 620],

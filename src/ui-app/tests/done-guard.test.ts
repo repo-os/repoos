@@ -20,12 +20,28 @@ import { join } from "node:path";
 import { rmFixture } from "./helpers";
 import { ensureWorktree } from "../../core/git.js";
 import { createJobCoordinator } from "../../server/integration-job.js";
-import { taskAction, getWorktreeDirtyForTask } from "../../server/routes/tasks.js";
+import {
+  taskAction,
+  getWorktreeDirtyForTask,
+  landAnywayReasonError,
+} from "../../server/routes/tasks.js";
 import { engineerSelfCheckCheckpointMessage } from "../../core/engineer-checkpoint-commit.js";
 import { readPostHandoffCheckpointRecovery } from "../../server/post-handoff-checkpoint-recovery.js";
 import { readHandoffSnapshot, writeHandoffSnapshot } from "../../server/worktree-handoff-guard.js";
 import type { RouteContext } from "../../server/routes/types.js";
 import type { Task } from "../../core/types.js";
+
+describe("landAnywayReasonError", () => {
+  it("names non-string reasons clearly and validates string length", () => {
+    expect(landAnywayReasonError({})).toBe("Land anyway reason must be a string");
+    expect(landAnywayReasonError(17)).toBe("Land anyway reason must be a string");
+    expect(landAnywayReasonError("  ")).toBe("Land anyway requires a reason of 1–1000 characters");
+    expect(landAnywayReasonError("x".repeat(1001))).toBe(
+      "Land anyway requires a reason of 1–1000 characters",
+    );
+    expect(landAnywayReasonError("valid reason")).toBeNull();
+  });
+});
 
 function makeRes(): any {
   const capture: any = {

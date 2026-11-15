@@ -3,10 +3,9 @@ id: "1120"
 title: "RepoOS Hub app: native-looking server picker, web color themes with light/dark, better icons, and a Settings page"
 type: feature
 status: active
-needs_input: true
-needs_input_reason: needs-human-step
 human_step_override: Cleared needs-human-step flag (sticky until acceptance criteria change)
 human_step_override_key: f531bd01
+paths: [repoos.toml]
 priority: p2
 area: mobile
 assigned_to: ai
@@ -15,9 +14,12 @@ branch: feat/repoos-hub-app-native-looking-server-pic
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-14T16:53:29Z"
-updated_at: "2026-11-14T17:24:04Z"
-dev_error_count: 3
-engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-14T16:53:55.155Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-14T16:53:58.914Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-14T16:54:02.450Z\",\"kind\":\"dev-error\"}]"
+updated_at: "2026-11-15T01:08:55Z"
+review_rounds: 1
+review_passes: 1
+last_check_failure: "repoos check at 2026-11-14T21:07:45.909Z: repoos check failed: ui verification failed (2 issue(s)): [missing-target] Hub server list (Android, dark classic) (target \"default\"): highlight [data-testid=\"hub-server-list\"] matched nothing on /?fixture=many&platform=android&appearance=dark&theme=classic (http://127.0.0.1:41679/?fixture=many&platform=android&appearance=dark&theme=classic); [missing-target] Hub Settings (iOS, light gruvbox) (target \"default\"): highlight [data-testid=\"hub-settings\"] matched nothing on /?fixture=settings&platfor… (truncated)"
+dev_error_count: 4
+engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-15T00:49:18.472Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 The RepoOS Hub Capacitor shell (mobile/, iOS and Android) is bare bones. Nick's current Android build (screenshot attached) shows a single dark theme, a "Device lock" panel pushed inline above the server list, text-arrow reorder buttons and a pencil glyph that look like web controls, flat unstyled server cards, and a plain "+ Add server" button. It has no color themes and no light mode, and the icons are not the set used by the web app. The device lock and any future preferences have nowhere proper to live. (The screenshot also shows the old "RepoOS" title, so it is a build from before the September "RepoOS Hub" rename.)
@@ -42,18 +44,28 @@ Read docs/mobile-architecture.md, docs/adr/0011-mobile-web-ui.md (the native she
 ```json
 [
 {
-"label": "Hub server list — Android styling, Gruvbox light",
-"target": "default",
-"route": "/?fixture=one&theme=gruvbox&appearance=light&platform=android",
-"selector": "#app",
-"highlight": "[data-testid=hub-server-list]"
+"label": "Hub Android empty state (gruvbox dark)",
+"target": "repoos-mobile-dev",
+"route": "/?fixture=empty&platform=android&theme=gruvbox&appearance=dark",
+"highlight": "[data-testid=\"hub-empty-state\"]",
+"viewportWidth": 390,
+"viewportHeight": 844
 },
 {
-"label": "Hub Settings — iOS grouped, Classic dark",
-"target": "default",
-"route": "/?fixture=settings&theme=classic&appearance=dark&platform=ios",
-"selector": "#app",
-"highlight": "[data-testid=hub-settings]"
+"label": "Hub iOS Settings (solarized light)",
+"target": "repoos-mobile-dev",
+"route": "/?fixture=settings&platform=ios&theme=solarized&appearance=light",
+"highlight": "[data-testid=\"hub-settings\"]",
+"viewportWidth": 390,
+"viewportHeight": 844
+},
+{
+"label": "Hub Android server list (classic dark)",
+"target": "repoos-mobile-dev",
+"route": "/?fixture=many&platform=android&theme=classic&appearance=dark",
+"highlight": "[data-testid=\"hub-server-list\"]",
+"viewportWidth": 390,
+"viewportHeight": 844
 }
 ]
 ```
@@ -88,3 +100,120 @@ Read docs/mobile-architecture.md, docs/adr/0011-mobile-web-ui.md (the native she
 - 2026-11-14T17:23:53Z · message_queued at 2026-11-14T17:23:53.398Z
 - 2026-11-14T17:23:53Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-14T17:24:04Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-14T18:31:00Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-14T18:42:44Z · body
+- 2026-11-14T18:48:53Z · CTO nudge: held — handoff gate is running
+- 2026-11-14T19:15:16Z · engineer stopped by request
+- 2026-11-14T19:15:17Z · needs_input
+- 2026-11-14T19:15:17Z · needs_input
+- 2026-11-14T19:15:29Z · needs_input
+- 2026-11-14T19:32:23Z · message_queued at 2026-11-14T19:32:23.721Z
+- 2026-11-14T19:32:26Z · message_delivered: 1 message(s)
+- 2026-11-14T19:34:04Z · body
+- 2026-11-14T19:43:53Z · message_queued at 2026-11-14T19:43:53.238Z
+- 2026-11-14T19:43:53Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-14T19:45:02Z · message_queued at 2026-11-14T19:45:02.112Z
+- 2026-11-14T19:45:34Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-14T19:48:43Z · queued message undelivered for 5m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-14T19:48:43Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: no assistant message · stderr: (empty)
+- 2026-11-14T19:48:43Z · message_delivered: 2 message(s)
+- 2026-11-14T19:48:53Z · message_queued at 2026-11-14T19:48:53.193Z
+- 2026-11-14T19:48:53Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-14T19:50:04Z · body
+- 2026-11-14T19:51:58Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-14T19:51:58Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: Checking worktree state and finishing verification so we can hand off. · stderr: (empty)
+- 2026-11-14T19:51:58Z · needs_input
+- 2026-11-14T19:51:58Z · message_delivered: 1 message(s)
+- 2026-11-14T19:53:53Z · message_queued at 2026-11-14T19:53:53.191Z
+- 2026-11-14T19:53:53Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-14T19:58:53Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-14T20:15:01Z · engineer stopped by request
+- 2026-11-14T20:15:01Z · needs_input
+- 2026-11-14T20:15:01Z · needs_input
+- 2026-11-14T20:15:03Z · needs_input
+- 2026-11-14T20:15:04Z · message_delivered: 1 message(s)
+- 2026-11-14T20:21:53Z · body
+- 2026-11-14T20:32:17Z · body
+- 2026-11-14T20:43:53Z · CTO nudge: held — handoff gate is running
+- 2026-11-14T20:52:43Z · needs_input
+- 2026-11-14T21:07:42Z · note: ui verification failed: ui verification failed (2 issue(s)): [missing-target] Hub server list (Android, dark classic) (target "default"): highlight [data-testid="hub-server-list"] matched nothing on /?fixture=many&platform=android&appearance=dark&theme=classic (http://127.0.0.1:41679/?fixture=many&platform=android&appearance=dark&theme=classic); [missing-target] Hub Settings (iOS, light gruvbox) (target "default"): highlight [data-testid="hub-settings"] matched nothing on /?fixture=settings&plat
+- 2026-11-14T21:07:43Z · message_queued at 2026-11-14T21:07:43.043Z
+- 2026-11-14T21:07:45Z · message_delivered: 1 message(s)
+- 2026-11-14T21:08:04Z · body
+- 2026-11-14T21:13:53Z · message_queued at 2026-11-14T21:13:53.180Z
+- 2026-11-14T21:13:53Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-14T21:14:59Z · needs_input
+- 2026-11-14T21:15:00Z · message_queued at 2026-11-14T21:15:00.388Z
+- 2026-11-14T21:16:59Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-14T21:17:00Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: Declared shots target the main app preview, but mobile hub fixtures only exist in the Capacitor shell — clearing those shots and re-running verification. · stderr: (empty)
+- 2026-11-14T21:17:00Z · message_delivered: 2 message(s)
+- 2026-11-14T21:17:28Z · body
+- 2026-11-14T21:18:53Z · message_queued at 2026-11-14T21:18:53.265Z
+- 2026-11-14T21:18:53Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-14T21:22:00Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-14T21:22:00Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: Canonical shots are already `[]`. Restoring an accidental `repoos.toml` edit, then running the check and requesting handoff. · stderr: (empty)
+- 2026-11-14T21:22:00Z · needs_input
+- 2026-11-14T21:22:00Z · message_delivered: 1 message(s)
+- 2026-11-14T21:23:53Z · message_queued at 2026-11-14T21:23:53.243Z
+- 2026-11-14T21:23:53Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-14T21:28:53Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-14T21:44:55Z · engineer stopped by request
+- 2026-11-14T21:44:56Z · needs_input
+- 2026-11-14T21:44:56Z · needs_input
+- 2026-11-14T21:44:57Z · needs_input
+- 2026-11-14T21:44:58Z · message_delivered: 1 message(s)
+- 2026-11-14T21:57:00Z · body
+- 2026-11-14T21:57:14Z · body
+- 2026-11-14T22:14:29Z · body
+- 2026-11-14T22:18:53Z · CTO nudge: held — handoff gate is running
+- 2026-11-14T22:26:20Z · handoff failed · remote validation failed: test failure: tests/remote-host-pool.test.ts > host-side lock (server + standalone CLI share one limit) > lets a holder expire the waiter with a clear timeout instead of a red gate on bee — fix it in the feature branch and re-run the gate
+- 2026-11-14T22:26:20Z · message_queued at 2026-11-14T22:26:20.860Z
+- 2026-11-14T22:28:53Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-14T22:29:31Z · watchdog: restarting engineer because a queued message waited 3m with no live process
+- 2026-11-14T22:29:32Z · message_delivered: 1 message(s)
+- 2026-11-14T22:38:53Z · message_queued at 2026-11-14T22:38:53.308Z
+- 2026-11-14T22:38:53Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-14T22:43:10Z · body
+- 2026-11-14T22:43:53Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-14T22:44:31Z · queued message undelivered for 6m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-14T22:44:31Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: no assistant message · stderr: (empty)
+- 2026-11-14T22:44:31Z · message_delivered: 1 message(s)
+- 2026-11-14T22:44:58Z · note: handoff requested (cli)
+- 2026-11-14T22:44:59Z · body
+- 2026-11-14T22:48:53Z · CTO nudge: held — handoff gate is running
+- 2026-11-14T22:50:05Z · note: ui verification failed: ui verification failed (3 issue(s)): [missing-target] Hub server list (Android, Gruvbox dark) (target "default"): highlight [data-testid="hub-server-list"] matched nothing on /?fixture=many&platform=android&theme=gruvbox&appearance=dark (http://127.0.0.1:44347/?fixture=many&platform=android&theme=gruvbox&appearance=dark); [missing-target] Hub Settings (iOS, Jelly light) (target "default"): highlight [data-testid="hub-settings"] matched nothing on /?fixture=settings&platfo
+- 2026-11-14T22:50:05Z · message_queued at 2026-11-14T22:50:05.311Z
+- 2026-11-14T22:50:05Z · handoff failed · task-file handoff failed at verify · ui verification failed (3 issue(s)): [missing-target] Hub server list (Android, Gruvbox dark) (target "default"): highlight [data-testid="hub-server-list"] matched nothing on /?fixture=many&platform=android&theme=gruvbox&appearance=dark (http://127.0.0.1:44347/?fixture=many&platform=android&theme=gruvbox&appearance=dark); [missing-target] Hub Settings (iOS, Jelly light) (target "default"): highlight [data-testid="hub-settings"] matched nothing on /?fixture=settings&platform=ios&theme=jelly&appearance=light (http://127.0.0.1:44347/?fixture=settings&platform=ios&theme=jelly&appearance=light); [missing-target] Hub empty state (Android, Classic dark) (target "default"): highlight [data-testid="hub-empty-state"] matched nothing on /?fixture=empty&platform=android&theme=classic&appearance=dark (http://127.0.0.1:44347/?fixture=empty&platform=android&theme=classic&appearance=dark)
+- 2026-11-14T22:53:16Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-14T22:53:16Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: no assistant message · stderr: (empty)
+- 2026-11-14T22:53:16Z · needs_input
+- 2026-11-14T22:53:16Z · message_delivered: 1 message(s)
+- 2026-11-14T22:53:42Z · body
+- 2026-11-14T22:53:53Z · message_queued at 2026-11-14T22:53:53.364Z
+- 2026-11-14T22:53:53Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-14T22:58:53Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-14T23:00:03Z · body
+- 2026-11-14T23:03:53Z · CTO nudge: held — handoff gate is running
+- 2026-11-14T23:14:58Z · body
+- 2026-11-14T23:15:03Z · note: handoff requested (cli)
+- 2026-11-14T23:18:46Z · note: ui verification passed: 1 shot captured with clean console
+- 2026-11-14T23:33:26Z · body
+- 2026-11-14T23:34:01Z · status active→review
+- 2026-11-14T23:47:22Z · note: ui verification passed: 1 shot captured with clean console
+- 2026-11-14T23:47:22Z · message_queued at 2026-11-14T23:47:22.616Z
+- 2026-11-14T23:47:23Z · note: review pass 1: needs some work
+- 2026-11-14T23:47:23Z · message_delivered: 1 message(s)
+- 2026-11-14T23:47:23Z · status review→active
+- 2026-11-14T23:49:33Z · body
+- 2026-11-14T23:58:53Z · message_queued at 2026-11-14T23:58:53.465Z
+- 2026-11-14T23:58:53Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-15T00:03:53Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-15T00:49:18Z · engineer crash recovery: resuming cursor + composer-2.5 (1/3 crashes in 30m) · RetriableError: Agent turn stopped after repeated resume attempts made no progress
+- 2026-11-15T00:49:23Z · watchdog: restarting engineer because a queued message waited 50m with no live process
+- 2026-11-15T00:49:28Z · watchdog: active-without-engineer recovery failed — task is already running or finalizing
+- 2026-11-15T00:50:49Z · needs_input
+- 2026-11-15T00:50:50Z · message_delivered: 1 message(s)
+- 2026-11-15T00:53:14Z · paths
+- 2026-11-15T00:54:08Z · body
+- 2026-11-15T01:08:30Z · message_queued at 2026-11-15T01:08:30.671Z
+- 2026-11-15T01:08:55Z · CTO nudge: held — an undelivered message is already queued
