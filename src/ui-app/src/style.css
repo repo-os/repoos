@@ -316,6 +316,15 @@
   display: flex;
   flex-direction: column;
 }
+/* App.vue's root wrapper used to carry a duplicate id="app" and so inherited the
+   rule above. Keep it a full-height flex column inside the mount point so the
+   page body is the scrollport and the bottom dock/inset behave (hotfix). */
+.app-shell {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;

@@ -172,7 +172,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div :class="{ 'is-narrow': isNarrow }">
+  <div class="app-shell" :class="{ 'is-narrow': isNarrow }">
     <UiRecoveryBanner />
     <RouterView v-if="isPublicRoute" />
     <template v-else>
