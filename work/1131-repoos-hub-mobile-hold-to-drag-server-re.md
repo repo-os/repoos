@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/repoos-hub-mobile-hold-to-drag-server-re
 created_at: "2026-11-15T14:39:13Z"
-updated_at: "2026-11-15T16:47:16Z"
+updated_at: "2026-11-15T16:48:54Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-15T16:20:20.969Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 ---
@@ -86,3 +86,4 @@ Hold-to-drag feel, haptics and iOS gesture behavior are covered by code and comp
 - 2026-11-15T16:47:16Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-15T16:47:16Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 130) · last assistant: Check passed. Tests were skipped by the runner env (`REPOOS_SKIP_TESTS=1`), so let me run the affected suites directly to be sure. · stderr: (empty)
 - 2026-11-15T16:47:16Z · message_delivered: 1 message(s)
+- 2026-11-15T16:48:54Z · body
