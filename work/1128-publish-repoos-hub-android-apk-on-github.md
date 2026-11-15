@@ -3,6 +3,9 @@ id: "1128"
 title: Publish RepoOS Hub Android APK on GitHub Releases and link it from the landing page and docs
 type: feature
 status: done
+needs_input: true
+needs_input_reason: closeout-worktree-dirty
+needs_input_detail: "the worktree for feat/publish-repoos-hub-android-apk-on-github was kept because it had uncommitted changes the merge did not carry: .env"
 priority: p2
 area: [mobile, web]
 story: RepoOS Hub for Mobile
@@ -154,3 +157,5 @@ The Tiao app (a separate repo) is the reference for how the APK should be shared
 - 2026-11-15T17:02:35Z · close-out gate completed in 281s
 - 2026-11-15T17:02:39Z · message_dropped: 1 queued message(s) discarded — task is done
 - 2026-11-15T17:02:57Z · status done→done, release:success
+- 2026-11-15T17:02:57Z · needs_input
+- 2026-11-15T17:02:57Z · note: close-out kept a worktree with uncommitted changes
