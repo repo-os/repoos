@@ -207,6 +207,11 @@ const heavyQueued = computed(() => systemStats.value?.heavyJobs?.queued ?? 0);
 /** Top CPU / memory consumers across the whole machine (#0871). */
 const topProcesses = computed(() => systemStats.value?.topProcesses ?? null);
 
+/** Orphaned run processes the turn reaper found after turns ended (#1134). */
+const runProcesses = computed(() => systemStats.value?.runProcesses ?? null);
+const orphanedRuns = computed(() => runProcesses.value?.orphans ?? []);
+const orphanedStillRunning = computed(() => orphanedRuns.value.filter((p) => p.survived));
+
 /** Engineers across every registered RepoOS server on this laptop (#0871). */
 const globalEngineers = computed(() => systemStats.value?.globalEngineers ?? null);
 
@@ -225,6 +230,14 @@ function fmtCount(n: number): string {
   if (n >= 10_000) return Math.round(n / 1000) + "k";
   if (n >= 1_000) return (n / 1000).toFixed(1) + "k";
   return String(n);
+}
+
+/** Compact duration for CPU time / process age (#1134). */
+function fmtDuration(ms: number): string {
+  if (ms < 60_000) return `${Math.max(0, Math.round(ms / 1000))}s`;
+  const minutes = Math.round(ms / 60_000);
+  if (minutes < 60) return `${minutes}m`;
+  return `${Math.round(minutes / 6) / 10}h`;
 }
 
 /** Strays worth naming individually, newest-looking first. Capped so the panel never grows unbounded. */
@@ -476,6 +489,45 @@ const serveMessage = computed(() => {
           </span>
           <span v-if="serve.strays > strayList.length" class="serve-more">
             +{{ serve.strays - strayList.length }} more
+          </span>
+        </div>
+      </div>
+
+      <div
+        v-if="orphanedRuns.length"
+        class="serve-alert"
+        :class="orphanedStillRunning.length ? 'warn' : 'notice'"
+        data-orphan-runs
+      >
+        <div class="serve-alert-head">
+          <span class="serve-alert-icon">{{ orphanedStillRunning.length ? "!" : "i" }}</span>
+          <span>
+            {{ orphanedRuns.length }} orphaned run process{{
+              orphanedRuns.length === 1 ? "" : "es"
+            }}
+            left by a finished turn —
+            {{
+              orphanedStillRunning.length
+                ? `${orphanedStillRunning.length} still running and being stopped`
+                : "all stopped automatically"
+            }}.
+          </span>
+        </div>
+        <div class="serve-alert-list">
+          <span
+            v-for="p in orphanedRuns.slice(0, 6)"
+            :key="p.pid"
+            class="serve-chip"
+            :class="{ dead: p.survived }"
+          >
+            <template v-if="p.taskId">#{{ p.taskId }} </template>{{ p.pid }}
+            <span class="orphan-meta"
+              >{{ p.command.slice(0, 40) }} · {{ fmtDuration(p.cpuTimeMs) }} cpu ·
+              {{ fmtDuration(p.ageMs) }} old</span
+            >
+          </span>
+          <span v-if="orphanedRuns.length > 6" class="serve-more">
+            +{{ orphanedRuns.length - 6 }} more
           </span>
         </div>
       </div>
@@ -855,6 +907,12 @@ const serveMessage = computed(() => {
   /* hardcode-ok: var() fallback for a theme token — renders only when that token is undefined */
   color: var(--red, #f31260);
   background: color-mix(in srgb, var(--red, #f31260) 12%, transparent);
+}
+
+.orphan-meta {
+  color: var(--txt-dim);
+  opacity: 0.75;
+  font-size: 10px;
 }
 
 .serve-more {

@@ -119,6 +119,7 @@ export function listProcessEntries(): ProcessEntry[] {
   const res = spawnSync("ps", ["-axo", "pid=,pgid=,etime=,command="], {
     encoding: "utf8",
     timeout: 5_000,
+    maxBuffer: 16 * 1024 * 1024,
   });
   if (res.status !== 0 || !res.stdout) return [];
   const entries: ProcessEntry[] = [];
@@ -510,28 +511,85 @@ export function runRootsInCommand(command: string): string[] {
  * A run root that still exists is left alone — that is some checkout's live
  * test run (its per-file fixtures and heartbeat are still valid), not an
  * orphan. Nothing is matched by process name.
+ *
+ * Bounded on purpose (#1134): this runs in `beforeAll` and inside claim-hot
+ * test fixtures, so one pathological `ps` line (an agent prompt is tens of KB)
+ * must never hang the suite. It stops at a wall-clock deadline and caps both
+ * the rows examined and the roots collected.
  */
-export function sweepOrphanedRunRootProcesses(minAgeMs = STALE_FIXTURE_AGE_MS): number {
-  if (process.platform === "win32") return 0;
+export interface OrphanRunRootScanOptions {
+  /** Inject a listing/clock for tests. */
+  entries?: ProcessEntry[];
+  now?: () => number;
+  deadlineMs?: number;
+  maxEntries?: number;
+  maxRoots?: number;
+}
+
+export interface OrphanRunRootScanResult {
+  roots: string[];
+  /** True when the deadline or a cap stopped the scan early. */
+  truncated: boolean;
+  examined: number;
+}
+
+/** Collect run roots named by orphaned helpers, bounded in time and size. */
+export function collectOrphanedRunRoots(
+  minAgeMs = STALE_FIXTURE_AGE_MS,
+  opts: OrphanRunRootScanOptions = {},
+): OrphanRunRootScanResult {
+  if (process.platform === "win32") return { roots: [], truncated: false, examined: 0 };
+  const now = opts.now ?? Date.now;
+  const deadline = now() + (opts.deadlineMs ?? 5_000);
+  const maxEntries = Math.max(1, opts.maxEntries ?? 20_000);
+  const maxRoots = Math.max(1, opts.maxRoots ?? 64);
+  const entries = opts.entries ?? listProcessEntries();
   const orphanRoots = new Set<string>();
-  for (const entry of listProcessEntries()) {
-    // Only helpers at least as old as a stale fixture: a live run whose root
-    // was briefly missing (between teardown creating it and a worker starting)
-    // must not lose its children to this sweep.
+  let truncated = false;
+  let examined = 0;
+  for (const entry of entries) {
+    if (examined >= maxEntries || now() > deadline) {
+      truncated = true;
+      break;
+    }
+    examined++;
     if (entry.ageMs < minAgeMs) continue;
+    // A command line this long is an agent prompt, not a helper invocation;
+    // scanning it is both pointless and the source of regex blowups.
+    if (entry.command.length > 8_192) continue;
     for (const root of runRootsInCommand(entry.command)) {
+      if (orphanRoots.size >= maxRoots) {
+        truncated = true;
+        break;
+      }
       if (!existsSync(root)) orphanRoots.add(root);
     }
+    if (truncated) break;
   }
-  if (orphanRoots.size === 0) return 0;
-  const survivors = killProcessesMatchingRoots([...orphanRoots]);
+  return { roots: [...orphanRoots], truncated, examined };
+}
+
+export function sweepOrphanedRunRootProcesses(
+  minAgeMs = STALE_FIXTURE_AGE_MS,
+  opts: OrphanRunRootScanOptions = {},
+): number {
+  if (process.platform === "win32") return 0;
+  const scan = collectOrphanedRunRoots(minAgeMs, opts);
+  if (scan.truncated) {
+    console.warn(
+      `[global-reap] orphan run-root sweep stopped early after ${scan.examined} process row(s) ` +
+        `(deadline/size bound, #1134); ${scan.roots.length} root(s) still checked`,
+    );
+  }
+  if (scan.roots.length === 0) return 0;
+  const survivors = killProcessesMatchingRoots(scan.roots);
   if (survivors.length > 0) {
     console.warn(
       `[global-reap] ${survivors.length} orphaned helper process(es) survived SIGKILL: ` +
         survivors.join(", "),
     );
   }
-  return orphanRoots.size;
+  return scan.roots.length;
 }
 
 /**

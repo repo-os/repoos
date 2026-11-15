@@ -242,6 +242,11 @@ the underlying code or environment.
 - RepoOS runs each managed agent turn in its own process group and reaps that group
   when the turn ends, so helpers the agent started during a turn are torn down with
   it. That does not replace good habits: agents should still avoid pattern kills.
+- A helper that called `setsid`/`setpgid`, or was reparented to PID 1, leaves the
+  group. RepoOS also tracks those by PID tree, worktree cwd and a per-run marker in
+  the environment, and a 15s control-plane sweep stops any it finds that no live
+  turn owns (exact PIDs, TERM then KILL). Escaped processes show up in the activity
+  log and on the System Resources dashboard instead of quietly burning CPU.
 - For an unattended RepoOS server on your machine, use `repoos service` (launchd /
   systemd) or a terminal tab you keep open — not a detached `repoos serve` started
   from an agent shell. A detached serve for this repo whose parent is gone is

@@ -17,7 +17,11 @@ import {
 } from "node:fs";
 import { basename, join } from "node:path";
 import { cpus, totalmem, freemem, loadavg, platform } from "node:os";
-import { type PressureSnapshot } from "../core/pressure-guard.js";
+import {
+  type PressureSnapshot,
+  withOrphanedRunProcesses,
+  type OrphanedRunPressureInfo,
+} from "../core/pressure-guard.js";
 import { localCheckLockRoot } from "../core/cross-process-slots.js";
 import { registeredEngineerCount, type GlobalEngineerCount } from "../core/global-engineers.js";
 import type { RepoOSConfig } from "../core/types.js";
@@ -154,8 +158,29 @@ export interface SystemStats {
   topProcesses: TopProcesses;
   /** Engineers across every registered RepoOS server on this machine (#0871). */
   globalEngineers: GlobalEngineerCount | null;
+  /** Orphaned run processes found by the turn reaper (#1134). */
+  runProcesses?: RunProcessesInfo;
   serverPid: number;
   at: string;
+}
+
+/** One process the turn reaper stopped (or failed to stop) after a turn ended. */
+export interface OrphanedRunProcessInfo {
+  pid: number;
+  taskId: string | null;
+  command: string;
+  cpuTimeMs: number;
+  cpuPercent: number;
+  ageMs: number;
+  matchedBy: "turn-tree" | "worktree-cwd" | "run-marker";
+  survived: boolean;
+  at: string;
+}
+
+/** The turn reaper's most recent sweep, for the dashboard. */
+export interface RunProcessesInfo {
+  lastSweepAt: string | null;
+  orphans: OrphanedRunProcessInfo[];
 }
 
 interface PsRecord {
@@ -997,6 +1022,10 @@ export interface SampleSystemOptions {
   config?: RepoOSConfig;
   /** How many entries the top CPU / top memory lists carry. Default 10. */
   topLimit?: number;
+  /** Turn reaper sweep results, surfaced on the dashboard (#1134). */
+  runProcesses?: RunProcessesInfo | null;
+  /** Orphaned run processes to attribute the pressure verdict to (#1134). */
+  orphanedRuns?: readonly OrphanedRunPressureInfo[];
 }
 
 /**
@@ -1107,11 +1136,14 @@ export async function sampleSystem(opts: SampleSystemOptions): Promise<SystemSta
     processes,
     serve,
     repo,
-    pressure: resources.pressure,
+    pressure: withOrphanedRunProcesses(resources.pressure, opts.orphanedRuns ?? []),
     heavyJobs: resources.heavyJobs,
     gitJobs: gitWorkerInFlight(workerRoot),
     topProcesses,
     globalEngineers: opts.root ? registeredEngineerCount(opts.root) : null,
+    ...(opts.runProcesses !== undefined && opts.runProcesses !== null
+      ? { runProcesses: opts.runProcesses }
+      : {}),
     serverPid,
     at: new Date().toISOString(),
   };

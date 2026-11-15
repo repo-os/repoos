@@ -314,6 +314,8 @@ import {
   killTrackedProcess,
   type SystemStats,
 } from "./system.js";
+import { RunProcessReaper, describeRunDuration } from "./run-process-reaper.js";
+import { setOrphanedRunProcessProvider } from "../core/pressure-guard.js";
 import { readTunnelConfig, writeTunnelConfig } from "../core/tunnel.js";
 import { readRegistry, unionApps } from "../core/tunnel-registry.js";
 import { portListening } from "../core/net-probe.js";
@@ -2718,6 +2720,43 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   });
   const cto = new CTOManager(config, emitEvent, runner);
   const ctoHeartbeat = new CtoHeartbeatTracker();
+  // #1134: reap processes a finished turn left outside its process group.
+  // Tracking is by worktree cwd / run marker / PID tree — never by name.
+  const runProcessReaper = new RunProcessReaper({
+    config,
+    runningAgents: () => runner.running(),
+    taskIdForWorkdir: (workdir) => {
+      const worktreesRoot = resolve(worktreesDir(config.root));
+      const rel = relative(worktreesRoot, resolve(workdir));
+      if (!rel || rel.startsWith("..")) return null;
+      let best: string | null = null;
+      let bestLength = 0;
+      for (const task of index.getTasks()) {
+        if (!task.branch) continue;
+        if (
+          (rel === task.branch || rel.startsWith(`${task.branch}/`)) &&
+          task.branch.length > bestLength
+        ) {
+          best = task.id;
+          bestLength = task.branch.length;
+        }
+      }
+      return best;
+    },
+    logger,
+    onReaped: (item) => {
+      if (!item.taskId) return;
+      runner.recordActivity(
+        item.taskId,
+        `orphaned run process ${item.survived ? "survived cleanup" : "stopped"} · ` +
+          `pid ${item.pid} · ${item.command.slice(0, 100)} · ` +
+          `cpu ${describeRunDuration(item.cpuTimeMs)} · age ${describeRunDuration(item.ageMs)}`,
+      );
+    },
+  });
+  if (shouldReapStrayServeProcesses(opts)) {
+    setOrphanedRunProcessProvider(() => runProcessReaper.pressureInfo());
+  }
   const ctoMonitor = new CTOMonitor(config, index, cto, runner, {
     // #0873: a running review or remote-validation wait is work, not idleness.
     reviewRunning: (taskId) => reviews.isRunning(taskId),
@@ -2727,6 +2766,8 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       }
       return hostLockJobsForTask(remoteValidator?.hostStatus?.(), taskId) !== null;
     },
+    // #1134: name the cause (with PIDs) instead of only "processes look busy".
+    orphanedRunProcesses: () => runProcessReaper.pressureInfo(),
   });
   ctoMonitor.wireHeartbeatTouch(() => {
     ctoHeartbeat.touch();
@@ -2792,6 +2833,11 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         root: config.root,
         worktreeWarnThreshold: config.worktreeWarnThreshold,
         config,
+        orphanedRuns: runProcessReaper.pressureInfo(),
+        runProcesses: {
+          lastSweepAt: runProcessReaper.lastSweepAtIso(),
+          orphans: runProcessReaper.recent(),
+        },
       });
       emitEvent({ type: "system.stats", stats });
     })()
@@ -2886,6 +2932,34 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       testHelperReapTimer.unref?.();
     }, TEST_HELPER_REAP_INITIAL_MS);
     testHelperReapInitial.unref?.();
+  }
+
+  // Orphaned run-process reaper (#1134). Agent turns can leave test runners in
+  // a new session (`setsid`) or reparented to PID 1; the process-group teardown
+  // cannot see those. Every 15s the control plane finds reparented processes
+  // inside a managed worktree (or carrying this repo's run marker) that no live
+  // turn owns and stops them by exact PID. Each kill is logged with task id,
+  // command, CPU time and age.
+  const RUN_PROCESS_REAP_INTERVAL_MS = 15_000;
+  let runProcessReapInitial: ReturnType<typeof setTimeout> | null = null;
+  let runProcessReapTimer: ReturnType<typeof setInterval> | null = null;
+  if (shouldReapStrayServeProcesses(opts)) {
+    const runProcessReapSweep = async (): Promise<void> => {
+      if (!(await psAvailable())) return;
+      await runProcessReaper.sweep();
+    };
+    runProcessReapInitial = setTimeout(() => {
+      void runProcessReapSweep().catch(() => {
+        /* best-effort — never crash the server over cleanup */
+      });
+      runProcessReapTimer = setInterval(() => {
+        void runProcessReapSweep().catch(() => {
+          /* best-effort — never crash the server over cleanup */
+        });
+      }, RUN_PROCESS_REAP_INTERVAL_MS);
+      runProcessReapTimer.unref?.();
+    }, 5_000);
+    runProcessReapInitial.unref?.();
   }
 
   // Built-in agent scheduling: a single in-flight guard shared with the manual
@@ -3736,6 +3810,11 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       cacheDir: join(config.root, config.cacheDir),
       runningAgents: runner.running(),
       knownServePids: previews.knownPids(),
+      orphanedRuns: runProcessReaper.pressureInfo(),
+      runProcesses: {
+        lastSweepAt: runProcessReaper.lastSweepAtIso(),
+        orphans: runProcessReaper.recent(),
+      },
     });
     const known = new Set(stats.processes.map((p) => p.pid));
     for (const p of stats.serve?.processes ?? []) known.add(p.pid);
@@ -4765,6 +4844,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         if (reapTimer) clearInterval(reapTimer);
         if (testHelperReapInitial) clearTimeout(testHelperReapInitial);
         if (testHelperReapTimer) clearInterval(testHelperReapTimer);
+        if (runProcessReapInitial) clearTimeout(runProcessReapInitial);
+        if (runProcessReapTimer) clearInterval(runProcessReapTimer);
+        setOrphanedRunProcessProvider(null);
         clearInterval(builtInTimer);
         if (reminderTimer) clearInterval(reminderTimer);
         clearInterval(worktreeSweepTimer);
@@ -4844,6 +4926,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           if (reapTimer) clearInterval(reapTimer);
           if (testHelperReapInitial) clearTimeout(testHelperReapInitial);
           if (testHelperReapTimer) clearInterval(testHelperReapTimer);
+          if (runProcessReapInitial) clearTimeout(runProcessReapInitial);
+          if (runProcessReapTimer) clearInterval(runProcessReapTimer);
+          setOrphanedRunProcessProvider(null);
           clearInterval(worktreeSweepTimer);
           clearTimeout(initialWorktreeSweep);
           clearInterval(builtInTimer);
