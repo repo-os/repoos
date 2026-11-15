@@ -70,3 +70,4 @@ The CLI can already discover them: `repoos servers --tailscale` (`collectTailnet
 - 2026-11-15T14:15:20Z · CTO nudge: held — handoff gate is running
 - 2026-11-15T14:24:29Z · note: ui verification passed: 1 shot captured with clean console (1 shot warning)
 - 2026-11-15T14:24:30Z · status active→review
+- 2026-11-15T14:24:30Z · message_queued at 2026-11-15T14:24:30.133Z
