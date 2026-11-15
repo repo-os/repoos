@@ -1,3 +1,14 @@
+---
+id: summary
+title: summary
+type: feature
+status: inbox
+priority: p2
+area: general
+assigned_to: ai
+created_by: ""
+branch: ""
+---
 ## TL;DR
 
 Task 0579 wired Apple notarization, ticket stapling, and post-staple verification into the existing `release` job in `.github/workflows/macos-hub.yml`, completing the macOS Hub distribution path. The signed `RepoOSHub.dmg` is now submitted to Apple's notary service with `--wait --timeout 1800 --output-format json` after packaging and the DMG install-experience check, and before any GitHub Release upload. A rejected submission or wait timeout fails the job and fetches `notarytool log` with the same authentication options when Apple returned a submission ID; failure before an ID preserves the original error and reports that no log is available. Only an `Accepted` submission reaches `stapler staple`, `stapler validate`, and `spctl --assess`; the upload step runs only after every gate passes. A new `dry_run` `workflow_dispatch` input exercises the whole pipeline without creating or modifying a release. `docs/macos-hub-release.md` was rewritten to stop claiming the DMG is ad-hoc signed with an expected Gatekeeper warning, and now documents the secret names, gate order, dry run, release checklist, and failure triage. The reviewer returned `good to go` on the first pass; the close-out gate completed in 571s and the task landed at commit `a3d055574824b1a79170da6658574d1ec181d864`. Notarization could not be exercised end-to-end because the prerequisite tasks (#0576 credentials, #0577 hardened runtime, #0578 Developer ID signing) were not landed; the engineer validated the shell branches locally against stubbed `xcrun`/`spctl` instead, and the gate is intentionally fail-closed until those land.
@@ -21,11 +32,11 @@ What shipped (diff: `.github/workflows/macos-hub.yml` +113/−0, `docs/macos-hub
 - **Review rounds:** 1 pass, verdict `good to go`, no change requests.
 - **Wall clock, created → done:** 48 days 3h 39m (2026-09-28T18:43:47Z → 2026-11-15T22:22:57Z). Nearly all of that was waiting on prerequisites and task-body refinement; active engineering took one session of 594s (from status `ready→active` at 21:28:16Z to `active→review` at 21:43:52Z on 2026-11-15).
 - **Agents and models per role:**
-  - Engineer: `opencode-go/deepseek-v4.1-flash` (OpenCode), 1 session, 594s, 123,202 tokens, $0.051496662.
-  - Reviewer: `composer-2.5` (cursor), 1 session, 58s, tokens/cost not recorded.
-  - PM: `opencode-go/deepseek-v4.1-flash`, 2 sessions — 2026-10-05 (205s, 69,506 tokens, $0.020396892) and 2026-10-07 (53s, tokens/cost not recorded) — used to refine the task body and acceptance criteria.
-  - Routing: Model router (openrouter), model not recorded, 2 sessions of 1s each.
-  - Restarts or model swaps: none recorded.
+- Engineer: `opencode-go/deepseek-v4.1-flash` (OpenCode), 1 session, 594s, 123,202 tokens, $0.051496662.
+- Reviewer: `composer-2.5` (cursor), 1 session, 58s, tokens/cost not recorded.
+- PM: `opencode-go/deepseek-v4.1-flash`, 2 sessions — 2026-10-05 (205s, 69,506 tokens, $0.020396892) and 2026-10-07 (53s, tokens/cost not recorded) — used to refine the task body and acceptance criteria.
+- Routing: Model router (openrouter), model not recorded, 2 sessions of 1s each.
+- Restarts or model swaps: none recorded.
 - **Token/cost totals (where recorded):** 192,708 tokens and $0.071893554 across the two sessions that recorded usage; the reviewer and the 2026-10-07 PM session did not record figures.
 - **Close-out gate:** completed in 571s.
 - **Shots:** skipped — the diff touches no capture target's globs (no UI change), which is consistent with the task's "no UI change" intent.
