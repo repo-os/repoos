@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/engineer-test-runs-outlive-the-agent-tur
 created_at: "2026-11-15T16:22:52Z"
-updated_at: "2026-11-15T17:44:25Z"
+updated_at: "2026-11-15T17:49:07Z"
 ---
 ## Problem
 On 16 Nov 2026 at about 00:08 SGT, Nick's MacBook Air was at 6% idle CPU. Seven node processes with parent PID 1 (orphaned) were using 50 to 70% CPU each, and each had been running for 58 to 78 minutes. All of them were left behind by engineer turns that had already ended:
@@ -50,3 +50,4 @@ Look at the engineer turn spawner and process-group reaping in src/core (search 
 - 2026-11-15T17:42:10Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 130) · last assistant: no assistant message · stderr: (empty)
 - 2026-11-15T17:44:06Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-15T17:44:25Z · message_delivered: 1 message(s)
+- 2026-11-15T17:49:07Z · message_queued at 2026-11-15T17:49:07.052Z
