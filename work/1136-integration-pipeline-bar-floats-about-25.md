@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-11-15T20:11:22Z"
-review_passes: 1
+last_close_out_gate_ms: 555401
+last_close_out_gate_at: "2026-11-15T20:34:39.951Z"
 id: "1136"
 title: "Integration pipeline bar floats about 250px above the bottom over Work content (phone and desktop, regression on main)"
 type: bug
@@ -13,6 +13,8 @@ assigned_to: ai
 created_by: t@t
 branch: feat/integration-pipeline-bar-floats-about-25
 created_at: "2026-11-15T17:23:26Z"
+updated_at: "2026-11-15T20:34:39Z"
+review_passes: 1
 ---
 ## Problem
 On current main (`23dc737`, which includes #1130), the collapsed "Integration pipeline idle" bar on `/work` no longer sits just above the bottom nav. It floats about 250px higher, over the task cards. This happens at every width:
@@ -87,4 +89,5 @@ Measured with Playwright and CDP: `.ibar-wrap` (position: fixed; bottom: 74px) g
 - 2026-11-15T20:10:42Z · status active→review
 - 2026-11-15T20:10:42Z · message_queued at 2026-11-15T20:10:42.729Z
 - 2026-11-15T20:11:22Z · note: review pass 1: good to go
+- 2026-11-15T20:34:39Z · close-out gate completed in 555s
 
