@@ -60,3 +60,4 @@ Look at the worktree cleanup in the closeout path (the code behind `repoos done`
 - 2026-11-15T18:06:55Z · body
 - 2026-11-15T18:09:07Z · CTO nudge: held — handoff gate is running
 - 2026-11-15T18:09:25Z · status active→review
+- 2026-11-15T18:09:25Z · message_queued at 2026-11-15T18:09:25.707Z
