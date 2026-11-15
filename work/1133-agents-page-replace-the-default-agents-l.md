@@ -132,3 +132,4 @@ The current list is `agentLastRuns` in src/ui-app/src/views/AgentsView.vue, fed 
 - 2026-11-15T18:06:40Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 130) · last assistant: The earlier local check run timed out while waiting on the remote validation runner. I'll re-run it in the background and monitor the log rather than blocking the turn. · stderr: (empty)
 - 2026-11-15T18:08:10Z · message_delivered: 1 message(s)
 - 2026-11-15T18:09:07Z · message_queued at 2026-11-15T18:09:07.331Z
+- 2026-11-15T18:09:07Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
