@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/repoos-hub-mobile-hold-to-drag-server-re
 created_at: "2026-11-15T14:39:13Z"
-updated_at: "2026-11-15T16:08:33Z"
+updated_at: "2026-11-15T16:09:57Z"
 ---
 ## Problem
 Feedback from Nick after testing the #1127 build on his Nothing Phone (3a):
@@ -57,3 +57,4 @@ Hold-to-drag feel, haptics and iOS gesture behavior are covered by code and comp
 - 2026-11-15T15:59:55Z · watchdog: restarting engineer because a queued message waited 3m with no live process
 - 2026-11-15T16:03:30Z · message_delivered: 1 message(s)
 - 2026-11-15T16:08:33Z · body
+- 2026-11-15T16:09:57Z · CTO nudge: held — handoff gate is running
