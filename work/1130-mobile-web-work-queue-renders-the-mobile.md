@@ -1,18 +1,19 @@
 ---
-last_close_out_gate_ms: 114029
-last_close_out_gate_at: "2026-11-15T16:19:49.636Z"
 id: "1130"
 title: "Mobile web: Work queue renders the mobile list and desktop board on top of each other"
 type: bug
-status: review
+status: done
 priority: p0
 area: web
 story: RepoOS Hub for Mobile
+merged_commit: 075fe9ac9ca09d5b5bd1954ab988cf22e37d7f87
 assigned_to: ai
 created_by: t@t
 branch: feat/mobile-web-work-queue-renders-the-mobile
 created_at: "2026-11-15T14:34:55Z"
 updated_at: "2026-11-15T16:19:49Z"
+last_close_out_gate_ms: 114029
+last_close_out_gate_at: "2026-11-15T16:19:49.636Z"
 review_passes: 1
 ---
 ## Problem
