@@ -17076,11 +17076,8 @@
   .drawer-critical {
     padding-inline: 16px;
   }
-  .drawer-status-summary,
-  .drawer-done-error {
-    width: calc(100% - 32px);
-    margin-inline: 16px;
-  }
+  /* The status card / done-error keep their own 22px gutter (scoped rules in
+     TaskDrawer beat a global override, and 22px already fits a 360px phone). */
   .drawer-body {
     padding: 16px;
     overflow-x: hidden;
@@ -17091,7 +17088,12 @@
   .review-toolbar button,
   .save-bar button,
   .delete-zone button,
-  .drawer-body .field-row button {
+  .drawer-body .field-row button,
+  .drawer-wrap .agent-override-bar button {
+    min-height: 44px;
+  }
+  /* Canned chat prompts and the agent/model picker are controls too. */
+  .pm-canned-item {
     min-height: 44px;
   }
   .drawer-wrap .ai-chat-compose button,

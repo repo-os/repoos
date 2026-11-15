@@ -432,6 +432,146 @@ async function runUISmokeTest(): Promise<void> {
     await page.keyboard.press("Escape"); // close the drawer
     await page.waitForTimeout(300);
 
+    // ── Phone task detail is one full-screen drawer (#1137) ─────────────
+    // A queue card, Search and a ?task=<id>&tab= deep link all open the same
+    // shared drawer. At 360px it must fit the viewport with its 44px
+    // Back/close controls on-screen, every tab reachable by scrolling, and
+    // 16px chat inputs so iOS Safari does not zoom on focus.
+    {
+      await page.setViewportSize({ width: 360, height: 800 });
+      await page.goto(`${server.url}/work?task=9001&tab=changes`, {
+        waitUntil: "load",
+        timeout: 20_000,
+      });
+      await page.waitForFunction(
+        () => {
+          const drawer = document.querySelector(".drawer");
+          if (!(drawer instanceof HTMLElement)) return false;
+          const r = drawer.getBoundingClientRect();
+          return r.width > 0 && r.height > 0;
+        },
+        { timeout: 10_000 },
+      );
+      await page.waitForTimeout(400);
+
+      const detail = await page.evaluate(() => {
+        const rect = (el: Element | null) => {
+          if (!(el instanceof HTMLElement)) return null;
+          const r = el.getBoundingClientRect();
+          const s = getComputedStyle(el);
+          return {
+            left: r.left,
+            right: r.right,
+            width: r.width,
+            height: r.height,
+            display: s.display,
+            label: el.getAttribute("aria-label"),
+          };
+        };
+        const strip = document.querySelector(".drawer-tabs");
+        return {
+          scrollWidth: document.body.scrollWidth,
+          innerWidth: window.innerWidth,
+          back: rect(document.querySelector(".drawer-mobile-back")),
+          close: rect(document.querySelector(".drawer-head .close-x")),
+          hasTabStrip: strip instanceof HTMLElement,
+          activeTab:
+            document.querySelector(".drawer-tabs .tab-btn.active")?.textContent?.trim() ?? null,
+        };
+      });
+      const within = (r: { left: number; right: number } | null): boolean =>
+        r !== null && r.left >= 0 && r.right <= detail.innerWidth + 1;
+
+      if (detail.scrollWidth > detail.innerWidth) {
+        throw new Error(
+          `phone task detail overflows at 360px: body scrollWidth ${detail.scrollWidth} > innerWidth ${detail.innerWidth} (#1137)`,
+        );
+      }
+      if (!detail.back || detail.back.display === "none" || !within(detail.back)) {
+        throw new Error("phone task detail Back control is missing or off-screen at 360px (#1137)");
+      }
+      if (detail.back.width < 44 || detail.back.height < 44 || !detail.back.label) {
+        throw new Error(
+          "phone task detail Back control must be 44x44 with an accessible name (#1137)",
+        );
+      }
+      if (
+        !detail.close ||
+        !within(detail.close) ||
+        detail.close.width < 44 ||
+        detail.close.height < 44 ||
+        !detail.close.label
+      ) {
+        throw new Error(
+          "phone task detail close control must be on-screen, 44x44 and labelled (#1137)",
+        );
+      }
+      if (!detail.hasTabStrip) {
+        throw new Error("phone task detail did not render its tab strip (#1137)");
+      }
+      if (!detail.activeTab || !/changes/i.test(detail.activeTab)) {
+        throw new Error(
+          `?tab=changes did not select the Changes tab (got "${detail.activeTab}") (#1137)`,
+        );
+      }
+
+      // Every tab, including the expand control at the end, must be reachable
+      // by scrolling the strip horizontally.
+      const lastTabReachable = await page.evaluate(() => {
+        const strip = document.querySelector(".drawer-tabs");
+        if (!(strip instanceof HTMLElement)) return false;
+        strip.scrollLeft = strip.scrollWidth;
+        const tabs = strip.querySelectorAll(".tab-btn");
+        const last = tabs[tabs.length - 1];
+        if (!(last instanceof HTMLElement)) return false;
+        const r = last.getBoundingClientRect();
+        return r.left >= -1 && r.right <= window.innerWidth + 1;
+      });
+      if (!lastTabReachable) {
+        throw new Error("the last drawer tab stays unreachable by touch at 360px (#1137)");
+      }
+
+      await page.evaluate(() => {
+        for (const tab of Array.from(document.querySelectorAll(".drawer-tabs .tab-btn"))) {
+          if ((tab.textContent ?? "").trim().startsWith("PM")) {
+            (tab as HTMLElement).click();
+            return;
+          }
+        }
+      });
+      await page.waitForTimeout(300);
+      const composerFont = await page.evaluate(() => {
+        const ta = document.querySelector(".ai-chat-compose textarea");
+        if (!(ta instanceof HTMLElement)) return null;
+        return parseFloat(getComputedStyle(ta).fontSize);
+      });
+      if (composerFont !== null && composerFont < 16) {
+        throw new Error(
+          `phone drawer chat textarea is ${composerFont}px; iOS zoom needs >=16px (#1137)`,
+        );
+      }
+
+      const smallControls = await page.evaluate(() => {
+        const bad: string[] = [];
+        for (const sel of [".pm-canned-item", ".agent-override-bar button"]) {
+          for (const el of Array.from(document.querySelectorAll(sel))) {
+            if (!(el instanceof HTMLElement)) continue;
+            const h = el.getBoundingClientRect().height;
+            if (h < 43.5) bad.push(`${sel} ${Math.round(h)}px`);
+          }
+        }
+        return bad;
+      });
+      if (smallControls.length > 0) {
+        throw new Error(
+          `phone drawer controls under the 44px touch floor: ${smallControls.join(", ")} (#1137)`,
+        );
+      }
+
+      await page.keyboard.press("Escape");
+      await page.waitForTimeout(300);
+    }
+
     // ── UI recovery banner regression (#0420) ───────────────────────────
     // Intercept /api/health to return a build hash that differs from the
     // client's, which triggers checkUiBuild → showStaleUi on the next

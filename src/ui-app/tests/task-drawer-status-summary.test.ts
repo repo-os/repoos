@@ -173,6 +173,18 @@ describe("task drawer status summary (#0952)", () => {
     expect(summary.find(".drawer-status-l2").text()).toContain("No complete report");
     expect(summary.findAll(".drawer-status-row")).toHaveLength(2);
 
+    // #1137 AC2: the shared detail a phone opens from the queue offers the
+    // retry action for a failed reviewer, so the failure is actionable.
+    await wrapper
+      .findAll("button.tab-btn")
+      .find((tab) => tab.text().includes("Review"))!
+      .trigger("click");
+    await flush();
+    expect(
+      wrapper.findAll("button").some((btn) => btn.text().trim() === "Review again"),
+      "Review again action is reachable on a failed review",
+    ).toBe(true);
+
     await wrapper
       .findAll("button.tab-btn")
       .find((tab) => tab.text().includes("Debug"))!
