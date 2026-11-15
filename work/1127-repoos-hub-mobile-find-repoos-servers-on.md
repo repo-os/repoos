@@ -50,3 +50,4 @@ The CLI can already discover them: `repoos servers --tailscale` (`collectTailnet
 - 2026-11-15T13:48:24Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 130) · last assistant: Implementation and focused tests are green. Now I'll run the scoped check gate for the whole change. · stderr: (empty)
 - 2026-11-15T13:48:24Z · message_delivered: 1 message(s)
 - 2026-11-15T13:50:20Z · message_queued at 2026-11-15T13:50:20.524Z
+- 2026-11-15T13:50:20Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
