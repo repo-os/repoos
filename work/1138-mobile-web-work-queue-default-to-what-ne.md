@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/mobile-web-work-queue-default-to-what-ne
 created_at: "2026-11-15T17:24:06Z"
-updated_at: "2026-11-15T21:27:53Z"
+updated_at: "2026-11-15T21:28:19Z"
 last_close_out_gate_ms: 665882
 last_close_out_gate_at: "2026-11-15T21:27:33.417Z"
 review_passes: 1
@@ -113,3 +113,4 @@ Nick: on a phone it's "really hard to find the right task and do anything normal
 - 2026-11-15T21:27:33Z · close-out gate completed in 666s
 - 2026-11-15T21:27:49Z · status done→done, release:success
 - 2026-11-15T21:27:53Z · message_dropped: 1 queued message(s) discarded — task is done
+- 2026-11-15T21:28:19Z · message_dropped: 1 queued message(s) discarded — task is done
