@@ -11,7 +11,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/integration-pipeline-bar-floats-about-25
 created_at: "2026-11-15T17:23:26Z"
-updated_at: "2026-11-15T20:03:41Z"
+updated_at: "2026-11-15T20:06:59Z"
 ---
 ## Problem
 On current main (`23dc737`, which includes #1130), the collapsed "Integration pipeline idle" bar on `/work` no longer sits just above the bottom nav. It floats about 250px higher, over the task cards. This happens at every width:
@@ -48,20 +48,20 @@ Measured with Playwright and CDP: `.ibar-wrap` (position: fixed; bottom: 74px) g
 ```json
 [
 {
-  "label": "Desktop 1280: collapsed integration strip docked 14px above the viewport bottom",
-  "target": "default",
-  "route": "/work",
-  "highlight": ".ibar-wrap",
-  "viewportWidth": 1280,
-  "viewportHeight": 800
+"label": "Desktop 1280: collapsed integration strip docked 14px above the viewport bottom",
+"target": "default",
+"route": "/work",
+"highlight": ".ibar-wrap",
+"viewportWidth": 1280,
+"viewportHeight": 800
 },
 {
-  "label": "Phone 390: collapsed strip above the bottom nav with one review task",
-  "target": "default",
-  "route": "/work?status=review",
-  "highlight": ".ibar-wrap",
-  "viewportWidth": 390,
-  "viewportHeight": 844
+"label": "Phone 390: collapsed strip above the bottom nav with one review task",
+"target": "default",
+"route": "/work?status=review",
+"highlight": ".ibar-wrap",
+"viewportWidth": 390,
+"viewportHeight": 844
 }
 ]
 ```
@@ -80,3 +80,4 @@ Measured with Playwright and CDP: `.ibar-wrap` (position: fixed; bottom: 74px) g
 - 2026-11-15T19:49:07Z · status ready→active, branch
 - 2026-11-15T20:02:13Z · body
 - 2026-11-15T20:03:41Z · body
+- 2026-11-15T20:06:59Z · body
