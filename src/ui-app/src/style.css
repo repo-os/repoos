@@ -17141,14 +17141,12 @@
   .ff-textarea,
   .nt-body-textarea,
   .search-overlay-input,
-  input[type="text"],
-  input[type="search"],
-  input[type="email"],
-  input[type="password"],
-  input[type="url"],
-  input[type="number"],
-  textarea,
-  select {
+  .drawer-body input,
+  .drawer-body select,
+  .drawer-body textarea,
+  .settings-page input,
+  .settings-page select,
+  .settings-page textarea {
     font-size: 16px;
   }
 }
