@@ -676,7 +676,7 @@ build-android:
     cp -f "$apk" ../app-debug.apk
     echo "==> mobile/app-debug.apk ($(du -h ../app-debug.apk | cut -f1)) — copied from $apk"
 
-# build the release-signed Android APK for a public download `just build-android-release [tag]`
+# build the release-signed Android APK for a public download: `just build-android-release [tag]`
 [group('mobile')]
 build-android-release tag="":
     #!/usr/bin/env bash
