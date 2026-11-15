@@ -2,7 +2,7 @@
 id: "1125"
 title: Fix the flaky remote-host-pool (and agent-review/pressure-guard/agent-drivers) tests that keep failing close-out and handoff on remote runners
 type: bug
-status: active
+status: review
 priority: p0
 area: [core, server]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/fix-the-flaky-remote-host-pool-and-agent
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-15T04:51:36Z"
-updated_at: "2026-11-15T05:39:09Z"
+updated_at: "2026-11-15T05:40:07Z"
 ---
 ## Problem
 
@@ -64,3 +64,4 @@ Follow AGENTS.md 'Is a repoos check failure a flake or a real bug?' and docs/deb
 - 2026-11-15T05:39:09Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-15T05:39:09Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: Checking worktree state and completing verification after the interrupted check. · stderr: (empty)
 - 2026-11-15T05:39:09Z · message_delivered: 1 message(s)
+- 2026-11-15T05:40:07Z · status active→review
