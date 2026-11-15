@@ -11,7 +11,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/mobile-web-task-detail-one-full-touch-de
 created_at: "2026-11-15T17:24:03Z"
-updated_at: "2026-11-15T22:17:20Z"
+updated_at: "2026-11-15T22:19:17Z"
 dev_error_count: 3
 ---
 ## Problem
@@ -149,3 +149,4 @@ On a phone there's a single task detail, whichever way it was opened (card, sear
 - 2026-11-15T22:17:19Z · note: ui verification passed: 2 of 3 shots captured with clean console
 - 2026-11-15T22:17:20Z · status active→review
 - 2026-11-15T22:17:20Z · message_queued at 2026-11-15T22:17:20.409Z
+- 2026-11-15T22:19:17Z · note: review pass 1: needs some work
