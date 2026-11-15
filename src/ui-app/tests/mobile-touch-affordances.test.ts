@@ -75,11 +75,13 @@ describe("mobile web polish (#1139)", () => {
   });
 
   it("hides keyboard-only hints on touch input", () => {
+    // The rule keys off hover capability but also lists `pointer: coarse` so
+    // touchscreen hybrids (which may still report hover) hide the hints too.
     expect(css).toMatch(
-      /@media \(hover: none\)\s*\{[\s\S]*?\.search-input kbd\s*\{[^}]*display:\s*none/s,
+      /@media \(hover: none\)[^{]*\{[\s\S]*?\.search-input kbd\s*\{[^}]*display:\s*none/s,
     );
     expect(css).toMatch(
-      /@media \(hover: none\)\s*\{[\s\S]*?\.search-overlay-keyboard-hint\s*\{[^}]*display:\s*none/s,
+      /@media \(hover: none\)[^{]*\{[\s\S]*?\.search-overlay-keyboard-hint\s*\{[^}]*display:\s*none/s,
     );
     // The pill's tooltip no longer advertises keyboard commands at all.
     expect(searchBar).toContain('data-tip="Search"');
