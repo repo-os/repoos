@@ -18,6 +18,7 @@ const emit = defineEmits<{
   back: [];
   toggle: [key: string];
   add: [];
+  manual: [];
 }>();
 
 const selectableCount = computed(() => props.servers.filter((server) => server.selectable).length);
@@ -112,8 +113,9 @@ function isSelected(key: string): boolean {
       </template>
     </div>
 
-    <div v-if="!busy && servers.length" class="discovery-actions">
+    <div v-if="!busy" class="discovery-actions">
       <button
+        v-if="servers.length"
         type="button"
         class="btn-primary block"
         :disabled="selected.length === 0"
@@ -122,7 +124,16 @@ function isSelected(key: string): boolean {
       >
         {{ selected.length ? `Add ${selected.length} selected` : "Select servers to add" }}
       </button>
-      <p v-if="!selectableCount" class="hint discovery-footnote">
+      <button
+        v-else
+        type="button"
+        class="btn-ghost block"
+        data-testid="hub-discovery-add-manual"
+        @click="emit('manual')"
+      >
+        Add server by URL
+      </button>
+      <p v-if="servers.length && !selectableCount" class="hint discovery-footnote">
         Nothing left to add. Saved and non-HTTPS servers stay listed so you can see why.
       </p>
     </div>

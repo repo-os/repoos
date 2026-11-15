@@ -231,6 +231,7 @@ async function onLockScope(scope: "reopen" | "server") {
         @back="backToPicker"
         @toggle="onDiscoveryToggle"
         @add="onAddDiscovered"
+        @manual="startAdd"
       />
 
       <SettingsView
