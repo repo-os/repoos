@@ -80,3 +80,4 @@ Start from how `budget.allowlist` is read and merged today, `collectTailnetServe
 - 2026-11-15T18:37:10Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 130) · last assistant: Round-2 fixes are committed in the self-check checkpoint (`3e00712`) and the scoped check is running. Waiting for it to complete. · stderr: (empty)
 - 2026-11-15T18:37:10Z · status active→review
 - 2026-11-15T18:37:11Z · message_delivered: 1 message(s)
+- 2026-11-15T18:37:11Z · note: handoff requested (cli)
