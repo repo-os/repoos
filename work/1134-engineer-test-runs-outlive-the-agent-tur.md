@@ -121,3 +121,4 @@ Look at the engineer turn spawner and process-group reaping in src/core (search 
 - 2026-11-15T18:39:10Z · message_delivered: 1 message(s)
 - 2026-11-15T18:39:54Z · body
 - 2026-11-15T18:40:17Z · message_queued at 2026-11-15T18:40:17.016Z
+- 2026-11-15T18:40:17Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
