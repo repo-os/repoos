@@ -11,7 +11,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/mobile-web-task-detail-one-full-touch-de
 created_at: "2026-11-15T17:24:03Z"
-updated_at: "2026-11-15T23:01:08Z"
+updated_at: "2026-11-15T23:04:22Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -164,3 +164,4 @@ On a phone there's a single task detail, whichever way it was opened (card, sear
 - 2026-11-15T22:45:41Z · message_delivered: 1 message(s)
 - 2026-11-15T22:58:38Z · body
 - 2026-11-15T23:01:08Z · status active→review
+- 2026-11-15T23:04:22Z · note: ui verification passed: 2 of 3 shots captured with clean console
