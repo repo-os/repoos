@@ -3,16 +3,13 @@ id: "1133"
 title: "Agents page: replace the Default agents last-runs log with a per-agent status dot"
 type: feature
 status: inbox
-needs_input: true
-needs_input_reason: underspecified
-needs_input_detail: "missing sections: Notes for AI"
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
 branch: ""
 created_at: "2026-11-15T15:20:08Z"
-updated_at: "2026-11-15T15:20:10Z"
+updated_at: "2026-11-15T15:25:58Z"
 ---
 ## Problem
 The Default agents section of Agents > Agents now starts with a "last runs" log, added in #1098 (12 Nov) and reworked in #1123 (15 Nov). It lists rows such as CTO, debugger, engineer, pm and reviewer, each with a "finished · <timestamp>" line, plus a "Show older and other runs (14)" toggle. Nick didn't ask for it and finds it badly designed:
@@ -24,13 +21,19 @@ The Default agents section of Agents > Agents now starts with a "last runs" log,
 Remove the separate last-runs list from the top of Default agents. Each agent card gets a small status dot with a short label next to its name, such as "Last run 21:40" or "Failed 21:36". Tapping it shows the plain-language failure reason and the collapsed "Raw CLI error". When everything is healthy, nothing extra takes up space.
 
 ## Acceptance criteria
+- The status shown for an agent reflects its *current* coding agent and model. `getAgentLastRuns` in src/core/db.ts today partitions by `agent` (role) only, so after switching the engineer from OpenCode to Codex the card can still show an OpenCode failure. Record the model on each session if it isn't stored yet. Compare the latest run's CLI and model with the agent's current config, and show a run from an older combination as "previous setup (opencode + glm-5.3-flash)" or hide it, never as the current status.
+- The status dot links to the failed run's task and its log.
 - The last-runs block and its "Show older and other runs" toggle are gone from the top of Default agents.
 - Each default agent card (plus CTO and debugger) shows its last run status inline. The failure detail opens on demand and uses `formatAgentFailure`/`splitAgentFailureDetail` from #1123.
 - The failure summary never repeats itself. Fix the formatter so the "(CLI: …)" suffix doesn't repeat the summary, and add a test with the OpenCode string above.
 - Older runs remain reachable from the activity log, not from this page header.
 - UI tests are updated, and the layout is checked at 1280px and at phone width.
 
+## Notes for AI
+The current list is `agentLastRuns` in src/ui-app/src/views/AgentsView.vue, fed by `GET /api/agents/last-runs` in src/server/server.ts, which reads `getAgentLastRuns()` in src/core/db.ts (ROW_NUMBER partitioned by `agent`). The failure formatting is in src/core/agent-failure.ts (`formatAgentFailure`, `splitAgentFailureDetail`) from #1123. The engineer row in Nick's 15 Nov screenshot shows the summary repeated inside the "(CLI: …)" suffix. Reproduce that with a test. Keep the endpoint backward compatible, or update every caller.
+
 ## Activity
 
 - 2026-11-15T15:20:08Z · created · t@t
 - 2026-11-15T15:20:10Z · needs_input
+- 2026-11-15T15:25:58Z · needs_input, body: Acceptance criteria (added 2); Notes for AI (added)
