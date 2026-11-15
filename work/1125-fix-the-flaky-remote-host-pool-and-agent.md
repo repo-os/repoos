@@ -5,11 +5,13 @@ type: bug
 status: inbox
 priority: p0
 area: [core, server]
-assigned_to: ""
+assigned_to: ai
 created_by: t@t
 branch: ""
+cli_override: cursor
+model_override: composer-2.5
 created_at: "2026-11-15T04:51:36Z"
-updated_at: "2026-11-15T04:51:36Z"
+updated_at: "2026-11-15T04:51:40Z"
 ---
 ## Problem
 
@@ -37,3 +39,4 @@ Follow AGENTS.md 'Is a repoos check failure a flake or a real bug?' and docs/deb
 ## Activity
 
 - 2026-11-15T04:51:36Z · created · t@t
+- 2026-11-15T04:51:40Z · cli_override, model_override
