@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/mobile-web-work-queue-renders-the-mobile
 created_at: "2026-11-15T14:34:55Z"
-updated_at: "2026-11-15T15:14:51Z"
+updated_at: "2026-11-15T15:15:46Z"
 ---
 ## Problem
 On a phone browser (Nick's Nothing Phone 3a, Chrome, about 412px wide, opening `https://bee.tailc0c173.ts.net:7499` on the tiao project, server v0.5.83), the Work page draws two layouts at once:
@@ -41,19 +41,19 @@ Reproduced on this branch (based on current main) at 360, 390 and 412 px by moun
 ```json
 [
 {
-  "label": "Phone Work queue at 390px: one layout, filter row and list",
-  "target": "default",
-  "route": "/work",
-  "highlight": "[data-testid=\"mobile-work-queue\"]",
-  "viewportWidth": 390,
-  "viewportHeight": 844
+"label": "Phone Work queue at 390px: one layout, filter row and list",
+"target": "default",
+"route": "/work",
+"highlight": "[data-testid=\"mobile-work-queue\"]",
+"viewportWidth": 390,
+"viewportHeight": 844
 },
 {
-  "label": "Desktop Work board unchanged at 1280px",
-  "target": "default",
-  "route": "/work",
-  "highlight": ".board",
-  "viewportWidth": 1280
+"label": "Desktop Work board unchanged at 1280px",
+"target": "default",
+"route": "/work",
+"highlight": ".board",
+"viewportWidth": 1280
 }
 ]
 ```
@@ -68,3 +68,4 @@ Reproduced on this branch (based on current main) at 360, 390 and 412 px by moun
 - 2026-11-15T15:14:42Z · body: Reproduction (added)
 - 2026-11-15T15:14:43Z · message_queued at 2026-11-15T15:14:43.255Z
 - 2026-11-15T15:14:51Z · body
+- 2026-11-15T15:15:46Z · handoff_deferred: 1 queued message(s) must be read before review
