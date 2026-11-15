@@ -60,6 +60,13 @@ const mobileShells = [
     "agents-page",
     header + `<div class="agents-tab-content agents-tab-content--playground">${content}</div>`,
   ],
+  // #1130: the phone Work queue is the page scroller at narrow widths. Its end
+  // clearance must clear the fixed tab bar and floating integration bar.
+  [
+    "Mobile Work queue",
+    "mobile-work",
+    header + `<div class="mobile-task-list">${content}</div><div style="height:16px"></div>`,
+  ],
 ] as const;
 
 // Same optional browser dependency as the UI smoke check; no browser install is
@@ -237,7 +244,7 @@ describe.skipIf(!existsSync(webkit.executablePath()))(
             // outer scrollers must clear the entire fixed control stack.
             const clearance = width > 760 && /Work|Inputs board/.test(_name) ? 24 : geometry.inset;
             expect(geometry.lastBottom).toBeLessThanOrEqual(height - clearance + 1);
-            if (width <= 760 && /Inputs board|Agents playground/.test(_name)) {
+            if (width <= 760 && /Inputs board|Agents playground|Mobile Work queue/.test(_name)) {
               expect(geometry.scrollOwner).toBe("root");
             }
           } finally {
