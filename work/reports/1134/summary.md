@@ -1,3 +1,14 @@
+---
+id: summary
+title: summary
+type: feature
+status: inbox
+priority: p2
+area: general
+assigned_to: ai
+created_by: ""
+branch: ""
+---
 ## TL;DR
 
 Seven orphaned `vitest` processes left behind by finished engineer turns pinned a MacBook at ~6% idle CPU for an hour; six of them ignored SIGTERM and had to be SIGKILLed. Turn teardown only reaped the turn's process group, and agent CLIs' own shell tools can start test runners in new sessions that escape it. This task added two layers: `reapAgentTurnProcessTree` (turn teardown now collects the PID tree, processes whose cwd is in the turn's worktree, and processes carrying a new repo-scoped `REPOOS_TURN_MARKER` env value, sending TERM then KILL to exact PIDs — never name-based kills) and a control-plane sweeper (`run-process-reaper.ts`) running every 15 seconds that finds reparented orphans in managed worktrees, kills them by PID, and reports each kill to the activity log, dashboard, pressure guard and CTO digest. The test-helper sweep `sweepOrphanedRunRootProcesses` is now bounded by a deadline and caps so it cannot hang. One engineering round (opencode-go/deepseek-v4.1-flash), one review pass (verdict: good to go), landed as commit `e48820fc6b52bfd4c08ecaafeebc9b5a71ffc127`.
@@ -21,9 +32,9 @@ Final verdict: review pass 1 returned **good to go** with no bugs found; the tas
 - **Review passes:** 1 (2026-11-15T19:34:41Z, verdict good to go).
 - **Wall clock, created → done:** 4h 2m 22s (2026-11-15T16:22:52Z → 20:25:14Z, from the recorded timestamps).
 - **Agents and models:**
-  - Engineer: `opencode` on `opencode-go/deepseek-v4.1-flash` — one session, elapsed 8402s (~2h 20m), 364,482 tokens, cost 0.223392204 (currency units as recorded). No model swaps recorded.
-  - Reviewer: `cursor` on `composer-2.5` — one session, elapsed 128s; tokens and cost not recorded.
-  - Routing: two Model-router (openrouter) sessions, 1s each, model unknown; tokens and cost not recorded.
+- Engineer: `opencode` on `opencode-go/deepseek-v4.1-flash` — one session, elapsed 8402s (~2h 20m), 364,482 tokens, cost 0.223392204 (currency units as recorded). No model swaps recorded.
+- Reviewer: `cursor` on `composer-2.5` — one session, elapsed 128s; tokens and cost not recorded.
+- Routing: two Model-router (openrouter) sessions, 1s each, model unknown; tokens and cost not recorded.
 - **Close-out gate:** completed in 702s (~11m 42s), finishing at 20:24:55Z; status moved to done at 20:25:14Z. The reason for the gap between the review verdict (19:34:41Z) and the gate start is not recorded.
 - **Linked tasks:** none.
 

@@ -61,43 +61,43 @@ On a phone there's a single task detail, whichever way it was opened (card, sear
 ```json
 [
 {
-  "label": "Phone task detail: Back to queue, Paused/Review-failed status line, scrollable tabs and Review again",
-  "target": "default",
-  "route": "/work?task=9999&tab=review",
-  "highlight": ".drawer-status-summary",
-  "assert": [
-    {
-      "selector": ".drawer-mobile-back",
-      "label": "Back-to-queue control present"
-    },
-    {
-      "selector": ".drawer-tabs .tab-btn",
-      "label": "All drawer tabs present in the scrollable strip",
-      "minCount": 6
-    }
-  ],
-  "state": "drawer:statusReviewFailed",
-  "viewportWidth": 390,
-  "viewportHeight": 844
+"label": "Phone task detail: Back to queue, Paused/Review-failed status line, scrollable tabs and Review again",
+"target": "default",
+"route": "/work?task=9999&tab=review",
+"highlight": ".drawer-status-summary",
+"assert": [
+  {
+    "selector": ".drawer-mobile-back",
+    "label": "Back-to-queue control present"
+  },
+  {
+    "selector": ".drawer-tabs .tab-btn",
+    "label": "All drawer tabs present in the scrollable strip",
+    "minCount": 6
+  }
+],
+"state": "drawer:statusReviewFailed",
+"viewportWidth": 390,
+"viewportHeight": 844
 },
 {
-  "label": "Phone task detail from a ?tab=changes deep link at 360px",
-  "target": "default",
-  "route": "/work?task=9999&tab=changes",
-  "highlight": ".drawer-tabs",
-  "assert": [
-    {
-      "selector": ".drawer-tabs",
-      "label": "Tab strip present"
-    },
-    {
-      "selector": ".drawer-mobile-back",
-      "label": "Back control present"
-    }
-  ],
-  "state": "drawer:statusReviewFailed",
-  "viewportWidth": 360,
-  "viewportHeight": 780
+"label": "Phone task detail from a ?tab=changes deep link at 360px",
+"target": "default",
+"route": "/work?task=9999&tab=changes",
+"highlight": ".drawer-tabs",
+"assert": [
+  {
+    "selector": ".drawer-tabs",
+    "label": "Tab strip present"
+  },
+  {
+    "selector": ".drawer-mobile-back",
+    "label": "Back control present"
+  }
+],
+"state": "drawer:statusReviewFailed",
+"viewportWidth": 360,
+"viewportHeight": 780
 }
 ]
 ```
