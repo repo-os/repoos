@@ -91,3 +91,4 @@ Look at the engineer turn spawner and process-group reaping in src/core (search 
 - 2026-11-15T18:09:27Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-15T18:12:10Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-15T18:12:10Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 130) · last assistant: no assistant message · stderr: (empty)
+- 2026-11-15T18:12:10Z · message_delivered: 1 message(s)
