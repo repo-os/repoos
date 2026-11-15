@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: "check|remote validation failed: test failure: gate exit 2 on bee — fix it in the feature branch and re-run the gate"
+last_handoff_failure_sha: f6611e7d434fc295a24bf67c6237414b0bd9d470
 id: "1120"
 title: "RepoOS Hub app: native-looking server picker, web color themes with light/dark, better icons, and a Settings page"
 type: feature
@@ -226,3 +228,4 @@ Read docs/mobile-architecture.md, docs/adr/0011-mobile-web-ui.md (the native she
 - 2026-11-15T01:12:40Z · message_delivered: 1 message(s)
 - 2026-11-15T01:12:53Z · message_queued at 2026-11-15T01:12:53.422Z
 - 2026-11-15T01:12:53Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: gate exit 2 on bee — fix it in the feature branch and re-run the gate
+
