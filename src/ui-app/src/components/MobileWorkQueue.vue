@@ -80,9 +80,11 @@ function readStatus(raw: unknown): QueueStatus {
 const initial = route.query;
 const status = ref<QueueStatus>(readStatus(initial.status));
 const query = ref(stringParam(initial.q));
-const priority = ref(PRIORITIES.includes(stringParam(initial.priority) as (typeof PRIORITIES)[number])
-  ? stringParam(initial.priority)
-  : "");
+const priority = ref(
+  PRIORITIES.includes(stringParam(initial.priority) as (typeof PRIORITIES)[number])
+    ? stringParam(initial.priority)
+    : "",
+);
 const area = ref(stringParam(initial.area) || "any");
 const story = ref(stringParam(initial.story) || "any");
 const mine = ref(initial.mine === "1");
@@ -313,7 +315,8 @@ watch([status, query, priority, area, story, mine, sort], () => {
   const next: Record<string, string | string[]> = {};
   for (const [key, value] of Object.entries(route.query)) {
     if (typeof value === "string") next[key] = value;
-    else if (Array.isArray(value)) next[key] = value.filter((v): v is string => typeof v === "string");
+    else if (Array.isArray(value))
+      next[key] = value.filter((v): v is string => typeof v === "string");
   }
   for (const key of URL_KEYS) delete next[key];
   Object.assign(next, desired);
@@ -429,12 +432,7 @@ function openTask(task: Task): void {
         >
           <span>Updated</span><strong>{{ sort === "newest" ? "Newest" : "Oldest" }}</strong>
         </button>
-        <button
-          class="mobile-reset"
-          type="button"
-          :disabled="!filtersActive"
-          @click="resetQueue"
-        >
+        <button class="mobile-reset" type="button" :disabled="!filtersActive" @click="resetQueue">
           Reset
         </button>
       </div>
@@ -454,10 +452,7 @@ function openTask(task: Task): void {
         </button>
 
         <span class="mobile-chip-label">Area</span>
-        <Select
-          :model-value="area"
-          @update:model-value="(value) => (area = String(value))"
-        >
+        <Select :model-value="area" @update:model-value="(value) => (area = String(value))">
           <SelectTrigger class="mobile-chip-select" aria-label="Filter tasks by area">
             <SelectValue />
           </SelectTrigger>
@@ -472,10 +467,7 @@ function openTask(task: Task): void {
         </Select>
 
         <span class="mobile-chip-label">Story</span>
-        <Select
-          :model-value="story"
-          @update:model-value="(value) => (story = String(value))"
-        >
+        <Select :model-value="story" @update:model-value="(value) => (story = String(value))">
           <SelectTrigger class="mobile-chip-select" aria-label="Filter tasks by story">
             <SelectValue />
           </SelectTrigger>
@@ -550,10 +542,10 @@ function openTask(task: Task): void {
       </div>
       <div v-else-if="!matchingCount" class="mobile-queue-state">
         <h2>{{ emptyTitle }}</h2>
-        <p>{{ filtersActive ? "Clear the filters to see the full queue." : "Nothing to show yet." }}</p>
-        <Button v-if="filtersActive" variant="outline" @click="resetQueue">
-          Show all tasks
-        </Button>
+        <p>
+          {{ filtersActive ? "Clear the filters to see the full queue." : "Nothing to show yet." }}
+        </p>
+        <Button v-if="filtersActive" variant="outline" @click="resetQueue"> Show all tasks </Button>
       </div>
       <template v-else>
         <section

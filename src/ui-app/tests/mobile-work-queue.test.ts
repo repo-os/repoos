@@ -329,9 +329,7 @@ describe("mobile Work queue", () => {
   it("renders at most 100 cards for a 1,000-task board until expanded", async () => {
     const repo = useRepoStore();
     repo.loading = false;
-    repo.tasks = Array.from({ length: 1_000 }, (_, i) =>
-      task(String(i).padStart(4, "0"), "ready"),
-    );
+    repo.tasks = Array.from({ length: 1_000 }, (_, i) => task(String(i).padStart(4, "0"), "ready"));
     const wrapper = mountQueue();
 
     const rendered = wrapper.findAll(".mobile-task-card").length;
