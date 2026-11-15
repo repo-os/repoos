@@ -1,18 +1,19 @@
 ---
-last_close_out_gate_ms: 571476
-last_close_out_gate_at: "2026-11-15T22:22:53.577Z"
 id: "0579"
 title: Wire notarization and ticket stapling into the RepoOS Hub release workflow
 type: feature
-status: review
+status: done
 priority: p1
 area: macos
 story: MacOS Native App
+merged_commit: a3d055574824b1a79170da6658574d1ec181d864
 assigned_to: ai
 created_by: ""
 branch: feat/wire-notarization-and-ticket-stapling-in
 created_at: "2026-09-28T18:43:47Z"
 updated_at: "2026-11-15T22:22:53Z"
+last_close_out_gate_ms: 571476
+last_close_out_gate_at: "2026-11-15T22:22:53.577Z"
 review_passes: 1
 handoff_signal_retry_count: 1
 ---
