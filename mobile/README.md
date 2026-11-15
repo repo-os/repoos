@@ -77,7 +77,7 @@ Repository secrets required by the workflow:
 
 | Secret | Purpose |
 | --- | --- |
-| `REPOOS_ANDROID_KEYSTORE_BASE64` | Base64 of the release keystore (`base64 -i release.keystore`) |
+| `REPOOS_ANDROID_KEYSTORE_BASE64` | Base64 of the release keystore (`base64 < release.keystore`, one line) |
 | `REPOOS_ANDROID_KEYSTORE_PASSWORD` | Keystore (store) password |
 | `REPOOS_ANDROID_KEY_ALIAS` | Key alias inside the keystore |
 | `REPOOS_ANDROID_KEY_PASSWORD` | Password for that key |

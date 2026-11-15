@@ -582,7 +582,7 @@ const year = new Date().getFullYear();
     </section>
 
     <!-- ============ REPOOS HUB FOR ANDROID ============ -->
-    <section class="wrap pb-20 sm:pb-24">
+    <section id="android-hub" class="wrap pb-20 sm:pb-24">
       <div class="panel p-6 sm:p-8">
         <div class="grid items-center gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
           <div class="min-w-0">
