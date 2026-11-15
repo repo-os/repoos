@@ -11,7 +11,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/mobile-web-work-queue-renders-the-mobile
 created_at: "2026-11-15T14:34:55Z"
-updated_at: "2026-11-15T16:19:49Z"
+updated_at: "2026-11-15T16:20:17Z"
 last_close_out_gate_ms: 114029
 last_close_out_gate_at: "2026-11-15T16:19:49.636Z"
 review_passes: 1
@@ -85,4 +85,4 @@ Reproduced on this branch (based on current main) at 360, 390 and 412 px by moun
 - 2026-11-15T15:25:14Z · message_queued at 2026-11-15T15:25:14.449Z
 - 2026-11-15T15:26:51Z · note: review pass 1: good to go
 - 2026-11-15T16:19:49Z · close-out gate completed in 114s
-
+- 2026-11-15T16:20:17Z · message_dropped: 1 queued message(s) discarded — task is done
