@@ -12,13 +12,13 @@ assigned_to: ai
 created_by: t@t
 branch: ""
 created_at: "2026-11-15T08:14:22Z"
-updated_at: "2026-11-15T08:14:23Z"
+updated_at: "2026-11-15T08:14:28Z"
 ---
 ## Problem
 
 Cutting a release today takes two waits: click Generate AI release notes, wait a few minutes for the draft (a server-tracked run, #0605), then come back and click Publish. Nick often forgets to come back, which wastes time. A human should not have to babysit the draft just to press Publish.
 
-## Desired behavior
+## Desired UX
 
 In the Releases page 'cut a release' panel:
 
@@ -46,3 +46,4 @@ Reuse the existing AI-draft run in ReleasesView.vue and the server release run; 
 
 - 2026-11-15T08:14:22Z · created · t@t
 - 2026-11-15T08:14:23Z · needs_input
+- 2026-11-15T08:14:28Z · body: Desired UX (added); Desired behavior (removed)
