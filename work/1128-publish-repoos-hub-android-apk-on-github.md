@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/publish-repoos-hub-android-apk-on-github
 created_at: "2026-11-15T13:35:11Z"
-updated_at: "2026-11-15T14:28:24Z"
+updated_at: "2026-11-15T14:30:20Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-15T14:03:27.994Z: repoos check failed: ui verification failed: runner result omitted the UI verification record: ui verification: preview for \"Landing page\" did not start: preview server for #1128 did not become ready"
 ---
@@ -79,3 +79,4 @@ The Tiao app (a separate repo) is the reference for how the APK should be shared
 - 2026-11-15T14:27:39Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 130) · last assistant: Implementation is in place and locally verified. Now running the scoped check gate. · stderr: (empty)
 - 2026-11-15T14:27:39Z · message_delivered: 1 message(s)
 - 2026-11-15T14:28:24Z · body
+- 2026-11-15T14:30:20Z · message_queued at 2026-11-15T14:30:20.551Z
