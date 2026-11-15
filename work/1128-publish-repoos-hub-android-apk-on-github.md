@@ -11,7 +11,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/publish-repoos-hub-android-apk-on-github
 created_at: "2026-11-15T13:35:11Z"
-updated_at: "2026-11-15T17:02:39Z"
+updated_at: "2026-11-15T17:02:57Z"
 last_close_out_gate_ms: 281235
 last_close_out_gate_at: "2026-11-15T17:02:35.769Z"
 review_passes: 1
@@ -153,3 +153,4 @@ The Tiao app (a separate repo) is the reference for how the APK should be shared
 - 2026-11-15T16:34:24Z · note: review pass 1: good to go
 - 2026-11-15T17:02:35Z · close-out gate completed in 281s
 - 2026-11-15T17:02:39Z · message_dropped: 1 queued message(s) discarded — task is done
+- 2026-11-15T17:02:57Z · status done→done, release:success
