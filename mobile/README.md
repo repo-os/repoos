@@ -2,8 +2,10 @@
 
 A privacy-first native shell (iOS + Android) for the RepoOS web UI, built with
 Capacitor. It is a **private client**, not a directory or hosted service: the
-list of your servers lives on-device only, and your app performs no discovery,
-reporting, or central account.
+list of your servers lives on-device only, and the app performs no scanning,
+reporting, or central account. The optional **Find servers on my tailnet**
+action asks one server you already trust for the RepoOS servers *it* can see;
+the phone never probes the tailnet itself.
 
 ## What it is
 
@@ -133,6 +135,10 @@ Isolation" docs for the API < 28 caveat.
 - Server URLs + display names are stored in `@capacitor/preferences`
   (UserDefaults / SharedPreferences), never sent anywhere, never backed up to
   cloud (`android:allowBackup="false"`).
+- **Find servers on my tailnet** sends one authenticated request to a server
+  you already saved. That server does the Tailscale/SSH discovery; the phone
+  never scans or broadcasts. Discovery results are not reported anywhere, and
+  only the rows you pick are saved.
 - Server auth cookies live in the isolated InAppBrowser WebView container,
   keyed by origin — they persist across app launches like a browser session,
   and are never readable by the shell.

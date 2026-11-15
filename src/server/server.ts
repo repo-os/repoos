@@ -74,6 +74,7 @@
  *   GET  /api/supervisor/heartbeats -> { ok, heartbeats } recent supervisor heartbeats
  *   POST /api/supervisor/check-now -> { ok } run a supervisor check immediately
  *   GET  /api/driver/brief     -> the CTO board brief from live state (#0731)
+ *   GET  /api/servers/tailnet  -> RepoOS servers this host can see on the tailnet (#1127)
  *   GET  /api/events           -> SSE stream of RepoEvent
  *
  * The SSE stream is the live heartbeat the Stage 3 UI subscribes to.
@@ -556,6 +557,8 @@ import {
   rotateHubCapability,
   hubSummary,
   hubTaskSearch,
+  // Tailnet discovery for the native Hub (#1127)
+  getTailnetServers,
   // Service routes
   getServiceStatusRoute,
   listServicesRoute,
@@ -4329,6 +4332,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("POST", /^\/api\/auth\/hub-capabilities\/([^/]+)\/rotate$/, rotateHubCapability);
   router.register("GET", "/api/hub/v1/summary", hubSummary);
   router.register("GET", "/api/hub/v1/tasks/search", hubTaskSearch);
+  // Server-assisted tailnet discovery (#1127) — authenticated like every other
+  // /api route; the mobile Hub asks a trusted server instead of scanning.
+  router.register("GET", "/api/servers/tailnet", getTailnetServers);
 
   // Background service management routes (0185)
   router.register("GET", "/api/service/status", getServiceStatusRoute);

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
-import { ChevronRight, GripVertical, MoreVertical, Plus, Server } from "lucide-vue-next";
+import { ChevronRight, GripVertical, MoreVertical, Plus, Radar, Server } from "lucide-vue-next";
 import type { ServerEntry, ReachabilityState } from "../types";
 import HubLogo from "./HubLogo.vue";
 import { impactMedium } from "../haptics";
@@ -18,6 +18,7 @@ const emit = defineEmits<{
   add: [];
   edit: [server: ServerEntry];
   reorder: [id: string, toIndex: number];
+  discover: [];
 }>();
 
 const editMode = ref(false);
@@ -78,6 +79,16 @@ function toggleEdit() {
 
     <template v-else>
       <div class="list-toolbar">
+        <button
+          v-if="!editMode"
+          type="button"
+          class="btn-text discover-btn"
+          data-testid="hub-find-tailnet"
+          @click="emit('discover')"
+        >
+          <Radar :size="18" stroke-width="2.2" />
+          Find servers on my tailnet
+        </button>
         <button
           type="button"
           class="btn-text"

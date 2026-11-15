@@ -345,6 +345,7 @@ export const DEFAULT_CONFIG: Omit<RepoOSConfig, "root"> = {
   updates: {
     check: true,
   },
+  tailnetDiscovery: true,
   auth: {
     enabled: false,
     sessionMaxAge: 2592000,
@@ -1600,6 +1601,14 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
       stories.excerptBytes = Math.floor(storiesExcerptBytes);
     }
     cfg.stories = stories;
+    // Tailnet discovery for the mobile Hub — ON by default so a trusted server
+    // can list the RepoOS servers around it when the user taps "Find servers on
+    // my tailnet". Only an explicit `tailnetDiscovery = false` turns it off;
+    // a malformed value falls back to the default. Discovery itself still
+    // requires an authenticated request and is never triggered by the phone's
+    // own network.
+    const tailnetDiscovery = parsed["tailnetDiscovery"];
+    if (typeof tailnetDiscovery === "boolean") cfg.tailnetDiscovery = tailnetDiscovery;
     // [areas] section (#0583) — the declared area vocabulary. Both the
     // `[[areas]]` array-of-tables form (with per-area descriptions) and the
     // flat `areas = ["web", "core"]` string-array shorthand are accepted.
@@ -3933,6 +3942,18 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         "How long a login session lasts in seconds (default 2592000 = 30 days). Values under 300 are read as days.",
     },
     {
+      key: "tailnetDiscovery",
+      label: "Tailnet server discovery",
+      type: "boolean",
+      tier: "live",
+      restartRequired: false,
+      default: true,
+      description:
+        "Let a signed-in RepoOS Hub on your phone ask this server which RepoOS servers it can " +
+        "see on your Tailscale tailnet. Discovery runs here (Tailscale CLI + SSH); the phone " +
+        "makes no scans. Turn off to refuse the request; adding servers manually still works.",
+    },
+    {
       key: "remoteValidation.enabled",
       label: "Remote validation runner",
       type: "boolean",
@@ -4647,6 +4668,7 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "servePort",
   "strictBuild",
   "autoReload",
+  "tailnetDiscovery",
   // Worktrees
   "worktrees.inheritEnv",
   // Agents

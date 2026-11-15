@@ -211,8 +211,17 @@ select {
 
 .list-toolbar {
   display: flex;
-  justify-content: flex-end;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
   padding: 8px 16px 0;
+}
+
+.discover-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
 }
 
 .server-list {
@@ -357,6 +366,167 @@ select {
   justify-content: center;
   color: var(--txt-dim);
   border-left: 1px solid var(--border);
+}
+
+/* ---- Tailnet discovery ---- */
+
+.discovery-trust {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  margin-bottom: 16px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--shell-elev);
+}
+
+.discovery-trust svg {
+  color: var(--primary, var(--cyan));
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.discovery-trust strong {
+  color: var(--txt);
+  font-weight: 600;
+}
+
+.discovery-trust-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.discovery-trust-host {
+  font-size: 12px;
+  color: var(--txt-faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.discovery-state {
+  padding: 24px 0;
+}
+
+.discovery-spin {
+  color: var(--primary, var(--cyan));
+  animation: discovery-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes discovery-pulse {
+  0%,
+  100% {
+    opacity: 0.45;
+    transform: scale(0.94);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .discovery-spin {
+    animation: none;
+    opacity: 0.8;
+  }
+}
+
+.discovery-message {
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--shell-elev);
+  color: var(--txt-dim);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.discovery-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.discovery-card {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 12px;
+  min-height: 72px;
+  text-align: left;
+  background: var(--shell-elev);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+
+.discovery-card.selected {
+  border-color: var(--border-bright);
+  box-shadow: var(--card-glow);
+}
+
+.discovery-card.saved,
+.discovery-card.not-selectable {
+  opacity: 0.78;
+}
+
+.discovery-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: var(--btn-primary-bg);
+  color: var(--shell-accent-fg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.discovery-check {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--shell-accent-fg);
+  flex-shrink: 0;
+}
+
+.discovery-check.checked {
+  background: var(--btn-primary-bg);
+  border-color: transparent;
+}
+
+.discovery-check.saved {
+  background: var(--green, var(--primary, var(--cyan)));
+  border-color: transparent;
+}
+
+.discovery-actions {
+  padding: 0 0 calc(env(safe-area-inset-bottom, 0px) + 8px);
+  border-top: 1px solid var(--border);
+  background: var(--panel-solid);
+}
+
+.discovery-actions .btn-primary.block {
+  width: calc(100% - 32px);
+}
+
+.discovery-footnote {
+  text-align: center;
+  padding: 0 16px 8px;
 }
 
 .subhead {
