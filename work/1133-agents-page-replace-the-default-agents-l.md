@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/agents-page-replace-the-default-agents-l
 created_at: "2026-11-15T15:20:08Z"
-updated_at: "2026-11-15T18:37:10Z"
+updated_at: "2026-11-15T18:39:07Z"
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -158,3 +158,4 @@ The current list is `agentLastRuns` in src/ui-app/src/views/AgentsView.vue, fed 
 - 2026-11-15T18:33:55Z · queued message undelivered for 5m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-15T18:33:55Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 130) · last assistant: The remote validation runner failed one unrelated real-process test (`agent-serve-guard`) that passes locally; the server's own scoped re-check then passed. I'll run a local-tests gate explicitly for a clean result before handing off. · stderr: (empty)
 - 2026-11-15T18:37:10Z · message_delivered: 1 message(s)
+- 2026-11-15T18:39:07Z · message_queued at 2026-11-15T18:39:07.281Z
