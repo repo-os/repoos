@@ -39,6 +39,18 @@ describe("repoos.toml and environment docs", () => {
     expect(SUPPORTED_TOML_KEYS).toContain("updates.check");
   });
 
+  it("exposes tailnetDiscovery as a live, documented Settings toggle (#1127)", () => {
+    const field = getConfigSchema().find((f) => f.key === "tailnetDiscovery");
+    expect(field).toMatchObject({
+      type: "boolean",
+      tier: "live",
+      restartRequired: false,
+      default: true,
+    });
+    expect(field?.description).toMatch(/tailnet/i);
+    expect(SUPPORTED_TOML_KEYS).toContain("tailnetDiscovery");
+  });
+
   it("exposes git.tuneForScale as a documented Settings toggle", () => {
     const field = getConfigSchema().find((f) => f.key === "git.tuneForScale");
     expect(field).toMatchObject({

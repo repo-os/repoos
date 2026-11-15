@@ -19,6 +19,11 @@ import {
   reachability,
   setDesignTheme,
   setAppearanceMode,
+  discovery,
+  discoveryLoading,
+  discoverTailnet,
+  toggleDiscovered,
+  addSelectedDiscovered,
 } from "./app-state";
 import { openServer, onBrowserEvents } from "./browser";
 import { verifyWithDeviceLock } from "./lock";
@@ -27,6 +32,7 @@ import HubLogo from "./components/HubLogo.vue";
 import ServerListView from "./components/ServerListView.vue";
 import SettingsView from "./components/SettingsView.vue";
 import AddServerView from "./components/AddServerView.vue";
+import TailnetDiscoveryView from "./components/TailnetDiscoveryView.vue";
 import BottomSheet from "./components/BottomSheet.vue";
 import LockOverlay from "./components/LockOverlay.vue";
 import { resolveShellPlatform } from "./platform";
@@ -34,7 +40,7 @@ import { fixtureInitialRoute, readHubFixture } from "./fixture";
 import { impactHeavy } from "./haptics";
 import type { AppearanceMode, DesignThemeId } from "./theme";
 
-type Route = "picker" | "settings" | "add" | "edit";
+type Route = "picker" | "settings" | "add" | "edit" | "discover";
 
 const route = ref<Route>("picker");
 const sheetServer = ref<ServerEntry | null>(null);
@@ -58,8 +64,10 @@ onMounted(async () => {
   const initial = fixtureInitialRoute(fx);
   if (initial === "settings") route.value = "settings";
   if (initial === "add") route.value = "add";
+  if (initial === "discover") route.value = "discover";
 
   await init();
+  if (initial === "discover") await discoverTailnet();
   onBrowserEvents({ closed: () => undefined });
   if (lockSettings.value.enabled && lockSettings.value.scope === "reopen") {
     await gateLock(null);
@@ -91,6 +99,19 @@ function startAdd() {
   formUrl.value = "";
   formError.value = "";
   route.value = "add";
+}
+
+async function startDiscovery() {
+  route.value = "discover";
+  await discoverTailnet();
+}
+
+function onDiscoveryToggle(key: string) {
+  toggleDiscovered(key);
+}
+
+async function onAddDiscovered() {
+  await addSelectedDiscovered();
 }
 
 function openSheet(server: ServerEntry) {
@@ -194,6 +215,22 @@ async function onLockScope(scope: "reopen" | "server") {
         @add="startAdd"
         @edit="openSheet"
         @reorder="onReorder"
+        @discover="startDiscovery"
+      />
+
+      <TailnetDiscoveryView
+        v-else-if="route === 'discover'"
+        :busy="discoveryLoading"
+        :trusted-name="discovery.trustedName"
+        :trusted-url="discovery.trustedUrl"
+        :message="discovery.message"
+        :error="discovery.error"
+        :servers="discovery.results"
+        :selected="discovery.selected"
+        :platform="platform"
+        @back="backToPicker"
+        @toggle="onDiscoveryToggle"
+        @add="onAddDiscovered"
       />
 
       <SettingsView

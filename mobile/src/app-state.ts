@@ -7,8 +7,14 @@ import { ref, computed } from "vue";
 import type { ServerEntry, LockSettings, ReachabilityState } from "./types";
 import * as store from "./store";
 import { validateServer, originOf } from "./reachability";
+import {
+  fetchTailnetServers,
+  mergeTailnetResults,
+  type DiscoveredServer,
+  type TailnetServer,
+} from "./tailnet";
 import { probeDeviceLock } from "./lock";
-import { fixtureServers, readHubFixture } from "./fixture";
+import { fixtureServers, fixtureTailnetRows, readHubFixture } from "./fixture";
 import {
   applyThemesToDocument,
   loadThemePrefs,
@@ -28,6 +34,34 @@ export const loaded = ref(false);
 export const designTheme = ref<DesignThemeId>("classic");
 export const appearanceMode = ref<AppearanceMode>("system");
 export const reachability = ref<Record<string, ReachabilityState>>({});
+
+export interface DiscoveryState {
+  status: "idle" | "loading" | "ready";
+  /** The saved server Hub asked for the list. */
+  trustedName: string;
+  trustedUrl: string;
+  /** Plain message shown when there is no list (off, auth, unreachable). */
+  message: string;
+  /** Save failures, kept separate from the neutral info message. */
+  error: string;
+  /** Rows returned by the trusted server, before de-duplication. */
+  rows: TailnetServer[];
+  results: DiscoveredServer[];
+  selected: string[];
+}
+
+export const discovery = ref<DiscoveryState>({
+  status: "idle",
+  trustedName: "",
+  trustedUrl: "",
+  message: "",
+  error: "",
+  rows: [],
+  results: [],
+  selected: [],
+});
+
+export const discoveryLoading = computed(() => discovery.value.status === "loading");
 
 export const selected = computed<ServerEntry | null>(
   () => servers.value.find((s) => s.id === selectedId.value) ?? null,
@@ -122,6 +156,123 @@ export async function addServer(name: string, url: string): Promise<AddResult> {
   servers.value.push(entry);
   await persist();
   return { server: entry };
+}
+
+/**
+ * Ask the selected (or first) saved server for the RepoOS servers it can see
+ * on the tailnet. Nothing is saved here; `addSelectedDiscovered` is the only
+ * path that persists, and it reuses the normal HTTPS reachability gate.
+ */
+export async function discoverTailnet(): Promise<void> {
+  const trusted = selected.value ?? servers.value[0] ?? null;
+  if (!trusted) {
+    discovery.value = {
+      status: "ready",
+      trustedName: "",
+      trustedUrl: "",
+      message: "Add one server you trust before finding others on your tailnet.",
+      error: "",
+      rows: [],
+      results: [],
+      selected: [],
+    };
+    return;
+  }
+  discovery.value = {
+    status: "loading",
+    trustedName: trusted.name,
+    trustedUrl: trusted.url,
+    message: "",
+    error: "",
+    rows: [],
+    results: [],
+    selected: [],
+  };
+  if (readHubFixture() === "discover") {
+    const rows = fixtureTailnetRows();
+    discovery.value = {
+      status: "ready",
+      trustedName: trusted.name,
+      trustedUrl: trusted.url,
+      message: "",
+      error: "",
+      rows,
+      results: mergeTailnetResults(rows, servers.value),
+      selected: [],
+    };
+    return;
+  }
+  const outcome = await fetchTailnetServers(trusted.url);
+  if (outcome.kind !== "ok") {
+    discovery.value = {
+      ...discovery.value,
+      status: "ready",
+      message: outcome.message,
+    };
+    return;
+  }
+  const results = mergeTailnetResults(outcome.servers, servers.value);
+  const selectable = results.filter((result) => result.selectable);
+  const message =
+    outcome.message ??
+    (results.length === 0
+      ? "No RepoOS servers were found on the tailnet from this server."
+      : selectable.length === 0
+        ? "Every server found is already saved or can't be added yet."
+        : "");
+  discovery.value = {
+    status: "ready",
+    trustedName: trusted.name,
+    trustedUrl: trusted.url,
+    message,
+    error: "",
+    rows: outcome.servers,
+    results,
+    selected: [],
+  };
+}
+
+/** Toggle one selectable discovery result. */
+export function toggleDiscovered(key: string): void {
+  const result = discovery.value.results.find((entry) => entry.key === key);
+  if (!result?.selectable) return;
+  const selected = discovery.value.selected;
+  discovery.value.selected = selected.includes(key)
+    ? selected.filter((entry) => entry !== key)
+    : [...selected, key];
+}
+
+/**
+ * Save the rows the user picked. Each pick goes through `addServer`, which
+ * re-validates HTTPS + reachability and refuses duplicates, so a stale or
+ * unreachable result can never slip into the saved list. Sequential on
+ * purpose: `addServer` persists the whole list after each add.
+ */
+export async function addSelectedDiscovered(): Promise<void> {
+  if (discovery.value.status === "loading") return;
+  const picks = discovery.value.results.filter(
+    (result) => result.selectable && discovery.value.selected.includes(result.key),
+  );
+  if (picks.length === 0) return;
+  discovery.value = { ...discovery.value, status: "loading", error: "" };
+  const errors: string[] = [];
+  let added = 0;
+  for (const pick of picks) {
+    const res = await addServer(pick.name, pick.url);
+    if (res.error) errors.push(`${pick.name}: ${res.error}`);
+    else added += 1;
+  }
+  const results = mergeTailnetResults(discovery.value.rows, servers.value);
+  discovery.value = {
+    ...discovery.value,
+    status: "ready",
+    results,
+    selected: [],
+    message:
+      added > 0 ? `Added ${added} server${added === 1 ? "" : "s"}.` : "No servers were added.",
+    error: errors.join(" "),
+  };
+  if (added > 0) void refreshReachability();
 }
 
 export async function selectServer(id: string): Promise<void> {

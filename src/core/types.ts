@@ -631,6 +631,14 @@ export interface RepoOSConfig {
   /** Remote validation runner — runs the close-out build+test off this machine. */
   remoteValidation?: RemoteValidationConfig;
   /**
+   * Allow a signed-in RepoOS Hub client (mobile) to ask this server for the
+   * RepoOS servers it can see on the owner's Tailscale tailnet, via
+   * `GET /api/servers/tailnet`. On by default; `false` makes the endpoint
+   * refuse without running discovery. Discovery itself happens on this server
+   * (Tailscale CLI + SSH), never on the phone.
+   */
+  tailnetDiscovery?: boolean;
+  /**
    * Machine-wide heavy build/test slots shared by engineer builds, tests and
    * local checks (#0961). When set, overrides `localChecks.maxConcurrent`.
    */
