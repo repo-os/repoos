@@ -153,7 +153,9 @@ export async function gatherApprovalPreflight(
     // reports (#0867): the branch moved after handoff, so never auto-approve it.
     if (lockSha && headSha && lockSha !== headSha) handoffDrift = true;
     try {
-      worktreeDirty = await uncommittedWorkFiles(worktree, workFileFilter(config));
+      worktreeDirty = await uncommittedWorkFiles(worktree, workFileFilter(config), {
+        ignoreProvisionedFromMain: config.root,
+      });
       if (worktreeDirty.length > 0) handoffDrift = true;
     } catch {
       handoffDrift = true;
@@ -254,7 +256,9 @@ export async function enqueueCloseOutForTask(
     task.hotfix === true || !branch ? null : (overview.worktrees.get(branch)?.path ?? null);
   if (worktree) {
     try {
-      const worktreeDirty = await uncommittedWorkFiles(worktree, workFileFilter(config));
+      const worktreeDirty = await uncommittedWorkFiles(worktree, workFileFilter(config), {
+        ignoreProvisionedFromMain: config.root,
+      });
       if (worktreeDirty.length > 0) {
         return { ok: false, reason: "worktree has uncommitted files" };
       }

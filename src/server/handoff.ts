@@ -557,7 +557,9 @@ async function worktreeState(workdir: string, config: RepoOSConfig): Promise<Wor
   if (head.status !== 0) {
     throw new Error(`could not resolve HEAD (${concise(head)})`);
   }
-  const paths = await uncommittedWorkFiles(workdir, workFileFilter(config));
+  const paths = await uncommittedWorkFiles(workdir, workFileFilter(config), {
+    ignoreProvisionedFromMain: config.root,
+  });
   const files: Record<string, string> = {};
   for (const path of paths) {
     try {

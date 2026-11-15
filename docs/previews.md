@@ -804,7 +804,9 @@ the path is not ignored — placing a secret in a path git could commit is worse
 than a preview that can't boot. The committed `.gitignore` propagates to every
 worktree, so a repo that ignores `.env` on `main` is covered automatically.
 `.env` therefore stays gitignored in the worktree, never enters git history,
-and `git status` in the worktree stays clean.
+and `git status` in the worktree stays clean. Close-out treats the link as
+provisioned, not leftover task work, even when a stalled worktree removal has
+already deleted the `.gitignore` that hid it (#1135).
 
 The preview path repairs a missing link too: `PreviewManager.doStart` calls
 `linkInheritedEnv` for the resolved worktree, so a task cut *before* the repo

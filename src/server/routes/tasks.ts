@@ -3247,7 +3247,9 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
     let worktreeDirty: string[] = [];
     if (worktree) {
       try {
-        worktreeDirty = await uncommittedWorkFiles(worktree, workFileFilter(config));
+        worktreeDirty = await uncommittedWorkFiles(worktree, workFileFilter(config), {
+          ignoreProvisionedFromMain: config.root,
+        });
       } catch (err) {
         if (err instanceof GitDirtyCheckError) {
           return json(res, 409, {
@@ -5114,7 +5116,9 @@ export const getWorktreeDirtyForTask: RouteHandler = async (ctx, _req, res, para
     return json(res, 200, { ok: true, path: null, files: [] });
   }
   try {
-    const files = await uncommittedWorkFiles(path, workFileFilter(config));
+    const files = await uncommittedWorkFiles(path, workFileFilter(config), {
+      ignoreProvisionedFromMain: config.root,
+    });
     return json(res, 200, { ok: true, path, files });
   } catch (err) {
     if (err instanceof GitDirtyCheckError) {

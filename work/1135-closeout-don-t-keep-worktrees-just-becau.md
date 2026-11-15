@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 566982
-last_close_out_gate_at: "2026-11-15T18:30:28.793Z"
 id: "1135"
 title: "Closeout: don't keep worktrees just because of the .env symlink RepoOS itself created"
 type: bug
-status: review
+status: done
 priority: p2
 area: core
+merged_commit: 36d022261714b4c21ce1ddbb177c6734a639e767
 assigned_to: ai
 created_by: t@t
 branch: feat/closeout-don-t-keep-worktrees-just-becau
 created_at: "2026-11-15T17:07:22Z"
 updated_at: "2026-11-15T18:30:28Z"
+last_close_out_gate_ms: 566982
+last_close_out_gate_at: "2026-11-15T18:30:28.793Z"
 review_passes: 1
 ---
 ## Problem
