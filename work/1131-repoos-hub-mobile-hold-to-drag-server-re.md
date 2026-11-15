@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/repoos-hub-mobile-hold-to-drag-server-re
 created_at: "2026-11-15T14:39:13Z"
-updated_at: "2026-11-15T16:20:39Z"
+updated_at: "2026-11-15T16:33:18Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-15T16:20:20.969Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 ---
@@ -67,3 +67,4 @@ Hold-to-drag feel, haptics and iOS gesture behavior are covered by code and comp
 - 2026-11-15T16:19:54Z · CTO nudge: held — handoff gate is running
 - 2026-11-15T16:20:18Z · message_queued at 2026-11-15T16:20:18.176Z
 - 2026-11-15T16:20:39Z · message_delivered: 1 message(s)
+- 2026-11-15T16:33:18Z · message_queued at 2026-11-15T16:33:18.495Z
