@@ -486,6 +486,22 @@ export function reapStaleFixtures(prefix: string): number {
 }
 
 /**
+ * Run roots (`…/repoos-vitest-XXXX`) named in one process command line.
+ *
+ * The path segments exclude `/` on purpose. With `[^\s"'=(]+` (which can eat
+ * slashes) the repetition is ambiguous, so a long slash-heavy command line —
+ * an agent prompt in `ps` is tens of KB — makes the regex backtrack
+ * exponentially and the whole test run hangs before its first file. Keep the
+ * class slash-free so each segment is matched exactly one way.
+ */
+export function runRootsInCommand(command: string): string[] {
+  const pattern = /(?:^|[\s"'=(])((?:\/[^\s"'=(/]+)+\/repoos-vitest-[A-Za-z0-9]+)/g;
+  const roots: string[] = [];
+  for (const match of command.matchAll(pattern)) roots.push(match[1]);
+  return roots;
+}
+
+/**
  * Kill helpers whose command line names a `repoos-vitest-*` run root that no
  * longer exists on disk. This is the recovery path for a run whose worker was
  * killed before its teardown could record anything: the root is removed but
@@ -497,15 +513,14 @@ export function reapStaleFixtures(prefix: string): number {
  */
 export function sweepOrphanedRunRootProcesses(minAgeMs = STALE_FIXTURE_AGE_MS): number {
   if (process.platform === "win32") return 0;
-  const pattern = /(?:^|[\s"'=(])((?:\/[^\s"'=(]+)*\/repoos-vitest-[A-Za-z0-9]+)/g;
   const orphanRoots = new Set<string>();
   for (const entry of listProcessEntries()) {
     // Only helpers at least as old as a stale fixture: a live run whose root
     // was briefly missing (between teardown creating it and a worker starting)
     // must not lose its children to this sweep.
     if (entry.ageMs < minAgeMs) continue;
-    for (const match of entry.command.matchAll(pattern)) {
-      if (!existsSync(match[1])) orphanRoots.add(match[1]);
+    for (const root of runRootsInCommand(entry.command)) {
+      if (!existsSync(root)) orphanRoots.add(root);
     }
   }
   if (orphanRoots.size === 0) return 0;

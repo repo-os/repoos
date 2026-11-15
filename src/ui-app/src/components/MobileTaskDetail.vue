@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { ArrowLeft, LoaderCircle, Pause, Play } from "lucide-vue-next";
+import { ArrowLeft, CheckCheck, LoaderCircle, Pause, Play } from "lucide-vue-next";
 import { renderMarkdown } from "../lib/markdown";
 import { useRepoStore } from "../stores/repo";
 import { useUiStore } from "../stores/ui";
@@ -21,6 +21,55 @@ const descriptionHtml = computed(() => (task.value?.body ? renderMarkdown(task.v
 const dateLabel = (value: string | null | undefined) =>
   value ? new Intl.DateTimeFormat(undefined, { dateStyle: "medium" }).format(new Date(value)) : "—";
 
+// ── Review → done (#1130) ────────────────────────────────────────────────
+// A review task's primary touch action is Move to done. It runs the same
+// close-out pipeline as the drawer's button, so it stays disabled until the
+// read-only landing pre-checks say the branch can land — a phone tap must not
+// bypass merge readiness. The checks are advisory/best-effort: when the server
+// cannot answer, the action stays disabled and says so rather than guessing.
+const readiness = ref<"idle" | "loading" | "ready" | "unavailable">("idle");
+const landable = computed(() => {
+  const t = task.value;
+  if (!t) return undefined;
+  const result = repo.landableFor(t.id);
+  if (!result || !Array.isArray(result.checks) || !result.summary) return undefined;
+  return result;
+});
+const landableFailure = computed(() => landable.value?.checks.find((c) => c.status === "fail"));
+const canMoveToDone = computed(() => {
+  const t = task.value;
+  if (!t || t.status !== "review" || t.assignee === "human") return false;
+  if (repo.isRunning(t.id)) return false;
+  return landable.value?.landable === true;
+});
+const readinessHint = computed(() => {
+  if (readiness.value === "unavailable") return "Merge readiness could not be checked.";
+  const fail = landableFailure.value;
+  if (fail) return `${fail.label}: ${fail.detail}`;
+  if (landable.value) return "Merge readiness has not passed.";
+  return "Checking merge readiness…";
+});
+
+async function loadReadiness(): Promise<void> {
+  const t = task.value;
+  if (!t || t.status !== "review" || t.assignee === "human") {
+    readiness.value = "idle";
+    return;
+  }
+  const id = t.id;
+  readiness.value = "loading";
+  await repo.loadLandable(id);
+  // The user may have opened another task while the checks were in flight.
+  if (task.value?.id !== id) return;
+  readiness.value = repo.landableFor(id) ? "ready" : "unavailable";
+}
+
+watch(
+  () => [task.value?.id, task.value?.status, task.value?.assignee] as const,
+  () => void loadReadiness(),
+  { immediate: true },
+);
+
 async function returnToQueue(): Promise<void> {
   const query = { ...route.query };
   delete query.task;
@@ -28,14 +77,23 @@ async function returnToQueue(): Promise<void> {
   await router.replace({ path: "/work", query });
 }
 
-async function runAction(action: "start" | "pause" | "ready"): Promise<void> {
+async function runAction(action: "start" | "pause" | "ready" | "done"): Promise<void> {
   if (!task.value || busy.value) return;
   busy.value = true;
   error.value = "";
   try {
     if (action === "start") await repo.startWork(task.value);
     else if (action === "pause") await repo.pauseWork(task.value);
-    else await repo.setStatus(task.value, "ready");
+    else if (action === "done") {
+      const id = task.value.id;
+      await repo.completeTask(task.value);
+      // The close-out job now owns the task: leave the stale detail view and
+      // surface the pipeline bar so its live progress is visible on a phone.
+      await returnToQueue();
+      ui.close();
+      ui.expandIntegrationBar();
+      repo.pushToast(`#${id} close-out started`, "info");
+    } else await repo.setStatus(task.value, "ready");
   } catch (cause) {
     error.value = cause instanceof Error ? cause.message : "The task could not be updated.";
   } finally {
@@ -102,8 +160,22 @@ async function runAction(action: "start" | "pause" | "ready"): Promise<void> {
         >
           Move to ready
         </Button>
+        <Button
+          v-else-if="task.status === 'review' && task.assignee !== 'human'"
+          variant="accent"
+          :disabled="busy || !canMoveToDone"
+          @click="runAction('done')"
+        >
+          <CheckCheck aria-hidden="true" /> Move to done
+        </Button>
         <span v-if="busy" class="mobile-detail-saving" role="status">Saving…</span>
       </section>
+      <p
+        v-if="task.status === 'review' && task.assignee !== 'human' && !canMoveToDone"
+        class="mobile-detail-action-hint"
+      >
+        {{ readinessHint }}
+      </p>
       <p v-if="error" class="mobile-detail-error" role="alert">{{ error }}</p>
 
       <section class="mobile-detail-metadata" aria-label="Task metadata">
@@ -226,6 +298,13 @@ async function runAction(action: "start" | "pause" | "ready"): Promise<void> {
 }
 .mobile-detail-actions :deep(button) {
   min-height: 46px;
+}
+.mobile-detail-action-hint {
+  margin: 10px 0 0;
+  color: var(--txt-faint);
+  font-size: 12px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
 }
 .mobile-detail-saving {
   color: var(--txt-faint);

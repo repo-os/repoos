@@ -5,6 +5,7 @@
   "description": "repoos.org landing page. A standalone static site, decoupled from the RepoOS app itself — own install, own lockfile, own deploy pipeline.",
   "type": "module",
   "scripts": {
+    "predev": "bun install --frozen-lockfile",
     "dev": "vite",
     "build": "vue-tsc --noEmit && vite build",
     "preview": "vite preview"

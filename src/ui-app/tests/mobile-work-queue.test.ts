@@ -21,6 +21,36 @@ const buttonStub = {
 };
 const selectStub = { template: "<div><slot /></div>" };
 
+/** Stub the heavy desktop board pieces but keep both layout roots queryable. */
+function workViewStubs() {
+  return {
+    BoardColumn: { template: "<div class='desktop-board-column' />", props: ["col"] },
+    IntegrationStatusBar: { template: "<div class='integration-status-bar' />" },
+    MobileTaskDetail: { template: "<div class='mobile-task-detail-stub' />" },
+    RouterLink: { template: "<a><slot /></a>" },
+    Button: buttonStub,
+    Select: selectStub,
+    SelectTrigger: selectStub,
+    SelectContent: selectStub,
+    SelectItem: selectStub,
+    SelectViewport: selectStub,
+    SelectValue: selectStub,
+    PipelineView: true,
+  };
+}
+
+function stubViewport(width: number, narrow: boolean): void {
+  vi.stubGlobal(
+    "matchMedia",
+    vi.fn().mockReturnValue({
+      matches: narrow,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }),
+  );
+  vi.stubGlobal("innerWidth", width);
+}
+
 function task(
   id: string,
   status: Task["status"] = "ready",
@@ -83,7 +113,10 @@ beforeEach(() => {
   api.mockReset();
 });
 
-afterEach(() => api.mockReset());
+afterEach(() => {
+  api.mockReset();
+  vi.unstubAllGlobals();
+});
 
 describe("mobile Work queue", () => {
   it("shows task number, wrapping title, type, priority, status and updated time", () => {
@@ -145,33 +178,47 @@ describe("mobile Work queue", () => {
   });
 
   it("keeps the desktop board composition when the responsive layout is wide", async () => {
-    vi.stubGlobal(
-      "matchMedia",
-      vi.fn().mockReturnValue({
-        matches: false,
-        addEventListener: vi.fn(),
-        removeEventListener: vi.fn(),
-      }),
-    );
-    const wrapper = mount(WorkView, {
-      global: {
-        stubs: {
-          BoardColumn: { template: "<div class='desktop-board-column' />", props: ["col"] },
-          IntegrationStatusBar: true,
-          RouterLink: { template: "<a><slot /></a>" },
-          Button: buttonStub,
-          Select: selectStub,
-          SelectTrigger: selectStub,
-          SelectContent: selectStub,
-          SelectItem: selectStub,
-          SelectViewport: selectStub,
-          SelectValue: selectStub,
-          PipelineView: true,
-        },
-      },
-    });
+    stubViewport(1280, false);
+    const wrapper = mount(WorkView, { global: { stubs: workViewStubs() } });
     await flushPromises();
     expect(wrapper.find(".desktop-board-column").exists()).toBe(true);
     expect(wrapper.find("[data-testid='mobile-work-queue']").exists()).toBe(false);
+    expect(wrapper.find(".integration-status-bar").exists()).toBe(true);
+  });
+
+  // #1130: the mobile queue and the desktop board used to be painted on top of
+  // each other because `v-else` was chained to MobileTaskDetail rather than to
+  // the narrow layout. These widths are the phone sizes from the report.
+  it.each([360, 390, 412])("renders exactly one queue at %spx", async (width) => {
+    stubViewport(width, true);
+    const repo = useRepoStore();
+    repo.loading = false;
+    repo.tasks = [task("0042", "review")];
+    const wrapper = mount(WorkView, { global: { stubs: workViewStubs() } });
+    await flushPromises();
+
+    expect(wrapper.find("[data-testid='mobile-work-queue']").exists()).toBe(true);
+    expect(wrapper.find(".work-page").exists()).toBe(false);
+    expect(wrapper.find(".desktop-board-column").exists()).toBe(false);
+    expect(wrapper.text()).not.toContain("Client board");
+    // The integration bar belongs to Work, not to the desktop board: it stays
+    // mounted (and floats clear of the tab bar) on a phone.
+    expect(wrapper.find(".integration-status-bar").exists()).toBe(true);
+  });
+
+  it("shows only the task detail above the queue on a narrow task route", async () => {
+    stubViewport(390, true);
+    routeState.query = { task: "0042" };
+    const repo = useRepoStore();
+    repo.loading = false;
+    repo.tasks = [task("0042", "review")];
+    api.mockResolvedValue(task("0042", "review"));
+    const wrapper = mount(WorkView, { global: { stubs: workViewStubs() } });
+    await flushPromises();
+
+    expect(wrapper.find(".mobile-task-detail-stub").exists()).toBe(true);
+    expect(wrapper.find("[data-testid='mobile-work-queue']").isVisible()).toBe(false);
+    expect(wrapper.find(".work-page").exists()).toBe(false);
+    expect(wrapper.find(".desktop-board-column").exists()).toBe(false);
   });
 });

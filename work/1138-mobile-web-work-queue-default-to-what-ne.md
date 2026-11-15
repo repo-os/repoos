@@ -1,0 +1,54 @@
+---
+id: "1138"
+title: "Mobile web Work queue: default to what needs attention, add inline search and filters, show held and human tasks"
+type: feature
+status: inbox
+paths: [src/ui-app/src/components/MobileWorkQueue.vue]
+priority: p1
+area: web
+story: RepoOS Hub for Mobile
+assigned_to: ai
+created_by: t@t
+branch: ""
+created_at: "2026-11-15T17:24:06Z"
+updated_at: "2026-11-15T17:24:06Z"
+---
+## Problem
+Nick: on a phone it's "really hard to find the right task and do anything normal". On main `23dc737`, the mobile Work queue (MobileWorkQueue.vue):
+
+- **Defaults to everything.** "All statuses", newest first. On the repoos board that's 1,065 cards, of which 1,035 are done. The one review task, the active task and the ready and inbox tasks are mixed in with done ones (C1).
+- **Has no search field in the queue.** The only search is the global palette behind the bottom Search tab.
+- **Can't filter by anything but status.** There's no priority, area, story, assignee or needs-input filter, and no grouping by status.
+- **Hides tasks that need you.** Held and archived tasks are always filtered out (`!task.isArchived && !task.isHeld`), with no way to reach them. For example, #0907 is a human task listed under "Tasks needing you" in the bell, but it doesn't appear in the queue under any filter (C2). The desktop board has Human / Archived / Held lists for this.
+- **Doesn't sync the filter with the URL.** It ignores `?status=review`, which desktop honors, and doesn't write the filter to the URL, so it can't be linked or kept across reloads.
+- **Renders every card at once.** About 10,900 DOM nodes and a 154,000px scroll height. Toggling sort took about 1.8s with 4x CPU throttling in Chromium mobile emulation.
+
+## Desired UX
+- **A default "Needs attention" view grouped by section:** Needs you (human, needs input, held), Review, Active, Ready, Inbox. Done is collapsed or behind its own filter. Section counts match their rows.
+- **An inline search box** at the top of the queue that filters by id, title and area.
+- **Quick filter chips** for priority, area, story and "assigned to me", plus a way to see Held, Archived and Human tasks.
+- **Filter and search state in the URL** (`?status=`, `?q=`), so Back and reload keep them.
+- **Smooth scrolling** with a large board, through windowing/virtualization or paginated sections.
+
+## Acceptance criteria
+- At 360, 390 and 412px, `/work` opens to a view where review, active, needs-input and human tasks appear before any done task without scrolling past done tasks. Done tasks are hidden or collapsed by default.
+- Typing in the queue search narrows the list, and the header count matches the visible cards.
+- Held and human tasks (for example a held human task like #0907) can be reached from the queue in two taps or fewer.
+- `/work?status=review` opens the queue filtered to Review, and changing the filter updates the URL.
+- With about 1,000 tasks, the queue renders at most about 100 task cards at once (or equivalent windowing), and sort/filter changes complete in under 300ms on a mid-range phone profile.
+- The empty, loading and error states still work, and the existing MobileWorkQueue tests are updated.
+
+## Notes for AI
+- File: src/ui-app/src/components/MobileWorkQueue.vue. Reuse the board's existing held/archived/human selectors and the global search matching where possible.
+- #0303 (native Hub touch-first queue) covers the Capacitor shell and depends on #0302. This task is the web UI's mobile queue that phones and the Hub WebView load today. Keep components shareable.
+- Found in a box-side Playwright QA pass on 16 Nov. Screenshots attached.
+
+## Screenshots
+
+![360px: queue defaults to All statuses, 1065 tasks incl. 1035 done, no search](/api/tasks/1138/attachments/att_b78506c3-5dbe-4c4d-8f17-de54c90d274d.png)
+![Bell lists tasks needing you (e.g. held human #0907) that never appear in the mobile queue](/api/tasks/1138/attachments/att_83638a4b-6f22-4314-968a-7bc374399ebc.png)
+
+## Activity
+
+- 2026-11-15T17:24:06Z · created · t@t
+- 2026-11-15T17:24:06Z · screenshots

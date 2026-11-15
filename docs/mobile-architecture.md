@@ -71,8 +71,8 @@ threat model.
 
 The user's phone cannot run the Tailscale CLI or read the Tailscale app's peer
 list, and Hub deliberately does not scan the network. Instead, after the user
-has saved one server they trust, the picker offers **Find servers on my
-tailnet**. That action makes exactly one request — to the saved server —
+has saved one server they trust, the picker's bottom action area offers **Find
+servers on my tailnet**, next to **Add server**. That action makes exactly one request — to the saved server —
 `GET /api/servers/tailnet` over the same HTTPS origin Hub already uses.
 
 - The request is a normal `/api/*` call, so it is subject to the server's auth
@@ -95,6 +95,9 @@ tailnet**. That action makes exactly one request — to the saved server —
   `repoos.toml`, or Settings → General → Tailnet server discovery). The
   endpoint then returns a plain `disabled` message, and manual URL entry keeps
   working exactly as before.
+- A server older than the endpoint answers `404` (or not JSON at all). Hub says
+  that server is running an older RepoOS that can't list tailnet servers yet,
+  offers a button that opens manual add, and never retries or scans instead.
 - Results are only a suggestion: Hub marks servers already saved, shows which
   rows have no HTTPS URL (they cannot be saved), and saves only the rows the
   user explicitly selects. Every pick still goes through the existing HTTPS

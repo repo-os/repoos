@@ -1,5 +1,44 @@
 apply plugin: 'com.android.application'
 
+// Release signing and app versioning.
+//
+// Secrets are never committed: CI writes the keystore from a GitHub secret and
+// sets these environment variables; `just build-android-release` sets the same
+// ones locally. Gradle properties (repoosAndroidKeystorePath, …) are an
+// alternative for a developer who prefers ~/.gradle/gradle.properties.
+//
+// Debug builds need none of this. A release build fails early and clearly when
+// signing is not configured — see mobile/README.md.
+def envOrProp = { String envName, String propName ->
+    def value = System.getenv(envName)
+    if (value == null || value.trim().isEmpty()) {
+        value = project.findProperty(propName)
+    }
+    return value == null ? null : value.toString().trim()
+}
+
+def releaseKeystorePath = envOrProp("REPOOS_ANDROID_KEYSTORE_PATH", "repoosAndroidKeystorePath")
+def releaseKeystorePassword = envOrProp("REPOOS_ANDROID_KEYSTORE_PASSWORD", "repoosAndroidKeystorePassword")
+def releaseKeyAlias = envOrProp("REPOOS_ANDROID_KEY_ALIAS", "repoosAndroidKeyAlias")
+def releaseKeyPassword = envOrProp("REPOOS_ANDROID_KEY_PASSWORD", "repoosAndroidKeyPassword")
+def releaseSigningConfigured = [releaseKeystorePath, releaseKeystorePassword, releaseKeyAlias, releaseKeyPassword].every { it }
+
+// The public APK's version comes from the release tag in CI
+// (REPOOS_APP_VERSION, e.g. 0.6.23) and from mobile/package.json for a local
+// build. versionCode is derived from the semver so every release installs over
+// the previous one; the minor and patch components must stay below 100.
+def mobilePackage = new groovy.json.JsonSlurper().parseText(file("../../package.json").text)
+def defaultVersionName = (mobilePackage.version ?: "0.0.0").toString()
+def appVersionName = (envOrProp("REPOOS_APP_VERSION", "repoosAppVersion") ?: defaultVersionName).replaceFirst(/^v/, "")
+def versionCodeFromName = { String name ->
+    def matcher = name =~ /^(\d+)\.(\d+)\.(\d+)/
+    if (!matcher.find()) {
+        return 1
+    }
+    return (matcher.group(1).toInteger() * 10000) + (matcher.group(2).toInteger() * 100) + matcher.group(3).toInteger()
+}
+def appVersionCode = (envOrProp("REPOOS_APP_VERSION_CODE", "repoosAppVersionCode") ?: versionCodeFromName(appVersionName).toString()).toInteger()
+
 android {
     namespace = "org.repoos.mobile"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -7,8 +46,8 @@ android {
         applicationId "org.repoos.mobile"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        versionCode appVersionCode
+        versionName appVersionName
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -20,14 +59,43 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~:!pdfjs'
         }
     }
+    signingConfigs {
+        if (releaseSigningConfigured) {
+            release {
+                storeFile file(releaseKeystorePath)
+                storePassword releaseKeystorePassword
+                keyAlias releaseKeyAlias
+                keyPassword releaseKeyPassword
+            }
+        }
+    }
     buildTypes {
         debug {
             applicationIdSuffix ".dev"
         }
         release {
+            if (releaseSigningConfigured) {
+                signingConfig signingConfigs.release
+            }
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
+    }
+}
+
+// Fail a release build before it produces an unsigned or debug-signed artifact,
+// with instructions instead of a vague "app-release-unsigned.apk" later.
+gradle.taskGraph.whenReady { graph ->
+    def buildingRelease = graph.allTasks.any {
+        it.name == "assembleRelease" || it.name == "bundleRelease" || it.name == "packageRelease"
+    }
+    if (buildingRelease && !releaseSigningConfigured) {
+        throw new GradleException(
+            "Release signing is not configured. Set REPOOS_ANDROID_KEYSTORE_PATH, " +
+            "REPOOS_ANDROID_KEYSTORE_PASSWORD, REPOOS_ANDROID_KEY_ALIAS and " +
+            "REPOOS_ANDROID_KEY_PASSWORD (or the repoosAndroid* Gradle properties). " +
+            "Debug builds do not need them. See mobile/README.md → Release signing."
+        )
     }
 }
 

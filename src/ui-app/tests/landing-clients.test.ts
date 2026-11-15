@@ -98,6 +98,20 @@ describe("For Clients landing page", () => {
     expect(wrapper.get("h1").text()).toContain("operating system");
     expect(wrapper.find('.nav-link[href*="/for-clients"]').exists()).toBe(true);
   });
+  it("offers both public Hub downloads with the Android sideload note", () => {
+    wrapper = mount(LandingApp);
+    const hrefs = wrapper.findAll("a").map((link) => link.attributes("href"));
+    expect(hrefs).toContain(
+      "https://github.com/repo-os/repoos/releases/latest/download/RepoOSHub.dmg",
+    );
+    expect(hrefs).toContain(
+      "https://github.com/repo-os/repoos/releases/latest/download/RepoOSHub.apk",
+    );
+    expect(wrapper.text()).toContain("Download for Mac");
+    expect(wrapper.text()).toContain("Download for Android");
+    expect(wrapper.text()).toContain("Not on the Play Store yet");
+    expect(wrapper.text()).toMatch(/Android 8\.0\s+\(API 26\) or newer/);
+  });
 });
 describe("enquiry form", () => {
   it("blocks invalid/blank fields and duplicate sends, then shows success only after acknowledgement", async () => {

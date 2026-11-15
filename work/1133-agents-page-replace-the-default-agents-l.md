@@ -9,7 +9,8 @@ assigned_to: ai
 created_by: t@t
 branch: feat/agents-page-replace-the-default-agents-l
 created_at: "2026-11-15T15:20:08Z"
-updated_at: "2026-11-15T16:09:48Z"
+updated_at: "2026-11-15T17:44:25Z"
+handoff_signal_retry_count: 1
 ---
 ## Problem
 The Default agents section of Agents > Agents now starts with a "last runs" log, added in #1098 (12 Nov) and reworked in #1123 (15 Nov). It lists rows such as CTO, debugger, engineer, pm and reviewer, each with a "finished · <timestamp>" line, plus a "Show older and other runs (14)" toggle. Nick didn't ask for it and finds it badly designed:
@@ -32,6 +33,30 @@ Remove the separate last-runs list from the top of Default agents. Each agent ca
 ## Notes for AI
 The current list is `agentLastRuns` in src/ui-app/src/views/AgentsView.vue, fed by `GET /api/agents/last-runs` in src/server/server.ts, which reads `getAgentLastRuns()` in src/core/db.ts (ROW_NUMBER partitioned by `agent`). The failure formatting is in src/core/agent-failure.ts (`formatAgentFailure`, `splitAgentFailureDetail`) from #1123. The engineer row in Nick's 15 Nov screenshot shows the summary repeated inside the "(CLI: …)" suffix. Reproduce that with a test. Keep the endpoint backward compatible, or update every caller.
 
+## Shots
+```json
+[
+{
+"label": "Default agents cards with inline last-run status (1280px)",
+"target": "default",
+"route": "/agents",
+"highlight": ".agent-tab-panel:first-child .agent-head",
+"state": "agents:lastRuns",
+"viewportWidth": 1280,
+"viewportHeight": 900
+},
+{
+"label": "Default agents at phone width (390px)",
+"target": "default",
+"route": "/agents",
+"highlight": ".agent-tab-panel:first-child .agent-head",
+"state": "agents:lastRuns",
+"viewportWidth": 390,
+"viewportHeight": 844
+}
+]
+```
+
 ## Activity
 
 - 2026-11-15T15:20:08Z · created · t@t
@@ -39,3 +64,53 @@ The current list is `agentLastRuns` in src/ui-app/src/views/AgentsView.vue, fed 
 - 2026-11-15T15:25:58Z · needs_input, body: Acceptance criteria (added 2); Notes for AI (added)
 - 2026-11-15T16:09:46Z · status inbox→ready
 - 2026-11-15T16:09:48Z · status ready→active, branch
+- 2026-11-15T16:44:07Z · message_queued at 2026-11-15T16:44:07.158Z
+- 2026-11-15T16:44:07Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-15T16:44:30Z · body
+- 2026-11-15T16:47:16Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-15T16:47:16Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 130) · last assistant: Now I have a clear picture. Let me implement the core status helpers. · stderr: (empty)
+- 2026-11-15T16:47:32Z · message_delivered: 1 message(s)
+- 2026-11-15T16:48:44Z · body
+- 2026-11-15T16:49:07Z · message_queued at 2026-11-15T16:49:07.706Z
+- 2026-11-15T16:49:07Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-15T16:50:17Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-15T16:52:16Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-15T16:52:16Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 130) · last assistant: Now I have a clear picture. Let me implement the core status helpers. · stderr: (empty)
+- 2026-11-15T16:52:16Z · message_delivered: 1 message(s)
+- 2026-11-15T16:54:06Z · message_queued at 2026-11-15T16:54:06.968Z
+- 2026-11-15T16:54:07Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-15T16:56:50Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-15T16:57:19Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-15T16:57:19Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 130) · last assistant: Now I have a clear picture. Let me implement the core status helpers. · stderr: (empty)
+- 2026-11-15T16:57:20Z · message_delivered: 1 message(s)
+- 2026-11-15T16:57:38Z · body
+- 2026-11-15T16:58:03Z · message_queued at 2026-11-15T16:58:03.680Z
+- 2026-11-15T16:58:04Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-15T16:58:10Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-15T17:01:22Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-15T17:01:22Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 130) · last assistant: I found one more nesting case in the formatter that matches the exact screenshot shape. Let me fix it and test it. · stderr: (empty)
+- 2026-11-15T17:01:22Z · message_delivered: 1 message(s)
+- 2026-11-15T17:02:39Z · message_queued at 2026-11-15T17:02:39.339Z
+- 2026-11-15T17:02:39Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-15T17:04:06Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-15T17:05:39Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-15T17:05:39Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 130) · last assistant: I found one more nesting case in the formatter that matches the exact screenshot shape. Let me fix it and test it. · stderr: (empty)
+- 2026-11-15T17:05:39Z · message_delivered: 1 message(s)
+- 2026-11-15T17:06:58Z · body
+- 2026-11-15T17:09:06Z · CTO nudge: held — handoff gate is running
+- 2026-11-15T17:18:54Z · note: ui verification passed: 2 of 2 shots captured with clean console (1 shot warning)
+- 2026-11-15T17:18:54Z · message_queued at 2026-11-15T17:18:54.808Z
+- 2026-11-15T17:19:06Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-15T17:22:09Z · watchdog: restarting engineer because a queued message waited 3m with no live process
+- 2026-11-15T17:27:12Z · message_queued at 2026-11-15T17:27:12.638Z
+- 2026-11-15T17:32:09Z · message_delivered: 1 message(s)
+- 2026-11-15T17:33:39Z · body
+- 2026-11-15T17:35:09Z · queued message undelivered for 8m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-15T17:35:10Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 130) · last assistant: I found one more nesting case in the formatter that matches the exact screenshot shape. Let me fix it and test it. · stderr: (empty)
+- 2026-11-15T17:37:09Z · message_delivered: 1 message(s)
+- 2026-11-15T17:39:07Z · message_queued at 2026-11-15T17:39:07.264Z
+- 2026-11-15T17:39:07Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-15T17:42:52Z · body
+- 2026-11-15T17:44:07Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-15T17:44:24Z · queued message undelivered for 5m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-15T17:44:25Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 130) · last assistant: The captured shots show the old block is gone but no status dots, because the preview board has no recent runs. I'll add a deterministic preview fixture so the review shots actually demonstrate the new inline status. · stderr: (empty)

@@ -1,17 +1,20 @@
 ---
-updated_at: "2026-11-15T15:26:51Z"
-review_passes: 1
 id: "1130"
 title: "Mobile web: Work queue renders the mobile list and desktop board on top of each other"
 type: bug
-status: review
+status: done
 priority: p0
 area: web
 story: RepoOS Hub for Mobile
+merged_commit: 075fe9ac9ca09d5b5bd1954ab988cf22e37d7f87
 assigned_to: ai
 created_by: t@t
 branch: feat/mobile-web-work-queue-renders-the-mobile
 created_at: "2026-11-15T14:34:55Z"
+updated_at: "2026-11-15T16:20:45Z"
+last_close_out_gate_ms: 114029
+last_close_out_gate_at: "2026-11-15T16:19:49.636Z"
+review_passes: 1
 ---
 ## Problem
 On a phone browser (Nick's Nothing Phone 3a, Chrome, about 412px wide, opening `https://bee.tailc0c173.ts.net:7499` on the tiao project, server v0.5.83), the Work page draws two layouts at once:
@@ -81,4 +84,6 @@ Reproduced on this branch (based on current main) at 360, 390 and 412 px by moun
 - 2026-11-15T15:25:14Z · note: Task body is underspecified: missing sections: Notes for AI
 - 2026-11-15T15:25:14Z · message_queued at 2026-11-15T15:25:14.449Z
 - 2026-11-15T15:26:51Z · note: review pass 1: good to go
-
+- 2026-11-15T16:19:49Z · close-out gate completed in 114s
+- 2026-11-15T16:20:17Z · message_dropped: 1 queued message(s) discarded — task is done
+- 2026-11-15T16:20:45Z · status done→done, release:success

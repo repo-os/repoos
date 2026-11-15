@@ -676,6 +676,60 @@ build-android:
     cp -f "$apk" ../app-debug.apk
     echo "==> mobile/app-debug.apk ($(du -h ../app-debug.apk | cut -f1)) — copied from $apk"
 
+# build the release-signed Android APK for a public download: `just build-android-release [tag]`
+[group('mobile')]
+build-android-release tag="":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if ! command -v brew >/dev/null || [ -z "$(brew --prefix openjdk@21 2>/dev/null)" ]; then
+        echo "error: openjdk@21 not found — run: brew install openjdk@21" >&2
+        exit 1
+    fi
+    sdk_root="$(brew --prefix)/share/android-commandlinetools"
+    if [ ! -d "$sdk_root" ]; then
+        echo "error: Android SDK not found at $sdk_root — run: brew install --cask android-commandlinetools" >&2
+        exit 1
+    fi
+    for var in REPOOS_ANDROID_KEYSTORE_PATH REPOOS_ANDROID_KEYSTORE_PASSWORD REPOOS_ANDROID_KEY_ALIAS REPOOS_ANDROID_KEY_PASSWORD; do
+        if [ -z "${!var:-}" ]; then
+            echo "error: $var is not set. A release APK must be signed with the release key, never the Android debug key." >&2
+            echo "       See mobile/README.md → Release signing, and export all four variables." >&2
+            exit 1
+        fi
+    done
+    keystore="$REPOOS_ANDROID_KEYSTORE_PATH"
+    case "$keystore" in
+        /*) ;;
+        *) keystore="$(pwd -P)/$keystore" ;;
+    esac
+    if [ ! -f "$keystore" ]; then
+        echo "error: REPOOS_ANDROID_KEYSTORE_PATH does not exist: $keystore" >&2
+        exit 1
+    fi
+    export REPOOS_ANDROID_KEYSTORE_PATH="$keystore"
+    if [ -n "{{tag}}" ]; then
+        export REPOOS_APP_VERSION="{{tag}}"
+        export REPOOS_APP_VERSION="${REPOOS_APP_VERSION#v}"
+    fi
+    repo_root="$(pwd -P)"
+    cd mobile
+    bun install
+    bun run build
+    bun run sync
+    cd android
+    export JAVA_HOME="$(brew --prefix openjdk@21)/libexec/openjdk.jdk/Contents/Home"
+    export ANDROID_HOME="$sdk_root"
+    export ANDROID_SDK_ROOT="$sdk_root"
+    # Clean so a version change from a previous local build always lands in
+    # the APK (Gradle does not treat these env-derived values as task inputs).
+    ./gradlew clean assembleRelease
+    apk="app/build/outputs/apk/release/app-release.apk"
+    cp -f "$apk" ../app-release.apk
+    fingerprint="$(bun "$repo_root/mobile/scripts/verify-release-apk.ts" ../app-release.apk)"
+    echo "==> mobile/app-release.apk ($(du -h ../app-release.apk | cut -f1)) — release-signed, verified against $REPOOS_ANDROID_KEYSTORE_PATH"
+    echo "==> release certificate SHA-256: $fingerprint"
+    echo "    install with: adb install -r mobile/app-release.apk"
+
 # build the mobile app for the iOS Simulator (unsigned .app, no device/App Store signing) `just build-ios`
 [group('mobile')]
 build-ios:

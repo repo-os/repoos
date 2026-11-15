@@ -2,15 +2,20 @@
 id: "1131"
 title: "RepoOS Hub mobile: hold-to-drag server reordering, and move Find servers on my tailnet next to Add server"
 type: feature
-status: active
+status: done
 priority: p1
 area: mobile
 story: RepoOS Hub for Mobile
+merged_commit: cc01d288ca54a34f5e79bcbffabb1a7456caddff
 assigned_to: ai
 created_by: t@t
 branch: feat/repoos-hub-mobile-hold-to-drag-server-re
 created_at: "2026-11-15T14:39:13Z"
-updated_at: "2026-11-15T16:08:33Z"
+updated_at: "2026-11-15T16:58:03Z"
+last_close_out_gate_ms: 233080
+last_close_out_gate_at: "2026-11-15T16:56:47.406Z"
+review_passes: 1
+last_check_failure: "repoos check at 2026-11-15T16:20:20.969Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 ---
 ## Problem
 Feedback from Nick after testing the #1127 build on his Nothing Phone (3a):
@@ -57,3 +62,41 @@ Hold-to-drag feel, haptics and iOS gesture behavior are covered by code and comp
 - 2026-11-15T15:59:55Z · watchdog: restarting engineer because a queued message waited 3m with no live process
 - 2026-11-15T16:03:30Z · message_delivered: 1 message(s)
 - 2026-11-15T16:08:33Z · body
+- 2026-11-15T16:09:57Z · CTO nudge: held — handoff gate is running
+- 2026-11-15T16:10:27Z · message_queued at 2026-11-15T16:10:27.621Z
+- 2026-11-15T16:13:40Z · watchdog: restarting engineer because a queued message waited 3m with no live process
+- 2026-11-15T16:13:41Z · message_delivered: 1 message(s)
+- 2026-11-15T16:18:03Z · body
+- 2026-11-15T16:19:54Z · CTO nudge: held — handoff gate is running
+- 2026-11-15T16:20:18Z · message_queued at 2026-11-15T16:20:18.176Z
+- 2026-11-15T16:20:39Z · message_delivered: 1 message(s)
+- 2026-11-15T16:33:18Z · message_queued at 2026-11-15T16:33:18.495Z
+- 2026-11-15T16:33:18Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-15T16:34:07Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-15T16:35:42Z · body
+- 2026-11-15T16:37:46Z · queued message undelivered for 4m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-15T16:37:46Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 130) · last assistant: Check passed. Tests were skipped by the runner env (`REPOOS_SKIP_TESTS=1`), so let me run the affected suites directly to be sure. · stderr: (empty)
+- 2026-11-15T16:37:46Z · message_delivered: 1 message(s)
+- 2026-11-15T16:39:06Z · message_queued at 2026-11-15T16:39:06.965Z
+- 2026-11-15T16:39:07Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-15T16:40:10Z · body
+- 2026-11-15T16:42:16Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-15T16:42:16Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 130) · last assistant: Check passed. Tests were skipped by the runner env (`REPOOS_SKIP_TESTS=1`), so let me run the affected suites directly to be sure. · stderr: (empty)
+- 2026-11-15T16:42:16Z · message_delivered: 1 message(s)
+- 2026-11-15T16:44:06Z · message_queued at 2026-11-15T16:44:06.964Z
+- 2026-11-15T16:44:07Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-15T16:45:06Z · body
+- 2026-11-15T16:47:16Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-15T16:47:16Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 130) · last assistant: Check passed. Tests were skipped by the runner env (`REPOOS_SKIP_TESTS=1`), so let me run the affected suites directly to be sure. · stderr: (empty)
+- 2026-11-15T16:47:16Z · message_delivered: 1 message(s)
+- 2026-11-15T16:48:54Z · body
+- 2026-11-15T16:49:07Z · message_queued at 2026-11-15T16:49:07.009Z
+- 2026-11-15T16:49:07Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-15T16:50:15Z · status active→review
+- 2026-11-15T16:50:15Z · note: Task body is underspecified: missing sections: Notes for AI
+- 2026-11-15T16:50:15Z · message_queued at 2026-11-15T16:50:15.771Z
+- 2026-11-15T16:50:15Z · note: shots: skipped — the diff (15 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-11-15T16:51:17Z · note: review pass 1: good to go
+- 2026-11-15T16:56:47Z · close-out gate completed in 233s
+- 2026-11-15T16:57:37Z · status done→done, release:success
+- 2026-11-15T16:58:03Z · message_dropped: 1 queued message(s) discarded — task is done

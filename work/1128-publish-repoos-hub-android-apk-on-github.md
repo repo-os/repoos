@@ -2,16 +2,22 @@
 id: "1128"
 title: Publish RepoOS Hub Android APK on GitHub Releases and link it from the landing page and docs
 type: feature
-status: active
+status: done
+needs_input: true
+needs_input_reason: closeout-worktree-dirty
+needs_input_detail: "the worktree for feat/publish-repoos-hub-android-apk-on-github was kept because it had uncommitted changes the merge did not carry: .env"
 priority: p2
 area: [mobile, web]
 story: RepoOS Hub for Mobile
+merged_commit: e23a1db4eefb90b25bd1aa2800b1f43250ba9ca7
 assigned_to: ai
 created_by: t@t
 branch: feat/publish-repoos-hub-android-apk-on-github
 created_at: "2026-11-15T13:35:11Z"
-updated_at: "2026-11-15T16:09:07Z"
-check_retry_count: 2
+updated_at: "2026-11-15T17:02:57Z"
+last_close_out_gate_ms: 281235
+last_close_out_gate_at: "2026-11-15T17:02:35.769Z"
+review_passes: 1
 last_check_failure: "repoos check at 2026-11-15T15:14:33.244Z: repoos check failed: rendered-contrast — · div#setting-model_routing.provider.setting-row > div.setting-info > div.setting-desc — #958ab0 on #ffffff = 3.21 (need ≥4.5, 11px) [settings] \"Which decision backend answers routing questions. Jev uses T\""
 dev_error_count: 1
 ---
@@ -127,3 +133,29 @@ The Tiao app (a separate repo) is the reference for how the APK should be shared
 - 2026-11-15T16:07:11Z · message_delivered: 1 message(s)
 - 2026-11-15T16:09:07Z · message_queued at 2026-11-15T16:09:07.110Z
 - 2026-11-15T16:09:07Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-15T16:09:50Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-15T16:12:10Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-15T16:12:10Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 130) · last assistant: The last two failures are unrelated remote-runner flakes (agent-review, serve-guard, host-pool timing tests) — different tests each run. I’m running the gate locally now to confirm the merged tree itself is green. · stderr: (empty)
+- 2026-11-15T16:12:10Z · message_delivered: 1 message(s)
+- 2026-11-15T16:14:07Z · message_queued at 2026-11-15T16:14:07.008Z
+- 2026-11-15T16:14:07Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-15T16:17:10Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-15T16:17:10Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 130) · last assistant: The last two failures are unrelated remote-runner flakes (agent-review, serve-guard, host-pool timing tests) — different tests each run. I’m running the gate locally now to confirm the merged tree itself is green. · stderr: (empty)
+- 2026-11-15T16:17:10Z · message_delivered: 1 message(s)
+- 2026-11-15T16:19:07Z · message_queued at 2026-11-15T16:19:07.079Z
+- 2026-11-15T16:19:07Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-15T16:19:55Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-15T16:23:00Z · queued message undelivered for 4m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-15T16:23:01Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 130) · last assistant: The scoped gate is green now. I’m refreshing the shot evidence against the merged tree, then I’ll hand off. · stderr: (empty)
+- 2026-11-15T16:23:01Z · message_delivered: 1 message(s)
+- 2026-11-15T16:24:06Z · CTO nudge: held — handoff gate is running
+- 2026-11-15T16:33:16Z · status active→review
+- 2026-11-15T16:33:16Z · note: shots: skipped — 4 shots already captured — an engineer-made capture pre-empts the automatic one
+- 2026-11-15T16:33:16Z · message_queued at 2026-11-15T16:33:16.466Z
+- 2026-11-15T16:33:16Z · note: shots: skipped — 4 shots already captured — an engineer-made capture pre-empts the automatic one
+- 2026-11-15T16:34:24Z · note: review pass 1: good to go
+- 2026-11-15T17:02:35Z · close-out gate completed in 281s
+- 2026-11-15T17:02:39Z · message_dropped: 1 queued message(s) discarded — task is done
+- 2026-11-15T17:02:57Z · status done→done, release:success
+- 2026-11-15T17:02:57Z · needs_input
+- 2026-11-15T17:02:57Z · note: close-out kept a worktree with uncommitted changes
