@@ -1,4 +1,6 @@
 // @vitest-environment jsdom
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it, beforeEach } from "vitest";
 import {
   normalizeAppearanceMode,
@@ -128,7 +130,8 @@ describe("mobile hub fixtures and navigation", () => {
 
 describe("mobile preview target", () => {
   it("resolves repoos-mobile-dev from mobile/** path changes", () => {
-    const config = loadConfig(process.cwd());
+    const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "../../..");
+    const config = loadConfig(repoRoot);
     const r = resolveShotTargets(config.preview, "mobile", ["mobile/src/App.vue"]);
     expect(r.names).toContain("repoos-mobile-dev");
   });
