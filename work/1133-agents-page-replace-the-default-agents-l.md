@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/agents-page-replace-the-default-agents-l
 created_at: "2026-11-15T15:20:08Z"
-updated_at: "2026-11-15T19:48:58Z"
+updated_at: "2026-11-15T19:49:09Z"
 last_close_out_gate_ms: 662670
 last_close_out_gate_at: "2026-11-15T19:48:41.904Z"
 review_passes: 1
@@ -184,3 +184,4 @@ The current list is `agentLastRuns` in src/ui-app/src/views/AgentsView.vue, fed 
 - 2026-11-15T18:52:41Z · note: review pass 1: good to go
 - 2026-11-15T19:48:41Z · close-out gate completed in 663s
 - 2026-11-15T19:48:58Z · status done→done, release:success
+- 2026-11-15T19:49:09Z · message_dropped: 1 queued message(s) discarded — task is done
