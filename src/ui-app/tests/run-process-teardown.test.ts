@@ -62,13 +62,20 @@ describe.skipIf(process.platform === "win32")("turn teardown kills escaped grand
    * This is the exact escape shape from the incident: the parent is in the
    * turn's group, the grandchild `setsid`s into its own session.
    */
-  async function startTurn(worktree: string, marker: string, pidFile: string): Promise<FakeTurn> {
+  async function startTurn(
+    worktree: string,
+    marker: string,
+    pidFile: string,
+    inheritMarker = true,
+  ): Promise<FakeTurn> {
     const turnScript =
       `const { spawn } = require("node:child_process");` +
       `const { writeFileSync } = require("node:fs");` +
+      `const env = { ...process.env };` +
+      `if (${JSON.stringify(!inheritMarker)}) delete env.REPOOS_TURN_MARKER;` +
       `const child = spawn(process.execPath, ["-e", ` +
       `"setInterval(() => { for (let i = 0; i < 20000; i++); }, 200)"], ` +
-      `{ cwd: process.cwd(), detached: true, stdio: "ignore", env: process.env });` +
+      `{ cwd: process.cwd(), detached: true, stdio: "ignore", env });` +
       `child.unref();` +
       `writeFileSync(${JSON.stringify(pidFile)}, String(child.pid));` +
       `setInterval(() => {}, 1000);`;
@@ -120,7 +127,10 @@ describe.skipIf(process.platform === "win32")("turn teardown kills escaped grand
   it("finds and kills a grandchild reparented to PID 1 by worktree cwd", async () => {
     const { worktree, worktreesRoot, pidFile } = fixture();
     const marker = turnMarker(root, "1134", "run-orphan");
-    const { parentPid, grandchildPid } = await startTurn(worktree, marker, pidFile);
+    // Do not let this grandchild inherit the marker: this test proves the
+    // worktree-cwd path (the only path available on macOS, where SIP hides a
+    // foreign process's environment).
+    const { parentPid, grandchildPid } = await startTurn(worktree, marker, pidFile, false);
 
     // End only the turn's process group, like an agent CLI that vanished.
     // The setsid grandchild survives and is reparented to PID 1.
