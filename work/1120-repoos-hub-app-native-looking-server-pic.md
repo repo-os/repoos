@@ -1,6 +1,4 @@
 ---
-last_handoff_failure_fingerprint: "check|remote validation failed: test failure: gate exit 2 on bee — fix it in the feature branch and re-run the gate"
-last_handoff_failure_sha: f6611e7d434fc295a24bf67c6237414b0bd9d470
 id: "1120"
 title: "RepoOS Hub app: native-looking server picker, web color themes with light/dark, better icons, and a Settings page"
 type: feature
@@ -18,7 +16,9 @@ branch: feat/repoos-hub-app-native-looking-server-pic
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-14T16:53:29Z"
-updated_at: "2026-11-15T01:12:53Z"
+updated_at: "2026-11-15T01:13:22Z"
+last_handoff_failure_fingerprint: "check|remote validation failed: test failure: gate exit 2 on bee — fix it in the feature branch and re-run the gate"
+last_handoff_failure_sha: f6611e7d434fc295a24bf67c6237414b0bd9d470
 review_rounds: 1
 review_passes: 1
 last_check_failure: "repoos check at 2026-11-14T21:07:45.909Z: repoos check failed: ui verification failed (2 issue(s)): [missing-target] Hub server list (Android, dark classic) (target \"default\"): highlight [data-testid=\"hub-server-list\"] matched nothing on /?fixture=many&platform=android&appearance=dark&theme=classic (http://127.0.0.1:41679/?fixture=many&platform=android&appearance=dark&theme=classic); [missing-target] Hub Settings (iOS, light gruvbox) (target \"default\"): highlight [data-testid=\"hub-settings\"] matched nothing on /?fixture=settings&platfor… (truncated)"
@@ -46,32 +46,7 @@ Read docs/mobile-architecture.md, docs/adr/0011-mobile-web-ui.md (the native she
 
 ## Shots
 ```json
-[
-{
-"label": "Hub Android empty state (gruvbox dark)",
-"target": "repoos-mobile-dev",
-"route": "/?fixture=empty&platform=android&theme=gruvbox&appearance=dark",
-"highlight": "[data-testid=\"hub-empty-state\"]",
-"viewportWidth": 390,
-"viewportHeight": 844
-},
-{
-"label": "Hub iOS Settings (solarized light)",
-"target": "repoos-mobile-dev",
-"route": "/?fixture=settings&platform=ios&theme=solarized&appearance=light",
-"highlight": "[data-testid=\"hub-settings\"]",
-"viewportWidth": 390,
-"viewportHeight": 844
-},
-{
-"label": "Hub Android server list (classic dark)",
-"target": "repoos-mobile-dev",
-"route": "/?fixture=many&platform=android&theme=classic&appearance=dark",
-"highlight": "[data-testid=\"hub-server-list\"]",
-"viewportWidth": 390,
-"viewportHeight": 844
-}
-]
+[]
 ```
 
 ## Screenshots
@@ -228,4 +203,4 @@ Read docs/mobile-architecture.md, docs/adr/0011-mobile-web-ui.md (the native she
 - 2026-11-15T01:12:40Z · message_delivered: 1 message(s)
 - 2026-11-15T01:12:53Z · message_queued at 2026-11-15T01:12:53.422Z
 - 2026-11-15T01:12:53Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: gate exit 2 on bee — fix it in the feature branch and re-run the gate
-
+- 2026-11-15T01:13:22Z · body
