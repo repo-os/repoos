@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/allowlist-groups-projects-that-opt-into-
 created_at: "2026-11-15T15:20:04Z"
-updated_at: "2026-11-15T17:45:46Z"
+updated_at: "2026-11-15T17:53:38Z"
 ---
 ## Problem
 The budget allowlist (`[[budget.allowlist]]`: CLIs, models, paused, pausedUntil, pausedModels, pausedReason) lives only in each repo's committed `repoos.toml`. Nick works for several companies. Each company has its own coding agents, model providers, accounts and quotas, and its projects are spread across his MacBook, bee and thinkpad. Projects that belong together, because they share the same company and the same logins, have to be hand-edited one by one. Nothing ties them together, and nothing notices when they drift apart.
@@ -37,6 +37,18 @@ The tailnet as a whole must **not** share one allowlist. Projects for different 
 ## Notes for AI
 Start from how `budget.allowlist` is read and merged today, `collectTailnetServers` in src/commands/servers.ts, src/core/tailnet-servers.ts, and the `/api/servers/tailnet` route in src/server/routes/servers.ts. Keep the design for one machine with several groups working with no network access. Tailnet propagation is a layer on top. Don't make the tailnet a single group by default.
 
+## Shots
+```json
+[
+{
+  "label": "Budget Controls: join an allowlist group",
+  "target": "default",
+  "route": "/agents?tab=budget-controls",
+  "highlight": "[data-testid=\"budget-join-group\"]"
+}
+]
+```
+
 ## Activity
 
 - 2026-11-15T15:20:04Z · created · t@t
@@ -44,3 +56,4 @@ Start from how `budget.allowlist` is read and merged today, `collectTailnetServe
 - 2026-11-15T16:09:55Z · status inbox→ready
 - 2026-11-15T16:58:12Z · status ready→active, branch
 - 2026-11-15T17:45:46Z · body
+- 2026-11-15T17:53:38Z · body
