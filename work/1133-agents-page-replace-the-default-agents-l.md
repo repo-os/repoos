@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/agents-page-replace-the-default-agents-l
 created_at: "2026-11-15T15:20:08Z"
-updated_at: "2026-11-15T16:58:04Z"
+updated_at: "2026-11-15T16:58:10Z"
 ---
 ## Problem
 The Default agents section of Agents > Agents now starts with a "last runs" log, added in #1098 (12 Nov) and reworked in #1123 (15 Nov). It lists rows such as CTO, debugger, engineer, pm and reviewer, each with a "finished · <timestamp>" line, plus a "Show older and other runs (14)" toggle. Nick didn't ask for it and finds it badly designed:
@@ -83,3 +83,4 @@ The current list is `agentLastRuns` in src/ui-app/src/views/AgentsView.vue, fed 
 - 2026-11-15T16:57:38Z · body
 - 2026-11-15T16:58:03Z · message_queued at 2026-11-15T16:58:03.680Z
 - 2026-11-15T16:58:04Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-15T16:58:10Z · CTO nudge: held — an undelivered message is already queued
