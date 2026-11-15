@@ -144,6 +144,11 @@ jobs:
             echo "::notice::Dry run: exercising notarization, stapling and verification; the GitHub Release upload will be skipped."
           fi
 
+          if ! command -v jq >/dev/null 2>&1; then
+            echo "::error::jq is required to read the notarization submission ID from notarytool JSON." >&2
+            exit 1
+          fi
+
           # Resolve exactly one authentication set from the repository Actions
           # secrets. Never echo secret values or write them outside RUNNER_TEMP.
           AUTH_ARGS=()
@@ -241,7 +246,7 @@ jobs:
           fi
 
       - name: Upload DMG to GitHub Release
-        if: ${{ inputs.dry_run != true }}
+        if: ${{ inputs.dry_run != 'true' }}
         uses: softprops/action-gh-release@v2
         with:
           files: RepoOSHub.dmg

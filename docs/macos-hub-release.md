@@ -25,7 +25,8 @@ installation copy.
   stapled DMG passes `xcrun stapler validate` and Gatekeeper's `spctl` open
   assessment. The workflow enforces that order and uploads only the stapled
   file. Developer ID signing itself is owned by #0578; this runbook covers the
-  notarization and stapling gates that follow it.
+  notarization and stapling gates that follow it. Until that signing is present
+  and valid the notarization submission fails and nothing is uploaded.
 
 ## Signing and notarization credentials
 
