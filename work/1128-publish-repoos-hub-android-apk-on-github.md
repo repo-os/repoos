@@ -144,3 +144,4 @@ The Tiao app (a separate repo) is the reference for how the APK should be shared
 - 2026-11-15T16:24:06Z · CTO nudge: held — handoff gate is running
 - 2026-11-15T16:33:16Z · status active→review
 - 2026-11-15T16:33:16Z · note: shots: skipped — 4 shots already captured — an engineer-made capture pre-empts the automatic one
+- 2026-11-15T16:33:16Z · message_queued at 2026-11-15T16:33:16.466Z
