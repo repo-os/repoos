@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/mobile-web-polish-44px-tap-targets-no-io
 created_at: "2026-11-15T17:24:09Z"
-updated_at: "2026-11-15T22:11:58Z"
+updated_at: "2026-11-15T22:13:23Z"
 handoff_signal_retry_count: 2
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-11-15T21:27:51.683Z\",\"kind\":\"dev-error\"}]"
@@ -58,28 +58,28 @@ Smaller mobile issues found on main `23dc737` (Chromium mobile emulation; 360/39
 ```json
 [
 {
-"label": "Phone top bar: 44px search, bell, theme, help and icon-only repo chip",
-"target": "default",
-"route": "/work",
-"highlight": ".topbar",
-"viewportWidth": 390,
-"viewportHeight": 844
+  "label": "Phone Work queue: 44px top-bar controls, no keyboard hint in the search pill",
+  "target": "default",
+  "route": "/work",
+  "highlight": ".topbar",
+  "viewportWidth": 390,
+  "viewportHeight": 844
 },
 {
-"label": "Landscape phone Work header wraps without clipping",
-"target": "default",
-"route": "/work",
-"highlight": ".work-header",
-"viewportWidth": 740,
-"viewportHeight": 360
+  "label": "Landscape phone: icon-only sidebar and a Work header that wraps instead of clipping",
+  "target": "default",
+  "route": "/work",
+  "highlight": ".work-header",
+  "viewportWidth": 740,
+  "viewportHeight": 360
 },
 {
-"label": "Phone Agents page: wrapping tabs and 44px header links",
-"target": "default",
-"route": "/agents",
-"highlight": ".agent-tabs",
-"viewportWidth": 390,
-"viewportHeight": 844
+  "label": "Phone Agents page: sub-tabs wrap and controls meet the 44px floor",
+  "target": "default",
+  "route": "/agents",
+  "highlight": ".agent-tabs",
+  "viewportWidth": 390,
+  "viewportHeight": 844
 }
 ]
 ```
@@ -109,3 +109,4 @@ Smaller mobile issues found on main `23dc737` (Chromium mobile emulation; 360/39
 - 2026-11-15T21:55:53Z · body
 - 2026-11-15T22:06:39Z · watchdog: restarting engineer after 11m with no live process
 - 2026-11-15T22:11:58Z · body
+- 2026-11-15T22:13:23Z · body
