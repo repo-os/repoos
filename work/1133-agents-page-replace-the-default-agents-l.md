@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/agents-page-replace-the-default-agents-l
 created_at: "2026-11-15T15:20:08Z"
-updated_at: "2026-11-15T17:42:52Z"
+updated_at: "2026-11-15T17:44:07Z"
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -37,22 +37,22 @@ The current list is `agentLastRuns` in src/ui-app/src/views/AgentsView.vue, fed 
 ```json
 [
 {
-  "label": "Default agents cards with inline last-run status (1280px)",
-  "target": "default",
-  "route": "/agents",
-  "highlight": ".agent-tab-panel:first-child .agent-head",
-  "state": "agents:lastRuns",
-  "viewportWidth": 1280,
-  "viewportHeight": 900
+"label": "Default agents cards with inline last-run status (1280px)",
+"target": "default",
+"route": "/agents",
+"highlight": ".agent-tab-panel:first-child .agent-head",
+"state": "agents:lastRuns",
+"viewportWidth": 1280,
+"viewportHeight": 900
 },
 {
-  "label": "Default agents at phone width (390px)",
-  "target": "default",
-  "route": "/agents",
-  "highlight": ".agent-tab-panel:first-child .agent-head",
-  "state": "agents:lastRuns",
-  "viewportWidth": 390,
-  "viewportHeight": 844
+"label": "Default agents at phone width (390px)",
+"target": "default",
+"route": "/agents",
+"highlight": ".agent-tab-panel:first-child .agent-head",
+"state": "agents:lastRuns",
+"viewportWidth": 390,
+"viewportHeight": 844
 }
 ]
 ```
@@ -111,3 +111,4 @@ The current list is `agentLastRuns` in src/ui-app/src/views/AgentsView.vue, fed 
 - 2026-11-15T17:39:07Z · message_queued at 2026-11-15T17:39:07.264Z
 - 2026-11-15T17:39:07Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-15T17:42:52Z · body
+- 2026-11-15T17:44:07Z · CTO nudge: held — an undelivered message is already queued
