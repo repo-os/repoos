@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/agents-page-replace-the-default-agents-l
 created_at: "2026-11-15T15:20:08Z"
-updated_at: "2026-11-15T17:33:39Z"
+updated_at: "2026-11-15T17:35:09Z"
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -37,20 +37,20 @@ The current list is `agentLastRuns` in src/ui-app/src/views/AgentsView.vue, fed 
 ```json
 [
 {
-  "label": "Default agents cards with inline last-run status (1280px)",
-  "target": "default",
-  "route": "/agents",
-  "highlight": ".agent-tab-panel:first-child .agent-head",
-  "viewportWidth": 1280,
-  "viewportHeight": 900
+"label": "Default agents cards with inline last-run status (1280px)",
+"target": "default",
+"route": "/agents",
+"highlight": ".agent-tab-panel:first-child .agent-head",
+"viewportWidth": 1280,
+"viewportHeight": 900
 },
 {
-  "label": "Default agents cards with inline last-run status (phone width)",
-  "target": "default",
-  "route": "/agents",
-  "highlight": ".agent-tab-panel:first-child .agent-head",
-  "viewportWidth": 375,
-  "viewportHeight": 812
+"label": "Default agents cards with inline last-run status (phone width)",
+"target": "default",
+"route": "/agents",
+"highlight": ".agent-tab-panel:first-child .agent-head",
+"viewportWidth": 375,
+"viewportHeight": 812
 }
 ]
 ```
@@ -103,3 +103,4 @@ The current list is `agentLastRuns` in src/ui-app/src/views/AgentsView.vue, fed 
 - 2026-11-15T17:27:12Z · message_queued at 2026-11-15T17:27:12.638Z
 - 2026-11-15T17:32:09Z · message_delivered: 1 message(s)
 - 2026-11-15T17:33:39Z · body
+- 2026-11-15T17:35:09Z · queued message undelivered for 8m and the engineer produced no output — ending the turn so it is delivered
