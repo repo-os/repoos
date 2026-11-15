@@ -520,7 +520,7 @@ const serveMessage = computed(() => {
             class="serve-chip"
             :class="{ dead: p.survived }"
           >
-            <template v-if="p.taskId">#{{ p.taskId }} </template>{{ p.pid }}
+            {{ p.taskId ? `#${p.taskId} ` : "" }}{{ p.pid }}
             <span class="orphan-meta"
               >{{ p.command.slice(0, 40) }} · {{ fmtDuration(p.cpuTimeMs) }} cpu ·
               {{ fmtDuration(p.ageMs) }} old</span
