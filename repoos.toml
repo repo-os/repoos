@@ -771,9 +771,6 @@ models = ["composer-2.5", "grok-4.7-low"]
 [[budget.allowlist]]
 cli = "codex"
 models = ["gpt-6-luna", "gpt-6.1-terra"]
-paused = true
-pausedUntil = "2026-11-15T12:00:00.000Z"
-pausedModels = [{ model = "gpt-6.1-terra" }]
 [[budget.allowlist]]
 cli = "pi"
 models = ["openrouter/deepseek/deepseek-v4.1-flash"]
