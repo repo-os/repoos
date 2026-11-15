@@ -2,7 +2,7 @@
 id: "1120"
 title: "RepoOS Hub app: native-looking server picker, web color themes with light/dark, better icons, and a Settings page"
 type: feature
-status: active
+status: review
 needs_input: true
 needs_input_reason: needs-human-step
 human_step_override: Cleared needs-human-step flag (sticky until acceptance criteria change)
@@ -209,4 +209,4 @@ Read docs/mobile-architecture.md, docs/adr/0011-mobile-web-ui.md (the native she
 - 2026-11-15T01:38:53Z · CTO nudge: held — handoff gate is running
 - 2026-11-15T01:47:36Z · body
 - 2026-11-15T01:50:06Z · note: ui verification passed: 1 shot captured with clean console
-- 2026-11-15T01:50:07Z · engineer stopped by request
+- 2026-11-15T01:50:07Z · status active→review
