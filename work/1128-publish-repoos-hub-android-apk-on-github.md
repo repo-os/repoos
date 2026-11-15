@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-15T14:03:27.994Z: repoos check failed: ui verification failed: runner result omitted the UI verification record: ui verification: preview for \"Landing page\" did not start: preview server for #1128 did not become ready"
 id: "1128"
 title: Publish RepoOS Hub Android APK on GitHub Releases and link it from the landing page and docs
 type: feature
@@ -68,3 +70,4 @@ The Tiao app (a separate repo) is the reference for how the APK should be shared
 - 2026-11-15T14:01:00Z · body
 - 2026-11-15T14:03:24Z · message_queued at 2026-11-15T14:03:24.867Z
 - 2026-11-15T14:03:27Z · message_delivered: 1 message(s)
+
