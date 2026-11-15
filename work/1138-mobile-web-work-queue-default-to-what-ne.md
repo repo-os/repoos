@@ -11,7 +11,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/mobile-web-work-queue-default-to-what-ne
 created_at: "2026-11-15T17:24:06Z"
-updated_at: "2026-11-15T20:17:56Z"
+updated_at: "2026-11-15T20:18:59Z"
 ---
 ## Problem
 Nick: on a phone it's "really hard to find the right task and do anything normal". On main `23dc737`, the mobile Work queue (MobileWorkQueue.vue):
@@ -47,21 +47,21 @@ Nick: on a phone it's "really hard to find the right task and do anything normal
 ```json
 [
 {
-  "label": "Mobile Work queue opens on Needs attention, with inline search and quick filters",
-  "target": "default",
-  "route": "/work",
-  "highlight": ".mobile-queue-controls",
-  "viewportWidth": 390,
-  "viewportHeight": 844
+"label": "Mobile Work queue opens on Needs attention, with inline search and quick filters",
+"target": "default",
+"route": "/work",
+"highlight": ".mobile-queue-controls",
+"viewportWidth": 390,
+"viewportHeight": 844
 },
 {
-  "label": "URL ?status=review opens the Review section",
-  "target": "default",
-  "route": "/work?status=review",
-  "highlight": "[data-section=\"review\"] .mobile-task-card",
-  "state": "board:withReviewTask",
-  "viewportWidth": 390,
-  "viewportHeight": 844
+"label": "URL ?status=review opens the Review section",
+"target": "default",
+"route": "/work?status=review",
+"highlight": "[data-section=\"review\"] .mobile-task-card",
+"state": "board:withReviewTask",
+"viewportWidth": 390,
+"viewportHeight": 844
 }
 ]
 ```
@@ -101,3 +101,4 @@ Nick: on a phone it's "really hard to find the right task and do anything normal
 - 2026-11-15T20:13:32Z · message_delivered: 1 message(s)
 - 2026-11-15T20:15:33Z · body
 - 2026-11-15T20:17:56Z · body
+- 2026-11-15T20:18:59Z · CTO nudge: held — handoff gate is running
