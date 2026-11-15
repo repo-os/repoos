@@ -107,10 +107,29 @@ function applyManifestColor(color: string | null): void {
     : "/manifest.webmanifest";
 }
 
+/**
+ * Point the iOS home-screen icon at a color-aware variant too (#1139). iOS
+ * reads the `<link rel="apple-touch-icon">` tag, not the manifest, so keeping
+ * it in sync is what makes the installed icon match the tab favicon.
+ */
+function applyAppleTouchIcon(color: string | null): void {
+  let link = document.head.querySelector<HTMLLinkElement>('link[rel="apple-touch-icon"]');
+  if (!link) {
+    link = document.createElement("link");
+    link.rel = "apple-touch-icon";
+    link.sizes = "180x180";
+    document.head.appendChild(link);
+  }
+  link.href = color
+    ? `/apple-touch-icon.png?c=${encodeURIComponent(color)}`
+    : "/apple-touch-icon.png";
+}
+
 /** Apply the chosen color to the favicon + PWA manifest (null clears both). */
 function applyColorCues(color: string | null): void {
   applyFavicon(color);
   applyManifestColor(color);
+  applyAppleTouchIcon(color);
 }
 
 function textColorFor(hex: string): string {
@@ -309,6 +328,7 @@ watch(repoName, () => {
         class="repo-pill"
         type="button"
         :aria-expanded="popoverOpen"
+        :aria-label="`Repo colour${pillText ? ' · ' + pillText : ''}`"
         :style="pillStyle"
         @click="togglePopover"
       >
@@ -319,7 +339,7 @@ watch(repoName, () => {
             stroke-width="1.8"
           />
         </svg>
-        <span class="mono" :style="pillTextStyle">{{ pillText }}</span>
+        <span class="mono repo-pill-text" :style="pillTextStyle">{{ pillText }}</span>
       </button>
       <div v-if="popoverOpen" class="repo-color-popover">
         <div class="repo-color-grid">
@@ -631,5 +651,50 @@ watch(repoName, () => {
   background: var(--red-tint);
   color: var(--txt);
   border-color: transparent;
+}
+
+/* Touch sizing (#1139): header controls and popover rows reach 44x44 on phone
+   layouts, including landscape phones and small tablets where the compact
+   shell runs but the top bar is still a pointer-sized row. */
+@media (max-width: 900px) {
+  .help-menu-trigger,
+  .user-menu-trigger {
+    width: 44px;
+    height: 44px;
+  }
+  .help-menu-link {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 10px 12px;
+  }
+  .user-menu-logout {
+    min-height: 44px;
+  }
+}
+@media (max-width: 719.98px) {
+  /* The project chip opens a colour picker, not a repo switcher, so on a
+     phone it becomes an icon-only 44x44 swatch trigger (#1139). */
+  .repo-pill-text {
+    display: none;
+  }
+  .repo-pill {
+    width: 44px;
+    min-height: 44px;
+    padding: 0;
+    justify-content: center;
+  }
+  .repo-color-grid {
+    grid-template-columns: repeat(3, 44px);
+    gap: 8px;
+  }
+  .repo-color-swatch {
+    width: 44px;
+    height: 44px;
+  }
+  .repo-color-default {
+    min-height: 44px;
+    padding: 10px 0;
+  }
 }
 </style>

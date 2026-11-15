@@ -526,6 +526,7 @@ import {
   transcribe,
   // UI routes
   serveManifest,
+  serveAppleTouchIcon,
   serveIcon,
   setIconRenderer,
   // Auth routes
@@ -4450,6 +4451,8 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
 
   // UI routes
   router.register("GET", "/manifest.webmanifest", serveManifest);
+  router.register("GET", "/apple-touch-icon.png", serveAppleTouchIcon);
+  router.register("GET", "/apple-touch-icon-precomposed.png", serveAppleTouchIcon);
   router.register("GET", /^\/icons\/icon-(\d+)\.png$/, serveIcon);
 
   const localToken =
@@ -4505,7 +4508,12 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           "/api/telegram/webhook/",
           "/api/release/email/unsubscribe",
         ];
-        const PUBLIC_PATHS = ["/login", "/manifest.webmanifest"];
+        const PUBLIC_PATHS = [
+          "/login",
+          "/manifest.webmanifest",
+          "/apple-touch-icon.png",
+          "/apple-touch-icon-precomposed.png",
+        ];
         const isPublicRoute =
           PUBLIC_PREFIXES.some((p) => path.startsWith(p)) ||
           PUBLIC_PATHS.includes(path) ||

@@ -432,4 +432,26 @@ watch(open, (o) => {
   text-transform: uppercase;
   color: var(--txt-faint);
 }
+
+/* #1139: the bell and the rows inside its popover are touch controls on
+   phones/tablets; keep them at least 44x44. */
+@media (max-width: 900px) {
+  .notice-bell-trigger {
+    width: 44px;
+    height: 44px;
+  }
+  .notice-pop-action {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 10px 8px;
+  }
+  .notice-body {
+    min-height: 44px;
+    padding: 6px 0;
+  }
+  .notice-x {
+    width: 44px;
+    height: 44px;
+  }
+}
 </style>

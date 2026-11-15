@@ -8295,6 +8295,13 @@ watch(
   border-color: var(--border-bright);
 }
 
+/* #1139: iOS zooms in when a focused field is under 16px. */
+@media (pointer: coarse) {
+  .nt-body-textarea {
+    font-size: 16px;
+  }
+}
+
 .landable-checks {
   flex-direction: column;
   align-items: stretch;

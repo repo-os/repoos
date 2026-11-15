@@ -132,4 +132,14 @@ function openCard(id: string): void {
   outline: 2px solid var(--cyan);
   outline-offset: 1px;
 }
+/* #1139: phone/tablet reminders are a touch target, not a 18px desktop chip. */
+@media (max-width: 900px) {
+  .reminder-card {
+    min-height: 44px;
+  }
+  .reminder-card-x {
+    width: 44px;
+    height: 44px;
+  }
+}
 </style>
