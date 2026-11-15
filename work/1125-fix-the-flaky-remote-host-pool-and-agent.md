@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-15T05:40:47Z"
+review_passes: 1
 id: "1125"
 title: Fix the flaky remote-host-pool (and agent-review/pressure-guard/agent-drivers) tests that keep failing close-out and handoff on remote runners
 type: bug
@@ -11,7 +13,6 @@ branch: feat/fix-the-flaky-remote-host-pool-and-agent
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-15T04:51:36Z"
-updated_at: "2026-11-15T05:40:46Z"
 ---
 ## Problem
 
@@ -68,3 +69,4 @@ Follow AGENTS.md 'Is a repoos check failure a flake or a real bug?' and docs/deb
 - 2026-11-15T05:40:07Z · message_queued at 2026-11-15T05:40:07.876Z
 - 2026-11-15T05:40:08Z · note: shots: skipped — the diff (8 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-15T05:40:46Z · note: review pass 1: good to go
+
