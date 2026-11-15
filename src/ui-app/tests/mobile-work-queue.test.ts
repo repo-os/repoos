@@ -343,6 +343,22 @@ describe("mobile Work queue", () => {
     expect(wrapper.findAll(".mobile-task-card").length).toBe(rendered + 12);
   });
 
+  it("offers all statuses when only done work exists", async () => {
+    const repo = useRepoStore();
+    repo.loading = false;
+    repo.tasks = [task("0500", "done")];
+    const wrapper = mountQueue();
+
+    expect(wrapper.text()).toContain("Nothing needs attention");
+    const showAll = wrapper
+      .findAll("button")
+      .find((button) => button.text() === "Show all statuses");
+    expect(showAll).toBeTruthy();
+    await showAll!.trigger("click");
+    await flushPromises();
+    expect(wrapper.get("[data-section='done']").text()).toContain("#0500");
+  });
+
   it("opens the shared new-task flow", async () => {
     const ui = useUiStore();
     const open = vi.spyOn(ui, "openNewTask");

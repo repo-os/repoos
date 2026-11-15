@@ -242,12 +242,6 @@ const countLabel = computed(() => {
   return `${matchingCount.value} ${noun}`;
 });
 
-const emptyTitle = computed(() => {
-  if (status.value === "attention") return "Nothing needs attention";
-  if (status.value === "all") return "No tasks";
-  return `No ${STATUS_LABELS[status.value].toLowerCase()} tasks`;
-});
-
 const filtersActive = computed(
   () =>
     status.value !== "attention" ||
@@ -258,6 +252,20 @@ const filtersActive = computed(
     story.value !== "any" ||
     mine.value,
 );
+
+const emptyTitle = computed(() => {
+  if (status.value === "attention") return "Nothing needs attention";
+  if (status.value === "all") return "No tasks";
+  return `No ${STATUS_LABELS[status.value].toLowerCase()} tasks`;
+});
+
+const emptyHint = computed(() => {
+  if (filtersActive.value) return "Clear the filters to see the full queue.";
+  if (status.value === "attention") {
+    return "No open tasks are waiting on you. Show all statuses to see done work.";
+  }
+  return "Nothing to show yet.";
+});
 
 function showMore(section: QueueSection): void {
   page.value = { ...page.value, [section.id]: section.limit + PAGE_SIZE };
@@ -542,10 +550,11 @@ function openTask(task: Task): void {
       </div>
       <div v-else-if="!matchingCount" class="mobile-queue-state">
         <h2>{{ emptyTitle }}</h2>
-        <p>
-          {{ filtersActive ? "Clear the filters to see the full queue." : "Nothing to show yet." }}
-        </p>
+        <p>{{ emptyHint }}</p>
         <Button v-if="filtersActive" variant="outline" @click="resetQueue"> Show all tasks </Button>
+        <Button v-else-if="status === 'attention'" variant="outline" @click="status = 'all'">
+          Show all statuses
+        </Button>
       </div>
       <template v-else>
         <section
@@ -690,8 +699,8 @@ function openTask(task: Task): void {
 }
 .mobile-search-clear {
   display: inline-grid;
-  width: 38px;
-  height: 38px;
+  width: 40px;
+  height: 40px;
   flex: 0 0 auto;
   place-items: center;
   border: 0;
@@ -791,7 +800,7 @@ function openTask(task: Task): void {
 }
 .mobile-chip {
   display: inline-flex;
-  min-height: 34px;
+  min-height: 40px;
   flex: 0 0 auto;
   align-items: center;
   padding: 0 11px;
@@ -814,7 +823,9 @@ function openTask(task: Task): void {
   border-style: dashed;
 }
 .mobile-chip-select {
-  min-height: 34px;
+  width: auto;
+  max-width: 170px;
+  min-height: 40px;
   flex: 0 0 auto;
   padding: 0 11px;
   border-radius: 999px;
