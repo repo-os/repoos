@@ -11,7 +11,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/mobile-web-polish-44px-tap-targets-no-io
 created_at: "2026-11-15T17:24:09Z"
-updated_at: "2026-11-15T23:18:42Z"
+updated_at: "2026-11-15T23:18:54Z"
 last_close_out_gate_ms: 69445
 last_close_out_gate_at: "2026-11-15T23:18:27.740Z"
 review_passes: 1
@@ -122,3 +122,4 @@ Smaller mobile issues found on main `23dc737` (Chromium mobile emulation; 360/39
 - 2026-11-15T22:46:36Z · note: review pass 1: good to go
 - 2026-11-15T23:18:27Z · close-out gate completed in 69s
 - 2026-11-15T23:18:42Z · status done→done, release:success
+- 2026-11-15T23:18:54Z · message_dropped: 1 queued message(s) discarded — task is done
