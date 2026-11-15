@@ -81,6 +81,7 @@ export async function buildTailnetDiscoveryPayload(
       startedAt: row.entry.startedAt,
       activeEngineers: row.entry.activeEngineers ?? 0,
       engineersUpdatedAt: row.entry.engineersUpdatedAt ?? null,
+      allowlistGroup: row.entry.allowlistGroup,
       uptimeSeconds: row.uptimeSeconds,
       valid: row.valid,
       staleReason: row.staleReason,

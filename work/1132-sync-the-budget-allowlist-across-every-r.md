@@ -9,10 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/allowlist-groups-projects-that-opt-into-
 created_at: "2026-11-15T15:20:04Z"
-updated_at: "2026-11-15T19:07:36Z"
-review_passes: 2
-review_rounds: 1
-routing_switches: 1
+updated_at: "2026-11-15T18:03:16Z"
 ---
 ## Problem
 The budget allowlist (`[[budget.allowlist]]`: CLIs, models, paused, pausedUntil, pausedModels, pausedReason) lives only in each repo's committed `repoos.toml`. Nick works for several companies. Each company has its own coding agents, model providers, accounts and quotas, and its projects are spread across his MacBook, bee and thinkpad. Projects that belong together, because they share the same company and the same logins, have to be hand-edited one by one. Nothing ties them together, and nothing notices when they drift apart.
@@ -40,51 +37,10 @@ The tailnet as a whole must **not** share one allowlist. Projects for different 
 ## Notes for AI
 Start from how `budget.allowlist` is read and merged today, `collectTailnetServers` in src/commands/servers.ts, src/core/tailnet-servers.ts, and the `/api/servers/tailnet` route in src/server/routes/servers.ts. Keep the design for one machine with several groups working with no network access. Tailnet propagation is a layer on top. Don't make the tailnet a single group by default.
 
-## Shots
-```json
-[
-{
-"label": "Budget Controls: join an allowlist group",
-"target": "default",
-"route": "/agents?tab=budget-controls",
-"highlight": "[data-testid=\"budget-join-group\"]"
-}
-]
-```
-
 ## Activity
 
 - 2026-11-15T15:20:04Z · created · t@t
 - 2026-11-15T15:25:40Z · title, body: Problem (added 3, removed 2); Desired UX (added 6, removed 3); Acceptance criteria (added 6, removed 5); Notes for AI (added 1, removed 1)
 - 2026-11-15T16:09:55Z · status inbox→ready
 - 2026-11-15T16:58:12Z · status ready→active, branch
-- 2026-11-15T17:45:46Z · body
-- 2026-11-15T17:53:38Z · body
-- 2026-11-15T17:54:06Z · CTO nudge: held — handoff gate is running
-- 2026-11-15T18:03:16Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
 - 2026-11-15T18:03:16Z · status active→review
-- 2026-11-15T18:03:17Z · message_queued at 2026-11-15T18:03:17.089Z
-- 2026-11-15T18:05:03Z · note: review pass 1: needs some work
-- 2026-11-15T18:05:04Z · status review→active
-- 2026-11-15T18:05:06Z · CTO nudge: held — an undelivered message is already queued
-- 2026-11-15T18:06:25Z · message_delivered: 1 message(s)
-- 2026-11-15T18:29:07Z · message_queued at 2026-11-15T18:29:07.007Z
-- 2026-11-15T18:29:07Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-15T18:30:31Z · CTO nudge: held — an undelivered message is already queued
-- 2026-11-15T18:33:40Z · queued message undelivered for 5m and the engineer produced no output — ending the turn so it is delivered
-- 2026-11-15T18:33:40Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 130) · last assistant: Round-2 fixes are committed in the self-check checkpoint (`3e00712`) and the scoped check is running. Waiting for it to complete. · stderr: (empty)
-- 2026-11-15T18:33:55Z · message_delivered: 1 message(s)
-- 2026-11-15T18:34:07Z · message_queued at 2026-11-15T18:34:07.083Z
-- 2026-11-15T18:34:07Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-15T18:37:10Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
-- 2026-11-15T18:37:10Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 130) · last assistant: Round-2 fixes are committed in the self-check checkpoint (`3e00712`) and the scoped check is running. Waiting for it to complete. · stderr: (empty)
-- 2026-11-15T18:37:10Z · status active→review
-- 2026-11-15T18:37:11Z · message_delivered: 1 message(s)
-- 2026-11-15T18:37:11Z · note: handoff requested (cli)
-- 2026-11-15T18:39:07Z · CTO nudge: held — handoff gate is running
-- 2026-11-15T18:43:41Z · status active→review
-- 2026-11-15T18:57:42Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
-- 2026-11-15T18:57:43Z · handoff failed · task-file handoff failed at review · Engineering report narrative is 1263 words; the hard limit is 1,200 words of narrative. Shorten it and request handoff again.
-- 2026-11-15T18:57:43Z · note: review pass 2: good to go
-- 2026-11-15T19:07:36Z · handoff failed · remote validation failed: test failure: tests/remote-host-pool.test.ts > host-side lock (server + standalone CLI share one limit) > lets a holder expire the waiter with a clear timeout instead of a red gate on bee — fix it in the feature branch and re-run the gate
-- 2026-11-15T19:07:36Z · message_queued at 2026-11-15T19:07:36.627Z

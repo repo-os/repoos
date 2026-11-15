@@ -547,6 +547,7 @@ models = ["sonnet"]
 
 | Field | Type | Default | Committed | Effect |
 | --- | --- | --- | --- | --- |
+| `budget.allowlistGroup` | string | *(none)* | yes | Join a machine-local allowlist group. Every project that declares the same name shares one allowlist and pause state on this machine, and — when tailnet discovery is on — on other machines. Unset keeps project-only behaviour. |
 | `budget.allowlist[].cli` | string | *(required)* | yes | A coding-agent CLI id (the `AGENT_CLIS` string, e.g. `opencode`, `claude code`). An agent driver may only use a listed CLI. |
 | `budget.allowlist[].models` | array of strings | *(required)* | yes | The model ids allowed for that CLI. A model not listed is refused. Rows for the same `cli` are merged; a row with no models is dropped. |
 | `budget.allowlist[].paused` | boolean | `false` | yes | Pauses the whole agent (every model on the row) without removing it. A paused entry is never selected by defaults, Start, dispatch, failover or agent drivers. |
@@ -568,6 +569,42 @@ instead, so it does not dirty main. Your pause on the same agent or model wins.
 An expired `pausedUntil` resumes with no rewrite. On startup, automatic pause
 fields still sitting in `repoos.toml` are copied into that runtime file and then
 read from there.
+
+### Allowlist groups: one allowlist for projects that belong together
+
+Companies and machines do not share one allowlist. A project **opts in** to a
+named group in its own `repoos.toml`:
+
+```toml
+budget.allowlistGroup = "personal"
+```
+
+The group's CLIs, models and pause state live **outside every repo**, in
+`~/.config/repoos/allowlist-groups/<name>.toml` on each machine
+(`$REPOOS_ALLOWLIST_GROUPS_DIR` overrides the directory). That file is machine
+state: it is never committed or pushed, it has a `version` and `updatedAt` so
+the newest change wins, and it never holds a login or credential. The committed
+`[[budget.allowlist]]` rows stay this project's overrides: the group is the
+base, a project row for the same CLI unions its models and can add a pause on
+top (a group pause is never silently removed by a local row).
+
+A pause or resume from **Budget Controls** or from
+`repoos allowlist pause|resume <cli> [model] [--until <date>] [--reason "…"]`
+updates the group. Pausing asks for confirmation and lists every member project
+and host that will be updated, then reports **applied**, **unreachable** or
+**refused** for each. Members on this machine share the group file directly.
+Members on other machines are found with `GET /api/servers/tailnet` (the same
+trusted discovery as Hub): only servers whose project declares the **same group
+name** are included, and the update is applied over the SSH credentials that
+discovery already uses (`repoos allowlist group apply`), never an
+unauthenticated HTTP write. A member that is not logged in to an allowed CLI is
+reported as such on that host; credentials are never synced.
+
+Budget Controls shows the group name and a **group** / **project** badge on each
+entry. When this project's own rows change a group entry, a **drift** warning
+lists what differs and offers **Re-sync from group** (drops the local overrides
+for CLIs the group defines; project-only additions stay). Timed pauses end on
+their own on every member because `pausedUntil` is evaluated at selection time.
 
 When an allowlist entry is paused, selection falls back to the next allowed
 pair that is not paused and records the swap (and the reason) in the task's

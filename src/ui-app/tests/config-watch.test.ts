@@ -10,6 +10,7 @@ import { applyReloadedConfig, loadConfig } from "../../core/config";
 import type { RepoOSConfig } from "../../core/types";
 import { ConfigWatcher } from "../../server/config-watch";
 import { PreviewManager, resolvePreviewTarget } from "../../server/preview";
+import { writeAllowlistGroup } from "../../core/allowlist-groups";
 import type { Task } from "../../core/types";
 
 const roots: string[] = [];
@@ -61,6 +62,46 @@ describe("ConfigWatcher", () => {
     expect(manager.get("nope")).toBeNull();
 
     watcher.stop();
+  });
+
+  it("adopts a group-file pause written outside the repo root (#1132)", () => {
+    const groupDir = mkdtempSync(join(tmpdir(), "repoos-config-watch-groups-"));
+    roots.push(groupDir);
+    const previous = process.env.REPOOS_ALLOWLIST_GROUPS_DIR;
+    process.env.REPOOS_ALLOWLIST_GROUPS_DIR = groupDir;
+    try {
+      const root = tmpRoot('workDir = "work"\nbudget.allowlistGroup = "personal"\n');
+      writeAllowlistGroup({
+        name: "personal",
+        version: 1,
+        updatedAt: "2026-11-16T10:00:00.000Z",
+        allowlist: [{ cli: "codex", models: ["gpt-6"] }],
+      });
+      const holder = { config: loadConfig(root) };
+      const onChange = vi.fn();
+      const watcher = new ConfigWatcher({ root, holder, onChange });
+      watcher.start();
+      expect(holder.config.budget?.allowlist?.[0]?.paused).toBeUndefined();
+
+      writeAllowlistGroup({
+        name: "personal",
+        version: 2,
+        updatedAt: "2026-11-16T11:00:00.000Z",
+        allowlist: [{ cli: "codex", models: ["gpt-6"], paused: true, pausedReason: "quota" }],
+      });
+
+      expect(watcher.reloadIfChanged()).toBe(true);
+      expect(holder.config.budget?.allowlist?.[0]).toMatchObject({
+        cli: "codex",
+        paused: true,
+        pausedReason: "quota",
+      });
+      expect(onChange).toHaveBeenCalledOnce();
+      watcher.stop();
+    } finally {
+      if (previous === undefined) delete process.env.REPOOS_ALLOWLIST_GROUPS_DIR;
+      else process.env.REPOOS_ALLOWLIST_GROUPS_DIR = previous;
+    }
   });
 
   it("is a no-op when file content is unchanged", () => {

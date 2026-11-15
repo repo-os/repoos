@@ -67,6 +67,11 @@ import {
   type NativeLaunchMode,
 } from "./types.js";
 import { agentModelAllowRows } from "./budget-allowlist.js";
+import {
+  loadAllowlistGroup,
+  mergeAllowlistRows,
+  normalizeAllowlistGroupName,
+} from "./allowlist-groups.js";
 import { hydrateAllowlistRuntime } from "./budget-runtime-state.js";
 import {
   DEFAULT_ENGINEER_CRASH_FAILOVER_THRESHOLD,
@@ -2505,11 +2510,39 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
     // [[budget.allowlist]] (#0764) — the agent-driver allowlist. Malformed rows
     // are dropped with a warning rather than failing config load (the safe
     // behaviour is the unrestricted default, so a typo never blocks the server).
-    const budgetAllowlist = hydrateAllowlistRuntime(
+    const projectAllowlist = hydrateAllowlistRuntime(
       root,
       agentModelAllowRows(parsed["budget.allowlist"]),
     );
-    if (budgetAllowlist.length) cfg.budget = { allowlist: budgetAllowlist };
+    // budget.allowlistGroup (#1132) — a project can join a machine-local group.
+    // The group file is the base; the project's own rows layer on top. A
+    // missing group file is not an error (the project works alone until the
+    // group is created); a corrupt one warns and falls back to the project
+    // rows so a bad hand edit can never un-pause everything.
+    const rawGroup = parsed["budget.allowlistGroup"];
+    const groupName = normalizeAllowlistGroupName(rawGroup);
+    if (!groupName && typeof rawGroup === "string" && rawGroup.trim()) {
+      console.warn(
+        `[repoos] budget.allowlistGroup ${JSON.stringify(rawGroup)} is not a valid group name — using this project's own allowlist only`,
+      );
+    }
+    let budgetAllowlist = projectAllowlist;
+    if (groupName) {
+      const loaded = loadAllowlistGroup(groupName);
+      if (loaded?.group) {
+        budgetAllowlist = mergeAllowlistRows(loaded.group.allowlist, projectAllowlist);
+      } else if (loaded?.invalid) {
+        console.warn(
+          `[repoos] allowlist group "${groupName}" could not be read — using this project's own [[budget.allowlist]] rows`,
+        );
+      }
+    }
+    if (budgetAllowlist.length || groupName) {
+      cfg.budget = {
+        allowlist: budgetAllowlist,
+        ...(groupName ? { allowlistGroup: groupName } : {}),
+      };
+    }
     // [model_routing] (#0791) — adaptive agent/model routing. Default off; a
     // malformed value is dropped with a warning and never blocks server boot.
     const routingRaw: Record<string, unknown> = {};
@@ -4495,6 +4528,25 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         "row or one model with paused / pausedUntil / pausedReason / pausedModels instead of " +
         "removing it. Edit it on the Agents page's Budget Controls tab.",
     },
+    {
+      // Join a machine-local allowlist group (#1132). Like `budget.allowlist`,
+      // the Settings control is the Agents page's Budget Controls tab; this
+      // entry makes the key discoverable in the Settings search overlay.
+      key: "budget.allowlistGroup",
+      label: "Allowlist group",
+      type: "string",
+      tier: "live",
+      restartRequired: false,
+      default: "",
+      description:
+        'Name of a machine-local allowlist group this project joins (for example "personal" ' +
+        'or "acme"). The group\'s CLIs, models and pause state live in ' +
+        "~/.config/repoos/allowlist-groups/<name>.toml, never in this repo, and are shared with " +
+        "every project that declares the same group — on this machine and, when tailnet " +
+        "discovery is on, on other machines. This project's own [[budget.allowlist]] rows layer " +
+        "on top as overrides. Leave it empty for project-only behaviour. Edit it on the Agents " +
+        "page's Budget Controls tab.",
+    },
     // Adaptive agent/model routing (#0791). Default off; shadow recommended first.
     {
       key: "model_routing.mode",
@@ -4750,6 +4802,8 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "shot.maxAutoShots",
   // Agent-driver budget controls (#0764) — the `[[budget.allowlist]]` rows.
   "budget.allowlist.cli",
+  // Machine-local allowlist group this project joins (#1132).
+  "budget.allowlistGroup",
   "budget.allowlist.models",
   // Pausing an allowlist row/model without removing it (#0850).
   "budget.allowlist.paused",

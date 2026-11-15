@@ -41,6 +41,7 @@ import { cmdService } from "../commands/service.js";
 import { cmdServers } from "../commands/servers.js";
 import {
   cmdAgentsRunning,
+  cmdAllowlist,
   cmdConfig,
   cmdDone,
   cmdLandable,
@@ -421,6 +422,11 @@ function main(): void {
       break;
     case "agents":
       void cmdAgentsRunning(rest).then((code) => {
+        if (code !== 0) process.exitCode = code;
+      });
+      break;
+    case "allowlist":
+      void cmdAllowlist(rest).then((code) => {
         if (code !== 0) process.exitCode = code;
       });
       break;

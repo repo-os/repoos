@@ -58,6 +58,12 @@ const CONTROL_API_MATCHERS: Matcher[] = [
   re("POST", /^\/api\/dev\/targets\/([^/]+)\/(start|stop|restart)$/.source),
   exact("GET", "/api/config"),
   exact("PATCH", "/api/config"),
+  // `repoos allowlist …` (#1132): group state, pause/resume + tailnet
+  // propagation, re-sync, and the authenticated receiver a peer's CLI calls.
+  exact("GET", "/api/budget/allowlist-group"),
+  exact("POST", "/api/budget/allowlist-group/pause"),
+  exact("POST", "/api/budget/allowlist-group/resync"),
+  exact("POST", "/api/budget/allowlist-group/apply"),
   exact("GET", "/api/remote-validation/status"),
   exact("POST", "/api/remote-validation/test"),
   exact("GET", "/api/agents/running"),
