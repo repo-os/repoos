@@ -11,7 +11,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/mobile-web-task-detail-one-full-touch-de
 created_at: "2026-11-15T17:24:03Z"
-updated_at: "2026-11-15T22:07:51Z"
+updated_at: "2026-11-15T22:09:24Z"
 dev_error_count: 3
 ---
 ## Problem
@@ -143,3 +143,4 @@ On a phone there's a single task detail, whichever way it was opened (card, sear
 - 2026-11-15T22:06:16Z · note: ui verification passed: 2 of 3 shots captured with clean console
 - 2026-11-15T22:06:17Z · message_queued at 2026-11-15T22:06:17.495Z
 - 2026-11-15T22:07:51Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-15T22:09:24Z · watchdog: restarting engineer because a queued message waited 3m with no live process
