@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/allowlist-groups-projects-that-opt-into-
 created_at: "2026-11-15T15:20:04Z"
-updated_at: "2026-11-15T19:37:32Z"
+updated_at: "2026-11-15T19:49:09Z"
 last_close_out_gate_ms: 1359721
 last_close_out_gate_at: "2026-11-15T19:37:15.344Z"
 review_passes: 2
@@ -93,3 +93,4 @@ Start from how `budget.allowlist` is read and merged today, `collectTailnetServe
 - 2026-11-15T19:07:36Z · message_queued at 2026-11-15T19:07:36.627Z
 - 2026-11-15T19:37:15Z · close-out gate completed in 1360s
 - 2026-11-15T19:37:32Z · status done→done, release:success
+- 2026-11-15T19:49:09Z · message_dropped: 1 queued message(s) discarded — task is done
