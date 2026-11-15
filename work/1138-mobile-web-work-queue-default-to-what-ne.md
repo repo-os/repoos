@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-11-15T20:21:08Z"
-review_passes: 1
+last_close_out_gate_ms: 665882
+last_close_out_gate_at: "2026-11-15T21:27:33.417Z"
 id: "1138"
 title: "Mobile web Work queue: default to what needs attention, add inline search and filters, show held and human tasks"
 type: feature
@@ -13,6 +13,8 @@ assigned_to: ai
 created_by: t@t
 branch: feat/mobile-web-work-queue-default-to-what-ne
 created_at: "2026-11-15T17:24:06Z"
+updated_at: "2026-11-15T21:27:33Z"
+review_passes: 1
 ---
 ## Problem
 Nick: on a phone it's "really hard to find the right task and do anything normal". On main `23dc737`, the mobile Work queue (MobileWorkQueue.vue):
@@ -107,4 +109,5 @@ Nick: on a phone it's "really hard to find the right task and do anything normal
 - 2026-11-15T20:20:13Z · status active→review
 - 2026-11-15T20:20:14Z · message_queued at 2026-11-15T20:20:14.117Z
 - 2026-11-15T20:21:07Z · note: review pass 1: good to go
+- 2026-11-15T21:27:33Z · close-out gate completed in 666s
 
