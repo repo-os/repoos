@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/publish-repoos-hub-android-apk-on-github
 created_at: "2026-11-15T13:35:11Z"
-updated_at: "2026-11-15T14:59:07Z"
+updated_at: "2026-11-15T15:10:31Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-15T14:03:27.994Z: repoos check failed: ui verification failed: runner result omitted the UI verification record: ui verification: preview for \"Landing page\" did not start: preview server for #1128 did not become ready"
 dev_error_count: 1
@@ -47,16 +47,16 @@ The Tiao app (a separate repo) is the reference for how the APK should be shared
 ```json
 [
 {
-  "label": "Landing page: RepoOS Hub for Android download card",
-  "target": "Landing page",
-  "route": "/",
-  "highlight": "#android-hub"
+"label": "Landing page: RepoOS Hub for Android download card",
+"target": "Landing page",
+"route": "/",
+"highlight": "#android-hub"
 },
 {
-  "label": "Android Hub guide: download and requirements",
-  "target": "Docs site",
-  "route": "/android-hub",
-  "highlight": "#download-and-requirements"
+"label": "Android Hub guide: download and requirements",
+"target": "Docs site",
+"route": "/android-hub",
+"highlight": "#download-and-requirements"
 }
 ]
 ```
@@ -96,3 +96,4 @@ The Tiao app (a separate repo) is the reference for how the APK should be shared
 - 2026-11-15T14:37:41Z · message_delivered: 1 message(s)
 - 2026-11-15T14:49:51Z · body
 - 2026-11-15T14:59:07Z · body
+- 2026-11-15T15:10:31Z · body
