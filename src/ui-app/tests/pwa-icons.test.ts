@@ -7,8 +7,15 @@
  * isn't a fragment.
  */
 import { afterEach, describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { renderPwaIcon } from "../../server/icons.js";
-import { buildPwaManifest, serveIcon, setIconRenderer } from "../../server/routes/ui.js";
+import {
+  buildPwaManifest,
+  serveAppleTouchIcon,
+  serveIcon,
+  setIconRenderer,
+} from "../../server/routes/ui.js";
 
 const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
 
@@ -87,6 +94,13 @@ describe("buildPwaManifest (#0645)", () => {
       expect(icon.src).not.toContain("#");
     }
   });
+
+  it("opens the Work queue and allows rotation (#1139)", () => {
+    expect(manifest.start_url).toBe("/work");
+    expect(manifest.orientation).toBe("any");
+    // Scope stays at the origin so every route opens inside the installed app.
+    expect(manifest.scope).toBe("/");
+  });
 });
 
 describe("serveIcon (#0645)", () => {
@@ -134,5 +148,44 @@ describe("serveIcon (#0645)", () => {
 
   it("rejects unsupported sizes", () => {
     expect(run("/icons/icon-64.png", "64").res.statusCode).toBe(404);
+  });
+});
+
+describe("apple-touch-icon (#1139)", () => {
+  afterEach(() => setIconRenderer(() => Buffer.from("")));
+
+  it("serves a 180x180 PNG the iOS home screen can use", () => {
+    const calls: Array<{ size: number; color?: string; theme?: string; maskable?: boolean }> = [];
+    setIconRenderer((size, color, theme, maskable) => {
+      calls.push({ size, color, theme, maskable });
+      return Buffer.from("png");
+    });
+    const res = {
+      statusCode: 0,
+      headers: {} as Record<string, string>,
+      writeHead(code: number, headers: Record<string, string>) {
+        res.statusCode = code;
+        res.headers = headers;
+        return res;
+      },
+      end() {
+        /* body unused */
+      },
+    };
+    serveAppleTouchIcon(
+      {} as never,
+      { url: "/apple-touch-icon.png?c=%239E8FD0&theme=light" } as never,
+      res as never,
+      {} as never,
+    );
+    expect(res.statusCode).toBe(200);
+    expect(res.headers["Content-Type"]).toBe("image/png");
+    expect(calls).toEqual([{ size: 180, color: "#9e8fd0", theme: "light", maskable: false }]);
+  });
+
+  it("is linked from index.html so iOS does not screenshot the page", () => {
+    const html = readFileSync(join(import.meta.dirname, "../index.html"), "utf8");
+    expect(html).toContain('rel="apple-touch-icon"');
+    expect(html).toContain('href="/apple-touch-icon.png"');
   });
 });
