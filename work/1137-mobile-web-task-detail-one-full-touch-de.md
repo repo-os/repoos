@@ -166,3 +166,4 @@ On a phone there's a single task detail, whichever way it was opened (card, sear
 - 2026-11-15T23:01:08Z · status active→review
 - 2026-11-15T23:04:22Z · note: ui verification passed: 2 of 3 shots captured with clean console
 - 2026-11-15T23:04:23Z · message_queued at 2026-11-15T23:04:23.600Z
+- 2026-11-15T23:04:23Z · note: review pass 2: good to go
