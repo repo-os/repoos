@@ -1,6 +1,4 @@
 // @vitest-environment jsdom
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
 import { describe, expect, it, beforeEach } from "vitest";
 import {
   normalizeAppearanceMode,
@@ -14,7 +12,6 @@ import {
   mirrorThemePrefs,
 } from "../../../mobile/src/theme-core";
 import { fixtureServers, fixtureInitialRoute, readHubFixture } from "../../../mobile/src/fixture";
-import { loadConfig } from "../../core/config.js";
 import { resolveShotTargets } from "../../core/shot-targets.js";
 
 function stubMatchMedia(dark = true) {
@@ -130,9 +127,18 @@ describe("mobile hub fixtures and navigation", () => {
 
 describe("mobile preview target", () => {
   it("resolves repoos-mobile-dev from mobile/** path changes", () => {
-    const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "../../..");
-    const config = loadConfig(repoRoot);
-    const r = resolveShotTargets(config.preview, "mobile", ["mobile/src/App.vue"]);
+    const preview = {
+      targets: [
+        {
+          name: "repoos-mobile-dev",
+          areas: ["mobile"],
+          paths: ["mobile/**"],
+          command: "bun run dev -- --port {port} --host {host} --strictPort",
+          cwd: "mobile",
+        },
+      ],
+    };
+    const r = resolveShotTargets(preview, "mobile", ["mobile/src/App.vue"]);
     expect(r.names).toContain("repoos-mobile-dev");
   });
 });
