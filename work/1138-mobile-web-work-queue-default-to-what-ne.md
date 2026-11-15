@@ -2,7 +2,7 @@
 id: "1138"
 title: "Mobile web Work queue: default to what needs attention, add inline search and filters, show held and human tasks"
 type: feature
-status: active
+status: review
 paths: [src/ui-app/src/components/MobileWorkQueue.vue]
 priority: p1
 area: web
@@ -103,3 +103,4 @@ Nick: on a phone it's "really hard to find the right task and do anything normal
 - 2026-11-15T20:17:56Z · body
 - 2026-11-15T20:18:59Z · CTO nudge: held — handoff gate is running
 - 2026-11-15T20:20:13Z · note: ui verification passed: 2 of 2 shots captured with clean console
+- 2026-11-15T20:20:13Z · status active→review
