@@ -45,3 +45,4 @@ The CLI can already discover them: `repoos servers --tailscale` (`collectTailnet
 - 2026-11-15T13:16:13Z · status inbox→ready
 - 2026-11-15T13:16:15Z · status ready→active, branch
 - 2026-11-15T13:45:20Z · message_queued at 2026-11-15T13:45:20.238Z
+- 2026-11-15T13:45:20Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
