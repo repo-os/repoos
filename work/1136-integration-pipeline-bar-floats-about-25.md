@@ -2,16 +2,16 @@
 id: "1136"
 title: "Integration pipeline bar floats about 250px above the bottom over Work content (phone and desktop, regression on main)"
 type: bug
-status: ready
+status: active
 paths: [src/ui-app/src/views/WorkView.vue, src/ui-app/src/style.css, src/ui-app/src/components/IntegrationStatusBar.vue]
 priority: p1
 area: web
 story: RepoOS Hub for Mobile
 assigned_to: ai
 created_by: t@t
-branch: ""
+branch: feat/integration-pipeline-bar-floats-about-25
 created_at: "2026-11-15T17:23:26Z"
-updated_at: "2026-11-15T19:49:05Z"
+updated_at: "2026-11-15T19:49:07Z"
 ---
 ## Problem
 On current main (`23dc737`, which includes #1130), the collapsed "Integration pipeline idle" bar on `/work` no longer sits just above the bottom nav. It floats about 250px higher, over the task cards. This happens at every width:
@@ -55,3 +55,4 @@ Measured with Playwright and CDP: `.ibar-wrap` (position: fixed; bottom: 74px) g
 - 2026-11-15T17:23:26Z · created · t@t
 - 2026-11-15T17:23:27Z · screenshots
 - 2026-11-15T19:49:05Z · status inbox→ready
+- 2026-11-15T19:49:07Z · status ready→active, branch
