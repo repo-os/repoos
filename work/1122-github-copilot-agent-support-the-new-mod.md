@@ -85,3 +85,4 @@ Read work/1088-*.md and src/core/copilot-auto-tier.ts first. Copilot usage is bi
 - 2026-11-15T00:47:03Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: Restoring `repoos.toml` from main (close-out blocked config changes), updating the engineering report, and re-verifying. · stderr: (empty)
 - 2026-11-15T00:47:03Z · status active→review
 - 2026-11-15T00:47:03Z · message_delivered: 1 message(s)
+- 2026-11-15T00:47:04Z · note: handoff requested (cli)
