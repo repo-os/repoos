@@ -85,3 +85,4 @@ The Tiao app (a separate repo) is the reference for how the APK should be shared
 - 2026-11-15T14:33:24Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 130) · last assistant: Implementation is in place and locally verified. Now running the scoped check gate. · stderr: (empty)
 - 2026-11-15T14:33:24Z · message_delivered: 1 message(s)
 - 2026-11-15T14:33:47Z · message_queued at 2026-11-15T14:33:47.073Z
+- 2026-11-15T14:33:47Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
