@@ -747,6 +747,15 @@ kind = "process"
 label = "RepoOS Hub (macOS app)"
 command = "just macos-build && derived=\"${REPOOS_MACOS_DERIVED_DATA:-$HOME/Library/Caches/RepoOS/macos-derived-data}\" && exec env LLVM_PROFILE_FILE=/dev/null \"$derived/Build/Products/Debug/RepoOS Hub.app/Contents/MacOS/RepoOS Hub\""
 
+[[dev.targets]]
+name = "android-phone"
+kind = "artifact"
+label = "RepoOS Hub (Android, install on phone)"
+# Phone address (ip:port) comes from $REPOOS_PHONE or ~/.config/repoos/phone,
+# never this file. Run `adb tcpip 5555` once over USB after a phone reboot.
+command = "just build-android && phone=\"${REPOOS_PHONE:-$(cat \"$HOME/.config/repoos/phone\" 2>/dev/null)}\" && [ -n \"$phone\" ] || { echo 'set REPOOS_PHONE or ~/.config/repoos/phone to ip:port' >&2; exit 1; }; adb connect \"$phone\" && adb -s \"$phone\" install -r mobile/app-debug.apk && adb -s \"$phone\" shell monkey -p org.repoos.mobile.dev -c android.intent.category.LAUNCHER 1"
+artifactPath = "mobile/app-debug.apk"
+
 [[budget.allowlist]]
 cli = "opencode"
 models = ["opencode-go/deepseek-v4.1-flash", "opencode-go/glm-5.3-flash", "opencode-go/mimo-v2.6-flash", "deepinfra/deepseek-ai/DeepSeek-V4.1-Flash"]
