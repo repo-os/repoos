@@ -89,3 +89,4 @@ Hold-to-drag feel, haptics and iOS gesture behavior are covered by code and comp
 - 2026-11-15T16:49:07Z · message_queued at 2026-11-15T16:49:07.009Z
 - 2026-11-15T16:49:07Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-15T16:50:15Z · status active→review
+- 2026-11-15T16:50:15Z · note: Task body is underspecified: missing sections: Notes for AI
