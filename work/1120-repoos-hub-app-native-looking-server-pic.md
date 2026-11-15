@@ -211,3 +211,4 @@ Read docs/mobile-architecture.md, docs/adr/0011-mobile-web-ui.md (the native she
 - 2026-11-15T01:50:06Z · note: ui verification passed: 1 shot captured with clean console
 - 2026-11-15T01:50:07Z · status active→review
 - 2026-11-15T01:50:07Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-15T01:50:07Z · message_queued at 2026-11-15T01:50:07.836Z
