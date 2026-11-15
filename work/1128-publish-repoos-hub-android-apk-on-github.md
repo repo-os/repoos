@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/publish-repoos-hub-android-apk-on-github
 created_at: "2026-11-15T13:35:11Z"
-updated_at: "2026-11-15T13:36:31Z"
+updated_at: "2026-11-15T13:53:36Z"
 ---
 ## Problem
 RepoOS Hub for Android (`mobile/`, Capacitor app `org.repoos.mobile`) has no public download. The only way to get it today is to build it locally with `just build-android` and sideload the debug APK over adb. The macOS Hub already has a public download: `.github/workflows/macos-hub.yml` builds `RepoOSHub.dmg` on every stable `v*` tag and attaches it to the GitHub Release, and both the landing page (`landing/src/App.vue`, "Download for Mac" pointing at `https://github.com/repo-os/repoos/releases/latest/download/RepoOSHub.dmg`) and `user-docs/macos-hub.md` link to it. Android should have the same thing.
@@ -44,3 +44,4 @@ The Tiao app (a separate repo) is the reference for how the APK should be shared
 - 2026-11-15T13:35:11Z · created · t@t
 - 2026-11-15T13:36:29Z · status inbox→ready
 - 2026-11-15T13:36:31Z · status ready→active, branch
+- 2026-11-15T13:53:36Z · body
