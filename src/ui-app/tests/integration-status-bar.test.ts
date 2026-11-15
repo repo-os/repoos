@@ -1,4 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { mount, flushPromises } from "@vue/test-utils";
 import { createPinia, setActivePinia, type Pinia } from "pinia";
 import { nextTick } from "vue";
@@ -697,5 +699,40 @@ describe("IntegrationStatusBar", () => {
 
     expect(wrapper.get(".ibar-strip").attributes("aria-label")).toContain("Queue: #0455 #0456");
     expect(wrapper.find(".strip-queue").exists()).toBe(true);
+  });
+});
+
+/**
+ * The bar is a fixed overlay, so its wrapper must be a pure positioning layer:
+ * any padding on it enlarges the box upward and lifts the strip off the bottom
+ * (#1136). Geometry is asserted in the WebKit suite; these are the CSS rules
+ * that keep it true regardless of the `.main` child it hangs from.
+ */
+describe("IntegrationStatusBar layout (#1136)", () => {
+  const source = readFileSync(
+    resolve(__dirname, "../src/components/IntegrationStatusBar.vue"),
+    "utf8",
+  );
+  const scoped = source.split("<style scoped>")[1]!.split("</style>")[0]!;
+  const rule = (selector: string): string =>
+    scoped.match(
+      new RegExp(`(^|\\n)\\s*${selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*\\{[^}]*\\}`),
+    )?.[0] ?? "";
+
+  it("gives the fixed wrapper no layout padding of its own", () => {
+    const wrap = rule(".ibar-wrap");
+    expect(wrap).toContain("position: fixed;");
+    expect(wrap).not.toMatch(/\bpadding(-[a-z]+)?\s*:/);
+  });
+
+  it("floats above the bottom nav on phones and 14px from the bottom on desktop", () => {
+    // Phone: the tab bar is ~63px plus the safe-area inset, so 74px leaves a
+    // small gap above it. Desktop: the strip's own 14px margin.
+    expect(scoped).toMatch(
+      /@media \(max-width: 719\.98px\)[\s\S]*?\.ibar-wrap\s*\{[^}]*bottom:\s*calc\(74px \+ var\(--safe-bot\)\)/,
+    );
+    expect(scoped).toMatch(
+      /@media \(min-width: 720px\)[\s\S]*?\.ibar-wrap\s*\{[^}]*bottom:\s*14px/,
+    );
   });
 });

@@ -1401,11 +1401,16 @@
   min-height: 0;
   min-width: 0;
 }
-/* Flow pages without an internal scrollport scroll here; fill pages clip at the shell. */
+/* Flow pages without an internal scrollport scroll here; fill pages clip at the shell.
+   `.page-fixed-layer` is for `position: fixed` overlays a view renders as a `.main`
+   child (the Work integration bar). A fixed element is not a page: page padding on
+   it enlarges the wrapper upward, which lifts its content off the viewport bottom
+   (#1136 — the bar floated ~218px over the board). Fixed layers reserve their own
+   clearance in the scrollport behind them. */
 .main
   > :not(.spin):not(.page-scroll):not(.work-page):not(.agents-page):not(.ctx-page):not(
     .inputs-board-page
-  ) {
+  ):not(.page-fixed-layer) {
   overflow-y: auto;
   padding-bottom: var(--page-bottom-inset);
 }

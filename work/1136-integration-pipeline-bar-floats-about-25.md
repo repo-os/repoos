@@ -1,19 +1,20 @@
 ---
-last_close_out_gate_ms: 555401
-last_close_out_gate_at: "2026-11-15T20:34:39.951Z"
 id: "1136"
 title: "Integration pipeline bar floats about 250px above the bottom over Work content (phone and desktop, regression on main)"
 type: bug
-status: review
+status: done
 paths: [src/ui-app/src/views/WorkView.vue, src/ui-app/src/style.css, src/ui-app/src/components/IntegrationStatusBar.vue]
 priority: p1
 area: web
 story: RepoOS Hub for Mobile
+merged_commit: 6f3eb245b1ac096110cac8a31d8e4b7b41a108c6
 assigned_to: ai
 created_by: t@t
 branch: feat/integration-pipeline-bar-floats-about-25
 created_at: "2026-11-15T17:23:26Z"
 updated_at: "2026-11-15T20:34:39Z"
+last_close_out_gate_ms: 555401
+last_close_out_gate_at: "2026-11-15T20:34:39.951Z"
 review_passes: 1
 ---
 ## Problem
