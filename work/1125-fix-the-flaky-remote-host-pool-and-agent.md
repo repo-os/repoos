@@ -12,7 +12,7 @@ branch: feat/fix-the-flaky-remote-host-pool-and-agent
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-15T04:51:36Z"
-updated_at: "2026-11-15T06:17:50Z"
+updated_at: "2026-11-15T13:16:18Z"
 last_close_out_gate_ms: 587735
 last_close_out_gate_at: "2026-11-15T06:17:36.080Z"
 review_passes: 1
@@ -74,3 +74,4 @@ Follow AGENTS.md 'Is a repoos check failure a flake or a real bug?' and docs/deb
 - 2026-11-15T05:40:46Z · note: review pass 1: good to go
 - 2026-11-15T06:17:36Z · close-out gate completed in 588s
 - 2026-11-15T06:17:50Z · status done→done, release:success
+- 2026-11-15T13:16:18Z · message_dropped: 1 queued message(s) discarded — task is done
