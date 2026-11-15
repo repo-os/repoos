@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/mobile-web-work-queue-renders-the-mobile
 created_at: "2026-11-15T14:34:55Z"
-updated_at: "2026-11-15T15:25:14Z"
+updated_at: "2026-11-15T15:26:51Z"
 ---
 ## Problem
 On a phone browser (Nick's Nothing Phone 3a, Chrome, about 412px wide, opening `https://bee.tailc0c173.ts.net:7499` on the tiao project, server v0.5.83), the Work page draws two layouts at once:
@@ -79,3 +79,4 @@ Reproduced on this branch (based on current main) at 360, 390 and 412 px by moun
 - 2026-11-15T15:25:13Z · status active→review
 - 2026-11-15T15:25:14Z · note: Task body is underspecified: missing sections: Notes for AI
 - 2026-11-15T15:25:14Z · message_queued at 2026-11-15T15:25:14.449Z
+- 2026-11-15T15:26:51Z · note: review pass 1: good to go
