@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "1133"
 title: "Agents page: replace the Default agents last-runs log with a per-agent status dot"
 type: feature
@@ -100,3 +101,4 @@ The current list is `agentLastRuns` in src/ui-app/src/views/AgentsView.vue, fed 
 - 2026-11-15T17:19:06Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-15T17:22:09Z · watchdog: restarting engineer because a queued message waited 3m with no live process
 - 2026-11-15T17:27:12Z · message_queued at 2026-11-15T17:27:12.638Z
+
