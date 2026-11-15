@@ -91,3 +91,4 @@ Hold-to-drag feel, haptics and iOS gesture behavior are covered by code and comp
 - 2026-11-15T16:50:15Z · status active→review
 - 2026-11-15T16:50:15Z · note: Task body is underspecified: missing sections: Notes for AI
 - 2026-11-15T16:50:15Z · message_queued at 2026-11-15T16:50:15.771Z
+- 2026-11-15T16:50:15Z · note: shots: skipped — the diff (15 changed paths) touches no capture target's globs — no UI change to capture
