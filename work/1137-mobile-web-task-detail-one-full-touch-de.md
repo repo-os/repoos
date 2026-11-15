@@ -1,4 +1,5 @@
 ---
+close_out_repair_count: 1
 id: "1137"
 title: "Mobile web task detail: one full touch detail for every entry point (card view is a read-only stub; drawer tabs and close clipped)"
 type: bug
@@ -170,3 +171,4 @@ On a phone there's a single task detail, whichever way it was opened (card, sear
 - 2026-11-15T23:18:54Z · status review→active
 - 2026-11-15T23:18:54Z · note: close-out repair: merge-conflict
 - 2026-11-15T23:18:54Z · message_delivered: 1 message(s)
+
