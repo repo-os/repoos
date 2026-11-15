@@ -12,7 +12,7 @@ branch: feat/task-drawer-move-to-done-fails-instantly
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-14T16:14:26Z"
-updated_at: "2026-11-15T00:35:37Z"
+updated_at: "2026-11-15T00:43:53Z"
 last_close_out_gate_ms: 166185
 last_close_out_gate_at: "2026-11-15T00:35:16.731Z"
 review_passes: 2
@@ -116,3 +116,4 @@ Related: #1081 (introduced the reason parameter) and the audit that missed this.
 - 2026-11-14T19:43:53Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-15T00:35:16Z · close-out gate completed in 166s
 - 2026-11-15T00:35:37Z · status done→done, release:success
+- 2026-11-15T00:43:53Z · message_dropped: 1 queued message(s) discarded — task is done
