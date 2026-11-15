@@ -2,7 +2,7 @@
 id: "1139"
 title: "Mobile web polish: 44px tap targets, no iOS input zoom, touch-only hints, landscape/tablet layout, PWA start page and icon"
 type: bug
-status: inbox
+status: ready
 priority: p2
 area: web
 story: RepoOS Hub for Mobile
@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: t@t
 branch: ""
 created_at: "2026-11-15T17:24:09Z"
-updated_at: "2026-11-15T17:24:09Z"
+updated_at: "2026-11-15T20:38:21Z"
 ---
 ## Problem
 Smaller mobile issues found on main `23dc737` (Chromium mobile emulation; 360/390/412 portrait, 740/844 landscape, 768 tablet):
@@ -58,3 +58,4 @@ Smaller mobile issues found on main `23dc737` (Chromium mobile emulation; 360/39
 
 - 2026-11-15T17:24:09Z · created · t@t
 - 2026-11-15T17:24:09Z · screenshots
+- 2026-11-15T20:38:21Z · status inbox→ready
