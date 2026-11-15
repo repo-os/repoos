@@ -383,3 +383,31 @@ budget and could sleep forever when `waitSecs` was zero. The gate retry now
 checks the zero budget after its first failed attempt, matching the outer
 acquisition loop. A regression test holds the gate and verifies immediate
 timeout.
+
+## Close-out flakes on remote runners (#1125)
+
+Under a full gate on bee/thinkpad/mini, unrelated tasks kept failing the same
+timing-shaped tests:
+
+- `pressure-guard.test.ts` · `waitForPressureRelief` · relief probe — on the
+  second poll, `pressureSnapshot` mixed the injected memory probe with a **live
+  CPU-idle sample** (`sampleCpuIdlePercent`). On a busy validator host the idle
+  delta read as below `minIdleCpuPercent`, so relief never arrived and the test
+  timed out or called `onWaiting` more than once. **Pattern:** when a test
+  injects `MemoryPressureProbe`, do not also sample the host; reset CPU sampling
+  between tests if you must exercise idle gates.
+- `agent-review.test.ts` · reviewer chat — local `waitForAsync` / review-running
+  polls used a hard **10s** ceiling while the shared helpers use 60s. A slow
+  second `opencode` spawn under load missed the reviewer reply. **Pattern:** use
+  `WAIT_FOR_TIMEOUT_MS` / `WAIT_FOR_POLL_MS` from `tests/helpers.ts`.
+- `agent-drivers.test.ts` · engineer resource limits — `start()` can return
+  `queued: true` for a capacity slot while still `ok: true`; the test only
+  waited for the spawn log. **Pattern:** drain `isQueued` before asserting spawn
+  records.
+- `remote-host-pool.test.ts` host-side lock — (1) deferred-queue setup used
+  `sleep 0.2` before the lock shell; under scheduler delay the shell could scan
+  an empty queue and acquire. Use a **fixture gate file** the parent creates only
+  after dead/live wait entries exist (#1101). (2) orphan stale-break used
+  platform-specific `touch -t` only; remote validators need **`utimesSync` plus a
+  touch fallback** so `find -mmin` sees the slot as stale before asserting
+  acquisition — not a longer `waitSecs`.

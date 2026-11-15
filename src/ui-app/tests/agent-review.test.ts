@@ -24,7 +24,7 @@ import {
 import { tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
 import { startServer, type ServerHandle } from "../../server/server";
-import { waitFor } from "./helpers";
+import { WAIT_FOR_POLL_MS, WAIT_FOR_TIMEOUT_MS, waitFor } from "./helpers";
 
 /** Review finalization + bumpReviewPasses can exceed the default poll ceiling under full-suite load. */
 const REVIEW_PASS_WAIT_MS = 120_000;
@@ -188,10 +188,10 @@ async function waitForReviewRunning(
   id: string,
   running: boolean,
 ): Promise<void> {
-  const deadline = Date.now() + 10_000;
+  const deadline = Date.now() + WAIT_FOR_TIMEOUT_MS;
   while ((await getReview(server, id)).running !== running) {
     if (Date.now() > deadline) throw new Error(`timed out waiting for review running=${running}`);
-    await new Promise((resolve) => setTimeout(resolve, 25));
+    await new Promise((resolve) => setTimeout(resolve, WAIT_FOR_POLL_MS));
   }
 }
 
@@ -209,11 +209,15 @@ async function waitForHandoffSlotReleased(server: ServerHandle, id: string): Pro
 }
 
 /** Async poll for an observable outcome (the reviewer runs are fire-and-forget). */
-async function waitForAsync(fn: () => Promise<boolean>, label: string): Promise<void> {
-  const deadline = Date.now() + 10_000;
+async function waitForAsync(
+  fn: () => Promise<boolean>,
+  label: string,
+  timeoutMs = WAIT_FOR_TIMEOUT_MS,
+): Promise<void> {
+  const deadline = Date.now() + timeoutMs;
   while (!(await fn())) {
     if (Date.now() > deadline) throw new Error(`timed out waiting for ${label}`);
-    await new Promise((resolve) => setTimeout(resolve, 25));
+    await new Promise((resolve) => setTimeout(resolve, WAIT_FOR_POLL_MS));
   }
 }
 
@@ -630,7 +634,7 @@ ${printReport}`,
       // index itself reports the review running instead of asserting once —
       // the review stays alive for 3s, so the window cannot close early.
       let indexed: Record<string, unknown> | undefined;
-      const deadline = Date.now() + 10_000;
+      const deadline = Date.now() + WAIT_FOR_TIMEOUT_MS;
       while (true) {
         const index = await api(server, "GET", "/api/index");
         indexed = (index.body.tasks as Array<Record<string, unknown>>).find(
@@ -640,7 +644,7 @@ ${printReport}`,
           break;
         if (Date.now() > deadline)
           throw new Error("timed out waiting for task index to report review running");
-        await new Promise((resolve) => setTimeout(resolve, 25));
+        await new Promise((resolve) => setTimeout(resolve, WAIT_FOR_POLL_MS));
       }
       expect(indexed?.automaticReview).toEqual({ running: true, enabled: true });
 

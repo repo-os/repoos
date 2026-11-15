@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-15T05:40:47Z"
-review_passes: 1
 id: "1125"
 title: Fix the flaky remote-host-pool (and agent-review/pressure-guard/agent-drivers) tests that keep failing close-out and handoff on remote runners
 type: bug
@@ -13,6 +11,7 @@ branch: feat/fix-the-flaky-remote-host-pool-and-agent
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-15T04:51:36Z"
+updated_at: "2026-11-15T05:40:07Z"
 ---
 ## Problem
 
@@ -43,30 +42,4 @@ Follow AGENTS.md 'Is a repoos check failure a flake or a real bug?' and docs/deb
 - 2026-11-15T04:51:40Z · cli_override, model_override
 - 2026-11-15T04:51:41Z · status inbox→ready
 - 2026-11-15T04:51:43Z · status ready→active, branch
-- 2026-11-15T05:21:07Z · message_queued at 2026-11-15T05:21:07.370Z
-- 2026-11-15T05:21:07Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-15T05:22:24Z · body
-- 2026-11-15T05:24:09Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
-- 2026-11-15T05:24:09Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: no assistant message · stderr: (empty)
-- 2026-11-15T05:24:09Z · message_delivered: 1 message(s)
-- 2026-11-15T05:26:07Z · message_queued at 2026-11-15T05:26:07.369Z
-- 2026-11-15T05:26:07Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-15T05:29:09Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
-- 2026-11-15T05:29:09Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: Checking worktree state and completing verification after the interrupted check. · stderr: (empty)
-- 2026-11-15T05:29:09Z · message_delivered: 1 message(s)
-- 2026-11-15T05:30:51Z · body
-- 2026-11-15T05:31:07Z · message_queued at 2026-11-15T05:31:07.415Z
-- 2026-11-15T05:31:07Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-15T05:34:09Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
-- 2026-11-15T05:34:09Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: Checking worktree state and completing verification after the interrupted check. · stderr: (empty)
-- 2026-11-15T05:34:09Z · message_delivered: 1 message(s)
-- 2026-11-15T05:36:07Z · message_queued at 2026-11-15T05:36:07.373Z
-- 2026-11-15T05:36:07Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-15T05:39:09Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
-- 2026-11-15T05:39:09Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: Checking worktree state and completing verification after the interrupted check. · stderr: (empty)
-- 2026-11-15T05:39:09Z · message_delivered: 1 message(s)
 - 2026-11-15T05:40:07Z · status active→review
-- 2026-11-15T05:40:07Z · message_queued at 2026-11-15T05:40:07.876Z
-- 2026-11-15T05:40:08Z · note: shots: skipped — the diff (8 changed paths) touches no capture target's globs — no UI change to capture
-- 2026-11-15T05:40:46Z · note: review pass 1: good to go
-
