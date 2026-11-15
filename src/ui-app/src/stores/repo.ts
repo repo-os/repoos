@@ -3186,7 +3186,7 @@ export const useRepoStore = defineStore("repo", () => {
     opts: { commitDirty?: boolean; landAnywayReason?: string } = {},
   ): Promise<DoneResult> {
     // Never forward anything but a non-empty string as the Land anyway reason
-    // (a click event once leaked in here and the server rejected the request).
+    // (a click event once leaked in here and the server refused the request).
     const landAnywayReason =
       typeof opts.landAnywayReason === "string" && opts.landAnywayReason.trim()
         ? opts.landAnywayReason
