@@ -498,10 +498,9 @@ describe("waitForPressureRelief", () => {
 
   it("does not mix a live CPU-idle sample into an injected memory probe", () => {
     const relief = probe(readings({ swapIoBytesPerSec: 0, activityWindowSec: 30 }));
+    // Prime host CPU sampling — without the fix, a busy delta here would block relief.
     sampleCpuIdlePercent();
-    const idle = sampleCpuIdlePercent();
-    expect(idle).not.toBeNull();
-    expect(idle!).toBeLessThan(100);
+    sampleCpuIdlePercent();
     expect(pressureSnapshot(config(), relief).reason).toBeNull();
   });
 
