@@ -1,6 +1,6 @@
 ---
-last_close_out_gate_ms: 712350
-last_close_out_gate_at: "2026-11-15T00:47:38.977Z"
+last_close_out_gate_ms: 301749
+last_close_out_gate_at: "2026-11-15T01:20:51.829Z"
 id: "1121"
 title: "Hub app: one-command build, install and launch on Nick's Android phone over Tailscale adb"
 type: feature
@@ -13,7 +13,7 @@ branch: feat/hub-app-one-command-build-install-and-la
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-14T17:35:18Z"
-updated_at: "2026-11-15T00:47:38Z"
+updated_at: "2026-11-15T01:20:51Z"
 review_passes: 1
 handoff_signal_retry_count: 2
 ---
@@ -72,4 +72,5 @@ Related: #1120 (Hub app redesign, runs in parallel, touches mobile/src only) and
 - 2026-11-14T19:24:49Z · message_queued at 2026-11-14T19:24:49.618Z
 - 2026-11-14T21:07:42Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-15T00:47:38Z · close-out gate completed in 712s
+- 2026-11-15T01:20:51Z · close-out gate completed in 302s
 
