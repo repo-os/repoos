@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/engineer-test-runs-outlive-the-agent-tur
 created_at: "2026-11-15T16:22:52Z"
-updated_at: "2026-11-15T20:25:17Z"
+updated_at: "2026-11-15T20:38:27Z"
 last_close_out_gate_ms: 702474
 last_close_out_gate_at: "2026-11-15T20:24:55.471Z"
 review_passes: 1
@@ -186,3 +186,4 @@ Look at the engineer turn spawner and process-group reaping in src/core (search 
 - 2026-11-15T20:24:55Z · close-out gate completed in 702s
 - 2026-11-15T20:25:14Z · status done→done, release:success
 - 2026-11-15T20:25:17Z · message_dropped: 1 queued message(s) discarded — task is done
+- 2026-11-15T20:38:27Z · message_dropped: 1 queued message(s) discarded — task is done
