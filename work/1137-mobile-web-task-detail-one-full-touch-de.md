@@ -2,16 +2,16 @@
 id: "1137"
 title: "Mobile web task detail: one full touch detail for every entry point (card view is a read-only stub; drawer tabs and close clipped)"
 type: bug
-status: ready
+status: active
 paths: [src/ui-app/src/components/MobileTaskDetail.vue, src/ui-app/src/App.vue, src/ui-app/src/components/TaskDrawer.vue]
 priority: p1
 area: web
 story: RepoOS Hub for Mobile
 assigned_to: ai
 created_by: t@t
-branch: ""
+branch: feat/mobile-web-task-detail-one-full-touch-de
 created_at: "2026-11-15T17:24:03Z"
-updated_at: "2026-11-15T19:49:12Z"
+updated_at: "2026-11-15T19:49:13Z"
 ---
 ## Problem
 On a phone (below 720px), a task has two different detail views:
@@ -67,3 +67,4 @@ On a phone there's a single task detail, whichever way it was opened (card, sear
 - 2026-11-15T17:24:03Z · created · t@t
 - 2026-11-15T17:24:03Z · screenshots
 - 2026-11-15T19:49:12Z · status inbox→ready
+- 2026-11-15T19:49:13Z · status ready→active, branch
