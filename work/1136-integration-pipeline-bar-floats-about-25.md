@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-15T20:11:22Z"
-review_passes: 1
 id: "1136"
 title: "Integration pipeline bar floats about 250px above the bottom over Work content (phone and desktop, regression on main)"
 type: bug
@@ -13,6 +11,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/integration-pipeline-bar-floats-about-25
 created_at: "2026-11-15T17:23:26Z"
+updated_at: "2026-11-15T20:10:42Z"
 ---
 ## Problem
 On current main (`23dc737`, which includes #1130), the collapsed "Integration pipeline idle" bar on `/work` no longer sits just above the bottom nav. It floats about 250px higher, over the task cards. This happens at every width:
@@ -45,28 +44,6 @@ Measured with Playwright and CDP: `.ibar-wrap` (position: fixed; bottom: 74px) g
 - Found in a box-side Playwright QA pass on 16 Nov (Chromium mobile emulation). Screenshots attached.
 - Don't regress #1130's single-layout guarantee.
 
-## Shots
-```json
-[
-{
-"label": "Desktop 1280: collapsed integration strip docked 14px above the viewport bottom",
-"target": "default",
-"route": "/work",
-"highlight": ".ibar-wrap",
-"viewportWidth": 1280,
-"viewportHeight": 800
-},
-{
-"label": "Phone 390: collapsed strip above the bottom nav with one review task",
-"target": "default",
-"route": "/work?status=review",
-"highlight": ".ibar-wrap",
-"viewportWidth": 390,
-"viewportHeight": 844
-}
-]
-```
-
 ## Screenshots
 
 ![390x844, Review filter with 1 task: collapsed pipeline bar floats mid-screen](/api/tasks/1136/attachments/att_591c500f-a1be-4fea-8ada-3bb7ad5dae75.png)
@@ -79,12 +56,4 @@ Measured with Playwright and CDP: `.ibar-wrap` (position: fixed; bottom: 74px) g
 - 2026-11-15T17:23:27Z · screenshots
 - 2026-11-15T19:49:05Z · status inbox→ready
 - 2026-11-15T19:49:07Z · status ready→active, branch
-- 2026-11-15T20:02:13Z · body
-- 2026-11-15T20:03:41Z · body
-- 2026-11-15T20:06:59Z · body
-- 2026-11-15T20:08:59Z · CTO nudge: held — handoff gate is running
-- 2026-11-15T20:10:41Z · note: ui verification passed: 2 of 2 shots captured with clean console
 - 2026-11-15T20:10:42Z · status active→review
-- 2026-11-15T20:10:42Z · message_queued at 2026-11-15T20:10:42.729Z
-- 2026-11-15T20:11:22Z · note: review pass 1: good to go
-
