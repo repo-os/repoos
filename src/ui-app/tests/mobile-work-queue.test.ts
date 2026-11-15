@@ -8,10 +8,13 @@ import { useUiStore } from "../src/stores/ui";
 import * as apiMod from "../src/api";
 import type { Task } from "../src/types";
 
-const routeState = vi.hoisted(() => ({ query: {} as Record<string, string | string[]> }));
+const routeState = vi.hoisted(() => ({
+  query: {} as Record<string, string | string[]>,
+  router: { replace: vi.fn(), push: vi.fn() },
+}));
 vi.mock("vue-router", () => ({
   useRoute: () => routeState,
-  useRouter: () => ({ replace: vi.fn(), push: vi.fn() }),
+  useRouter: () => routeState.router,
 }));
 
 const api = vi.spyOn(apiMod, "api");
@@ -55,6 +58,7 @@ function task(
   id: string,
   status: Task["status"] = "ready",
   updated_at: string | null = null,
+  extra: Partial<Task> = {},
 ): Task {
   return {
     id,
@@ -88,6 +92,7 @@ function task(
       dirty: false,
     },
     preview: null,
+    ...extra,
   } as Task;
 }
 
@@ -107,9 +112,18 @@ function mountQueue() {
   });
 }
 
+function cardIds(wrapper: ReturnType<typeof mountQueue>): string[] {
+  return wrapper.findAll(".mobile-task-card").map((card) => {
+    const id = card.element.closest("li")?.getAttribute("data-task-id");
+    return id ?? "";
+  });
+}
+
 beforeEach(() => {
   setActivePinia(createPinia());
   routeState.query = {};
+  routeState.router.replace.mockReset();
+  routeState.router.push.mockReset();
   api.mockReset();
 });
 
@@ -151,6 +165,184 @@ describe("mobile Work queue", () => {
     (wrapper.vm as unknown as { status: string }).status = "done";
     await flushPromises();
     expect(wrapper.text()).toContain("No done tasks");
+  });
+
+  // #1138 C1: the default view is the grouped "needs attention" view. Review,
+  // active, ready and inbox work comes before anything done, and done is not
+  // rendered at all until its own filter is chosen.
+  it("opens on a grouped needs-attention view and hides done tasks", () => {
+    const repo = useRepoStore();
+    repo.loading = false;
+    repo.tasks = [
+      task("0001", "done"),
+      task("0002", "active"),
+      task("0003", "review"),
+      task("0004", "ready"),
+      task("0005", "inbox"),
+      task("0006", "ready", null, { assignee: "human" }),
+      task("0007", "active", null, { needsInput: true }),
+      task("0008", "ready", null, { isHeld: true }),
+    ];
+    const wrapper = mountQueue();
+
+    const order = wrapper.findAll(".mobile-queue-section").map((s) => s.attributes("data-section"));
+    expect(order).toEqual(["needs", "review", "active", "ready", "inbox"]);
+    expect(wrapper.find("[data-section='done']").exists()).toBe(false);
+    expect(wrapper.text()).not.toContain("#0001");
+    expect(cardIds(wrapper)).not.toContain("0001");
+
+    // Needs you holds the human, needs-input and held tasks — even though their
+    // statuses are ready/active.
+    expect(cardIds(wrapper).slice(0, 3).sort()).toEqual(["0006", "0007", "0008"]);
+    expect(wrapper.get("[data-section='needs'] .mobile-section-count").text()).toBe("3");
+    expect(wrapper.get("[data-section='review'] .mobile-section-count").text()).toBe("1");
+    expect(wrapper.get("[data-testid='mobile-queue-count']").text()).toBe("7 tasks");
+  });
+
+  it("narrows the queue by id, title and area and keeps the count honest", async () => {
+    const repo = useRepoStore();
+    repo.loading = false;
+    repo.tasks = [
+      task("0100", "ready", null, { title: "Alpha mobile queue", area: "web" }),
+      task("0101", "ready", null, { title: "Beta server job", area: "server" }),
+      task("0102", "ready", null, { title: "Gamma release", area: "core" }),
+    ];
+    const wrapper = mountQueue();
+    expect(wrapper.get("[data-testid='mobile-queue-count']").text()).toBe("3 tasks");
+
+    const input = wrapper.get("[data-testid='mobile-queue-search']");
+    await input.setValue("server");
+    expect(cardIds(wrapper)).toEqual(["0101"]);
+    expect(wrapper.get("[data-testid='mobile-queue-count']").text()).toBe("1 task");
+    expect(wrapper.get("[data-testid='mobile-queue-count']").text()).toBe(
+      `${wrapper.findAll(".mobile-task-card").length} task`,
+    );
+
+    await input.setValue("#0102");
+    expect(cardIds(wrapper)).toEqual(["0102"]);
+
+    await input.setValue("core");
+    expect(cardIds(wrapper)).toEqual(["0102"]);
+
+    await input.setValue("");
+    expect(cardIds(wrapper)).toEqual(["0100", "0101", "0102"]);
+  });
+
+  it("filters by priority, area, story and human assignment", async () => {
+    const repo = useRepoStore();
+    repo.loading = false;
+    repo.tasks = [
+      task("0200", "ready", null, { priority: "p0", area: "web", story: "Mobile" }),
+      task("0201", "ready", null, { priority: "p1", area: "web", story: "Mobile" }),
+      task("0202", "ready", null, { priority: "p0", area: "server", story: "Server" }),
+      task("0203", "ready", null, { priority: "p0", area: "web", assignee: "human" }),
+    ];
+    const wrapper = mountQueue();
+    const vm = wrapper.vm as unknown as {
+      priority: string;
+      area: string;
+      story: string;
+      mine: boolean;
+    };
+
+    vm.priority = "p0";
+    await flushPromises();
+    // The human-assigned task sits in Needs you, ahead of the status sections.
+    expect(cardIds(wrapper)).toEqual(["0203", "0200", "0202"]);
+
+    vm.priority = "";
+    vm.area = "web";
+    await flushPromises();
+    expect(cardIds(wrapper)).toEqual(["0203", "0200", "0201"]);
+
+    vm.area = "any";
+    vm.story = "Server";
+    await flushPromises();
+    expect(cardIds(wrapper)).toEqual(["0202"]);
+
+    vm.story = "any";
+    vm.mine = true;
+    await flushPromises();
+    expect(cardIds(wrapper)).toEqual(["0203"]);
+  });
+
+  // #1138 C2: held and human tasks (the old queue filtered them out forever)
+  // are in the default view and have their own one-tap parked views.
+  it("reaches held and human tasks from the default view in two taps or fewer", async () => {
+    const repo = useRepoStore();
+    repo.loading = false;
+    repo.tasks = [
+      task("0300", "ready", null, {
+        assignee: "human",
+        isHeld: true,
+        title: "Held human task",
+      }),
+    ];
+    const wrapper = mountQueue();
+
+    // One tap: it already sits in Needs you.
+    expect(cardIds(wrapper)).toEqual(["0300"]);
+    expect(wrapper.get("[data-section='needs']").text()).toContain("Held human task");
+
+    const heldChip = wrapper.get("[data-testid='mobile-filter-held']");
+    await heldChip.trigger("click");
+    expect(wrapper.get("[data-section='held']").text()).toContain("Held human task");
+    await wrapper.get("[data-testid='mobile-filter-human']").trigger("click");
+    expect(wrapper.get("[data-section='human']").text()).toContain("Held human task");
+  });
+
+  it("honors ?status= and writes filter changes back to the URL", async () => {
+    routeState.query = { status: "review" };
+    const repo = useRepoStore();
+    repo.loading = false;
+    repo.tasks = [task("0400", "review"), task("0401", "ready")];
+    const wrapper = mountQueue();
+
+    expect(wrapper.find("[data-section='review']").exists()).toBe(true);
+    expect(wrapper.find("[data-section='ready']").exists()).toBe(false);
+
+    (wrapper.vm as unknown as { status: string }).status = "ready";
+    await flushPromises();
+    expect(routeState.router.replace).toHaveBeenCalled();
+    const lastQuery = routeState.router.replace.mock.calls.at(-1)?.[0]?.query;
+    expect(lastQuery).toMatchObject({ status: "ready" });
+
+    (wrapper.vm as unknown as { status: string }).status = "attention";
+    await flushPromises();
+    const backToDefault = routeState.router.replace.mock.calls.at(-1)?.[0]?.query;
+    expect(backToDefault).not.toHaveProperty("status");
+  });
+
+  it("writes the search query to the URL and keeps unrelated params", async () => {
+    routeState.query = { status: "review", task: "0400" };
+    const repo = useRepoStore();
+    repo.loading = false;
+    repo.tasks = [task("0400", "review")];
+    const wrapper = mountQueue();
+
+    await wrapper.get("[data-testid='mobile-queue-search']").setValue("mobile");
+    const lastQuery = routeState.router.replace.mock.calls.at(-1)?.[0]?.query;
+    expect(lastQuery).toMatchObject({ status: "review", task: "0400", q: "mobile" });
+  });
+
+  // #1138: about 1,000 tasks must not mean 1,000 cards or a 154,000px page.
+  it("renders at most 100 cards for a 1,000-task board until expanded", async () => {
+    const repo = useRepoStore();
+    repo.loading = false;
+    repo.tasks = Array.from({ length: 1_000 }, (_, i) =>
+      task(String(i).padStart(4, "0"), "ready"),
+    );
+    const wrapper = mountQueue();
+
+    const rendered = wrapper.findAll(".mobile-task-card").length;
+    expect(rendered).toBeLessThanOrEqual(100);
+    expect(wrapper.get("[data-section='ready'] .mobile-section-count").text()).toBe("1000");
+    expect(wrapper.get("[data-testid='mobile-queue-count']").text()).toBe(
+      `${rendered} of 1000 tasks`,
+    );
+
+    await wrapper.get(".mobile-section-more").trigger("click");
+    expect(wrapper.findAll(".mobile-task-card").length).toBe(rendered + 12);
   });
 
   it("opens the shared new-task flow", async () => {
