@@ -3,24 +3,18 @@ id: "1120"
 title: "RepoOS Hub app: native-looking server picker, web color themes with light/dark, better icons, and a Settings page"
 type: feature
 status: review
-human_step_override: Cleared needs-human-step flag (sticky until acceptance criteria change)
-human_step_override_key: f531bd01
-paths: [repoos.toml]
+needs_input: true
+needs_input_reason: needs-human-step
+needs_input_detail: "Acceptance criteria mention a real device, physical hardware, accounts, credentials, or third-party registration — split that verification into a separate human-only task. (matched: on-device verification, device verification — \"Theme and mode persist on the device (Capacitor Preferences) and apply before first paint (no flash).\")"
 priority: p2
 area: mobile
 assigned_to: ai
 created_by: t@t
 branch: feat/repoos-hub-app-native-looking-server-pic
-cli_override: cursor
-model_override: composer-2.5
+cli_override: codex
+model_override: gpt-6-luna
 created_at: "2026-11-14T16:53:29Z"
-updated_at: "2026-11-15T02:00:17Z"
-review_passes: 2
-review_rounds: 1
-last_check_failure: "repoos check at 2026-11-14T21:07:45.909Z: repoos check failed: ui verification failed (2 issue(s)): [missing-target] Hub server list (Android, dark classic) (target \"default\"): highlight [data-testid=\"hub-server-list\"] matched nothing on /?fixture=many&platform=android&appearance=dark&theme=classic (http://127.0.0.1:41679/?fixture=many&platform=android&appearance=dark&theme=classic); [missing-target] Hub Settings (iOS, light gruvbox) (target \"default\"): highlight [data-testid=\"hub-settings\"] matched nothing on /?fixture=settings&platfor… (truncated)"
-dev_error_count: 4
-engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-15T00:49:18.472Z\",\"kind\":\"dev-error\"}]"
-deferred_handoff_resume_count: 1
+updated_at: "2026-11-14T23:34:01Z"
 ---
 ## Problem
 The RepoOS Hub Capacitor shell (mobile/, iOS and Android) is bare bones. Nick's current Android build (screenshot attached) shows a single dark theme, a "Device lock" panel pushed inline above the server list, text-arrow reorder buttons and a pencil glyph that look like web controls, flat unstyled server cards, and a plain "+ Add server" button. It has no color themes and no light mode, and the icons are not the set used by the web app. The device lock and any future preferences have nowhere proper to live. (The screenshot also shows the old "RepoOS" title, so it is a build from before the September "RepoOS Hub" rename.)
@@ -41,11 +35,6 @@ The shell feels like a native app on each platform and matches the web app: the 
 ## Notes for AI
 Read docs/mobile-architecture.md, docs/adr/0011-mobile-web-ui.md (the native shell stays a thin picker and lock; the server-served web UI is the in-server experience) and mobile/README.md. Do not add RepoOS server screens to the shell. Keep the shell small and fast. Related tasks: #0300 (mobile testing, keep), #0302 and #0304 (likely rewrite or close per the ADR); do not edit them.
 
-## Shots
-```json
-[]
-```
-
 ## Screenshots
 
 ![21f31e1d-image](/api/tasks/1120/attachments/att_7f3e2a85-0ca2-4bff-b79f-659408e2dacf.png)
@@ -59,156 +48,4 @@ Read docs/mobile-architecture.md, docs/adr/0011-mobile-web-ui.md (the native she
 - 2026-11-14T16:53:46Z · cli_override, model_override
 - 2026-11-14T16:53:48Z · status inbox→ready
 - 2026-11-14T16:53:49Z · status ready→active, branch
-- 2026-11-14T16:53:51Z · needs_input
-- 2026-11-14T16:53:55Z · agent exited with an error (codex) · Reading additional input from stdin...
-- 2026-11-14T16:53:55Z · engineer crash recovery: resuming codex + gpt-6-luna (1/3 crashes in 30m) · Reading additional input from stdin...
-- 2026-11-14T16:53:58Z · engineer crash recovery: resuming codex + gpt-6-luna (2/3 crashes in 30m) · Reading additional input from stdin...
-- 2026-11-14T16:54:02Z · engineer crash recovery: surfaced instead of switching — a human-set task override (codex + gpt-6-luna) is pinned, so RepoOS did not replace it (3/3 crashes in 30m)
-- 2026-11-14T17:04:03Z · cli_override, model_override
-- 2026-11-14T17:04:04Z · needs_input
-- 2026-11-14T17:07:45Z · body
-- 2026-11-14T17:18:53Z · message_queued at 2026-11-14T17:18:53.181Z
-- 2026-11-14T17:18:53Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-14T17:23:23Z · queued message undelivered for 5m and the engineer produced no output — ending the turn so it is delivered
-- 2026-11-14T17:23:23Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: no assistant message · stderr: (empty)
-- 2026-11-14T17:23:23Z · needs_input
-- 2026-11-14T17:23:23Z · message_delivered: 1 message(s)
-- 2026-11-14T17:23:53Z · message_queued at 2026-11-14T17:23:53.398Z
-- 2026-11-14T17:23:53Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-14T17:24:04Z · CTO nudge: held — an undelivered message is already queued
-- 2026-11-14T18:31:00Z · message_overdue: still queued after 60m without being delivered
-- 2026-11-14T18:42:44Z · body
-- 2026-11-14T18:48:53Z · CTO nudge: held — handoff gate is running
-- 2026-11-14T19:15:16Z · engineer stopped by request
-- 2026-11-14T19:15:17Z · needs_input
-- 2026-11-14T19:15:17Z · needs_input
-- 2026-11-14T19:15:29Z · needs_input
-- 2026-11-14T19:32:23Z · message_queued at 2026-11-14T19:32:23.721Z
-- 2026-11-14T19:32:26Z · message_delivered: 1 message(s)
-- 2026-11-14T19:34:04Z · body
-- 2026-11-14T19:43:53Z · message_queued at 2026-11-14T19:43:53.238Z
-- 2026-11-14T19:43:53Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-14T19:45:02Z · message_queued at 2026-11-14T19:45:02.112Z
-- 2026-11-14T19:45:34Z · CTO nudge: held — an undelivered message is already queued
-- 2026-11-14T19:48:43Z · queued message undelivered for 5m and the engineer produced no output — ending the turn so it is delivered
-- 2026-11-14T19:48:43Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: no assistant message · stderr: (empty)
-- 2026-11-14T19:48:43Z · message_delivered: 2 message(s)
-- 2026-11-14T19:48:53Z · message_queued at 2026-11-14T19:48:53.193Z
-- 2026-11-14T19:48:53Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-14T19:50:04Z · body
-- 2026-11-14T19:51:58Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
-- 2026-11-14T19:51:58Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: Checking worktree state and finishing verification so we can hand off. · stderr: (empty)
-- 2026-11-14T19:51:58Z · needs_input
-- 2026-11-14T19:51:58Z · message_delivered: 1 message(s)
-- 2026-11-14T19:53:53Z · message_queued at 2026-11-14T19:53:53.191Z
-- 2026-11-14T19:53:53Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-14T19:58:53Z · CTO nudge: held — an undelivered message is already queued
-- 2026-11-14T20:15:01Z · engineer stopped by request
-- 2026-11-14T20:15:01Z · needs_input
-- 2026-11-14T20:15:01Z · needs_input
-- 2026-11-14T20:15:03Z · needs_input
-- 2026-11-14T20:15:04Z · message_delivered: 1 message(s)
-- 2026-11-14T20:21:53Z · body
-- 2026-11-14T20:32:17Z · body
-- 2026-11-14T20:43:53Z · CTO nudge: held — handoff gate is running
-- 2026-11-14T20:52:43Z · needs_input
-- 2026-11-14T21:07:42Z · note: ui verification failed: ui verification failed (2 issue(s)): [missing-target] Hub server list (Android, dark classic) (target "default"): highlight [data-testid="hub-server-list"] matched nothing on /?fixture=many&platform=android&appearance=dark&theme=classic (http://127.0.0.1:41679/?fixture=many&platform=android&appearance=dark&theme=classic); [missing-target] Hub Settings (iOS, light gruvbox) (target "default"): highlight [data-testid="hub-settings"] matched nothing on /?fixture=settings&plat
-- 2026-11-14T21:07:43Z · message_queued at 2026-11-14T21:07:43.043Z
-- 2026-11-14T21:07:45Z · message_delivered: 1 message(s)
-- 2026-11-14T21:08:04Z · body
-- 2026-11-14T21:13:53Z · message_queued at 2026-11-14T21:13:53.180Z
-- 2026-11-14T21:13:53Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-14T21:14:59Z · needs_input
-- 2026-11-14T21:15:00Z · message_queued at 2026-11-14T21:15:00.388Z
-- 2026-11-14T21:16:59Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
-- 2026-11-14T21:17:00Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: Declared shots target the main app preview, but mobile hub fixtures only exist in the Capacitor shell — clearing those shots and re-running verification. · stderr: (empty)
-- 2026-11-14T21:17:00Z · message_delivered: 2 message(s)
-- 2026-11-14T21:17:28Z · body
-- 2026-11-14T21:18:53Z · message_queued at 2026-11-14T21:18:53.265Z
-- 2026-11-14T21:18:53Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-14T21:22:00Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
-- 2026-11-14T21:22:00Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: Canonical shots are already `[]`. Restoring an accidental `repoos.toml` edit, then running the check and requesting handoff. · stderr: (empty)
-- 2026-11-14T21:22:00Z · needs_input
-- 2026-11-14T21:22:00Z · message_delivered: 1 message(s)
-- 2026-11-14T21:23:53Z · message_queued at 2026-11-14T21:23:53.243Z
-- 2026-11-14T21:23:53Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-14T21:28:53Z · CTO nudge: held — an undelivered message is already queued
-- 2026-11-14T21:44:55Z · engineer stopped by request
-- 2026-11-14T21:44:56Z · needs_input
-- 2026-11-14T21:44:56Z · needs_input
-- 2026-11-14T21:44:57Z · needs_input
-- 2026-11-14T21:44:58Z · message_delivered: 1 message(s)
-- 2026-11-14T21:57:00Z · body
-- 2026-11-14T21:57:14Z · body
-- 2026-11-14T22:14:29Z · body
-- 2026-11-14T22:18:53Z · CTO nudge: held — handoff gate is running
-- 2026-11-14T22:26:20Z · handoff failed · remote validation failed: test failure: tests/remote-host-pool.test.ts > host-side lock (server + standalone CLI share one limit) > lets a holder expire the waiter with a clear timeout instead of a red gate on bee — fix it in the feature branch and re-run the gate
-- 2026-11-14T22:26:20Z · message_queued at 2026-11-14T22:26:20.860Z
-- 2026-11-14T22:28:53Z · CTO nudge: held — an undelivered message is already queued
-- 2026-11-14T22:29:31Z · watchdog: restarting engineer because a queued message waited 3m with no live process
-- 2026-11-14T22:29:32Z · message_delivered: 1 message(s)
-- 2026-11-14T22:38:53Z · message_queued at 2026-11-14T22:38:53.308Z
-- 2026-11-14T22:38:53Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-14T22:43:10Z · body
-- 2026-11-14T22:43:53Z · CTO nudge: held — an undelivered message is already queued
-- 2026-11-14T22:44:31Z · queued message undelivered for 6m and the engineer produced no output — ending the turn so it is delivered
-- 2026-11-14T22:44:31Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: no assistant message · stderr: (empty)
-- 2026-11-14T22:44:31Z · message_delivered: 1 message(s)
-- 2026-11-14T22:44:58Z · note: handoff requested (cli)
-- 2026-11-14T22:44:59Z · body
-- 2026-11-14T22:48:53Z · CTO nudge: held — handoff gate is running
-- 2026-11-14T22:50:05Z · note: ui verification failed: ui verification failed (3 issue(s)): [missing-target] Hub server list (Android, Gruvbox dark) (target "default"): highlight [data-testid="hub-server-list"] matched nothing on /?fixture=many&platform=android&theme=gruvbox&appearance=dark (http://127.0.0.1:44347/?fixture=many&platform=android&theme=gruvbox&appearance=dark); [missing-target] Hub Settings (iOS, Jelly light) (target "default"): highlight [data-testid="hub-settings"] matched nothing on /?fixture=settings&platfo
-- 2026-11-14T22:50:05Z · message_queued at 2026-11-14T22:50:05.311Z
-- 2026-11-14T22:50:05Z · handoff failed · task-file handoff failed at verify · ui verification failed (3 issue(s)): [missing-target] Hub server list (Android, Gruvbox dark) (target "default"): highlight [data-testid="hub-server-list"] matched nothing on /?fixture=many&platform=android&theme=gruvbox&appearance=dark (http://127.0.0.1:44347/?fixture=many&platform=android&theme=gruvbox&appearance=dark); [missing-target] Hub Settings (iOS, Jelly light) (target "default"): highlight [data-testid="hub-settings"] matched nothing on /?fixture=settings&platform=ios&theme=jelly&appearance=light (http://127.0.0.1:44347/?fixture=settings&platform=ios&theme=jelly&appearance=light); [missing-target] Hub empty state (Android, Classic dark) (target "default"): highlight [data-testid="hub-empty-state"] matched nothing on /?fixture=empty&platform=android&theme=classic&appearance=dark (http://127.0.0.1:44347/?fixture=empty&platform=android&theme=classic&appearance=dark)
-- 2026-11-14T22:53:16Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
-- 2026-11-14T22:53:16Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: no assistant message · stderr: (empty)
-- 2026-11-14T22:53:16Z · needs_input
-- 2026-11-14T22:53:16Z · message_delivered: 1 message(s)
-- 2026-11-14T22:53:42Z · body
-- 2026-11-14T22:53:53Z · message_queued at 2026-11-14T22:53:53.364Z
-- 2026-11-14T22:53:53Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-14T22:58:53Z · CTO nudge: held — an undelivered message is already queued
-- 2026-11-14T23:00:03Z · body
-- 2026-11-14T23:03:53Z · CTO nudge: held — handoff gate is running
-- 2026-11-14T23:14:58Z · body
-- 2026-11-14T23:15:03Z · note: handoff requested (cli)
-- 2026-11-14T23:18:46Z · note: ui verification passed: 1 shot captured with clean console
-- 2026-11-14T23:33:26Z · body
 - 2026-11-14T23:34:01Z · status active→review
-- 2026-11-14T23:47:22Z · note: ui verification passed: 1 shot captured with clean console
-- 2026-11-14T23:47:22Z · message_queued at 2026-11-14T23:47:22.616Z
-- 2026-11-14T23:47:23Z · note: review pass 1: needs some work
-- 2026-11-14T23:47:23Z · message_delivered: 1 message(s)
-- 2026-11-14T23:47:23Z · status review→active
-- 2026-11-14T23:49:33Z · body
-- 2026-11-14T23:58:53Z · message_queued at 2026-11-14T23:58:53.465Z
-- 2026-11-14T23:58:53Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-15T00:03:53Z · CTO nudge: held — an undelivered message is already queued
-- 2026-11-15T00:49:18Z · engineer crash recovery: resuming cursor + composer-2.5 (1/3 crashes in 30m) · RetriableError: Agent turn stopped after repeated resume attempts made no progress
-- 2026-11-15T00:49:23Z · watchdog: restarting engineer because a queued message waited 50m with no live process
-- 2026-11-15T00:49:28Z · watchdog: active-without-engineer recovery failed — task is already running or finalizing
-- 2026-11-15T00:50:49Z · needs_input
-- 2026-11-15T00:50:50Z · message_delivered: 1 message(s)
-- 2026-11-15T00:53:14Z · paths
-- 2026-11-15T00:54:08Z · body
-- 2026-11-15T01:08:30Z · message_queued at 2026-11-15T01:08:30.671Z
-- 2026-11-15T01:08:55Z · CTO nudge: held — an undelivered message is already queued
-- 2026-11-15T01:11:43Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
-- 2026-11-15T01:11:44Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: Removing Vue mounts (outside the vitest root) and expanding pure fixture and navigation tests instead. · stderr: RetriableError: Agent turn stopped after repeated resume attempts made no progress
-- 2026-11-15T01:11:45Z · status active→review, needs_input
-- 2026-11-15T01:11:46Z · note: handoff requested (cli)
-- 2026-11-15T01:12:40Z · message_delivered: 1 message(s)
-- 2026-11-15T01:12:53Z · message_queued at 2026-11-15T01:12:53.422Z
-- 2026-11-15T01:12:53Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: gate exit 2 on bee — fix it in the feature branch and re-run the gate
-- 2026-11-15T01:13:22Z · body
-- 2026-11-15T01:35:53Z · body
-- 2026-11-15T01:37:46Z · note: handoff requested (cli)
-- 2026-11-15T01:38:53Z · CTO nudge: held — handoff gate is running
-- 2026-11-15T01:47:36Z · body
-- 2026-11-15T01:50:06Z · note: ui verification passed: 1 shot captured with clean console
-- 2026-11-15T01:50:07Z · status active→review
-- 2026-11-15T01:50:07Z · handoff_deferred: 1 queued message(s) must be read before review
-- 2026-11-15T01:50:07Z · message_queued at 2026-11-15T01:50:07.836Z
-- 2026-11-15T01:50:08Z · ↻ resuming engineer to read queued message
-- 2026-11-15T01:50:57Z · note: review pass 2: good to go
-- 2026-11-15T02:00:17Z · needs_input
