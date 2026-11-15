@@ -43,3 +43,4 @@ The current list is `agentLastRuns` in src/ui-app/src/views/AgentsView.vue, fed 
 - 2026-11-15T16:44:07Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-15T16:44:30Z · body
 - 2026-11-15T16:47:16Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-15T16:47:16Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 130) · last assistant: Now I have a clear picture. Let me implement the core status helpers. · stderr: (empty)
