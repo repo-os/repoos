@@ -11,7 +11,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/mobile-web-task-detail-one-full-touch-de
 created_at: "2026-11-15T17:24:03Z"
-updated_at: "2026-11-15T19:49:13Z"
+updated_at: "2026-11-15T20:09:56Z"
 ---
 ## Problem
 On a phone (below 720px), a task has two different detail views:
@@ -55,6 +55,30 @@ On a phone there's a single task detail, whichever way it was opened (card, sear
 - Related but separate: #0303 is the native Hub's touch-first queue and detail (Capacitor shell, depends on #0302). This task is the web UI served by `repoos serve`, which the Hub and phone browsers load. Share components where it makes sense.
 - Found in a box-side Playwright QA pass on 16 Nov. Screenshots attached.
 
+## Shots
+```json
+[
+{
+  "label": "Phone Work detail: one drawer, Review failed state and every tab reachable",
+  "target": "default",
+  "route": "/work?task=9999&tab=review",
+  "highlight": ".drawer-tabs",
+  "state": "drawer:statusReviewFailedNarrow",
+  "viewportWidth": 390,
+  "viewportHeight": 844
+},
+{
+  "label": "Phone ?task=&tab=changes deep link lands on the Changes tab at 360px",
+  "target": "default",
+  "route": "/work?task=9999&tab=changes",
+  "highlight": ".drawer-tabs",
+  "state": "drawer:statusReviewFailedNarrow",
+  "viewportWidth": 360,
+  "viewportHeight": 800
+}
+]
+```
+
 ## Screenshots
 
 ![Card tap on #1128 (review): stub says no review report yet, Move to done disabled, no tabs](/api/tasks/1137/attachments/att_3fa0c23d-e275-46aa-b4ba-02e80b003111.png)
@@ -68,3 +92,4 @@ On a phone there's a single task detail, whichever way it was opened (card, sear
 - 2026-11-15T17:24:03Z · screenshots
 - 2026-11-15T19:49:12Z · status inbox→ready
 - 2026-11-15T19:49:13Z · status ready→active, branch
+- 2026-11-15T20:09:56Z · body
