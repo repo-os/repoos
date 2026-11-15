@@ -11,7 +11,7 @@ branch: feat/github-copilot-agent-support-the-new-mod
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-14T17:41:02Z"
-updated_at: "2026-11-15T01:09:03Z"
+updated_at: "2026-11-15T01:09:10Z"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/remote-host-pool.test.ts > host-side lock (server + standalone CLI share one limit) > breaks an orphaned lock dir within the wait budget instead of timing out on it (#0521 review) on mini — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: 73fd1b282c52e6a95c1fc71bc6e032141453fd4f
 review_passes: 1
