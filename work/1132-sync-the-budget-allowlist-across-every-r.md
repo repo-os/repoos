@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/allowlist-groups-projects-that-opt-into-
 created_at: "2026-11-15T15:20:04Z"
-updated_at: "2026-11-15T17:53:38Z"
+updated_at: "2026-11-15T17:54:06Z"
 ---
 ## Problem
 The budget allowlist (`[[budget.allowlist]]`: CLIs, models, paused, pausedUntil, pausedModels, pausedReason) lives only in each repo's committed `repoos.toml`. Nick works for several companies. Each company has its own coding agents, model providers, accounts and quotas, and its projects are spread across his MacBook, bee and thinkpad. Projects that belong together, because they share the same company and the same logins, have to be hand-edited one by one. Nothing ties them together, and nothing notices when they drift apart.
@@ -41,10 +41,10 @@ Start from how `budget.allowlist` is read and merged today, `collectTailnetServe
 ```json
 [
 {
-  "label": "Budget Controls: join an allowlist group",
-  "target": "default",
-  "route": "/agents?tab=budget-controls",
-  "highlight": "[data-testid=\"budget-join-group\"]"
+"label": "Budget Controls: join an allowlist group",
+"target": "default",
+"route": "/agents?tab=budget-controls",
+"highlight": "[data-testid=\"budget-join-group\"]"
 }
 ]
 ```
@@ -57,3 +57,4 @@ Start from how `budget.allowlist` is read and merged today, `collectTailnetServe
 - 2026-11-15T16:58:12Z · status ready→active, branch
 - 2026-11-15T17:45:46Z · body
 - 2026-11-15T17:53:38Z · body
+- 2026-11-15T17:54:06Z · CTO nudge: held — handoff gate is running
