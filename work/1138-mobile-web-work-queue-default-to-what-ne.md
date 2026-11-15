@@ -11,7 +11,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/mobile-web-work-queue-default-to-what-ne
 created_at: "2026-11-15T17:24:06Z"
-updated_at: "2026-11-15T20:15:33Z"
+updated_at: "2026-11-15T20:17:56Z"
 ---
 ## Problem
 Nick: on a phone it's "really hard to find the right task and do anything normal". On main `23dc737`, the mobile Work queue (MobileWorkQueue.vue):
@@ -47,28 +47,21 @@ Nick: on a phone it's "really hard to find the right task and do anything normal
 ```json
 [
 {
-"label": "Mobile Work queue opens on Needs attention with inline search and filter chips",
-"target": "default",
-"route": "/work",
-"highlight": "[data-testid=\"mobile-work-queue\"]",
-"viewportWidth": 390,
-"viewportHeight": 844
+  "label": "Mobile Work queue opens on Needs attention, with inline search and quick filters",
+  "target": "default",
+  "route": "/work",
+  "highlight": ".mobile-queue-controls",
+  "viewportWidth": 390,
+  "viewportHeight": 844
 },
 {
-"label": "?status=review opens the Review view",
-"target": "default",
-"route": "/work?status=review",
-"highlight": "[data-testid=\"mobile-queue-count\"]",
-"viewportWidth": 390,
-"viewportHeight": 844
-},
-{
-"label": "Queue search narrows by task id from the URL",
-"target": "default",
-"route": "/work?q=1138",
-"highlight": "[data-testid=\"mobile-queue-search\"]",
-"viewportWidth": 390,
-"viewportHeight": 844
+  "label": "URL ?status=review opens the Review section",
+  "target": "default",
+  "route": "/work?status=review",
+  "highlight": "[data-section=\"review\"] .mobile-task-card",
+  "state": "board:withReviewTask",
+  "viewportWidth": 390,
+  "viewportHeight": 844
 }
 ]
 ```
@@ -107,3 +100,4 @@ Nick: on a phone it's "really hard to find the right task and do anything normal
 - 2026-11-15T20:13:31Z · watchdog: restarting engineer because a queued message waited 3m with no live process
 - 2026-11-15T20:13:32Z · message_delivered: 1 message(s)
 - 2026-11-15T20:15:33Z · body
+- 2026-11-15T20:17:56Z · body
