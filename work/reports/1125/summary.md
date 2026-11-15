@@ -1,3 +1,14 @@
+---
+id: summary
+title: summary
+type: feature
+status: inbox
+priority: p2
+area: general
+assigned_to: ai
+created_by: ""
+branch: ""
+---
 ## TL;DR
 
 Task #1125 fixed a cluster of timing-sensitive tests (`remote-host-pool`, `agent-review`, `pressure-guard`, `agent-drivers`) that kept failing close-out and handoff on the remote runners (bee, thinkpad) even when the branch under review was correct. Root causes were environmental coupling in the tests: live CPU sampling blended into injected pressure probes, duplicated (too-short) wait budgets, unhandled queued-start results, and sleep-based shell-fixture synchronization. All four areas were fixed by removing the couplings (injected clocks/probes, shared wait helpers, file-marker gates, portable stale-mtime handling) rather than by raising timeouts. Production lock and pressure-guard behavior is unchanged apart from a narrow probe-only path in `pressureSnapshot`. One engineering round, one review pass (`good to go`), merged as `bbd4d3a7`.
@@ -21,10 +32,10 @@ No test was deleted, skipped, or made retry-on-fail. Final verdict: review pass 
 - **Wall-clock start → done:** 1h 26m 14s (created 2026-11-15T04:51:36Z, done 2026-11-15T06:17:50Z).
 - **Close-out gate:** 588s.
 - **Agents and models:**
-  - Engineer: cursor / composer-2.5 — 2868s elapsed, 1000 tokens, cost 0.1234.
-  - Reviewer: cursor / composer-2.5 — 37s elapsed; tokens and cost not recorded.
-  - Debugger: opencode-go/deepseek-v4.1-flash — 5s elapsed; tokens and cost not recorded.
-  - Routing: Model router (openrouter), model unknown — 1s elapsed.
+- Engineer: cursor / composer-2.5 — 2868s elapsed, 1000 tokens, cost 0.1234.
+- Reviewer: cursor / composer-2.5 — 37s elapsed; tokens and cost not recorded.
+- Debugger: opencode-go/deepseek-v4.1-flash — 5s elapsed; tokens and cost not recorded.
+- Routing: Model router (openrouter), model unknown — 1s elapsed.
 - **Restarts or model swaps:** none recorded. A `cli_override` / `model_override` event was logged at task creation (04:51:40Z); its details are not in the record.
 - **Token/cost totals:** only the engineer session has recorded values (1000 tokens, 0.1234); a fleet-wide total is not recorded.
 
