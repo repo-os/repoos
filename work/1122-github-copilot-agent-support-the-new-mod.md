@@ -2,7 +2,7 @@
 id: "1122"
 title: "GitHub Copilot agent: support the new model picker (GPT-6 Luna, GPT-6.1 Terra, Haiku 5.5 ...) with real --model ids"
 type: feature
-status: review
+status: active
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/github-copilot-agent-support-the-new-mod
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-14T17:41:02Z"
-updated_at: "2026-11-14T19:18:53Z"
+updated_at: "2026-11-15T00:34:26Z"
 review_passes: 1
 handoff_signal_retry_count: 2
 ---
@@ -77,3 +77,4 @@ Read work/1088-*.md and src/core/copilot-auto-tier.ts first. Copilot usage is bi
 - 2026-11-14T18:34:37Z · message_queued at 2026-11-14T18:34:37.340Z
 - 2026-11-14T18:35:56Z · note: review pass 1: good to go
 - 2026-11-14T19:18:53Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-15T00:34:26Z · status review→active
