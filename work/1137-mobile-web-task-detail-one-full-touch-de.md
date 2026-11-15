@@ -11,7 +11,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/mobile-web-task-detail-one-full-touch-de
 created_at: "2026-11-15T17:24:03Z"
-updated_at: "2026-11-15T21:33:51Z"
+updated_at: "2026-11-15T21:41:34Z"
 dev_error_count: 3
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-11-15T21:27:52.574Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -128,3 +128,4 @@ On a phone there's a single task detail, whichever way it was opened (card, sear
 - 2026-11-15T21:27:52Z · engineer crash recovery: resuming opencode + opencode-go/deepseek-v4.1-flash (1/3 crashes in 30m) · the agent process exited with an error — open the task to see the full output. Open Raw CLI error for details. (CLI: the agent process exited with an error — open the task to see the full output)
 - 2026-11-15T21:27:55Z · needs_input
 - 2026-11-15T21:33:51Z · body
+- 2026-11-15T21:41:34Z · body
