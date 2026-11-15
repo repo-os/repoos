@@ -31,7 +31,9 @@ import {
   pressureThresholds,
   resetCpuIdleSampling,
   sampleCpuIdlePercent,
+  setOrphanedRunProcessProvider,
   waitForPressureRelief,
+  withOrphanedRunProcesses,
 } from "../../core/pressure-guard.js";
 import type { RepoOSConfig } from "../../core/types.js";
 
@@ -548,5 +550,49 @@ describe("waitForPressureRelief", () => {
         deadlineAt: Date.now(),
       }),
     ).rejects.toThrow(/timed out waiting for relief/i);
+  });
+});
+
+describe("orphaned run processes as a pressure cause (#1134)", () => {
+  afterEach(() => setOrphanedRunProcessProvider(null));
+
+  const orphan = {
+    pid: 4242,
+    taskId: "1134",
+    command: "node vitest run tests/ui",
+    cpuPercent: 61,
+    cpuTimeMs: 58 * 60_000,
+    ageMs: 62 * 60_000,
+    state: "running" as const,
+  };
+
+  it("holds new work and names the PIDs instead of only reporting load", () => {
+    const verdict = evaluatePressure({ ...readings(), orphanedRunProcesses: [orphan] });
+    expect(verdict.level).toBe("critical");
+    expect(verdict.reason).toMatch(/orphaned run process/i);
+    expect(verdict.reason).toContain("PID 4242");
+    expect(verdict.reason).toContain("#1134");
+    expect(verdict.orphanedRunProcesses).toEqual([orphan]);
+  });
+
+  it("keeps an already-reaped run advisory", () => {
+    const verdict = withOrphanedRunProcesses(evaluatePressure(readings()), [
+      { ...orphan, state: "reaped" },
+    ]);
+    expect(verdict.level).toBe("warning");
+    expect(verdict.reason).toBeNull();
+    expect(verdict.warnings.join(" ")).toContain("stopped 1 orphaned run process");
+    expect(verdict.warnings.join(" ")).toContain("PID 4242");
+  });
+
+  it("uses the control plane's reaper as the default provider", () => {
+    setOrphanedRunProcessProvider(() => [orphan]);
+    expect(pressureReason(config(), readings())).toMatch(/PID 4242/);
+  });
+
+  it("reports nothing when the reaper has no orphaned runs", () => {
+    const verdict = evaluatePressure(readings());
+    expect(verdict.orphanedRunProcesses).toEqual([]);
+    expect(verdict.reason).toBeNull();
   });
 });

@@ -14,7 +14,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/publish-repoos-hub-android-apk-on-github
 created_at: "2026-11-15T13:35:11Z"
-updated_at: "2026-11-15T17:02:57Z"
+updated_at: "2026-11-15T20:35:13Z"
 last_close_out_gate_ms: 281235
 last_close_out_gate_at: "2026-11-15T17:02:35.769Z"
 review_passes: 1
@@ -159,3 +159,4 @@ The Tiao app (a separate repo) is the reference for how the APK should be shared
 - 2026-11-15T17:02:57Z · status done→done, release:success
 - 2026-11-15T17:02:57Z · needs_input
 - 2026-11-15T17:02:57Z · note: close-out kept a worktree with uncommitted changes
+- 2026-11-15T20:35:13Z · orphaned run process stopped · pid 71731 · /opt/homebrew/bin/bun run dev -- --port 7331 --host 127.0.0.1 · cpu 0s · age 6.5h

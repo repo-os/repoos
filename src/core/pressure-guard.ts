@@ -39,6 +39,21 @@ import {
 
 export type PressureLevel = "normal" | "warning" | "critical";
 
+/**
+ * A process left behind by a finished agent/check/review turn (#1134), as the
+ * run-process reaper saw it. `reaped` entries were already stopped by RepoOS;
+ * `running` entries survived and are still burning CPU right now.
+ */
+export interface OrphanedRunPressureInfo {
+  pid: number;
+  taskId?: string | null;
+  command: string;
+  cpuPercent?: number;
+  cpuTimeMs?: number;
+  ageMs?: number;
+  state: "running" | "reaped";
+}
+
 export interface PressureSnapshot {
   level: PressureLevel;
   /** Reclaimable memory as a fraction of RAM. */
@@ -66,6 +81,8 @@ export interface PressureSnapshot {
   warnings: string[];
   /** The critical reason joined for display; null when work may proceed. */
   reason: string | null;
+  /** Orphaned run processes reported by the turn/reaper (#1134). */
+  orphanedRunProcesses?: OrphanedRunPressureInfo[];
 }
 
 export interface PressureThresholds {
@@ -84,6 +101,66 @@ export interface PressureThresholds {
 
 /** Near a threshold (75% of the way) is worth surfacing before it bites. */
 const WARNING_FACTOR = 0.75;
+
+/**
+ * How the guard learns about orphaned run processes it did not sample itself
+ * (#1134). The control plane's run-process reaper owns the census; every
+ * pressure decision in this process (queue starts, gate waits, CTO nudges)
+ * should attribute the load to the real cause instead of only "load is high".
+ */
+let orphanedRunProvider: (() => readonly OrphanedRunPressureInfo[]) | null = null;
+
+export function setOrphanedRunProcessProvider(
+  provider: (() => readonly OrphanedRunPressureInfo[]) | null,
+): void {
+  orphanedRunProvider = provider;
+}
+
+function describeRun(process: OrphanedRunPressureInfo): string {
+  const task = process.taskId ? `#${process.taskId} ` : "";
+  const cpu = process.cpuPercent !== undefined ? ` ${process.cpuPercent.toFixed(0)}% CPU` : "";
+  return `${task}PID ${process.pid}${cpu} (${process.command.trim().slice(0, 120)})`;
+}
+
+/**
+ * Add orphaned-run causes to an existing verdict. Running orphans are a
+ * critical reason (they are exactly the incident this guards against);
+ * already-reaped ones stay advisory so the dashboard can explain the CPU
+ * spike without holding work for a process RepoOS has already stopped.
+ */
+export function withOrphanedRunProcesses(
+  snapshot: PressureSnapshot,
+  orphanedRuns: readonly OrphanedRunPressureInfo[],
+): PressureSnapshot {
+  if (orphanedRuns.length === 0) return { ...snapshot, orphanedRunProcesses: [] };
+  const reasons = [...snapshot.reasons];
+  const warnings = [...snapshot.warnings];
+  const running = orphanedRuns.filter((process) => process.state === "running");
+  const reaped = orphanedRuns.filter((process) => process.state === "reaped");
+  if (running.length > 0) {
+    reasons.push(
+      `${running.length} orphaned run process${running.length === 1 ? "" : "es"} from finished ` +
+        `turns ${running.length === 1 ? "is" : "are"} still burning CPU: ` +
+        `${running.map(describeRun).join("; ")}. RepoOS is stopping them.`,
+    );
+  }
+  if (reaped.length > 0) {
+    warnings.push(
+      `stopped ${reaped.length} orphaned run process${reaped.length === 1 ? "" : "es"} left by ` +
+        `finished turns: ${reaped.map(describeRun).join("; ")}`,
+    );
+  }
+  const level: PressureLevel =
+    reasons.length > 0 ? "critical" : warnings.length > 0 ? "warning" : "normal";
+  return {
+    ...snapshot,
+    level,
+    reasons,
+    warnings,
+    reason: reasons.length > 0 ? reasons.join("; ") : null,
+    orphanedRunProcesses: [...orphanedRuns],
+  };
+}
 
 const ACTIVITY_DIAG =
   "Check Activity Monitor (Memory tab), `vm_stat 1`, or `memory_pressure -Q` on macOS; " +
@@ -312,7 +389,7 @@ export function evaluatePressure(
   const reason = reasons.length > 0 ? reasons.join("; ") : null;
   const level: PressureLevel =
     reasons.length > 0 ? "critical" : warnings.length > 0 ? "warning" : "normal";
-  return {
+  const snapshot: PressureSnapshot = {
     level,
     availableMemRatio,
     loadPerCpu,
@@ -333,6 +410,9 @@ export function evaluatePressure(
     warnings,
     reason,
   };
+  const orphanedRuns =
+    sample.orphanedRunProcesses ?? orphanedRunProvider?.() ?? ([] as OrphanedRunPressureInfo[]);
+  return withOrphanedRunProcesses(snapshot, orphanedRuns);
 }
 
 function mergeActivityReadings(

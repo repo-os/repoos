@@ -224,6 +224,74 @@ describe("CTO monitor skip-when-healthy (#0649)", () => {
     expect(runs).toHaveLength(2);
   });
 
+  it("reports orphaned run processes as their own cause, with PIDs (#1134)", async () => {
+    const { cto, runs } = fakeCto();
+    const monitor = new CTOMonitor(
+      configFor(tempRoot()),
+      indexWith([task({ id: "0001", status: "inbox" })]),
+      cto as unknown as CTOManager,
+      undefined,
+      {
+        orphanedRunProcesses: () => [
+          {
+            pid: 4242,
+            taskId: "1134",
+            command: "node vitest run tests/ui",
+            cpuPercent: 61,
+            cpuTimeMs: 58 * 60_000,
+            ageMs: 62 * 60_000,
+            state: "running",
+          },
+        ],
+      },
+    );
+
+    await monitor.checkNow("timer");
+
+    expect(runs).toHaveLength(1);
+    expect(runs[0].digest).toContain("## Orphaned run processes");
+    expect(runs[0].digest).toContain("PID 4242");
+    expect(runs[0].digest).toContain("#1134");
+    expect(runs[0].digest).toContain("STILL RUNNING");
+  });
+
+  it("does not treat already-stopped orphaned runs as a live problem (#1134)", async () => {
+    const { cto, runs } = fakeCto();
+    const monitor = new CTOMonitor(
+      configFor(tempRoot()),
+      indexWith([task({ id: "0001", status: "inbox" })]),
+      cto as unknown as CTOManager,
+      undefined,
+      {
+        orphanedRunProcesses: () => [
+          {
+            pid: 4243,
+            taskId: "1134",
+            command: "node vitest run tests/ui",
+            cpuTimeMs: 58 * 60_000,
+            ageMs: 62 * 60_000,
+            state: "reaped",
+          },
+        ],
+      },
+    );
+
+    await monitor.checkNow("timer");
+    await monitor.checkNow("timer");
+
+    // Reaped processes no longer make the board unhealthy or retrigger runs on
+    // their own; the digest still names them so the cause is visible.
+    const health = await (
+      monitor as unknown as {
+        processHealth: () => Promise<{ healthy: boolean; label: string }>;
+      }
+    ).processHealth();
+    expect(health.healthy).toBe(true);
+    expect(health.label).toContain("stopped since the last digest");
+    expect(runs).toHaveLength(1);
+    expect(runs[0].digest).toContain("stopped by RepoOS");
+  });
+
   it("does not nudge or record a CTO reminder when no engineer session is running (#0693)", async () => {
     const root = tempRoot();
     const stale = task({

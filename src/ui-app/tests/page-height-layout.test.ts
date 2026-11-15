@@ -9,6 +9,7 @@ const floatingHeads = readFileSync(
 );
 const appVue = readFileSync(resolve(__dirname, "../src/App.vue"), "utf8");
 const inputsVue = readFileSync(resolve(__dirname, "../src/views/InputsView.vue"), "utf8");
+const workVue = readFileSync(resolve(__dirname, "../src/views/WorkView.vue"), "utf8");
 
 describe("standard page height and floating controls", () => {
   it("lets the shared page pane fill and scroll through the full app body", () => {
@@ -93,6 +94,18 @@ describe("standard page height and floating controls", () => {
 
   it("keeps the internally scrolling Work columns clear of fixed bottom controls", () => {
     expect(css).toMatch(/\.col-body::after\s*\{[^}]*flex:\s*0 0 var\(--page-bottom-inset\)/s);
+  });
+
+  it("keeps fixed overlays out of the shared page-inset rule (#1136)", () => {
+    // Work renders the integration bar as a `position: fixed` sibling of its
+    // page shells. Adding the page inset to a fixed box grows it upward, which
+    // detached the collapsed strip from the viewport bottom by ~218px.
+    const pageInsetRule =
+      css.match(
+        /\.main\s*>\s*:not\([\s\S]*?\)\s*\{[^}]*padding-bottom:\s*var\(--page-bottom-inset\);[^}]*\}/,
+      )?.[0] ?? "";
+    expect(pageInsetRule).toContain(":not(.page-fixed-layer)");
+    expect(workVue).toMatch(/<IntegrationStatusBar class="ibar-outer page-fixed-layer" \/>/);
   });
 
   it("clears floating heads in page-scroll views (Checks, Releases, Deployments)", () => {

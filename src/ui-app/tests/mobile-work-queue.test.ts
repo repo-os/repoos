@@ -205,6 +205,23 @@ describe("mobile Work queue", () => {
     expect(wrapper.find(".integration-status-bar").exists()).toBe(true);
   });
 
+  it("marks the fixed integration bar as a fixed overlay, not a page shell (#1136)", async () => {
+    // The bar is a `position: fixed` sibling of the page shells. Without the
+    // marker the shared `.main` page inset pads the fixed box and lifts the
+    // strip over the board (padding grows a fixed element upward).
+    for (const [width, narrow] of [
+      [1280, false],
+      [390, true],
+    ] as const) {
+      stubViewport(width, narrow);
+      const wrapper = mount(WorkView, { global: { stubs: workViewStubs() } });
+      await flushPromises();
+      const bar = wrapper.get(".integration-status-bar");
+      expect(bar.classes()).toContain("page-fixed-layer");
+      expect(wrapper.findAll(".integration-status-bar")).toHaveLength(1);
+    }
+  });
+
   // #1137: the phone task detail is the shared TaskDrawer mounted by App.vue,
   // not a WorkView sibling. The queue stays mounted (so Back is instant) but is
   // hidden while a ?task= route selects the drawer.

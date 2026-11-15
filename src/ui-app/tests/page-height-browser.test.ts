@@ -185,6 +185,89 @@ describe.skipIf(!existsSync(webkit.executablePath()))(
       }
     });
 
+    // #1136: the integration bar is a fixed overlay rendered as a direct child
+    // of `.main` (WorkView's mobile and desktop branches are siblings). The
+    // shared page inset must not pad it — padding grows the fixed box upward
+    // and lifts the strip ~218px off the bottom.
+    const barMarkup =
+      '<div class="ibar-wrap collapsed page-fixed-layer"><div class="ibar-strip"><span class="strip-dot idle"></span><span class="strip-label">Integration pipeline idle</span></div></div>';
+    const tabbarMarkup =
+      '<div class="tabbar"><div class="tab">Work</div><div class="tab">Search</div><div class="tab">More</div></div>';
+    const phoneWork = (contentHeight: number) =>
+      `<main class="mobile-work"><header class="mobile-work-heading" style="height:90px">Work</header><div class="mobile-task-list"><div style="height:${contentHeight}px">One task</div></div><div class="mobile-work-bottom-space"></div></main>`;
+    const desktopWork = `<div class="work-page"><header class="work-header" style="height:90px;flex-shrink:0">Work</header><div class="board"><div class="board-col"><div class="col-head">Active</div><div class="col-body"><div style="height:900px">Cards</div></div></div><div class="board-col"><div class="col-head">Review</div><div class="col-body"><div style="height:900px">Cards</div></div></div></div></div>`;
+
+    /** Collapsed bar geometry in a `.main` shell with the given page content. */
+    async function measureBar(
+      width: number,
+      height: number,
+      lane: "phone" | "desktop",
+      content: number,
+    ) {
+      const page = await browser.newPage({ viewport: { width, height } });
+      try {
+        await page.setContent(
+          `<style>${css}\n${componentCss}</style><div id="app"><div class="body"><main class="main">${lane === "phone" ? phoneWork(content) : desktopWork}${barMarkup}</main></div>${tabbarMarkup}</div>`,
+        );
+        const geometry = await page.evaluate(() => {
+          const wrap = document.querySelector<HTMLElement>(".ibar-wrap")!;
+          const strip = document.querySelector<HTMLElement>(".ibar-strip")!;
+          const tabbar = document.querySelector<HTMLElement>(".tabbar")!;
+          const wrapStyle = getComputedStyle(wrap);
+          const wrapRect = wrap.getBoundingClientRect();
+          const stripRect = strip.getBoundingClientRect();
+          return {
+            position: wrapStyle.position,
+            paddingTop: wrapStyle.paddingTop,
+            paddingBottom: wrapStyle.paddingBottom,
+            wrapHeight: wrapRect.height,
+            stripHeight: stripRect.height,
+            stripBottom: stripRect.bottom,
+            navTop: tabbar.getBoundingClientRect().top,
+            navVisible: getComputedStyle(tabbar).display !== "none",
+            viewportHeight: window.innerHeight,
+          };
+        });
+        // The wrapper is a pure positioning layer: no page padding, and its
+        // box is exactly the strip (no invisible 200px+ hit area).
+        expect(geometry.position).toBe("fixed");
+        expect(geometry.paddingTop).toBe("0px");
+        expect(geometry.paddingBottom).toBe("0px");
+        expect(geometry.wrapHeight).toBeCloseTo(geometry.stripHeight, 0);
+        if (lane === "phone") {
+          expect(geometry.navVisible).toBe(true);
+          // Phone: just above the bottom tab bar.
+          expect(geometry.stripBottom).toBeLessThanOrEqual(geometry.navTop);
+          expect(geometry.navTop - geometry.stripBottom).toBeLessThanOrEqual(16);
+        } else {
+          // Desktop/tablet: 14px from the viewport bottom.
+          expect(geometry.viewportHeight - geometry.stripBottom).toBeLessThanOrEqual(16);
+          expect(geometry.viewportHeight - geometry.stripBottom).toBeGreaterThanOrEqual(0);
+        }
+      } finally {
+        await page.close();
+      }
+    }
+
+    it.each([
+      { width: 360, height: 740, lane: "phone" as const },
+      { width: 390, height: 844, lane: "phone" as const },
+      { width: 412, height: 915, lane: "phone" as const },
+      { width: 1280, height: 800, lane: "desktop" as const },
+      { width: 768, height: 1024, lane: "desktop" as const },
+    ])(
+      "docks the collapsed integration bar to the viewport bottom at $width×$height ($lane)",
+      async ({ width, height, lane }) => {
+        await measureBar(width, height, lane, 900);
+      },
+    );
+
+    it("keeps the bar docked with a single filtered task and a short list", async () => {
+      // The reported mid-screen case: `/work?status=review` with one task.
+      // The bar is viewport-fixed, so a short page must not move it.
+      await measureBar(390, 844, "phone", 60);
+    });
+
     for (const [width, height] of [
       [1280, 620],
       [1280, 1120],

@@ -1993,6 +1993,8 @@ export interface SystemStats {
   globalEngineers?: GlobalEngineerCount | null;
   /** Shared build/test slots (#0961). */
   heavyJobs?: { running: number; queued: number };
+  /** Orphaned run processes found by the turn reaper (#1134). */
+  runProcesses?: RunProcessesInfo;
   serverPid: number;
   at: string;
 }
@@ -2018,6 +2020,38 @@ export interface PressureSnapshot {
   reasons: string[];
   warnings: string[];
   reason: string | null;
+  /** Orphaned run processes from finished turns (#1134). */
+  orphanedRunProcesses?: OrphanedRunPressureInfo[];
+}
+
+/** A run process the turn reaper found after its turn ended (#1134). */
+export interface OrphanedRunPressureInfo {
+  pid: number;
+  taskId?: string | null;
+  command: string;
+  cpuPercent?: number;
+  cpuTimeMs?: number;
+  ageMs?: number;
+  state: "running" | "reaped";
+}
+
+/** One process the turn reaper stopped (or failed to stop) after a turn ended. */
+export interface OrphanedRunProcessInfo {
+  pid: number;
+  taskId: string | null;
+  command: string;
+  cpuTimeMs: number;
+  cpuPercent: number;
+  ageMs: number;
+  matchedBy: "turn-tree" | "worktree-cwd" | "run-marker";
+  survived: boolean;
+  at: string;
+}
+
+/** The turn reaper's most recent sweep (#1134). */
+export interface RunProcessesInfo {
+  lastSweepAt: string | null;
+  orphans: OrphanedRunProcessInfo[];
 }
 
 export interface TopProcessInfo {
