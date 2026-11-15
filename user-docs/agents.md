@@ -375,8 +375,26 @@ human-approved subset.
   and `repoos agents resume <agent> [--model <model>]`. An expired resume date
   takes effect automatically, with no restart.
 
+- **Allowlist groups** share one allowlist and pause state between projects that
+  belong together (same company, same logins). Set `budget.allowlistGroup =
+  "personal"` in each project's `repoos.toml`, or use **Join an allowlist
+  group…** at the top of Budget Controls. The group lives outside the repo in
+  `~/.config/repoos/allowlist-groups/<name>.toml`; it is never committed and
+  never holds credentials. Each row shows whether it came from the **group**
+  (shared) or **project** (a local override), and a **drift** warning with
+  **Re-sync from group** appears when this project's own rows differ. Pause or
+  resume an entry and the confirmation lists every member project and host;
+  each one reports applied, unreachable or refused. Members on other machines
+  are found through tailnet discovery and only projects declaring the same
+  group name are updated. Logins stay local — a member that is not logged in to
+  an allowed CLI says so on that host. From a shell, use
+  `repoos allowlist pause|resume <cli> [model] [--until <date>] [--reason "…"]`
+  (and `repoos allowlist` to see the group). A project with no group keeps
+  today's project-only behaviour.
+
 The allowlist is stored in `repoos.toml` as `[[budget.allowlist]]` rows; see
-[Configuration](/configuration#budget-controls-agent-drivers).
+[Configuration](/configuration#budget-controls-agent-drivers). A group's shared
+state is machine-local and intentionally not in git.
 
 ## Agent failure messages
 

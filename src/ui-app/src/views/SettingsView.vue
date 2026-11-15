@@ -1086,6 +1086,8 @@ function buildBody(): Record<string, unknown> {
     // (#0764); skipping it here keeps an unrelated Settings save from rewriting
     // its [[budget.allowlist]] rows.
     if (f.key === "budget.allowlist") continue;
+    // The allowlist group name is edited beside it on Budget Controls (#1132).
+    if (f.key === "budget.allowlistGroup") continue;
     if (f.key === "cto.actions") {
       const next = ctoActionsFormValue();
       const prev = Array.isArray(baseline["cto.actions"])

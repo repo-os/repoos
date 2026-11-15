@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 1359721
-last_close_out_gate_at: "2026-11-15T19:37:15.344Z"
 id: "1132"
 title: "Allowlist groups: projects that opt into the same group share one budget allowlist across machines"
 type: feature
-status: review
+status: done
 priority: p1
 area: [core, server, web]
+merged_commit: 668410a1cb641028c604159f3bba4e236549daf0
 assigned_to: ai
 created_by: t@t
 branch: feat/allowlist-groups-projects-that-opt-into-
 created_at: "2026-11-15T15:20:04Z"
 updated_at: "2026-11-15T19:37:15Z"
+last_close_out_gate_ms: 1359721
+last_close_out_gate_at: "2026-11-15T19:37:15.344Z"
 review_passes: 2
 review_rounds: 1
 routing_switches: 1

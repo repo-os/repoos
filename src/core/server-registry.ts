@@ -46,6 +46,12 @@ export interface ServerRegistryEntry {
    */
   activeEngineers?: number;
   engineersUpdatedAt?: string;
+  /**
+   * Allowlist group this project joined (#1132), if any. Published so tailnet
+   * discovery can find the members of one group without reading every peer's
+   * repoos.toml, and so the tailnet is never treated as one shared group.
+   */
+  allowlistGroup?: string;
 }
 
 /** Override for tests (`REPOOS_SERVERS_REGISTRY_DIR`). */
@@ -397,6 +403,8 @@ export interface RegisterRunningServerInput {
   startedAt: string;
   pid?: number;
   registryDir?: string;
+  /** Allowlist group this project joined (#1132). */
+  allowlistGroup?: string;
 }
 
 /** Register (or refresh) after the HTTP listener is bound. Best-effort. */
@@ -413,20 +421,26 @@ export function registerRunningServer(input: RegisterRunningServerInput): void {
     kind: "server",
     activeEngineers: 0,
     engineersUpdatedAt: new Date().toISOString(),
+    ...(input.allowlistGroup ? { allowlistGroup: input.allowlistGroup } : {}),
   };
   writeServerRegistryEntry(entry, input.registryDir);
 }
 
-export function refreshRunningServerProjectName(
+/** Refresh name/group after a config reload or a group join (#1132). */
+export function refreshRunningServerIdentity(
   port: number,
   root: string,
+  allowlistGroup: string | undefined,
   registryDir?: string,
 ): void {
   const existing = readServerRegistryEntry(port, registryDir);
   if (!existing || existing.pid !== process.pid) return;
   const projectName = projectDisplayName(root);
-  if (existing.projectName === projectName) return;
-  writeServerRegistryEntry({ ...existing, projectName }, registryDir);
+  if (existing.projectName === projectName && existing.allowlistGroup === allowlistGroup) return;
+  const next: ServerRegistryEntry = { ...existing, projectName };
+  if (allowlistGroup) next.allowlistGroup = allowlistGroup;
+  else delete next.allowlistGroup;
+  writeServerRegistryEntry(next, registryDir);
 }
 
 let registryErrorLogged = false;

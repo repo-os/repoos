@@ -150,7 +150,7 @@ import { sweepStaleWorktrees } from "../core/worktree-gc.js";
 import {
   checkServerRegistryPortConflict,
   logServerRegistryError,
-  refreshRunningServerProjectName,
+  refreshRunningServerIdentity,
   registerRunningServer,
   removeServerRegistryEntry,
   shouldRegisterServerRegistry,
@@ -559,6 +559,11 @@ import {
   hubTaskSearch,
   // Tailnet discovery for the native Hub (#1127)
   getTailnetServers,
+  // Machine-local allowlist groups and their tailnet propagation (#1132)
+  getAllowlistGroup,
+  mutateAllowlistGroup,
+  resyncAllowlistGroup,
+  applyAllowlistGroup,
   // Service routes
   getServiceStatusRoute,
   listServicesRoute,
@@ -1638,7 +1643,11 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           }
           if (runningServerRegistry && registerInServerRegistry) {
             try {
-              refreshRunningServerProjectName(runningServerRegistry.port, fresh.root);
+              refreshRunningServerIdentity(
+                runningServerRegistry.port,
+                fresh.root,
+                fresh.budget?.allowlistGroup,
+              );
             } catch (e) {
               logServerRegistryError(logger, "refresh", e);
             }
@@ -4153,6 +4162,12 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // Config routes
   router.register("GET", "/api/config", readConfig);
   router.register("PATCH", "/api/config", patchConfig);
+  // Allowlist groups (#1132): read state, pause/resume + propagate, re-sync,
+  // and the authenticated receiver a tailnet peer's SSH command calls.
+  router.register("GET", "/api/budget/allowlist-group", getAllowlistGroup);
+  router.register("POST", "/api/budget/allowlist-group/pause", mutateAllowlistGroup);
+  router.register("POST", "/api/budget/allowlist-group/resync", resyncAllowlistGroup);
+  router.register("POST", "/api/budget/allowlist-group/apply", applyAllowlistGroup);
   router.register("GET", "/api/config/raw", readRawConfig);
   router.register("PUT", "/api/config/raw", writeRawConfig);
   router.register("POST", "/api/dev/copy-inspector/open", postCopyInspectorOpen);
@@ -4804,6 +4819,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
             host: connectHost,
             root: config.root,
             version: readBuildMeta().version ?? "unknown",
+            allowlistGroup: config.budget?.allowlistGroup,
             startedAt: serverStartedAt,
           });
           runningServerRegistry = {

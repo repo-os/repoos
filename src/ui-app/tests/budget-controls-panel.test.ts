@@ -511,3 +511,120 @@ describe("BudgetControlsPanel add-to-allowlist modal (#0856)", () => {
     wrapper.unmount();
   });
 });
+
+describe("BudgetControlsPanel allowlist groups (#1132)", () => {
+  afterEach(() => {
+    document.body.innerHTML = "";
+    vi.unstubAllGlobals();
+  });
+
+  const groupState = {
+    enabled: true,
+    name: "personal",
+    group: {
+      name: "personal",
+      version: 2,
+      updatedAt: "2026-11-16T10:00:00.000Z",
+      allowlist: [{ cli: "claude code", models: ["sonnet"] }],
+    },
+    projectRows: [{ cli: "claude code", models: ["sonnet"] }],
+    effective: [{ cli: "claude code", models: ["sonnet"] }],
+    sources: { "claude code": "project" },
+    drift: [{ cli: "claude code", detail: "claude code has a local pause override" }],
+    members: [
+      { host: "local", local: true, reachable: true, projectName: "repoos" },
+      { host: "bee", local: false, reachable: true, projectName: "neung" },
+    ],
+  };
+
+  function mountPanel(): VueWrapper {
+    return mount(BudgetControlsPanel, {
+      attachTo: document.body,
+      global: { stubs: { AgentModelControl: true } },
+    });
+  }
+
+  it("shows the group, each entry's source, drift and the member list", async () => {
+    seedConfig({
+      "budget.allowlist": [{ cli: "claude code", models: ["sonnet"] }],
+      "budget.allowlistGroup": "personal",
+    });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => ({
+        ok: true,
+        status: 200,
+        json: async () => (url.includes("/api/budget/allowlist-group") ? groupState : { ok: true }),
+      })),
+    );
+    const wrapper = mountPanel();
+    await flushPromises();
+
+    expect(wrapper.find("[data-testid='budget-group-name']").text()).toBe("personal");
+    expect(wrapper.find("[data-testid='budget-source-claude code']").text()).toBe("project");
+    expect(wrapper.find("[data-testid='budget-drift']").text()).toContain("Re-sync from group");
+
+    await wrapper.find("[data-testid='budget-pause-agent']").trigger("click");
+    await flushPromises();
+    const members = document.body.querySelector("[data-testid='budget-pause-members']");
+    expect(members?.textContent).toContain("repoos (this machine)");
+    expect(members?.textContent).toContain("neung on bee");
+    wrapper.unmount();
+  });
+
+  it("pauses the group through the group endpoint, not a project PATCH", async () => {
+    seedConfig({
+      "budget.allowlist": [{ cli: "claude code", models: ["sonnet"] }],
+      "budget.allowlistGroup": "personal",
+    });
+    const posts: Array<{ url: string; body: Record<string, unknown> }> = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string, init?: { method?: string; body?: string }) => {
+        if (init?.method === "POST") {
+          posts.push({ url, body: JSON.parse(init.body ?? "{}") });
+          return {
+            ok: true,
+            status: 200,
+            json: async () => ({
+              ok: true,
+              results: [
+                { host: "local", local: true, projectName: "repoos", status: "applied" },
+                {
+                  host: "bee",
+                  local: false,
+                  projectName: "neung",
+                  status: "unreachable",
+                  reason: "timed out",
+                },
+              ],
+            }),
+          };
+        }
+        return {
+          ok: true,
+          status: 200,
+          json: async () => (url.includes("/api/budget/allowlist-group") ? groupState : {}),
+        };
+      }),
+    );
+    const wrapper = mountPanel();
+    await flushPromises();
+    await wrapper.find("[data-testid='budget-pause-agent']").trigger("click");
+    await flushPromises();
+    document.body.querySelector<HTMLButtonElement>("[data-testid='budget-pause-confirm']")!.click();
+    await flushPromises();
+
+    expect(posts).toHaveLength(1);
+    expect(posts[0]!.url).toContain("/api/budget/allowlist-group/pause");
+    expect(posts[0]!.body).toMatchObject({
+      action: "pause",
+      cli: "claude code",
+      propagate: true,
+    });
+    const results = wrapper.find("[data-testid='budget-results']");
+    expect(results.text()).toContain("unreachable");
+    expect(results.text()).toContain("timed out");
+    wrapper.unmount();
+  });
+});

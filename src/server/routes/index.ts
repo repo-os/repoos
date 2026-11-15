@@ -5,6 +5,7 @@ export * from "./agents.js";
 export * from "./check-plan.js";
 export * from "./check-runs.js";
 export * from "./config.js";
+export * from "./budget-allowlist-groups.js";
 export * from "./docs.js";
 export * from "./repo-log.js";
 export * from "./inputs.js";

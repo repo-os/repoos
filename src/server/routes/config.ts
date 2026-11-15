@@ -28,6 +28,7 @@ import {
   redactDevEnv,
 } from "../../core/dev-targets.js";
 import { normalizeAllowlistRows } from "../../core/budget-allowlist.js";
+import { normalizeAllowlistGroupName } from "../../core/allowlist-groups.js";
 import {
   allowlistWithoutAutomaticPauses,
   automaticPausesIn,
@@ -119,6 +120,13 @@ export function safeConfigForBrowser(config: Record<string, unknown>): Record<st
      * so the Budget Controls tab round-trips exactly what the parser accepted.
      */
     "budget.allowlist": (_rawBudget as { allowlist?: unknown } | undefined)?.allowlist ?? [],
+    /**
+     * The machine-local allowlist group this project joined (#1132), flattened
+     * beside its allowlist. Without it the browser (and `repoos allowlist`) saw
+     * a grouped project as project-only after every `/api/config` reload.
+     */
+    "budget.allowlistGroup":
+      (_rawBudget as { allowlistGroup?: unknown } | undefined)?.allowlistGroup ?? "",
     "model_routing.mode": (_rawModelRouting as { mode?: string } | undefined)?.mode,
     "model_routing.provider": (_rawModelRouting as { provider?: string } | undefined)?.provider,
     "model_routing.model": (_rawModelRouting as { model?: string } | undefined)?.model,
@@ -335,6 +343,10 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
   let budgetRuntimeUpdated = false;
   /** Set when a budget-allowlist PATCH clears the last `[[budget.allowlist]]` row. */
   let dropBudgetAllowlistRows = false;
+  /** Set when a budget.allowlistGroup PATCH leaves the group (removes the key). */
+  let dropAllowlistGroupKey = false;
+  /** Set when a budget.allowlistGroup PATCH already matches disk (no-op save). */
+  let allowlistGroupUnchanged = false;
   if (body.builtInAgents !== undefined) {
     if (
       typeof body.builtInAgents !== "object" ||
@@ -510,6 +522,32 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
     }
   }
 
+  // Machine-local allowlist group (#1132). Joining or leaving a group is a
+  // single config key; the group's own state lives outside this repo. An
+  // invalid name is refused here instead of silently becoming "no group".
+  if (body["budget.allowlistGroup"] !== undefined) {
+    const raw = body["budget.allowlistGroup"];
+    if (typeof raw !== "string") {
+      return json(res, 400, { error: "budget.allowlistGroup must be a group name or empty" });
+    }
+    const trimmed = raw.trim();
+    if (trimmed && !normalizeAllowlistGroupName(trimmed)) {
+      return json(res, 400, {
+        error:
+          "budget.allowlistGroup must be 1–64 characters of letters, digits, dots, dashes or " +
+          'underscores, starting with a letter or digit (for example "personal")',
+      });
+    }
+    const onDisk = loadConfig(config.root).budget?.allowlistGroup ?? "";
+    if (trimmed === onDisk) {
+      allowlistGroupUnchanged = true;
+    } else if (trimmed) {
+      patch["budget.allowlistGroup"] = trimmed;
+    } else {
+      dropAllowlistGroupKey = true;
+    }
+  }
+
   // Auth config patching — handle auth-specific fields that live in [auth]
   // section of repoos.toml. Secrets (sessionSecret, emailProvider.apiKey,
   // google.clientSecret) are never written to repoos.toml — that file is
@@ -605,6 +643,9 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
     // The budget allowlist has its own dedicated branch above (#0764); its
     // schema entry is search/focus metadata only.
     if (field.key === "budget.allowlist") continue;
+    // The allowlist group name has its own dedicated branch above (#1132):
+    // it validates the name and removes the key when the field is cleared.
+    if (field.key === "budget.allowlistGroup") continue;
     const val = body[field.key];
 
     if (field.type === "string") {
@@ -929,6 +970,8 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
     !budgetAllowlistUnchanged &&
     !budgetRuntimeUpdated &&
     !dropBudgetAllowlistRows &&
+    !allowlistGroupUnchanged &&
+    !dropAllowlistGroupKey &&
     !onlyEmptyWhisperKey
   ) {
     return json(res, 400, { error: "No valid fields to update" });
@@ -941,6 +984,7 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
   if (dropAreaRows) dropTomlTableArray(mutationPath, "areas");
   if (dropDevTargetRows) dropTomlTableArray(mutationPath, "dev.targets");
   if (dropBudgetAllowlistRows) dropTomlTableArray(mutationPath, "budget.allowlist");
+  if (dropAllowlistGroupKey) dropTomlScalarKey(mutationPath, "budget.allowlistGroup");
   if (dropRows) {
     dropTomlTableArray(mutationPath, "remoteValidation.tailscaleHosts");
   }
@@ -992,7 +1036,7 @@ function hashConfigContent(content: string): string {
  * replace a table array it is given, but an empty array would serialise as a
  * bogus `key = []` line instead of removing the blocks.
  */
-function dropTomlTableArray(tomlPath: string, key: string): void {
+export function dropTomlTableArray(tomlPath: string, key: string): void {
   if (!existsSync(tomlPath)) return;
   const lines = readFileSync(tomlPath, "utf8").replace(/\r\n/g, "\n").split("\n");
   // Lines inside a `'''`/`"""` string are content: a `[[key]]`-shaped (or
@@ -1015,6 +1059,37 @@ function dropTomlTableArray(tomlPath: string, key: string): void {
     }
     kept.push(lines[i] ?? "");
     i++;
+  }
+  if (!removed) return;
+  while (kept.length && !kept[kept.length - 1]!.trim()) kept.pop();
+  writeFileSync(tomlPath, `${kept.join("\n")}\n`, "utf8");
+}
+
+/**
+ * Remove one scalar key (root- or section-scoped) from repoos.toml. Used when
+ * a project leaves its allowlist group (#1132): `patchTomlConfig` writes an
+ * empty value, which would leave a meaningless `budget.allowlistGroup = ""`
+ * line behind.
+ */
+function dropTomlScalarKey(tomlPath: string, key: string): void {
+  if (!existsSync(tomlPath)) return;
+  const lines = readFileSync(tomlPath, "utf8").replace(/\r\n/g, "\n").split("\n");
+  const continuation = tomlContinuationLines(lines);
+  let section = "";
+  const kept: string[] = [];
+  let removed = false;
+  for (let i = 0; i < lines.length; i++) {
+    const stripped = continuation[i] ? "" : stripTomlComment(lines[i] ?? "").trim();
+    const header = stripped.match(/^\[([^\]]+)\]$/);
+    if (header) section = header[1]!.trim();
+    const kv = stripped.match(/^([A-Za-z0-9_.-]+)\s*=\s*/);
+    const full = kv ? (section ? `${section}.${kv[1]}` : kv[1]!) : null;
+    if (full === key) {
+      removed = true;
+      while (i + 1 < lines.length && continuation[i + 1]) i++;
+      continue;
+    }
+    kept.push(lines[i] ?? "");
   }
   if (!removed) return;
   while (kept.length && !kept[kept.length - 1]!.trim()) kept.pop();

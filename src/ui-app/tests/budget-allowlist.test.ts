@@ -159,10 +159,23 @@ describe("budget allowlist config contract (#0764)", () => {
 
   it("exposes the allowlist to the browser under its schema key", () => {
     const safe = safeConfigForBrowser({
-      budget: { allowlist: [{ cli: "opencode", models: ["big pickle"] }] },
+      budget: {
+        allowlist: [{ cli: "opencode", models: ["big pickle"] }],
+        allowlistGroup: "personal",
+      },
     } as never);
     expect(safe["budget.allowlist"]).toEqual([{ cli: "opencode", models: ["big pickle"] }]);
+    // Flattened beside the allowlist so Budget Controls and the CLI see the
+    // group after every config reload, not just the first one (#1132 review).
+    expect(safe["budget.allowlistGroup"]).toBe("personal");
     expect(safe.budget).toBeUndefined();
+  });
+
+  it("flattens an empty/unset allowlist group as an empty string (#1132)", () => {
+    const safe = safeConfigForBrowser({ budget: { allowlist: [] } } as never);
+    expect(safe["budget.allowlistGroup"]).toBe("");
+    const none = safeConfigForBrowser({} as never);
+    expect(none["budget.allowlistGroup"]).toBe("");
   });
 });
 

@@ -259,6 +259,13 @@ const GROUPS: readonly CommandGroup[] = [
         flags: "--model · --until · --reason · --json · --port",
       },
       {
+        name: "allowlist",
+        usage:
+          'allowlist [show] · allowlist pause|resume <cli> [model] [--until <date>] [--reason "..."] [--no-propagate] [--json]',
+        desc: "Show the budget allowlist group, or pause/resume an entry and propagate it to every group member",
+        flags: "--until · --reason · --no-propagate · --json · --port",
+      },
+      {
         name: "stats",
         usage: "stats [--json] [--port N]",
         desc: "Board spend summary (GET /api/stats/board)",

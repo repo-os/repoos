@@ -181,9 +181,10 @@ const GENERAL_EXCLUDED_KEYS = new Set([
   // The Dev-failure AI summary toggle (#0775) is rendered with the Dev targets
   // card on Advanced, not as a plain General row.
   "dev.failureSummary.ai",
-  // The agent-driver budget allowlist is edited on the Agents page's Budget
-  // Controls tab (#0764), not by a plain General row.
+  // The agent-driver budget allowlist and its group name are edited on the
+  // Agents page's Budget Controls tab (#0764/#1132), not by a plain General row.
   "budget.allowlist",
+  "budget.allowlistGroup",
   "attention.spendAlertUsd",
   // Hand-rendered checkbox list beside ctoSkipHealthy (#0796).
   "cto.actions",
@@ -248,7 +249,7 @@ export function resolveSettingLocation(
   // The budget allowlist's control lives on the Agents page's Budget Controls
   // tab (#0764), which is outside the Settings page — the schema entry exists
   // for search, which points at the toml tab for a raw edit.
-  if (key === "budget.allowlist") {
+  if (key === "budget.allowlist" || key === "budget.allowlistGroup") {
     if (!field) return null;
     return { tab: "toml", hasUiRow: false };
   }
@@ -359,6 +360,8 @@ const SETTING_SEARCH_ALIASES: Record<string, string> = {
     "capture targets native macos ios android desktop screenshot command offscreen render simctl adb screencapture evidence image non-web",
   "budget.allowlist":
     "budget controls agent driver allowlist allowed models expensive steering restrict override",
+  "budget.allowlistGroup":
+    "allowlist group personal acme share projects machines tailnet pause propagation sync drift company",
 };
 
 export function settingSearchAliases(key: string): string {
