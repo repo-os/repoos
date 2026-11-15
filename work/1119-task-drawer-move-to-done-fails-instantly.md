@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 166185
-last_close_out_gate_at: "2026-11-15T00:35:16.731Z"
 id: "1119"
 title: "Task drawer Move to done fails instantly: click event is sent as the land-anyway reason"
 type: feature
-status: review
+status: done
 priority: p1
 area: web
+merged_commit: 9a00025cdd387f76204f15a0519cd7fd46a5443f
 assigned_to: ai
 created_by: t@t
 branch: feat/task-drawer-move-to-done-fails-instantly
@@ -14,6 +13,8 @@ cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-14T16:14:26Z"
 updated_at: "2026-11-15T00:35:16Z"
+last_close_out_gate_ms: 166185
+last_close_out_gate_at: "2026-11-15T00:35:16.731Z"
 review_passes: 2
 review_rounds: 1
 handoff_signal_retry_count: 2
