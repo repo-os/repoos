@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-11-15T22:46:36Z"
-review_passes: 1
+last_close_out_gate_ms: 69445
+last_close_out_gate_at: "2026-11-15T23:18:27.740Z"
 id: "1139"
 title: "Mobile web polish: 44px tap targets, no iOS input zoom, touch-only hints, landscape/tablet layout, PWA start page and icon"
 type: bug
@@ -12,6 +12,8 @@ assigned_to: ai
 created_by: t@t
 branch: feat/mobile-web-polish-44px-tap-targets-no-io
 created_at: "2026-11-15T17:24:09Z"
+updated_at: "2026-11-15T23:18:27Z"
+review_passes: 1
 handoff_signal_retry_count: 2
 dev_error_count: 1
 engineer_stall_resume_log: "[{\"at\":\"2026-11-15T21:35:54.464Z\",\"reason\":\"clean-exit-without-handoff\"}]"
@@ -117,4 +119,5 @@ Smaller mobile issues found on main `23dc737` (Chromium mobile emulation; 360/39
 - 2026-11-15T22:45:37Z · status active→review
 - 2026-11-15T22:45:37Z · message_queued at 2026-11-15T22:45:37.308Z
 - 2026-11-15T22:46:36Z · note: review pass 1: good to go
+- 2026-11-15T23:18:27Z · close-out gate completed in 69s
 
