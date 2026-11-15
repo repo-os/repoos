@@ -11,7 +11,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/repoos-hub-mobile-find-repoos-servers-on
 created_at: "2026-11-15T12:54:17Z"
-updated_at: "2026-11-15T14:33:43Z"
+updated_at: "2026-11-15T14:33:46Z"
 last_close_out_gate_ms: 149602
 last_close_out_gate_at: "2026-11-15T14:33:43.622Z"
 review_passes: 1
@@ -77,4 +77,4 @@ The CLI can already discover them: `repoos servers --tailscale` (`collectTailnet
 - 2026-11-15T14:24:30Z · message_queued at 2026-11-15T14:24:30.133Z
 - 2026-11-15T14:25:38Z · note: review pass 1: good to go
 - 2026-11-15T14:33:43Z · close-out gate completed in 150s
-
+- 2026-11-15T14:33:46Z · message_dropped: 1 queued message(s) discarded — task is done
