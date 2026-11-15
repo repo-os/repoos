@@ -1632,7 +1632,11 @@ async function runAllowlistPauseResume(
       projectRows?: Array<{ cli: string; models: string[] }>;
     };
     projectRows = agentModelAllowRows(state.projectRows);
-    const inGroup = state.group?.allowlist?.some((row) => row.cli === target.cli) === true;
+    // No group file yet means the first pause seeds the group from this
+    // project's rows, so it still belongs to the group. Only a local-only CLI
+    // in an existing group falls back to the project's committed rows.
+    const inGroup =
+      !state.group || state.group.allowlist?.some((row) => row.cli === target.cli) === true;
     if (!inGroup) {
       // A local-only entry is not group state; pause it in this repo's own rows.
       const localResult =

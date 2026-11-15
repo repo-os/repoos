@@ -224,6 +224,13 @@ function pauseDetail(row: AgentModelAllowRow, model?: string): string {
 }
 
 async function save(next: AgentModelAllowRow[]): Promise<boolean> {
+  if (inGroup.value && !group.value) {
+    // Never materialize a merged group list into the project's committed rows:
+    // if the group view is unavailable, ask for a reload instead of forking it.
+    groupError.value =
+      "Could not read the allowlist group — reload the page before editing, so group rows stay out of repoos.toml.";
+    return false;
+  }
   try {
     await config.setConfigValues({ "budget.allowlist": next });
     if (inGroup.value) await refreshGroup();
@@ -234,9 +241,16 @@ async function save(next: AgentModelAllowRow[]): Promise<boolean> {
   }
 }
 
-/** True when the group owns this CLI (so a pause belongs to the group). */
+/**
+ * True when the group owns this CLI (so a pause belongs to the group). When the
+ * group view has not loaded yet, still route to the group endpoint: it re-reads
+ * the group locally and refuses loudly for a local-only CLI, which is safer
+ * than writing the merged list into the project's committed rows.
+ */
 function isGroupEntry(cli: string): boolean {
-  return inGroup.value && Boolean(group.value?.group?.allowlist.some((row) => row.cli === cli));
+  if (!inGroup.value) return false;
+  if (!group.value) return true;
+  return Boolean(group.value.group?.allowlist.some((row) => row.cli === cli));
 }
 
 /**

@@ -23,7 +23,7 @@
  * Zero runtime deps: node:fs only.
  */
 import { existsSync, readFileSync, watch, type FSWatcher } from "node:fs";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { loadConfig, applyReloadedConfig } from "../core/config.js";
 import { allowlistGroupPath } from "../core/allowlist-groups.js";
 import type { RepoOSConfig } from "../core/types.js";
@@ -89,6 +89,14 @@ function readConfigSignature(root: string, holder: { config: RepoOSConfig }): st
 export class ConfigWatcher {
   private readonly options: ConfigWatcherOptions;
   private fsWatcher: FSWatcher | null = null;
+  /**
+   * The group file lives outside the repo root (usually under
+   * `~/.config/repoos/allowlist-groups`), so the root watcher cannot see it.
+   * Watching its directory closes the up-to-3s poll gap for same-machine
+   * members (#1132); the poll remains the fallback for a missing dir.
+   */
+  private groupWatcher: FSWatcher | null = null;
+  private watchedGroup: string | null = null;
   private debounceTimer: ReturnType<typeof setTimeout> | null = null;
   private pollTimer: ReturnType<typeof setInterval> | null = null;
   private lastContent: string | null;
@@ -116,8 +124,40 @@ export class ConfigWatcher {
         this.fsWatcher = null;
       }
     }
+    this.retargetGroupWatcher();
     this.pollTimer = setInterval(() => this.onPoll(), this.options.pollMs ?? DEFAULT_POLL_MS);
     this.pollTimer.unref?.();
+  }
+
+  /** (Re)attach the fs.watch for the current group's directory, if any. */
+  private retargetGroupWatcher(): void {
+    const name = this.options.holder.config.budget?.allowlistGroup?.trim() || null;
+    if (name === this.watchedGroup) return;
+    if (this.groupWatcher) {
+      try {
+        this.groupWatcher.close();
+      } catch {
+        /* ignore */
+      }
+      this.groupWatcher = null;
+    }
+    this.watchedGroup = name;
+    if (!name) return;
+    let dir: string;
+    try {
+      dir = dirname(allowlistGroupPath(name));
+    } catch {
+      return;
+    }
+    if (!existsSync(dir)) return;
+    try {
+      this.groupWatcher = watch(dir, (_event, filename) => {
+        if (filename && filename.toString() !== `${name}.toml`) return;
+        this.schedule();
+      });
+    } catch {
+      this.groupWatcher = null;
+    }
   }
 
   /** Stop watching and cancel timers. Idempotent. */
@@ -138,6 +178,14 @@ export class ConfigWatcher {
         /* ignore */
       }
       this.fsWatcher = null;
+    }
+    if (this.groupWatcher) {
+      try {
+        this.groupWatcher.close();
+      } catch {
+        /* ignore */
+      }
+      this.groupWatcher = null;
     }
   }
 
@@ -165,7 +213,9 @@ export class ConfigWatcher {
       return false;
     }
     applyReloadedConfig(this.options.holder, fresh);
-    this.log("repoos.toml changed on disk — reloaded config");
+    // Joining/leaving a group changes which directory to watch.
+    this.retargetGroupWatcher();
+    this.log("config changed on disk — reloaded config");
     this.options.onChange?.(fresh, prev);
     return true;
   }
@@ -182,9 +232,10 @@ export class ConfigWatcher {
 
   private onPoll(): void {
     if (this.stopped) return;
-    // A group file lives outside the repo root, so `fs.watch` cannot see it.
-    // The poll compares the full signature (repoos.toml + group file) and is
-    // cheap: two small text reads at most once per poll interval.
+    // The group file lives outside the repo root; `fs.watch` covers it once its
+    // directory exists, and this poll picks up the dir's creation and any
+    // dropped fs events. Cheap: two small text reads per interval.
+    this.retargetGroupWatcher();
     this.reloadIfChanged();
   }
 

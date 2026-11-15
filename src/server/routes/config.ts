@@ -120,6 +120,13 @@ export function safeConfigForBrowser(config: Record<string, unknown>): Record<st
      * so the Budget Controls tab round-trips exactly what the parser accepted.
      */
     "budget.allowlist": (_rawBudget as { allowlist?: unknown } | undefined)?.allowlist ?? [],
+    /**
+     * The machine-local allowlist group this project joined (#1132), flattened
+     * beside its allowlist. Without it the browser (and `repoos allowlist`) saw
+     * a grouped project as project-only after every `/api/config` reload.
+     */
+    "budget.allowlistGroup":
+      (_rawBudget as { allowlistGroup?: unknown } | undefined)?.allowlistGroup ?? "",
     "model_routing.mode": (_rawModelRouting as { mode?: string } | undefined)?.mode,
     "model_routing.provider": (_rawModelRouting as { provider?: string } | undefined)?.provider,
     "model_routing.model": (_rawModelRouting as { model?: string } | undefined)?.model,
