@@ -1,4 +1,6 @@
 // @vitest-environment jsdom
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it, beforeEach } from "vitest";
 import {
   normalizeAppearanceMode,
@@ -12,7 +14,10 @@ import {
   mirrorThemePrefs,
 } from "../../../mobile/src/theme-core";
 import { fixtureServers, fixtureInitialRoute, readHubFixture } from "../../../mobile/src/fixture";
+import { loadConfig } from "../../core/config.js";
 import { resolveShotTargets } from "../../core/shot-targets.js";
+
+const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
 function stubMatchMedia(dark = true) {
   Object.defineProperty(window, "matchMedia", {
@@ -79,6 +84,19 @@ describe("mobile hub theme", () => {
     expect(document.documentElement.dataset.theme).toBe("dark");
   });
 
+  it("persists system appearance mode and resolves it from matchMedia", () => {
+    stubMatchMedia(false);
+    mirrorThemePrefs("jelly", "system");
+    expect(localStorage.getItem(APPEARANCE_KEY)).toBe("system");
+    const boot = bootThemeFromStorage();
+    expect(boot.appearanceMode).toBe("system");
+    applyThemesToDocument(boot.design, boot.appearanceMode);
+    expect(document.documentElement.dataset.theme).toBe("light");
+    stubMatchMedia(true);
+    applyThemesToDocument(boot.design, boot.appearanceMode);
+    expect(document.documentElement.dataset.theme).toBe("dark");
+  });
+
   it("lists every web design theme the shell exposes", () => {
     expect(DESIGN_THEMES.map((t) => t.id)).toEqual([
       "classic",
@@ -125,19 +143,45 @@ describe("mobile hub fixtures and navigation", () => {
   });
 });
 
+describe("mobile hub server list states", () => {
+  it.each([
+    ["empty", 0, [] as string[]],
+    ["one", 1, ["dev"]],
+    ["many", 3, ["dev", "celleris", "staging"]],
+    ["unreachable", 1, ["offline"]],
+  ] as const)("%s fixture seeds %i servers", (fixture, count, names) => {
+    const servers = fixtureServers(fixture) ?? [];
+    expect(servers).toHaveLength(count);
+    expect(servers.map((s) => s.name)).toEqual(names);
+    expect(fixtureInitialRoute(fixture)).toBe("picker");
+    for (const server of servers) {
+      expect(server.url).toMatch(/^https:\/\//);
+    }
+  });
+});
+
+describe("mobile hub settings navigation", () => {
+  it("opens settings and add flows from fixture query params", () => {
+    setLocationSearch("?fixture=settings");
+    expect(fixtureInitialRoute(readHubFixture())).toBe("settings");
+    setLocationSearch("?fixture=add");
+    expect(fixtureInitialRoute(readHubFixture())).toBe("add");
+    setLocationSearch("?fixture=one");
+    expect(fixtureInitialRoute(readHubFixture())).toBe("picker");
+    expect(fixtureServers(readHubFixture())).toHaveLength(1);
+  });
+
+  it("does not inject servers for settings or add fixtures", () => {
+    expect(fixtureServers("settings")).toBeNull();
+    expect(fixtureServers("add")).toBeNull();
+  });
+});
+
 describe("mobile preview target", () => {
-  it("resolves repoos-mobile-dev from mobile/** path changes", () => {
-    const preview = {
-      targets: [
-        {
-          name: "repoos-mobile-dev",
-          areas: ["mobile"],
-          paths: ["mobile/**"],
-          command: "bun run dev -- --port {port} --host {host} --strictPort",
-          cwd: "mobile",
-        },
-      ],
-    };
+  it("registers repoos-mobile-dev in repoos.toml and resolves mobile paths", () => {
+    const preview = loadConfig(repoRoot).preview;
+    const names = preview.targets?.map((t) => t.name) ?? [];
+    expect(names).toContain("repoos-mobile-dev");
     const r = resolveShotTargets(preview, "mobile", ["mobile/src/App.vue"]);
     expect(r.names).toContain("repoos-mobile-dev");
   });
