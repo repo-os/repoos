@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-11-15T23:04:23Z"
-review_passes: 2
 id: "1137"
 title: "Mobile web task detail: one full touch detail for every entry point (card view is a read-only stub; drawer tabs and close clipped)"
 type: bug
-status: review
+status: active
 paths: [src/ui-app/src/components/MobileTaskDetail.vue, src/ui-app/src/App.vue, src/ui-app/src/components/TaskDrawer.vue]
 priority: p1
 area: web
@@ -13,6 +11,8 @@ assigned_to: ai
 created_by: t@t
 branch: feat/mobile-web-task-detail-one-full-touch-de
 created_at: "2026-11-15T17:24:03Z"
+updated_at: "2026-11-15T23:18:54Z"
+review_passes: 2
 review_rounds: 1
 routing_switches: 1
 dev_error_count: 3
@@ -167,4 +167,5 @@ On a phone there's a single task detail, whichever way it was opened (card, sear
 - 2026-11-15T23:04:22Z · note: ui verification passed: 2 of 3 shots captured with clean console
 - 2026-11-15T23:04:23Z · message_queued at 2026-11-15T23:04:23.600Z
 - 2026-11-15T23:04:23Z · note: review pass 2: good to go
-
+- 2026-11-15T23:18:54Z · status review→active
+- 2026-11-15T23:18:54Z · note: close-out repair: merge-conflict
