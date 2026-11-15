@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/wire-notarization-and-ticket-stapling-in
 created_at: "2026-09-28T18:43:47Z"
-updated_at: "2026-11-15T21:36:05Z"
+updated_at: "2026-11-15T21:37:02Z"
 ---
 After the release app and its DMG are signed as specified by #0578, the macOS Hub release job must submit the DMG to Apple's notary service, wait for approval, staple Apple's ticket to that same DMG, and verify the result before attaching it to a GitHub Release. This completes the distribution path needed for Gatekeeper to trust the downloaded artifact, including offline verification from the stapled ticket.
 
@@ -60,3 +60,4 @@ There is no UI change in this task: users receive a notarized, stapled DMG, whil
 - 2026-10-07T16:09:27Z · body: section Acceptance criteria
 - 2026-11-15T21:28:16Z · status ready→active, branch
 - 2026-11-15T21:36:05Z · body
+- 2026-11-15T21:37:02Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: Waiting for the scoped check to complete before requesting handoff. · stderr: (empty)
