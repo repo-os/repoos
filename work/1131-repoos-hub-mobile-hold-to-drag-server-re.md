@@ -2,7 +2,7 @@
 id: "1131"
 title: "RepoOS Hub mobile: hold-to-drag server reordering, and move Find servers on my tailnet next to Add server"
 type: feature
-status: active
+status: review
 priority: p1
 area: mobile
 story: RepoOS Hub for Mobile
@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/repoos-hub-mobile-hold-to-drag-server-re
 created_at: "2026-11-15T14:39:13Z"
-updated_at: "2026-11-15T16:49:07Z"
+updated_at: "2026-11-15T16:50:15Z"
 last_check_failure: "repoos check at 2026-11-15T16:20:20.969Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 ---
 ## Problem
@@ -88,4 +88,4 @@ Hold-to-drag feel, haptics and iOS gesture behavior are covered by code and comp
 - 2026-11-15T16:48:54Z · body
 - 2026-11-15T16:49:07Z · message_queued at 2026-11-15T16:49:07.009Z
 - 2026-11-15T16:49:07Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-
+- 2026-11-15T16:50:15Z · status active→review
