@@ -1,6 +1,6 @@
 ---
 id: "1132"
-title: Sync the budget allowlist across every RepoOS project and server on the tailnet
+title: "Allowlist groups: projects that opt into the same group share one budget allowlist across machines"
 type: feature
 status: inbox
 priority: p1
@@ -9,28 +9,35 @@ assigned_to: ai
 created_by: t@t
 branch: ""
 created_at: "2026-11-15T15:20:04Z"
-updated_at: "2026-11-15T15:20:04Z"
+updated_at: "2026-11-15T15:25:40Z"
 ---
 ## Problem
-The budget allowlist (`[[budget.allowlist]]`: CLIs, models, paused, pausedUntil, pausedModels, pausedReason) lives only in each repo's committed `repoos.toml`. Nick runs at least five projects on three machines: repoos on his MacBook, tiao and tuk-driver on bee, and neung and laisen on thinkpad. Whenever a quota resets or an account changes, he has to edit every file by hand on every machine.
+The budget allowlist (`[[budget.allowlist]]`: CLIs, models, paused, pausedUntil, pausedModels, pausedReason) lives only in each repo's committed `repoos.toml`. Nick works for several companies. Each company has its own coding agents, model providers, accounts and quotas, and its projects are spread across his MacBook, bee and thinkpad. Projects that belong together, because they share the same company and the same logins, have to be hand-edited one by one. Nothing ties them together, and nothing notices when they drift apart.
 
-On 15 Nov 2026 Codex came back. tuk-driver, neung, laisen and repoos still had codex fully paused (`paused = true`, `pausedUntil = "2026-11-15T12:00:00.000Z"`), while tiao had only gpt-6.1-terra paused. Each one had to be edited and committed separately. Nothing showed that the projects had drifted apart.
+On 15 Nov 2026 Codex came back. tuk-driver, neung, laisen and repoos still had codex fully paused (`paused = true`, `pausedUntil = "2026-11-15T12:00:00.000Z"`), while tiao had only gpt-6.1-terra paused. Each one had to be edited and committed separately.
+
+The tailnet as a whole must **not** share one allowlist. Projects for different companies must not leak CLIs, models or pause state into each other.
 
 ## Desired UX
-- A user-level allowlist on each machine (for example `~/.config/repoos/allowlist.toml`) holds which CLIs and models the user can use and their pause state. Every project on that machine inherits it. A project's `repoos.toml` can add project-specific overrides only.
-- A pause or resume made in one place (Settings > Budget Controls, or `repoos allowlist pause|resume <cli> [model] [--until <time>]`) applies on this machine. It can also be pushed to every RepoOS server reachable on the tailnet, using the same server-assisted discovery as #1127 (`GET /api/servers/tailnet`), behind a confirmation that lists the hosts and projects affected.
-- Each project's Settings page shows where every entry comes from (user, project or synced from a host), and shows a drift warning when this project or machine differs from the others.
+- **Allowlist groups:** a named group (for example `personal` or `acme`) holds an allowlist covering CLIs, models and pause state. A project joins a group explicitly in its `repoos.toml` (for example `[budget] allowlistGroup = "personal"`). A project with no group keeps today's project-only behavior.
+- A project's own `[[budget.allowlist]]` entries layer on top of its group as overrides. Settings > Budget Controls shows the group name and where each entry comes from (group or project).
+- A pause or resume in any member project updates the group. Every member project picks it up: on the same machine, and on other machines over the tailnet. Only members of that group change.
+- Group members on other machines are found through server-assisted tailnet discovery (#1127, `GET /api/servers/tailnet`), and only those that declare the same group name are included. Before a change goes out, a confirmation lists the projects and hosts that will be updated. Each one then reports applied, unreachable or refused.
+- Settings shows a drift warning when a member's effective allowlist differs from its group, with a one-click "Re-sync from group".
+- Logins and credentials are never synced. A group says which CLIs and models are allowed and paused, and each machine still uses its own local login. A member whose machine isn't logged in to an allowed CLI shows that it's not logged in on that host, rather than failing silently.
 
 ## Acceptance criteria
-- Merging: the user-level allowlist is the base and `repoos.toml` entries override it per CLI or model. Existing project-only configs keep working unchanged. Table-driven tests cover the merge.
-- A timed pause (`pausedUntil`) ends on its own at that time on every machine, with no file edits. An expired pause never keeps blocking starts.
-- `repoos allowlist sync --tailnet` (and the matching UI button) applies a change to every reachable server. It reports each host and project as applied, unreachable or refused, and never pushes git or edits other repos' committed files without explicit opt-in.
-- Settings > Budget Controls shows the source of each entry and any drift between projects.
-- The new config keys get a `getConfigSchema()` entry, a Settings control, an entry in the supported-keys list, and docs in user-docs.
+- A project config can set `allowlistGroup`. Merging works as group base plus project overrides, with table-driven tests. Projects without a group behave exactly as they do today.
+- A group's state is stored outside any single repo's committed `repoos.toml` (for example `~/.config/repoos/allowlist-groups/<name>.toml` on each machine, with a version or updatedAt so the newest change wins). It isn't committed into project repos, and it never holds secrets.
+- A pause or resume through the UI or `repoos allowlist pause|resume <cli> [model] [--until <time>]` reaches every reachable member of that group, on any tailnet host, and no other project. A test proves a project in group B is untouched by a change in group A.
+- Timed pauses (`pausedUntil`) end on their own on every member, and an expired pause never blocks starts.
+- Remote updates need auth on the receiving server. There's no unauthenticated write endpoint. Nothing pushes git or edits another repo's committed files.
+- Budget Controls shows the group name, where each entry comes from, any drift, and Re-sync. New config keys get a `getConfigSchema()` entry, a Settings control, an entry in the supported-keys list, and user-docs.
 
 ## Notes for AI
-Look at `collectTailnetServers` in src/commands/servers.ts, src/core/tailnet-servers.ts, the `/api/servers/tailnet` route in src/server/routes/servers.ts, and how `budget.allowlist` is read today. Remote writes need auth on every server, so don't add an unauthenticated write endpoint.
+Start from how `budget.allowlist` is read and merged today, `collectTailnetServers` in src/commands/servers.ts, src/core/tailnet-servers.ts, and the `/api/servers/tailnet` route in src/server/routes/servers.ts. Keep the design for one machine with several groups working with no network access. Tailnet propagation is a layer on top. Don't make the tailnet a single group by default.
 
 ## Activity
 
 - 2026-11-15T15:20:04Z · created · t@t
+- 2026-11-15T15:25:40Z · title, body: Problem (added 3, removed 2); Desired UX (added 6, removed 3); Acceptance criteria (added 6, removed 5); Notes for AI (added 1, removed 1)
