@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/repoos-hub-mobile-hold-to-drag-server-re
 created_at: "2026-11-15T14:39:13Z"
-updated_at: "2026-11-15T15:44:33Z"
+updated_at: "2026-11-15T15:48:50Z"
 ---
 ## Problem
 Feedback from Nick after testing the #1127 build on his Nothing Phone (3a):
@@ -50,3 +50,4 @@ Hold-to-drag feel, haptics and iOS gesture behavior are covered by code and comp
 - 2026-11-15T15:34:25Z · message_delivered: 1 message(s)
 - 2026-11-15T15:36:10Z · body
 - 2026-11-15T15:44:33Z · body
+- 2026-11-15T15:48:50Z · body
