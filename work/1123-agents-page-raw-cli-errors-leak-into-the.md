@@ -12,7 +12,7 @@ branch: feat/agents-page-raw-cli-errors-leak-into-the
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-14T18:02:14Z"
-updated_at: "2026-11-15T04:02:28Z"
+updated_at: "2026-11-15T04:02:45Z"
 last_close_out_gate_ms: 1172266
 last_close_out_gate_at: "2026-11-15T04:02:28.023Z"
 review_passes: 1
@@ -115,4 +115,4 @@ Build on #1098 (src/core/agent-failure.ts, `splitAgentFailureDetail`). Related: 
 - 2026-11-14T19:46:34Z · note: review pass 1: good to go
 - 2026-11-14T21:07:42Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-15T04:02:28Z · close-out gate completed in 1172s
-
+- 2026-11-15T04:02:45Z · status done→done, release:success
