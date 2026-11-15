@@ -3,6 +3,9 @@ id: "1139"
 title: "Mobile web polish: 44px tap targets, no iOS input zoom, touch-only hints, landscape/tablet layout, PWA start page and icon"
 type: bug
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: the agent process exited with an error — open the task to see the full output
 priority: p2
 area: web
 story: RepoOS Hub for Mobile
@@ -10,7 +13,8 @@ assigned_to: ai
 created_by: t@t
 branch: feat/mobile-web-polish-44px-tap-targets-no-io
 created_at: "2026-11-15T17:24:09Z"
-updated_at: "2026-11-15T21:08:44Z"
+updated_at: "2026-11-15T21:27:51Z"
+dev_error_count: 1
 ---
 ## Problem
 Smaller mobile issues found on main `23dc737` (Chromium mobile emulation; 360/390/412 portrait, 740/844 landscape, 768 tablet):
@@ -62,3 +66,5 @@ Smaller mobile issues found on main `23dc737` (Chromium mobile emulation; 360/39
 - 2026-11-15T20:38:24Z · status ready→active, branch
 - 2026-11-15T20:54:48Z · body
 - 2026-11-15T21:08:44Z · body
+- 2026-11-15T21:27:51Z · note: stopped orphaned engineer pid 20251
+- 2026-11-15T21:27:51Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
