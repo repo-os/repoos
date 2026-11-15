@@ -73,3 +73,4 @@ Hold-to-drag feel, haptics and iOS gesture behavior are covered by code and comp
 - 2026-11-15T16:35:42Z · body
 - 2026-11-15T16:37:46Z · queued message undelivered for 4m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-15T16:37:46Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 130) · last assistant: Check passed. Tests were skipped by the runner env (`REPOOS_SKIP_TESTS=1`), so let me run the affected suites directly to be sure. · stderr: (empty)
+- 2026-11-15T16:37:46Z · message_delivered: 1 message(s)
