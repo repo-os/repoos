@@ -11,7 +11,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/mobile-web-task-detail-one-full-touch-de
 created_at: "2026-11-15T17:24:03Z"
-updated_at: "2026-11-15T21:43:46Z"
+updated_at: "2026-11-15T21:49:00Z"
 dev_error_count: 3
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-11-15T21:27:52.574Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -131,3 +131,4 @@ On a phone there's a single task detail, whichever way it was opened (card, sear
 - 2026-11-15T21:41:34Z · body
 - 2026-11-15T21:43:37Z · body
 - 2026-11-15T21:43:46Z · body
+- 2026-11-15T21:49:00Z · body
