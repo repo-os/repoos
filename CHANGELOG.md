@@ -5,6 +5,14 @@ pipeline from `release-history.json`; the newest entry is also the GitHub
 release body. The full discussion of each change lives in the release notes
 and on GitHub.
 
+## [v0.5.87] - 2026-11-15
+
+Fixed the app page losing its full-height layout: since the last release the main content didn't scroll properly and the bottom dock and toolbars could overlap content. The layout is restored to normal.
+
+Reliability improvements in the task pipeline: fixed several timing-sensitive internal tests (remote host pool, agent review, pressure guard, agent drivers) that were failing close-out and handoff steps on slower or loaded machines, causing healthy work to be blocked by false failures for 15–20 minutes at a time. The tests now use injected clocks and isolated resources, so automated task landing should fail far less often. As part of this, the pressure guard no longer mixes test-injected probes with live CPU sampling.
+
+[Release on GitHub](https://github.com/repo-os/repoos/releases/tag/v0.5.87)
+
 ## [v0.5.86] - 2026-11-15
 
 ## Highlights
