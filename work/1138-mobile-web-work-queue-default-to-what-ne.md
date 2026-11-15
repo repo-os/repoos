@@ -12,7 +12,6 @@ created_by: t@t
 branch: feat/mobile-web-work-queue-default-to-what-ne
 created_at: "2026-11-15T17:24:06Z"
 updated_at: "2026-11-15T20:07:37Z"
-deferred_handoff_resume_count: 1
 ---
 ## Problem
 Nick: on a phone it's "really hard to find the right task and do anything normal". On main `23dc737`, the mobile Work queue (MobileWorkQueue.vue):
