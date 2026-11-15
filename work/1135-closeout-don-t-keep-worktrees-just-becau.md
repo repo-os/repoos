@@ -30,3 +30,4 @@ Look at the worktree cleanup in the closeout path (the code behind `repoos done`
 - 2026-11-15T17:15:35Z · status inbox→ready
 - 2026-11-15T17:15:37Z · status ready→active, branch
 - 2026-11-15T17:34:07Z · message_queued at 2026-11-15T17:34:07.214Z
+- 2026-11-15T17:34:07Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
