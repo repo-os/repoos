@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-15T18:57:43Z"
+review_passes: 2
 id: "1132"
 title: "Allowlist groups: projects that opt into the same group share one budget allowlist across machines"
 type: feature
@@ -9,10 +11,8 @@ assigned_to: ai
 created_by: t@t
 branch: feat/allowlist-groups-projects-that-opt-into-
 created_at: "2026-11-15T15:20:04Z"
-updated_at: "2026-11-15T18:57:43Z"
 review_rounds: 1
 routing_switches: 1
-review_passes: 1
 ---
 ## Problem
 The budget allowlist (`[[budget.allowlist]]`: CLIs, models, paused, pausedUntil, pausedModels, pausedReason) lives only in each repo's committed `repoos.toml`. Nick works for several companies. Each company has its own coding agents, model providers, accounts and quotas, and its projects are spread across his MacBook, bee and thinkpad. Projects that belong together, because they share the same company and the same logins, have to be hand-edited one by one. Nothing ties them together, and nothing notices when they drift apart.
@@ -86,3 +86,4 @@ Start from how `budget.allowlist` is read and merged today, `collectTailnetServe
 - 2026-11-15T18:57:42Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
 - 2026-11-15T18:57:43Z · handoff failed · task-file handoff failed at review · Engineering report narrative is 1263 words; the hard limit is 1,200 words of narrative. Shorten it and request handoff again.
 - 2026-11-15T18:57:43Z · note: review pass 2: good to go
+
