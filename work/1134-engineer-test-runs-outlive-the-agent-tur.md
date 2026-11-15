@@ -143,3 +143,4 @@ Look at the engineer turn spawner and process-group reaping in src/core (search 
 - 2026-11-15T18:57:11Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 130) · last assistant: no assistant message · stderr: (empty)
 - 2026-11-15T18:57:11Z · message_delivered: 1 message(s)
 - 2026-11-15T18:59:07Z · message_queued at 2026-11-15T18:59:07.003Z
+- 2026-11-15T18:59:07Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
