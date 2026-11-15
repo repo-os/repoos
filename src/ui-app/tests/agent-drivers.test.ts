@@ -409,6 +409,9 @@ describe("engineer resource limits (#0961)", () => {
     try {
       const start = runner.start(TASK, "feat/x", agent("opencode"), { cwd: fx.bin });
       expect(start.ok).toBe(true);
+      if (start.queued) {
+        await waitFor(() => !runner.isQueued("0001"), "engineer dequeued from slot hold");
+      }
       await waitFor(() => existsSync(fx.log) && spawns(fx).length === 1, "engineer resource spawn");
       await waitFor(() => !runner.isRunning("0001"), "engineer resource turn exit");
 

@@ -3,7 +3,7 @@
  * block starts; swap/compressor occupancy is advisory. Every test uses injected
  * samples — never the real machine.
  */
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   activityRatesBetween,
   parseDarwinMemoryPressureLevel,
@@ -26,8 +26,11 @@ import {
 import {
   evaluatePressure,
   pressureReason,
+  pressureSnapshot,
   pressureSnapshotForDisplay,
   pressureThresholds,
+  resetCpuIdleSampling,
+  sampleCpuIdlePercent,
   waitForPressureRelief,
 } from "../../core/pressure-guard.js";
 import type { RepoOSConfig } from "../../core/types.js";
@@ -88,9 +91,14 @@ function probe(...sequence: MemoryReadings[]): MemoryPressureProbe {
   };
 }
 
+beforeEach(() => {
+  resetCpuIdleSampling();
+});
+
 afterEach(() => {
   vi.useRealTimers();
   resetDefaultActivityTracker();
+  resetCpuIdleSampling();
 });
 
 describe("platform pressure parsers", () => {
@@ -486,6 +494,15 @@ describe("waitForPressureRelief", () => {
       onWaiting: (reason) => waiting.push(reason),
     });
     expect(waiting).toHaveLength(0);
+  });
+
+  it("does not mix a live CPU-idle sample into an injected memory probe", () => {
+    const relief = probe(readings({ swapIoBytesPerSec: 0, activityWindowSec: 30 }));
+    sampleCpuIdlePercent();
+    const idle = sampleCpuIdlePercent();
+    expect(idle).not.toBeNull();
+    expect(idle!).toBeLessThan(100);
+    expect(pressureSnapshot(config(), relief).reason).toBeNull();
   });
 
   it("waits until a fake probe reports relief, then proceeds", async () => {
