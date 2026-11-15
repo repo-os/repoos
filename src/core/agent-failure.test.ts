@@ -102,4 +102,38 @@ describe("classifyAgentFailure", () => {
       "Claude usage limit reached until 14:00.",
     );
   });
+
+  it("does not repeat the summary when formatting an already-formatted failure", () => {
+    const raw = 'opencode exited with code 1\n{"error":"boom"}';
+    const once = formatAgentFailure(raw, "opencode");
+    const twice = formatAgentFailure(once, "opencode");
+    expect(twice).toBe(once);
+    expect(twice.match(/OpenCode exited with an error/g)).toHaveLength(1);
+    expect(twice.match(/opencode exited with code 1/g)).toHaveLength(1);
+  });
+
+  it("keeps a stored OpenCode summary without repeating it inside the CLI tail (#1133)", () => {
+    const stored = "OpenCode exited with an error. Open Raw CLI error for details.";
+    expect(formatAgentFailure(stored, "opencode")).toBe(stored);
+    expect(splitAgentFailureDetail(formatAgentFailure(stored, "opencode"))).toEqual({
+      summary: stored,
+      raw: null,
+    });
+  });
+
+  it("keeps an already-concise classified summary unchanged", () => {
+    const stored = "OpenCode is out of credit. Add balance, or pick another model.";
+    expect(formatAgentFailure(stored, "opencode")).toBe(stored);
+  });
+
+  it("re-formats the raw tail of a stored formatted failure exactly once", () => {
+    const stored =
+      "opencode exited with code 1: Error: You need positive balance to do inference. (CLI: opencode exited with code 1: Error: You need positive balance to do inference.)";
+    const formatted = formatAgentFailure(stored, "opencode");
+    const parts = splitAgentFailureDetail(formatted);
+    expect(parts.summary).toBe("OpenCode is out of credit. Add balance, or pick another model.");
+    expect(parts.raw).toBe(
+      "opencode exited with code 1: Error: You need positive balance to do inference.",
+    );
+  });
 });

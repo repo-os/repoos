@@ -386,6 +386,10 @@ the service, RepoOS shows a short plain-language explanation and a suggested nex
 step on the task. Other failures get a one-line summary with the full CLI output
 behind a **Raw CLI error** disclosure. Signed-out and unavailable-model failures
 also create one board bell notice per agent; a later successful run clears that
-notice. On the **Default agents** tab, the last-runs list shows configured roles
-and built-ins from the last 14 days; use **Show older and other runs** for stale
-rows, removed roles, and model-routing one-shots.
+notice. On the **Default agents** tab each agent card shows its latest run
+inline next to the agent's name — for example **Failed 21:36** or **Last run
+21:40**. Expanding a failed run shows the same plain-language reason and the
+**Raw CLI error** disclosure, with a link to the task's log. A run from an older
+coding agent + model is labelled **Previous setup (opencode + …)** rather than
+presented as the agent's current status. Older runs stay available in the
+activity log.

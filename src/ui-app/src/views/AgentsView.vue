@@ -5,11 +5,7 @@ import { Star } from "lucide-vue-next";
 import { useConfigStore, type ModelListNotice } from "../stores/config";
 import { useDocsStore } from "../stores/docs";
 import { api, JSON_OPTS } from "../api";
-import { splitAgentFailureDetail } from "../../../core/agent-failure.js";
-import {
-  buildConfiguredAgentLastRunNames,
-  filterAgentLastRuns,
-} from "../../../core/agent-last-runs.js";
+import type { AgentLastRunRow } from "../../../core/agent-last-runs.js";
 import { copyToClipboard } from "../lib/clipboard";
 import type {
   Agent,
@@ -53,63 +49,24 @@ const route = useRoute();
 const docs = useDocsStore();
 const reminders = useRemindersStore();
 
-interface AgentLastRun {
-  name: string;
-  status: string;
-  at: string;
-  taskId: string | null;
-  reason: string | null;
-}
-const agentLastRuns = ref<AgentLastRun[]>([]);
-const showAllAgentLastRuns = ref(false);
-const BUILTIN_LAST_RUN_AGENT_IDS = [
-  "debugger",
-  "tech-debt",
-  "performance",
-  "architect",
-  "design",
-  "docs-debt",
-];
+const agentLastRuns = ref<AgentLastRunRow[]>([]);
 async function loadAgentLastRuns(): Promise<void> {
   try {
-    const result = await api<{ agents: AgentLastRun[] }>("/api/agents/last-runs");
+    const result = await api<{ agents: AgentLastRunRow[] }>("/api/agents/last-runs");
     agentLastRuns.value = result.agents;
   } catch {
     agentLastRuns.value = [];
   }
 }
-const configuredLastRunAgentNames = computed(() => {
-  const roleNames = localAgents.value.map((a) => a.name);
-  const builtIn = config.data?.builtInAgents;
-  const configuredBuiltIns =
-    builtIn && typeof builtIn === "object"
-      ? Object.keys(builtIn as Record<string, unknown>)
-      : BUILTIN_LAST_RUN_AGENT_IDS;
-  return buildConfiguredAgentLastRunNames(roleNames, configuredBuiltIns);
+const lastRunByName = computed(() => {
+  const runs = new Map<string, AgentLastRunRow>();
+  for (const run of agentLastRuns.value) {
+    if (run.name) runs.set(run.name.trim().toLowerCase(), run);
+  }
+  return runs;
 });
-const agentLastRunsHiddenCount = computed(
-  () =>
-    filterAgentLastRuns(agentLastRuns.value, configuredLastRunAgentNames.value, Date.now(), false)
-      .hiddenCount,
-);
-const filteredAgentLastRuns = computed(() => {
-  const { visible, hiddenCount } = filterAgentLastRuns(
-    agentLastRuns.value,
-    configuredLastRunAgentNames.value,
-    Date.now(),
-    showAllAgentLastRuns.value,
-  );
-  return { visible, hiddenCount };
-});
-function lastRunFailureParts(reason: string | null): { summary: string; raw: string | null } {
-  if (!reason) return { summary: "", raw: null };
-  return splitAgentFailureDetail(reason);
-}
-function lastRunStatusLabel(status: string): string {
-  if (status === "errored") return "Failed";
-  if (status === "active" || status === "running") return "Running";
-  if (status === "ok" || status === "succeeded") return "Succeeded";
-  return status;
+function lastRunFor(name: string): AgentLastRunRow | null {
+  return lastRunByName.value.get(name.trim().toLowerCase()) ?? null;
 }
 
 type AgentTab =
@@ -854,52 +811,6 @@ onUnmounted(() => {
             Headless task-engine roles that run the roadmap. Toggle them on or off and pick their
             coding agent and model.
           </div>
-          <div
-            v-if="filteredAgentLastRuns.visible.length || filteredAgentLastRuns.hiddenCount"
-            class="agents-last-runs"
-            data-testid="agents-last-runs"
-          >
-            <div
-              v-for="run in filteredAgentLastRuns.visible"
-              :key="run.name"
-              class="agents-last-run"
-              :data-status="run.status"
-            >
-              <span class="agents-last-run-name">{{ run.name }}</span>
-              <span
-                >{{ lastRunStatusLabel(run.status) }} ·
-                {{ new Date(run.at).toLocaleString() }}</span
-              >
-              <span v-if="run.reason" class="agents-last-run-reason">{{
-                lastRunFailureParts(run.reason).summary
-              }}</span>
-              <details
-                v-if="run.reason && lastRunFailureParts(run.reason).raw"
-                class="agent-failure-raw"
-              >
-                <summary>Raw CLI error</summary>
-                <pre>{{ lastRunFailureParts(run.reason).raw }}</pre>
-              </details>
-            </div>
-            <button
-              v-if="agentLastRunsHiddenCount && !showAllAgentLastRuns"
-              type="button"
-              class="agents-last-runs-toggle"
-              data-testid="agents-last-runs-toggle"
-              @click="showAllAgentLastRuns = true"
-            >
-              Show older and other runs ({{ agentLastRunsHiddenCount }})
-            </button>
-            <button
-              v-else-if="showAllAgentLastRuns && agentLastRunsHiddenCount"
-              type="button"
-              class="agents-last-runs-toggle"
-              data-testid="agents-last-runs-toggle"
-              @click="showAllAgentLastRuns = false"
-            >
-              Show recent default agents only
-            </button>
-          </div>
           <AgentCard
             v-for="a in sortedHeadlessAgents"
             :key="a.name"
@@ -910,6 +821,7 @@ onUnmounted(() => {
             :skills-available="config.agentsMeta.skills.length > 0"
             :testing="!!testing[testKey(a)]"
             :test-result="resultFor(a)"
+            :last-run="lastRunFor(a.name)"
             :register-instr-ref="(el) => defaultInstrRefs.set(a.name, el)"
             @test="testAgent(a)"
             @open-skills="openSkillsModal(a)"
@@ -992,6 +904,7 @@ onUnmounted(() => {
             :skills-available="config.agentsMeta.skills.length > 0"
             :testing="!!testing[testKey(a)]"
             :test-result="resultFor(a)"
+            :last-run="lastRunFor(a.name)"
             :register-instr-ref="(el) => defaultInstrRefs.set(a.name, el)"
             @test="testAgent(a)"
             @open-skills="openSkillsModal(a)"
@@ -1001,7 +914,7 @@ onUnmounted(() => {
             @transcribed="onDefaultInstrTranscribed(a.name, $event)"
           />
 
-          <BuiltInAgentCard agent="debugger" interactive />
+          <BuiltInAgentCard agent="debugger" interactive :last-run="lastRunFor('debugger')" />
           <BuiltInAgentCard agent="tech-debt" />
           <BuiltInAgentCard agent="performance" />
           <BuiltInAgentCard agent="architect" />
@@ -1314,47 +1227,3 @@ onUnmounted(() => {
     </Teleport>
   </div>
 </template>
-
-<style scoped>
-.agents-last-runs {
-  display: grid;
-  gap: 6px;
-  margin: 0 0 14px;
-}
-.agents-last-run {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 8px 14px;
-  padding: 8px 10px;
-  border-left: 2px solid var(--line);
-  color: var(--text-muted);
-  font-size: 12px;
-}
-.agents-last-run[data-status="errored"] {
-  border-left-color: var(--red);
-}
-.agents-last-run-name {
-  min-width: 90px;
-  color: var(--text);
-  font-weight: 650;
-}
-.agents-last-run-reason {
-  flex-basis: 100%;
-  color: var(--text);
-}
-.agents-last-runs-toggle {
-  justify-self: start;
-  padding: 0;
-  border: 0;
-  background: none;
-  color: var(--link, var(--cyan));
-  font-size: 12px;
-  cursor: pointer;
-  text-decoration: underline;
-  text-underline-offset: 2px;
-}
-.agents-last-runs-toggle:hover {
-  color: var(--text);
-}
-</style>

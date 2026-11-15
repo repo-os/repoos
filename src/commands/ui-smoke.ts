@@ -194,8 +194,12 @@ async function runUISmokeTest(): Promise<void> {
     const hasBrand = await page.evaluate(() => document.body.innerText.includes("RepoOS"));
     if (!hasBrand) throw new Error('Expected "RepoOS" in rendered content');
 
-    const assertNoHorizontalOverflow = async (label: string, url: string) => {
-      await page.setViewportSize({ width: 375, height: 812 });
+    const assertNoHorizontalOverflow = async (
+      label: string,
+      url: string,
+      width = 375,
+    ): Promise<void> => {
+      await page.setViewportSize({ width, height: width < 600 ? 812 : 900 });
       await page.goto(url, { waitUntil: "load", timeout: 20_000 });
       await page.waitForFunction(
         () =>
@@ -209,13 +213,25 @@ async function runUISmokeTest(): Promise<void> {
       }));
       if (dims.scrollWidth > dims.innerWidth) {
         throw new Error(
-          `${label} overflow at 375px viewport: body scrollWidth ${dims.scrollWidth} > innerWidth ${dims.innerWidth}`,
+          `${label} overflow at ${width}px viewport: body scrollWidth ${dims.scrollWidth} > innerWidth ${dims.innerWidth}`,
         );
       }
     };
 
     await assertNoHorizontalOverflow("dashboard", server.url);
     await assertNoHorizontalOverflow("docs", `${server.url}/repo`);
+    // #1133 — the Agents page replaced its header log with inline per-card
+    // status. Check both desktop and phone widths, and that the removed block
+    // and toggle do not come back.
+    await assertNoHorizontalOverflow("agents", `${server.url}/agents`, 1280);
+    const legacyLastRuns = await page.evaluate(() => ({
+      block: Boolean(document.querySelector('[data-testid="agents-last-runs"]')),
+      toggle: Boolean(document.querySelector('[data-testid="agents-last-runs-toggle"]')),
+    }));
+    if (legacyLastRuns.block || legacyLastRuns.toggle) {
+      throw new Error("Agents page still renders the removed last-runs block or toggle (#1133)");
+    }
+    await assertNoHorizontalOverflow("agents", `${server.url}/agents`);
 
     // Navigate to work page and click +New Task
     await page.setViewportSize({ width: 1280, height: 900 });

@@ -1,72 +1,105 @@
 import { describe, expect, it } from "vitest";
-import { formatAgentFailure } from "./agent-failure.js";
 import {
-  AGENT_LAST_RUN_RECENT_MS,
-  buildConfiguredAgentLastRunNames,
-  filterAgentLastRuns,
-  type AgentLastRunRow,
+  agentRunTone,
+  describeAgentRunSetup,
+  formatAgentRunLabel,
+  matchAgentRunSetup,
+  normalizeCodingAgent,
+  normalizeModelName,
 } from "./agent-last-runs.js";
 
-describe("filterAgentLastRuns", () => {
-  const now = Date.parse("2026-11-15T12:00:00.000Z");
-  const recentAt = new Date(now - 2 * 24 * 60 * 60 * 1000).toISOString();
-  const staleAt = new Date(now - 30 * 24 * 60 * 60 * 1000).toISOString();
-  const names = buildConfiguredAgentLastRunNames(
-    ["engineer", "reviewer"],
-    ["debugger", "docs-debt"],
-  );
+const current = { cli: "opencode", model: "glm-5.3-flash" };
 
-  const rows: AgentLastRunRow[] = [
-    { name: "engineer", status: "ok", at: recentAt, taskId: "1", reason: null },
-    { name: "docs-debt", status: "errored", at: staleAt, taskId: null, reason: "old failure" },
-    { name: "design", status: "errored", at: recentAt, taskId: null, reason: "not configured" },
-    {
-      name: "Model router (openrouter)",
-      status: "errored",
-      at: recentAt,
-      taskId: null,
-      reason: "quota",
-    },
-    {
-      name: "Decision check (jev)",
-      status: "errored",
-      at: recentAt,
-      taskId: null,
-      reason: "timeout",
-    },
-  ];
-
-  it("shows only recent configured agents by default", () => {
-    const { visible, hiddenCount } = filterAgentLastRuns(rows, names, now, false);
-    expect(visible.map((r) => r.name)).toEqual(["engineer"]);
-    expect(hiddenCount).toBe(4);
-  });
-
-  it("reveals hidden rows when the toggle is on", () => {
-    const { visible, hiddenCount } = filterAgentLastRuns(rows, names, now, true);
-    expect(visible).toHaveLength(5);
-    expect(hiddenCount).toBe(0);
-  });
-
-  it("uses a fourteen-day recency window", () => {
-    expect(AGENT_LAST_RUN_RECENT_MS).toBe(14 * 24 * 60 * 60 * 1000);
-    const borderlineAt = new Date(now - AGENT_LAST_RUN_RECENT_MS).toISOString();
-    const { visible } = filterAgentLastRuns(
-      [{ name: "engineer", status: "ok", at: borderlineAt, taskId: null, reason: null }],
-      names,
-      now,
-      false,
+describe("matchAgentRunSetup", () => {
+  it("treats a run from the agent's current CLI and model as current", () => {
+    expect(matchAgentRunSetup({ codingAgent: "opencode", model: "glm-5.3-flash" }, current)).toBe(
+      "current",
     );
-    expect(visible).toHaveLength(1);
+  });
+
+  it("never reports a run from an older coding agent as current", () => {
+    expect(
+      matchAgentRunSetup(
+        { codingAgent: "opencode", model: "glm-5.3-flash" },
+        {
+          cli: "codex",
+          model: "gpt-5",
+        },
+      ),
+    ).toBe("previous");
+  });
+
+  it("never reports a run from an older model as current", () => {
+    expect(matchAgentRunSetup({ codingAgent: "opencode", model: "old-model" }, current)).toBe(
+      "previous",
+    );
+  });
+
+  it("matches CLI aliases and case-insensitive names", () => {
+    expect(
+      matchAgentRunSetup(
+        { codingAgent: "Claude Code", model: "Sonnet-4" },
+        { cli: "claude", model: "sonnet-4" },
+      ),
+    ).toBe("current");
+  });
+
+  it("returns unknown when the response predates the CLI/model fields", () => {
+    expect(matchAgentRunSetup({}, current)).toBe("unknown");
+    expect(matchAgentRunSetup({ codingAgent: "", model: null }, current)).toBe("unknown");
   });
 });
 
-describe("last-runs API formatting", () => {
-  it("formats a stored raw DeepInfra balance error at read time", () => {
-    const stored =
-      "opencode exited with code 1: Error: You need positive balance to do inference. Please add balance manually or setup top-up";
-    const reason = formatAgentFailure(stored, "opencode");
-    expect(reason).toContain("OpenCode is out of credit.");
-    expect(reason).toContain("(CLI:");
+describe("formatAgentRunLabel", () => {
+  it("labels a current failure with its clock time", () => {
+    expect(formatAgentRunLabel({ status: "errored", ...current }, "current", "21:36")).toBe(
+      "Failed 21:36",
+    );
+  });
+
+  it("labels a healthy current run and a running one", () => {
+    expect(formatAgentRunLabel({ status: "finished", ...current }, "current", "21:40")).toBe(
+      "Last run 21:40",
+    );
+    expect(formatAgentRunLabel({ status: "running", ...current }, "current", "21:40")).toBe(
+      "Running 21:40",
+    );
+  });
+
+  it("names an older combination instead of presenting it as the current status", () => {
+    const old = { status: "errored", codingAgent: "opencode", model: "glm-5.3-flash" };
+    expect(formatAgentRunLabel(old, "previous", "21:36")).toBe(
+      "Previous setup (opencode + glm-5.3-flash)",
+    );
+    expect(describeAgentRunSetup(old)).toBe("opencode + glm-5.3-flash");
+  });
+
+  it("falls back to readable setup names for old rows", () => {
+    expect(describeAgentRunSetup({})).toBe("unknown CLI + unknown model");
+  });
+});
+
+describe("agentRunTone", () => {
+  it.each([
+    ["errored", "current", "error"],
+    ["finished", "current", "ok"],
+    ["running", "current", "running"],
+    ["errored", "previous", "muted"],
+    ["finished", "previous", "muted"],
+  ] as const)("maps %s/%s to %s", (status, match, tone) => {
+    expect(agentRunTone(status, match)).toBe(tone);
+  });
+});
+
+describe("normalization", () => {
+  it("collapses CLI aliases", () => {
+    expect(normalizeCodingAgent(" Claude  Code ")).toBe("claude code");
+    expect(normalizeCodingAgent("agy")).toBe("antigravity");
+    expect(normalizeCodingAgent("Qwen Code")).toBe("qwen code");
+    expect(normalizeCodingAgent(null)).toBe("");
+  });
+
+  it("lowercases model names", () => {
+    expect(normalizeModelName("  GLM-5.3-Flash ")).toBe("glm-5.3-flash");
   });
 });
