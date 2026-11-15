@@ -2,7 +2,7 @@
 id: "1138"
 title: "Mobile web Work queue: default to what needs attention, add inline search and filters, show held and human tasks"
 type: feature
-status: active
+status: review
 paths: [src/ui-app/src/components/MobileWorkQueue.vue]
 priority: p1
 area: web
@@ -11,7 +11,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/mobile-web-work-queue-default-to-what-ne
 created_at: "2026-11-15T17:24:06Z"
-updated_at: "2026-11-15T19:49:20Z"
+updated_at: "2026-11-15T20:20:13Z"
 ---
 ## Problem
 Nick: on a phone it's "really hard to find the right task and do anything normal". On main `23dc737`, the mobile Work queue (MobileWorkQueue.vue):
@@ -54,3 +54,4 @@ Nick: on a phone it's "really hard to find the right task and do anything normal
 - 2026-11-15T17:24:06Z · screenshots
 - 2026-11-15T19:49:18Z · status inbox→ready
 - 2026-11-15T19:49:20Z · status ready→active, branch
+- 2026-11-15T20:20:13Z · status active→review
