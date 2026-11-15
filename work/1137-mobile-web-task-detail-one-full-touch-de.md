@@ -11,7 +11,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/mobile-web-task-detail-one-full-touch-de
 created_at: "2026-11-15T17:24:03Z"
-updated_at: "2026-11-15T21:54:39Z"
+updated_at: "2026-11-15T21:54:40Z"
 dev_error_count: 3
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-11-15T21:27:52.574Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -133,3 +133,4 @@ On a phone there's a single task detail, whichever way it was opened (card, sear
 - 2026-11-15T21:43:46Z · body
 - 2026-11-15T21:49:00Z · body
 - 2026-11-15T21:54:39Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: test failure: tests/agent-serve-guard.test.ts > CLI rejection (real process) > rejects an agent's direct repoos serve and leaves the port free on bee — fix it in the feature branch and re-run the gate · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
+- 2026-11-15T21:54:40Z · note: handoff requested (cli)
