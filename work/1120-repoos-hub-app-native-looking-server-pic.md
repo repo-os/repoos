@@ -3,8 +3,6 @@ id: "1120"
 title: "RepoOS Hub app: native-looking server picker, web color themes with light/dark, better icons, and a Settings page"
 type: feature
 status: active
-needs_input: true
-needs_input_reason: needs-human-step
 human_step_override: Cleared needs-human-step flag (sticky until acceptance criteria change)
 human_step_override_key: f531bd01
 priority: p2
@@ -15,7 +13,7 @@ branch: feat/repoos-hub-app-native-looking-server-pic
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-14T16:53:29Z"
-updated_at: "2026-11-15T00:49:18Z"
+updated_at: "2026-11-15T00:49:23Z"
 review_rounds: 1
 review_passes: 1
 last_check_failure: "repoos check at 2026-11-14T21:07:45.909Z: repoos check failed: ui verification failed (2 issue(s)): [missing-target] Hub server list (Android, dark classic) (target \"default\"): highlight [data-testid=\"hub-server-list\"] matched nothing on /?fixture=many&platform=android&appearance=dark&theme=classic (http://127.0.0.1:41679/?fixture=many&platform=android&appearance=dark&theme=classic); [missing-target] Hub Settings (iOS, light gruvbox) (target \"default\"): highlight [data-testid=\"hub-settings\"] matched nothing on /?fixture=settings&platfor… (truncated)"
@@ -185,3 +183,4 @@ Read docs/mobile-architecture.md, docs/adr/0011-mobile-web-ui.md (the native she
 - 2026-11-14T23:58:53Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-15T00:03:53Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-15T00:49:18Z · engineer crash recovery: resuming cursor + composer-2.5 (1/3 crashes in 30m) · RetriableError: Agent turn stopped after repeated resume attempts made no progress
+- 2026-11-15T00:49:23Z · watchdog: restarting engineer because a queued message waited 50m with no live process
