@@ -78,11 +78,13 @@ const buildTitle = computed(() => {
       v-for="n in nav"
       :key="n.id"
       :to="n.path"
+      :aria-label="n.label"
       class="nav-item"
       active-class="active"
       exact-active-class="active"
     >
-      <span v-html="n.icon"></span>{{ n.label }}
+      <span class="nav-icon" v-html="n.icon"></span>
+      <span class="nav-label">{{ n.label }}</span>
     </RouterLink>
 
     <div class="side-foot">

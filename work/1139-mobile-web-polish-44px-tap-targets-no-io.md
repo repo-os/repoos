@@ -2,21 +2,21 @@
 id: "1139"
 title: "Mobile web polish: 44px tap targets, no iOS input zoom, touch-only hints, landscape/tablet layout, PWA start page and icon"
 type: bug
-status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "automatic resume could not start the engineer: This worktree already has a recorded live engineer for task #1139 (pid 27638). The task stayed active with its worktree intact."
+status: done
 priority: p2
 area: web
 story: RepoOS Hub for Mobile
+merged_commit: e17b9a07ac3095b9a2f6c132c679ab7d24ada281
 assigned_to: ai
 created_by: t@t
 branch: feat/mobile-web-polish-44px-tap-targets-no-io
 created_at: "2026-11-15T17:24:09Z"
-updated_at: "2026-11-15T21:40:56Z"
+updated_at: "2026-11-15T23:18:54Z"
+last_close_out_gate_ms: 69445
+last_close_out_gate_at: "2026-11-15T23:18:27.740Z"
+review_passes: 1
 handoff_signal_retry_count: 2
 dev_error_count: 1
-engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-11-15T21:27:51.683Z\",\"kind\":\"dev-error\"}]"
 engineer_stall_resume_log: "[{\"at\":\"2026-11-15T21:35:54.464Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
 ## Problem
@@ -57,6 +57,36 @@ Smaller mobile issues found on main `23dc737` (Chromium mobile emulation; 360/39
 - #1133 is reworking the Agents page last-runs log. Coordinate so this only touches tab and target sizing.
 - Found in a box-side Playwright QA pass on 16 Nov. Screenshots attached.
 
+## Shots
+```json
+[
+{
+"label": "Phone Work queue: 44px top-bar controls, no keyboard hint in the search pill",
+"target": "default",
+"route": "/work",
+"highlight": ".topbar",
+"viewportWidth": 390,
+"viewportHeight": 844
+},
+{
+"label": "Landscape phone: icon-only sidebar and a Work header that wraps instead of clipping",
+"target": "default",
+"route": "/work",
+"highlight": ".work-header",
+"viewportWidth": 740,
+"viewportHeight": 360
+},
+{
+"label": "Phone Agents page: sub-tabs wrap and controls meet the 44px floor",
+"target": "default",
+"route": "/agents",
+"highlight": ".agent-tabs",
+"viewportWidth": 390,
+"viewportHeight": 844
+}
+]
+```
+
 ## Screenshots
 
 ![740x360 landscape: desktop board + sidebar, title wraps, toolbar clipped, bar over title](/api/tasks/1139/attachments/att_dfb31a2f-0418-4561-85a5-7dfc888c1e5d.png)
@@ -76,3 +106,20 @@ Smaller mobile issues found on main `23dc737` (Chromium mobile emulation; 360/39
 - 2026-11-15T21:35:54Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 1/3
 - 2026-11-15T21:35:56Z · watchdog: automatic resume failed — This worktree already has a recorded live engineer for task #1139 (pid 27638)
 - 2026-11-15T21:40:56Z · body
+- 2026-11-15T21:46:18Z · body
+- 2026-11-15T21:47:48Z · body
+- 2026-11-15T21:51:06Z · body
+- 2026-11-15T21:55:53Z · body
+- 2026-11-15T22:06:39Z · watchdog: restarting engineer after 11m with no live process
+- 2026-11-15T22:11:58Z · body
+- 2026-11-15T22:13:23Z · body
+- 2026-11-15T22:26:49Z · body
+- 2026-11-15T22:34:51Z · body
+- 2026-11-15T22:42:42Z · body
+- 2026-11-15T22:45:36Z · note: ui verification passed: 3 of 3 shots captured with clean console
+- 2026-11-15T22:45:37Z · status active→review
+- 2026-11-15T22:45:37Z · message_queued at 2026-11-15T22:45:37.308Z
+- 2026-11-15T22:46:36Z · note: review pass 1: good to go
+- 2026-11-15T23:18:27Z · close-out gate completed in 69s
+- 2026-11-15T23:18:42Z · status done→done, release:success
+- 2026-11-15T23:18:54Z · message_dropped: 1 queued message(s) discarded — task is done

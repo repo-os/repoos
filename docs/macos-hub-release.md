@@ -20,16 +20,22 @@ installation copy.
 - `.github/workflows/macos-hub.yml` builds/tests on Mac changes and uploads the
   DMG on version tags. It must compile `AppIcon.icns` into the release bundle
   and inject the tag version into the app bundle; both are release checks.
-- The DMG is currently ad-hoc signed and not notarized; documentation must not
-  imply Developer ID signing or a warning-free first launch.
+- A release is not publishable until the signed DMG has been accepted by
+  Apple's notary service, Apple's ticket is stapled to `RepoOSHub.dmg`, and the
+  stapled DMG passes `xcrun stapler validate` and Gatekeeper's `spctl` open
+  assessment. The workflow enforces that order and uploads only the stapled
+  file. Developer ID signing itself is owned by #0578; this runbook covers the
+  notarization and stapling gates that follow it. Until that signing is present
+  and valid the notarization submission fails and nothing is uploaded.
 
 ## Signing and notarization credentials
 
 This section is the secret contract for the Developer ID signing and
 notarization work in #0577–#0579. It defines credential names, formats, and
-maintainer procedures only. **It does not mean the repository secrets exist or
-that releases are signed today**: provisioning is a human-only operation, and
-until #0578/#0579 land the DMG remains ad-hoc signed and not notarized.
+maintainer procedures only. **It does not mean the repository secrets exist**:
+provisioning is a human-only operation. The release workflow fails before upload
+when the credential set is missing or incomplete; a missing secret is never
+treated as permission to publish an unnotarized DMG.
 
 All values are **repository Actions secrets** (Settings → Secrets and variables
 → Actions → New repository secret), never repository variables or committed
@@ -177,8 +183,34 @@ The signing workflow (#0578) decodes `MACOS_CERTIFICATE` into a temporary
 and uses `APPLE_TEAM_ID` as the development team. It removes the temporary
 keychain and `.p12` in an `always()` cleanup step.
 
-The notarization workflow (#0579) submits the signed DMG with exactly one
-authentication set:
+The `release` job in `.github/workflows/macos-hub.yml` consumes the notarization
+secret set. It resolves exactly one authentication set — the API-key trio when
+all three API variables are present, otherwise the Apple ID pair plus
+`APPLE_TEAM_ID` — materializes an API `.p8` only in `$RUNNER_TEMP`, deletes it in
+a trap, and never prints a secret value. The repository Actions secrets it reads
+are `APPLE_TEAM_ID`, `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD`,
+`APPLE_API_KEY`, `APPLE_API_KEY_ID`, and `APPLE_API_ISSUER_ID`. Do not invent
+aliases such as `APPLE_ID_PASSWORD`, `MACOS_CERTIFICATE_BASE64`, or
+`APPLE_API_KEY_PATH`.
+
+After `Package DMG` and `Verify DMG install experience`, and before any upload,
+the job:
+
+1. runs `xcrun notarytool submit RepoOSHub.dmg --wait --timeout 1800
+   --output-format json` and captures the submission `id` from the JSON;
+2. fails the job when the submission is rejected or the wait times out, and
+   fetches `xcrun notarytool log "$ID"` with the same authentication options so
+   Apple's reasons appear in CI. If submission fails before Apple returns an ID,
+   the step preserves the original nonzero exit status and reports that no
+   submission ID was available;
+3. runs `xcrun stapler staple RepoOSHub.dmg`, then `xcrun stapler validate
+   RepoOSHub.dmg`, then `spctl --assess --type open --context
+   context:primary-signature RepoOSHub.dmg` as fatal gates;
+4. uploads the now-stapled `RepoOSHub.dmg` to the GitHub Release only after all
+   of those gates pass. A rejected, timed-out, unstapled, or unvalidated DMG is
+   never uploaded.
+
+The commands the job runs, reduced to their authentication shape:
 
 ```sh
 # App-specific-password path
@@ -199,10 +231,22 @@ xcrun notarytool submit RepoOSHub.dmg \
 rm -P "$KEY"
 ```
 
-These names and meanings are the contract those tasks must consume. They must
-not invent aliases such as `APPLE_ID_PASSWORD`, `MACOS_CERTIFICATE_BASE64`, or
-`APPLE_API_KEY_PATH`. The materialized `.p8` must be deleted in an `always()` or
-trap cleanup path, not only after a successful submission.
+These names and meanings are the contract those tasks must consume. The
+materialized `.p8` must be deleted in an `always()` or trap cleanup path, not
+only after a successful submission.
+
+### Non-publishing validation
+
+The **macOS Hub** workflow's `workflow_dispatch` trigger has a `dry_run` input.
+Set `release_tag` to an existing tag, enable `dry_run`, and run the workflow to
+build and sign that tag exactly as a real release does, then exercise
+submission, stapling, and verification without creating or modifying a GitHub
+Release. No tag is created and the upload step is skipped; the logs state that
+the run is a dry run.
+
+A dry run still requires the complete signing and notarization secret set. It is
+a gate test, not an override: missing or incomplete credentials fail the job
+before any upload, exactly as on a real release.
 
 ### Rotate the Developer ID certificate
 
@@ -252,9 +296,9 @@ Rotation never invalidates releases already notarized with the old credential.
    now.
 2. Pause releases, then replace `APPLE_APP_SPECIFIC_PASSWORD`. `APPLE_ID` and
    `APPLE_TEAM_ID` stay unchanged.
-3. Re-verify with the non-publishing notarization workflow from #0579 when it is
-   available; confirm a submission is accepted (or inspect `notarytool history`
-   with the same credentials).
+3. Re-verify with the non-publishing `dry_run` dispatch described in
+   [Non-publishing validation](#non-publishing-validation); confirm a submission
+   is accepted (or inspect `notarytool history` with the same credentials).
 4. Revoke the old app-specific password only after verification succeeds, then
    delete its password-manager entry.
 5. Clean up any copied value and clear the clipboard.
@@ -267,9 +311,9 @@ Rotation never invalidates releases already notarized with the old credential.
    PEM), `APPLE_API_KEY_ID` (new Key ID), and `APPLE_API_ISSUER_ID` (unchanged
    unless App Store Connect shows a new Issuer ID). The workflow derives the
    runtime filename from `APPLE_API_KEY_ID`, so no path secret changes.
-3. Re-verify with the non-publishing notarization workflow from #0579 when it is
-   available. The submission must authenticate with the new key before you
-   revoke the old one.
+3. Re-verify with the non-publishing `dry_run` dispatch described in
+   [Non-publishing validation](#non-publishing-validation). The submission must
+   authenticate with the new key before you revoke the old one.
 4. Revoke the old key in **Users and Access → Integrations → App Store Connect
    API → Team Keys** only after verification.
 5. Delete every downloaded `.p8` and any copied PEM text with the cleanup steps
@@ -298,13 +342,17 @@ were already synced to cloud storage.
 1. Build the Mac Release configuration and verify `RepoOS Hub.app` exists.
 2. Merge to `main`, then cut a new patch tag; do not rewrite a failed release
    tag to repair a DMG upload.
-3. Confirm the macOS Hub workflow attached `RepoOSHub.dmg`, then inspect it for
+3. Confirm the workflow's notarization step reported an `Accepted` submission
+   and that `xcrun stapler validate` plus `spctl --assess` passed on the stapled
+   DMG. Do not publish a DMG whose job skipped or failed those gates; use the
+   `dry_run` dispatch first when validating a credential or signing change.
+4. Confirm the macOS Hub workflow attached `RepoOSHub.dmg`, then inspect it for
    `RepoOS Hub.app`, its branded Finder icon, Applications alias, background,
    and saved app → Applications layout.
-4. The release workflow publishes npm before dispatching `repo-os/homebrew-tap`.
+5. The release workflow publishes npm before dispatching `repo-os/homebrew-tap`.
    It must wait for the versioned npm tarball: npm can accept a publish before
    the tarball is publicly downloadable.
-5. Confirm the tap updates `Formula/repoos.rb`, then test `brew update && brew
+6. Confirm the tap updates `Formula/repoos.rb`, then test `brew update && brew
    upgrade repo-os/tap/repoos`.
 
 ## Failure triage
@@ -340,5 +388,16 @@ were already synced to cloud storage.
   light/dark appearance variants, then confirm the workflow's icon check.
 - A tap 404 for the npm tarball is registry propagation, not a formula checksum
   failure. Retry only after the tarball is public and retain the release wait.
-- A Gatekeeper warning is currently expected. Revisit docs only when signing or
-  notarization policy changes.
+- A `notarytool` rejection or wait timeout fails the release job before upload.
+  Read the `notarytool log` output in the failing step: it names the offending
+  file and reason (for example a missing hardened runtime, an unsigned nested
+  binary, or an entitlement Apple rejects). Fix the artifact and cut a new patch
+  tag; do not re-upload the rejected DMG.
+- `stapler validate` or `spctl --assess` failing after an accepted submission
+  means the local file is not the one Apple accepted (for example it was rebuilt
+  or re-signed after submission). Re-run the release job instead of uploading
+  the earlier copy.
+- A missing or partial notarization secret set fails the job before upload with
+  a message naming the required variables. Complete the set from
+  [Provision notarization credentials](#provision-notarization-credentials);
+  never disable or skip the gate.

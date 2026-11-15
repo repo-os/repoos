@@ -74,10 +74,13 @@ export function buildPwaManifest(name: string, color: string | null): PwaManifes
     name: `RepoOS · ${name}`,
     short_name: `RepoOS · ${name}`,
     description: `${name} · RepoOS`,
-    start_url: "/",
+    // The installed app opens the Work queue, not Mission Control (#1139).
+    start_url: "/work",
     scope: "/",
     display: "standalone",
-    orientation: "portrait-primary",
+    // Phones and tablets may rotate; the narrow/compact layouts handle both
+    // orientations, so an installed app must not be locked to portrait (#1139).
+    orientation: "any",
     background_color: "#070a12",
     theme_color: "#070a12",
     icons: [
@@ -181,6 +184,28 @@ export const serveIcon: RouteHandler = (_ctx, req, res, params) => {
   }
   const color = colorFromUrl(req);
   const png = renderIconFn(size, color ?? undefined, themeFromUrl(req), maskableFromUrl(req));
+  res.writeHead(200, {
+    "Content-Type": "image/png",
+    "Cache-Control": "max-age=86400",
+    "Access-Control-Allow-Origin": "*",
+  });
+  res.end(png);
+};
+
+/**
+ * iOS ignores manifest icons when adding to the home screen and uses
+ * `<link rel="apple-touch-icon">` instead. Serve the same rendered artwork at
+ * the size Apple documents (180×180) rather than falling through to the SPA's
+ * HTML page, which made iOS screenshot the page (#1139).
+ */
+export const serveAppleTouchIcon: RouteHandler = (_ctx, req, res) => {
+  if (!renderIconFn) {
+    res.writeHead(404, { "Content-Type": "text/plain" });
+    res.end("Icon renderer not initialized");
+    return;
+  }
+  const color = colorFromUrl(req);
+  const png = renderIconFn(180, color ?? undefined, themeFromUrl(req), false);
   res.writeHead(200, {
     "Content-Type": "image/png",
     "Cache-Control": "max-age=86400",

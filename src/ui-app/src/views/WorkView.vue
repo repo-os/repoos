@@ -448,23 +448,15 @@ function openHeld(task: Task): void {
     </main>
   </template>
   <div v-else class="work-page">
-    <div
-      class="work-header"
-      style="
-        display: flex;
-        align-items: flex-end;
-        justify-content: space-between;
-        margin-bottom: 20px;
-      "
-    >
-      <div>
+    <div class="work-header">
+      <div class="work-header-copy">
         <div class="page-title">Work Queue</div>
         <div class="page-desc" style="margin: 3px 0 0">
           Repo-native tasks ·
           <span class="mono" style="color: var(--cyan)">{{ workDir }}/*.md</span>
         </div>
       </div>
-      <div style="display: flex; align-items: center; gap: 10px">
+      <div class="work-header-actions">
         <RouterLink to="/client-board" class="client-board-link">Client board</RouterLink>
         <Button
           v-if="!statusFilter && effectiveView === 'board'"
@@ -706,6 +698,34 @@ function openHeld(task: Task): void {
 </template>
 
 <style scoped>
+/* #1139: the header row must wrap instead of clipping its toolbar on
+   landscape phones and 768px tablets. The actions drop to a second line while
+   the title keeps its full width (one line at these sizes). */
+.work-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+.work-header-copy {
+  min-width: 0;
+}
+.work-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+@media (max-width: 900px) {
+  .work-header {
+    align-items: flex-start;
+  }
+  .work-header-actions {
+    width: 100%;
+  }
+}
 /* Pipeline | Board switch — same styled toggle as the Inputs page List | Board. */
 .view-toggle {
   display: inline-flex;

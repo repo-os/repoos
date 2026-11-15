@@ -572,6 +572,42 @@
     display: none;
   }
 }
+/* #1139: touch-sized header controls on phone layouts, landscape phones and
+   small tablets. The shell's compact nav still uses this pointer-sized row. */
+@media (max-width: 900px) {
+  .theme-toggle {
+    width: 44px;
+    height: 44px;
+  }
+  .repo-pill {
+    min-height: 44px;
+  }
+  .search-input {
+    min-height: 44px;
+  }
+}
+@media (max-width: 719.98px) {
+  .topbar {
+    gap: 6px;
+    padding: 0 8px;
+  }
+  /* The search pill grows into the space the desktop spacer used; a 44px floor
+     keeps it a valid touch target at 360px. */
+  .topbar .spacer {
+    display: none;
+  }
+  .search-wrap {
+    flex: 1 1 44px;
+    max-width: none;
+    min-width: 44px;
+  }
+}
+/* A touch device has no keyboard-shortcut affordance: hide the ⌘K chip in the
+   header pill and the navigate/open/close legend in the palette footer
+   (#1139). Key off input capability, not viewport width, so a landscape phone
+   at 844px hides them too; `pointer: coarse` also covers hybrids whose
+   primary pointer is touch but still report hover. This block lives at the end
+   of the stylesheet so it wins against the later base `.search-*` rules. */
 
 .search-overlay-backdrop {
   position: fixed;
@@ -648,6 +684,12 @@
   background: var(--panel);
   border-color: var(--border-bright);
   color: var(--txt);
+}
+@media (max-width: 900px) {
+  .search-overlay-close {
+    width: 44px;
+    height: 44px;
+  }
 }
 .search-overlay-body {
   flex: 1;
@@ -862,6 +904,34 @@
   color: var(--txt-dim);
   font-family: "JetBrains Mono", monospace;
   font-weight: 500;
+}
+
+/* #1139: landscape phones (740×360, 844×390) and 768px tablets are too narrow
+   for the 210px labelled sidebar and the desktop header toolbar beside it.
+   Between the phone shell and a full desktop, collapse navigation to an
+   icon-only rail so Work/Agents keep their full content width. */
+@media (min-width: 720px) and (max-width: 900px) {
+  .sidebar {
+    width: 60px;
+    padding: 14px 8px;
+    align-items: center;
+  }
+  .nav-item {
+    justify-content: center;
+    width: 100%;
+    min-height: 44px;
+    padding: 10px 0;
+  }
+  .nav-item .nav-label,
+  .side-foot,
+  .theme-switch,
+  .build-widget {
+    display: none;
+  }
+  .nav-item.active::before {
+    top: 10px;
+    bottom: 10px;
+  }
 }
 
 /* Sidebar git-state row + its popover (#0584). The row is deliberately the
@@ -1518,6 +1588,21 @@
   }
   .page-header-actions {
     justify-content: flex-start;
+  }
+}
+@media (min-width: 720px) and (max-width: 900px) {
+  /* #1139: at landscape-phone and 768px-tablet widths the desktop header row
+     ran out of room and clipped its toolbar ("Pipeline" cut off). Let the
+     actions wrap under the title instead. */
+  .page-header {
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .page-header-actions {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    max-width: 100%;
   }
 }
 
@@ -8650,6 +8735,52 @@
 .agent-tabs .tab-btn {
   white-space: nowrap;
   padding: 10px 14px;
+}
+/* #1139: the Agents sub-tab strip ("Agents / Build Your Team / Scheduled
+   Tasks…") was horizontally clipped on phones and landscape tablets. Let it
+   wrap onto a second row instead of hiding destinations off-screen. */
+@media (max-width: 900px) {
+  .agent-tabs {
+    flex-wrap: wrap;
+    overflow-x: visible;
+  }
+  .agent-tabs .tab-btn {
+    white-space: normal;
+    min-height: 44px;
+  }
+  .page-help-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+}
+@media (max-width: 719.98px) {
+  /* Mobile Agents page: header links and every tab/button reaches 44px (#1139). */
+  .agent-tabs .tab-btn {
+    min-width: 44px;
+    padding: 10px 12px;
+  }
+  .agents-page button,
+  .agents-page a,
+  .agents-page .page-header a,
+  .agents-page input,
+  .agents-page select,
+  .agents-page [role="button"],
+  .agents-page [role="switch"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  .agents-page a {
+    display: inline-flex;
+    align-items: center;
+  }
+  /* Section eyebrows ("Default agents" + pricing link + Refresh models) are a
+     tight desktop row; let them wrap on a phone instead of squeezing a control
+     under another one's text. */
+  .agents-page .sec-label {
+    flex-wrap: wrap;
+    row-gap: 8px;
+  }
 }
 .ff-textarea {
   width: 100%;
@@ -17119,5 +17250,41 @@
   }
   .drawer-wrap .ai-chat-compose textarea {
     font-size: 16px;
+  }
+}
+
+/* iOS Safari zooms the page when a focused control's computed font-size is
+   below 16px. On coarse-pointer (touch) devices raise every form control we
+   render — including the New task freeform/Manual fields and the search
+   palette — to 16px so opening the keyboard never rescales the page (#1139). */
+@media (pointer: coarse) {
+  .field input,
+  .field select,
+  .field textarea,
+  .ff-textarea,
+  .nt-body-textarea,
+  .search-overlay-input,
+  .drawer-body input,
+  .drawer-body select,
+  .drawer-body textarea,
+  .settings-page input,
+  .settings-page select,
+  .settings-page textarea {
+    font-size: 16px;
+  }
+}
+
+/* #1139: a touch device has no use for keyboard-shortcut hints. Placed last so
+   it beats the base `.search-*` rules defined above it. */
+@media (hover: none), (pointer: coarse) {
+  .search-input kbd {
+    display: none;
+  }
+  .search-overlay-keyboard-hint {
+    display: none;
+  }
+  /* Empty-state rows in the palette are keyboard instructions, not results. */
+  .search-row-hint {
+    display: none;
   }
 }
