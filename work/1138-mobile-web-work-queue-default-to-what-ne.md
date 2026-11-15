@@ -11,7 +11,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/mobile-web-work-queue-default-to-what-ne
 created_at: "2026-11-15T17:24:06Z"
-updated_at: "2026-11-15T20:18:59Z"
+updated_at: "2026-11-15T20:20:13Z"
 ---
 ## Problem
 Nick: on a phone it's "really hard to find the right task and do anything normal". On main `23dc737`, the mobile Work queue (MobileWorkQueue.vue):
@@ -102,3 +102,4 @@ Nick: on a phone it's "really hard to find the right task and do anything normal
 - 2026-11-15T20:15:33Z · body
 - 2026-11-15T20:17:56Z · body
 - 2026-11-15T20:18:59Z · CTO nudge: held — handoff gate is running
+- 2026-11-15T20:20:13Z · note: ui verification passed: 2 of 2 shots captured with clean console
