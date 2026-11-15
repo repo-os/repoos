@@ -3,6 +3,9 @@ id: "1137"
 title: "Mobile web task detail: one full touch detail for every entry point (card view is a read-only stub; drawer tabs and close clipped)"
 type: bug
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "OpenCode exited with an error. Open Raw CLI error for details. (CLI: ✗ Server finalization stopped at check: remote validation failed: test failure: tests/agent-serve-guard.test.ts > CLI rejection (real process) > rejects an agent's direct repoos serve and leaves the port free on bee — fix it in the feature branch and re-run the gate. The same worktree can be resumed and retried.)"
 paths: [src/ui-app/src/components/MobileTaskDetail.vue, src/ui-app/src/App.vue, src/ui-app/src/components/TaskDrawer.vue]
 priority: p1
 area: web
@@ -11,7 +14,9 @@ assigned_to: ai
 created_by: t@t
 branch: feat/mobile-web-task-detail-one-full-touch-de
 created_at: "2026-11-15T17:24:03Z"
-updated_at: "2026-11-15T20:24:17Z"
+updated_at: "2026-11-15T20:25:16Z"
+dev_error_count: 1
+engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-11-15T20:25:16.075Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 On a phone (below 720px), a task has two different detail views:
@@ -99,3 +104,6 @@ On a phone there's a single task detail, whichever way it was opened (card, sear
 - 2026-11-15T20:23:59Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-15T20:24:16Z · watchdog: restarting engineer because a queued message waited 3m with no live process
 - 2026-11-15T20:24:17Z · message_delivered: 1 message(s)
+- 2026-11-15T20:25:16Z · note: stopped orphaned engineer pid 87667
+- 2026-11-15T20:25:16Z · agent exited with an error (opencode) · OpenCode exited with an error. Open Raw CLI error for details. (CLI: ✗ Server finalization stopped at check: remote validation failed: test failure: tests/agent-serve-guard.test.ts > CLI rejection (real process) > rejects an agent's direct repoos serve and leaves the port free on bee — fix it in the feature branch and re-run the gate. The same worktree can be resumed and retried.)
+- 2026-11-15T20:25:16Z · engineer crash recovery: resuming opencode + opencode-go/deepseek-v4.1-flash (1/3 crashes in 30m) · OpenCode exited with an error. Open Raw CLI error for details. (CLI: ✗ Server finalization stopped at check: remote validation failed: test failure: tests/agent-serve-guard.test.ts > CLI rejection (real process) > rejects an agent's dire…
