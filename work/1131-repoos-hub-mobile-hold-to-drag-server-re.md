@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/repoos-hub-mobile-hold-to-drag-server-re
 created_at: "2026-11-15T14:39:13Z"
-updated_at: "2026-11-15T15:34:06Z"
+updated_at: "2026-11-15T15:34:25Z"
 ---
 ## Problem
 Feedback from Nick after testing the #1127 build on his Nothing Phone (3a):
@@ -45,3 +45,4 @@ Hold-to-drag feel, haptics and iOS gesture behavior are covered by code and comp
 - 2026-11-15T15:31:23Z · body: Verification notes (added)
 - 2026-11-15T15:31:23Z · message_queued at 2026-11-15T15:31:23.203Z
 - 2026-11-15T15:34:06Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-15T15:34:25Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
