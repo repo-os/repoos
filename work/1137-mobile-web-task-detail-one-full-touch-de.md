@@ -11,7 +11,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/mobile-web-task-detail-one-full-touch-de
 created_at: "2026-11-15T17:24:03Z"
-updated_at: "2026-11-15T20:23:59Z"
+updated_at: "2026-11-15T20:24:16Z"
 ---
 ## Problem
 On a phone (below 720px), a task has two different detail views:
@@ -97,3 +97,4 @@ On a phone there's a single task detail, whichever way it was opened (card, sear
 - 2026-11-15T20:21:03Z · handoff failed · remote validation failed: test failure: tests/agent-serve-guard.test.ts > CLI rejection (real process) > rejects an agent's direct repoos serve and leaves the port free on bee — fix it in the feature branch and re-run the gate
 - 2026-11-15T20:21:03Z · message_queued at 2026-11-15T20:21:03.530Z
 - 2026-11-15T20:23:59Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-15T20:24:16Z · watchdog: restarting engineer because a queued message waited 3m with no live process
