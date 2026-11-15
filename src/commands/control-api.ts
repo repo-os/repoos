@@ -19,6 +19,14 @@ import {
   resumeAllowlistEntry,
   pairPauseInfo,
 } from "../core/budget-allowlist.js";
+import { findRepoRoot, loadConfig } from "../core/config.js";
+import {
+  isNewerGroup,
+  normalizeAllowlistGroupPayload,
+  readAllowlistGroup,
+  writeAllowlistGroup,
+} from "../core/allowlist-groups.js";
+import { detectAgents } from "../core/detect.js";
 import type { RepoOSConfig } from "../core/types.js";
 import type { LandableCheck, LandableResult } from "../core/landable.js";
 import type { HandoffStatus } from "../server/handoff-status.js";
@@ -1540,24 +1548,339 @@ async function cmdAgentsPauseResume(mode: "pause" | "resume", args: string[]): P
   const api = new RepoOsApi({ port: opts.port });
   try {
     await ensureServer(api);
-    const configData = await api.requestOk("GET", "/api/config");
-    const rows = agentModelAllowRows(
-      (configData.config as Record<string, unknown> | undefined)?.["budget.allowlist"],
-    );
-    const result =
-      mode === "pause"
-        ? pauseAllowlistEntry(rows, { cli: agent, model, until, reason })
-        : resumeAllowlistEntry(rows, { cli: agent, model });
-    if ("error" in result) {
-      printErr(result.error);
-      return 1;
+    // A grouped project shares pause state with its group, so `agents pause`
+    // and `allowlist pause` must not diverge (#1132).
+    return await runAllowlistPauseResume(api, mode, {
+      cli: agent,
+      model,
+      until,
+      reason,
+      json: opts.json,
+    });
+  } catch (e) {
+    printErr((e as RepoOsApiError).message);
+    return 1;
+  }
+}
+
+// ── Allowlist groups (#1132) ────────────────────────────────────────────────
+
+const ALLOWLIST_USAGE =
+  'Usage: repoos allowlist pause|resume <cli> [model] [--until <date>] [--reason "..."] [--no-propagate] [--json]';
+
+interface GroupApplyCliResult {
+  host?: string;
+  projectName?: string;
+  local?: boolean;
+  status?: "applied" | "unreachable" | "refused";
+  reason?: string;
+  notLoggedIn?: string[];
+}
+
+interface GroupPauseResponse {
+  ok?: boolean;
+  group?: { name?: string; updatedAt?: string };
+  results?: GroupApplyCliResult[];
+}
+
+function printGroupResults(results: GroupApplyCliResult[]): void {
+  for (const result of results) {
+    const where = result.local
+      ? `${result.projectName ?? "this project"} (this machine)`
+      : `${result.projectName ?? "RepoOS"} on ${result.host ?? "?"}`;
+    const status = result.status ?? "applied";
+    const mark =
+      status === "applied" ? c.green("✓") : status === "unreachable" ? c.yellow("·") : c.red("✗");
+    const detail = result.reason ? c.dim(` — ${result.reason}`) : "";
+    console.log(`  ${mark} ${where}: ${status}${detail}`);
+    if (result.notLoggedIn?.length) {
+      console.log(
+        c.dim(
+          `      not logged in on that host: ${result.notLoggedIn.join(", ")} (logins are never synced)`,
+        ),
+      );
     }
-    await api.requestOk("PATCH", "/api/config", { "budget.allowlist": result.rows });
+  }
+}
+
+/**
+ * Pause/resume one allowlist entry. A grouped project updates the group (and
+ * the server propagates to every member); a project without a group keeps the
+ * exact `PATCH /api/config` behaviour it had before #1132.
+ */
+async function runAllowlistPauseResume(
+  api: RepoOsApi,
+  mode: "pause" | "resume",
+  target: {
+    cli: string;
+    model?: string;
+    until?: string;
+    reason?: string;
+    json: boolean;
+    noPropagate?: boolean;
+  },
+): Promise<number> {
+  const configData = await api.requestOk("GET", "/api/config");
+  const cfg = configData.config as Record<string, unknown> | undefined;
+  const group =
+    typeof cfg?.["budget.allowlistGroup"] === "string" ? cfg["budget.allowlistGroup"].trim() : "";
+  const label = target.model ? `${target.cli} + ${target.model}` : `${target.cli} (all models)`;
+  let projectRows = agentModelAllowRows(cfg?.["budget.allowlist"]);
+  if (group) {
+    const state = (await api.requestOk("GET", "/api/budget/allowlist-group?members=0")) as {
+      group?: { allowlist?: Array<{ cli: string }> } | null;
+      projectRows?: Array<{ cli: string; models: string[] }>;
+    };
+    projectRows = agentModelAllowRows(state.projectRows);
+    const inGroup = state.group?.allowlist?.some((row) => row.cli === target.cli) === true;
+    if (!inGroup) {
+      // A local-only entry is not group state; pause it in this repo's own rows.
+      const localResult =
+        mode === "pause"
+          ? pauseAllowlistEntry(projectRows, {
+              cli: target.cli,
+              model: target.model,
+              until: target.until,
+              reason: target.reason,
+            })
+          : resumeAllowlistEntry(projectRows, { cli: target.cli, model: target.model });
+      if ("error" in localResult) {
+        printErr(localResult.error);
+        return 1;
+      }
+      await api.requestOk("PATCH", "/api/config", { "budget.allowlist": localResult.rows });
+      if (target.json) {
+        printJson({
+          ok: true,
+          action: mode,
+          agent: target.cli,
+          model: target.model ?? null,
+          rows: localResult.rows,
+        });
+      } else {
+        console.log(
+          c.green("  ✓ ") +
+            c.dim(`${mode === "pause" ? "paused" : "resumed"} ${label} in this project only`),
+        );
+      }
+      return 0;
+    }
+    const body: Record<string, unknown> = {
+      action: mode,
+      cli: target.cli,
+      ...(target.model ? { model: target.model } : {}),
+      ...(mode === "pause" && target.until ? { until: target.until } : {}),
+      ...(target.reason ? { reason: target.reason } : {}),
+      ...(target.noPropagate ? { propagate: false } : {}),
+    };
+    const data = (await api.requestOk(
+      "POST",
+      "/api/budget/allowlist-group/pause",
+      body,
+    )) as GroupPauseResponse;
+    if (target.json) {
+      printJson({ ok: true, action: mode, group, target: label, ...data });
+      return 0;
+    }
+    console.log(
+      c.green("  ✓ ") +
+        c.dim(`${mode === "pause" ? "paused" : "resumed"} ${label} in allowlist group "${group}"`),
+    );
+    printGroupResults(data.results ?? []);
+    return 0;
+  }
+  const rows = agentModelAllowRows(cfg?.["budget.allowlist"]);
+  const result =
+    mode === "pause"
+      ? pauseAllowlistEntry(rows, {
+          cli: target.cli,
+          model: target.model,
+          until: target.until,
+          reason: target.reason,
+        })
+      : resumeAllowlistEntry(rows, { cli: target.cli, model: target.model });
+  if ("error" in result) {
+    printErr(result.error);
+    return 1;
+  }
+  await api.requestOk("PATCH", "/api/config", { "budget.allowlist": result.rows });
+  if (target.json) {
+    printJson({
+      ok: true,
+      action: mode,
+      agent: target.cli,
+      model: target.model ?? null,
+      rows: result.rows,
+    });
+  } else {
+    console.log(c.green("  ✓ ") + c.dim(`${mode === "pause" ? "paused" : "resumed"} ${label}`));
+  }
+  return 0;
+}
+
+/** `repoos allowlist group apply` — the receiver a tailnet peer's SSH runs. */
+async function cmdAllowlistGroupApply(args: string[]): Promise<number> {
+  let payloadBase64 = "";
+  let checkLogins = false;
+  for (let i = 0; i < args.length; i++) {
+    const a = args[i]!;
+    if (a === "--payload-base64") payloadBase64 = args[++i] ?? "";
+    else if (a === "--check-logins") checkLogins = true;
+    else if (a === "--json") {
+      /* JSON is the only receiver output format */
+    } else if (a === "--help" || a === "-h") {
+      console.log(
+        c.cyan("Usage:") +
+          " repoos allowlist group apply --payload-base64 <b64> [--check-logins] [--json]",
+      );
+      return 0;
+    }
+  }
+  const refuse = (reason: string): number => {
+    printJson({ ok: true, applied: false, status: "refused", reason });
+    return 0;
+  };
+  if (!payloadBase64.trim()) return refuse("missing --payload-base64");
+  let parsedPayload: unknown;
+  try {
+    parsedPayload = JSON.parse(Buffer.from(payloadBase64.trim(), "base64").toString("utf8"));
+  } catch {
+    return refuse("payload is not base64-encoded JSON");
+  }
+  let root: string;
+  try {
+    root = findRepoRoot();
+  } catch {
+    return refuse("run this from a RepoOS project checkout");
+  }
+  let config: ReturnType<typeof loadConfig>;
+  try {
+    config = loadConfig(root);
+  } catch (error) {
+    return refuse(`could not read this project's config: ${(error as Error).message}`);
+  }
+  const localName = config.budget?.allowlistGroup;
+  if (!localName) return refuse("this project is not in an allowlist group");
+  const incoming = normalizeAllowlistGroupPayload(parsedPayload, localName);
+  if (typeof incoming === "string") return refuse(incoming);
+  const current = readAllowlistGroup(incoming.name);
+  if (current === "invalid")
+    return refuse(`local allowlist group "${incoming.name}" is unreadable`);
+  if (!isNewerGroup(incoming, current)) {
+    return refuse("this host already has a newer allowlist-group state");
+  }
+  writeAllowlistGroup(incoming);
+  let notLoggedIn: string[] | undefined;
+  if (checkLogins && incoming.allowlist.length) {
+    const wanted = new Set(incoming.allowlist.map((row) => row.cli));
+    try {
+      const detected = await detectAgents({ probeAuth: true, versionTimeoutMs: 1200 });
+      notLoggedIn = detected
+        .filter((agent) => agent.cli && wanted.has(agent.cli) && agent.auth === false)
+        .map((agent) => agent.cli as string);
+    } catch {
+      notLoggedIn = undefined;
+    }
+  }
+  printJson({
+    ok: true,
+    applied: true,
+    status: "applied",
+    name: incoming.name,
+    updatedAt: incoming.updatedAt,
+    ...(notLoggedIn?.length ? { notLoggedIn } : {}),
+  });
+  return 0;
+}
+
+/** `repoos allowlist …` (#1132). */
+export async function cmdAllowlist(args: string[]): Promise<number> {
+  if (args.includes("--help") || args.includes("-h") || args.length === 0) {
+    console.log(c.cyan("Usage:") + ` ${ALLOWLIST_USAGE}`);
+    console.log(c.cyan("       ") + " repoos allowlist [show] [--json]");
+    console.log(c.cyan("       ") + " repoos allowlist group show|apply …");
+    return 0;
+  }
+  if (args[0] === "group") {
+    if (args[1] === "apply") return cmdAllowlistGroupApply(args.slice(2));
+    // `group show` is the same view as plain `show`.
+    args = ["show", ...args.slice(2)];
+  }
+  const { rest, opts, error } = parseCommonFlags(args);
+  if (error) {
+    printErr(error);
+    return 1;
+  }
+  const mode = rest[0] === "pause" || rest[0] === "resume" ? rest[0] : null;
+  const api = new RepoOsApi({ port: opts.port });
+  try {
+    await ensureServer(api);
+    if (mode) {
+      let model: string | undefined;
+      let cli = "";
+      const words: string[] = [];
+      for (let i = 1; i < rest.length; i++) {
+        const a = rest[i]!;
+        if (a === "--model") model = rest[++i];
+        else if (!a.startsWith("-")) words.push(a);
+      }
+      if (words.length) cli = words[0]!;
+      if (!model && words.length > 1) model = words.slice(1).join(" ");
+      if (mode === "resume" && opts.until) {
+        printErr("--until is only meaningful with `pause`");
+        return 1;
+      }
+      if (!cli) {
+        printErr(ALLOWLIST_USAGE);
+        return 1;
+      }
+      return await runAllowlistPauseResume(api, mode, {
+        cli,
+        model,
+        until: opts.until,
+        reason: opts.reason,
+        json: opts.json,
+        noPropagate: rest.includes("--no-propagate"),
+      });
+    }
+    // show
+    const state = await api.requestOk("GET", "/api/budget/allowlist-group");
     if (opts.json) {
-      printJson({ ok: true, action: mode, agent, model: model ?? null, rows: result.rows });
-    } else {
-      const target = model ? `${agent} + ${model}` : `${agent} (all models)`;
-      console.log(c.green("  ✓ ") + c.dim(`${mode === "pause" ? "paused" : "resumed"} ${target}`));
+      printJson(state);
+      return 0;
+    }
+    const s = state as {
+      enabled?: boolean;
+      name?: string | null;
+      group?: { updatedAt?: string; allowlist?: Array<{ cli: string; models: string[] }> } | null;
+      projectRows?: Array<{ cli: string }>;
+      sources?: Record<string, string>;
+      drift?: Array<{ detail: string }>;
+      members?: GroupApplyCliResult[];
+    };
+    if (!s.enabled) {
+      console.log(c.dim("  This project is not in an allowlist group (project-only allowlist)."));
+      return 0;
+    }
+    console.log(
+      c.cyan(`  Group "${s.name}"`) +
+        (s.group?.updatedAt
+          ? c.dim(` · updated ${s.group.updatedAt}`)
+          : c.dim(" · not created yet")),
+    );
+    for (const row of s.group?.allowlist ?? []) {
+      const source = s.sources?.[row.cli] ?? "group";
+      console.log(`  ${c.bold(row.cli)} · ${row.models.join(", ")} ${c.dim(`(${source})`)}`);
+    }
+    for (const projectRow of s.projectRows ?? []) {
+      if (s.sources?.[projectRow.cli] !== "project") continue;
+      if ((s.group?.allowlist ?? []).some((row) => row.cli === projectRow.cli)) continue;
+      console.log(`  ${c.bold(projectRow.cli)} ${c.dim("(project only)")}`);
+    }
+    for (const entry of s.drift ?? []) console.log(c.yellow(`  drift: ${entry.detail}`));
+    if (s.members?.length) {
+      console.log(c.dim("  Members:"));
+      printGroupResults(s.members);
     }
     return 0;
   } catch (e) {

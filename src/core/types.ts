@@ -2249,8 +2249,16 @@ export interface BudgetConfig {
   /**
    * Human-approved coding-agent + model pairs an agent driver (a CLI/API
    * caller — not a human in the UI) may set as an engineer/reviewer override.
+   * When `allowlistGroup` is set this is the *effective* list: the group base
+   * with this project's own rows layered on top (#1132).
    */
   allowlist?: AgentModelAllowRow[];
+  /**
+   * Name of the machine-local allowlist group this project joins (#1132).
+   * Unset keeps the project-only behaviour. Declared in repoos.toml as
+   * `budget.allowlistGroup = "personal"`.
+   */
+  allowlistGroup?: string;
 }
 
 /**

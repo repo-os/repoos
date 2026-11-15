@@ -22,9 +22,10 @@
  *
  * Zero runtime deps: node:fs only.
  */
-import { existsSync, readFileSync, statSync, watch, type FSWatcher } from "node:fs";
+import { existsSync, readFileSync, watch, type FSWatcher } from "node:fs";
 import { join } from "node:path";
 import { loadConfig, applyReloadedConfig } from "../core/config.js";
+import { allowlistGroupPath } from "../core/allowlist-groups.js";
 import type { RepoOSConfig } from "../core/types.js";
 
 const DEBOUNCE_MS = 80;
@@ -63,13 +64,26 @@ function readConfigContent(root: string): string | null {
   }
 }
 
-/** Last-write mtime of `repoos.toml`, or null when it is absent. */
-function configMtime(root: string): number | null {
+/**
+ * The machine-local allowlist group file's content, when this project is in a
+ * group (#1132). A pause written by another member on this machine, or by a
+ * tailnet peer over SSH, lands here — outside the repo root — so it has to be
+ * part of the change signature or a running server would keep enforcing the
+ * stale pause until restart.
+ */
+function groupFileContent(holder: { config: RepoOSConfig }): string {
+  const name = holder.config.budget?.allowlistGroup;
+  if (!name) return "";
   try {
-    return statSync(join(root, "repoos.toml")).mtimeMs;
+    return readFileSync(allowlistGroupPath(name), "utf8");
   } catch {
-    return null;
+    return "";
   }
+}
+
+/** `repoos.toml` plus the group file, so either can trigger a reload. */
+function readConfigSignature(root: string, holder: { config: RepoOSConfig }): string {
+  return `${readConfigContent(root) ?? ""}\u0000${groupFileContent(holder)}`;
 }
 
 export class ConfigWatcher {
@@ -78,13 +92,11 @@ export class ConfigWatcher {
   private debounceTimer: ReturnType<typeof setTimeout> | null = null;
   private pollTimer: ReturnType<typeof setInterval> | null = null;
   private lastContent: string | null;
-  private lastMtime: number | null;
   private stopped = false;
 
   constructor(options: ConfigWatcherOptions) {
     this.options = options;
-    this.lastContent = readConfigContent(options.root);
-    this.lastMtime = configMtime(options.root);
+    this.lastContent = readConfigSignature(options.root, options.holder);
   }
 
   /** Begin watching `repoos.toml` (fs.watch on the root dir + mtime poll). */
@@ -136,10 +148,9 @@ export class ConfigWatcher {
    */
   reloadIfChanged(): boolean {
     if (this.stopped) return false;
-    const content = readConfigContent(this.options.root);
+    const content = readConfigSignature(this.options.root, this.options.holder);
     if (content === this.lastContent) return false;
     this.lastContent = content;
-    this.lastMtime = configMtime(this.options.root);
     if (content === null) return false; // the file was deleted; keep the last good config
 
     const prev = this.options.holder.config;
@@ -171,9 +182,9 @@ export class ConfigWatcher {
 
   private onPoll(): void {
     if (this.stopped) return;
-    const mtime = configMtime(this.options.root);
-    if (mtime === this.lastMtime) return;
-    this.lastMtime = mtime;
+    // A group file lives outside the repo root, so `fs.watch` cannot see it.
+    // The poll compares the full signature (repoos.toml + group file) and is
+    // cheap: two small text reads at most once per poll interval.
     this.reloadIfChanged();
   }
 
