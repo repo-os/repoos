@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "1139"
 title: "Mobile web polish: 44px tap targets, no iOS input zoom, touch-only hints, landscape/tablet layout, PWA start page and icon"
 type: bug
@@ -68,3 +69,4 @@ Smaller mobile issues found on main `23dc737` (Chromium mobile emulation; 360/39
 - 2026-11-15T21:27:51Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
 - 2026-11-15T21:27:51Z · engineer crash recovery: resuming opencode + opencode-go/deepseek-v4.1-flash (1/3 crashes in 30m) · the agent process exited with an error — open the task to see the full output. Open Raw CLI error for details. (CLI: the agent process exited with an error — open the task to see the full output)
 - 2026-11-15T21:27:54Z · needs_input
+
