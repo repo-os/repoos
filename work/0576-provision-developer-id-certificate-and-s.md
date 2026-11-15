@@ -15,7 +15,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/provision-developer-id-certificate-and-s
 created_at: "2026-09-28T18:42:44Z"
-updated_at: "2026-11-15T21:15:11Z"
+updated_at: "2026-11-15T21:28:19Z"
 last_close_out_gate_ms: 70972
 last_close_out_gate_at: "2026-11-15T20:39:27.199Z"
 review_passes: 1
@@ -87,3 +87,4 @@ There is no UI change; maintainers can follow the runbook to provision and rotat
 - 2026-11-15T20:39:27Z · close-out gate completed in 71s
 - 2026-11-15T20:39:31Z · status done→done, release:success
 - 2026-11-15T21:15:11Z · message_dropped: 1 queued message(s) discarded — task is done
+- 2026-11-15T21:28:19Z · message_dropped: 1 queued message(s) discarded — task is done
