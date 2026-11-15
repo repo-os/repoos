@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/integration-pipeline-bar-floats-about-25
 created_at: "2026-11-15T17:23:26Z"
-updated_at: "2026-11-15T20:38:27Z"
+updated_at: "2026-11-15T21:28:19Z"
 last_close_out_gate_ms: 555401
 last_close_out_gate_at: "2026-11-15T20:34:39.951Z"
 review_passes: 1
@@ -94,3 +94,4 @@ Measured with Playwright and CDP: `.ibar-wrap` (position: fixed; bottom: 74px) g
 - 2026-11-15T20:35:05Z · status done→done, release:success
 - 2026-11-15T20:35:08Z · message_dropped: 1 queued message(s) discarded — task is done
 - 2026-11-15T20:38:27Z · message_dropped: 1 queued message(s) discarded — task is done
+- 2026-11-15T21:28:19Z · message_dropped: 1 queued message(s) discarded — task is done
