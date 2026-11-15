@@ -2,7 +2,7 @@
 id: "1127"
 title: "RepoOS Hub mobile: find RepoOS servers on my tailnet via a trusted server"
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: [mobile, core]
 story: RepoOS Hub for Mobile
@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: t@t
 branch: ""
 created_at: "2026-11-15T12:54:17Z"
-updated_at: "2026-11-15T12:54:17Z"
+updated_at: "2026-11-15T13:16:13Z"
 ---
 ## Problem
 RepoOS Hub for Android/iOS (`mobile/`) only knows about servers the user types in by hand as HTTPS URLs. Nick runs several RepoOS servers across his Tailscale tailnet (e.g. bee and thinkpad, each with several project servers on ports like 7499/7819/7578) and has to add each one manually on his phone.
@@ -42,3 +42,4 @@ The CLI can already discover them: `repoos servers --tailscale` (`collectTailnet
 ## Activity
 
 - 2026-11-15T12:54:17Z · created · t@t
+- 2026-11-15T13:16:13Z · status inbox→ready
