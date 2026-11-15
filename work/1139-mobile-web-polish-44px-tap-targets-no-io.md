@@ -3,9 +3,6 @@ id: "1139"
 title: "Mobile web polish: 44px tap targets, no iOS input zoom, touch-only hints, landscape/tablet layout, PWA start page and icon"
 type: bug
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: the agent process exited with an error — open the task to see the full output
 priority: p2
 area: web
 story: RepoOS Hub for Mobile
@@ -13,7 +10,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/mobile-web-polish-44px-tap-targets-no-io
 created_at: "2026-11-15T17:24:09Z"
-updated_at: "2026-11-15T21:27:51Z"
+updated_at: "2026-11-15T21:27:54Z"
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-11-15T21:27:51.683Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -70,3 +67,4 @@ Smaller mobile issues found on main `23dc737` (Chromium mobile emulation; 360/39
 - 2026-11-15T21:27:51Z · note: stopped orphaned engineer pid 20251
 - 2026-11-15T21:27:51Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
 - 2026-11-15T21:27:51Z · engineer crash recovery: resuming opencode + opencode-go/deepseek-v4.1-flash (1/3 crashes in 30m) · the agent process exited with an error — open the task to see the full output. Open Raw CLI error for details. (CLI: the agent process exited with an error — open the task to see the full output)
+- 2026-11-15T21:27:54Z · needs_input
