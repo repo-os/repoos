@@ -55,3 +55,4 @@ Look at the worktree cleanup in the closeout path (the code behind `repoos done`
 - 2026-11-15T18:03:19Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-15T18:04:07Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-15T18:06:25Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-15T18:06:25Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 130) · last assistant: Both failures are load-sensitive tests unrelated to this diff (`agent-review.test.ts` even notes the remote-validator race in a comment; `remote-host-pool` passed locally in 176 ms). Re-running the check: · stderr: (empty)
