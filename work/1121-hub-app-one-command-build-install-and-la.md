@@ -12,7 +12,7 @@ branch: feat/hub-app-one-command-build-install-and-la
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-14T17:35:18Z"
-updated_at: "2026-11-15T01:21:07Z"
+updated_at: "2026-11-15T01:41:18Z"
 last_close_out_gate_ms: 301749
 last_close_out_gate_at: "2026-11-15T01:20:51.829Z"
 review_passes: 1
@@ -75,3 +75,4 @@ Related: #1120 (Hub app redesign, runs in parallel, touches mobile/src only) and
 - 2026-11-15T00:47:38Z · close-out gate completed in 712s
 - 2026-11-15T01:20:51Z · close-out gate completed in 302s
 - 2026-11-15T01:21:07Z · status done→done, release:success
+- 2026-11-15T01:41:18Z · message_dropped: 1 queued message(s) discarded — task is done
