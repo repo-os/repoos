@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/allowlist-groups-projects-that-opt-into-
 created_at: "2026-11-15T15:20:04Z"
-updated_at: "2026-11-15T18:29:07Z"
+updated_at: "2026-11-15T18:30:31Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -70,3 +70,4 @@ Start from how `budget.allowlist` is read and merged today, `collectTailnetServe
 - 2026-11-15T18:06:25Z · message_delivered: 1 message(s)
 - 2026-11-15T18:29:07Z · message_queued at 2026-11-15T18:29:07.007Z
 - 2026-11-15T18:29:07Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-15T18:30:31Z · CTO nudge: held — an undelivered message is already queued
