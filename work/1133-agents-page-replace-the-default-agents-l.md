@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/agents-page-replace-the-default-agents-l
 created_at: "2026-11-15T15:20:08Z"
-updated_at: "2026-11-15T17:49:10Z"
+updated_at: "2026-11-15T17:54:07Z"
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -115,3 +115,4 @@ The current list is `agentLastRuns` in src/ui-app/src/views/AgentsView.vue, fed 
 - 2026-11-15T17:44:24Z · queued message undelivered for 5m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-15T17:44:25Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 130) · last assistant: The captured shots show the old block is gone but no status dots, because the preview board has no recent runs. I'll add a deterministic preview fixture so the review shots actually demonstrate the new inline status. · stderr: (empty)
 - 2026-11-15T17:49:10Z · message_delivered: 1 message(s)
+- 2026-11-15T17:54:07Z · message_queued at 2026-11-15T17:54:07.419Z
