@@ -104,6 +104,7 @@ export function generalSectionForKey(key: string): string {
     return "activity-animation";
   }
   if (key === "tunnelEnabled") return "publishing";
+  if (key === "tailnetDiscovery") return "remote-validation";
   if (key === "remoteValidation.enabled") return "remote-validation";
   if (key === "remoteValidation.browserCaptureMode") return "performance";
   if (key === "remoteValidation.offloadBrowserSteps" || key === "remoteValidation.localFallback") {
@@ -320,6 +321,7 @@ export function settingTabLabel(tab: SettingsTabId): string {
 const SETTING_SEARCH_ALIASES: Record<string, string> = {
   "remoteValidation.enabled":
     "tailscale hetzner remote validation runner configure disposable vm cloud",
+  tailnetDiscovery: "tailscale tailnet discovery hub mobile phone find servers network magicdns",
   tunnelEnabled: "cloudflare tunnel publish publishing hostname public",
   "closeOut.timeoutMs": "close out move to done mtd merge pipeline budget timeout hung",
   "git.tuneForScale": "git status fsmonitor daemon file watcher load acceleration performance",

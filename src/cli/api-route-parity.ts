@@ -116,6 +116,10 @@ const UI_ONLY_MATCHERS: Matcher[] = [
   re("GET", /^\/api\/tasks\/([^/]+)\/engineering-reports\/([^/]+)$/.source),
   under("/api/auth/"),
   under("/api/hub/"),
+  // The native mobile Hub's server-assisted tailnet import (#1127). The phone
+  // cannot run the CLI, and the CLI's own `repoos servers --tailscale` reads
+  // the same core directly rather than this authenticated endpoint.
+  exact("GET", "/api/servers/tailnet"),
   under("/api/telegram/"),
   exact("GET", "/api/index"),
   exact("GET", "/api/board"),

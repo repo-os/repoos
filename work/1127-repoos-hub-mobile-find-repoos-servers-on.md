@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-15T14:25:39Z"
-review_passes: 1
 id: "1127"
 title: "RepoOS Hub mobile: find RepoOS servers on my tailnet via a trusted server"
 type: feature
@@ -12,6 +10,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/repoos-hub-mobile-find-repoos-servers-on
 created_at: "2026-11-15T12:54:17Z"
+updated_at: "2026-11-15T14:24:29Z"
 ---
 ## Problem
 RepoOS Hub for Android/iOS (`mobile/`) only knows about servers the user types in by hand as HTTPS URLs. Nick runs several RepoOS servers across his Tailscale tailnet (e.g. bee and thinkpad, each with several project servers on ports like 7499/7819/7578) and has to add each one manually on his phone.
@@ -45,32 +44,4 @@ The CLI can already discover them: `repoos servers --tailscale` (`collectTailnet
 - 2026-11-15T12:54:17Z · created · t@t
 - 2026-11-15T13:16:13Z · status inbox→ready
 - 2026-11-15T13:16:15Z · status ready→active, branch
-- 2026-11-15T13:45:20Z · message_queued at 2026-11-15T13:45:20.238Z
-- 2026-11-15T13:45:20Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-15T13:48:24Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
-- 2026-11-15T13:48:24Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 130) · last assistant: Implementation and focused tests are green. Now I'll run the scoped check gate for the whole change. · stderr: (empty)
-- 2026-11-15T13:48:24Z · message_delivered: 1 message(s)
-- 2026-11-15T13:50:20Z · message_queued at 2026-11-15T13:50:20.524Z
-- 2026-11-15T13:50:20Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-15T13:53:24Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
-- 2026-11-15T13:53:24Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 130) · last assistant: Implementation and focused tests are green. Now I'll run the scoped check gate for the whole change. · stderr: (empty)
-- 2026-11-15T13:53:24Z · message_delivered: 1 message(s)
-- 2026-11-15T13:55:20Z · message_queued at 2026-11-15T13:55:20.552Z
-- 2026-11-15T13:55:20Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-15T14:00:20Z · CTO nudge: held — an undelivered message is already queued
-- 2026-11-15T14:00:39Z · queued message undelivered for 5m and the engineer produced no output — ending the turn so it is delivered
-- 2026-11-15T14:00:39Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 130) · last assistant: The first scoped check failed only on the UI smoke step. I'll reproduce that locally to see the actual error rather than guess. · stderr: (empty)
-- 2026-11-15T14:00:39Z · message_delivered: 1 message(s)
-- 2026-11-15T14:05:20Z · message_queued at 2026-11-15T14:05:20.604Z
-- 2026-11-15T14:05:20Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-15T14:08:24Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
-- 2026-11-15T14:08:24Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 130) · last assistant: The first scoped check failed only on the UI smoke step. I'll reproduce that locally to see the actual error rather than guess. · stderr: (empty)
-- 2026-11-15T14:08:24Z · message_delivered: 1 message(s)
-- 2026-11-15T14:10:20Z · message_queued at 2026-11-15T14:10:20.543Z
-- 2026-11-15T14:10:20Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-15T14:15:20Z · CTO nudge: held — handoff gate is running
-- 2026-11-15T14:24:29Z · note: ui verification passed: 1 shot captured with clean console (1 shot warning)
-- 2026-11-15T14:24:30Z · status active→review
-- 2026-11-15T14:24:30Z · message_queued at 2026-11-15T14:24:30.133Z
-- 2026-11-15T14:25:38Z · note: review pass 1: good to go
-
+- 2026-11-15T14:24:29Z · status active→review

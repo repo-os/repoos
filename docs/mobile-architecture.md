@@ -58,13 +58,58 @@ threat model.
 
 - The server list (URL + display name + order + selection) is stored in
   `@capacitor/preferences` (UserDefaults / SharedPreferences). No network call
-  ever transmits it — the only outbound requests are the explicit
-  reachability check to the URL the user typed, and opening that URL in the
-  WebView.
-- No server discovery, no central account, no report home.
+  ever transmits it. The outbound requests are: the explicit reachability check
+  to a URL the user typed, the one discovery request described below to a
+  server the user already saved, and opening that URL in the WebView.
+- The phone performs **no scanning, probing or broadcasting** of the local
+  network or the tailnet. There is no central account and no report home.
 - `android:allowBackup="false"` prevents the server list from sync'ing to
   Google backup; iOS stores it in plain UserDefaults (no credentials are ever
   held, so keychain is unnecessary).
+
+### Server-assisted tailnet discovery ("Find servers on my tailnet")
+
+The user's phone cannot run the Tailscale CLI or read the Tailscale app's peer
+list, and Hub deliberately does not scan the network. Instead, after the user
+has saved one server they trust, the picker offers **Find servers on my
+tailnet**. That action makes exactly one request — to the saved server —
+`GET /api/servers/tailnet` over the same HTTPS origin Hub already uses.
+
+- The request is a normal `/api/*` call, so it is subject to the server's auth
+  middleware like every other API route; an unauthenticated request is refused
+  rather than answered. Hub sends it with `credentials: "same-origin"` so a
+  shell served by the same origin (the web build) carries its session, while
+  the native shell's cross-origin request stays CORS-compatible (the server's
+  JSON routes advertise `Access-Control-Allow-Origin: *`, which browsers reject
+  for credentialed requests).
+- The *server* does the discovery: it runs `tailscale status --json`, asks each
+  online peer over SSH for `repoos servers --json`, and reads the peer's
+  `tailscale serve status --json` to attach the HTTPS MagicDNS URL for each
+  discovered port. No part of this touches the phone's network.
+- The response is the same server rows `repoos servers --tailscale --json`
+  reports, plus a ready-to-open `url` and an `https` flag per row. Rows that
+  could not be reached carry `unreachable: true` and a `reason`. A per-host
+  timeout and a whole-request deadline mean one slow machine cannot hang the
+  list; Hub renders the partial result and says which host failed.
+- Discovery can be turned off on the server (`tailnetDiscovery = false` in
+  `repoos.toml`, or Settings → General → Tailnet server discovery). The
+  endpoint then returns a plain `disabled` message, and manual URL entry keeps
+  working exactly as before.
+- Results are only a suggestion: Hub marks servers already saved, shows which
+  rows have no HTTPS URL (they cannot be saved), and saves only the rows the
+  user explicitly selects. Every pick still goes through the existing HTTPS
+  reachability gate (`fetch(origin + "/api/health")`) before it reaches
+  `@capacitor/preferences`. Nothing is saved automatically, and the server is
+  never told which rows were chosen.
+
+There is currently one integration caveat: the native shell's cookies live in
+the isolated InAppBrowser container, so it has no session for the saved server
+by itself. On a server with authentication enabled the discovery request can
+therefore be refused; Hub shows that refusal plainly and leaves manual add
+available. Giving the shell its own per-server session is story task **#0304**.
+Auth-disabled servers, and the web build served from the same origin, work
+today.
+
 
 ### HTTPS-only, reachability-gated add flow
 

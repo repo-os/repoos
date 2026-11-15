@@ -26,6 +26,7 @@ export * from "./transcribe.js";
 export * from "./auth.js";
 export * from "./telegram-identity.js";
 export * from "./hub.js";
+export * from "./servers.js";
 export * from "./telegram.js";
 export * from "./telegram-webhook.js";
 export * from "./skill-registry.js";
