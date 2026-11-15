@@ -7,6 +7,10 @@ import { useDocsStore } from "../stores/docs";
 import { api, JSON_OPTS } from "../api";
 import type { AgentLastRunRow } from "../../../core/agent-last-runs.js";
 import { copyToClipboard } from "../lib/clipboard";
+import {
+  readShotPreviewFixtureFromLocation,
+  shotFixtureAgentLastRuns,
+} from "../lib/shot-preview-fixtures";
 import type {
   Agent,
   AgentUpdate,
@@ -51,6 +55,13 @@ const reminders = useRemindersStore();
 
 const agentLastRuns = ref<AgentLastRunRow[]>([]);
 async function loadAgentLastRuns(): Promise<void> {
+  const fixture =
+    typeof window !== "undefined" ? readShotPreviewFixtureFromLocation(window.location) : null;
+  const seeded = shotFixtureAgentLastRuns(fixture, localAgents.value);
+  if (seeded) {
+    agentLastRuns.value = seeded;
+    return;
+  }
   try {
     const result = await api<{ agents: AgentLastRunRow[] }>("/api/agents/last-runs");
     agentLastRuns.value = result.agents;
@@ -174,6 +185,15 @@ watch(
     if (loaded) sync();
   },
   { immediate: true },
+);
+
+// The status compares each run with the card's *current* CLI/model, so a saved
+// agent edit must re-resolve the run labels immediately (not wait for a reload).
+watch(
+  () => localAgents.value.map((a) => `${a.name}\u0000${a.cli}\u0000${a.model}`).join("\u0001"),
+  () => {
+    if (config.loaded) void loadAgentLastRuns();
+  },
 );
 
 // Default-vs-custom matching is case-insensitive: agent names are stored

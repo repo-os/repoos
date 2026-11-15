@@ -11,6 +11,7 @@ import {
 } from "../../../core/shot-fixtures.js";
 import type { ActivityAnimationStyle } from "../../../core/activity-animation.js";
 import type { TaskSchedule } from "../../../core/schedule.js";
+import type { AgentLastRunRow } from "../../../core/agent-last-runs.js";
 import type { useConfigStore } from "../stores/config";
 import type { useRepoStore } from "../stores/repo";
 import { useNoticesStore } from "../stores/notices";
@@ -803,6 +804,77 @@ export function shotFixtureSchedules(fixture: ShotPreviewFixtureId | null): Task
       path: "schedules/0002-daily-health-check.md",
       templateUnderspecified: false,
       templateUnderspecifiedDetail: "",
+    },
+  ];
+}
+
+/**
+ * Deterministic latest runs for the `agents:lastRuns` capture fixture (#1133).
+ * Returns null for any other fixture so the page keeps its real server data.
+ * The engineer/pm/cto/debugger rows use the card's current CLI and model, so
+ * the capture proves the inline "Failed"/"Last run" states; the reviewer row
+ * deliberately uses an older pair so the muted "Previous setup" label shows.
+ */
+export function shotFixtureAgentLastRuns(
+  fixture: ShotPreviewFixtureId | null,
+  agents: ReadonlyArray<{ name: string; cli: string; model: string }>,
+): AgentLastRunRow[] | null {
+  if (fixture !== "agents:lastRuns") return null;
+  const at = (minutesAgo: number): string =>
+    new Date(Date.now() - minutesAgo * 60_000).toISOString();
+  const setup = (
+    name: string,
+    fallbackCli: string,
+    fallbackModel: string,
+  ): Pick<AgentLastRunRow, "codingAgent" | "model"> => {
+    const agent = agents.find((a) => a.name.trim().toLowerCase() === name);
+    return {
+      codingAgent: agent?.cli || fallbackCli,
+      model: agent?.model || fallbackModel,
+    };
+  };
+  return [
+    {
+      ...setup("engineer", "opencode", "opencode-go/glm-5.3-flash"),
+      name: "engineer",
+      status: "errored",
+      at: at(12),
+      taskId: "1133",
+      reason:
+        "OpenCode is out of credit. Add balance, or pick another model. (CLI: opencode exited with code 1: Error: You need positive balance to do inference.)",
+    },
+    {
+      ...setup("pm", "opencode", "opencode-go/glm-5.3-flash"),
+      name: "pm",
+      status: "finished",
+      at: at(4),
+      taskId: "1133",
+      reason: null,
+    },
+    {
+      name: "reviewer",
+      status: "errored",
+      at: at(40),
+      taskId: "1133",
+      reason: "Codex is signed out. Re-authenticate Codex on this computer.",
+      codingAgent: "claude code",
+      model: "sonnet-4",
+    },
+    {
+      ...setup("cto", "opencode", "default"),
+      name: "cto",
+      status: "finished",
+      at: at(8),
+      taskId: null,
+      reason: null,
+    },
+    {
+      ...setup("debugger", "opencode", "default"),
+      name: "debugger",
+      status: "errored",
+      at: at(20),
+      taskId: "1133",
+      reason: "OpenCode is signed out. Re-authenticate OpenCode on this computer.",
     },
   ];
 }
