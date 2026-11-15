@@ -1,3 +1,14 @@
+---
+id: summary
+title: summary
+type: feature
+status: inbox
+priority: p2
+area: general
+assigned_to: ai
+created_by: ""
+branch: ""
+---
 ## TL;DR
 
 Task #1121 shipped `just deploy-phone`: a one-command Bun/TypeScript port of the Laisen/Tiao Tailscale-over-adb deploy flow for the RepoOS Hub Android app. It builds the debug APK via `just build-android`, connects over Tailscale adb (saved address → other open ports → 30000–49999 scan), installs with `adb install -r -d`, force-stops, launches, and prints the short commit. Debug builds now carry `applicationIdSuffix ".dev"` (`org.repoos.mobile.dev`, launcher label "RepoOS Hub Dev") so they install beside the release build; the release id is unchanged. Phone targets come only from `REPOOS_HUB_PHONE` / `REPOOS_HUB_PHONE_PORT` / `~/.config/repoos-hub/phone` — no default IP in the repo. Vitest fakes cover connect, fallback, scan, launch-component validation, the signature-mismatch message and `--no-build`/`--no-scan`; docs live in `docs/phone-deploy.md` plus a `mobile/README.md` pointer. No real install was run, by design. Review verdict: good to go (pass 1); task done with release:success. The run was bumpy: three engineer turns ended without a handoff, two handoffs failed (worktree changed mid-gate; finalization timeout), and one watchdog restart was needed.
@@ -24,10 +35,10 @@ Task #1121 shipped `just deploy-phone`: a one-command Bun/TypeScript port of the
 - **Review passes:** 1 — `good to go`, 2026-11-14T19:17:42Z.
 - **Wall-clock, created → done:** 2026-11-14T17:35:18Z → 2026-11-15T01:21:07Z = **7 h 45 m 49 s**. Of that, ~3 h 36 m elapsed between the review verdict (19:24:49Z) and close-out completion, dominated by the close-out gates and a queued message that sat undelivered.
 - **Agents and models:**
-  - Engineer: cursor · composer-2.5 (both rounds). One watchdog restart (18:59:55Z, after 10 m with no live process); the restart's model is not recorded.
-  - Reviewer: cursor · composer-2.5, session elapsed 49 s.
-  - Routing (Model router, openrouter): 2 s, model "unknown".
-  - Engineer session as recorded in the sessions table: elapsed 1979 s (~33 min), **2,000 tokens** (the figure as recorded). Reviewer/routing token counts: not recorded.
+- Engineer: cursor · composer-2.5 (both rounds). One watchdog restart (18:59:55Z, after 10 m with no live process); the restart's model is not recorded.
+- Reviewer: cursor · composer-2.5, session elapsed 49 s.
+- Routing (Model router, openrouter): 2 s, model "unknown".
+- Engineer session as recorded in the sessions table: elapsed 1979 s (~33 min), **2,000 tokens** (the figure as recorded). Reviewer/routing token counts: not recorded.
 - **Costs:** not recorded for any session.
 - **Close-out:** two gate completions — 2026-11-15T00:47:38Z in **712 s** and 2026-11-15T01:20:51Z in **302 s**; the task moved to done at 01:21:07Z.
 

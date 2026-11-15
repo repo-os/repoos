@@ -1,3 +1,14 @@
+---
+id: summary
+title: summary
+type: feature
+status: inbox
+priority: p2
+area: general
+assigned_to: ai
+created_by: ""
+branch: ""
+---
 ## TL;DR
 
 #1116 closed the remaining cross-surface mobile touch gaps after the #1112–#1115 shell/queue/details/Settings slices: below 720 px, page content and the integration status bar now use the full viewport width (floating agent heads overlay content instead of reserving a ~70 px inline-end column), floating-head visibility became a per-device Settings preference (default off on phones, on on desktop; CTO/Ross/Debugger stay reachable from the More sheet), Releases and Activity gained stacked actions, 44 px touch targets and wrap-anywhere text, and #1069's last-activity touch gestures were verified rather than reopened. Review pass 1 found a drawer-stacking bug (fixed in-branch); pass 2 was good to go. Getting there required swapping a crash-looping pinned codex + gpt-6-luna engineer override to composer-2.5 and fixing a WebKit page-height gate failure on the feature branch. Merged as `ef69819c6b0eb65ebf6ad595e13f707bfd56b4cf`.
@@ -19,10 +30,10 @@ Final verdict: review pass 2 returned **good to go** (qualified `STALE-EVIDENCE-
 - **Rounds:** 1 recorded engineering round (Round 1, preceded by earlier engineer turns that ended in crashes and left WIP checkpoint commits); 2 review passes (needs some work → good to go).
 - **Wall-clock, start to done:** created 2026-11-14T09:11:01Z, done 2026-11-14T18:47:18Z — 9 h 36 m end to end. Engineering was active only from 16:14:12Z (ready→active) to done, i.e. 2 h 33 m; the task sat in needs_input/ready between 09:11 and 16:03.
 - **Agents and models per role:**
-  - Engineer: a human-set override (16:03:44) pinned the engineer; crash-recovery notes identify the pinned pair as codex + gpt-6-luna. A second override (17:03:58) switched the engineer to composer-2.5, which finished. Sessions table: composer-2.5 finished, 4989 s elapsed, 13,111,829 tokens; gpt-6-luna errored, 659 s, 13,110,829 tokens (both listed with start 2026-11-14T16:14:15Z).
-  - Reviewer: composer-2.5, two sessions (41 s and 56 s).
-  - Debugger: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash, five sessions, all errored; no successful debugger session recorded.
-  - Routing: OpenRouter model router (model unknown), two 1 s sessions.
+- Engineer: a human-set override (16:03:44) pinned the engineer; crash-recovery notes identify the pinned pair as codex + gpt-6-luna. A second override (17:03:58) switched the engineer to composer-2.5, which finished. Sessions table: composer-2.5 finished, 4989 s elapsed, 13,111,829 tokens; gpt-6-luna errored, 659 s, 13,110,829 tokens (both listed with start 2026-11-14T16:14:15Z).
+- Reviewer: composer-2.5, two sessions (41 s and 56 s).
+- Debugger: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash, five sessions, all errored; no successful debugger session recorded.
+- Routing: OpenRouter model router (model unknown), two 1 s sessions.
 - **Tokens/cost:** recorded engineer tokens total 26,222,658 across the two sessions (13,111,829 + 13,110,829). Reviewer, debugger and routing tokens not recorded. Cost: not recorded for any session.
 - **Restarts/swaps:** 3 watchdog engineer restarts (two after queued messages waited 3 m with no live process, one after 10 m with no live process); 5 crash-recovery events on the codex engineer; 2 adoptions of an orphaned engineer process (pid 34168); 1 engineer model swap via override.
 
