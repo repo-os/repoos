@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/closeout-don-t-keep-worktrees-just-becau
 created_at: "2026-11-15T17:07:22Z"
-updated_at: "2026-11-15T17:37:10Z"
+updated_at: "2026-11-15T17:39:07Z"
 ---
 ## Problem
 After `repoos done` merged #1128 (branch commit e23a1db4e is on main), the task card shows Done but also "Needs input": "the worktree for feat/publish-repoos-hub-android-apk-on-github was kept because it had uncommitted changes the merge did not carry: .env".
@@ -33,3 +33,4 @@ Look at the worktree cleanup in the closeout path (the code behind `repoos done`
 - 2026-11-15T17:34:07Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-15T17:37:09Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-15T17:37:10Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 130) · last assistant: Now add the unit tests: · stderr: (empty)
+- 2026-11-15T17:39:07Z · CTO nudge: held — an undelivered message is already queued
