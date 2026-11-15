@@ -11,6 +11,7 @@ describe("copilot Auto tier helpers", () => {
     ["copilot-auto-efficiency", "balance"],
     ["copilot-auto-balance", "balance"],
     ["copilot-auto-intelligence", "intelligence"],
+    ["gpt-6-luna", null],
     ["gpt-5.3-codex", null],
   ])("resolveCopilotAutoTier(%s) → %s", (model, tier) => {
     expect(resolveCopilotAutoTier(model)).toBe(tier);

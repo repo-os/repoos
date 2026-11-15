@@ -8,6 +8,8 @@
  * and may suggest alternatives in error text — do not treat tier ids as a closed list.
  */
 
+import { formatCopilotModelFailure, formatCopilotReasoningFailure } from "./copilot-models.js";
+
 const COPILOT_AUTO_TIER_CLI_ID: Record<string, string> = {
   default: "balance",
   "copilot-auto-efficiency": "balance",
@@ -41,7 +43,12 @@ const COPILOT_AUTO_TIER_FAILURE =
  */
 export function enrichAgentFailureDetail(detail: string, cli?: string): string {
   if (cli !== "github copilot") return detail;
-  return formatCopilotAutoTierFailure(detail) ?? detail;
+  return (
+    formatCopilotAutoTierFailure(detail) ??
+    formatCopilotReasoningFailure(detail) ??
+    formatCopilotModelFailure(detail) ??
+    detail
+  );
 }
 
 /**

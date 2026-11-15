@@ -18,6 +18,7 @@ import {
 import { agentSilenceCountsAsStalled } from "../core/active-task-card.js";
 import { agentSpawnErrorMessage } from "../core/agent-spawn-error.js";
 import { copilotAutoTierModelArgs, enrichAgentFailureDetail } from "../core/copilot-auto-tier.js";
+import { copilotNamedModelArgs } from "../core/copilot-models.js";
 import { formatAgentFailure } from "../core/agent-failure.js";
 import {
   patternKillWarning,
@@ -3444,6 +3445,7 @@ function modelArgs(cli: string, model: string): string[] {
   if (cli === "github copilot") {
     const auto = copilotAutoTierModelArgs(model);
     if (auto.length) return auto;
+    return copilotNamedModelArgs(model);
   }
   if (!model || model === "default") return [];
   if (cli === "pi") {
