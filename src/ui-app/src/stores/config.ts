@@ -10,6 +10,7 @@ import type {
   ModelSourcesResponse,
   StorageStatus,
 } from "../types";
+import { copilotModelReasoningHint } from "../../../core/copilot-models";
 
 /** claude code takes model aliases, not the provider/model ids other CLIs use. */
 const CLAUDE_CODE_MODELS = ["default", "opus", "sonnet", "haiku"] as const;
@@ -19,6 +20,9 @@ const MODEL_LABELS: Record<string, string> = {
   "copilot-auto-efficiency": "Auto · Balance",
   "copilot-auto-balance": "Auto · Balance",
   "copilot-auto-intelligence": "Auto · Intelligence",
+  "gpt-6-luna": "GPT-6 Luna",
+  "gpt-6.1-terra": "GPT-6.1 Terra",
+  "claude-haiku-5.5": "Claude Haiku 5.5",
   opus: "Opus",
   sonnet: "Sonnet",
   haiku: "Haiku",
@@ -29,7 +33,12 @@ const MODEL_LABELS: Record<string, string> = {
 /** Display label for a model id; unknown ids render as-is. */
 export function labelForModel(m: string, cli?: string): string {
   if (m === "default" && cli === "github copilot") return "Auto · Balance";
-  return MODEL_LABELS[m] ?? m;
+  const base = MODEL_LABELS[m] ?? m;
+  if (cli === "github copilot") {
+    const hint = copilotModelReasoningHint(m);
+    if (hint) return `${base} (${hint})`;
+  }
+  return base;
 }
 
 export interface ConfigResponse {

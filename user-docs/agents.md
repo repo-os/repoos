@@ -66,7 +66,7 @@ RepoOS has a driver for eight CLIs:
 | `opencode` | The best-supported driver. Structured JSON output, live model discovery, and same-session resume. |
 | `claude code` | Structured stream output; resume/recovery is less proven. |
 | `codex` | Structured app-server protocol and a model list. |
-| `github copilot` | JSON driver with Auto tier selection. |
+| `github copilot` | JSON driver with Auto tiers and pinned named models (`gpt-6-luna`, etc.). |
 | `qwen code` | Driver present; no machine-parseable output format. |
 | `kiro` | Driver present. |
 | `cursor` | The Cursor Agent CLI (`cursor-agent`). Structured stream-JSON, session resume, and model selection. |
@@ -179,15 +179,21 @@ engineering turns and resumed follow-ups after the server loads the new build.
 
 ### GitHub Copilot CLI
 
-RepoOS offers Copilot's **Auto · Balance** (the default) and **Auto ·
-Intelligence** tiers. They choose from models your Copilot account and policy
-make available; the tier controls the cost, quality, and latency trade-off rather
-than pinning a named model. The legacy model id `copilot-auto-efficiency` still
-works in saved config but maps to Balance — GitHub removed the CLI `efficiency`
-tier. Valid tier ids can differ by account; if a tier fails, the CLI error may
-name alternatives. RepoOS uses Copilot's documented `--model auto --auto-tier`
-flags (for example `balance` or `intelligence`), so it does not need to scrape
-the interactive `/model` picker.
+RepoOS offers Copilot's **Auto · Balance** (the default), **Auto ·
+Intelligence**, and verified named models **`gpt-6-luna`**, **`gpt-6.1-terra`**,
+and **`claude-haiku-5.5`**. Each named model shows its supported reasoning levels
+in the model picker; RepoOS runs them with economical `low` reasoning unless you
+change the CLI default elsewhere. Auto tiers choose among models your Copilot
+account and policy make available rather than pinning a single model. The legacy
+model id `copilot-auto-efficiency` still works in saved config but maps to Balance
+— GitHub removed the CLI `efficiency` tier. Valid tier ids can differ by account;
+if a tier or model fails, the Agents **Test** names the model and explains the
+failure. RepoOS uses `--model auto --auto-tier` for Auto tiers and
+`--model <id> --reasoning-effort low` for the named models in its catalog.
+
+The budget allowlist for `github copilot` may stay paused until you resume it
+(`repoos agents resume "github copilot"`); unpause only after picking a model
+that works on your account.
 
 RepoOS passes Copilot's `--yolo` flag (all tools, paths and URLs) for every role:
 engineer, PM, reviewer, Debugger, RepoOS Guide, and one-shot authoring. Copilot

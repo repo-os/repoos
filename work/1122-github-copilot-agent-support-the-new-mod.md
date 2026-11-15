@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 84276
-last_close_out_gate_at: "2026-11-15T02:00:00.341Z"
 id: "1122"
 title: "GitHub Copilot agent: support the new model picker (GPT-6 Luna, GPT-6.1 Terra, Haiku 5.5 ...) with real --model ids"
 type: feature
-status: review
+status: done
 priority: p2
 area: [core, server]
+merged_commit: d77bdf0c085800ffdd370cc715f3df58e7f8ce97
 assigned_to: ai
 created_by: t@t
 branch: feat/github-copilot-agent-support-the-new-mod
@@ -14,6 +13,8 @@ cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-14T17:41:02Z"
 updated_at: "2026-11-15T02:00:00Z"
+last_close_out_gate_ms: 84276
+last_close_out_gate_at: "2026-11-15T02:00:00.341Z"
 review_passes: 2
 handoff_signal_retry_count: 2
 ---

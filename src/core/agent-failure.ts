@@ -37,6 +37,13 @@ function cliName(cli: string): string {
 export function classifyAgentFailure(detail: string, cli = ""): AgentFailureReason | null {
   const text = detail.trim();
   if (!text) return null;
+  if (/github copilot/i.test(cli) && /Reasoning effort .+ is not supported for model/i.test(text)) {
+    return {
+      id: "model-unavailable",
+      summary: "Copilot does not support that reasoning level for this model.",
+      fix: "Choose another model on the Agents page.",
+    };
+  }
   if (
     /github copilot/i.test(cli) &&
     /(?:Auto (?:profile|preference)|Set --auto-tier\b|auto-tier\s+(?:to|profile|preference))/i.test(

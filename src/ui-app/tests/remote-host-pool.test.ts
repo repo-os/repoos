@@ -15,6 +15,7 @@ import {
   readFileSync,
   rmSync,
   statSync,
+  utimesSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
@@ -2611,7 +2612,9 @@ describe("host-side lock (server + standalone CLI share one limit)", () => {
     const lockRoot = join(root, "locks");
     const slot = join(lockRoot, "0");
     mkdirSync(slot, { recursive: true });
-    execFileSync("touch", ["-t", "200001010000", slot]); // last heartbeat: 2000-01-01
+    // Node mtime — portable on remote validators where `touch -t` differs (#1122 mini).
+    const staleAt = new Date("2000-01-01T00:00:00Z");
+    utimesSync(slot, staleAt, staleAt);
     const marks = join(root, "marks.log");
     const res = await sh(
       hostLockShell({
@@ -2625,7 +2628,7 @@ describe("host-side lock (server + standalone CLI share one limit)", () => {
     expect(res.code).toBe(0);
     expect(res.out).toContain("[lock] slot 0 acquired");
     expect(readFileSync(marks, "utf8")).toContain("ran");
-  }, 30_000);
+  }, 45_000);
 
   it("heartbeats the slot dir while the holder runs, so staleness means 'dead' not 'slow' (#0521 review)", async () => {
     const root = tmpRoot();

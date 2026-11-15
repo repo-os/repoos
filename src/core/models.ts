@@ -21,6 +21,7 @@ import { join } from "node:path";
 import { writeChildStdin } from "./child-stdin.js";
 import { resolveBinary, KNOWN_AGENTS } from "./detect.js";
 import { sanitizeSpawnArgs } from "./spawn-args.js";
+import { COPILOT_MODEL_IDS } from "./copilot-models.js";
 
 /** Default ceiling on the `opencode models` probe, ms. A hung CLI is SIGKILLed. */
 export const MODELS_TIMEOUT_MS = 12_000;
@@ -416,10 +417,8 @@ const museAdapter: ModelSourceAdapter = {
 };
 
 /**
- * Copilot's interactive picker has no stable machine-readable catalog, but
- * Auto tiers are stable CLI flags. The underlying model remains account- and
- * policy-dependent, so expose tiers rather than guessing which named models a
- * user can access.
+ * Copilot has no stable machine-readable model list, but Auto tiers and verified
+ * `--model` ids from live probes are cataloged in `copilot-models.ts` (#1122).
  */
 const copilotAdapter: ModelSourceAdapter = {
   id: "copilot",
@@ -428,7 +427,7 @@ const copilotAdapter: ModelSourceAdapter = {
   async list(): Promise<ModelSourceResult> {
     return {
       supported: true,
-      models: ["default", "copilot-auto-balance", "copilot-auto-intelligence"],
+      models: [...COPILOT_MODEL_IDS],
       refreshable: false,
     };
   },
