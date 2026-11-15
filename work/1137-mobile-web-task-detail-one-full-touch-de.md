@@ -11,7 +11,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/mobile-web-task-detail-one-full-touch-de
 created_at: "2026-11-15T17:24:03Z"
-updated_at: "2026-11-15T20:25:17Z"
+updated_at: "2026-11-15T20:32:27Z"
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-11-15T20:25:16.075Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -61,22 +61,43 @@ On a phone there's a single task detail, whichever way it was opened (card, sear
 ```json
 [
 {
-"label": "Phone Work detail: one drawer, Review failed state and every tab reachable",
-"target": "default",
-"route": "/work?task=9999&tab=review",
-"highlight": ".drawer-tabs",
-"state": "drawer:statusReviewFailedNarrow",
-"viewportWidth": 390,
-"viewportHeight": 844
+  "label": "Phone task detail: Back to queue, Paused/Review-failed status line, scrollable tabs and Review again",
+  "target": "default",
+  "route": "/work?task=9999&tab=review",
+  "highlight": ".drawer-status-summary",
+  "assert": [
+    {
+      "selector": ".drawer-mobile-back",
+      "label": "Back-to-queue control present"
+    },
+    {
+      "selector": ".drawer-tabs .tab-btn",
+      "label": "All drawer tabs present in the scrollable strip",
+      "minCount": 6
+    }
+  ],
+  "state": "drawer:statusReviewFailed",
+  "viewportWidth": 390,
+  "viewportHeight": 844
 },
 {
-"label": "Phone ?task=&tab=changes deep link lands on the Changes tab at 360px",
-"target": "default",
-"route": "/work?task=9999&tab=changes",
-"highlight": ".drawer-tabs",
-"state": "drawer:statusReviewFailedNarrow",
-"viewportWidth": 360,
-"viewportHeight": 800
+  "label": "Phone task detail from a ?tab=changes deep link at 360px",
+  "target": "default",
+  "route": "/work?task=9999&tab=changes",
+  "highlight": ".drawer-tabs",
+  "assert": [
+    {
+      "selector": ".drawer-tabs",
+      "label": "Tab strip present"
+    },
+    {
+      "selector": ".drawer-mobile-back",
+      "label": "Back control present"
+    }
+  ],
+  "state": "drawer:statusReviewFailed",
+  "viewportWidth": 360,
+  "viewportHeight": 780
 }
 ]
 ```
@@ -105,3 +126,4 @@ On a phone there's a single task detail, whichever way it was opened (card, sear
 - 2026-11-15T20:25:16Z · agent exited with an error (opencode) · OpenCode exited with an error. Open Raw CLI error for details. (CLI: ✗ Server finalization stopped at check: remote validation failed: test failure: tests/agent-serve-guard.test.ts > CLI rejection (real process) > rejects an agent's direct repoos serve and leaves the port free on bee — fix it in the feature branch and re-run the gate. The same worktree can be resumed and retried.)
 - 2026-11-15T20:25:16Z · engineer crash recovery: resuming opencode + opencode-go/deepseek-v4.1-flash (1/3 crashes in 30m) · OpenCode exited with an error. Open Raw CLI error for details. (CLI: ✗ Server finalization stopped at check: remote validation failed: test failure: tests/agent-serve-guard.test.ts > CLI rejection (real process) > rejects an agent's dire…
 - 2026-11-15T20:25:17Z · needs_input
+- 2026-11-15T20:32:27Z · body
