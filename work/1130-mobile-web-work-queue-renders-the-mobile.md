@@ -2,7 +2,7 @@
 id: "1130"
 title: "Mobile web: Work queue renders the mobile list and desktop board on top of each other"
 type: bug
-status: inbox
+status: ready
 needs_input: true
 needs_input_reason: underspecified
 needs_input_detail: "missing sections: Notes for AI"
@@ -13,7 +13,7 @@ assigned_to: ai
 created_by: t@t
 branch: ""
 created_at: "2026-11-15T14:34:55Z"
-updated_at: "2026-11-15T14:34:56Z"
+updated_at: "2026-11-15T14:35:07Z"
 ---
 ## Problem
 On a phone browser (Nick's Nothing Phone 3a, Chrome, about 412px wide, opening `https://bee.tailc0c173.ts.net:7499` on the tiao project, server v0.5.83), the Work page draws two layouts at once:
@@ -41,3 +41,4 @@ On a narrow viewport, Work shows exactly one layout: a single readable column wi
 
 - 2026-11-15T14:34:55Z · created · t@t
 - 2026-11-15T14:34:56Z · needs_input
+- 2026-11-15T14:35:07Z · status inbox→ready
