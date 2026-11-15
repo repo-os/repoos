@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-15T19:34:41Z"
+review_passes: 1
 id: "1134"
 title: "Engineer test runs outlive the agent turn: orphaned vitest processes burn CPU for an hour"
 type: bug
@@ -9,7 +11,6 @@ assigned_to: ai
 created_by: t@t
 branch: feat/engineer-test-runs-outlive-the-agent-tur
 created_at: "2026-11-15T16:22:52Z"
-updated_at: "2026-11-15T19:34:41Z"
 ---
 ## Problem
 On 16 Nov 2026 at about 00:08 SGT, Nick's MacBook Air was at 6% idle CPU. Seven node processes with parent PID 1 (orphaned) were using 50 to 70% CPU each, and each had been running for 58 to 78 minutes. All of them were left behind by engineer turns that had already ended:
@@ -179,3 +180,4 @@ Look at the engineer turn spawner and process-group reaping in src/core (search 
 - 2026-11-15T19:32:31Z · status active→review
 - 2026-11-15T19:32:31Z · message_queued at 2026-11-15T19:32:31.959Z
 - 2026-11-15T19:34:41Z · note: review pass 1: good to go
+
