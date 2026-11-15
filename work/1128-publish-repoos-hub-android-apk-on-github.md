@@ -108,3 +108,4 @@ The Tiao app (a separate repo) is the reference for how the APK should be shared
 - 2026-11-15T15:44:07Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-15T15:47:10Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-15T15:47:10Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 130) · last assistant: All work is complete and verified. Final state check: · stderr: (empty)
+- 2026-11-15T15:47:10Z · message_delivered: 1 message(s)
