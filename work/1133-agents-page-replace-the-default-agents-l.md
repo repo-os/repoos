@@ -176,3 +176,4 @@ The current list is `agentLastRuns` in src/ui-app/src/views/AgentsView.vue, fed 
 - 2026-11-15T18:51:41Z · status active→review
 - 2026-11-15T18:51:41Z · note: shots: skipped — 2 shots already captured — an engineer-made capture pre-empts the automatic one
 - 2026-11-15T18:51:41Z · message_queued at 2026-11-15T18:51:41.391Z
+- 2026-11-15T18:51:41Z · note: shots: skipped — 2 shots already captured — an engineer-made capture pre-empts the automatic one
