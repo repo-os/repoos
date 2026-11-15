@@ -65,6 +65,53 @@ just build-mobile   # both
 `build-ios` needs the full Xcode.app installed (Command Line Tools alone
 aren't enough) — see [justfile](../justfile) for exact requirements/errors.
 
+### Release signing
+
+The public Android download is a **release-signed** APK attached to each stable
+GitHub Release by `.github/workflows/android-hub.yml`. It is never the debug
+key, and no signing material is committed: CI writes the keystore from a
+repository secret, builds `assembleRelease`, verifies the certificate, and
+uploads the file as `RepoOSHub.apk` next to `RepoOSHub.dmg`.
+
+Repository secrets required by the workflow:
+
+| Secret | Purpose |
+| --- | --- |
+| `REPOOS_ANDROID_KEYSTORE_BASE64` | Base64 of the release keystore (`base64 -i release.keystore`) |
+| `REPOOS_ANDROID_KEYSTORE_PASSWORD` | Keystore (store) password |
+| `REPOOS_ANDROID_KEY_ALIAS` | Key alias inside the keystore |
+| `REPOOS_ANDROID_KEY_PASSWORD` | Password for that key |
+
+Creating the keystore and adding those secrets is a human step. Until they
+exist, the workflow skips the APK with a note in the job summary and leaves the
+release itself green.
+
+For a local release build, export the same values the Gradle file reads. Use a
+real file path, not base64, and a keystore stored **outside** the repo:
+
+```bash
+export REPOOS_ANDROID_KEYSTORE_PATH="$HOME/.config/repoos-hub/release.keystore"
+export REPOOS_ANDROID_KEYSTORE_PASSWORD='…'
+export REPOOS_ANDROID_KEY_ALIAS='repoos-hub'
+export REPOOS_ANDROID_KEY_PASSWORD='…'
+just build-android-release            # version from mobile/package.json
+just build-android-release v0.6.23    # or from a release tag
+```
+
+The recipe writes `mobile/app-release.apk` and runs
+`mobile/scripts/verify-release-apk.ts`, which compares the APK's certificate
+SHA-256 (via `apksigner verify --print-certs`) with the configured keystore and
+refuses the Android debug certificate. The same script runs in CI, which puts
+the verified fingerprint in the job summary. A release build with no signing
+configuration fails with the variable names and a pointer back here; debug
+builds need none of it.
+
+`versionName` comes from `REPOOS_APP_VERSION` (the release tag without `v`) or,
+when unset, `mobile/package.json`. `versionCode` is derived from that semver as
+`major * 10000 + minor * 100 + patch`, so successive releases install over the
+previous app. `REPOOS_APP_VERSION_CODE` overrides it if a cut ever needs a
+non-semver value.
+
 ### Deploy to a phone (Tailscale adb)
 
 ```bash

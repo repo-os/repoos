@@ -145,7 +145,10 @@ export default defineConfig({
       },
       {
         text: "Apps",
-        items: [{ text: "RepoOS Hub for Mac", link: "/macos-hub" }],
+        items: [
+          { text: "RepoOS Hub for Mac", link: "/macos-hub" },
+          { text: "RepoOS Hub for Android", link: "/android-hub" },
+        ],
       },
       {
         text: "Help",

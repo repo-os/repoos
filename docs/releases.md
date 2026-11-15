@@ -568,6 +568,25 @@ RepoOS's `repoos check` already ran (locally, during `cutNewRelease`) before
 the tag was pushed, so CI does not re-run the test gate — it only packages and
 publishes.
 
+### Native Hub app assets
+
+Two separate workflows attach native app artifacts to the same GitHub Release:
+
+- `.github/workflows/macos-hub.yml` builds `RepoOSHub.dmg`.
+- `.github/workflows/android-hub.yml` builds a release-signed `RepoOSHub.apk`.
+
+Both run on `v*.*.*` tags (plus `workflow_dispatch` with an existing tag), flag
+prereleases from the `-` in the tag exactly like `release.yml`, and use
+`make_latest: false` so the main release keeps the "Latest" badge. They upload
+with `softprops/action-gh-release@v2`; the release itself may be created by
+whichever workflow finishes first. The APK's `versionName` is the tag without
+the leading `v`, and its `versionCode` is
+`major * 10000 + minor * 100 + patch`, so each release installs over the
+previous one. Signing secrets are repository secrets; while they are not
+configured, the Android workflow skips the APK and explains why in the job
+summary instead of failing the release. Setup and local signing:
+[`mobile/README.md`](../mobile/README.md#release-signing).
+
 ## Notes / gotchas
 
 - **The release is not downloadable when `cutNewRelease` returns.** It returns

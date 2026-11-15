@@ -1,0 +1,191 @@
+name: Android Hub
+
+on:
+  pull_request:
+    paths:
+      - "mobile/**"
+      - ".github/workflows/android-hub.yml"
+  push:
+    branches: [main]
+    paths:
+      - "mobile/**"
+      - ".github/workflows/android-hub.yml"
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Existing release tag to build and attach an APK to
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  build-debug:
+    name: Build Android debug APK
+    if: >-
+      github.event_name == 'pull_request' ||
+      (github.event_name == 'push' && !startsWith(github.ref, 'refs/tags/v'))
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Build web assets and sync Capacitor
+        working-directory: mobile
+        run: |
+          bun install --frozen-lockfile
+          bun run build
+          bun run sync
+
+      - name: Build debug APK
+        working-directory: mobile/android
+        run: ./gradlew assembleDebug
+
+  release:
+    name: Release Android Hub APK
+    if: >-
+      startsWith(github.ref, 'refs/tags/v') ||
+      (github.event_name == 'workflow_dispatch' && inputs.release_tag != '')
+    runs-on: ubuntu-latest
+    env:
+      ANDROID_KEYSTORE_BASE64: ${{ secrets.REPOOS_ANDROID_KEYSTORE_BASE64 }}
+      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.REPOOS_ANDROID_KEYSTORE_PASSWORD }}
+      ANDROID_KEY_ALIAS: ${{ secrets.REPOOS_ANDROID_KEY_ALIAS }}
+      ANDROID_KEY_PASSWORD: ${{ secrets.REPOOS_ANDROID_KEY_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.release_tag || github.ref }}
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - uses: android-actions/setup-android@v3
+
+      # Creating the keystore and adding these secrets is a human step (see
+      # mobile/README.md). Without them the release still succeeds; it simply
+      # ships no Android APK, with a note in the job summary.
+      - name: Check signing secrets
+        id: signing
+        run: |
+          if [[ -n "$ANDROID_KEYSTORE_BASE64" && -n "$ANDROID_KEYSTORE_PASSWORD" \
+                && -n "$ANDROID_KEY_ALIAS" && -n "$ANDROID_KEY_PASSWORD" ]]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+            echo "Release signing secrets are configured."
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            {
+              echo "### Android Hub APK skipped"
+              echo ""
+              echo "Release signing secrets are not configured, so no \`RepoOSHub.apk\` was uploaded."
+              echo "Add \`REPOOS_ANDROID_KEYSTORE_BASE64\`, \`REPOOS_ANDROID_KEYSTORE_PASSWORD\`,"
+              echo "\`REPOOS_ANDROID_KEY_ALIAS\` and \`REPOOS_ANDROID_KEY_PASSWORD\` to the repository"
+              echo "secrets. See \`mobile/README.md\` → Release signing. The release itself is not blocked."
+            } >> "$GITHUB_STEP_SUMMARY"
+            echo "::warning::Android release signing secrets are not configured; skipping RepoOSHub.apk"
+          fi
+
+      - name: Resolve app version from the tag
+        run: |
+          RELEASE_TAG="${{ inputs.release_tag || github.ref_name }}"
+          echo "REPOOS_APP_VERSION=${RELEASE_TAG#v}" >> "$GITHUB_ENV"
+
+      - name: Write release keystore
+        if: steps.signing.outputs.available == 'true'
+        run: |
+          KEYSTORE="$RUNNER_TEMP/repoos-release.keystore"
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$KEYSTORE"
+          chmod 600 "$KEYSTORE"
+          test -s "$KEYSTORE" || {
+            echo "error: decoded release keystore is empty; check REPOOS_ANDROID_KEYSTORE_BASE64"
+            exit 1
+          }
+          {
+            echo "REPOOS_ANDROID_KEYSTORE_PATH=$KEYSTORE"
+            echo "REPOOS_ANDROID_KEYSTORE_PASSWORD=$ANDROID_KEYSTORE_PASSWORD"
+            echo "REPOOS_ANDROID_KEY_ALIAS=$ANDROID_KEY_ALIAS"
+            echo "REPOOS_ANDROID_KEY_PASSWORD=$ANDROID_KEY_PASSWORD"
+          } >> "$GITHUB_ENV"
+
+      - name: Build web assets and sync Capacitor
+        if: steps.signing.outputs.available == 'true'
+        working-directory: mobile
+        run: |
+          bun install --frozen-lockfile
+          bun run build
+          bun run sync
+
+      - name: Build release-signed APK
+        if: steps.signing.outputs.available == 'true'
+        working-directory: mobile/android
+        run: ./gradlew assembleRelease
+
+      - name: Verify release signature
+        if: steps.signing.outputs.available == 'true'
+        run: |
+          APK="mobile/android/app/build/outputs/apk/release/app-release.apk"
+          if [[ ! -s "$APK" ]]; then
+            echo "error: expected release APK not found at $APK"
+            ls -la mobile/android/app/build/outputs/apk/release/ 2>/dev/null || true
+            exit 1
+          fi
+          cp "$APK" RepoOSHub.apk
+          # Fails when the APK is unsigned, has more than one signer, carries
+          # the debug certificate, or does not match the configured keystore.
+          FINGERPRINT="$(bun mobile/scripts/verify-release-apk.ts RepoOSHub.apk)"
+
+          AAPT="$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -1)"
+          BADGING="$("$AAPT" dump badging RepoOSHub.apk)"
+          VERSION_NAME="$(printf '%s\n' "$BADGING" | sed -n "s/.*versionName='\([^']*\)'.*/\1/p")"
+          VERSION_CODE="$(printf '%s\n' "$BADGING" | sed -n "s/.*versionCode='\([^']*\)'.*/\1/p")"
+          if [[ "$VERSION_NAME" != "$REPOOS_APP_VERSION" ]]; then
+            echo "error: APK versionName is '$VERSION_NAME', expected '$REPOOS_APP_VERSION' from the tag"
+            exit 1
+          fi
+
+          {
+            echo "### RepoOS Hub Android APK"
+            echo ""
+            echo "- \`RepoOSHub.apk\` v${VERSION_NAME} (versionCode ${VERSION_CODE})"
+            echo "- Release certificate SHA-256: \`$FINGERPRINT\`"
+            echo ""
+            echo "Sideload instructions: https://docs.repoos.org/android-hub"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Determine channel
+        id: meta
+        run: |
+          if [[ "${{ inputs.release_tag || github.ref_name }}" == *-* ]]; then
+            echo "prerelease=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "prerelease=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Upload APK to GitHub Release
+        if: steps.signing.outputs.available == 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: RepoOSHub.apk
+          fail_on_unmatched_files: true
+          tag_name: ${{ inputs.release_tag || github.ref_name }}
+          prerelease: ${{ steps.meta.outputs.prerelease }}
+          make_latest: false

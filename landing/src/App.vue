@@ -581,6 +581,53 @@ const year = new Date().getFullYear();
       </div>
     </section>
 
+    <!-- ============ REPOOS HUB FOR ANDROID ============ -->
+    <section class="wrap pb-20 sm:pb-24">
+      <div class="panel p-6 sm:p-8">
+        <div class="grid items-center gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+          <div class="min-w-0">
+            <p class="eyebrow mb-3">Android app</p>
+            <h2 class="text-[26px] font-bold leading-tight tracking-tight sm:text-[32px]">
+              RepoOS Hub for Android
+            </h2>
+            <p class="mt-4 max-w-[60ch] text-[15.5px] leading-relaxed text-[var(--txt-dim)]">
+              The same Hub for your phone. Keep your RepoOS servers on the device and open each one
+              in an isolated WebView: the server list never leaves the phone, accounts and cookies
+              stay separate per server, and the server remains the source of truth for your board.
+            </p>
+            <p class="mt-5 flex flex-wrap gap-x-6 gap-y-2 text-[14px]">
+              <a
+                href="https://github.com/repo-os/repoos/releases/latest/download/RepoOSHub.apk"
+                class="text-[var(--cyan)] hover:underline"
+                >Download for Android &rarr;</a
+              >
+              <a :href="docsLink('/android-hub')" class="text-[var(--cyan)] hover:underline"
+                >Read the guide &rarr;</a
+              >
+            </p>
+            <p class="mt-3 text-[12px] text-[var(--txt-faint)]">
+              Not on the Play Store yet &mdash; sideload the APK. Requires Android 8.0 (API 26) or
+              newer.
+            </p>
+          </div>
+          <ul class="grid grid-cols-2 gap-2.5 text-[13px] leading-snug text-[var(--txt-dim)]">
+            <li class="rounded-lg border border-[var(--border)] px-3 py-2.5">
+              Server list stays on device
+            </li>
+            <li class="rounded-lg border border-[var(--border)] px-3 py-2.5">
+              Isolated WebView per server
+            </li>
+            <li class="rounded-lg border border-[var(--border)] px-3 py-2.5">
+              Optional device lock
+            </li>
+            <li class="rounded-lg border border-[var(--border)] px-3 py-2.5">
+              No accounts or cloud sync
+            </li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
     <!-- ============ SELF-DEVELOPMENT ============ -->
     <section class="wrap pb-20 sm:pb-24">
       <div class="panel p-6 sm:p-8">
