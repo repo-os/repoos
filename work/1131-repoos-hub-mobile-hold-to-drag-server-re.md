@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/repoos-hub-mobile-hold-to-drag-server-re
 created_at: "2026-11-15T14:39:13Z"
-updated_at: "2026-11-15T15:18:38Z"
+updated_at: "2026-11-15T15:27:03Z"
 ---
 ## Problem
 Feedback from Nick after testing the #1127 build on his Nothing Phone (3a):
@@ -38,3 +38,4 @@ Feedback from Nick after testing the #1127 build on his Nothing Phone (3a):
 - 2026-11-15T14:39:29Z · status inbox→ready
 - 2026-11-15T14:39:33Z · status ready→active, needs_input, branch
 - 2026-11-15T15:18:38Z · body
+- 2026-11-15T15:27:03Z · body
