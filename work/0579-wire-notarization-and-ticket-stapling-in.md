@@ -11,7 +11,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/wire-notarization-and-ticket-stapling-in
 created_at: "2026-09-28T18:43:47Z"
-updated_at: "2026-11-15T22:22:53Z"
+updated_at: "2026-11-15T22:22:57Z"
 last_close_out_gate_ms: 571476
 last_close_out_gate_at: "2026-11-15T22:22:53.577Z"
 review_passes: 1
@@ -72,4 +72,4 @@ There is no UI change in this task: users receive a notarized, stapled DMG, whil
 - 2026-11-15T21:43:52Z · note: shots: skipped — the diff (4 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-15T21:44:53Z · note: review pass 1: good to go
 - 2026-11-15T22:22:53Z · close-out gate completed in 571s
-
+- 2026-11-15T22:22:57Z · status done→done, release:success
