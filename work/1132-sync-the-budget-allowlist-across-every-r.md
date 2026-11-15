@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-15T18:57:43Z"
-review_passes: 2
 id: "1132"
 title: "Allowlist groups: projects that opt into the same group share one budget allowlist across machines"
 type: feature
@@ -11,6 +9,8 @@ assigned_to: ai
 created_by: t@t
 branch: feat/allowlist-groups-projects-that-opt-into-
 created_at: "2026-11-15T15:20:04Z"
+updated_at: "2026-11-15T19:07:36Z"
+review_passes: 2
 review_rounds: 1
 routing_switches: 1
 ---
@@ -86,4 +86,4 @@ Start from how `budget.allowlist` is read and merged today, `collectTailnetServe
 - 2026-11-15T18:57:42Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
 - 2026-11-15T18:57:43Z · handoff failed · task-file handoff failed at review · Engineering report narrative is 1263 words; the hard limit is 1,200 words of narrative. Shorten it and request handoff again.
 - 2026-11-15T18:57:43Z · note: review pass 2: good to go
-
+- 2026-11-15T19:07:36Z · handoff failed · remote validation failed: test failure: tests/remote-host-pool.test.ts > host-side lock (server + standalone CLI share one limit) > lets a holder expire the waiter with a clear timeout instead of a red gate on bee — fix it in the feature branch and re-run the gate
