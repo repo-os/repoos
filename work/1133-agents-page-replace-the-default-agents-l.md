@@ -96,3 +96,4 @@ The current list is `agentLastRuns` in src/ui-app/src/views/AgentsView.vue, fed 
 - 2026-11-15T17:06:58Z · body
 - 2026-11-15T17:09:06Z · CTO nudge: held — handoff gate is running
 - 2026-11-15T17:18:54Z · note: ui verification passed: 2 of 2 shots captured with clean console (1 shot warning)
+- 2026-11-15T17:18:54Z · message_queued at 2026-11-15T17:18:54.808Z
