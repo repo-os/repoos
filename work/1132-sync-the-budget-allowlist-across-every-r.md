@@ -69,3 +69,4 @@ Start from how `budget.allowlist` is read and merged today, `collectTailnetServe
 - 2026-11-15T18:05:06Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-15T18:06:25Z · message_delivered: 1 message(s)
 - 2026-11-15T18:29:07Z · message_queued at 2026-11-15T18:29:07.007Z
+- 2026-11-15T18:29:07Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
