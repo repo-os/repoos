@@ -591,26 +591,23 @@
     gap: 6px;
     padding: 0 8px;
   }
+  /* The search pill grows into the space the desktop spacer used; a 44px floor
+     keeps it a valid touch target at 360px. */
+  .topbar .spacer {
+    display: none;
+  }
   .search-wrap {
+    flex: 1 1 44px;
     max-width: none;
+    min-width: 44px;
   }
 }
 /* A touch device has no keyboard-shortcut affordance: hide the ⌘K chip in the
    header pill and the navigate/open/close legend in the palette footer
-   (#1139). This keys off input capability, not viewport width, so a landscape
-   phone at 844px hides them too. */
-@media (hover: none) {
-  .search-input kbd {
-    display: none;
-  }
-  .search-overlay-keyboard-hint {
-    display: none;
-  }
-  /* Empty-state rows in the palette are keyboard instructions, not results. */
-  .search-row-hint {
-    display: none;
-  }
-}
+   (#1139). Key off input capability, not viewport width, so a landscape phone
+   at 844px hides them too; `pointer: coarse` also covers hybrids whose
+   primary pointer is touch but still report hover. This block lives at the end
+   of the stylesheet so it wins against the later base `.search-*` rules. */
 
 .search-overlay-backdrop {
   position: fixed;
@@ -8764,6 +8761,7 @@
     padding: 10px 12px;
   }
   .agents-page button,
+  .agents-page a,
   .agents-page .page-header a,
   .agents-page input,
   .agents-page select,
@@ -8771,6 +8769,10 @@
   .agents-page [role="switch"] {
     min-height: 44px;
     min-width: 44px;
+  }
+  .agents-page a {
+    display: inline-flex;
+    align-items: center;
   }
 }
 .ff-textarea {
@@ -17148,5 +17150,20 @@
   .settings-page select,
   .settings-page textarea {
     font-size: 16px;
+  }
+}
+
+/* #1139: a touch device has no use for keyboard-shortcut hints. Placed last so
+   it beats the base `.search-*` rules defined above it. */
+@media (hover: none), (pointer: coarse) {
+  .search-input kbd {
+    display: none;
+  }
+  .search-overlay-keyboard-hint {
+    display: none;
+  }
+  /* Empty-state rows in the palette are keyboard instructions, not results. */
+  .search-row-hint {
+    display: none;
   }
 }
