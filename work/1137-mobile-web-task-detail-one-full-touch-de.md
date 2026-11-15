@@ -95,3 +95,4 @@ On a phone there's a single task detail, whichever way it was opened (card, sear
 - 2026-11-15T20:09:56Z · body
 - 2026-11-15T20:13:59Z · CTO nudge: held — handoff gate is running
 - 2026-11-15T20:21:03Z · handoff failed · remote validation failed: test failure: tests/agent-serve-guard.test.ts > CLI rejection (real process) > rejects an agent's direct repoos serve and leaves the port free on bee — fix it in the feature branch and re-run the gate
+- 2026-11-15T20:21:03Z · message_queued at 2026-11-15T20:21:03.530Z
