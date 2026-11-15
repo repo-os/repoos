@@ -77,3 +77,4 @@ Start from how `budget.allowlist` is read and merged today, `collectTailnetServe
 - 2026-11-15T18:34:07Z · message_queued at 2026-11-15T18:34:07.083Z
 - 2026-11-15T18:34:07Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-15T18:37:10Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-15T18:37:10Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 130) · last assistant: Round-2 fixes are committed in the self-check checkpoint (`3e00712`) and the scoped check is running. Waiting for it to complete. · stderr: (empty)
