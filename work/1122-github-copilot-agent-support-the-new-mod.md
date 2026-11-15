@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-15T01:42:15Z"
+review_passes: 2
 id: "1122"
 title: "GitHub Copilot agent: support the new model picker (GPT-6 Luna, GPT-6.1 Terra, Haiku 5.5 ...) with real --model ids"
 type: feature
@@ -11,8 +13,6 @@ branch: feat/github-copilot-agent-support-the-new-mod
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-14T17:41:02Z"
-updated_at: "2026-11-15T01:42:15Z"
-review_passes: 1
 handoff_signal_retry_count: 2
 ---
 ## Problem
@@ -98,3 +98,4 @@ Read work/1088-*.md and src/core/copilot-auto-tier.ts first. Copilot usage is bi
 - 2026-11-15T01:41:18Z · status active→review
 - 2026-11-15T01:41:18Z · message_queued at 2026-11-15T01:41:18.448Z
 - 2026-11-15T01:42:15Z · note: review pass 2: good to go
+
