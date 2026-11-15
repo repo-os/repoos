@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 702474
-last_close_out_gate_at: "2026-11-15T20:24:55.471Z"
 id: "1134"
 title: "Engineer test runs outlive the agent turn: orphaned vitest processes burn CPU for an hour"
 type: bug
-status: review
+status: done
 priority: p1
 area: core
+merged_commit: e48820fc6b52bfd4c08ecaafeebc9b5a71ffc127
 assigned_to: ai
 created_by: t@t
 branch: feat/engineer-test-runs-outlive-the-agent-tur
 created_at: "2026-11-15T16:22:52Z"
 updated_at: "2026-11-15T20:24:55Z"
+last_close_out_gate_ms: 702474
+last_close_out_gate_at: "2026-11-15T20:24:55.471Z"
 review_passes: 1
 ---
 ## Problem

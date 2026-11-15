@@ -31,7 +31,7 @@ import { resolveAgentForTask, type AgentRunner } from "./agents.js";
 import { isHoldActive } from "../core/task-selection.js";
 import { clearExpiredHoldPauses } from "./hold-guard.js";
 import { hasRecentWorktreeActivity } from "./task-watchdog.js";
-import { pressureReason } from "../core/pressure-guard.js";
+import { pressureReason, type OrphanedRunPressureInfo } from "../core/pressure-guard.js";
 import {
   lastEngineerCleanExitAt,
   readEngineerCleanExitSignal,
@@ -63,6 +63,8 @@ export interface CTOMonitorProbes {
   reviewRunning?: (taskId: string) => boolean;
   /** True while a remote-validation run is active for the task. */
   remoteValidationRunning?: (taskId: string) => boolean;
+  /** Orphaned run processes the control plane's reaper found (#1134). */
+  orphanedRunProcesses?: () => readonly OrphanedRunPressureInfo[];
 }
 
 /** A built board digest plus the structural verdict used to gate model calls. */
@@ -473,11 +475,33 @@ export class CTOMonitor {
 
     const build = this.buildHealth();
     const processes = await this.processHealth();
+    const orphanedRuns = this.probes.orphanedRunProcesses?.() ?? [];
     lines.push("## Build and Process Health");
     lines.push("");
     lines.push(`- Build marker: ${build.label}`);
     lines.push(`- Agent turns: ${processes.label}`);
     lines.push("");
+    if (orphanedRuns.length > 0) {
+      // #1134: high load used to be reported only as a number. Name the cause:
+      // a finished turn left these processes behind, with the PIDs to prove it.
+      lines.push("## Orphaned run processes");
+      lines.push("");
+      for (const process of orphanedRuns.slice(0, 12)) {
+        const state = process.state === "reaped" ? "stopped by RepoOS" : "STILL RUNNING";
+        const task = process.taskId ? `#${process.taskId} ` : "";
+        const cpu =
+          process.cpuTimeMs !== undefined ? `, cpu ${describeAge(process.cpuTimeMs)}` : "";
+        const age = process.ageMs !== undefined ? `, age ${describeAge(process.ageMs)}` : "";
+        lines.push(
+          `- ${task}PID ${process.pid} — ${process.command.trim().slice(0, 140)} ` +
+            `(${state}${cpu}${age})`,
+        );
+      }
+      if (orphanedRuns.length > 12) {
+        lines.push(`- +${orphanedRuns.length - 12} more`);
+      }
+      lines.push("");
+    }
 
     // #0715: RepoOS-owned idle evidence. The CTO agent used to be told to work
     // out "slow vs stalled" from `ps`, which a sandbox may deny (the 2026-11-04
@@ -517,7 +541,12 @@ export class CTOMonitor {
       lines.push("");
     }
 
-    const healthy = stuckTasks.length === 0 && build.healthy && processes.healthy;
+    const orphanedStillRunning = orphanedRuns.filter((process) => process.state !== "reaped");
+    const healthy =
+      stuckTasks.length === 0 &&
+      build.healthy &&
+      processes.healthy &&
+      orphanedStillRunning.length === 0;
 
     // The material signal is what a run is *for*: task identities and why
     // each is stuck, the board counts, and a boolean build/process verdict.
@@ -529,6 +558,10 @@ export class CTOMonitor {
       ...stuckTasks.map((t) => `${t.id}:${this.stuckKind(t)}`),
       `build=${build.healthy ? "ok" : "bad"}`,
       `proc=${processes.healthy ? "ok" : "bad"}`,
+      `orphans=${orphanedRuns
+        .map((process) => `${process.pid}:${process.state}`)
+        .sort()
+        .join(",")}`,
     ].join("|");
 
     return { text: lines.join("\n"), material, healthy };
@@ -585,10 +618,26 @@ export class CTOMonitor {
   private async processHealth(): Promise<HealthSignal> {
     const running =
       typeof this.runner?.running === "function" ? this.runner.running() : ([] as unknown[]);
+    const orphans = this.probes.orphanedRunProcesses?.() ?? [];
+    const stillRunning = orphans.filter((process) => process.state !== "reaped");
+    const orphanNote =
+      orphans.length === 0
+        ? ""
+        : stillRunning.length > 0
+          ? ` — ⚠ ${stillRunning.length} orphaned run process(es) still running (PIDs ${stillRunning
+              .map((process) => process.pid)
+              .join(", ")})`
+          : ` — ${orphans.length} orphaned run process(es) stopped since the last digest`;
     if (running.length === 0) {
-      return { healthy: true, label: "✓ no live agent turns" };
+      return {
+        healthy: stillRunning.length === 0,
+        label: `✓ no live agent turns${orphanNote}`,
+      };
     }
-    return { healthy: true, label: `✓ ${running.length} tracked agent turn(s) running` };
+    return {
+      healthy: stillRunning.length === 0,
+      label: `✓ ${running.length} tracked agent turn(s) running${orphanNote}`,
+    };
   }
 
   private isTaskStuck(task: Task): boolean {

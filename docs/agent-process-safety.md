@@ -18,6 +18,42 @@ If a child daemonizes out of the group (double-fork to PID 1), it can survive th
 group reap; the runner logs any PIDs still in the group after SIGKILL as a leak
 warning in the task transcript.
 
+### Escaped grandchildren and the orphan sweeper (#1134)
+
+The group reap cannot see a child that called `setsid`/`setpgid` (agent CLIs'
+own shell tools do this) or was reparented to PID 1, so on 2026-11-16 seven
+orphaned `vitest` processes burned CPU for an hour after their turns ended.
+Turn teardown now does more than signal the group:
+
+- Every managed agent spawn gets `REPOOS_TURN_MARKER` (repo-scoped, task-scoped,
+  run-scoped) in its environment; the marker is inherited by all descendants.
+- At turn end RepoOS collects the group leader's PID tree, processes whose cwd
+  is inside the turn's worktree, and processes carrying that exact marker, then
+  sends TERM to exact PIDs and KILL after a short grace. It re-scans once after
+  TERM in case a child daemonized during the grace window. Matching is never by
+  process name, and `pkill`/`killall` are never used.
+- A control-plane sweeper runs every 15s. It finds **reparented** (`ppid 1`)
+  same-uid processes whose cwd is inside a managed worktree or whose marker was
+  minted by this checkout, skips anything a live turn still owns (tree, workdir
+  or marker), and stops the rest by exact PID. Each kill is written to
+  `system.log` with task id, command, CPU time and age, and appears on the
+  dashboard (`System Resources`).
+- The pressure guard treats a still-running orphan as a critical cause with its
+  PIDs, instead of only reporting high load; already-reaped processes are an
+  advisory warning. The CTO digest gets its own "Orphaned run processes"
+  section with PIDs, command, CPU time and age.
+
+The cwd probe is batched `lsof` on macOS and `/proc/<pid>/cwd` on Linux. The
+environment marker is Linux-only for a foreign process (macOS SIP hides another
+process's environment), so macOS relies on the PID tree and worktree cwd; both
+paths are covered by `run-process-teardown.test.ts` and the injectable unit
+tests in `run-processes.test.ts`.
+
+`sweepOrphanedRunRootProcesses` (test helper teardown) is bounded as well: it
+stops at a wall-clock deadline, caps the rows it examines and roots it collects,
+and skips agent-prompt-sized command lines, so one pathological `ps` line can
+no longer hang `beforeAll`.
+
 Engineer and reviewer prompts, and the default agent instructions in
 `repoos.toml`, tell agents never to use `pkill` / `killall`. The runner also
 emits a transcript warning when a shell tool call looks like a pattern kill.
