@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/agents-page-replace-the-default-agents-l
 created_at: "2026-11-15T15:20:08Z"
-updated_at: "2026-11-15T18:51:41Z"
+updated_at: "2026-11-15T18:52:41Z"
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -177,3 +177,4 @@ The current list is `agentLastRuns` in src/ui-app/src/views/AgentsView.vue, fed 
 - 2026-11-15T18:51:41Z · note: shots: skipped — 2 shots already captured — an engineer-made capture pre-empts the automatic one
 - 2026-11-15T18:51:41Z · message_queued at 2026-11-15T18:51:41.391Z
 - 2026-11-15T18:51:41Z · note: shots: skipped — 2 shots already captured — an engineer-made capture pre-empts the automatic one
+- 2026-11-15T18:52:41Z · note: review pass 1: good to go
