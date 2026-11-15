@@ -3,6 +3,9 @@ id: "1128"
 title: Publish RepoOS Hub Android APK on GitHub Releases and link it from the landing page and docs
 type: feature
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "OpenCode exited with an error. Open Raw CLI error for details. (CLI: ✗ Server finalization stopped at verify: ui verification failed: runner result omitted the UI verification record: ui verification: preview for \"Landing page\" did not start: preview server for #1128 did not become ready. The same worktree can be resumed and retried.)"
 priority: p2
 area: [mobile, web]
 story: RepoOS Hub for Mobile
@@ -10,9 +13,11 @@ assigned_to: ai
 created_by: t@t
 branch: feat/publish-repoos-hub-android-apk-on-github
 created_at: "2026-11-15T13:35:11Z"
-updated_at: "2026-11-15T14:33:47Z"
+updated_at: "2026-11-15T14:34:07Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-15T14:03:27.994Z: repoos check failed: ui verification failed: runner result omitted the UI verification record: ui verification: preview for \"Landing page\" did not start: preview server for #1128 did not become ready"
+dev_error_count: 1
+engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-11-15T14:34:07.784Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 RepoOS Hub for Android (`mobile/`, Capacitor app `org.repoos.mobile`) has no public download. The only way to get it today is to build it locally with `just build-android` and sideload the debug APK over adb. The macOS Hub already has a public download: `.github/workflows/macos-hub.yml` builds `RepoOSHub.dmg` on every stable `v*` tag and attaches it to the GitHub Release, and both the landing page (`landing/src/App.vue`, "Download for Mac" pointing at `https://github.com/repo-os/repoos/releases/latest/download/RepoOSHub.dmg`) and `user-docs/macos-hub.md` link to it. Android should have the same thing.
@@ -86,3 +91,6 @@ The Tiao app (a separate repo) is the reference for how the APK should be shared
 - 2026-11-15T14:33:24Z · message_delivered: 1 message(s)
 - 2026-11-15T14:33:47Z · message_queued at 2026-11-15T14:33:47.073Z
 - 2026-11-15T14:33:47Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-15T14:34:07Z · note: stopped orphaned engineer pid 4322
+- 2026-11-15T14:34:07Z · agent exited with an error (opencode) · OpenCode exited with an error. Open Raw CLI error for details. (CLI: ✗ Server finalization stopped at verify: ui verification failed: runner result omitted the UI verification record: ui verification: preview for "Landing page" did not start: preview server for #1128 did not become ready. The same worktree can be resumed and retried.)
+- 2026-11-15T14:34:07Z · engineer crash recovery: resuming opencode + opencode-go/deepseek-v4.1-flash (1/3 crashes in 30m) · OpenCode exited with an error. Open Raw CLI error for details. (CLI: OpenCode exited with an error. Open Raw CLI error for details. (CLI: ✗ Server finalization stopped at verify: ui verification failed: runner result omitted the UI verif…
