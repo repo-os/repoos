@@ -2,14 +2,14 @@
 id: "1133"
 title: "Agents page: replace the Default agents last-runs log with a per-agent status dot"
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
 branch: ""
 created_at: "2026-11-15T15:20:08Z"
-updated_at: "2026-11-15T15:25:58Z"
+updated_at: "2026-11-15T16:09:46Z"
 ---
 ## Problem
 The Default agents section of Agents > Agents now starts with a "last runs" log, added in #1098 (12 Nov) and reworked in #1123 (15 Nov). It lists rows such as CTO, debugger, engineer, pm and reviewer, each with a "finished · <timestamp>" line, plus a "Show older and other runs (14)" toggle. Nick didn't ask for it and finds it badly designed:
@@ -37,3 +37,4 @@ The current list is `agentLastRuns` in src/ui-app/src/views/AgentsView.vue, fed 
 - 2026-11-15T15:20:08Z · created · t@t
 - 2026-11-15T15:20:10Z · needs_input
 - 2026-11-15T15:25:58Z · needs_input, body: Acceptance criteria (added 2); Notes for AI (added)
+- 2026-11-15T16:09:46Z · status inbox→ready
