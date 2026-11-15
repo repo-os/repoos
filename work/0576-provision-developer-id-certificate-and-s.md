@@ -14,8 +14,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/provision-developer-id-certificate-and-s
 created_at: "2026-09-28T18:42:44Z"
-updated_at: "2026-11-15T19:49:09Z"
-review_passes: 1
+updated_at: "2026-11-15T18:40:14Z"
 ---
 Document the credentials and rotation runbook required for automated Developer ID signing and notarization of RepoOS Hub. An authorized maintainer performs the Apple Developer account and GitHub secret setup separately; this task's agent deliverable is the repository documentation and must not depend on access to, or claims about, those external account/device outcomes.
 
@@ -76,7 +75,3 @@ There is no UI change; maintainers can follow the runbook to provision and rotat
 - 2026-10-22T07:47:35Z · needs_input
 - 2026-11-15T18:31:00Z · status ready→active, branch
 - 2026-11-15T18:40:14Z · status active→review
-- 2026-11-15T18:40:14Z · message_queued at 2026-11-15T18:40:14.966Z
-- 2026-11-15T18:40:15Z · note: shots: skipped — the diff (3 changed paths) touches no capture target's globs — no UI change to capture
-- 2026-11-15T18:40:47Z · note: review pass 1: good to go
-- 2026-11-15T19:49:09Z · message_overdue: still queued after 60m without being delivered
