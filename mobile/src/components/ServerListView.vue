@@ -92,6 +92,8 @@ function cancelPending() {
 function onPointerDown(server: ServerEntry, ev: PointerEvent) {
   if (draggingId.value) return;
   if (ev.pointerType === "mouse" && ev.button !== 0) return;
+  // A fresh gesture is a real tap again, even right after a drop.
+  ignoreClickUntil = 0;
   cancelPending();
   pendingId = server.id;
   pendingStartX = ev.clientX;
