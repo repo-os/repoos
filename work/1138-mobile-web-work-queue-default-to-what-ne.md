@@ -11,7 +11,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/mobile-web-work-queue-default-to-what-ne
 created_at: "2026-11-15T17:24:06Z"
-updated_at: "2026-11-15T20:00:08Z"
+updated_at: "2026-11-15T20:02:09Z"
 ---
 ## Problem
 Nick: on a phone it's "really hard to find the right task and do anything normal". On main `23dc737`, the mobile Work queue (MobileWorkQueue.vue):
@@ -43,6 +43,36 @@ Nick: on a phone it's "really hard to find the right task and do anything normal
 - #0303 (native Hub touch-first queue) covers the Capacitor shell and depends on #0302. This task is the web UI's mobile queue that phones and the Hub WebView load today. Keep components shareable.
 - Found in a box-side Playwright QA pass on 16 Nov. Screenshots attached.
 
+## Shots
+```json
+[
+{
+  "label": "Mobile Work queue opens on Needs attention with inline search and filter chips",
+  "target": "default",
+  "route": "/work",
+  "highlight": "[data-testid=\"mobile-work-queue\"]",
+  "viewportWidth": 390,
+  "viewportHeight": 844
+},
+{
+  "label": "?status=review opens the Review view",
+  "target": "default",
+  "route": "/work?status=review",
+  "highlight": "[data-testid=\"mobile-queue-count\"]",
+  "viewportWidth": 390,
+  "viewportHeight": 844
+},
+{
+  "label": "Queue search narrows by task id from the URL",
+  "target": "default",
+  "route": "/work?q=1138",
+  "highlight": "[data-testid=\"mobile-queue-search\"]",
+  "viewportWidth": 390,
+  "viewportHeight": 844
+}
+]
+```
+
 ## Screenshots
 
 ![360px: queue defaults to All statuses, 1065 tasks incl. 1035 done, no search](/api/tasks/1138/attachments/att_b78506c3-5dbe-4c4d-8f17-de54c90d274d.png)
@@ -56,3 +86,4 @@ Nick: on a phone it's "really hard to find the right task and do anything normal
 - 2026-11-15T19:49:20Z · status ready→active, branch
 - 2026-11-15T19:58:16Z · body
 - 2026-11-15T20:00:08Z · body
+- 2026-11-15T20:02:09Z · body
