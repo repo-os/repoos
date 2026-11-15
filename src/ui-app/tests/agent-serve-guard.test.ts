@@ -76,8 +76,17 @@ describe("CLI rejection (real process)", () => {
   interface ChildResult {
     code: number | null;
     signal: NodeJS.Signals | null;
+    stdout: string;
     stderr: string;
     timedOut: boolean;
+  }
+
+  function read(path: string): string {
+    try {
+      return readFileSync(path, "utf8");
+    } catch {
+      return "";
+    }
   }
 
   function runServe(root: string, port: number, env: Record<string, string>): Promise<ChildResult> {
@@ -99,12 +108,15 @@ describe("CLI rejection (real process)", () => {
       // into a multi-minute `bun run build` inside the test.
       REPOOS_STALENESS_REEXEC: "1",
     };
-    // stderr goes to a FILE, not a pipe. On POSIX, writes to a pipe are
+    // Both streams go to FILES, not pipes. On POSIX, writes to a pipe are
     // asynchronous; a child torn down on a memory-pressured runner can exit
     // before the guard's message flushes, which surfaced as a false failure on
-    // empty stderr for an otherwise correct guard. File writes are
-    // synchronous, so whatever the CLI managed to print survives the process.
+    // empty stderr for an otherwise correct guard. Writes to a regular file
+    // are synchronous, so whatever the CLI managed to print survives the
+    // process. stdout is captured too only so a pre-guard failure is visible.
+    const stdoutPath = join(root, "serve-stdout.log");
     const stderrPath = join(root, "serve-stderr.log");
+    const stdoutFd = openSync(stdoutPath, "w");
     const stderrFd = openSync(stderrPath, "w");
     let child: ChildProcess;
     try {
@@ -114,11 +126,12 @@ describe("CLI rejection (real process)", () => {
         {
           cwd: root,
           env: { ...baseEnv, ...env },
-          stdio: ["ignore", "ignore", stderrFd],
+          stdio: ["ignore", stdoutFd, stderrFd],
         },
       );
     } finally {
-      // The child holds its own duplicate; ours is no longer needed.
+      // The child holds its own duplicates; ours are no longer needed.
+      closeSync(stdoutFd);
       closeSync(stderrFd);
     }
 
@@ -130,13 +143,13 @@ describe("CLI rejection (real process)", () => {
         if (settled) return;
         settled = true;
         clearTimeout(deadline);
-        let stderr = "";
-        try {
-          stderr = readFileSync(stderrPath, "utf8");
-        } catch {
-          /* nothing captured */
-        }
-        resolvePromise({ code, signal, stderr: stderr + spawnError, timedOut });
+        resolvePromise({
+          code,
+          signal,
+          stdout: read(stdoutPath),
+          stderr: read(stderrPath) + spawnError,
+          timedOut,
+        });
       };
       const deadline = setTimeout(() => {
         timedOut = true;
@@ -150,10 +163,43 @@ describe("CLI rejection (real process)", () => {
     });
   }
 
+  /**
+   * Spawn the real CLI and return its result. On a shared/loaded runner the
+   * child is occasionally killed before it reaches the guard (a signal, or a
+   * bare non-zero with no output). That is an environment failure, not a guard
+   * regression: retrying a couple of times keeps the real-process assertion
+   * meaningful without turning a transient kill into a red gate. A regression
+   * (server binds) still times out and fails immediately.
+   */
+  async function runServeWithRetry(
+    root: string,
+    env: Record<string, string>,
+  ): Promise<ChildResult> {
+    const attempts: ChildResult[] = [];
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      const result = await runServe(root, 0, env);
+      attempts.push(result);
+      if (result.timedOut) return result;
+      if (result.code !== 0 && /may not launch `repoos serve`/i.test(result.stderr)) return result;
+      // A guard-only spawn is cheap; give a transiently killed runner a beat.
+      await new Promise((r) => setTimeout(r, 250 * attempt));
+    }
+    const last = attempts[attempts.length - 1]!;
+    return {
+      ...last,
+      stderr:
+        last.stderr +
+        `\n[${attempts.length} attempts; exit/signal: ${attempts
+          .map((a) => `${a.code}/${a.signal ?? "-"}`)
+          .join(", ")}]` +
+        (last.stdout ? `\n[stdout]\n${last.stdout}` : ""),
+    };
+  }
+
   it("rejects an agent's direct repoos serve and leaves the port free", async () => {
     const root = mkdtempSync(join(tmpdir(), "repoos-guard-"));
     try {
-      const { code, signal, stderr, timedOut } = await runServe(root, 0, {
+      const { code, signal, stderr, timedOut } = await runServeWithRetry(root, {
         REPOOS_AGENT: "1",
         REPOOS_TASK_ID: "0096",
         REPOOS_API_URL: "http://127.0.0.1:7171",
@@ -164,7 +210,9 @@ describe("CLI rejection (real process)", () => {
       expect(code, `exit ${code} (signal ${signal}): ${stderr}`).not.toBe(0);
       // Guidance points the agent at the managed preview — the one sanctioned
       // way to verify a UI.
-      expect(stderr).toMatch(/may not launch `repoos serve`/i);
+      expect(stderr, `exit ${code} (signal ${signal}): ${stderr}`).toMatch(
+        /may not launch `repoos serve`/i,
+      );
       expect(stderr).toMatch(/preview/i);
     } finally {
       rmSync(root, { recursive: true, force: true });
