@@ -2,18 +2,15 @@
 id: "1131"
 title: "RepoOS Hub mobile: hold-to-drag server reordering, and move Find servers on my tailnet next to Add server"
 type: feature
-status: ready
-needs_input: true
-needs_input_reason: underspecified
-needs_input_detail: "missing sections: Notes for AI"
+status: active
 priority: p1
 area: mobile
 story: RepoOS Hub for Mobile
 assigned_to: ai
 created_by: t@t
-branch: ""
+branch: feat/repoos-hub-mobile-hold-to-drag-server-re
 created_at: "2026-11-15T14:39:13Z"
-updated_at: "2026-11-15T14:39:29Z"
+updated_at: "2026-11-15T14:39:33Z"
 ---
 ## Problem
 Feedback from Nick after testing the #1127 build on his Nothing Phone (3a):
@@ -39,3 +36,4 @@ Feedback from Nick after testing the #1127 build on his Nothing Phone (3a):
 - 2026-11-15T14:39:13Z · created · t@t
 - 2026-11-15T14:39:14Z · needs_input
 - 2026-11-15T14:39:29Z · status inbox→ready
+- 2026-11-15T14:39:33Z · status ready→active, needs_input, branch
