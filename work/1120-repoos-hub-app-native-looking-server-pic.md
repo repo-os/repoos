@@ -15,11 +15,12 @@ branch: feat/repoos-hub-app-native-looking-server-pic
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-14T16:53:29Z"
-updated_at: "2026-11-15T00:03:53Z"
+updated_at: "2026-11-15T00:49:18Z"
 review_rounds: 1
 review_passes: 1
 last_check_failure: "repoos check at 2026-11-14T21:07:45.909Z: repoos check failed: ui verification failed (2 issue(s)): [missing-target] Hub server list (Android, dark classic) (target \"default\"): highlight [data-testid=\"hub-server-list\"] matched nothing on /?fixture=many&platform=android&appearance=dark&theme=classic (http://127.0.0.1:41679/?fixture=many&platform=android&appearance=dark&theme=classic); [missing-target] Hub Settings (iOS, light gruvbox) (target \"default\"): highlight [data-testid=\"hub-settings\"] matched nothing on /?fixture=settings&platfor… (truncated)"
-dev_error_count: 3
+dev_error_count: 4
+engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-15T00:49:18.472Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 The RepoOS Hub Capacitor shell (mobile/, iOS and Android) is bare bones. Nick's current Android build (screenshot attached) shows a single dark theme, a "Device lock" panel pushed inline above the server list, text-arrow reorder buttons and a pencil glyph that look like web controls, flat unstyled server cards, and a plain "+ Add server" button. It has no color themes and no light mode, and the icons are not the set used by the web app. The device lock and any future preferences have nowhere proper to live. (The screenshot also shows the old "RepoOS" title, so it is a build from before the September "RepoOS Hub" rename.)
@@ -183,3 +184,4 @@ Read docs/mobile-architecture.md, docs/adr/0011-mobile-web-ui.md (the native she
 - 2026-11-14T23:58:53Z · message_queued at 2026-11-14T23:58:53.465Z
 - 2026-11-14T23:58:53Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-15T00:03:53Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-15T00:49:18Z · engineer crash recovery: resuming cursor + composer-2.5 (1/3 crashes in 30m) · RetriableError: Agent turn stopped after repeated resume attempts made no progress
