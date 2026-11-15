@@ -221,7 +221,7 @@ function openTask(task: Task): void {
 }
 .mobile-status-filter :deep(button) {
   width: 100%;
-  min-height: 40px;
+  min-height: 44px;
   color: var(--txt);
   text-transform: none;
   letter-spacing: 0;
@@ -229,7 +229,7 @@ function openTask(task: Task): void {
 }
 .mobile-sort {
   display: grid;
-  min-height: 40px;
+  min-height: 44px;
   align-content: center;
   gap: 2px;
   padding: 0 9px;
@@ -248,7 +248,7 @@ function openTask(task: Task): void {
   font-weight: 550;
 }
 .mobile-reset {
-  min-height: 40px;
+  min-height: 44px;
   padding: 0 4px;
   border: 0;
   background: transparent;
@@ -376,6 +376,8 @@ function openTask(task: Task): void {
   margin-top: 5px;
 }
 .mobile-work-bottom-space {
-  height: 120px;
+  /* The routed shell already carries --page-bottom-inset on its scroller, so
+     the queue only needs a small final breath — not a second full tab-bar gap. */
+  height: 16px;
 }
 </style>

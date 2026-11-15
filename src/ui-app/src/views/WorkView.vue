@@ -368,8 +368,15 @@ function openHeld(task: Task): void {
 </script>
 
 <template>
-  <MobileWorkQueue v-if="isNarrow" v-show="!mobileTaskSelected" />
-  <MobileTaskDetail v-if="mobileTaskSelected" />
+  <!-- #1130: the two Work compositions are mutually exclusive by viewport.
+       `v-else` used to chain to MobileTaskDetail, so on a phone with no task
+       open the desktop board mounted underneath the mobile queue and painted
+       over it. Keep the narrow branch in its own v-if so exactly one queue
+       ever renders. -->
+  <template v-if="isNarrow">
+    <MobileWorkQueue v-show="!mobileTaskSelected" />
+    <MobileTaskDetail v-if="mobileTaskSelected" />
+  </template>
   <div v-else class="work-page">
     <div
       class="work-header"
@@ -616,8 +623,13 @@ function openHeld(task: Task): void {
     </section>
 
     <div class="ibar-spacer" aria-hidden="true"></div>
-    <IntegrationStatusBar class="ibar-outer" />
   </div>
+
+  <!-- The integration bar is Work's ambient pipeline status, not part of the
+       desktop board. Keeping it outside the desktop-only branch means the
+       phone layout still shows it; its own narrow CSS floats it above the
+       bottom tab bar and the queue reserves end clearance below. -->
+  <IntegrationStatusBar class="ibar-outer" />
 </template>
 
 <style scoped>
