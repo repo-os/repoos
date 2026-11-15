@@ -148,3 +148,4 @@ On a phone there's a single task detail, whichever way it was opened (card, sear
 - 2026-11-15T22:14:13Z · body
 - 2026-11-15T22:17:19Z · note: ui verification passed: 2 of 3 shots captured with clean console
 - 2026-11-15T22:17:20Z · status active→review
+- 2026-11-15T22:17:20Z · message_queued at 2026-11-15T22:17:20.409Z
