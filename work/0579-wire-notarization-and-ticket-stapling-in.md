@@ -2,7 +2,7 @@
 id: "0579"
 title: Wire notarization and ticket stapling into the RepoOS Hub release workflow
 type: feature
-status: active
+status: review
 priority: p1
 area: macos
 story: MacOS Native App
@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/wire-notarization-and-ticket-stapling-in
 created_at: "2026-09-28T18:43:47Z"
-updated_at: "2026-11-15T21:28:16Z"
+updated_at: "2026-11-15T21:43:52Z"
 ---
 After the release app and its DMG are signed as specified by #0578, the macOS Hub release job must submit the DMG to Apple's notary service, wait for approval, staple Apple's ticket to that same DMG, and verify the result before attaching it to a GitHub Release. This completes the distribution path needed for Gatekeeper to trust the downloaded artifact, including offline verification from the stapled ticket.
 
@@ -59,3 +59,4 @@ There is no UI change in this task: users receive a notarized, stapled DMG, whil
 - 2026-10-07T16:08:42Z · needs_input
 - 2026-10-07T16:09:27Z · body: section Acceptance criteria
 - 2026-11-15T21:28:16Z · status ready→active, branch
+- 2026-11-15T21:43:52Z · status active→review
