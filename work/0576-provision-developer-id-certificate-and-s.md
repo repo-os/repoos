@@ -1,10 +1,8 @@
 ---
-last_close_out_gate_ms: 70972
-last_close_out_gate_at: "2026-11-15T20:39:27.199Z"
 id: "0576"
 title: Provision Developer ID certificate and store CI secrets for macOS Hub signing
 type: feature
-status: review
+status: done
 human_step_decision: human
 human_step_decision_key: 05f845c2
 human_step_override: Cleared needs-human-step flag (sticky until acceptance criteria change)
@@ -12,11 +10,14 @@ human_step_override_key: 05f845c2
 priority: p1
 area: macos
 story: MacOS Native App
+merged_commit: 848ea9ba4e9ea6f04c53d5bd9ddf18a1ba2c1f65
 assigned_to: ai
 created_by: ""
 branch: feat/provision-developer-id-certificate-and-s
 created_at: "2026-09-28T18:42:44Z"
 updated_at: "2026-11-15T20:39:27Z"
+last_close_out_gate_ms: 70972
+last_close_out_gate_at: "2026-11-15T20:39:27.199Z"
 review_passes: 1
 ---
 Document the credentials and rotation runbook required for automated Developer ID signing and notarization of RepoOS Hub. An authorized maintainer performs the Apple Developer account and GitHub secret setup separately; this task's agent deliverable is the repository documentation and must not depend on access to, or claims about, those external account/device outcomes.
