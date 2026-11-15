@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/engineer-test-runs-outlive-the-agent-tur
 created_at: "2026-11-15T16:22:52Z"
-updated_at: "2026-11-15T17:59:07Z"
+updated_at: "2026-11-15T18:01:38Z"
 ---
 ## Problem
 On 16 Nov 2026 at about 00:08 SGT, Nick's MacBook Air was at 6% idle CPU. Seven node processes with parent PID 1 (orphaned) were using 50 to 70% CPU each, and each had been running for 58 to 78 minutes. All of them were left behind by engineer turns that had already ended:
@@ -32,6 +32,19 @@ When an engineer, reviewer or check turn ends, every process it started is gone 
 
 ## Notes for AI
 Look at the engineer turn spawner and process-group reaping in src/core (search for `process group`, `detached`, `killTree` or `reap`), the run-root markers, and `sweepOrphanedRunRootProcesses`. Agent CLIs like OpenCode, Codex and Claude Code launch tests through their own shell tools, which can create new sessions, so don't depend on the agent to clean up after itself.
+
+## Shots
+```json
+[
+{
+  "label": "Control dashboard: orphaned run processes stopped after a finished turn",
+  "target": "default",
+  "route": "/",
+  "highlight": "[data-orphan-runs]",
+  "state": "system:orphanedRuns"
+}
+]
+```
 
 ## Activity
 
@@ -63,3 +76,4 @@ Look at the engineer turn spawner and process-group reaping in src/core (search 
 - 2026-11-15T17:58:50Z · body
 - 2026-11-15T17:59:06Z · message_queued at 2026-11-15T17:59:06.978Z
 - 2026-11-15T17:59:07Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-15T18:01:38Z · body
