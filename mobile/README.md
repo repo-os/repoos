@@ -65,6 +65,15 @@ just build-mobile   # both
 `build-ios` needs the full Xcode.app installed (Command Line Tools alone
 aren't enough) — see [justfile](../justfile) for exact requirements/errors.
 
+### Deploy to a phone (Tailscale adb)
+
+```bash
+just deploy-phone          # build, install, launch debug APK on the configured phone
+just deploy-phone --no-build   # install existing APK only
+```
+
+Debug builds install as **`org.repoos.mobile.dev`** (`.dev` suffix) with the launcher label **RepoOS Hub Dev** (`app/src/debug/res/values/strings.xml`) so they sit next to the release **RepoOS Hub** app. See [phone deploy notes](../docs/phone-deploy.md) for adb, Tailscale, Wireless debugging, and `~/.config/repoos-hub/phone`.
+
 ## Android SDK note
 
 `@capacitor/inappbrowser` runs loaded servers in an isolated process so their

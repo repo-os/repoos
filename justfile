@@ -698,6 +698,11 @@ build-ios:
 [group('mobile')]
 build-mobile: build-android build-ios
 
+# build, install and launch the Hub debug APK on Nick's phone (Tailscale adb) `just deploy-phone`
+[group('mobile')]
+deploy-phone *FLAGS:
+    bun scripts/deploy-phone.ts {{FLAGS}}
+
 # ── release ──────────────────────────────────────────────────────────────
 
 # show the released version (package.json) vs the latest git tag

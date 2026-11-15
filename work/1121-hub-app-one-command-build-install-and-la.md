@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 301749
-last_close_out_gate_at: "2026-11-15T01:20:51.829Z"
 id: "1121"
 title: "Hub app: one-command build, install and launch on Nick's Android phone over Tailscale adb"
 type: feature
-status: review
+status: done
 priority: p2
 area: mobile
+merged_commit: 4209ec5cc9bb70311cbdd2b45b491d326ee4dc27
 assigned_to: ai
 created_by: t@t
 branch: feat/hub-app-one-command-build-install-and-la
@@ -14,6 +13,8 @@ cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-14T17:35:18Z"
 updated_at: "2026-11-15T01:20:51Z"
+last_close_out_gate_ms: 301749
+last_close_out_gate_at: "2026-11-15T01:20:51.829Z"
 review_passes: 1
 handoff_signal_retry_count: 2
 ---
