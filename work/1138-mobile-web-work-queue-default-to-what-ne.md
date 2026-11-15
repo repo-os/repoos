@@ -1,19 +1,20 @@
 ---
-last_close_out_gate_ms: 665882
-last_close_out_gate_at: "2026-11-15T21:27:33.417Z"
 id: "1138"
 title: "Mobile web Work queue: default to what needs attention, add inline search and filters, show held and human tasks"
 type: feature
-status: review
+status: done
 paths: [src/ui-app/src/components/MobileWorkQueue.vue]
 priority: p1
 area: web
 story: RepoOS Hub for Mobile
+merged_commit: 904312a502c3bf39e813a6c95d1873408f643db2
 assigned_to: ai
 created_by: t@t
 branch: feat/mobile-web-work-queue-default-to-what-ne
 created_at: "2026-11-15T17:24:06Z"
 updated_at: "2026-11-15T21:27:33Z"
+last_close_out_gate_ms: 665882
+last_close_out_gate_at: "2026-11-15T21:27:33.417Z"
 review_passes: 1
 ---
 ## Problem

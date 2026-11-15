@@ -75,6 +75,13 @@ visibility. Mobile Work should optimize for scanning and touch interaction:
 - readable task cards with status, priority, type, and updated time;
 - a prominent, thumb-friendly New task action;
 - compact sorting and filtering controls;
+- an inline search box and quick filter chips (priority, area, story,
+  human assignment), with the view and search kept in the URL so reload and
+  Back preserve them;
+- a "Needs attention" default: needs-you, review, active, ready and inbox
+  sections first, done tasks behind their own filter, and held, archived and
+  human tasks reachable from the queue;
+- paginated sections so a board with a thousand tasks still paints quickly;
 - task details presented as a mobile navigation page or bottom sheet;
 - no desktop-only hover actions or tiny icon buttons.
 
