@@ -11,7 +11,10 @@ assigned_to: ai
 created_by: t@t
 branch: feat/mobile-web-task-detail-one-full-touch-de
 created_at: "2026-11-15T17:24:03Z"
-updated_at: "2026-11-15T22:14:13Z"
+updated_at: "2026-11-15T22:26:58Z"
+review_rounds: 1
+routing_switches: 1
+review_passes: 1
 dev_error_count: 3
 ---
 ## Problem
@@ -146,3 +149,10 @@ On a phone there's a single task detail, whichever way it was opened (card, sear
 - 2026-11-15T22:09:24Z · watchdog: restarting engineer because a queued message waited 3m with no live process
 - 2026-11-15T22:09:26Z · message_delivered: 1 message(s)
 - 2026-11-15T22:14:13Z · body
+- 2026-11-15T22:17:19Z · note: ui verification passed: 2 of 3 shots captured with clean console
+- 2026-11-15T22:17:20Z · status active→review
+- 2026-11-15T22:17:20Z · message_queued at 2026-11-15T22:17:20.409Z
+- 2026-11-15T22:19:17Z · note: review pass 1: needs some work
+- 2026-11-15T22:19:17Z · message_delivered: 1 message(s)
+- 2026-11-15T22:19:18Z · status review→active
+- 2026-11-15T22:26:58Z · body

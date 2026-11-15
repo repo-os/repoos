@@ -18,6 +18,11 @@ on:
         description: Existing release tag to build and attach a DMG to
         required: true
         type: string
+      dry_run:
+        description: Run notarization, stapling and verification without creating or modifying a GitHub Release
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: write
@@ -124,6 +129,113 @@ jobs:
           test -s "$MOUNT/.DS_Store"
           test -s "$MOUNT/.background.png"
 
+      - name: Notarize, staple and verify DMG
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_API_ISSUER_ID: ${{ secrets.APPLE_API_ISSUER_ID }}
+        run: |
+          set -euo pipefail
+
+          if [[ "${{ inputs.dry_run || 'false' }}" == "true" ]]; then
+            echo "::notice::Dry run: exercising notarization, stapling and verification; the GitHub Release upload will be skipped."
+          fi
+
+          if ! command -v jq >/dev/null 2>&1; then
+            echo "::error::jq is required to read the notarization submission ID from notarytool JSON." >&2
+            exit 1
+          fi
+
+          # Resolve exactly one authentication set from the repository Actions
+          # secrets. Never echo secret values or write them outside RUNNER_TEMP.
+          AUTH_ARGS=()
+          KEY_PATH=""
+          cleanup() {
+            if [[ -n "$KEY_PATH" ]]; then
+              rm -Pf "$KEY_PATH" 2>/dev/null || true
+            fi
+          }
+          trap cleanup EXIT
+
+          if [[ -n "${APPLE_API_KEY:-}" || -n "${APPLE_API_KEY_ID:-}" || -n "${APPLE_API_ISSUER_ID:-}" ]]; then
+            if [[ -z "${APPLE_API_KEY:-}" || -z "${APPLE_API_KEY_ID:-}" || -z "${APPLE_API_ISSUER_ID:-}" ]]; then
+              echo "::error::Incomplete App Store Connect API key notarization credentials. APPLE_API_KEY, APPLE_API_KEY_ID and APPLE_API_ISSUER_ID must all be set." >&2
+              exit 1
+            fi
+            KEY_PATH="$RUNNER_TEMP/AuthKey_${APPLE_API_KEY_ID}.p8"
+            printf '%s\n' "$APPLE_API_KEY" > "$KEY_PATH"
+            chmod 600 "$KEY_PATH"
+            AUTH_ARGS=(--key "$KEY_PATH" --key-id "$APPLE_API_KEY_ID" --issuer "$APPLE_API_ISSUER_ID")
+            echo "Using App Store Connect API key notarization credentials."
+          else
+            if [[ -z "${APPLE_ID:-}" || -z "${APPLE_APP_SPECIFIC_PASSWORD:-}" || -z "${APPLE_TEAM_ID:-}" ]]; then
+              echo "::error::No complete notarization credential set is configured. Set APPLE_ID, APPLE_APP_SPECIFIC_PASSWORD and APPLE_TEAM_ID, or APPLE_API_KEY, APPLE_API_KEY_ID and APPLE_API_ISSUER_ID." >&2
+              exit 1
+            fi
+            AUTH_ARGS=(--apple-id "$APPLE_ID" --password "$APPLE_APP_SPECIFIC_PASSWORD" --team-id "$APPLE_TEAM_ID")
+            echo "Using Apple ID app-specific-password notarization credentials."
+          fi
+
+          # A failed submission must still leave its JSON (and ID when Apple
+          # returned one) available so the Apple log can be fetched below.
+          SUBMIT_JSON="$RUNNER_TEMP/notarytool-submit.json"
+          SUBMIT_STATUS=0
+          xcrun notarytool submit RepoOSHub.dmg \
+            "${AUTH_ARGS[@]}" \
+            --wait --timeout 1800 --output-format json \
+            | tee "$SUBMIT_JSON" || SUBMIT_STATUS=$?
+
+          SUBMISSION_ID="$(jq -r '.id // empty' "$SUBMIT_JSON" 2>/dev/null || true)"
+          SUBMISSION_STATUS="$(jq -r '.status // empty' "$SUBMIT_JSON" 2>/dev/null || true)"
+
+          if [[ -z "$SUBMISSION_ID" ]]; then
+            if [[ -s "$SUBMIT_JSON" ]]; then
+              echo "--- notarytool submit output ---"
+              cat "$SUBMIT_JSON"
+              echo "--- end notarytool submit output ---"
+            fi
+            echo "::error::Notarization failed before Apple returned a submission ID (notarytool exit code $SUBMIT_STATUS); no notarization log is available." >&2
+            if [[ "$SUBMIT_STATUS" -gt 0 ]]; then exit "$SUBMIT_STATUS"; fi
+            exit 1
+          fi
+
+          echo "Notarization submission ID: $SUBMISSION_ID"
+          echo "Notarization submission status: ${SUBMISSION_STATUS:-unknown}"
+          {
+            echo "### Notarization"
+            echo "- Submission ID: \`$SUBMISSION_ID\`"
+            echo "- Status: \`${SUBMISSION_STATUS:-unknown}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          if [[ "$SUBMIT_STATUS" -ne 0 || "$SUBMISSION_STATUS" != "Accepted" ]]; then
+            echo "::error::Apple did not accept notarization submission $SUBMISSION_ID (status: ${SUBMISSION_STATUS:-unknown}, notarytool exit code $SUBMIT_STATUS)." >&2
+            echo "Apple notarization log for submission $SUBMISSION_ID:"
+            if ! xcrun notarytool log "$SUBMISSION_ID" "${AUTH_ARGS[@]}"; then
+              echo "::warning::Could not retrieve the notarization log for submission $SUBMISSION_ID."
+            fi
+            exit 1
+          fi
+
+          # Only an accepted submission may reach stapling and publication.
+          echo "Stapling Apple's notarization ticket to RepoOSHub.dmg ..."
+          xcrun stapler staple RepoOSHub.dmg
+
+          echo "Validating the stapled ticket ..."
+          xcrun stapler validate RepoOSHub.dmg
+
+          echo "Assessing the stapled DMG with Gatekeeper ..."
+          spctl --assess --type open --context context:primary-signature RepoOSHub.dmg
+
+          echo "Notarization accepted, ticket stapled and verification passed."
+          {
+            echo "- Ticket stapled: \`xcrun stapler staple\`"
+            echo "- Ticket validated: \`xcrun stapler validate\`"
+            echo "- Gatekeeper assessment: \`spctl --assess\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Determine channel
         id: meta
         run: |
@@ -134,6 +246,7 @@ jobs:
           fi
 
       - name: Upload DMG to GitHub Release
+        if: ${{ inputs.dry_run != 'true' }}
         uses: softprops/action-gh-release@v2
         with:
           files: RepoOSHub.dmg
