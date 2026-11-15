@@ -2,7 +2,7 @@
 id: "1128"
 title: Publish RepoOS Hub Android APK on GitHub Releases and link it from the landing page and docs
 type: feature
-status: active
+status: review
 priority: p2
 area: [mobile, web]
 story: RepoOS Hub for Mobile
@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/publish-repoos-hub-android-apk-on-github
 created_at: "2026-11-15T13:35:11Z"
-updated_at: "2026-11-15T15:15:27Z"
+updated_at: "2026-11-15T16:33:16Z"
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-11-15T15:14:33.244Z: repoos check failed: rendered-contrast — · div#setting-model_routing.provider.setting-row > div.setting-info > div.setting-desc — #958ab0 on #ffffff = 3.21 (need ≥4.5, 11px) [settings] \"Which decision backend answers routing questions. Jev uses T\""
 dev_error_count: 1
@@ -99,3 +99,4 @@ The Tiao app (a separate repo) is the reference for how the APK should be shared
 - 2026-11-15T15:14:07Z · CTO nudge: held — handoff gate is running
 - 2026-11-15T15:14:30Z · message_queued at 2026-11-15T15:14:30.226Z
 - 2026-11-15T15:15:27Z · message_delivered: 1 message(s)
+- 2026-11-15T16:33:16Z · status active→review
