@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/repoos-hub-mobile-hold-to-drag-server-re
 created_at: "2026-11-15T14:39:13Z"
-updated_at: "2026-11-15T15:54:06Z"
+updated_at: "2026-11-15T15:56:52Z"
 ---
 ## Problem
 Feedback from Nick after testing the #1127 build on his Nothing Phone (3a):
@@ -52,3 +52,4 @@ Hold-to-drag feel, haptics and iOS gesture behavior are covered by code and comp
 - 2026-11-15T15:44:33Z · body
 - 2026-11-15T15:48:50Z · body
 - 2026-11-15T15:54:06Z · CTO nudge: held — machine under pressure (CPU idle is 0% (below 5%) — holding new work until the machine has idle CPU; system load is high (4.4× per CPU, limit 3×) — waiting for headroom before starting more work)
+- 2026-11-15T15:56:52Z · message_queued at 2026-11-15T15:56:52.032Z
