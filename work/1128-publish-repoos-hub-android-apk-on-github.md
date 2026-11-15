@@ -3,9 +3,6 @@ id: "1128"
 title: Publish RepoOS Hub Android APK on GitHub Releases and link it from the landing page and docs
 type: feature
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "OpenCode exited with an error. Open Raw CLI error for details. (CLI: ✗ Server finalization stopped at verify: ui verification failed: runner result omitted the UI verification record: ui verification: preview for \"Landing page\" did not start: preview server for #1128 did not become ready. The same worktree can be resumed and retried.)"
 priority: p2
 area: [mobile, web]
 story: RepoOS Hub for Mobile
@@ -13,11 +10,10 @@ assigned_to: ai
 created_by: t@t
 branch: feat/publish-repoos-hub-android-apk-on-github
 created_at: "2026-11-15T13:35:11Z"
-updated_at: "2026-11-15T14:34:07Z"
-check_retry_count: 1
-last_check_failure: "repoos check at 2026-11-15T14:03:27.994Z: repoos check failed: ui verification failed: runner result omitted the UI verification record: ui verification: preview for \"Landing page\" did not start: preview server for #1128 did not become ready"
+updated_at: "2026-11-15T15:15:27Z"
+check_retry_count: 2
+last_check_failure: "repoos check at 2026-11-15T15:14:33.244Z: repoos check failed: rendered-contrast — · div#setting-model_routing.provider.setting-row > div.setting-info > div.setting-desc — #958ab0 on #ffffff = 3.21 (need ≥4.5, 11px) [settings] \"Which decision backend answers routing questions. Jev uses T\""
 dev_error_count: 1
-engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-11-15T14:34:07.784Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 RepoOS Hub for Android (`mobile/`, Capacitor app `org.repoos.mobile`) has no public download. The only way to get it today is to build it locally with `just build-android` and sideload the debug APK over adb. The macOS Hub already has a public download: `.github/workflows/macos-hub.yml` builds `RepoOSHub.dmg` on every stable `v*` tag and attaches it to the GitHub Release, and both the landing page (`landing/src/App.vue`, "Download for Mac" pointing at `https://github.com/repo-os/repoos/releases/latest/download/RepoOSHub.dmg`) and `user-docs/macos-hub.md` link to it. Android should have the same thing.
@@ -50,16 +46,16 @@ The Tiao app (a separate repo) is the reference for how the APK should be shared
 ```json
 [
 {
-"label": "RepoOS Hub for Android section with download button and sideload note",
+"label": "Landing page: RepoOS Hub for Android download card",
 "target": "Landing page",
 "route": "/",
-"highlight": "a[href*=\"RepoOSHub.apk\"]"
+"highlight": "#android-hub"
 },
 {
-"label": "New Android Hub guide page",
+"label": "Android Hub guide: download and requirements",
 "target": "Docs site",
 "route": "/android-hub",
-"highlight": "h1"
+"highlight": "#download-and-requirements"
 }
 ]
 ```
@@ -94,3 +90,12 @@ The Tiao app (a separate repo) is the reference for how the APK should be shared
 - 2026-11-15T14:34:07Z · note: stopped orphaned engineer pid 4322
 - 2026-11-15T14:34:07Z · agent exited with an error (opencode) · OpenCode exited with an error. Open Raw CLI error for details. (CLI: ✗ Server finalization stopped at verify: ui verification failed: runner result omitted the UI verification record: ui verification: preview for "Landing page" did not start: preview server for #1128 did not become ready. The same worktree can be resumed and retried.)
 - 2026-11-15T14:34:07Z · engineer crash recovery: resuming opencode + opencode-go/deepseek-v4.1-flash (1/3 crashes in 30m) · OpenCode exited with an error. Open Raw CLI error for details. (CLI: OpenCode exited with an error. Open Raw CLI error for details. (CLI: ✗ Server finalization stopped at verify: ui verification failed: runner result omitted the UI verif…
+- 2026-11-15T14:35:09Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-15T14:37:40Z · watchdog: restarting engineer because a queued message waited 4m with no live process
+- 2026-11-15T14:37:41Z · message_delivered: 1 message(s)
+- 2026-11-15T14:49:51Z · body
+- 2026-11-15T14:59:07Z · body
+- 2026-11-15T15:10:31Z · body
+- 2026-11-15T15:14:07Z · CTO nudge: held — handoff gate is running
+- 2026-11-15T15:14:30Z · message_queued at 2026-11-15T15:14:30.226Z
+- 2026-11-15T15:15:27Z · message_delivered: 1 message(s)
