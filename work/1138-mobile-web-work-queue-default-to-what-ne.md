@@ -11,7 +11,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/mobile-web-work-queue-default-to-what-ne
 created_at: "2026-11-15T17:24:06Z"
-updated_at: "2026-11-15T20:10:30Z"
+updated_at: "2026-11-15T20:10:44Z"
 ---
 ## Problem
 Nick: on a phone it's "really hard to find the right task and do anything normal". On main `23dc737`, the mobile Work queue (MobileWorkQueue.vue):
@@ -103,3 +103,4 @@ Nick: on a phone it's "really hard to find the right task and do anything normal
 - 2026-11-15T20:08:59Z · CTO nudge: held — handoff gate is running
 - 2026-11-15T20:10:29Z · note: ui verification passed: 3 of 3 shots captured with clean console
 - 2026-11-15T20:10:30Z · message_queued at 2026-11-15T20:10:30.132Z
+- 2026-11-15T20:10:44Z · CTO nudge: held — an undelivered message is already queued
