@@ -1,18 +1,19 @@
 ---
-last_close_out_gate_ms: 281235
-last_close_out_gate_at: "2026-11-15T17:02:35.769Z"
 id: "1128"
 title: Publish RepoOS Hub Android APK on GitHub Releases and link it from the landing page and docs
 type: feature
-status: review
+status: done
 priority: p2
 area: [mobile, web]
 story: RepoOS Hub for Mobile
+merged_commit: e23a1db4eefb90b25bd1aa2800b1f43250ba9ca7
 assigned_to: ai
 created_by: t@t
 branch: feat/publish-repoos-hub-android-apk-on-github
 created_at: "2026-11-15T13:35:11Z"
 updated_at: "2026-11-15T17:02:35Z"
+last_close_out_gate_ms: 281235
+last_close_out_gate_at: "2026-11-15T17:02:35.769Z"
 review_passes: 1
 last_check_failure: "repoos check at 2026-11-15T15:14:33.244Z: repoos check failed: rendered-contrast — · div#setting-model_routing.provider.setting-row > div.setting-info > div.setting-desc — #958ab0 on #ffffff = 3.21 (need ≥4.5, 11px) [settings] \"Which decision backend answers routing questions. Jev uses T\""
 dev_error_count: 1

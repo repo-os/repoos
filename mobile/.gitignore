@@ -10,5 +10,8 @@ node_modules/
 # Symlink to the latest debug APK, maintained by `just build-android`
 app-debug.apk
 
+# Release-signed APK maintained by `just build-android-release`
+app-release.apk
+
 # Native build artifacts are already covered by the generated
 # ios/.gitignore and android/.gitignore (android/app/.gitignore).

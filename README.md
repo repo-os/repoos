@@ -320,6 +320,18 @@ Current builds are ad-hoc signed and not notarized. After a first blocked launch
 use **System Settings → Privacy & Security → Open Anyway**; the guide has the
 exact steps. Developer ID signing and notarization are planned.
 
+## RepoOS Hub for Android
+
+The same Hub for your phone, requiring **Android 8.0 (API 26) or newer**. It
+keeps the server list on the device and opens each server in an isolated
+WebView, so accounts and cookies never cross between servers.
+
+Download the latest [RepoOS Hub APK](https://github.com/repo-os/repoos/releases/latest/download/RepoOSHub.apk),
+or browse [GitHub Releases](https://github.com/repo-os/repoos/releases). It is
+not on the Play Store yet, so you sideload the APK; each stable tag ships a
+release-signed `RepoOSHub.apk` next to the DMG. Install, update, and certificate
+verification steps are in the [Android Hub guide](https://docs.repoos.org/android-hub).
+
 ## Roadmap
 
 - **Stage 1 — parser + index + CLI** ✅
