@@ -11,7 +11,6 @@ created_by: t@t
 branch: feat/publish-repoos-hub-android-apk-on-github
 created_at: "2026-11-15T13:35:11Z"
 updated_at: "2026-11-15T16:24:06Z"
-check_retry_count: 2
 last_check_failure: "repoos check at 2026-11-15T15:14:33.244Z: repoos check failed: rendered-contrast — · div#setting-model_routing.provider.setting-row > div.setting-info > div.setting-desc — #958ab0 on #ffffff = 3.21 (need ≥4.5, 11px) [settings] \"Which decision backend answers routing questions. Jev uses T\""
 dev_error_count: 1
 ---
@@ -143,3 +142,4 @@ The Tiao app (a separate repo) is the reference for how the APK should be shared
 - 2026-11-15T16:23:01Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 130) · last assistant: The scoped gate is green now. I’m refreshing the shot evidence against the merged tree, then I’ll hand off. · stderr: (empty)
 - 2026-11-15T16:23:01Z · message_delivered: 1 message(s)
 - 2026-11-15T16:24:06Z · CTO nudge: held — handoff gate is running
+
