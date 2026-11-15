@@ -2,7 +2,7 @@
 id: "1132"
 title: "Allowlist groups: projects that opt into the same group share one budget allowlist across machines"
 type: feature
-status: review
+status: active
 priority: p1
 area: [core, server, web]
 assigned_to: ai
