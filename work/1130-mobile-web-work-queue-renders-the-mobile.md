@@ -11,7 +11,6 @@ created_by: t@t
 branch: feat/mobile-web-work-queue-renders-the-mobile
 created_at: "2026-11-15T14:34:55Z"
 updated_at: "2026-11-15T15:15:59Z"
-deferred_handoff_resume_count: 1
 ---
 ## Problem
 On a phone browser (Nick's Nothing Phone 3a, Chrome, about 412px wide, opening `https://bee.tailc0c173.ts.net:7499` on the tiao project, server v0.5.83), the Work page draws two layouts at once:
