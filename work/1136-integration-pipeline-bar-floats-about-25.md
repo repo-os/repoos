@@ -84,3 +84,4 @@ Measured with Playwright and CDP: `.ibar-wrap` (position: fixed; bottom: 74px) g
 - 2026-11-15T20:08:59Z · CTO nudge: held — handoff gate is running
 - 2026-11-15T20:10:41Z · note: ui verification passed: 2 of 2 shots captured with clean console
 - 2026-11-15T20:10:42Z · status active→review
+- 2026-11-15T20:10:42Z · message_queued at 2026-11-15T20:10:42.729Z
