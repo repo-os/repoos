@@ -11,7 +11,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/repoos-hub-mobile-hold-to-drag-server-re
 created_at: "2026-11-15T14:39:13Z"
-updated_at: "2026-11-15T16:57:37Z"
+updated_at: "2026-11-15T16:58:03Z"
 last_close_out_gate_ms: 233080
 last_close_out_gate_at: "2026-11-15T16:56:47.406Z"
 review_passes: 1
@@ -99,3 +99,4 @@ Hold-to-drag feel, haptics and iOS gesture behavior are covered by code and comp
 - 2026-11-15T16:51:17Z · note: review pass 1: good to go
 - 2026-11-15T16:56:47Z · close-out gate completed in 233s
 - 2026-11-15T16:57:37Z · status done→done, release:success
+- 2026-11-15T16:58:03Z · message_dropped: 1 queued message(s) discarded — task is done
