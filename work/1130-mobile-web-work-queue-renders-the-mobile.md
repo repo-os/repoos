@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/mobile-web-work-queue-renders-the-mobile
 created_at: "2026-11-15T14:34:55Z"
-updated_at: "2026-11-15T15:15:46Z"
+updated_at: "2026-11-15T15:15:47Z"
 deferred_handoff_resume_count: 1
 ---
 ## Problem
@@ -71,3 +71,4 @@ Reproduced on this branch (based on current main) at 360, 390 and 412 px by moun
 - 2026-11-15T15:14:51Z · body
 - 2026-11-15T15:15:46Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-15T15:15:46Z · message_queued at 2026-11-15T15:15:46.761Z
+- 2026-11-15T15:15:47Z · ↻ resuming engineer to read queued message
