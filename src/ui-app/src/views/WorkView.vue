@@ -34,7 +34,6 @@ import SelectValue from "../components/ui/select/value.vue";
 import SelectViewport from "../components/ui/select/viewport.vue";
 import IntegrationStatusBar from "../components/IntegrationStatusBar.vue";
 import MobileWorkQueue from "../components/MobileWorkQueue.vue";
-import MobileTaskDetail from "../components/MobileTaskDetail.vue";
 import {
   applyShotPreviewFixture,
   isShotPreviewCaptureActive,
@@ -115,6 +114,16 @@ watch(
     void openFromTaskParam(v);
   },
   { immediate: true },
+);
+// A ?tab= change while the same task stays selected (a deep link followed from
+// an already-open phone detail) must still move the shared drawer to that tab.
+watch(
+  () => route.query.tab,
+  (raw) => {
+    if (typeof route.query.task !== "string" || !ui.active) return;
+    const tab = tabFromQuery(raw);
+    if (tab) ui.activeTab = tab;
+  },
 );
 
 async function clearTaskParam(): Promise<void> {
@@ -369,13 +378,16 @@ function openHeld(task: Task): void {
 
 <template>
   <!-- #1130: the two Work compositions are mutually exclusive by viewport.
-       `v-else` used to chain to MobileTaskDetail, so on a phone with no task
-       open the desktop board mounted underneath the mobile queue and painted
-       over it. Keep the narrow branch in its own v-if so exactly one queue
-       ever renders. -->
+       `v-else` used to chain to the old mobile detail, so on a phone with no
+       task open the desktop board mounted underneath the mobile queue and
+       painted over it. Keep the narrow branch in its own v-if so exactly one
+       queue ever renders.
+
+       #1137: the phone task detail is the shared TaskDrawer mounted by App.vue,
+       so every entry point renders the same component. WorkView only owns the
+       queue here; the ?task= watcher still opens the drawer and applies ?tab=. -->
   <template v-if="isNarrow">
     <MobileWorkQueue v-show="!mobileTaskSelected" />
-    <MobileTaskDetail v-if="mobileTaskSelected" />
   </template>
   <div v-else class="work-page">
     <div

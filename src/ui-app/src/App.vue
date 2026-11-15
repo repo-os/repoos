@@ -44,9 +44,12 @@ const { isNarrow } = useResponsiveLayout();
 // full-viewport screen with no app chrome — the visitor isn't authenticated
 // yet, and the sidebar/topbar assume a signed-in session.
 const isPublicRoute = computed(() => route.meta.public === true || route.meta.fullscreen === true);
-const isMobileTaskDetail = computed(
-  () => isNarrow.value && route.path === "/work" && typeof route.query.task === "string",
-);
+// #1137: one task detail on a phone. The task drawer is the single full-screen
+// detail no matter how the task was opened (queue card, search, notices, deep
+// link), so only the tab bar is hidden behind it. Keeping the drawer mounted
+// here — rather than switching to a second component from WorkView — avoids the
+// diverging read-only stub that used to disagree with the drawer.
+const isPhoneTaskDetail = computed(() => isNarrow.value && ui.active !== null);
 const loadingKind = computed(() => loadingSkeletonKind(route.path));
 const loadingHeader = computed(() => loadingPageHeader(route.path));
 const showRepoSkeleton = ref(false);
@@ -200,8 +203,8 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <MobileTabs v-if="!isMobileTaskDetail" />
-      <TaskDrawer v-if="!isMobileTaskDetail" />
+      <MobileTabs v-if="!isPhoneTaskDetail" />
+      <TaskDrawer />
       <TunnelDrawer />
       <RemoteValidationDrawer />
       <ToastPanel />

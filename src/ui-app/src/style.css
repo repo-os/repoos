@@ -17002,3 +17002,109 @@
     align-items: flex-start;
   }
 }
+
+/* ---------- phone task detail (#1137) ----------
+   On a phone the shared task drawer is the single full-screen task detail for
+   every entry point (queue card, search, notices, ?task= deep links, after
+   create). These rules only apply below the 720px phone breakpoint, so the
+   desktop drawer, its width and its density are unchanged. */
+.drawer-mobile-back {
+  display: none;
+}
+@media (max-width: 719.98px) {
+  .drawer-wrap {
+    left: 0;
+    width: 100vw !important;
+  }
+  .drawer-resize {
+    display: none;
+  }
+  .drawer {
+    min-width: 0;
+    overflow-x: hidden;
+  }
+  .drawer-head {
+    padding: 14px 16px 12px;
+    gap: 10px;
+    align-items: flex-start;
+  }
+  /* Let the title/chips column shrink instead of pushing the close control
+     past the right edge on long header chips. */
+  .drawer-head-main {
+    min-width: 0;
+  }
+  .drawer-mobile-back {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0 9px;
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    background: var(--panel);
+    color: var(--txt-dim);
+    font: 600 12px var(--font-sans);
+    cursor: pointer;
+  }
+  .drawer-mobile-back svg {
+    width: 16px;
+    height: 16px;
+  }
+  .drawer-mobile-back:active {
+    background: var(--bg-secondary);
+  }
+  .drawer-mobile-back:focus-visible {
+    outline: 2px solid var(--cyan);
+    outline-offset: 2px;
+  }
+  /* A 44x44 close target, inside the viewport even with long chips. */
+  .drawer-head .close-x {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+  }
+  .drawer-tabs {
+    padding-inline: 16px;
+  }
+  .drawer-tabs .tab-btn {
+    min-height: 44px;
+  }
+  .drawer-quickbar,
+  .drawer-critical {
+    padding-inline: 16px;
+  }
+  .drawer-status-summary,
+  .drawer-done-error {
+    width: calc(100% - 32px);
+    margin-inline: 16px;
+  }
+  .drawer-body {
+    padding: 16px;
+    overflow-x: hidden;
+  }
+  /* Touch targets: the state/primary actions, review controls, composer and
+     destructive actions all meet the 44px floor on a phone. */
+  .quickbar-row button,
+  .review-toolbar button,
+  .save-bar button,
+  .delete-zone button,
+  .drawer-body .field-row button {
+    min-height: 44px;
+  }
+  .drawer-wrap .ai-chat-compose button,
+  .drawer-wrap .ai-chat-compose .ai-chat-attach {
+    width: 44px;
+    height: 44px;
+  }
+  /* iOS Safari zooms the page when a focused input is under 16px. */
+  .drawer-wrap input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+  .drawer-wrap textarea {
+    font-size: 16px;
+  }
+  .drawer-wrap .ai-chat-compose textarea {
+    font-size: 16px;
+  }
+}

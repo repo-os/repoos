@@ -2,7 +2,7 @@
 import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch } from "vue";
 import { randomId } from "../lib/random-id";
 import { humanTaskGuideWarning } from "../../../core/task-underspecified.js";
-import { useRouter } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import {
   X,
   Play,
@@ -11,6 +11,7 @@ import {
   CheckCheck,
   ExternalLink,
   Square,
+  ArrowLeft,
   ArrowRight,
   ArrowDown,
   RotateCcw,
@@ -53,6 +54,7 @@ import { useUiStore } from "../stores/ui";
 import { useConfigStore } from "../stores/config";
 import { useAuthStore } from "../stores/auth";
 import { useNoticesStore } from "../stores/notices";
+import { useResponsiveLayout } from "../composables/useResponsiveLayout";
 import { renderMarkdown } from "../lib/markdown";
 import { annotateAttachmentCloudUploads } from "../lib/attachment-cloud-markdown";
 import { fmtFullDateTime, fmtShortDateTime, fmtTime, formatDuration, relTime } from "../lib/time";
@@ -244,7 +246,9 @@ async function openDependency(id: string): Promise<void> {
 }
 const config = useConfigStore();
 const auth = useAuthStore();
+const route = useRoute();
 const router = useRouter();
+const { isNarrow } = useResponsiveLayout();
 const { recall: recallModelForCli } = useModelMemory();
 const { onTaskDrawerBubbleClick } = useCopyChatMessage();
 
@@ -982,6 +986,10 @@ const drawerStatusSummary = computed(() => {
       !(activeCheckRun.value || localCheckWait.value || localCheckSlot.value || handoffBusy.value),
     ),
     reviewerRunning: Boolean(review.value?.running),
+    // A human pause is a real state with its own action (Resume work). It
+    // outranks the live-work row so the pause is visible as soon as the POST
+    // returns, then Resume becomes enabled once the agent process exits.
+    workPaused: task.status === "active" && repo.isPaused(task.id) && !repo.pmWorkingFor(task.id),
     workRunning: repo.isRunning(task.id) || repo.pmWorkingFor(task.id),
   });
   if (!key) return null;
@@ -995,6 +1003,7 @@ const drawerStatusSummary = computed(() => {
     confirmingHandoff: "Confirming handoff",
     checksFailedAfterRetries: "Checks failed",
     reviewerRunning: "Reviewer running",
+    workPaused: "Paused",
     workRunning: "Work running",
   } as const;
   const failCount = landable.value?.summary.fail ?? 0;
@@ -1016,6 +1025,7 @@ const drawerStatusSummary = computed(() => {
     integrating: integrationCardLabel.value ?? "",
     confirmingHandoff: "",
     reviewerRunning: "",
+    workPaused: "Agent stopped — Resume work continues from the existing turn.",
     workRunning: "",
   };
   const mergeReadinessChecklist = landable.value
@@ -1043,6 +1053,7 @@ const drawerStatusSummary = computed(() => {
     confirmingHandoff:
       "RepoOS is finalizing the handoff. The task stays active until the checks pass.",
     reviewerRunning: "The reviewer is inspecting this task.",
+    workPaused: "The agent is stopped. Use Resume work to continue where it left off.",
     workRunning: "An agent is working on this task.",
   };
   const isError = [
@@ -1135,6 +1146,8 @@ const drawerStatusSummary = computed(() => {
       motion = pmWorking ? "agent" : "coding";
       lines = compactStatusLines(pmWorking ? PM_WORKING_LABEL : "coding");
     }
+  } else if (key === "workPaused") {
+    lines = compactStatusLines("Paused", shortDetails.workPaused);
   } else if (key === "reviewFailed") {
     lines = compactStatusLines("Review failed", shortDetails.reviewFailed || "No complete report");
   } else if (key === "notLandable") {
@@ -1310,8 +1323,43 @@ const drawerStatusDetails = computed(() => {
 });
 
 const open = computed(() => ui.active !== null || ui.isNew);
+
+/**
+ * #1137: on a phone the drawer IS the Work task page, so closing it must also
+ * drop the `?task=`/`?tab=` route. Otherwise WorkView's deep-link watcher sees
+ * the param still present and re-opens the drawer immediately after a dismiss.
+ */
+async function clearPhoneTaskRoute(): Promise<void> {
+  if (!isNarrow.value || route.path !== "/work" || typeof route.query.task !== "string") return;
+  const query = { ...route.query };
+  delete query.task;
+  delete query.tab;
+  await router.replace({ path: "/work", query });
+}
+
 function setOpen(v: boolean): void {
   if (!v) ui.close();
+}
+
+// Every close path (X, Escape, overlay, an action that calls ui.close) must
+// drop the phone task route, not just the dialog's own dismiss event.
+watch(open, (isOpen) => {
+  if (!isOpen) void clearPhoneTaskRoute();
+});
+
+/** Phone-only header control: leave the task detail and return to the queue. */
+async function backToQueue(): Promise<void> {
+  ui.close();
+  if (route.path === "/work") {
+    const query = { ...route.query };
+    delete query.task;
+    delete query.tab;
+    // Replace the task-page entry: leaving it in history would let Back land
+    // on a ?task= URL that immediately re-opens the detail.
+    await router.replace({ path: "/work", query });
+    return;
+  }
+  await router.push({ path: "/work" });
 }
 
 function onOpenAutoFocus(e: Event): void {
@@ -5442,7 +5490,16 @@ watch(
       <!-- TASK DETAIL -->
       <template v-else-if="ui.active">
         <div class="drawer-head">
-          <div style="flex: 1">
+          <button
+            type="button"
+            class="drawer-mobile-back"
+            aria-label="Back to Work queue"
+            @click="backToQueue"
+          >
+            <ArrowLeft aria-hidden="true" />
+            <span>Queue</span>
+          </button>
+          <div class="drawer-head-main" style="flex: 1">
             <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 7px">
               <CopyableNumber
                 :label="`#${ui.active.id}`"
@@ -5534,7 +5591,7 @@ watch(
               {{ hiddenAlertCount }} alert{{ hiddenAlertCount === 1 ? "" : "s" }}
             </button>
           </div>
-          <DialogClose class="close-x">
+          <DialogClose class="close-x" aria-label="Close task detail">
             <X class="size-[15px]" />
           </DialogClose>
         </div>
@@ -5617,6 +5674,33 @@ watch(
                 <CheckCheck class="size-3.5" /> Mark done
               </Button>
             </div>
+            <!-- #1137: the phone detail is the only task detail, so the card's
+                 fresh-done / AI-created acknowledgement must be reachable here
+                 too (there is no queue card behind the full-screen detail). -->
+            <div
+              v-if="repo.needsAck(ui.active) || repo.needsCreateAck(ui.active.id)"
+              class="quickbar-row"
+            >
+              <Button
+                v-if="repo.needsAck(ui.active)"
+                variant="status"
+                :style="{ '--tone': statusColor('done') }"
+                :disabled="ui.saving"
+                data-test-id="task-drawer-acknowledge"
+                @click="repo.acknowledge(ui.active.id)"
+              >
+                <CheckCheck class="size-3.5" /> Acknowledge
+              </Button>
+              <Button
+                v-if="repo.needsCreateAck(ui.active.id)"
+                variant="outline"
+                :disabled="ui.saving"
+                data-test-id="task-drawer-acknowledge-created"
+                @click="repo.acknowledgeCreate(ui.active.id)"
+              >
+                <CheckCheck class="size-3.5" /> Acknowledge
+              </Button>
+            </div>
             <div class="quickbar-row">
               <Select
                 :model-value="ui.active.status"
@@ -5666,13 +5750,21 @@ watch(
                 v-if="
                   !isHumanTask &&
                   (ui.active.status === 'ready' || ui.active.status === 'active') &&
-                  (ui.active.status === 'ready' || !repo.isRunning(ui.active.id)) &&
+                  (ui.active.status === 'ready' ||
+                    !repo.isRunning(ui.active.id) ||
+                    repo.isPaused(ui.active.id)) &&
                   !activeChecksBusy
                 "
                 data-test-id="task-drawer-start-work"
                 variant="status"
                 :style="{ '--tone': statusColor('active') }"
-                :disabled="ui.saving || startingWork"
+                :disabled="
+                  ui.saving ||
+                  startingWork ||
+                  (ui.active.status === 'active' &&
+                    repo.isPaused(ui.active.id) &&
+                    repo.isRunning(ui.active.id))
+                "
                 @click="startWork"
               >
                 <Play v-if="!startingWork" class="size-3.5" />
@@ -5681,7 +5773,9 @@ watch(
                   startingWork
                     ? "Starting work…"
                     : ui.active.status === "active"
-                      ? "Restart work"
+                      ? repo.isPaused(ui.active.id)
+                        ? "Resume work"
+                        : "Restart work"
                       : "Start work"
                 }}
               </Button>
@@ -5708,6 +5802,7 @@ watch(
                   !isHumanTask &&
                   ui.active.status === 'active' &&
                   repo.isRunning(ui.active.id) &&
+                  !repo.isPaused(ui.active.id) &&
                   !activeChecksBusy
                 "
                 variant="outline"
@@ -6295,7 +6390,10 @@ watch(
             </div>
           </div>
         </div>
-        <div class="drawer-tabs">
+        <!-- #1137: on a phone the seven tabs cannot shrink to fit. Opt this
+             strip into horizontal scrolling so every tab (and the expand
+             control) stays reachable by touch instead of being clipped. -->
+        <div class="drawer-tabs" :class="{ 'drawer-tabs-scroll': isNarrow }">
           <button
             type="button"
             class="tab-btn"
