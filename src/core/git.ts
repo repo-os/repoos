@@ -11,6 +11,7 @@ import {
   lstatSync,
   mkdirSync,
   readFileSync,
+  readlinkSync,
   renameSync,
   writeFileSync,
   realpathSync,
@@ -18,7 +19,7 @@ import {
   symlinkSync,
   statSync,
 } from "node:fs";
-import { dirname, isAbsolute, join, relative, resolve } from "node:path";
+import { basename, dirname, isAbsolute, join, relative, resolve } from "node:path";
 import type { TaskGitInfo } from "./types.js";
 import { isLinkedWorktreeRoot, worktreesDir, worktreesInheritEnv } from "./config.js";
 import { repoosTomlDiffIsAutomaticPauseOnly } from "./repoos-toml-runtime-diff.js";
@@ -3099,6 +3100,89 @@ function isWorktreeOnlyDeletion(status: string): boolean {
   return status.length >= 2 && status[0] === " " && status[1] === "D";
 }
 
+/**
+ * True when `candidate` is strictly inside `dir`, comparing normalised
+ * (not realpath'd) paths. Callers canonicalise the side that needs it.
+ */
+function isInsideDir(dir: string, candidate: string): boolean {
+  const rel = relative(dir, candidate);
+  return rel !== "" && !rel.startsWith("..") && !isAbsolute(rel);
+}
+
+/** `realpathSync` with a lexical fallback for paths that do not resolve. */
+function canonicalPath(path: string): string {
+  try {
+    return realpathSync(path);
+  } catch {
+    return resolve(path);
+  }
+}
+
+/**
+ * True when `relPath` is a symlink in the worktree pointing into `mainRoot`.
+ * RepoOS provisions the main checkout's gitignored `.env` this way
+ * ({@link linkInheritedEnv}), so deleting the worktree deletes only the link —
+ * the target survives. A symlink to anywhere else is the task's own file.
+ *
+ * Both the resolved target and the link's literal destination are checked, so
+ * a dangling `.env` link (main's file was deleted after linking) still counts.
+ */
+function isSymlinkIntoMain(worktreePath: string, relPath: string, mainRoot: string): boolean {
+  const trimmed = relPath.replace(/\/+$/, "");
+  if (!trimmed) return false;
+  const absolute = join(worktreePath, trimmed);
+  let entry: ReturnType<typeof lstatSync>;
+  try {
+    entry = lstatSync(absolute);
+  } catch {
+    return false;
+  }
+  if (!entry.isSymbolicLink()) return false;
+  const targets = new Set<string>();
+  try {
+    targets.add(realpathSync(absolute));
+  } catch {
+    /* dangling — fall back to the literal destination below */
+  }
+  try {
+    const literal = resolve(dirname(absolute), readlinkSync(absolute));
+    targets.add(literal);
+    // Canonicalise the parent so a dangling target still lines up with a main
+    // root reached through a symlink (macOS `/var` -> `/private/var`).
+    targets.add(join(canonicalPath(dirname(literal)), basename(literal)));
+  } catch {
+    /* unreadable link — not provably provisioned */
+  }
+  const roots = [resolve(mainRoot), canonicalPath(mainRoot)];
+  for (const target of targets) {
+    for (const root of roots) {
+      if (isInsideDir(root, target)) return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * The subset of `paths` that git ignores in the main checkout. Uses
+ * `check-ignore`, so it honours `.gitignore`, `.git/info/exclude` and the
+ * global excludes file. Any failure yields an empty set: counting a path as
+ * work is the safe answer, never assuming it is disposable.
+ */
+function gitIgnoredInMain(mainRoot: string, paths: string[]): Set<string> {
+  if (paths.length === 0) return new Set();
+  // `-z` needs `--stdin`; this call passes pathspecs, so newline output is the
+  // machine format. A path git has to C-quote simply won't match, and a path
+  // that doesn't match stays counted as work — the safe direction.
+  const run = gitCapture(mainRoot, ["check-ignore", "--", ...paths]);
+  if (run.status !== 0) return new Set();
+  return new Set(
+    run.stdout
+      .split("\n")
+      .map((p) => p.replace(/\r$/, "").replace(/\/+$/, ""))
+      .filter(Boolean),
+  );
+}
+
 export interface UncommittedWorkFilesOptions {
   /**
    * When set, ` D` entries for paths that still exist at this ref are omitted.
@@ -3108,6 +3192,18 @@ export interface UncommittedWorkFilesOptions {
   omitWorktreeDeletionsPresentAtRef?: string;
   /** Passed through to `git status` for untracked directory expansion (#1096). */
   untrackedFiles?: DirtyFilesOptions["untrackedFiles"];
+  /**
+   * Main checkout root. When set, untracked (`??`) paths that RepoOS
+   * provisioned into the worktree are not task work: a symlink resolving into
+   * the main checkout (the inherited `.env`, #1135) or a path main's ignore
+   * rules already cover. Without this a half-removed worktree reports the
+   * RepoOS-created `.env` symlink as leftover work and close-out keeps the
+   * worktree for a file the merge never carried anyway.
+   *
+   * Only `??` entries are eligible — a tracked file's modification is real
+   * work whatever the ignore rules say.
+   */
+  ignoreProvisionedFromMain?: string;
 }
 
 /**
@@ -3134,16 +3230,31 @@ export async function uncommittedWorkFiles(
   const ref = opts.omitWorktreeDeletionsPresentAtRef;
   const statusOpts: DirtyFilesOptions = {};
   if (opts.untrackedFiles) statusOpts.untrackedFiles = opts.untrackedFiles;
-  if (!ref) {
-    const files = await dirtyFiles(root, statusOpts);
-    return files.filter((p) => !isGeneratedOrRuntimePath(p, filter));
-  }
   const entries = await dirtyFilesDetailed(root, statusOpts);
+
+  // RepoOS-provisioned untracked paths are not work: the inherited `.env`
+  // symlink points at the main checkout, and anything main's ignore rules
+  // cover was never going to be carried by the merge either (#1135).
+  const provisioned = new Set<string>();
+  const mainRoot = opts.ignoreProvisionedFromMain;
+  if (mainRoot) {
+    const untracked = entries.filter((e) => e.status === "??").map((e) => e.path);
+    const ignoredInMain = gitIgnoredInMain(mainRoot, untracked);
+    for (const path of untracked) {
+      if (ignoredInMain.has(path.replace(/\/+$/, "")) || isSymlinkIntoMain(root, path, mainRoot)) {
+        provisioned.add(path);
+      }
+    }
+  }
+
   const out: string[] = [];
   for (const e of entries) {
+    if (provisioned.has(e.path)) continue;
     if (isWorktreeOnlyDeletion(e.status)) {
-      const atRef = gitCapture(root, ["cat-file", "-e", `${ref}:${e.path}`]);
-      if (atRef.status === 0) continue;
+      if (ref) {
+        const atRef = gitCapture(root, ["cat-file", "-e", `${ref}:${e.path}`]);
+        if (atRef.status === 0) continue;
+      }
     }
     if (!isGeneratedOrRuntimePath(e.path, filter)) out.push(e.path);
   }

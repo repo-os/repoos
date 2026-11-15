@@ -509,6 +509,17 @@ worktree made it unrecoverable. Cleanup therefore obeys three rules:
    own file, no other task's `work/*.md` drift), so the merge gate then validates the
    commit rather than the raw working tree. Cancel changes nothing.
 
+**RepoOS-provisioned paths are not uncommitted work (#1135).** The untracked check
+ignores what RepoOS itself put in the worktree: a symlink resolving into the main
+checkout (the inherited `.env` from `[worktrees] inheritEnv`, see
+`docs/previews.md`) and any untracked path main's own ignore rules cover
+(`git check-ignore` is run in the main checkout). This matters after a stalled
+worktree removal has already deleted the worktree's `.gitignore`: `.env` then reads
+as `?? .env`, and close-out used to keep the whole worktree and flag the Done card
+Needs input for a link the merge never carried. Only `??` entries are eligible — a
+tracked file's modification is real work whatever the ignore rules say. A genuinely
+untracked change still keeps the worktree and still names its files.
+
 The pre-review gate follows the same rule from the other side
 (`src/server/handoff.ts`): the commit/vacuity gate runs **before** `repoos check`, so
 the tree the check tested is the tree that got committed, and after the check the

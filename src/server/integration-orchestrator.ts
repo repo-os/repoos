@@ -4304,6 +4304,10 @@ export class CloseOutOrchestrator {
       try {
         keptDirtyFiles = await uncommittedWorkFiles(stuck, workFileFilter(this.config), {
           omitWorktreeDeletionsPresentAtRef: featureBranch,
+          // The inherited `.env` symlink is RepoOS's own provisioning, not work
+          // the merge skipped (#1135). Ignore it (and anything else main
+          // gitignores) so a Done card is not held for a file nothing lost.
+          ignoreProvisionedFromMain: root,
         });
       } catch (err) {
         couldNotReadWorktreeDirty = true;
