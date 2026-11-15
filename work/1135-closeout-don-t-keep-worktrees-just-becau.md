@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/closeout-don-t-keep-worktrees-just-becau
 created_at: "2026-11-15T17:07:22Z"
-updated_at: "2026-11-15T17:15:37Z"
+updated_at: "2026-11-15T17:34:07Z"
 ---
 ## Problem
 After `repoos done` merged #1128 (branch commit e23a1db4e is on main), the task card shows Done but also "Needs input": "the worktree for feat/publish-repoos-hub-android-apk-on-github was kept because it had uncommitted changes the merge did not carry: .env".
@@ -29,3 +29,4 @@ Look at the worktree cleanup in the closeout path (the code behind `repoos done`
 - 2026-11-15T17:07:22Z · created · t@t
 - 2026-11-15T17:15:35Z · status inbox→ready
 - 2026-11-15T17:15:37Z · status ready→active, branch
+- 2026-11-15T17:34:07Z · message_queued at 2026-11-15T17:34:07.214Z
