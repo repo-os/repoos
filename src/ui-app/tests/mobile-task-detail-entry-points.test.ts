@@ -219,6 +219,89 @@ describe("phone task detail entry points (#1137)", () => {
     wrapper.unmount();
   });
 
+  it("shows the phone loading shell while a deep-linked task is still resolving", async () => {
+    stubPhoneViewport(390);
+    const router = await phoneRouter("/work?task=0999");
+    const repo = useRepoStore();
+    repo.loading = false;
+    repo.tasks = [];
+    api.mockReturnValue(new Promise(() => {}) as never);
+
+    const wrapper = mount(WorkView, {
+      global: { plugins: [router], stubs: workViewStubs() },
+    });
+    await flushPromises();
+
+    const state = wrapper.get("[data-testid='mobile-task-detail-state']");
+    expect(state.text()).toContain("Loading task…");
+    // The queue is covered by a real surface, not left blank.
+    expect(wrapper.find("[data-testid='mobile-work-queue']").isVisible()).toBe(false);
+    wrapper.unmount();
+  });
+
+  it("shows a not-found shell with Return to Work when a deep-linked task cannot load", async () => {
+    stubPhoneViewport(390);
+    const router = await phoneRouter("/work?task=4040");
+    const repo = useRepoStore();
+    const ui = useUiStore();
+    repo.loading = false;
+    repo.tasks = [];
+    api.mockRejectedValue(new Error("404"));
+
+    const wrapper = mount(WorkView, {
+      global: { plugins: [router], stubs: workViewStubs() },
+    });
+    await flushPromises();
+
+    const state = wrapper.get("[data-testid='mobile-task-detail-state']");
+    expect(state.text()).toContain("Task unavailable");
+    expect(wrapper.find("[data-testid='mobile-work-queue']").isVisible()).toBe(false);
+
+    await state.get("button").trigger("click");
+    await flushPromises();
+
+    expect(ui.active).toBeNull();
+    expect(router.currentRoute.value.query.task).toBeUndefined();
+    expect(wrapper.find("[data-testid='mobile-task-detail-state']").exists()).toBe(false);
+    expect(
+      (wrapper.find("[data-testid='mobile-work-queue']").element as HTMLElement).style.display,
+    ).not.toBe("none");
+    wrapper.unmount();
+  });
+
+  it("ignores a stale deep-link fetch after the user returns to the queue", async () => {
+    stubPhoneViewport(390);
+    const router = await phoneRouter("/work?task=0999");
+    const repo = useRepoStore();
+    const ui = useUiStore();
+    repo.loading = false;
+    repo.tasks = [];
+    let resolveFetch: (value: Task) => void = () => {};
+    api.mockReturnValue(
+      new Promise<Task>((resolve) => {
+        resolveFetch = resolve;
+      }) as never,
+    );
+
+    const wrapper = mount(WorkView, {
+      global: { plugins: [router], stubs: workViewStubs() },
+    });
+    await flushPromises();
+    expect(wrapper.find("[data-testid='mobile-task-detail-state']").exists()).toBe(true);
+
+    // Return to Work before the fetch settles (same path as clearing the URL).
+    await router.replace({ path: "/work", query: {} });
+    resolveFetch(task("0999"));
+    await flushPromises();
+
+    expect(ui.active).toBeNull();
+    expect(wrapper.find("[data-testid='mobile-task-detail-state']").exists()).toBe(false);
+    expect(
+      (wrapper.find("[data-testid='mobile-work-queue']").element as HTMLElement).style.display,
+    ).not.toBe("none");
+    wrapper.unmount();
+  });
+
   it("drops the phone ?task= route when the shared detail is closed", async () => {
     stubPhoneViewport(390);
     const router = await phoneRouter("/work?task=0042");

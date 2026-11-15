@@ -2,7 +2,7 @@
 import { computed, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { storeToRefs } from "pinia";
-import { Columns3, Route, User } from "lucide-vue-next";
+import { Columns3, LoaderCircle, Route, User } from "lucide-vue-next";
 import { api } from "../api";
 import {
   COLUMNS,
@@ -52,7 +52,23 @@ const config = useConfigStore();
 const route = useRoute();
 const { workDir } = storeToRefs(repo);
 const { isNarrow } = useResponsiveLayout();
-const mobileTaskSelected = computed(() => isNarrow.value && typeof route.query.task === "string");
+
+// #1137 review: the phone queue and the phone detail must be derived from the
+// same state, never from the URL alone. A `?task=` param that is still being
+// fetched (or whose fetch failed) has no drawer yet — hiding the queue on the
+// param alone left a blank page and dropped the old loading/not-found shell.
+// `phoneTaskParam` excludes the `new` panel (the drawer owns that), and
+// `mobileDetailVisible` is true only when a real surface (the drawer, the new
+// panel, or the pending/not-found state) is on screen.
+const phoneTaskParam = computed<string | null>(() => {
+  if (!isNarrow.value || typeof route.query.task !== "string") return null;
+  const id = route.query.task.replace(/^#/, "");
+  return id && id !== "new" ? id : null;
+});
+const phoneTaskPending = computed(() => phoneTaskParam.value !== null && ui.active === null);
+const mobileDetailVisible = computed(
+  () => isNarrow.value && (ui.active !== null || ui.isNew || phoneTaskPending.value),
+);
 
 const columnLabels = computed(() => config.columnLabels);
 const DRAFT_COL = computed(() => draftColumnWithLabel(columnLabels.value));
@@ -104,10 +120,18 @@ watch(
   },
   { immediate: true },
 );
+/**
+ * Identifies the newest `?task=` open request. A slow fetch or retry that
+ * resolves after the param changed (or after Return to Work) must not open a
+ * stale task or leave the phone detail stuck on its loading shell.
+ */
+let taskOpenRequest = 0;
 watch(
   () => route.query.task,
   (v, previous) => {
     if (typeof v !== "string" || !v) {
+      taskOpenRequest++;
+      ui.activeDetailLoading = false;
       if (isNarrow.value && typeof previous === "string" && !ui.isNew) ui.close();
       return;
     }
@@ -133,7 +157,13 @@ async function clearTaskParam(): Promise<void> {
   await router.replace({ query });
 }
 
+/** Leave the phone loading/not-found shell and go back to the queue. */
+async function returnToQueue(): Promise<void> {
+  await clearTaskParam();
+}
+
 async function openFromTaskParam(raw: string): Promise<void> {
+  const request = ++taskOpenRequest;
   if (raw === "new") {
     ui.openNewTask();
     await clearTaskParam();
@@ -164,13 +194,18 @@ async function openFromTaskParam(raw: string): Promise<void> {
   } else {
     ui.activeDetailLoading = true;
     try {
-      ui.open(await api<Task>(`/api/tasks/${encodeURIComponent(id)}`));
+      const fetched = await api<Task>(`/api/tasks/${encodeURIComponent(id)}`);
+      // A newer open request (or Return to Work) won while this fetch ran.
+      if (request !== taskOpenRequest) return;
+      ui.open(fetched);
     } catch {
       // Unknown id — leave the param in place so the broken link stays
-      // inspectable, matching the settings ?focus= handler's give-up behavior.
+      // inspectable, and let the phone shell offer Return to Work instead of a
+      // blank page. The request token keeps a stale failure from clearing a
+      // newer request's loading state.
       return;
     } finally {
-      ui.activeDetailLoading = false;
+      if (request === taskOpenRequest) ui.activeDetailLoading = false;
     }
   }
   // #0755: a deep-linked tab wins over the status default set by `open`, so
@@ -387,7 +422,30 @@ function openHeld(task: Task): void {
        so every entry point renders the same component. WorkView only owns the
        queue here; the ?task= watcher still opens the drawer and applies ?tab=. -->
   <template v-if="isNarrow">
-    <MobileWorkQueue v-show="!mobileTaskSelected" />
+    <MobileWorkQueue v-show="!mobileDetailVisible" />
+    <!-- #1137 review: a `?task=` link can point at a task that is still being
+         fetched or is gone. The shared drawer only exists once `ui.active`
+         resolves, so keep the old phone loading/not-found surface here rather
+         than hiding the queue and leaving a blank page. -->
+    <main
+      v-if="phoneTaskPending"
+      class="mobile-detail-state"
+      data-testid="mobile-task-detail-state"
+      role="status"
+    >
+      <LoaderCircle
+        v-if="ui.activeDetailLoading"
+        class="mobile-detail-spinner"
+        aria-hidden="true"
+      />
+      <h1>{{ ui.activeDetailLoading ? "Loading task…" : "Task unavailable" }}</h1>
+      <p v-if="!ui.activeDetailLoading">
+        This task could not be loaded. Return to the queue and try again.
+      </p>
+      <Button v-if="!ui.activeDetailLoading" variant="outline" @click="returnToQueue"
+        >Return to Work</Button
+      >
+    </main>
   </template>
   <div v-else class="work-page">
     <div
@@ -697,5 +755,49 @@ function openHeld(task: Task): void {
 .client-board-link:focus-visible {
   outline: 2px solid var(--cyan);
   outline-offset: 3px;
+}
+</style>
+
+<style scoped>
+/* #1137 review: phone loading/not-found shell for a ?task= link whose drawer
+   has not resolved (or failed to). Matches the queue's typography and the old
+   MobileTaskDetail state surface. */
+.mobile-detail-state {
+  display: grid;
+  justify-items: start;
+  gap: 9px;
+  padding: 30px 0;
+  color: var(--txt);
+}
+.mobile-detail-state h1 {
+  margin: 0;
+  font-size: 22px;
+  line-height: 1.2;
+}
+.mobile-detail-state p {
+  margin: 0 0 8px;
+  color: var(--txt-faint);
+  font-size: 13px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.mobile-detail-state :deep(button) {
+  min-height: 44px;
+}
+.mobile-detail-spinner {
+  width: 20px;
+  height: 20px;
+  color: var(--cyan);
+  animation: mobile-detail-spin 1s linear infinite;
+}
+@keyframes mobile-detail-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mobile-detail-spinner {
+    animation-duration: 2.4s;
+  }
 }
 </style>
