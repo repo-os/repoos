@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/repoos-hub-mobile-hold-to-drag-server-re
 created_at: "2026-11-15T14:39:13Z"
-updated_at: "2026-11-15T15:27:03Z"
+updated_at: "2026-11-15T15:31:23Z"
 ---
 ## Problem
 Feedback from Nick after testing the #1127 build on his Nothing Phone (3a):
@@ -31,6 +31,9 @@ Feedback from Nick after testing the #1127 build on his Nothing Phone (3a):
 - A server without the endpoint shows the friendly message above, not "unexpected reply".
 - Component tests are updated (hub-edit-toggle tests are removed or replaced), and `just build-android` passes.
 
+## Verification notes
+Hold-to-drag feel, haptics and iOS gesture behavior are covered by code and component tests, not a real-device run; a quick check on Nick's phone is a human step. This repo has no preview target for the Hub app, so handoff screenshots will show the desktop app rather than the mobile picker — an evidence gap, not a missing change. `just build-android` passed on this branch.
+
 ## Activity
 
 - 2026-11-15T14:39:13Z · created · t@t
@@ -39,3 +42,4 @@ Feedback from Nick after testing the #1127 build on his Nothing Phone (3a):
 - 2026-11-15T14:39:33Z · status ready→active, needs_input, branch
 - 2026-11-15T15:18:38Z · body
 - 2026-11-15T15:27:03Z · body
+- 2026-11-15T15:31:23Z · body: Verification notes (added)
