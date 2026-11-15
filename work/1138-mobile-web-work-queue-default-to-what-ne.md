@@ -11,7 +11,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/mobile-web-work-queue-default-to-what-ne
 created_at: "2026-11-15T17:24:06Z"
-updated_at: "2026-11-15T20:07:24Z"
+updated_at: "2026-11-15T20:07:37Z"
 ---
 ## Problem
 Nick: on a phone it's "really hard to find the right task and do anything normal". On main `23dc737`, the mobile Work queue (MobileWorkQueue.vue):
@@ -94,3 +94,5 @@ Nick: on a phone it's "really hard to find the right task and do anything normal
 - 2026-11-15T20:02:09Z · body
 - 2026-11-15T20:05:50Z · body
 - 2026-11-15T20:07:24Z · body: Verification (added)
+- 2026-11-15T20:07:24Z · message_queued at 2026-11-15T20:07:24.248Z
+- 2026-11-15T20:07:37Z · handoff_deferred: 1 queued message(s) must be read before review
