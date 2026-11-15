@@ -64,3 +64,4 @@ There is no UI change in this task: users receive a notarized, stapled DMG, whil
 - 2026-11-15T21:37:02Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: Waiting for the scoped check to complete before requesting handoff. · stderr: (empty)
 - 2026-11-15T21:43:09Z · body
 - 2026-11-15T21:43:52Z · status active→review
+- 2026-11-15T21:43:52Z · message_queued at 2026-11-15T21:43:52.570Z
