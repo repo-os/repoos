@@ -15,7 +15,7 @@ branch: feat/repoos-hub-app-native-looking-server-pic
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-14T16:53:29Z"
-updated_at: "2026-11-15T04:45:54Z"
+updated_at: "2026-11-15T04:46:06Z"
 last_close_out_gate_ms: 487431
 last_close_out_gate_at: "2026-11-15T04:45:54.554Z"
 review_passes: 2
@@ -216,4 +216,4 @@ Read docs/mobile-architecture.md, docs/adr/0011-mobile-web-ui.md (the native she
 - 2026-11-15T01:50:57Z · note: review pass 2: good to go
 - 2026-11-15T02:00:17Z · needs_input
 - 2026-11-15T04:45:54Z · close-out gate completed in 487s
-
+- 2026-11-15T04:46:06Z · status done→done, release:success
