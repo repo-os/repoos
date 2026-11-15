@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/allowlist-groups-projects-that-opt-into-
 created_at: "2026-11-15T15:20:04Z"
-updated_at: "2026-11-15T18:05:04Z"
+updated_at: "2026-11-15T18:05:06Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -66,3 +66,4 @@ Start from how `budget.allowlist` is read and merged today, `collectTailnetServe
 - 2026-11-15T18:03:17Z · message_queued at 2026-11-15T18:03:17.089Z
 - 2026-11-15T18:05:03Z · note: review pass 1: needs some work
 - 2026-11-15T18:05:04Z · status review→active
+- 2026-11-15T18:05:06Z · CTO nudge: held — an undelivered message is already queued
