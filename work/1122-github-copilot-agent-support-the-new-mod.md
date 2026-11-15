@@ -12,7 +12,7 @@ branch: feat/github-copilot-agent-support-the-new-mod
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-14T17:41:02Z"
-updated_at: "2026-11-15T02:00:15Z"
+updated_at: "2026-11-15T04:51:45Z"
 last_close_out_gate_ms: 84276
 last_close_out_gate_at: "2026-11-15T02:00:00.341Z"
 review_passes: 2
@@ -103,3 +103,4 @@ Read work/1088-*.md and src/core/copilot-auto-tier.ts first. Copilot usage is bi
 - 2026-11-15T01:42:15Z · note: review pass 2: good to go
 - 2026-11-15T02:00:00Z · close-out gate completed in 84s
 - 2026-11-15T02:00:15Z · status done→done, release:success
+- 2026-11-15T04:51:45Z · message_dropped: 1 queued message(s) discarded — task is done
