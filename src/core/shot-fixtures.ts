@@ -192,6 +192,10 @@ export const SHOT_PREVIEW_FIXTURE_IDS = [
   // control-plane build rather than this branch's), and these rows are a plain
   // list screen whose steps open and close their own dialog.
   "agents:scheduledSeeded",
+  // #1133 — deterministic last runs on the Agents page, so a capture shows the
+  // inline status dots (a current failure, a healthy run and a previous setup)
+  // without depending on the preview board's session history.
+  "agents:lastRuns",
   "reminders:due",
   // #1071 — Releases page with the release-email card in a terminal state, so a
   // capture proves the sent/failed status row and the Resend button without a

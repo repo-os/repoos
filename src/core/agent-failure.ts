@@ -28,6 +28,15 @@ const NETWORK =
 const RAW_CLI_CAP = 8000;
 const SUMMARY_LINE_MAX = 120;
 const CLI_DETAIL_MARKER = " (CLI: ";
+const FALLBACK_SUFFIX = "Open Raw CLI error for details.";
+/** Fix sentences every classified failure ends with (see classifyAgentFailure). */
+const CONCISE_FIX_SUFFIXES = [
+  "Choose another model on the Agents page.",
+  "Add balance, or pick another model.",
+  "Wait for the provider limit to reset, then retry.",
+  "Check this computer's network connection, then retry.",
+];
+const AUTH_FIX_SUFFIX = /Re-authenticate .+ on this computer\.$/;
 
 function cliName(cli: string): string {
   const names: Record<string, string> = {
@@ -154,11 +163,37 @@ export function classifyAgentFailure(detail: string, cli = ""): AgentFailureReas
 }
 
 export function formatAgentFailure(detail: string, cli = ""): string {
+  const text = stripAnsi(detail).trim();
+  // A stored detail may already carry a CLI disclosure tail (the task's
+  // needs-input text and the old last-runs API both stored formatted output).
+  // Re-format the raw tail, never the whole formatted sentence, or the summary
+  // gets appended to itself (#1133).
+  const existing = splitAgentFailureDetail(text);
+  if (existing.raw !== null) return formatRawAgentFailure(existing.raw, cli);
+  // Older rows stored only the concise summary. Re-formatting it would repeat
+  // the sentence inside a new "(CLI: …)" tail; keep it as written.
+  if (isStoredConciseSummary(text)) return text;
+  return formatRawAgentFailure(text, cli);
+}
+
+function isStoredConciseSummary(text: string): boolean {
+  return (
+    text.endsWith(FALLBACK_SUFFIX) ||
+    AUTH_FIX_SUFFIX.test(text) ||
+    CONCISE_FIX_SUFFIXES.some((suffix) => text.endsWith(suffix))
+  );
+}
+
+function formatRawAgentFailure(detail: string, cli: string): string {
   const raw = capRawCli(stripAnsi(detail).trim());
+  // The raw text may itself be a concise summary from an earlier pass (a
+  // double-formatted stored detail whose tail was the summary). Wrapping it
+  // again would repeat the sentence inside a new tail — return it as-is.
+  if (isStoredConciseSummary(raw)) return raw;
   const reason = classifyAgentFailure(raw, cli);
   if (reason) return `${reason.summary} ${reason.fix}${CLI_DETAIL_MARKER}${raw})`;
   const summary = pickFallbackSummary(raw, cli);
-  return `${summary} Open Raw CLI error for details.${CLI_DETAIL_MARKER}${raw})`;
+  return `${summary} ${FALLBACK_SUFFIX}${CLI_DETAIL_MARKER}${raw})`;
 }
 
 /** Separate the concise guidance from the retained CLI tail for disclosure UI. */

@@ -45,6 +45,8 @@ describe("agent last runs", () => {
         agent: "engineer",
         status: "errored",
         errorReason: "Cannot use this model: composer-2.5",
+        codingAgent: "cursor",
+        model: "composer-2.5",
       }),
     ]);
   });

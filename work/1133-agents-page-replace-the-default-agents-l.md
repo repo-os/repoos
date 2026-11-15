@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 662670
-last_close_out_gate_at: "2026-11-15T19:48:41.904Z"
 id: "1133"
 title: "Agents page: replace the Default agents last-runs log with a per-agent status dot"
 type: feature
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: 57c82ed4afe7c2d70733bdf22e9f7b839cb4a5c1
 assigned_to: ai
 created_by: t@t
 branch: feat/agents-page-replace-the-default-agents-l
 created_at: "2026-11-15T15:20:08Z"
 updated_at: "2026-11-15T19:48:41Z"
+last_close_out_gate_ms: 662670
+last_close_out_gate_at: "2026-11-15T19:48:41.904Z"
 review_passes: 1
 handoff_signal_retry_count: 1
 ---
