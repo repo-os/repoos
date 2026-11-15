@@ -65,3 +65,4 @@ There is no UI change in this task: users receive a notarized, stapled DMG, whil
 - 2026-11-15T21:43:09Z · body
 - 2026-11-15T21:43:52Z · status active→review
 - 2026-11-15T21:43:52Z · message_queued at 2026-11-15T21:43:52.570Z
+- 2026-11-15T21:43:52Z · note: shots: skipped — the diff (4 changed paths) touches no capture target's globs — no UI change to capture
