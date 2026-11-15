@@ -11,7 +11,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/mobile-web-task-detail-one-full-touch-de
 created_at: "2026-11-15T17:24:03Z"
-updated_at: "2026-11-15T22:42:51Z"
+updated_at: "2026-11-15T22:45:40Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -160,3 +160,4 @@ On a phone there's a single task detail, whichever way it was opened (card, sear
 - 2026-11-15T22:42:38Z · handoff failed · remote validation failed: test failure: tests/remote-host-pool.test.ts > host-side lock (server + standalone CLI share one limit) > lets a holder expire the waiter with a clear timeout instead of a red gate, tests/remote-host-pool.test.ts > host-side lock (server + standalone CLI share one limit) > breaks an orphaned lock dir within the wait budget instead of timing out on it (#0521 review) on thinkpad — fix it in the feature branch and re-run the gate
 - 2026-11-15T22:42:38Z · message_queued at 2026-11-15T22:42:38.898Z
 - 2026-11-15T22:42:51Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-15T22:45:40Z · watchdog: restarting engineer because a queued message waited 3m with no live process
