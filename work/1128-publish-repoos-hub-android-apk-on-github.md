@@ -129,3 +129,4 @@ The Tiao app (a separate repo) is the reference for how the APK should be shared
 - 2026-11-15T16:09:07Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-15T16:09:50Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-15T16:12:10Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-15T16:12:10Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 130) · last assistant: The last two failures are unrelated remote-runner flakes (agent-review, serve-guard, host-pool timing tests) — different tests each run. I’m running the gate locally now to confirm the merged tree itself is green. · stderr: (empty)
