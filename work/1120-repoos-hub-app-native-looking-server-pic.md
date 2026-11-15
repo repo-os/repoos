@@ -225,3 +225,4 @@ Read docs/mobile-architecture.md, docs/adr/0011-mobile-web-ui.md (the native she
 - 2026-11-15T01:11:46Z · note: handoff requested (cli)
 - 2026-11-15T01:12:40Z · message_delivered: 1 message(s)
 - 2026-11-15T01:12:53Z · message_queued at 2026-11-15T01:12:53.422Z
+- 2026-11-15T01:12:53Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: gate exit 2 on bee — fix it in the feature branch and re-run the gate
