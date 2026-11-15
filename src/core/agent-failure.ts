@@ -186,6 +186,10 @@ function isStoredConciseSummary(text: string): boolean {
 
 function formatRawAgentFailure(detail: string, cli: string): string {
   const raw = capRawCli(stripAnsi(detail).trim());
+  // The raw text may itself be a concise summary from an earlier pass (a
+  // double-formatted stored detail whose tail was the summary). Wrapping it
+  // again would repeat the sentence inside a new tail — return it as-is.
+  if (isStoredConciseSummary(raw)) return raw;
   const reason = classifyAgentFailure(raw, cli);
   if (reason) return `${reason.summary} ${reason.fix}${CLI_DETAIL_MARKER}${raw})`;
   const summary = pickFallbackSummary(raw, cli);

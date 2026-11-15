@@ -121,6 +121,15 @@ describe("classifyAgentFailure", () => {
     });
   });
 
+  it("does not repeat a summary stored as the CLI tail of another formatted summary", () => {
+    const sentence = "OpenCode exited with an error. Open Raw CLI error for details.";
+    const stored = `${sentence} (CLI: ${sentence})`;
+    const formatted = formatAgentFailure(stored, "opencode");
+    expect(formatted).toBe(sentence);
+    expect(formatted.match(/OpenCode exited with an error/g)).toHaveLength(1);
+    expect(formatted.match(/Open Raw CLI error for details/g)).toHaveLength(1);
+  });
+
   it("keeps an already-concise classified summary unchanged", () => {
     const stored = "OpenCode is out of credit. Add balance, or pick another model.";
     expect(formatAgentFailure(stored, "opencode")).toBe(stored);
