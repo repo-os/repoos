@@ -43,6 +43,11 @@ bun run build    # static build to .vitepress/dist
 bun run preview  # serve the built site
 ```
 
+`dev` has a `predev` step that runs `bun install --frozen-lockfile` for this
+standalone package. Task previews execute `bun run dev` in a fresh remote
+checkout, where the repo-root install does not cover `user-docs/`; without it
+the preview never becomes ready and a handoff capture fails.
+
 ## Theme switcher
 
 The docs site uses the same two-axis model as [repoos.org](https://repoos.org):

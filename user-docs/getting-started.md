@@ -442,6 +442,8 @@ runs again before anything merges.
 
 ## Where to go next
 
+- [RepoOS Hub for Mac](/macos-hub) and [RepoOS Hub for Android](/android-hub) —
+  native companions for working across several RepoOS servers.
 - [CLI reference](/cli) — every command.
 - [Configuration](/configuration) — `repoos.toml` and environment variables.
 - [Concepts](/concepts) — how tasks, worktrees and the lifecycle fit together.

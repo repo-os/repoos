@@ -122,6 +122,11 @@ bun run build    # typecheck (vue-tsc) + static build to dist/
 bun run preview  # serve the built site
 ```
 
+`dev` has a `predev` step that runs `bun install --frozen-lockfile` for this
+standalone package. Task previews execute `bun run dev` in a fresh remote
+checkout, where the repo-root install does not cover `landing/`; without it the
+preview never becomes ready and a handoff capture fails.
+
 ## Deploy (Cloudflare)
 
 Not set up as part of building the site — the Cloudflare project, DNS and
