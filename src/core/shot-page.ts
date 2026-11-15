@@ -596,17 +596,18 @@ export async function captureShotPage(
       if (h.matched === 0 && onHighlightMiss) onHighlightMiss(h.selector, entry.route);
     }
     if (entry.selector) {
-      const element = page.locator(entry.selector) as unknown as {
-        count?(): Promise<number>;
-        screenshot(options: { fullPage?: boolean; timeout?: number }): Promise<Buffer>;
-      };
-      if (typeof element.count === "function") {
-        const n = await element.count();
+      const base = page.locator(entry.selector);
+      const countable = base as unknown as { count?(): Promise<number> };
+      if (typeof countable.count === "function") {
+        const n = await countable.count();
         if (n === 0) {
           if (onSelectorMiss) onSelectorMiss(entry.selector, entry.route);
           return await page.screenshot({ fullPage: options.fullPage });
         }
       }
+      const element = (typeof base.first === "function" ? base.first() : base) as unknown as {
+        screenshot(options: { fullPage?: boolean; timeout?: number }): Promise<Buffer>;
+      };
       return await element.screenshot({
         fullPage: options.fullPage,
         timeout: SHOT_SELECTOR_TIMEOUT_MS,

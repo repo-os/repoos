@@ -1,15 +1,14 @@
 ---
-last_close_out_gate_ms: 487431
-last_close_out_gate_at: "2026-11-15T04:45:54.554Z"
 id: "1120"
 title: "RepoOS Hub app: native-looking server picker, web color themes with light/dark, better icons, and a Settings page"
 type: feature
-status: review
+status: done
 human_step_override: Cleared needs-human-step flag (sticky until acceptance criteria change)
 human_step_override_key: f531bd01
 paths: [repoos.toml]
 priority: p2
 area: mobile
+merged_commit: 1518ad57ade6df2b8e22b803ba96ab7376425be7
 assigned_to: ai
 created_by: t@t
 branch: feat/repoos-hub-app-native-looking-server-pic
@@ -17,6 +16,8 @@ cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-14T16:53:29Z"
 updated_at: "2026-11-15T04:45:54Z"
+last_close_out_gate_ms: 487431
+last_close_out_gate_at: "2026-11-15T04:45:54.554Z"
 review_passes: 2
 review_rounds: 1
 last_check_failure: "repoos check at 2026-11-14T21:07:45.909Z: repoos check failed: ui verification failed (2 issue(s)): [missing-target] Hub server list (Android, dark classic) (target \"default\"): highlight [data-testid=\"hub-server-list\"] matched nothing on /?fixture=many&platform=android&appearance=dark&theme=classic (http://127.0.0.1:41679/?fixture=many&platform=android&appearance=dark&theme=classic); [missing-target] Hub Settings (iOS, light gruvbox) (target \"default\"): highlight [data-testid=\"hub-settings\"] matched nothing on /?fixture=settings&platfor… (truncated)"

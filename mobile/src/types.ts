@@ -32,3 +32,6 @@ export interface DeviceLockResult {
   supported: boolean;
   available: boolean;
 }
+
+/** Last-known reachability for a saved server (picker only — not persisted). */
+export type ReachabilityState = "unknown" | "checking" | "reachable" | "unreachable";
