@@ -141,3 +141,4 @@ The Tiao app (a separate repo) is the reference for how the APK should be shared
 - 2026-11-15T16:19:55Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-15T16:23:00Z · queued message undelivered for 4m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-15T16:23:01Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 130) · last assistant: The scoped gate is green now. I’m refreshing the shot evidence against the merged tree, then I’ll hand off. · stderr: (empty)
+- 2026-11-15T16:23:01Z · message_delivered: 1 message(s)
