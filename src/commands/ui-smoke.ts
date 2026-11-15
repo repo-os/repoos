@@ -448,11 +448,16 @@ async function runUISmokeTest(): Promise<void> {
           const drawer = document.querySelector(".drawer");
           if (!(drawer instanceof HTMLElement)) return false;
           const r = drawer.getBoundingClientRect();
-          return r.width > 0 && r.height > 0;
+          if (r.width <= 0 || r.height <= 0) return false;
+          // The drawer slides in over 280ms. Measuring mid-animation reports
+          // the translated controls as off-screen, which on a loaded runner
+          // used to fail this check even though the settled layout is correct
+          // (#1137). Wait for the transform to settle before measuring.
+          return getComputedStyle(drawer).transform === "none";
         },
         { timeout: 10_000 },
       );
-      await page.waitForTimeout(400);
+      await page.waitForTimeout(250);
 
       const detail = await page.evaluate(() => {
         const rect = (el: Element | null) => {
@@ -460,39 +465,51 @@ async function runUISmokeTest(): Promise<void> {
           const r = el.getBoundingClientRect();
           const s = getComputedStyle(el);
           return {
-            left: r.left,
-            right: r.right,
-            width: r.width,
-            height: r.height,
+            left: Math.round(r.left * 10) / 10,
+            right: Math.round(r.right * 10) / 10,
+            width: Math.round(r.width * 10) / 10,
+            height: Math.round(r.height * 10) / 10,
             display: s.display,
             label: el.getAttribute("aria-label"),
           };
         };
         const strip = document.querySelector(".drawer-tabs");
+        const closes = document.querySelectorAll('[data-test-id="task-detail-close"]');
         return {
           scrollWidth: document.body.scrollWidth,
           innerWidth: window.innerWidth,
+          scrollX: window.scrollX,
+          drawer: rect(document.querySelector(".drawer")),
           back: rect(document.querySelector(".drawer-mobile-back")),
-          close: rect(document.querySelector(".drawer-head .close-x")),
+          close: rect(closes[0] ?? null),
+          closeCount: closes.length,
           hasTabStrip: strip instanceof HTMLElement,
           activeTab:
             document.querySelector(".drawer-tabs .tab-btn.active")?.textContent?.trim() ?? null,
         };
       });
+      const geometry = JSON.stringify(detail);
       const within = (r: { left: number; right: number } | null): boolean =>
         r !== null && r.left >= 0 && r.right <= detail.innerWidth + 1;
 
       if (detail.scrollWidth > detail.innerWidth) {
         throw new Error(
-          `phone task detail overflows at 360px: body scrollWidth ${detail.scrollWidth} > innerWidth ${detail.innerWidth} (#1137)`,
+          `phone task detail overflows at 360px: body scrollWidth ${detail.scrollWidth} > innerWidth ${detail.innerWidth} (${geometry}) (#1137)`,
+        );
+      }
+      if (detail.closeCount !== 1) {
+        throw new Error(
+          `expected exactly one task-detail close control, found ${detail.closeCount} (${geometry}) (#1137)`,
         );
       }
       if (!detail.back || detail.back.display === "none" || !within(detail.back)) {
-        throw new Error("phone task detail Back control is missing or off-screen at 360px (#1137)");
+        throw new Error(
+          `phone task detail Back control is missing or off-screen at 360px (${geometry}) (#1137)`,
+        );
       }
       if (detail.back.width < 44 || detail.back.height < 44 || !detail.back.label) {
         throw new Error(
-          "phone task detail Back control must be 44x44 with an accessible name (#1137)",
+          `phone task detail Back control must be 44x44 with an accessible name (${geometry}) (#1137)`,
         );
       }
       if (
@@ -503,7 +520,7 @@ async function runUISmokeTest(): Promise<void> {
         !detail.close.label
       ) {
         throw new Error(
-          "phone task detail close control must be on-screen, 44x44 and labelled (#1137)",
+          `phone task detail close control must be on-screen, 44x44 and labelled (${geometry}) (#1137)`,
         );
       }
       if (!detail.hasTabStrip) {

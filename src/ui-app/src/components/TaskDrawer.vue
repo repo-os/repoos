@@ -5591,7 +5591,11 @@ watch(
               {{ hiddenAlertCount }} alert{{ hiddenAlertCount === 1 ? "" : "s" }}
             </button>
           </div>
-          <DialogClose class="close-x" aria-label="Close task detail">
+          <DialogClose
+            class="close-x"
+            data-test-id="task-detail-close"
+            aria-label="Close task detail"
+          >
             <X class="size-[15px]" />
           </DialogClose>
         </div>
