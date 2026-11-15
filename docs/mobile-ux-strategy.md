@@ -82,7 +82,13 @@ visibility. Mobile Work should optimize for scanning and touch interaction:
   sections first, done tasks behind their own filter, and held, archived and
   human tasks reachable from the queue;
 - paginated sections so a board with a thousand tasks still paints quickly;
-- task details presented as a mobile navigation page or bottom sheet;
+- one full-screen task detail for every entry point (queue card, Search, the
+  notices bell, `?task=<id>&tab=…` deep links and after create): the shared
+  TaskDrawer in its phone mode, with Back to the queue, a state-aware status
+  line and primary action, scrollable Task/PM/Review/Changes/Activity tabs and
+  editable metadata;
+- 44px minimum touch targets and 16px inputs/textareas, so iOS Safari does not
+  zoom on focus and drawer tabs stay reachable at 360px;
 - no desktop-only hover actions or tiny icon buttons.
 
 The mobile view should reuse task data and mutations from the shared stores,
