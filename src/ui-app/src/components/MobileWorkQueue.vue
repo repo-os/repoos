@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { Plus, RotateCw } from "lucide-vue-next";
+import { Plus, RotateCw, Search, X } from "lucide-vue-next";
 import { useRepoStore } from "../stores/repo";
 import { useUiStore } from "../stores/ui";
 import { relTime } from "../lib/time";
+import { parseTaskAreas } from "../../../core/areas.js";
 import type { Task } from "../types";
 import Button from "./ui/button.vue";
 import Select from "./ui/select/root.vue";
@@ -18,25 +19,334 @@ const repo = useRepoStore();
 const ui = useUiStore();
 const route = useRoute();
 const router = useRouter();
-const statuses = ["all", "draft", "inbox", "ready", "active", "review", "done"] as const;
-const status = ref<(typeof statuses)[number]>("all");
-const sort = ref<"newest" | "oldest">("newest");
+
+/**
+ * The queue's views. `attention` is the default: it is a *grouping* view
+ * (Needs you / Review / Active / Ready / Inbox) rather than a status filter, so
+ * a phone opens on the work that still needs a person instead of 1,000 done
+ * cards. The parked lists (Held / Archived / Human) are real views too, so a
+ * task the old queue filtered out forever is reachable from here (#1138).
+ */
+const statuses = [
+  "attention",
+  "all",
+  "needs",
+  "draft",
+  "inbox",
+  "ready",
+  "active",
+  "review",
+  "done",
+  "held",
+  "archived",
+  "human",
+] as const;
+type QueueStatus = (typeof statuses)[number];
+
+const STATUS_LABELS: Record<QueueStatus, string> = {
+  attention: "Needs attention",
+  all: "All statuses",
+  needs: "Needs you",
+  draft: "Draft",
+  inbox: "Inbox",
+  ready: "Ready",
+  active: "Active",
+  review: "Review",
+  done: "Done",
+  held: "Held",
+  archived: "Archived",
+  human: "Human",
+};
+
+/** Status groups shown by the grouped views, in the order a phone needs them. */
+const STATUS_SECTIONS = ["review", "active", "ready", "inbox", "draft", "done"] as const;
+const PRIORITIES = ["p0", "p1", "p2", "p3"] as const;
+const URL_KEYS = ["status", "q", "priority", "area", "story", "mine", "sort"] as const;
+
+/** Cards rendered per section before "Show more". With the six grouped
+ *  sections this keeps the first paint under ~90 cards even on a 1,000-task
+ *  board, while still letting the reader expand one section deliberately. */
+const PAGE_SIZE = 12;
+
+function stringParam(raw: unknown): string {
+  return typeof raw === "string" ? raw : "";
+}
+
+function readStatus(raw: unknown): QueueStatus {
+  const value = stringParam(raw);
+  return (statuses as readonly string[]).includes(value) ? (value as QueueStatus) : "attention";
+}
+
+const initial = route.query;
+const status = ref<QueueStatus>(readStatus(initial.status));
+const query = ref(stringParam(initial.q));
+const priority = ref(
+  PRIORITIES.includes(stringParam(initial.priority) as (typeof PRIORITIES)[number])
+    ? stringParam(initial.priority)
+    : "",
+);
+const area = ref(stringParam(initial.area) || "any");
+const story = ref(stringParam(initial.story) || "any");
+const mine = ref(initial.mine === "1");
+const sort = ref<"newest" | "oldest">(initial.sort === "oldest" ? "oldest" : "newest");
 const refreshError = ref("");
 const refreshing = ref(false);
-const tasks = computed(() => {
-  const visible = repo.tasks.filter((task) => !task.isArchived && !task.isHeld);
-  return visible
-    .filter((task) => status.value === "all" || task.status === status.value)
+/** Per-section "Show more" page count, reset whenever the filters change. */
+const page = ref<Record<string, number>>({});
+
+function taskAreaNames(task: Task): string[] {
+  return parseTaskAreas(task.areas?.length ? task.areas : task.area);
+}
+
+/** Shared queue search (#1138): id, title and area, the three things a phone
+ *  user scans a card by. Uses the same canonical area parser as global search. */
+function matchesQuery(task: Task, needle: string): boolean {
+  if (task.id.toLowerCase().includes(needle)) return true;
+  if (task.title.toLowerCase().includes(needle)) return true;
+  return taskAreaNames(task).some((name) => name.toLowerCase().includes(needle));
+}
+
+/** Reuse the board's selectors instead of re-deriving held/human membership. */
+const heldIds = computed(() => new Set(repo.heldTasks.map((task) => task.id)));
+
+/** "Needs you" is the board's bell list, restated for the queue: a human is
+ *  assigned it, it is waiting on an answer, or a hold is active. Archived
+ *  tasks are parked and never demand action. */
+function needsYou(task: Task): boolean {
+  if (task.isArchived) return false;
+  return (
+    (task.assignee === "human" && task.status !== "done") ||
+    (task.needsInput && task.status !== "done") ||
+    heldIds.value.has(task.id)
+  );
+}
+
+/**
+ * The pool a view starts from, before search and quick filters. Archived tasks
+ * are reachable only through their own view; done tasks never show in the
+ * default attention view (the point of #1138: 1,035 done cards were burying the
+ * one review task).
+ */
+const basePool = computed<Task[]>(() => {
+  const all = repo.tasks;
+  switch (status.value) {
+    case "held":
+      return repo.heldTasks;
+    case "archived":
+      return repo.archivedTasks;
+    case "human":
+      return repo.humanTasks;
+    case "needs":
+      return all.filter(needsYou);
+    case "all":
+      return all.filter((task) => !task.isArchived);
+    case "attention":
+      return all.filter((task) => !task.isArchived && task.status !== "done");
+    default:
+      return all.filter((task) => !task.isArchived && task.status === status.value);
+  }
+});
+
+const areaOptions = computed(() => {
+  const names = new Map<string, string>();
+  for (const task of repo.tasks) {
+    for (const name of taskAreaNames(task)) {
+      const key = name.toLowerCase();
+      if (name && !names.has(key)) names.set(key, name);
+    }
+  }
+  return [...names.values()].sort((a, b) => a.localeCompare(b));
+});
+
+const storyOptions = computed(() => {
+  const names = new Set<string>();
+  for (const task of repo.tasks) if (task.story) names.add(task.story);
+  return [...names].sort((a, b) => a.localeCompare(b));
+});
+
+const filtered = computed<Task[]>(() => {
+  const needle = query.value.trim().toLowerCase().replace(/^#/, "");
+  const wantedArea = area.value.toLowerCase();
+  const wantedStory = story.value;
+  return basePool.value
+    .filter((task) => {
+      if (priority.value && task.priority !== priority.value) return false;
+      if (wantedArea && wantedArea !== "any") {
+        if (!taskAreaNames(task).some((name) => name.toLowerCase() === wantedArea)) return false;
+      }
+      if (wantedStory && wantedStory !== "any" && (task.story ?? "") !== wantedStory) return false;
+      if (mine.value && task.assignee !== "human") return false;
+      return !needle || matchesQuery(task, needle);
+    })
     .sort((a, b) => {
       const order = (a.updated_at ?? "").localeCompare(b.updated_at ?? "");
       return sort.value === "newest" ? -order : order;
     });
 });
 
-function resetQueue(): void {
-  status.value = "all";
-  sort.value = "newest";
+interface QueueSection {
+  id: string;
+  label: string;
+  tasks: Task[];
+  visible: Task[];
+  limit: number;
 }
+
+const sections = computed<QueueSection[]>(() => {
+  const list = filtered.value;
+  const grouped = status.value === "attention" || status.value === "all";
+  const groups: { id: string; label: string; tasks: Task[] }[] = [];
+
+  if (grouped) {
+    const needs: Task[] = [];
+    const buckets = new Map<string, Task[]>();
+    for (const task of list) {
+      if (needsYou(task)) {
+        needs.push(task);
+        continue;
+      }
+      const bucket = buckets.get(task.status);
+      if (bucket) bucket.push(task);
+      else buckets.set(task.status, [task]);
+    }
+    if (needs.length) groups.push({ id: "needs", label: STATUS_LABELS.needs, tasks: needs });
+    for (const id of STATUS_SECTIONS) {
+      // Done is behind its own filter in the default view; "All statuses" shows
+      // it last, after every task that needs attention.
+      if (status.value === "attention" && id === "done") continue;
+      const tasks = buckets.get(id);
+      if (tasks?.length) {
+        groups.push({ id, label: STATUS_LABELS[id], tasks });
+      }
+    }
+  } else {
+    groups.push({ id: status.value, label: STATUS_LABELS[status.value], tasks: list });
+  }
+
+  return groups.map((group) => {
+    const limit = page.value[group.id] ?? PAGE_SIZE;
+    return { ...group, limit, visible: group.tasks.slice(0, limit) };
+  });
+});
+
+const matchingCount = computed(() => filtered.value.length);
+const renderedCount = computed(() =>
+  sections.value.reduce((total, section) => total + section.visible.length, 0),
+);
+const countLabel = computed(() => {
+  if (!matchingCount.value) return "No matching tasks";
+  const noun = matchingCount.value === 1 ? "task" : "tasks";
+  if (renderedCount.value < matchingCount.value) {
+    return `${renderedCount.value} of ${matchingCount.value} ${noun}`;
+  }
+  return `${matchingCount.value} ${noun}`;
+});
+
+const filtersActive = computed(
+  () =>
+    status.value !== "attention" ||
+    sort.value !== "newest" ||
+    query.value.trim() !== "" ||
+    priority.value !== "" ||
+    area.value !== "any" ||
+    story.value !== "any" ||
+    mine.value,
+);
+
+const emptyTitle = computed(() => {
+  if (status.value === "attention") return "Nothing needs attention";
+  if (status.value === "all") return "No tasks";
+  return `No ${STATUS_LABELS[status.value].toLowerCase()} tasks`;
+});
+
+const emptyHint = computed(() => {
+  if (filtersActive.value) return "Clear the filters to see the full queue.";
+  if (status.value === "attention") {
+    return "No open tasks are waiting on you. Show all statuses to see done work.";
+  }
+  return "Nothing to show yet.";
+});
+
+function showMore(section: QueueSection): void {
+  page.value = { ...page.value, [section.id]: section.limit + PAGE_SIZE };
+}
+
+function togglePriority(value: string): void {
+  priority.value = priority.value === value ? "" : value;
+}
+
+function toggleParked(value: QueueStatus): void {
+  status.value = status.value === value ? "attention" : value;
+}
+
+function resetQueue(): void {
+  status.value = "attention";
+  sort.value = "newest";
+  query.value = "";
+  priority.value = "";
+  area.value = "any";
+  story.value = "any";
+  mine.value = false;
+  page.value = {};
+}
+
+/** Reset paging whenever the result set changes under the reader. */
+watch([status, query, priority, area, story, mine, sort], () => {
+  page.value = {};
+});
+
+function desiredQuery(): Record<string, string> {
+  const next: Record<string, string> = {};
+  if (status.value !== "attention") next.status = status.value;
+  if (query.value) next.q = query.value;
+  if (priority.value) next.priority = priority.value;
+  if (area.value !== "any") next.area = area.value;
+  if (story.value !== "any") next.story = story.value;
+  if (mine.value) next.mine = "1";
+  if (sort.value !== "newest") next.sort = sort.value;
+  return next;
+}
+
+function currentQueueParams(): Record<string, string> {
+  const current: Record<string, string> = {};
+  for (const key of URL_KEYS) current[key] = stringParam(route.query[key]);
+  return current;
+}
+
+// Filter + search state lives in the URL (#1138) so `/work?status=review` opens
+// the review view and reload/Back keep the reader where they were. `replace`
+// (not `push`) keeps typing a search from stacking one history entry per key.
+watch([status, query, priority, area, story, mine, sort], () => {
+  const desired = desiredQuery();
+  const current = currentQueueParams();
+  if (URL_KEYS.every((key) => (desired[key] ?? "") === current[key])) return;
+  const next: Record<string, string | string[]> = {};
+  for (const [key, value] of Object.entries(route.query)) {
+    if (typeof value === "string") next[key] = value;
+    else if (Array.isArray(value))
+      next[key] = value.filter((v): v is string => typeof v === "string");
+  }
+  for (const key of URL_KEYS) delete next[key];
+  Object.assign(next, desired);
+  void router.replace({ query: next });
+});
+
+// A Back/forward or an external link changes the URL without touching our
+// refs — adopt it, then let the write-back watcher settle on the same values.
+watch(
+  () => currentQueueParams(),
+  (current) => {
+    status.value = readStatus(current.status);
+    query.value = current.q;
+    priority.value = PRIORITIES.includes(current.priority as (typeof PRIORITIES)[number])
+      ? current.priority
+      : "";
+    area.value = current.area || "any";
+    story.value = current.story || "any";
+    mine.value = current.mine === "1";
+    sort.value = current.sort === "oldest" ? "oldest" : "newest";
+  },
+);
 
 async function retryLoad(): Promise<void> {
   if (refreshing.value) return;
@@ -65,9 +375,7 @@ function openTask(task: Task): void {
       <div>
         <p class="mobile-work-kicker">REPOOS / WORK</p>
         <h1>Work queue</h1>
-        <p class="mobile-work-count">
-          {{ tasks.length }} {{ tasks.length === 1 ? "task" : "tasks" }}
-        </p>
+        <p class="mobile-work-count" data-testid="mobile-queue-count">{{ countLabel }}</p>
       </div>
       <Button
         variant="accent"
@@ -80,40 +388,151 @@ function openTask(task: Task): void {
     </header>
 
     <section class="mobile-queue-controls" aria-label="Queue controls">
-      <label class="mobile-status-filter">
-        <span>Status</span>
-        <Select
-          :model-value="status"
-          @update:model-value="(value) => (status = value as typeof status)"
+      <div class="mobile-search-row">
+        <Search class="mobile-search-icon" aria-hidden="true" />
+        <input
+          v-model="query"
+          class="mobile-search-input"
+          type="search"
+          inputmode="search"
+          autocomplete="off"
+          autocapitalize="off"
+          spellcheck="false"
+          placeholder="Search id, title or area"
+          aria-label="Search tasks"
+          data-testid="mobile-queue-search"
+        />
+        <button
+          v-if="query"
+          class="mobile-search-clear"
+          type="button"
+          aria-label="Clear search"
+          @click="query = ''"
         >
-          <SelectTrigger aria-label="Filter tasks by status">
+          <X aria-hidden="true" />
+        </button>
+      </div>
+
+      <div class="mobile-queue-row">
+        <label class="mobile-status-filter">
+          <span>Show</span>
+          <Select
+            :model-value="status"
+            @update:model-value="(value) => (status = value as QueueStatus)"
+          >
+            <SelectTrigger aria-label="Filter tasks by status">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent position="popper">
+              <SelectViewport>
+                <SelectItem v-for="item in statuses" :key="item" :value="item">
+                  {{ STATUS_LABELS[item] }}
+                </SelectItem>
+              </SelectViewport>
+            </SelectContent>
+          </Select>
+        </label>
+        <button
+          class="mobile-sort"
+          type="button"
+          :aria-label="`Sort by updated time, currently ${sort === 'newest' ? 'newest first' : 'oldest first'}`"
+          @click="sort = sort === 'newest' ? 'oldest' : 'newest'"
+        >
+          <span>Updated</span><strong>{{ sort === "newest" ? "Newest" : "Oldest" }}</strong>
+        </button>
+        <button class="mobile-reset" type="button" :disabled="!filtersActive" @click="resetQueue">
+          Reset
+        </button>
+      </div>
+
+      <div class="mobile-chip-row" role="group" aria-label="Quick filters">
+        <span class="mobile-chip-label">Priority</span>
+        <button
+          v-for="p in PRIORITIES"
+          :key="p"
+          class="mobile-chip"
+          :class="{ active: priority === p }"
+          type="button"
+          :aria-pressed="priority === p"
+          @click="togglePriority(p)"
+        >
+          {{ p.toUpperCase() }}
+        </button>
+
+        <span class="mobile-chip-label">Area</span>
+        <Select :model-value="area" @update:model-value="(value) => (area = String(value))">
+          <SelectTrigger class="mobile-chip-select" aria-label="Filter tasks by area">
             <SelectValue />
           </SelectTrigger>
           <SelectContent position="popper">
             <SelectViewport>
-              <SelectItem v-for="item in statuses" :key="item" :value="item">
-                {{ item === "all" ? "All statuses" : item[0]!.toUpperCase() + item.slice(1) }}
+              <SelectItem value="any">Any area</SelectItem>
+              <SelectItem v-for="item in areaOptions" :key="item" :value="item">
+                {{ item }}
               </SelectItem>
             </SelectViewport>
           </SelectContent>
         </Select>
-      </label>
-      <button
-        class="mobile-sort"
-        type="button"
-        :aria-label="`Sort by updated time, currently ${sort === 'newest' ? 'newest first' : 'oldest first'}`"
-        @click="sort = sort === 'newest' ? 'oldest' : 'newest'"
-      >
-        <span>Updated</span><strong>{{ sort === "newest" ? "Newest" : "Oldest" }}</strong>
-      </button>
-      <button
-        class="mobile-reset"
-        type="button"
-        :disabled="status === 'all' && sort === 'newest'"
-        @click="resetQueue"
-      >
-        Reset
-      </button>
+
+        <span class="mobile-chip-label">Story</span>
+        <Select :model-value="story" @update:model-value="(value) => (story = String(value))">
+          <SelectTrigger class="mobile-chip-select" aria-label="Filter tasks by story">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent position="popper">
+            <SelectViewport>
+              <SelectItem value="any">Any story</SelectItem>
+              <SelectItem v-for="item in storyOptions" :key="item" :value="item">
+                {{ item }}
+              </SelectItem>
+            </SelectViewport>
+          </SelectContent>
+        </Select>
+
+        <button
+          class="mobile-chip"
+          :class="{ active: mine }"
+          type="button"
+          :aria-pressed="mine"
+          @click="mine = !mine"
+        >
+          Assigned to you
+        </button>
+
+        <button
+          v-if="repo.heldTasks.length || status === 'held'"
+          class="mobile-chip mobile-chip-parked"
+          :class="{ active: status === 'held' }"
+          type="button"
+          :aria-pressed="status === 'held'"
+          data-testid="mobile-filter-held"
+          @click="toggleParked('held')"
+        >
+          Held ({{ repo.heldTasks.length }})
+        </button>
+        <button
+          v-if="repo.archivedTasks.length || status === 'archived'"
+          class="mobile-chip mobile-chip-parked"
+          :class="{ active: status === 'archived' }"
+          type="button"
+          :aria-pressed="status === 'archived'"
+          data-testid="mobile-filter-archived"
+          @click="toggleParked('archived')"
+        >
+          Archived ({{ repo.archivedTasks.length }})
+        </button>
+        <button
+          v-if="repo.humanTasks.length || status === 'human'"
+          class="mobile-chip mobile-chip-parked"
+          :class="{ active: status === 'human' }"
+          type="button"
+          :aria-pressed="status === 'human'"
+          data-testid="mobile-filter-human"
+          @click="toggleParked('human')"
+        >
+          Human ({{ repo.humanTasks.length }})
+        </button>
+      </div>
     </section>
 
     <section class="mobile-task-list" aria-label="Tasks">
@@ -129,29 +548,61 @@ function openTask(task: Task): void {
         <p>Create a task to start building your queue.</p>
         <Button variant="outline" @click="ui.openNewTask()">Create your first task</Button>
       </div>
-      <div v-else-if="!tasks.length" class="mobile-queue-state">
-        <h2>No {{ status }} tasks</h2>
-        <p>Clear the filter to see the full queue.</p>
-        <Button variant="outline" @click="resetQueue">Show all tasks</Button>
+      <div v-else-if="!matchingCount" class="mobile-queue-state">
+        <h2>{{ emptyTitle }}</h2>
+        <p>{{ emptyHint }}</p>
+        <Button v-if="filtersActive" variant="outline" @click="resetQueue"> Show all tasks </Button>
+        <Button v-else-if="status === 'attention'" variant="outline" @click="status = 'all'">
+          Show all statuses
+        </Button>
       </div>
-      <ul v-else>
-        <li v-for="task in tasks" :key="task.id" :data-task-id="task.id">
-          <button class="mobile-task-card" type="button" @click="openTask(task)">
-            <span class="mobile-task-topline">
-              <span class="mobile-task-number">#{{ task.id }}</span>
-              <time :datetime="task.updated_at ?? undefined">
-                {{ task.updated_at ? relTime(task.updated_at) : "No update time" }}
-              </time>
-            </span>
-            <span class="mobile-task-title">{{ task.title }}</span>
-            <span class="mobile-task-meta">
-              <span class="mobile-task-type">{{ task.type }}</span>
-              <span class="mobile-task-priority">{{ task.priority }}</span>
-              <span class="mobile-task-status" :data-status="task.status">{{ task.status }}</span>
-            </span>
-          </button>
-        </li>
-      </ul>
+      <template v-else>
+        <section
+          v-for="section in sections"
+          :key="section.id"
+          class="mobile-queue-section"
+          :data-section="section.id"
+        >
+          <header class="mobile-section-head">
+            <h2>
+              {{ section.label }}
+              <span class="mobile-section-count">{{ section.tasks.length }}</span>
+            </h2>
+            <button
+              v-if="section.tasks.length > section.limit"
+              class="mobile-section-more"
+              type="button"
+              @click="showMore(section)"
+            >
+              Show {{ Math.min(PAGE_SIZE, section.tasks.length - section.limit) }} more
+            </button>
+          </header>
+          <ul>
+            <li v-for="task in section.visible" :key="task.id" :data-task-id="task.id">
+              <button class="mobile-task-card" type="button" @click="openTask(task)">
+                <span class="mobile-task-topline">
+                  <span class="mobile-task-number">#{{ task.id }}</span>
+                  <time :datetime="task.updated_at ?? undefined">
+                    {{ task.updated_at ? relTime(task.updated_at) : "No update time" }}
+                  </time>
+                </span>
+                <span class="mobile-task-title">{{ task.title }}</span>
+                <span class="mobile-task-meta">
+                  <span class="mobile-task-type">{{ task.type }}</span>
+                  <span class="mobile-task-priority">{{ task.priority }}</span>
+                  <span class="mobile-task-status" :data-status="task.status">
+                    {{ task.status }}
+                  </span>
+                  <span v-if="task.area" class="mobile-task-area">{{ task.area }}</span>
+                  <span v-if="task.assignee === 'human'" class="mobile-task-human">human</span>
+                  <span v-if="heldIds.has(task.id)" class="mobile-task-held">held</span>
+                  <span v-if="task.needsInput" class="mobile-task-needs">needs input</span>
+                </span>
+              </button>
+            </li>
+          </ul>
+        </section>
+      </template>
     </section>
     <div class="mobile-work-bottom-space" aria-hidden="true"></div>
   </main>
@@ -201,13 +652,78 @@ function openTask(task: Task): void {
 }
 .mobile-queue-controls {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
-  align-items: end;
-  gap: 8px;
+  gap: 10px;
   padding: 12px;
   border: 1px solid var(--border);
   border-radius: 13px;
   background: var(--panel);
+}
+.mobile-search-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 46px;
+  padding: 0 6px 0 11px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+}
+.mobile-search-row:focus-within {
+  border-color: var(--cyan);
+}
+.mobile-search-icon {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+  color: var(--txt-faint);
+}
+.mobile-search-input {
+  min-width: 0;
+  flex: 1;
+  height: 44px;
+  border: 0;
+  background: transparent;
+  color: var(--txt);
+  font: inherit;
+  /* 16px keeps iOS Safari from zooming the page when the field takes focus. */
+  font-size: 16px;
+}
+.mobile-search-input::placeholder {
+  color: var(--txt-faint);
+}
+.mobile-search-input:focus {
+  outline: none;
+}
+.mobile-search-input::-webkit-search-cancel-button {
+  display: none;
+}
+.mobile-search-clear {
+  display: inline-grid;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--txt-faint);
+  cursor: pointer;
+}
+.mobile-search-clear :deep(svg) {
+  width: 16px;
+  height: 16px;
+}
+.mobile-search-clear:focus-visible,
+.mobile-chip:focus-visible,
+.mobile-section-more:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
+}
+.mobile-queue-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 8px;
 }
 .mobile-status-filter {
   display: grid;
@@ -262,15 +778,114 @@ function openTask(task: Task): void {
   color: var(--txt-faint);
   opacity: 0.55;
 }
+.mobile-chip-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.mobile-chip-row::-webkit-scrollbar {
+  display: none;
+}
+.mobile-chip-label {
+  flex: 0 0 auto;
+  color: var(--txt-faint);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+.mobile-chip {
+  display: inline-flex;
+  min-height: 40px;
+  flex: 0 0 auto;
+  align-items: center;
+  padding: 0 11px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg);
+  color: var(--txt-muted, var(--txt-faint));
+  font: inherit;
+  font-size: 12px;
+  font-weight: 550;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.mobile-chip.active {
+  border-color: color-mix(in srgb, var(--cyan) 55%, var(--border));
+  background: color-mix(in srgb, var(--cyan) 12%, transparent);
+  color: var(--cyan);
+}
+.mobile-chip-parked {
+  border-style: dashed;
+}
+.mobile-chip-select {
+  width: auto;
+  max-width: 170px;
+  min-height: 40px;
+  flex: 0 0 auto;
+  padding: 0 11px;
+  border-radius: 999px;
+  font-size: 12px;
+}
 .mobile-task-list {
   margin-top: 12px;
 }
-.mobile-task-list ul {
+.mobile-queue-section {
+  margin-bottom: 18px;
+}
+.mobile-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0 1px 8px;
+}
+.mobile-section-head h2 {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0;
+  color: var(--txt-muted, var(--txt-faint));
+  font: 700 10px/1.2 var(--font-mono, monospace);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.mobile-section-count {
+  min-width: 20px;
+  padding: 2px 6px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--txt-faint);
+  text-align: center;
+  font-size: 10px;
+  letter-spacing: 0;
+}
+.mobile-section-more {
+  min-height: 34px;
+  padding: 0 6px;
+  border: 0;
+  background: transparent;
+  color: var(--cyan);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.mobile-queue-section ul {
   display: grid;
   gap: 9px;
   margin: 0;
   padding: 0;
   list-style: none;
+}
+.mobile-queue-section li {
+  /* Long queues only paint the cards near the viewport (#1138). */
+  content-visibility: auto;
+  contain-intrinsic-size: auto 104px;
 }
 .mobile-task-card {
   display: grid;
@@ -345,6 +960,21 @@ function openTask(task: Task): void {
 }
 .mobile-task-status[data-status="review"] {
   border-color: color-mix(in srgb, var(--purple, var(--cyan)) 45%, var(--border));
+}
+.mobile-task-area {
+  color: var(--txt-muted, var(--txt-faint));
+}
+.mobile-task-human {
+  border-color: color-mix(in srgb, var(--purple, var(--cyan)) 55%, var(--border));
+  color: var(--purple, var(--cyan));
+}
+.mobile-task-held {
+  border-style: dashed;
+  color: var(--txt-muted, var(--txt-faint));
+}
+.mobile-task-needs {
+  border-color: color-mix(in srgb, var(--amber, var(--cyan)) 55%, var(--border));
+  color: var(--amber, var(--txt));
 }
 .mobile-queue-state {
   display: grid;

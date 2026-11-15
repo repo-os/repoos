@@ -10,7 +10,9 @@ assigned_to: ai
 created_by: t@t
 branch: feat/mobile-web-polish-44px-tap-targets-no-io
 created_at: "2026-11-15T17:24:09Z"
-updated_at: "2026-11-15T20:54:48Z"
+updated_at: "2026-11-15T21:27:54Z"
+dev_error_count: 1
+engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-11-15T21:27:51.683Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 Smaller mobile issues found on main `23dc737` (Chromium mobile emulation; 360/390/412 portrait, 740/844 landscape, 768 tablet):
@@ -61,3 +63,8 @@ Smaller mobile issues found on main `23dc737` (Chromium mobile emulation; 360/39
 - 2026-11-15T20:38:21Z · status inbox→ready
 - 2026-11-15T20:38:24Z · status ready→active, branch
 - 2026-11-15T20:54:48Z · body
+- 2026-11-15T21:08:44Z · body
+- 2026-11-15T21:27:51Z · note: stopped orphaned engineer pid 20251
+- 2026-11-15T21:27:51Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
+- 2026-11-15T21:27:51Z · engineer crash recovery: resuming opencode + opencode-go/deepseek-v4.1-flash (1/3 crashes in 30m) · the agent process exited with an error — open the task to see the full output. Open Raw CLI error for details. (CLI: the agent process exited with an error — open the task to see the full output)
+- 2026-11-15T21:27:54Z · needs_input

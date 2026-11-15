@@ -1,18 +1,21 @@
 ---
-updated_at: "2026-11-15T20:21:08Z"
-review_passes: 1
 id: "1138"
 title: "Mobile web Work queue: default to what needs attention, add inline search and filters, show held and human tasks"
 type: feature
-status: review
+status: done
 paths: [src/ui-app/src/components/MobileWorkQueue.vue]
 priority: p1
 area: web
 story: RepoOS Hub for Mobile
+merged_commit: 904312a502c3bf39e813a6c95d1873408f643db2
 assigned_to: ai
 created_by: t@t
 branch: feat/mobile-web-work-queue-default-to-what-ne
 created_at: "2026-11-15T17:24:06Z"
+updated_at: "2026-11-15T21:28:19Z"
+last_close_out_gate_ms: 665882
+last_close_out_gate_at: "2026-11-15T21:27:33.417Z"
+review_passes: 1
 ---
 ## Problem
 Nick: on a phone it's "really hard to find the right task and do anything normal". On main `23dc737`, the mobile Work queue (MobileWorkQueue.vue):
@@ -107,4 +110,7 @@ Nick: on a phone it's "really hard to find the right task and do anything normal
 - 2026-11-15T20:20:13Z · status active→review
 - 2026-11-15T20:20:14Z · message_queued at 2026-11-15T20:20:14.117Z
 - 2026-11-15T20:21:07Z · note: review pass 1: good to go
-
+- 2026-11-15T21:27:33Z · close-out gate completed in 666s
+- 2026-11-15T21:27:49Z · status done→done, release:success
+- 2026-11-15T21:27:53Z · message_dropped: 1 queued message(s) discarded — task is done
+- 2026-11-15T21:28:19Z · message_dropped: 1 queued message(s) discarded — task is done
