@@ -75,3 +75,4 @@ There is no UI change; maintainers can follow the runbook to provision and rotat
 - 2026-10-22T07:47:35Z · needs_input
 - 2026-11-15T18:31:00Z · status ready→active, branch
 - 2026-11-15T18:40:14Z · status active→review
+- 2026-11-15T18:40:14Z · message_queued at 2026-11-15T18:40:14.966Z
