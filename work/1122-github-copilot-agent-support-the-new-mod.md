@@ -88,3 +88,4 @@ Read work/1088-*.md and src/core/copilot-auto-tier.ts first. Copilot usage is bi
 - 2026-11-15T00:47:04Z · note: handoff requested (cli)
 - 2026-11-15T00:48:53Z · CTO nudge: held — handoff gate is running
 - 2026-11-15T00:56:43Z · message_queued at 2026-11-15T00:56:43.276Z
+- 2026-11-15T00:56:43Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: tests/remote-host-pool.test.ts > host-side lock (server + standalone CLI share one limit) > breaks an orphaned lock dir within the wait budget instead of timing out on it (#0521 review) on mini — fix it in the feature branch and re-run the gate
