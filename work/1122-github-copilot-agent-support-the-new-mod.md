@@ -1,6 +1,4 @@
 ---
-last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/remote-host-pool.test.ts > host-side lock (server + standalone CLI share one limit) > breaks an orphaned lock dir within the wait budget instead of timing out on it (#0521 review) on mini — fix it in the feature branch and re-run the gate"
-last_handoff_failure_sha: 73fd1b282c52e6a95c1fc71bc6e032141453fd4f
 id: "1122"
 title: "GitHub Copilot agent: support the new model picker (GPT-6 Luna, GPT-6.1 Terra, Haiku 5.5 ...) with real --model ids"
 type: feature
@@ -13,7 +11,9 @@ branch: feat/github-copilot-agent-support-the-new-mod
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-14T17:41:02Z"
-updated_at: "2026-11-15T00:56:43Z"
+updated_at: "2026-11-15T00:58:53Z"
+last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/remote-host-pool.test.ts > host-side lock (server + standalone CLI share one limit) > breaks an orphaned lock dir within the wait budget instead of timing out on it (#0521 review) on mini — fix it in the feature branch and re-run the gate"
+last_handoff_failure_sha: 73fd1b282c52e6a95c1fc71bc6e032141453fd4f
 review_passes: 1
 handoff_signal_retry_count: 2
 ---
@@ -91,4 +91,4 @@ Read work/1088-*.md and src/core/copilot-auto-tier.ts first. Copilot usage is bi
 - 2026-11-15T00:48:53Z · CTO nudge: held — handoff gate is running
 - 2026-11-15T00:56:43Z · message_queued at 2026-11-15T00:56:43.276Z
 - 2026-11-15T00:56:43Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: tests/remote-host-pool.test.ts > host-side lock (server + standalone CLI share one limit) > breaks an orphaned lock dir within the wait budget instead of timing out on it (#0521 review) on mini — fix it in the feature branch and re-run the gate
-
+- 2026-11-15T00:58:53Z · CTO nudge: held — an undelivered message is already queued
