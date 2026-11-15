@@ -55,7 +55,19 @@ export type TailnetFetchResult =
       tailscaleUnavailable: boolean;
       message?: string;
     }
-  | { kind: "disabled" | "auth" | "error"; message: string };
+  | { kind: "outdated" | "disabled" | "auth" | "error"; message: string };
+
+/**
+ * A 404 or a non-JSON reply means the trusted server predates
+ * `GET /api/servers/tailnet` (or something else answered in its place). Say so
+ * plainly instead of leaking "unexpected reply".
+ */
+function outdatedMessage(label: string): string {
+  return (
+    `${label} is running an older RepoOS that can't list tailnet servers yet. ` +
+    "Update RepoOS on that machine, or add servers by URL."
+  );
+}
 
 /** Normalize a discovered URL for display, allowing `http://` rows so Hub can
  * explain that they need HTTPS. Only `https:` origins are ever selectable. */
@@ -178,6 +190,8 @@ export function mergeTailnetResults(
 export interface FetchTailnetOptions {
   fetchImpl?: typeof fetch;
   timeoutMs?: number;
+  /** Display name of the trusted server, used in user-facing messages. */
+  serverName?: string;
 }
 
 /**
@@ -194,6 +208,7 @@ export async function fetchTailnetServers(
     return { kind: "error", message: "That server needs an HTTPS URL." };
   }
   const fetchImpl = options.fetchImpl ?? fetch;
+  const label = options.serverName?.trim() || origin.replace(/^https:\/\//, "");
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), options.timeoutMs ?? 15_000);
   try {
@@ -215,6 +230,9 @@ export async function fetchTailnetServers(
           "Open the server once in Hub, then try again — or add a server manually.",
       };
     }
+    if (res.status === 404) {
+      return { kind: "outdated", message: outdatedMessage(label) };
+    }
     if (!res.ok) {
       return {
         kind: "error",
@@ -222,8 +240,8 @@ export async function fetchTailnetServers(
       };
     }
     const body = (await res.json().catch(() => null)) as TailnetPayload | null;
-    if (!body || typeof body !== "object") {
-      return { kind: "error", message: "The server sent an unexpected reply." };
+    if (!body || typeof body !== "object" || Array.isArray(body)) {
+      return { kind: "outdated", message: outdatedMessage(label) };
     }
     if (body.disabled) {
       return {
