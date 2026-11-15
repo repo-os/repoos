@@ -8774,6 +8774,13 @@
     display: inline-flex;
     align-items: center;
   }
+  /* Section eyebrows ("Default agents" + pricing link + Refresh models) are a
+     tight desktop row; let them wrap on a phone instead of squeezing a control
+     under another one's text. */
+  .agents-page .sec-label {
+    flex-wrap: wrap;
+    row-gap: 8px;
+  }
 }
 .ff-textarea {
   width: 100%;
