@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/agents-page-replace-the-default-agents-l
 created_at: "2026-11-15T15:20:08Z"
-updated_at: "2026-11-15T18:49:07Z"
+updated_at: "2026-11-15T18:50:01Z"
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -172,3 +172,4 @@ The current list is `agentLastRuns` in src/ui-app/src/views/AgentsView.vue, fed 
 - 2026-11-15T18:46:56Z · message_delivered: 1 message(s)
 - 2026-11-15T18:49:07Z · message_queued at 2026-11-15T18:49:07.299Z
 - 2026-11-15T18:49:07Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-15T18:50:01Z · body
