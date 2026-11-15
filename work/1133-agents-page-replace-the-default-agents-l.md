@@ -40,3 +40,4 @@ The current list is `agentLastRuns` in src/ui-app/src/views/AgentsView.vue, fed 
 - 2026-11-15T16:09:46Z · status inbox→ready
 - 2026-11-15T16:09:48Z · status ready→active, branch
 - 2026-11-15T16:44:07Z · message_queued at 2026-11-15T16:44:07.158Z
+- 2026-11-15T16:44:07Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
