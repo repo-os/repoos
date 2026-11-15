@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 1172266
-last_close_out_gate_at: "2026-11-15T04:02:28.023Z"
 id: "1123"
 title: "Agents page: raw CLI errors leak into the Default agents last-runs list; classify more failures and hide stale rows"
 type: feature
-status: review
+status: done
 priority: p2
 area: [web, core]
+merged_commit: 687e74b6c94d86ffa7507b2e9bd9feffeab98f31
 assigned_to: ai
 created_by: t@t
 branch: feat/agents-page-raw-cli-errors-leak-into-the
@@ -14,6 +13,8 @@ cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-14T18:02:14Z"
 updated_at: "2026-11-15T04:02:28Z"
+last_close_out_gate_ms: 1172266
+last_close_out_gate_at: "2026-11-15T04:02:28.023Z"
 review_passes: 1
 ---
 ## Problem
