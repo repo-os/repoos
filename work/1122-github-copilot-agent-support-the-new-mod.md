@@ -2,7 +2,7 @@
 id: "1122"
 title: "GitHub Copilot agent: support the new model picker (GPT-6 Luna, GPT-6.1 Terra, Haiku 5.5 ...) with real --model ids"
 type: feature
-status: active
+status: review
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -83,3 +83,4 @@ Read work/1088-*.md and src/core/copilot-auto-tier.ts first. Copilot usage is bi
 - 2026-11-15T00:43:53Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-15T00:47:03Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-15T00:47:03Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: Restoring `repoos.toml` from main (close-out blocked config changes), updating the engineering report, and re-verifying. · stderr: (empty)
+- 2026-11-15T00:47:03Z · status active→review
