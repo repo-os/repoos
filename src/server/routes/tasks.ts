@@ -5015,11 +5015,12 @@ export const cancelDone: RouteHandler = async (ctx, _req, res, params) => {
 export const getTaskStats: RouteHandler = (ctx, _req, res, params) => {
   const { runner } = ctx;
   const taskId = params.param1;
+  // A branchless (or never-run) task has no recorded sessions. The drawer asks
+  // for stats on every open (#1139), so answer with an empty payload instead of
+  // a 404 — the client already treats `stats: null` as "no usage yet" and the
+  // 404 only produced a console error.
   const stats = runner.taskStats(taskId);
-  if (!stats) {
-    return json(res, 404, { error: `No stats found for task #${taskId}` });
-  }
-  return json(res, 200, { ok: true, stats });
+  return json(res, 200, { ok: true, stats: stats ?? null });
 };
 
 export const getSessionTypeStats: RouteHandler = (ctx, _req, res) => {

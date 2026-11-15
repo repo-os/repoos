@@ -1,18 +1,19 @@
 ---
-last_close_out_gate_ms: 69445
-last_close_out_gate_at: "2026-11-15T23:18:27.740Z"
 id: "1139"
 title: "Mobile web polish: 44px tap targets, no iOS input zoom, touch-only hints, landscape/tablet layout, PWA start page and icon"
 type: bug
-status: review
+status: done
 priority: p2
 area: web
 story: RepoOS Hub for Mobile
+merged_commit: e17b9a07ac3095b9a2f6c132c679ab7d24ada281
 assigned_to: ai
 created_by: t@t
 branch: feat/mobile-web-polish-44px-tap-targets-no-io
 created_at: "2026-11-15T17:24:09Z"
 updated_at: "2026-11-15T23:18:27Z"
+last_close_out_gate_ms: 69445
+last_close_out_gate_at: "2026-11-15T23:18:27.740Z"
 review_passes: 1
 handoff_signal_retry_count: 2
 dev_error_count: 1
