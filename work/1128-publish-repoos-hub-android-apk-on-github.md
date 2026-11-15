@@ -14,7 +14,6 @@ updated_at: "2026-11-15T15:10:31Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-15T14:03:27.994Z: repoos check failed: ui verification failed: runner result omitted the UI verification record: ui verification: preview for \"Landing page\" did not start: preview server for #1128 did not become ready"
 dev_error_count: 1
-engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-11-15T14:34:07.784Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 RepoOS Hub for Android (`mobile/`, Capacitor app `org.repoos.mobile`) has no public download. The only way to get it today is to build it locally with `just build-android` and sideload the debug APK over adb. The macOS Hub already has a public download: `.github/workflows/macos-hub.yml` builds `RepoOSHub.dmg` on every stable `v*` tag and attaches it to the GitHub Release, and both the landing page (`landing/src/App.vue`, "Download for Mac" pointing at `https://github.com/repo-os/repoos/releases/latest/download/RepoOSHub.dmg`) and `user-docs/macos-hub.md` link to it. Android should have the same thing.
