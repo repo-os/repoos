@@ -3,7 +3,7 @@ import { spawn } from "node:child_process";
 import { existsSync, mkdirSync, rmSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { reapStaleFixtures, STALE_FIXTURE_AGE_MS } from "./helpers";
+import { reapStaleFixtures, runRootsInCommand, STALE_FIXTURE_AGE_MS } from "./helpers";
 import { teardown } from "./setup/global-reap";
 
 /**
@@ -28,6 +28,26 @@ function stale(name: string, withLog = false): string {
 
 afterEach(() => {
   for (const d of made.splice(0)) rmSync(d, { recursive: true, force: true });
+});
+
+describe("runRootsInCommand", () => {
+  it("finds a quoted or bare run root", () => {
+    expect(runRootsInCommand("node /tmp/repoos-vitest-Abc123/file/bin/opencode")).toEqual([
+      "/tmp/repoos-vitest-Abc123",
+    ]);
+    expect(runRootsInCommand('bash -c "cd /var/tmp/repoos-vitest-Z9Yx8q"')).toEqual([
+      "/var/tmp/repoos-vitest-Z9Yx8q",
+    ]);
+  });
+
+  it("ignores a long slash-heavy command line without a run root", () => {
+    // An agent invocation puts its whole prompt in `ps`. A backtracking
+    // pattern here used to spin for minutes before the suite's first file.
+    const segments = Array.from({ length: 400 }, (_, i) => `segment-${i}`);
+    const command = `opencode run Working directory: /Users/me/${segments.join("/")}`;
+    expect(command.length).toBeGreaterThan(4_000);
+    expect(runRootsInCommand(command)).toEqual([]);
+  });
 });
 
 describe("reapStaleFixtures", () => {

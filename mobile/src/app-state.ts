@@ -202,7 +202,7 @@ export async function discoverTailnet(): Promise<void> {
     };
     return;
   }
-  const outcome = await fetchTailnetServers(trusted.url);
+  const outcome = await fetchTailnetServers(trusted.url, { serverName: trusted.name });
   if (outcome.kind !== "ok") {
     discovery.value = {
       ...discovery.value,

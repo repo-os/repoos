@@ -146,6 +146,42 @@ describe("mobile tailnet discovery", () => {
     expect(fetchImpl).toHaveBeenCalledTimes(1);
   });
 
+  it("names an older server instead of saying the reply was unexpected", async () => {
+    const fetchImpl = vi.fn(async () =>
+      Promise.resolve(new Response("Not Found", { status: 404 })),
+    );
+    const result = await fetchTailnetServers("https://bee.tailc0c173.ts.net:7499", {
+      fetchImpl: fetchImpl as unknown as typeof fetch,
+      serverName: "bee",
+    });
+
+    expect(result.kind).toBe("outdated");
+    expect(result.kind === "outdated" && result.message).toBe(
+      "bee is running an older RepoOS that can't list tailnet servers yet. " +
+        "Update RepoOS on that machine, or add servers by URL.",
+    );
+    expect(result.kind === "outdated" && result.message).not.toMatch(/unexpected reply/i);
+  });
+
+  it("treats a non-JSON reply as an older server, named by its host", async () => {
+    const fetchImpl = vi.fn(async () =>
+      Promise.resolve(
+        new Response("<!doctype html><title>RepoOS</title>", {
+          status: 200,
+          headers: { "Content-Type": "text/html" },
+        }),
+      ),
+    );
+    const result = await fetchTailnetServers("https://bee.tailc0c173.ts.net:7499", {
+      fetchImpl: fetchImpl as unknown as typeof fetch,
+    });
+
+    expect(result.kind).toBe("outdated");
+    expect(result.kind === "outdated" && result.message).toMatch(
+      /^bee\.tailc0c173\.ts\.net:7499 is running an older RepoOS/,
+    );
+  });
+
   it("surfaces the server's discovery-off message", async () => {
     const fetchImpl = vi.fn(async () =>
       Promise.resolve(

@@ -1,18 +1,19 @@
 ---
-last_close_out_gate_ms: 233080
-last_close_out_gate_at: "2026-11-15T16:56:47.406Z"
 id: "1131"
 title: "RepoOS Hub mobile: hold-to-drag server reordering, and move Find servers on my tailnet next to Add server"
 type: feature
-status: review
+status: done
 priority: p1
 area: mobile
 story: RepoOS Hub for Mobile
+merged_commit: cc01d288ca54a34f5e79bcbffabb1a7456caddff
 assigned_to: ai
 created_by: t@t
 branch: feat/repoos-hub-mobile-hold-to-drag-server-re
 created_at: "2026-11-15T14:39:13Z"
 updated_at: "2026-11-15T16:56:47Z"
+last_close_out_gate_ms: 233080
+last_close_out_gate_at: "2026-11-15T16:56:47.406Z"
 review_passes: 1
 last_check_failure: "repoos check at 2026-11-15T16:20:20.969Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 ---

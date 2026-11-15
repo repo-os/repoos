@@ -10,7 +10,8 @@ the phone never probes the tailnet itself.
 ## What it is
 
 - A native **server picker** (add / rename / reorder / select / delete) written
-  in Vue + Vite.
+  in Vue + Vite. Hold a server row to lift and drag it into a new order; a tap
+  opens the server and its ⋮ menu edits or deletes it.
 - A **chromeless WebView** that loads the *existing* RepoOS web UI for the
   selected server — no tabs, no address/search bar. The RepoOS web app stays the
   primary UI; nothing is duplicated natively.
