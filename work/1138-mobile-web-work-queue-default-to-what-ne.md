@@ -11,7 +11,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/mobile-web-work-queue-default-to-what-ne
 created_at: "2026-11-15T17:24:06Z"
-updated_at: "2026-11-15T20:02:09Z"
+updated_at: "2026-11-15T20:05:50Z"
 ---
 ## Problem
 Nick: on a phone it's "really hard to find the right task and do anything normal". On main `23dc737`, the mobile Work queue (MobileWorkQueue.vue):
@@ -47,28 +47,28 @@ Nick: on a phone it's "really hard to find the right task and do anything normal
 ```json
 [
 {
-  "label": "Mobile Work queue opens on Needs attention with inline search and filter chips",
-  "target": "default",
-  "route": "/work",
-  "highlight": "[data-testid=\"mobile-work-queue\"]",
-  "viewportWidth": 390,
-  "viewportHeight": 844
+"label": "Mobile Work queue opens on Needs attention with inline search and filter chips",
+"target": "default",
+"route": "/work",
+"highlight": "[data-testid=\"mobile-work-queue\"]",
+"viewportWidth": 390,
+"viewportHeight": 844
 },
 {
-  "label": "?status=review opens the Review view",
-  "target": "default",
-  "route": "/work?status=review",
-  "highlight": "[data-testid=\"mobile-queue-count\"]",
-  "viewportWidth": 390,
-  "viewportHeight": 844
+"label": "?status=review opens the Review view",
+"target": "default",
+"route": "/work?status=review",
+"highlight": "[data-testid=\"mobile-queue-count\"]",
+"viewportWidth": 390,
+"viewportHeight": 844
 },
 {
-  "label": "Queue search narrows by task id from the URL",
-  "target": "default",
-  "route": "/work?q=1138",
-  "highlight": "[data-testid=\"mobile-queue-search\"]",
-  "viewportWidth": 390,
-  "viewportHeight": 844
+"label": "Queue search narrows by task id from the URL",
+"target": "default",
+"route": "/work?q=1138",
+"highlight": "[data-testid=\"mobile-queue-search\"]",
+"viewportWidth": 390,
+"viewportHeight": 844
 }
 ]
 ```
@@ -87,3 +87,4 @@ Nick: on a phone it's "really hard to find the right task and do anything normal
 - 2026-11-15T19:58:16Z · body
 - 2026-11-15T20:00:08Z · body
 - 2026-11-15T20:02:09Z · body
+- 2026-11-15T20:05:50Z · body
