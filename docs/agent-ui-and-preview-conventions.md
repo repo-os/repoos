@@ -39,6 +39,10 @@ Long-form versions of the conventions `AGENTS.md` summarises (moved verbatim on
   to normal flow must keep their routed root scrollable and retain the shared
   bottom inset at the component’s own flow breakpoint.
   See the `.main` comment in `src/ui-app/src/style.css` (#0602, #0951).
+  A `position: fixed` overlay a view renders as a direct `.main` child (e.g.
+  Work's integration bar, which sits outside the page shell so phones keep it)
+  must carry `page-fixed-layer`: the shared page-inset rule pads its box upward
+  and lifts the bar off the viewport bottom (#1136).
 - **Table-like label/value rows use aligned columns.** Any UI that renders
   repeated rows of labeled fields (a `dl` of `dt`/`dd`, or label+value pairs
   — no literal `<table>` required) must use an aligned two-column layout:

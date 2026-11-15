@@ -628,8 +628,11 @@ function openHeld(task: Task): void {
   <!-- The integration bar is Work's ambient pipeline status, not part of the
        desktop board. Keeping it outside the desktop-only branch means the
        phone layout still shows it; its own narrow CSS floats it above the
-       bottom tab bar and the queue reserves end clearance below. -->
-  <IntegrationStatusBar class="ibar-outer" />
+       bottom tab bar and the queue reserves end clearance below.
+       `page-fixed-layer` keeps the shared `.main` page padding off this fixed
+       wrapper: padding here grows the box upward and detached the bar from the
+       viewport bottom (#1136). -->
+  <IntegrationStatusBar class="ibar-outer page-fixed-layer" />
 </template>
 
 <style scoped>
