@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/mobile-web-work-queue-renders-the-mobile
 created_at: "2026-11-15T14:34:55Z"
-updated_at: "2026-11-15T15:12:08Z"
+updated_at: "2026-11-15T15:14:42Z"
 ---
 ## Problem
 On a phone browser (Nick's Nothing Phone 3a, Chrome, about 412px wide, opening `https://bee.tailc0c173.ts.net:7499` on the tiao project, server v0.5.83), the Work page draws two layouts at once:
@@ -34,6 +34,9 @@ On a narrow viewport, Work shows exactly one layout: a single readable column wi
 - A UI test or screenshot test at a phone viewport catches a regression back to the double render.
 - Desktop layout is unchanged at 1280px and wider.
 
+## Reproduction
+Reproduced on this branch (based on current main) at 360, 390 and 412 px by mounting WorkView with a narrow matchMedia: before the fix, the DOM contained both the mobile queue ([data-testid=mobile-work-queue]) and the desktop .work-page board at all three widths; after the fix only the mobile queue is present. The pre-fix run is the new parameterized test failing on .work-page. No live v0.5.87 server or real phone was available in this agent run, so the live-build/device reproduction was not observed; the phone screenshots are from v0.5.83. The HEAD source had the same v-else chain, so main is affected too.
+
 ## Activity
 
 - 2026-11-15T14:34:55Z · created · t@t
@@ -41,3 +44,4 @@ On a narrow viewport, Work shows exactly one layout: a single readable column wi
 - 2026-11-15T14:35:07Z · status inbox→ready
 - 2026-11-15T14:35:12Z · status ready→active, needs_input, branch
 - 2026-11-15T15:12:08Z · body
+- 2026-11-15T15:14:42Z · body: Reproduction (added)
