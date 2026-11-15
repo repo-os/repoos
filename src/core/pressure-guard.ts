@@ -451,9 +451,7 @@ export async function waitForPressureRelief(
   } = {},
 ): Promise<void> {
   if (!pressureGuardEnabled(config)) return;
-  const poll = opts.probe
-    ? Math.max(1, opts.pollMs ?? 1)
-    : Math.max(500, opts.pollMs ?? 2000);
+  const poll = opts.probe ? Math.max(1, opts.pollMs ?? 1) : Math.max(500, opts.pollMs ?? 2000);
   while (true) {
     const snapshot = pressureSnapshot(config, opts.probe);
     const reason =

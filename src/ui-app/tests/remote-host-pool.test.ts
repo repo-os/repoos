@@ -2484,13 +2484,10 @@ describe("host-side lock (server + standalone CLI share one limit)", () => {
     });
     // Hold the lock shell before it inspects the queue so the dead PID can be
     // created after its own PID is known and cannot be mistaken for itself.
-    const child = spawn(
-      "sh",
-      [
-        "-c",
-        `echo $$ > "${shellPidPath}"; while [ ! -f "${queueReady}" ]; do sleep 0.02; done\n${script}`,
-      ],
-    );
+    const child = spawn("sh", [
+      "-c",
+      `echo $$ > "${shellPidPath}"; while [ ! -f "${queueReady}" ]; do sleep 0.02; done\n${script}`,
+    ]);
     let output = "";
     child.stdout.on("data", (chunk: Buffer) => (output += chunk.toString()));
     child.stderr.on("data", (chunk: Buffer) => (output += chunk.toString()));
