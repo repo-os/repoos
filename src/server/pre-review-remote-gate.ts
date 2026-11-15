@@ -85,7 +85,9 @@ export async function uncommittedFilesBlockingRemoteGate(
   config: RepoOSConfig,
 ): Promise<string[]> {
   try {
-    return await uncommittedWorkFiles(worktreePath, workFileFilter(config));
+    return await uncommittedWorkFiles(worktreePath, workFileFilter(config), {
+      ignoreProvisionedFromMain: config.root,
+    });
   } catch {
     return ["(git status could not be read)"];
   }

@@ -792,6 +792,93 @@ describe("uncommittedWorkFiles (#0609)", () => {
   });
 });
 
+describe("uncommittedWorkFiles ignores RepoOS-provisioned paths (#1135)", () => {
+  /**
+   * A worktree whose branch predates main's `.env` ignore rule — the shape a
+   * stalled removal leaves behind (main's ignore rules gone from the tree while
+   * the `.env` symlink RepoOS provisioned stays). `git status` there reports
+   * `?? .env` even though main ignores it and the link is RepoOS's own.
+   */
+  function setup(root: string, branch: string): string {
+    writeFileSync(join(root, "tracked.local"), "tracked\n");
+    writeFileSync(join(root, "README.md"), "hi\n");
+    git(root, ["add", "README.md", "tracked.local"]);
+    git(root, ["commit", "-m", "base"]);
+    const wt = ensureWorktree(root, branch);
+    expect(wt.ok).toBe(true);
+    // Main moves ahead with the ignore rules and the real file they cover.
+    writeFileSync(join(root, ".gitignore"), ".env\n*.local\nlocal-only.log\n");
+    writeFileSync(join(root, ".env"), "SECRET=1\n");
+    git(root, ["add", ".gitignore"]);
+    git(root, ["commit", "-m", "ignore local files"]);
+    // Exactly what `linkInheritedEnv` creates for an opted-in repo.
+    symlinkSync(join(root, ".env"), join(wt.path, ".env"), "file");
+    return wt.path;
+  }
+
+  it("drops the inherited .env symlink but keeps a real uncommitted file", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      const wtPath = setup(root, "feat/env");
+      writeFileSync(join(wtPath, "real-work.txt"), "not committed\n");
+
+      // The bug: close-out saw the RepoOS-created link as leftover work.
+      expect(await uncommittedWorkFiles(wtPath)).toEqual([".env", "real-work.txt"]);
+      expect(await uncommittedWorkFiles(wtPath, {}, { ignoreProvisionedFromMain: root })).toEqual([
+        "real-work.txt",
+      ]);
+    } finally {
+      clean();
+    }
+  });
+
+  it("drops an untracked path main already gitignores", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      const wtPath = setup(root, "feat/ignored");
+      writeFileSync(join(wtPath, "local-only.log"), "scratch\n");
+
+      expect(await uncommittedWorkFiles(wtPath)).toEqual([".env", "local-only.log"]);
+      expect(await uncommittedWorkFiles(wtPath, {}, { ignoreProvisionedFromMain: root })).toEqual(
+        [],
+      );
+    } finally {
+      clean();
+    }
+  });
+
+  it("keeps a symlink that points somewhere other than main", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      const wtPath = setup(root, "feat/own-link");
+      writeFileSync(join(wtPath, "own-target.txt"), "task data\n");
+      symlinkSync(join(wtPath, "own-target.txt"), join(wtPath, "own-link"), "file");
+
+      const files = await uncommittedWorkFiles(wtPath, {}, { ignoreProvisionedFromMain: root });
+      expect(files).toContain("own-link");
+      expect(files).toContain("own-target.txt");
+      expect(files).not.toContain(".env");
+    } finally {
+      clean();
+    }
+  });
+
+  it("keeps a tracked modification even when main's ignore rules match it", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      const wtPath = setup(root, "feat/tracked");
+      writeFileSync(join(wtPath, "tracked.local"), "changed\n");
+
+      // Only untracked paths can be provisioned; a tracked edit is always work.
+      expect(await uncommittedWorkFiles(wtPath, {}, { ignoreProvisionedFromMain: root })).toEqual([
+        "tracked.local",
+      ]);
+    } finally {
+      clean();
+    }
+  });
+});
+
 describe("main dirty paths for close-out (#0713)", () => {
   it("treats live task markdown as non-blocking, but not source/config/reports (#1020)", () => {
     expect(

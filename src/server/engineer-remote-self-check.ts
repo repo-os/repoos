@@ -105,6 +105,7 @@ export async function commitWipCheckpointForRemoteGate(
   try {
     dirty = await uncommittedWorkFiles(worktreePath, workFileFilter(config), {
       untrackedFiles: "all",
+      ignoreProvisionedFromMain: config.root,
     });
   } catch {
     return "could not read git status before remote self-check";

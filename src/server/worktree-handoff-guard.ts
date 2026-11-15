@@ -495,7 +495,9 @@ export async function verifyWorktreeHandoffIntegrity(
   const actualHead = headRes.stdout.trim();
   let dirtyFiles: string[] = [];
   try {
-    dirtyFiles = await uncommittedWorkFiles(wt, workFileFilter(config as RepoOSConfig));
+    dirtyFiles = await uncommittedWorkFiles(wt, workFileFilter(config as RepoOSConfig), {
+      ignoreProvisionedFromMain: config.root,
+    });
   } catch (err) {
     if (err instanceof GitDirtyCheckError) {
       return {
@@ -579,7 +581,9 @@ export async function recordWorktreeHandoffProtection(
   const sha = headRes.stdout.trim();
   let dirty: string[] = [];
   try {
-    dirty = await uncommittedWorkFiles(workdir, workFileFilter(config));
+    dirty = await uncommittedWorkFiles(workdir, workFileFilter(config), {
+      ignoreProvisionedFromMain: config.root,
+    });
   } catch {
     return;
   }
@@ -619,7 +623,9 @@ export async function refreshHandoffSnapshotFromWorktree(
   const sha = headRes.stdout.trim();
   let dirty: string[] = [];
   try {
-    dirty = await uncommittedWorkFiles(workdir, workFileFilter(config));
+    dirty = await uncommittedWorkFiles(workdir, workFileFilter(config), {
+      ignoreProvisionedFromMain: config.root,
+    });
   } catch (err) {
     const message = err instanceof GitDirtyCheckError ? err.message : String(err);
     return { ok: false, reason: `worktree not clean after close-out commit (${message})` };
