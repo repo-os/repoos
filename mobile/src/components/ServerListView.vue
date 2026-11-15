@@ -116,8 +116,7 @@ function beginDrag() {
   // is non-passive and added before the first move after the hold, so it can
   // still cancel the gesture the browser would otherwise treat as a pan.
   window.addEventListener("touchmove", blockTouchScroll, { passive: false });
-  // Android fires a context menu for a long press on text; the rows already
-  // opt out of selection, this covers the rest of the gesture.
+  // A short haptic confirms the row lifted, before the drag starts moving.
   void impactMedium();
   startAutoScroll();
 }
