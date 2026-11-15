@@ -3,9 +3,6 @@ id: "1139"
 title: "Mobile web polish: 44px tap targets, no iOS input zoom, touch-only hints, landscape/tablet layout, PWA start page and icon"
 type: bug
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "automatic resume could not start the engineer: This worktree already has a recorded live engineer for task #1139 (pid 27638). The task stayed active with its worktree intact."
 priority: p2
 area: web
 story: RepoOS Hub for Mobile
@@ -13,7 +10,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/mobile-web-polish-44px-tap-targets-no-io
 created_at: "2026-11-15T17:24:09Z"
-updated_at: "2026-11-15T21:55:53Z"
+updated_at: "2026-11-15T22:06:39Z"
 handoff_signal_retry_count: 2
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-11-15T21:27:51.683Z\",\"kind\":\"dev-error\"}]"
@@ -110,3 +107,4 @@ Smaller mobile issues found on main `23dc737` (Chromium mobile emulation; 360/39
 - 2026-11-15T21:47:48Z · body
 - 2026-11-15T21:51:06Z · body
 - 2026-11-15T21:55:53Z · body
+- 2026-11-15T22:06:39Z · watchdog: restarting engineer after 11m with no live process
