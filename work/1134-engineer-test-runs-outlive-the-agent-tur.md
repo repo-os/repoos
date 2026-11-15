@@ -177,3 +177,4 @@ Look at the engineer turn spawner and process-group reaping in src/core (search 
 - 2026-11-15T19:29:07Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-15T19:32:30Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
 - 2026-11-15T19:32:31Z · status active→review
+- 2026-11-15T19:32:31Z · message_queued at 2026-11-15T19:32:31.959Z
