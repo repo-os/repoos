@@ -2,14 +2,14 @@
 id: "1135"
 title: "Closeout: don't keep worktrees just because of the .env symlink RepoOS itself created"
 type: bug
-status: inbox
+status: ready
 priority: p2
 area: core
 assigned_to: ai
 created_by: t@t
 branch: ""
 created_at: "2026-11-15T17:07:22Z"
-updated_at: "2026-11-15T17:07:22Z"
+updated_at: "2026-11-15T17:15:35Z"
 ---
 ## Problem
 After `repoos done` merged #1128 (branch commit e23a1db4e is on main), the task card shows Done but also "Needs input": "the worktree for feat/publish-repoos-hub-android-apk-on-github was kept because it had uncommitted changes the merge did not carry: .env".
@@ -27,3 +27,4 @@ Look at the worktree cleanup in the closeout path (the code behind `repoos done`
 ## Activity
 
 - 2026-11-15T17:07:22Z · created · t@t
+- 2026-11-15T17:15:35Z · status inbox→ready
