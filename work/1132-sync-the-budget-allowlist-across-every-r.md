@@ -2,7 +2,7 @@
 id: "1132"
 title: "Allowlist groups: projects that opt into the same group share one budget allowlist across machines"
 type: feature
-status: active
+status: review
 priority: p1
 area: [core, server, web]
 assigned_to: ai
@@ -59,3 +59,4 @@ Start from how `budget.allowlist` is read and merged today, `collectTailnetServe
 - 2026-11-15T17:53:38Z · body
 - 2026-11-15T17:54:06Z · CTO nudge: held — handoff gate is running
 - 2026-11-15T18:03:16Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
+- 2026-11-15T18:03:16Z · status active→review
