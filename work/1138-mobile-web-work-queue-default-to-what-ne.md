@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-15T20:21:08Z"
-review_passes: 1
 id: "1138"
 title: "Mobile web Work queue: default to what needs attention, add inline search and filters, show held and human tasks"
 type: feature
@@ -13,6 +11,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/mobile-web-work-queue-default-to-what-ne
 created_at: "2026-11-15T17:24:06Z"
+updated_at: "2026-11-15T20:20:13Z"
 ---
 ## Problem
 Nick: on a phone it's "really hard to find the right task and do anything normal". On main `23dc737`, the mobile Work queue (MobileWorkQueue.vue):
@@ -44,34 +43,6 @@ Nick: on a phone it's "really hard to find the right task and do anything normal
 - #0303 (native Hub touch-first queue) covers the Capacitor shell and depends on #0302. This task is the web UI's mobile queue that phones and the Hub WebView load today. Keep components shareable.
 - Found in a box-side Playwright QA pass on 16 Nov. Screenshots attached.
 
-## Shots
-```json
-[
-{
-"label": "Mobile Work queue opens on Needs attention, with inline search and quick filters",
-"target": "default",
-"route": "/work",
-"highlight": ".mobile-queue-controls",
-"viewportWidth": 390,
-"viewportHeight": 844
-},
-{
-"label": "URL ?status=review opens the Review section",
-"target": "default",
-"route": "/work?status=review",
-"highlight": "[data-section=\"review\"] .mobile-task-card",
-"state": "board:withReviewTask",
-"viewportWidth": 390,
-"viewportHeight": 844
-}
-]
-```
-
-## Verification
-- Scoped `repoos check --changed main` passes (format, lint, build, CSS/theme/color guards, UI smoke, rendered contrast).
-- `src/ui-app/tests/mobile-work-queue.test.ts` covers the grouped default view, search by id/title/area, priority/area/story/human chips, held/human reachability, `?status=` read and URL write-back, the 1,000-task card cap, and the empty/loading/error states.
-- The card bound is enforced and tested. The separate 300ms mid-range-phone timing target was not measured in this session; verify it in a CPU-throttled mobile browser profile.
-
 ## Screenshots
 
 ![360px: queue defaults to All statuses, 1065 tasks incl. 1035 done, no search](/api/tasks/1138/attachments/att_b78506c3-5dbe-4c4d-8f17-de54c90d274d.png)
@@ -83,28 +54,4 @@ Nick: on a phone it's "really hard to find the right task and do anything normal
 - 2026-11-15T17:24:06Z · screenshots
 - 2026-11-15T19:49:18Z · status inbox→ready
 - 2026-11-15T19:49:20Z · status ready→active, branch
-- 2026-11-15T19:58:16Z · body
-- 2026-11-15T20:00:08Z · body
-- 2026-11-15T20:02:09Z · body
-- 2026-11-15T20:05:50Z · body
-- 2026-11-15T20:07:24Z · body: Verification (added)
-- 2026-11-15T20:07:24Z · message_queued at 2026-11-15T20:07:24.248Z
-- 2026-11-15T20:07:37Z · handoff_deferred: 1 queued message(s) must be read before review
-- 2026-11-15T20:07:37Z · message_queued at 2026-11-15T20:07:37.358Z
-- 2026-11-15T20:07:37Z · ↻ resuming engineer to read queued message
-- 2026-11-15T20:07:37Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: Now I'll rewrite `MobileWorkQueue.vue` with URL-backed filters, sections, search, chips, and pagination. · stderr: (empty)
-- 2026-11-15T20:07:37Z · message_delivered: 2 message(s)
-- 2026-11-15T20:08:59Z · CTO nudge: held — handoff gate is running
-- 2026-11-15T20:10:29Z · note: ui verification passed: 3 of 3 shots captured with clean console
-- 2026-11-15T20:10:30Z · message_queued at 2026-11-15T20:10:30.132Z
-- 2026-11-15T20:10:44Z · CTO nudge: held — an undelivered message is already queued
-- 2026-11-15T20:13:31Z · watchdog: restarting engineer because a queued message waited 3m with no live process
-- 2026-11-15T20:13:32Z · message_delivered: 1 message(s)
-- 2026-11-15T20:15:33Z · body
-- 2026-11-15T20:17:56Z · body
-- 2026-11-15T20:18:59Z · CTO nudge: held — handoff gate is running
-- 2026-11-15T20:20:13Z · note: ui verification passed: 2 of 2 shots captured with clean console
 - 2026-11-15T20:20:13Z · status active→review
-- 2026-11-15T20:20:14Z · message_queued at 2026-11-15T20:20:14.117Z
-- 2026-11-15T20:21:07Z · note: review pass 1: good to go
-
