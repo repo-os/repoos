@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 587735
-last_close_out_gate_at: "2026-11-15T06:17:36.080Z"
 id: "1125"
 title: Fix the flaky remote-host-pool (and agent-review/pressure-guard/agent-drivers) tests that keep failing close-out and handoff on remote runners
 type: bug
-status: review
+status: done
 priority: p0
 area: [core, server]
+merged_commit: bbd4d3a7bdae5672b7d30d1475430ea43fefcd7b
 assigned_to: ai
 created_by: t@t
 branch: feat/fix-the-flaky-remote-host-pool-and-agent
@@ -14,6 +13,8 @@ cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-15T04:51:36Z"
 updated_at: "2026-11-15T06:17:36Z"
+last_close_out_gate_ms: 587735
+last_close_out_gate_at: "2026-11-15T06:17:36.080Z"
 review_passes: 1
 ---
 ## Problem

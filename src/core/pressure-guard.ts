@@ -358,6 +358,11 @@ function mergeActivityReadings(
 
 let lastCpuSample: { idle: number; total: number } | null = null;
 
+/** Reset CPU sampling between unit tests — avoids cross-test delta pollution. */
+export function resetCpuIdleSampling(): void {
+  lastCpuSample = null;
+}
+
 /** Idle CPU since the previous call. The first call returns null (no delta yet). */
 export function sampleCpuIdlePercent(): number | null {
   const list = cpus();
@@ -391,10 +396,9 @@ export function pressureSnapshot(
     config,
     runCommand,
   );
-  return evaluatePressure(
-    { ...readings, cpuIdlePercent: sampleCpuIdlePercent() },
-    pressureThresholds(config),
-  );
+  // Injected probes are for deterministic tests — never blend them with live CPU.
+  const cpuIdlePercent = probe ? null : sampleCpuIdlePercent();
+  return evaluatePressure({ ...readings, cpuIdlePercent }, pressureThresholds(config));
 }
 
 /** Current machine readings without evaluating them (kept for diagnostics). */
@@ -447,7 +451,7 @@ export async function waitForPressureRelief(
   } = {},
 ): Promise<void> {
   if (!pressureGuardEnabled(config)) return;
-  const poll = Math.max(500, opts.pollMs ?? 2000);
+  const poll = opts.probe ? Math.max(1, opts.pollMs ?? 1) : Math.max(500, opts.pollMs ?? 2000);
   while (true) {
     const snapshot = pressureSnapshot(config, opts.probe);
     const reason =

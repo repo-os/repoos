@@ -2475,6 +2475,7 @@ describe("host-side lock (server + standalone CLI share one limit)", () => {
     const waitDir = join(lockRoot, "wait");
     mkdirSync(waitDir, { recursive: true });
     const shellPidPath = join(root, "shell.pid");
+    const queueReady = join(root, "queue-ready");
     const script = hostLockShell({
       slots: 1,
       waitSecs: 2,
@@ -2483,7 +2484,10 @@ describe("host-side lock (server + standalone CLI share one limit)", () => {
     });
     // Hold the lock shell before it inspects the queue so the dead PID can be
     // created after its own PID is known and cannot be mistaken for itself.
-    const child = spawn("sh", ["-c", `echo $$ > "${shellPidPath}"; sleep 0.2;\n${script}`]);
+    const child = spawn("sh", [
+      "-c",
+      `echo $$ > "${shellPidPath}"; while [ ! -f "${queueReady}" ]; do sleep 0.02; done\n${script}`,
+    ]);
     let output = "";
     child.stdout.on("data", (chunk: Buffer) => (output += chunk.toString()));
     child.stderr.on("data", (chunk: Buffer) => (output += chunk.toString()));
@@ -2513,6 +2517,7 @@ describe("host-side lock (server + standalone CLI share one limit)", () => {
     // A live high-priority entry forces deferral; a second dead PID entry is
     // cleaned as the queue is inspected.
     writeFileSync(join(waitDir, String(process.pid)), "999\n");
+    writeFileSync(queueReady, "go\n");
     const result = await new Promise<{ code: number | null; out: string }>((resolve) => {
       child.on("close", (code) => resolve({ code, out: output }));
     });
@@ -2615,11 +2620,17 @@ describe("host-side lock (server + standalone CLI share one limit)", () => {
     // Node mtime — portable on remote validators where `touch -t` differs (#1122 mini).
     const staleAt = new Date("2000-01-01T00:00:00Z");
     utimesSync(slot, staleAt, staleAt);
+    try {
+      execFileSync("touch", ["-d", "@0", slot]);
+    } catch {
+      execFileSync("touch", ["-t", "197001010000", slot]);
+    }
+    expect(statSync(slot).mtimeMs).toBeLessThan(Date.now() - 60_000);
     const marks = join(root, "marks.log");
     const res = await sh(
       hostLockShell({
         slots: 1,
-        waitSecs: 30,
+        waitSecs: 15,
         lockRoot,
         staleMinutes: 1,
         inner: `echo ran >> "${marks}"`,
@@ -2628,7 +2639,7 @@ describe("host-side lock (server + standalone CLI share one limit)", () => {
     expect(res.code).toBe(0);
     expect(res.out).toContain("[lock] slot 0 acquired");
     expect(readFileSync(marks, "utf8")).toContain("ran");
-  }, 45_000);
+  }, 30_000);
 
   it("heartbeats the slot dir while the holder runs, so staleness means 'dead' not 'slow' (#0521 review)", async () => {
     const root = tmpRoot();
