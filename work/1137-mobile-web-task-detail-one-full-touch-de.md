@@ -3,6 +3,9 @@ id: "1137"
 title: "Mobile web task detail: one full touch detail for every entry point (card view is a read-only stub; drawer tabs and close clipped)"
 type: bug
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: the agent process exited with an error — open the task to see the full output
 paths: [src/ui-app/src/components/MobileTaskDetail.vue, src/ui-app/src/App.vue, src/ui-app/src/components/TaskDrawer.vue]
 priority: p1
 area: web
@@ -11,8 +14,8 @@ assigned_to: ai
 created_by: t@t
 branch: feat/mobile-web-task-detail-one-full-touch-de
 created_at: "2026-11-15T17:24:03Z"
-updated_at: "2026-11-15T21:27:51Z"
-dev_error_count: 2
+updated_at: "2026-11-15T21:27:52Z"
+dev_error_count: 3
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-11-15T20:25:16.075Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-11-15T20:35:07.691Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
@@ -124,3 +127,4 @@ On a phone there's a single task detail, whichever way it was opened (card, sear
 - 2026-11-15T21:15:10Z · watchdog: restarting engineer after 10m with no live process
 - 2026-11-15T21:27:51Z · note: stopped orphaned engineer pid 9316
 - 2026-11-15T21:27:51Z · note: stopped orphaned engineer pid 9316
+- 2026-11-15T21:27:52Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
