@@ -13,7 +13,6 @@ branch: feat/mobile-web-task-detail-one-full-touch-de
 created_at: "2026-11-15T17:24:03Z"
 updated_at: "2026-11-15T22:02:20Z"
 dev_error_count: 3
-engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-11-15T21:27:52.574Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 On a phone (below 720px), a task has two different detail views:
