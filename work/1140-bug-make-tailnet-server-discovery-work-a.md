@@ -71,3 +71,4 @@ Reproduce the reported behavior first with fake Tailscale and SSH executables; k
 - 2026-11-16T04:46:24Z · message_queued at 2026-11-16T04:46:24.456Z
 - 2026-11-16T04:46:24Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-16T04:49:28Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-16T04:49:28Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 130) · last assistant: Now the scoped check. This can take a while. · stderr: (empty)
