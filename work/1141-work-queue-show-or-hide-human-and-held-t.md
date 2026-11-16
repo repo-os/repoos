@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/work-queue-show-or-hide-human-and-held-t
 created_at: "2026-11-16T03:51:39Z"
-updated_at: "2026-11-16T05:26:25Z"
+updated_at: "2026-11-16T07:02:02Z"
 review_passes: 1
 review_failed_report_retries: 0
 ---
@@ -97,3 +97,4 @@ Use the attached screenshot as the layout reference. Inspect existing Work Queue
 - 2026-11-16T05:14:13Z · needs_input (review-failed) cleared for review again by hello@repoos.org
 - 2026-11-16T05:16:54Z · note: review pass 4: good to go
 - 2026-11-16T05:26:25Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-16T07:02:02Z · message_overdue: still queued after 60m without being delivered
