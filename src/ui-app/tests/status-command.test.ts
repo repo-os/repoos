@@ -562,6 +562,8 @@ describe("stale-server helpers (#0701)", () => {
       health: "ok" as const,
       healthRoot: null,
       locks: 1,
+      registration: "registered" as const,
+      registrationReason: null,
       ...over,
     };
   }
@@ -667,6 +669,8 @@ describe("status --json shape", () => {
       "managedService",
       "pid",
       "port",
+      "registration",
+      "registrationReason",
       "running",
       "startedAt",
       "startedAtSource",

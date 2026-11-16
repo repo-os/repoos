@@ -5,6 +5,8 @@ import {
   checkServerRegistryPortConflict,
   readServerRegistryEntry,
   removeServerRegistryEntry,
+  serverRegistrationState,
+  serverRegistryExclusion,
   shouldRegisterServerRegistry,
   writeServerRegistryEntry,
   SERVER_REGISTRY_SCHEMA,
@@ -66,7 +68,16 @@ describe("shouldRegisterServerRegistry", () => {
     ).toBe(false);
   });
 
-  it("returns false for a linked task worktree root", () => {
+  it("reports the exclusion reason used by `repoos status`", () => {
+    const base = { root: "/tmp/main", previewOverrides: undefined };
+    expect(serverRegistryExclusion(base, { requestedPort: 7171 }, {})).toBeNull();
+    expect(serverRegistryExclusion(base, { requestedPort: 0 }, {})).toBe("ephemeral port");
+    expect(
+      serverRegistryExclusion(base, { requestedPort: 7171 }, { REPOOS_NO_REGISTRY: "1" }),
+    ).toBe("REPOOS_NO_REGISTRY=1");
+  });
+
+  it("registers a hand-run serve rooted in a linked task worktree (#1140)", () => {
     const main = mkdtempSync(join(tmpdir(), "repoos-srv-reg-main-"));
     git(main, ["init", "-q", "-b", "main"]);
     git(main, ["config", "user.email", "t@example.com"]);
@@ -83,11 +94,21 @@ describe("shouldRegisterServerRegistry", () => {
         {},
       ),
     ).toBe(true);
+    // A manually started control-plane serve in a worktree is a real server
+    // that `repoos status`, `repoos servers` and tailnet discovery must agree
+    // on. Preview children are excluded by REPOOS_PREVIEW_CHILD, not by root.
     expect(
       shouldRegisterServerRegistry(
         { root: wt, previewOverrides: undefined },
         { requestedPort: 7171 },
         {},
+      ),
+    ).toBe(true);
+    expect(
+      shouldRegisterServerRegistry(
+        { root: wt, previewOverrides: undefined },
+        { requestedPort: 7171 },
+        { REPOOS_PREVIEW_CHILD: "1" },
       ),
     ).toBe(false);
     rmSync(main, { recursive: true, force: true });
@@ -185,5 +206,41 @@ describe("server registry files", () => {
     writeServerRegistryEntry(sampleEntry(7500, "/tmp/x", 999_998));
     expect(await serverRegistry.pruneStaleServerRegistryEntries()).toBe(1);
     expect(existsSync(join(dir, "7500.json"))).toBe(false);
+  });
+
+  it("reconciles a running server's registration with its serve-lock intent (#1140)", () => {
+    const port = 7601;
+    expect(
+      serverRegistrationState({
+        root: "/tmp/repo",
+        port,
+        pid: process.pid,
+        lockRegistry: { state: "excluded", reason: "REPOOS_NO_REGISTRY=1" },
+        registryDir: dir,
+      }),
+    ).toEqual({ state: "excluded", reason: "REPOOS_NO_REGISTRY=1" });
+
+    writeServerRegistryEntry(sampleEntry(port, "/tmp/repo", process.pid));
+    expect(
+      serverRegistrationState({
+        root: "/tmp/repo",
+        port,
+        pid: process.pid,
+        lockRegistry: { state: "registered" },
+        registryDir: dir,
+      }),
+    ).toEqual({ state: "registered", reason: null });
+
+    // Intended to register but the best-effort write never landed (or an old
+    // server): status says so instead of silently agreeing with `status`.
+    expect(
+      serverRegistrationState({
+        root: "/tmp/repo",
+        port: 7602,
+        pid: process.pid,
+        lockRegistry: { state: "registered" },
+        registryDir: dir,
+      }),
+    ).toEqual({ state: "unregistered", reason: "no registry entry for this port" });
   });
 });

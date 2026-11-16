@@ -1,5 +1,18 @@
 import { describe, expect, it, vi } from "vitest";
-import { collectTailnetServers, parseTailnetPeers, cmdServers, serversSshArgs } from "./servers.js";
+import { execFileSync } from "node:child_process";
+import { chmodSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import {
+  collectTailnetServers,
+  parseTailnetPeers,
+  remoteFailureReason,
+  remoteShellCommand,
+  remoteShellScript,
+  shellQuote,
+  cmdServers,
+  serversSshArgs,
+} from "./servers.js";
 import * as registry from "../core/server-registry.js";
 
 describe("repoos servers --tailscale", () => {
@@ -35,6 +48,7 @@ describe("repoos servers --tailscale", () => {
       remoteExec,
     });
     expect(result.tailscaleUnavailable).toBe(false);
+    expect(result.source).toBe("tailscale");
     expect(result.servers).toEqual([
       { host: "local", port: 7000 },
       { port: 7171, projectName: "remote", valid: true, host: "fast" },
@@ -45,15 +59,18 @@ describe("repoos servers --tailscale", () => {
   });
 
   it("falls back to configured hosts when the Tailscale CLI is unavailable", async () => {
+    const remoteExec = vi.fn(async () => JSON.stringify({ servers: [{ port: 7499 }] }));
     const result = await collectTailnetServers([], {
       tailscaleStatus: async () => {
         throw new Error("tailscale: not found");
       },
       configuredHosts: ["bee"],
-      remoteExec: async () => JSON.stringify({ servers: [] }),
+      remoteExec,
     });
     expect(result.tailscaleUnavailable).toBe(true);
-    expect(result.servers).toEqual([]);
+    expect(result.source).toBe("configured-hosts");
+    expect(result.servers).toEqual([{ port: 7499, host: "bee" }]);
+    expect(remoteExec).toHaveBeenCalledWith("bee", "root", 4_000, "repoos servers --json");
   });
 
   it("uses configured per-host users and the global Tailscale user in SSH targets", async () => {
@@ -79,7 +96,122 @@ describe("repoos servers --tailscale", () => {
       "-o",
       "ConnectTimeout=4",
       "operator@bee",
-      "repoos servers --json",
+      remoteShellCommand("repoos servers --json"),
+    ]);
+  });
+
+  it("runs the remote command through sh with a predictable PATH, not an interactive shell", () => {
+    const args = serversSshArgs("bee", "operator", 4_000);
+    const remote = args.at(-1) as string;
+    expect(remote).toBe(
+      "sh -c 'PATH=\"$HOME/.local/bin:$HOME/.bun/bin:$HOME/.npm-global/bin:/opt/homebrew/bin:/usr/local/bin:$PATH\"; export PATH; repoos servers --json'",
+    );
+    // The destination and payload are separate argv, so a host/user value can
+    // never become shell syntax; the payload is one quoted `sh -c` argument.
+    expect(args.slice(-2)).toEqual(["operator@bee", remote]);
+    expect(remote.startsWith("sh -c '")).toBe(true);
+    expect(remote.endsWith("repoos servers --json'")).toBe(true);
+    expect(shellQuote("a'b")).toBe("'a'\\''b'");
+  });
+
+  it("finds repoos through the added PATH under sh, bash and zsh", () => {
+    const home = mkdtempSync(join(tmpdir(), "repoos-remote-path-"));
+    const bin = join(home, ".local", "bin");
+    mkdirSync(bin, { recursive: true });
+    const fake = join(bin, "repoos");
+    writeFileSync(fake, "#!/bin/sh\nprintf 'found:%s\\n' \"$1\"\n");
+    chmodSync(fake, 0o755);
+    try {
+      const script = remoteShellScript("repoos probe");
+      const shells = ["sh", "bash", "zsh"].filter((shell) => {
+        try {
+          execFileSync("sh", ["-c", `command -v ${shell}`], { stdio: "ignore" });
+          return true;
+        } catch {
+          return false;
+        }
+      });
+      // sh and bash are the POSIX/bourne pair every supported remote has;
+      // zsh is checked where present. All read the deterministic PATH, not an
+      // interactive startup file.
+      expect(shells).toContain("sh");
+      expect(shells).toContain("bash");
+      for (const shell of shells) {
+        const out = execFileSync(shell, ["-c", script], {
+          env: { ...process.env, HOME: home },
+          encoding: "utf8",
+        });
+        expect(out.trim()).toBe("found:probe");
+      }
+    } finally {
+      rmSync(home, { recursive: true, force: true });
+    }
+  });
+
+  it("keeps command-not-found, auth and connection causes distinct from real timeouts", async () => {
+    const commandNotFound = Object.assign(
+      new Error(
+        "Command failed: ssh -o BatchMode=yes -o ConnectTimeout=4 operator@bee sh -c 'repoos servers --json'",
+      ),
+      {
+        code: 127,
+        stderr: "bash: line 1: repoos: command not found\n",
+        stdout: "",
+      },
+    );
+    expect(remoteFailureReason(commandNotFound)).toMatch(/command not found: repoos/);
+    expect(remoteFailureReason(commandNotFound)).not.toBe("timed out");
+
+    const auth = Object.assign(new Error("Command failed: ssh ..."), {
+      code: 255,
+      stderr: "operator@bee: Permission denied (publickey).\n",
+    });
+    expect(remoteFailureReason(auth)).toMatch(/authentication failed/);
+    expect(remoteFailureReason(auth)).not.toBe("timed out");
+
+    const refused = Object.assign(new Error("Command failed: ssh ..."), {
+      code: 255,
+      stderr: "ssh: connect to host bee port 22: Connection refused\n",
+    });
+    expect(remoteFailureReason(refused)).toMatch(/connection refused/);
+    expect(remoteFailureReason(refused)).not.toBe("timed out");
+
+    // A real ssh-side timeout is still a timeout.
+    const sshTimeout = Object.assign(new Error("Command failed: ssh ..."), {
+      code: 255,
+      stderr: "ssh: connect to host bee port 22: Connection timed out\n",
+    });
+    expect(remoteFailureReason(sshTimeout)).toBe("timed out");
+
+    // A local execFile timeout (child killed) is a timeout even though its
+    // message repeats ConnectTimeout=4 from the argv.
+    const execTimeout = Object.assign(
+      new Error("Command failed: ssh -o ConnectTimeout=4 operator@bee sh -c ..."),
+      { killed: true, signal: "SIGTERM", code: null, stderr: "" },
+    );
+    expect(remoteFailureReason(execTimeout)).toBe("timed out");
+  });
+
+  it("reports a command-not-found peer as its real cause, not a timeout, while keeping other hosts", async () => {
+    const sshError = Object.assign(
+      new Error(
+        "Command failed: ssh -o BatchMode=yes -o ConnectTimeout=4 operator@bee sh -c 'repoos servers --json'",
+      ),
+      { code: 127, stderr: "zsh:1: command not found: repoos\n" },
+    );
+    const result = await collectTailnetServers([], {
+      tailscaleStatus: async () => {
+        throw new Error("tailscale: not found");
+      },
+      configuredHosts: ["bee", "thinkpad"],
+      remoteExec: async (host) => {
+        if (host === "bee") throw sshError;
+        return JSON.stringify({ servers: [{ port: 7499, projectName: "thinkpad-project" }] });
+      },
+    });
+    expect(result.servers).toEqual([
+      { host: "bee", unreachable: true, reason: "command not found: repoos on the remote PATH" },
+      { host: "thinkpad", port: 7499, projectName: "thinkpad-project" },
     ]);
   });
 

@@ -23,7 +23,7 @@ import http from "node:http";
 import { homedir } from "node:os";
 import { join, resolve } from "node:path";
 import { realpathSync } from "node:fs";
-import { isLinkedWorktreeRoot, projectDisplayName } from "./config.js";
+import { projectDisplayName } from "./config.js";
 import type { Logger } from "./logger.js";
 import type { RepoOSConfig } from "./types.js";
 
@@ -74,22 +74,86 @@ export function canonicalRegistryRoot(root: string): string {
 }
 
 /**
- * Whether this `startServer` instance should register in `~/.repoos/servers`.
- * Preview children, preview-overrides serves, task worktrees, ephemeral port 0,
- * and `REPOOS_NO_REGISTRY=1` are excluded.
+ * Why this `startServer` instance is intentionally left out of
+ * `~/.repoos/servers`, or null when it should register. Preview children,
+ * preview-overrides serves (manual UI previews), ephemeral port 0 and
+ * `REPOOS_NO_REGISTRY=1` are excluded. A hand-run `repoos serve` — including
+ * one rooted in a linked task worktree — registers normally: it is a real
+ * control plane and tailnet discovery should see it.
  */
+export type ServerRegistryExclusion =
+  | "REPOOS_NO_REGISTRY=1"
+  | "preview child"
+  | "preview overrides"
+  | "ephemeral port";
+
+export function serverRegistryExclusion(
+  config: Pick<RepoOSConfig, "root" | "previewOverrides">,
+  opts: { requestedPort: number },
+  env: NodeJS.ProcessEnv = process.env,
+): ServerRegistryExclusion | null {
+  if (env.REPOOS_NO_REGISTRY === "1") return "REPOOS_NO_REGISTRY=1";
+  if (env.REPOOS_PREVIEW_CHILD === "1") return "preview child";
+  if ((config.previewOverrides?.length ?? 0) > 0) return "preview overrides";
+  /** Harness `startServer({ port: 0 })` — OS assigns a real port but must not register. */
+  if (opts.requestedPort === 0) return "ephemeral port";
+  return null;
+}
+
 export function shouldRegisterServerRegistry(
   config: Pick<RepoOSConfig, "root" | "previewOverrides">,
   opts: { requestedPort: number },
   env: NodeJS.ProcessEnv = process.env,
 ): boolean {
-  if (env.REPOOS_NO_REGISTRY === "1") return false;
-  if (env.REPOOS_PREVIEW_CHILD === "1") return false;
-  if ((config.previewOverrides?.length ?? 0) > 0) return false;
-  if (isLinkedWorktreeRoot(config.root)) return false;
-  /** Harness `startServer({ port: 0 })` — OS assigns a real port but must not register. */
-  if (opts.requestedPort === 0) return false;
-  return true;
+  return serverRegistryExclusion(config, opts, env) === null;
+}
+
+/**
+ * The registry intent a serve process records in its serve lock. Status reads
+ * it to explain a running server that `repoos servers` and tailnet discovery
+ * cannot see, without guessing from the status CLI's own environment.
+ */
+export type ServeLockRegistryState = "registered" | "excluded";
+
+/**
+ * Reconcile what a running server *intended* to publish with what is actually
+ * in the registry. `registered` requires a matching entry; an intentional
+ * exclusion is reported as `excluded` with its reason; anything else is
+ * `unregistered` (best-effort registration failed, or an older server).
+ */
+export type ServerRegistrationState = "registered" | "excluded" | "unregistered";
+
+export interface ServerRegistrationResult {
+  state: ServerRegistrationState;
+  reason: string | null;
+}
+
+export function serverRegistrationState(input: {
+  root: string;
+  port: number;
+  pid?: number | null;
+  /** Registry intent recorded in the serve lock by a current server. */
+  lockRegistry?: { state: ServeLockRegistryState; reason?: string } | null;
+  registryDir?: string;
+}): ServerRegistrationResult {
+  const entry = readServerRegistryEntry(input.port, input.registryDir);
+  if (
+    entry &&
+    canonicalRegistryRoot(entry.root) === canonicalRegistryRoot(input.root) &&
+    (input.pid == null || entry.pid === input.pid)
+  ) {
+    return { state: "registered", reason: null };
+  }
+  if (input.lockRegistry?.state === "excluded") {
+    return { state: "excluded", reason: input.lockRegistry.reason ?? null };
+  }
+  if (input.lockRegistry?.state === "registered") {
+    return { state: "unregistered", reason: "no registry entry for this port" };
+  }
+  return {
+    state: "unregistered",
+    reason: "this server's RepoOS build does not publish registry intent",
+  };
 }
 
 export function isPidAlive(pid: number): boolean {

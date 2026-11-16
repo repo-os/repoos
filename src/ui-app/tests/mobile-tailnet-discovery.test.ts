@@ -131,6 +131,32 @@ describe("mobile tailnet discovery", () => {
     );
   });
 
+  it("explains configured-host fallback instead of claiming the tailnet is invisible", async () => {
+    const fetchImpl = vi.fn(async () =>
+      Promise.resolve(
+        new Response(
+          JSON.stringify({
+            ok: true,
+            servers: rows,
+            tailscaleUnavailable: true,
+            discoverySource: "configured-hosts",
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        ),
+      ),
+    );
+    const result = await fetchTailnetServers("https://bee.tailc0c173.ts.net:7499", {
+      fetchImpl: fetchImpl as unknown as typeof fetch,
+    });
+
+    expect(result.kind).toBe("ok");
+    if (result.kind === "ok") {
+      expect(result.tailscaleUnavailable).toBe(true);
+      expect(result.message).toMatch(/configured hosts/);
+      expect(result.message).not.toMatch(/can't see your tailnet/);
+    }
+  });
+
   it("turns an auth refusal into a plain message instead of a scan or retry", async () => {
     const fetchImpl = vi.fn(async () =>
       Promise.resolve(

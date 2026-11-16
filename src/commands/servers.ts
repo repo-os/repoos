@@ -14,7 +14,11 @@ import { c } from "../cli/colors.js";
 export {
   collectTailnetServers,
   parseTailnetPeers,
+  remoteFailureReason,
+  remoteShellCommand,
+  remoteShellScript,
   serversSshArgs,
+  shellQuote,
 } from "../core/tailnet-servers.js";
 export type { ListedServer, RemoteExec } from "../core/tailnet-servers.js";
 
@@ -100,7 +104,7 @@ export async function cmdServers(argv: string[]): Promise<void> {
         remoteHosts,
         remoteValidation: cfg?.remoteValidation,
       })
-    : { servers: local, tailscaleUnavailable: false };
+    : { servers: local, tailscaleUnavailable: false as const, source: "tailscale" as const };
 
   if (json) {
     console.log(
@@ -109,6 +113,7 @@ export async function cmdServers(argv: string[]): Promise<void> {
           servers: tailscale ? result.servers : localRows.map(localJsonRow),
           ...(pruned !== undefined ? { pruned } : {}),
           ...(result.tailscaleUnavailable ? { tailscaleUnavailable: true } : {}),
+          ...(tailscale && result.source ? { discoverySource: result.source } : {}),
         },
         null,
         2,
@@ -120,12 +125,16 @@ export async function cmdServers(argv: string[]): Promise<void> {
     console.log(
       c.dim(`  Pruned ${pruned} stale local registry entr${pruned === 1 ? "y" : "ies"}.`),
     );
-  if (result.tailscaleUnavailable)
+  if (result.tailscaleUnavailable) {
+    const configured = remoteHosts.map((host) => host.host);
     console.log(
       c.yellow(
-        "  Tailscale CLI unavailable; showing configured hosts where reachable and local servers.",
+        configured.length
+          ? `  Tailscale CLI unavailable; using configured hosts (${configured.join(", ")}) instead of the tailnet peer list.`
+          : "  Tailscale CLI unavailable and no remoteValidation.tailscaleHosts configured; showing local servers only.",
       ),
     );
+  }
   if (!tailscale && !prune && pruned === undefined) {
     if (localRows.length === 0) {
       console.log(c.dim("  No registered RepoOS servers."));

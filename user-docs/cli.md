@@ -613,21 +613,36 @@ Lists every control-plane `repoos serve` that registered itself under
 name, repo root, PID, uptime, live engineer count, and whether the entry still
 looks healthy (PID alive and `/api/health` reports the same root).
 
+A hand-run `repoos serve` registers whether it was started from the main
+checkout or a linked task worktree, so `repoos status`, `repoos servers` and
+tailnet discovery agree on the same instance. Preview and shot servers
+(`REPOOS_PREVIEW_CHILD=1` or `--preview-overrides`), ephemeral test servers
+(port `0`) and anything with `REPOOS_NO_REGISTRY=1` never register. When a
+running server is deliberately excluded, `repoos status` says
+`not in the running-server registry (<reason>)` and points out that
+`repoos servers` and tailnet discovery will not list it.
+
 `--prune` removes stale registry files (dead PID, or a live PID whose
 `/api/health` is unreachable or reports a different root), then lists the rest.
-`--json` prints the same data for scripts. Preview servers and task worktree
-serves never register. The Hub uses the same registry to discover local servers.
+`--json` prints the same data for scripts. The Hub uses the same registry to
+discover local servers.
 
 `--tailscale` adds servers from online Tailscale peers by running
 `repoos servers --json` over SSH. It uses `tailscale status --json` to discover
 peers, or the hosts configured under `remoteValidation.tailscaleHosts` if the
-Tailscale CLI is unavailable. Each host has a short timeout; failed hosts appear
-as `unreachable` with a reason, while the rest of the list is still shown. The
-JSON output includes a `host` field for every entry. If Tailscale is unavailable,
-the command says so and still prints local servers. `--prune` is local-only and
+Tailscale CLI is unavailable. When that fallback is used the text output names
+the configured hosts, and `--json` sets `tailscaleUnavailable: true` plus
+`discoverySource: "configured-hosts"` (the normal Tailscale path reports
+`"tailscale"`). The remote command runs through a non-interactive `sh -c` with
+the common `repoos` install directories added to `PATH`, so it does not depend
+on an interactive shell or a TTY. Each host has a short timeout; failed hosts
+appear as `unreachable` with their real cause — `command not found`,
+`SSH authentication failed`, `connection refused`, or `timed out` only when a
+timeout actually occurred — while the rest of the list is still shown. The JSON
+output includes a `host` field for every entry. `--prune` is local-only and
 cannot be combined with `--tailscale`.
-This behavior is implemented in `src/commands/servers.ts` and covered by
-`src/commands/servers.test.ts`.
+This behavior is implemented in `src/core/tailnet-servers.ts` and
+`src/commands/servers.ts`, and covered by `src/commands/servers.test.ts`.
 
 ### `repoos review keep <id> [--json] [--port N]`
 
@@ -654,6 +669,13 @@ describes this checkout, so in a project repo it reads `no RepoOS build` rather
 than implying the repo is a RepoOS source checkout. `--json` exposes `cli` and
 `server.buildState` (`same`/`stale`/`unknown`) so scripts can detect a stale
 server without parsing text.
+
+The `server` line also reconciles the serve lock with the running-server
+registry: `server.registration` is `registered`, `excluded` (with a reason such
+as `REPOOS_NO_REGISTRY=1` or `preview overrides`) or `unregistered` when a
+running server is missing from `~/.repoos/servers`. That keeps `repoos status`
+honest about what `repoos servers` and tailnet discovery can see, instead of
+reporting a live server they cannot discover.
 
 ### `repoos doctor [--json] [--verbose] [--probe <cli> [--model <id>]] [--binary <path>]`
 

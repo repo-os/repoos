@@ -169,6 +169,45 @@ export type RemoteExec = (
   command?: string,
 ) => Promise<string>;
 
+/**
+ * Install locations a `repoos` launcher and its Bun/Node runtime commonly use.
+ * A non-interactive SSH command inherits a minimal PATH (`/usr/bin:/bin:…`) and
+ * does not read the user's interactive shell startup files, so `repoos` is not
+ * found even though the same login works in a terminal. Prepending these known
+ * locations makes lookup predictable without a login shell or a TTY.
+ */
+export const REMOTE_PATH_PREFIX = [
+  "$HOME/.local/bin",
+  "$HOME/.bun/bin",
+  "$HOME/.npm-global/bin",
+  "/opt/homebrew/bin",
+  "/usr/local/bin",
+].join(":");
+
+/** POSIX-quote one argument for `sh` (single quotes, embedded quotes escaped). */
+export function shellQuote(value: string): string {
+  return `'${value.replace(/'/g, `'\\''`)}'`;
+}
+
+/**
+ * The remote script: a deterministic PATH followed by the command. `command`
+ * is a trusted internal constant (`repoos servers --json`, `tailscale serve
+ * status --json`), never user input; host and user travel as separate SSH argv.
+ */
+export function remoteShellScript(command: string): string {
+  return `PATH="${REMOTE_PATH_PREFIX}:$PATH"; export PATH; ${command}`;
+}
+
+/**
+ * Wrap the remote work in `sh -c '<script>'`. OpenSSH already runs the user's
+ * login shell non-interactively, which may be bash, zsh or a POSIX sh; passing
+ * one quoted argument keeps the payload valid for all of them and avoids
+ * relying on interactive rc files for PATH.
+ */
+export function remoteShellCommand(command = "repoos servers --json"): string {
+  return `sh -c ${shellQuote(remoteShellScript(command))}`;
+}
+
 export function serversSshArgs(
   host: string,
   user: string,
@@ -181,8 +220,98 @@ export function serversSshArgs(
     "-o",
     `ConnectTimeout=${Math.ceil(timeoutMs / 1000)}`,
     `${user}@${host}`,
-    command,
+    remoteShellCommand(command),
   ];
+}
+
+function stringField(error: unknown, key: string): string | undefined {
+  if (!error || typeof error !== "object") return undefined;
+  const value = (error as Record<string, unknown>)[key];
+  if (typeof value === "string") return value;
+  if (value instanceof Uint8Array) return Buffer.from(value).toString("utf8");
+  return undefined;
+}
+
+function booleanField(error: unknown, key: string): boolean | undefined {
+  if (!error || typeof error !== "object") return undefined;
+  const value = (error as Record<string, unknown>)[key];
+  return typeof value === "boolean" ? value : undefined;
+}
+
+/**
+ * A local timeout (execFile killed the child, ETIMEDOUT, or an AbortSignal) is
+ * the ONLY evidence that earns "timed out". Text matching is deliberately
+ * avoided here: execFile's message repeats the whole SSH argv, including
+ * `-o ConnectTimeout=4`, so a `/timeout/i` test wrongly labels every SSH
+ * failure a timeout.
+ */
+export function isRemoteTimeout(error: unknown): boolean {
+  if (stringField(error, "code") === "ETIMEDOUT") return true;
+  if (stringField(error, "name") === "TimeoutError") return true;
+  if (booleanField(error, "killed") === true) return true;
+  const signal = stringField(error, "signal");
+  return typeof signal === "string" && signal.length > 0;
+}
+
+/** First meaningful line of stderr, bounded so a chatty host can't flood a row. */
+function firstErrorLine(text: string): string {
+  const line = text
+    .split(/\r?\n/)
+    .map((part) => part.trim())
+    .find((part) => part.length > 0);
+  const value = line ?? text.trim();
+  return value.length > 300 ? `${value.slice(0, 297)}…` : value;
+}
+
+function remoteBinaryFromCommandNotFound(text: string): string | null {
+  const match =
+    /command not found:\s*([\w.+-]+)/i.exec(text) ??
+    /(?:^|[\s:])([\w.+-]+):\s*command not found/i.exec(text) ??
+    /(?:^|[\s:])([\w.+-]+):\s*not found\b/i.exec(text);
+  return match?.[1] ?? null;
+}
+
+/**
+ * Turn an SSH/exec failure into the user-facing reason shown by
+ * `repoos servers --tailscale`. The actual cause is preserved: a missing
+ * `repoos` binary, authentication failure, refused connection and a real
+ * network timeout stay distinct instead of collapsing into "timed out".
+ */
+export function remoteFailureReason(error: unknown): string {
+  if (isRemoteTimeout(error)) return "timed out";
+
+  const stderr = stringField(error, "stderr")?.trim() ?? "";
+  const message = error instanceof Error ? error.message : String(error ?? "");
+  const text = stderr || message;
+
+  if (/command not found|: not found\b/i.test(text)) {
+    const binary = remoteBinaryFromCommandNotFound(text);
+    return `command not found${binary ? `: ${binary}` : ""} on the remote PATH`;
+  }
+  if (/\bpermission denied\b/i.test(text)) {
+    return `SSH authentication failed: ${firstErrorLine(text)}`;
+  }
+  if (/host key verification failed/i.test(text)) {
+    return `SSH host key verification failed: ${firstErrorLine(text)}`;
+  }
+  if (/could not resolve hostname|name or service not known|nodename nor servname/i.test(text)) {
+    return `host not found: ${firstErrorLine(text)}`;
+  }
+  if (/\bconnection refused\b/i.test(text)) {
+    return `connection refused: ${firstErrorLine(text)}`;
+  }
+  if (/\btimed out\b|\btimeout\b/i.test(text)) {
+    return "timed out";
+  }
+  if (/\b(?:no route to host|network is unreachable)\b/i.test(text)) {
+    return `connection failed: ${firstErrorLine(text)}`;
+  }
+  if (stderr) return firstErrorLine(stderr);
+  // Only fall back to the process message when it is not execFile's
+  // "Command failed: <the whole ssh argv>" wrapper (which contains
+  // ConnectTimeout even when the failure had nothing to do with time).
+  if (/^command failed:/i.test(message)) return "ssh command failed";
+  return message || "remote command failed";
 }
 
 const defaultRemoteExec: RemoteExec = async (host, user, timeoutMs, command) => {
@@ -244,6 +373,12 @@ export interface CollectTailnetOptions {
 export interface TailnetCollection {
   servers: ListedServer[];
   tailscaleUnavailable: boolean;
+  /**
+   * Where the peer list came from: the local Tailscale CLI, or the configured
+   * host pool when that CLI is absent/unreadable. Surfaced so the CLI and Hub
+   * can say which mode produced the rows instead of guessing.
+   */
+  source: "tailscale" | "configured-hosts";
   /** This machine's Tailscale identity, when status parsed successfully. */
   self?: TailnetPeer;
 }
@@ -366,12 +501,11 @@ export async function collectTailnetServers(
               }) as ListedServer,
           );
         } catch (error) {
-          const reason = error instanceof Error ? error.message : String(error);
           return [
             {
               host: peer.host,
               unreachable: true,
-              reason: /timed? ?out|timeout/i.test(reason) ? "timed out" : reason,
+              reason: remoteFailureReason(error),
             },
           ];
         }
@@ -384,6 +518,7 @@ export async function collectTailnetServers(
   return {
     servers: [...localRows, ...remotes.flat()],
     tailscaleUnavailable,
+    source: tailscaleUnavailable ? "configured-hosts" : "tailscale",
     ...(info?.self ? { self: info.self } : {}),
   };
 }
