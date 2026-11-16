@@ -2,7 +2,7 @@
 id: "1140"
 title: "Bug: make tailnet server discovery work across remote shells and hand-run servers"
 type: bug
-status: active
+status: review
 priority: p1
 area: [server, core]
 assigned_to: ai
@@ -153,3 +153,4 @@ Reproduce the reported behavior first with fake Tailscale and SSH executables; k
 - 2026-11-16T09:28:42Z · handoff failed · task-file handoff failed at review · could not commit finalized engineering report: A check is running; wait for it to finish.
 - 2026-11-16T09:29:09Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-16T09:32:11Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-16T09:32:11Z · status active→review
