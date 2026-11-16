@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/bug-make-tailnet-server-discovery-work-a
 created_at: "2026-11-16T03:38:56Z"
-updated_at: "2026-11-16T04:22:34Z"
+updated_at: "2026-11-16T04:23:12Z"
 ---
 ## Problem
 
@@ -47,3 +47,4 @@ Reproduce the reported behavior first with fake Tailscale and SSH executables; k
 - 2026-11-16T04:20:09Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-16T04:21:24Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-16T04:22:34Z · body
+- 2026-11-16T04:23:12Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
