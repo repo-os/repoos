@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/bug-make-tailnet-server-discovery-work-a
 created_at: "2026-11-16T03:38:56Z"
-updated_at: "2026-11-16T09:45:23Z"
+updated_at: "2026-11-16T09:46:55Z"
 review_passes: 3
 review_failed_report_retries: 0
 review_rounds: 2
@@ -159,3 +159,4 @@ Reproduce the reported behavior first with fake Tailscale and SSH executables; k
 - 2026-11-16T09:34:09Z · CTO nudge: held — handoff gate is running
 - 2026-11-16T09:45:23Z · message_queued at 2026-11-16T09:45:23.387Z
 - 2026-11-16T09:45:23Z · handoff failed · task-file handoff failed at review · Engineering report narrative is 1221 words; the hard limit is 1,200 words of narrative. Shorten it and request handoff again.
+- 2026-11-16T09:46:55Z · handoff_deferred: 1 queued message(s) must be read before review
