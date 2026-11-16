@@ -248,6 +248,16 @@ describe("repoos servers --tailscale", () => {
       { killed: true, signal: "SIGTERM", code: null, stderr: "" },
     );
     expect(remoteFailureReason(execTimeout)).toBe("timed out");
+
+    // execFile also kills the child at maxBuffer; that is an output limit, not
+    // a network timeout (#1140 review).
+    const tooMuch = Object.assign(new Error("Command failed: ssh ..."), {
+      code: "ERR_CHILD_PROCESS_STDIO_MAXBUFFER",
+      killed: true,
+      signal: "SIGTERM",
+    });
+    expect(remoteFailureReason(tooMuch)).toBe("remote output exceeded the 2 MiB limit");
+    expect(remoteFailureReason(tooMuch)).not.toBe("timed out");
   });
 
   it("reports a command-not-found peer as its real cause, not a timeout, while keeping other hosts", async () => {
@@ -271,6 +281,63 @@ describe("repoos servers --tailscale", () => {
       { host: "bee", unreachable: true, reason: "command not found: repoos on the remote PATH" },
       { host: "thinkpad", port: 7499, projectName: "thinkpad-project" },
     ]);
+  });
+
+  it("prints the local-only fallback line through cmdServers", async () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-servers-text-"));
+    const registryDir = mkdtempSync(join(tmpdir(), "repoos-servers-text-reg-"));
+    writeFileSync(join(root, "repoos.toml"), "servePort = 7171\n");
+    const priorRegistry = process.env.REPOOS_SERVERS_REGISTRY_DIR;
+    process.env.REPOOS_SERVERS_REGISTRY_DIR = registryDir;
+    const logs: string[] = [];
+    const log = vi.spyOn(console, "log").mockImplementation((...args) => {
+      logs.push(args.map(String).join(" "));
+    });
+    try {
+      const collect: typeof collectTailnetServers = async (local) => ({
+        servers: local,
+        tailscaleUnavailable: true,
+        source: "local-only",
+      });
+      await cmdServers(["--tailscale"], { root, collect });
+      expect(logs.join("\n")).toMatch(/no remoteValidation\.tailscaleHosts configured/);
+    } finally {
+      log.mockRestore();
+      if (priorRegistry === undefined) delete process.env.REPOOS_SERVERS_REGISTRY_DIR;
+      else process.env.REPOOS_SERVERS_REGISTRY_DIR = priorRegistry;
+      rmSync(root, { recursive: true, force: true });
+      rmSync(registryDir, { recursive: true, force: true });
+    }
+  });
+
+  it("names configured hosts in the cmdServers fallback line", async () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-servers-text-hosts-"));
+    const registryDir = mkdtempSync(join(tmpdir(), "repoos-servers-text-hosts-reg-"));
+    writeFileSync(
+      join(root, "repoos.toml"),
+      'servePort = 7171\n[[remoteValidation.tailscaleHosts]]\nhost = "bee"\n',
+    );
+    const priorRegistry = process.env.REPOOS_SERVERS_REGISTRY_DIR;
+    process.env.REPOOS_SERVERS_REGISTRY_DIR = registryDir;
+    const logs: string[] = [];
+    const log = vi.spyOn(console, "log").mockImplementation((...args) => {
+      logs.push(args.map(String).join(" "));
+    });
+    try {
+      const collect: typeof collectTailnetServers = async (local) => ({
+        servers: local,
+        tailscaleUnavailable: true,
+        source: "configured-hosts",
+      });
+      await cmdServers(["--tailscale"], { root, collect });
+      expect(logs.join("\n")).toMatch(/using configured hosts \(bee\)/);
+    } finally {
+      log.mockRestore();
+      if (priorRegistry === undefined) delete process.env.REPOOS_SERVERS_REGISTRY_DIR;
+      else process.env.REPOOS_SERVERS_REGISTRY_DIR = priorRegistry;
+      rmSync(root, { recursive: true, force: true });
+      rmSync(registryDir, { recursive: true, force: true });
+    }
   });
 
   it("refuses --prune --tailscale before touching the local or remote registries", async () => {

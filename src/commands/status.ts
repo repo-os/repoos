@@ -492,7 +492,11 @@ export async function collectStatus(
         // a healthy server answers on `opts.probePort`.
         port: probePort,
         pid: primaryAlive ? (primary?.pid ?? null) : null,
-        lockRegistry: primary?.registry ?? null,
+        // A stale lock for a different endpoint must not label a healthy
+        // server discovered on another port. Same-port intent is kept even
+        // when `readServeLocks` cannot call the PID alive (in-process servers
+        // share the caller's PID).
+        lockRegistry: primary?.port === probePort ? (primary.registry ?? null) : null,
       })
     : { state: "not-running" as const, reason: null };
 

@@ -88,13 +88,15 @@ export type ServerRegistryExclusion =
   | "ephemeral port";
 
 export function serverRegistryExclusion(
-  config: Pick<RepoOSConfig, "root" | "previewOverrides">,
+  config: Pick<RepoOSConfig, "root" | "previewOverrides" | "previewOverridesRequested">,
   opts: { requestedPort: number },
   env: NodeJS.ProcessEnv = process.env,
 ): ServerRegistryExclusion | null {
   if (env.REPOOS_NO_REGISTRY === "1") return "REPOOS_NO_REGISTRY=1";
   if (env.REPOOS_PREVIEW_CHILD === "1") return "preview child";
-  if ((config.previewOverrides?.length ?? 0) > 0) return "preview overrides";
+  if (config.previewOverridesRequested || (config.previewOverrides?.length ?? 0) > 0) {
+    return "preview overrides";
+  }
   /** Harness `startServer({ port: 0 })` — OS assigns a real port but must not register. */
   if (opts.requestedPort === 0) return "ephemeral port";
   return null;

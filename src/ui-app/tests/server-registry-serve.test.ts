@@ -366,9 +366,8 @@ describe("startServer running-server registry", () => {
 
   it("keeps --preview-overrides out of the registry on a real port and explains why (#1140)", async () => {
     const root = minimalRepo();
-    // A real `[preview.*]` overlay is what sets config.previewOverrides; the
-    // boolean startServer option alone is not enough.
-    writeFileSync(join(root, "repoos.toml"), "servePort = 0\n[preview.auth]\nenabled = false\n");
+    // No `[preview.*]` keys on purpose: the flag alone must exclude the server,
+    // even though `config.previewOverrides` stays empty.
     const port = await reservePort();
     const handle = await startServer({
       root,

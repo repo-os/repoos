@@ -630,7 +630,8 @@ discover local servers.
 `--tailscale` adds servers from online Tailscale peers by running
 `repoos servers --json` over SSH. It uses `tailscale status --json` to discover
 peers, or the hosts configured under `remoteValidation.tailscaleHosts` if the
-Tailscale CLI is unavailable. When that fallback is used the text output names
+Tailscale CLI is unavailable or its status cannot be read. When that fallback is
+used the text output names
 the configured hosts, and `--json` sets `tailscaleUnavailable: true` plus
 `discoverySource: "configured-hosts"` (the normal Tailscale path reports
 `"tailscale"`). With no configured hosts, `discoverySource` is `"local-only"`

@@ -68,14 +68,21 @@ function formatUptime(seconds: number | null | undefined): string {
   return `${Math.floor(m / 60)}h ${m % 60}m`;
 }
 
-/** Human-readable fallback line when the local Tailscale CLI is absent. */
+/** Human-readable fallback line when the local Tailscale status is unavailable. */
 export function tailnetFallbackNotice(configuredHosts: string[]): string {
   return configuredHosts.length
-    ? `  Tailscale CLI unavailable; using configured hosts (${configuredHosts.join(", ")}) instead of the tailnet peer list.`
-    : "  Tailscale CLI unavailable and no remoteValidation.tailscaleHosts configured; showing local servers only.";
+    ? `  Tailscale peer discovery unavailable; using configured hosts (${configuredHosts.join(", ")}) instead of the tailnet peer list.`
+    : "  Tailscale peer discovery unavailable and no remoteValidation.tailscaleHosts configured; showing local servers only.";
 }
 
-export async function cmdServers(argv: string[]): Promise<void> {
+export interface ServersCommandDeps {
+  /** Test seam: resolve config from this root instead of the current repo. */
+  root?: string;
+  /** Test seam: replace tailnet collection (the CLI path has no network seam). */
+  collect?: typeof collectTailnetServers;
+}
+
+export async function cmdServers(argv: string[], deps: ServersCommandDeps = {}): Promise<void> {
   const json = argv.includes("--json");
   const prune = argv.includes("--prune");
   const tailscale = argv.includes("--tailscale");
@@ -103,10 +110,10 @@ export async function cmdServers(argv: string[]): Promise<void> {
     staleReason: row.staleReason,
     healthRoot: row.healthRoot,
   }));
-  const cfg = tailscale ? loadConfig(findRepoRoot()) : undefined;
+  const cfg = tailscale ? loadConfig(deps.root ?? findRepoRoot()) : undefined;
   const remoteHosts = resolveRemoteHosts(cfg?.remoteValidation);
   const result = tailscale
-    ? await collectTailnetServers(local, {
+    ? await (deps.collect ?? collectTailnetServers)(local, {
         configuredHosts: remoteHosts.map((host) => host.host),
         remoteHosts,
         remoteValidation: cfg?.remoteValidation,

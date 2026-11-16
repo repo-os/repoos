@@ -253,6 +253,9 @@ function numericField(error: unknown, key: string): number | null {
  */
 export function isRemoteTimeout(error: unknown): boolean {
   if (stringField(error, "code") === "ETIMEDOUT") return true;
+  // execFile's maxBuffer guard kills the child too, but that is an output
+  // limit, not a network timeout (#1140 review).
+  if (stringField(error, "code") === "ERR_CHILD_PROCESS_STDIO_MAXBUFFER") return false;
   if (stringField(error, "name") === "TimeoutError") return true;
   if (booleanField(error, "killed") === true) return true;
   const signal = stringField(error, "signal");
@@ -346,6 +349,12 @@ function classifySshDiagnostics(text: string): RemoteFailure {
  * output can become an authentication/connection/timeout cause.
  */
 export function classifyRemoteFailure(error: unknown): RemoteFailure {
+  if (stringField(error, "code") === "ERR_CHILD_PROCESS_STDIO_MAXBUFFER") {
+    return {
+      kind: "remote-command",
+      reason: "remote output exceeded the 2 MiB limit",
+    };
+  }
   if (isRemoteTimeout(error)) return { kind: "timeout", reason: "timed out" };
 
   const stderr = stringField(error, "stderr")?.trim() ?? "";

@@ -65,6 +65,15 @@ describe("serverRegistryExclusion", () => {
         {},
       ),
     ).toBe("preview overrides");
+    // The flag alone is enough: a repo with no `[preview.*]` keys still ran
+    // with the preview-override mode and must not register (#1140).
+    expect(
+      serverRegistryExclusion(
+        { root: "/tmp/main", previewOverrides: [], previewOverridesRequested: true },
+        { requestedPort: 7171 },
+        {},
+      ),
+    ).toBe("preview overrides");
   });
 
   it("registers a hand-run serve rooted in a linked task worktree (#1140)", () => {

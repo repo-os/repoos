@@ -15,7 +15,12 @@
  */
 import { remoteHostUser } from "./remote-hosts.js";
 import type { AllowlistGroup } from "./allowlist-groups.js";
-import { classifyRemoteFailure, type RemoteExec, type ListedServer } from "./tailnet-servers.js";
+import {
+  classifyRemoteFailure,
+  shellQuote,
+  type RemoteExec,
+  type ListedServer,
+} from "./tailnet-servers.js";
 import type { RemoteValidationConfig, RemoteValidationHost } from "./types.js";
 
 /** How one member answered a propagation attempt. */
@@ -75,11 +80,6 @@ export interface GroupApplyPayload {
 /** Base64-encode a JSON payload safely for one SSH command argument. */
 export function encodeGroupApplyPayload(payload: GroupApplyPayload): string {
   return Buffer.from(JSON.stringify(payload), "utf8").toString("base64");
-}
-
-/** Single-quote a path for the remote shell. */
-function shellQuote(value: string): string {
-  return `'${value.replace(/'/g, `'\\''`)}'`;
 }
 
 /**

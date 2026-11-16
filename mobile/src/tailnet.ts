@@ -261,12 +261,11 @@ export async function fetchTailnetServers(
         ? {
             message:
               body.discoverySource === "configured-hosts"
-                ? "This server's Tailscale CLI isn't available; it listed servers from its configured hosts instead."
+                ? "This server's Tailscale discovery isn't available; it listed servers from its configured hosts instead."
                 : body.discoverySource === "local-only"
-                  ? "This server's Tailscale CLI isn't available and it has no configured hosts, so only its local servers were listed."
-                  : // Older server: it cannot say which fallback produced the rows, so
-                    // do not claim a configured-host pool it may not have.
-                    "This server's Tailscale CLI isn't available, so it can only list its own local servers.",
+                  ? "This server's Tailscale discovery isn't available and it has no configured hosts, so only its local servers were listed."
+                  : // Older server: the source is unknowable, so no claim either way.
+                    "This server's Tailscale discovery isn't available; it used its configured hosts or listed local servers only.",
           }
         : {}),
     };

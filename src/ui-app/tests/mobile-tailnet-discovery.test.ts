@@ -172,8 +172,8 @@ describe("mobile tailnet discovery", () => {
 
     expect(result.kind).toBe("ok");
     if (result.kind === "ok") {
-      expect(result.message).toMatch(/only list its own local servers/);
-      expect(result.message).not.toMatch(/configured hosts/);
+      expect(result.message).toMatch(/used its configured hosts or listed local servers only/);
+      expect(result.message).not.toMatch(/only its local servers/);
     }
   });
 
