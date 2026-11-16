@@ -1,5 +1,6 @@
 ---
 updated_at: "2026-11-16T05:26:24Z"
+review_passes: 1
 review_failed_report_retries: 0
 id: "1140"
 title: "Bug: make tailnet server discovery work across remote shells and hand-run servers"
@@ -86,4 +87,5 @@ Reproduce the reported behavior first with fake Tailscale and SSH executables; k
 - 2026-11-16T04:56:32Z · needs_input
 - 2026-11-16T05:13:41Z · needs_input (review-failed) cleared for review again by hello@repoos.org
 - 2026-11-16T05:26:23Z · note: review pass 4: needs some work
+
 
