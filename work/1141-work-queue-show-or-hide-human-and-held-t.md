@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/work-queue-show-or-hide-human-and-held-t
 created_at: "2026-11-16T03:51:39Z"
-updated_at: "2026-11-16T04:16:24Z"
+updated_at: "2026-11-16T04:20:03Z"
 ---
 ## Problem
 
@@ -58,12 +58,12 @@ Use the attached screenshot as the layout reference. Inspect existing Work Queue
 "route": "/work",
 "highlight": ".queue-visibility",
 "steps": [
-  {
-    "click": "[data-testid='toggle-human-visibility']"
-  },
-  {
-    "waitMs": 300
-  }
+{
+  "click": "[data-testid='toggle-human-visibility']"
+},
+{
+  "waitMs": 300
+}
 ],
 "state": "card:humanStep"
 }
@@ -85,3 +85,4 @@ Use the attached screenshot as the layout reference. Inspect existing Work Queue
 - 2026-11-16T04:08:25Z · body
 - 2026-11-16T04:12:53Z · body
 - 2026-11-16T04:16:24Z · CTO nudge: held — handoff gate is running
+- 2026-11-16T04:20:03Z · note: ui verification passed: 2 of 2 shots captured with clean console (1 shot warning)
