@@ -6,13 +6,16 @@ status: review
 needs_input: true
 needs_input_reason: review-failed
 needs_input_detail: "the cursor agent exited without output: ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage. Stopped 1 process(es) this turn spawned outside its process group (PIDs: 56957)."
+debug_tldr: "Cursor agent hit its weekly usage limit during review — switch to a different reviewer agent, or buy credits/upgrade Cursor, then retry review."
+debug_tldr_at: "2026-11-16T04:56:37Z"
+debug_tldr_key: "review-failed|the cursor agent exited without output: ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage. Stopped 1 process(es) this turn spawned outside its process group (PIDs: 56957)."
 priority: p1
 area: [server, core]
 assigned_to: ai
 created_by: t@t
 branch: feat/bug-make-tailnet-server-discovery-work-a
 created_at: "2026-11-16T03:38:56Z"
-updated_at: "2026-11-16T04:56:32Z"
+updated_at: "2026-11-16T04:56:37Z"
 review_failed_report_retries: 2
 ---
 ## Problem
