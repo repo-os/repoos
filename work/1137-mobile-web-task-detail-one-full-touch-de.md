@@ -1,19 +1,20 @@
 ---
-last_close_out_gate_ms: 70342
-last_close_out_gate_at: "2026-11-16T00:22:46.605Z"
 id: "1137"
 title: "Mobile web task detail: one full touch detail for every entry point (card view is a read-only stub; drawer tabs and close clipped)"
 type: bug
-status: review
+status: done
 paths: [src/ui-app/src/components/MobileTaskDetail.vue, src/ui-app/src/App.vue, src/ui-app/src/components/TaskDrawer.vue]
 priority: p1
 area: web
 story: RepoOS Hub for Mobile
+merged_commit: bcd627121ecc7415634d03173c02de96a7a52ff6
 assigned_to: ai
 created_by: t@t
 branch: feat/mobile-web-task-detail-one-full-touch-de
 created_at: "2026-11-15T17:24:03Z"
 updated_at: "2026-11-16T00:22:46Z"
+last_close_out_gate_ms: 70342
+last_close_out_gate_at: "2026-11-16T00:22:46.605Z"
 review_passes: 3
 close_out_repair_count: 1
 review_rounds: 1
