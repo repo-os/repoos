@@ -16,6 +16,7 @@ review_rounds: 2
 routing_switches: 1
 routing_escalations: 1
 dev_error_count: 1
+deferred_handoff_resume_count: 1
 ---
 ## Problem
 
