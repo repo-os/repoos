@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/bug-make-tailnet-server-discovery-work-a
 created_at: "2026-11-16T03:38:56Z"
-updated_at: "2026-11-16T08:13:34Z"
+updated_at: "2026-11-16T08:13:37Z"
 review_rounds: 2
 routing_switches: 1
 routing_escalations: 1
@@ -111,3 +111,4 @@ Reproduce the reported behavior first with fake Tailscale and SSH executables; k
 - 2026-11-16T08:12:11Z · status active→review
 - 2026-11-16T08:12:12Z · note: shots: skipped — Docs site skipped: no docs shot declared
 - 2026-11-16T08:13:34Z · message_queued at 2026-11-16T08:13:34.565Z
+- 2026-11-16T08:13:37Z · handoff failed · could not auto-retry after check failure · This worktree already has a recorded live engineer for task #review:1140 (pid 61326)
