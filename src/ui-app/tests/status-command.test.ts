@@ -9,11 +9,13 @@ import { execFileSync, spawn } from "node:child_process";
 import { createHash } from "node:crypto";
 import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { createServer } from "node:net";
+import { createServer as createHttpServer } from "node:http";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { loadConfig, worktreesDir } from "../../core/config.js";
 import { ensureWorktree } from "../../core/git.js";
 import { sweepStaleWorktrees } from "../../core/worktree-gc.js";
+import { SERVER_REGISTRY_SCHEMA, writeServerRegistryEntry } from "../../core/server-registry.js";
 import type { RepoOSConfig } from "../../core/types.js";
 import {
   collectStatus,
@@ -344,6 +346,53 @@ describe("collectStatus — server stopped", () => {
     expect(Date.parse(order[0].startedAt as string)).toBeGreaterThan(
       Date.parse(order[1].startedAt as string),
     );
+  });
+
+  it("matches the registry on the port health answered on when the primary lock is stale (#1140)", async () => {
+    const fx = await makeGitFixture();
+    const livePort = await freePort();
+    const registryDir = mkdtempSync(join(tmpdir(), "repoos-status-registry-"));
+    const priorRegistry = process.env.REPOOS_SERVERS_REGISTRY_DIR;
+    process.env.REPOOS_SERVERS_REGISTRY_DIR = registryDir;
+    const health = createHttpServer((req, res) => {
+      if (req.url !== "/api/health") {
+        res.writeHead(404);
+        res.end();
+        return;
+      }
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ ok: true, root: fx.config.root }));
+    });
+    await new Promise<void>((resolve) => health.listen(livePort, "127.0.0.1", () => resolve()));
+    try {
+      writeServerRegistryEntry(
+        {
+          schema: SERVER_REGISTRY_SCHEMA,
+          port: livePort,
+          host: "127.0.0.1",
+          pid: process.pid,
+          root: fx.config.root,
+          projectName: "demo",
+          version: "0.0.0",
+          startedAt: new Date().toISOString(),
+          kind: "server",
+        },
+        registryDir,
+      );
+      const s = await collectStatus(fx.config, { probeTimeoutMs: 500, probePort: livePort });
+      // The fixture's primary lock is dead on another port; health answered on
+      // `probePort`, so registration must be reconciled there, not against the
+      // stale lock's dead port.
+      expect(s.server.running).toBe(true);
+      expect(s.server.health).toBe("ok");
+      expect(s.server.pid).toBe(fx.deadPid);
+      expect(s.server.registration).toBe("registered");
+    } finally {
+      health.close();
+      if (priorRegistry === undefined) delete process.env.REPOOS_SERVERS_REGISTRY_DIR;
+      else process.env.REPOOS_SERVERS_REGISTRY_DIR = priorRegistry;
+      rmSync(registryDir, { recursive: true, force: true });
+    }
   });
 
   it("does NOT report running when the lock's live PID was recycled by an unrelated process", async () => {

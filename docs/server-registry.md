@@ -66,7 +66,9 @@ Registry I/O is best-effort: failures are logged once and never block startup.
 A hand-run `repoos serve` registers whether it runs from the main checkout or a
 linked task worktree (#1140): it is a real control plane that `repoos status`,
 `repoos servers` and tailnet discovery must agree on. Only explicit preview /
-ephemeral / opt-out markers exclude a server.
+ephemeral / opt-out markers exclude a server. (This supersedes the earlier
+"task worktree servers never register" rule from #0845; the preview markers
+already distinguish a managed preview from a manually started serve.)
 
 The serve lock records that intent (`registry: { state: "registered" |
 "excluded", reason? }`) so `repoos status` can explain a running server that
