@@ -3,16 +3,13 @@ id: "1140"
 title: "Bug: make tailnet server discovery work across remote shells and hand-run servers"
 type: bug
 status: inbox
-needs_input: true
-needs_input_reason: underspecified
-needs_input_detail: "missing sections: Notes for AI"
 priority: p1
 area: [server, core]
 assigned_to: ai
 created_by: t@t
 branch: ""
 created_at: "2026-11-16T03:38:56Z"
-updated_at: "2026-11-16T03:38:56Z"
+updated_at: "2026-11-16T03:39:08Z"
 ---
 ## Problem
 
@@ -36,7 +33,12 @@ There is a second mismatch on ThinkPad: `repoos status` reports a running hand-r
 4. Tests cover the running-but-unregistered server case and verify the intended behavior across `status`, `servers`, and tailnet discovery.
 5. Update `user-docs/cli.md` and any directly affected operational docs. No runtime dependencies.
 
+## Notes for AI
+Reproduce the reported behavior first with fake Tailscale and SSH executables; keep tests deterministic and do not depend on a live tailnet. Inspect the registered-server lifecycle before changing it, and preserve registry safety checks and loopback-only server binding. Use the repo's established subprocess helpers and safe argument handling; don't add runtime dependencies. Keep the fix focused on tailnet discovery, error classification, and the documented server-registration contract. Do not change another host's state while validating.
+
+
 ## Activity
 
 - 2026-11-16T03:38:56Z · created · t@t
 - 2026-11-16T03:38:56Z · needs_input
+- 2026-11-16T03:39:08Z · needs_input, body: Notes for AI (added)
