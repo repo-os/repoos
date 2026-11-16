@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/bug-make-tailnet-server-discovery-work-a
 created_at: "2026-11-16T03:38:56Z"
-updated_at: "2026-11-16T04:23:14Z"
+updated_at: "2026-11-16T04:26:24Z"
 ---
 ## Problem
 
@@ -50,3 +50,4 @@ Reproduce the reported behavior first with fake Tailscale and SSH executables; k
 - 2026-11-16T04:23:12Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-16T04:23:12Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 130) · last assistant: Now the scoped check. This can take a while. · stderr: (empty)
 - 2026-11-16T04:23:14Z · message_delivered: 1 message(s)
+- 2026-11-16T04:26:24Z · message_queued at 2026-11-16T04:26:24.427Z
