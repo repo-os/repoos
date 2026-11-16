@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/bug-make-tailnet-server-discovery-work-a
 created_at: "2026-11-16T03:38:56Z"
-updated_at: "2026-11-16T07:54:47Z"
+updated_at: "2026-11-16T08:05:54Z"
 review_rounds: 2
 routing_switches: 1
 routing_escalations: 1
@@ -107,3 +107,4 @@ Reproduce the reported behavior first with fake Tailscale and SSH executables; k
 - 2026-11-16T07:51:45Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-16T07:54:47Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-16T07:54:47Z · message_delivered: 1 message(s)
+- 2026-11-16T08:05:54Z · body
