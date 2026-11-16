@@ -35,8 +35,18 @@ const props = withDefaults(
     forceExpand?: boolean;
     dragEnabled?: boolean;
     highlightId?: string | null;
+    /** Optional per-status task list (e.g. the Work Queue's show/hide
+     *  filters). When omitted the column reads the store's byStatus list. */
+    tasks?: Task[] | null;
   }>(),
-  { emptyText: "—", barColor: "", forceExpand: false, dragEnabled: true, highlightId: null },
+  {
+    emptyText: "—",
+    barColor: "",
+    forceExpand: false,
+    dragEnabled: true,
+    highlightId: null,
+    tasks: null,
+  },
 );
 
 const repo = useRepoStore();
@@ -77,7 +87,7 @@ const heightVersion = ref(0);
 const heights = new Map<string, number>();
 let cardObserver: ResizeObserver | null = null;
 const columnTasks = computed(() => {
-  const tasks = repo.byStatus(props.col.id);
+  const tasks = props.tasks ?? repo.byStatus(props.col.id);
   return props.col.id === "done" && repo.sortOrder === "current"
     ? sortTasks(tasks, "recent", "done")
     : tasks;
@@ -174,7 +184,7 @@ watch(collapsed, () => nextTick(checkScroll));
 
 const collapsedColor = computed(() => props.barColor || props.col.color);
 
-const taskCount = computed(() => repo.byStatus(props.col.id).length);
+const taskCount = computed(() => columnTasks.value.length);
 
 /**
  * 0..1 — how far the collapsed column's colour band reaches before it fades
@@ -463,7 +473,7 @@ const unackedBadge = computed(() =>
         :style="{ height: `${Math.max(0, bottomSpace - 10)}px`, flexShrink: 0 }"
         aria-hidden="true"
       ></div>
-      <div v-if="!repo.byStatus(col.id).length" class="col-empty">{{ displayEmpty }}</div>
+      <div v-if="!taskCount" class="col-empty">{{ displayEmpty }}</div>
     </div>
   </div>
   <RestartTaskDialog

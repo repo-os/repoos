@@ -149,6 +149,11 @@ From the CLI, `repoos list` hides archived tasks by default and prints a count;
 task. `repoos mv` refuses to move an archived task's status — unarchive it
 first (from the Archived list, or `POST /api/tasks/:id/unarchive`).
 
+The Work Queue's bottom-left parked lists sit in the order **Human (n)**,
+**Held (n)**, **Archived (n)**. The **Human** and **Held** toggles above the
+board independently show or hide those categories in the columns; hiding one
+never hides the other, and the parked lists keep both reachable either way.
+
 An archived task that another task `depends_on` does **not** count as done:
 the dependent stays blocked and reads *“Blocked by archived task #id; unarchive
 it to unblock”* until the upstream is unarchived.

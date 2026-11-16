@@ -2,7 +2,7 @@
 import { computed, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { storeToRefs } from "pinia";
-import { Columns3, LoaderCircle, Route, User } from "lucide-vue-next";
+import { Columns3, Eye, EyeOff, LoaderCircle, Route, User } from "lucide-vue-next";
 import { api } from "../api";
 import {
   COLUMNS,
@@ -228,6 +228,59 @@ async function openFromTaskParam(raw: string): Promise<void> {
   if (!isNarrow.value) await clearTaskParam();
 }
 
+// ── #1141 Show/hide human and held tasks ───────────────────────────────
+// The parked lists below the board keep every human/held task reachable, but
+// those categories can also clutter the board columns. Two independent header
+// toggles filter them out of the queue lists without touching status or
+// assignment semantics; the choice persists like the parked-list open states.
+// Defaults are visible so the board looks exactly as it did before.
+const HUMAN_VISIBLE_KEY = "repoos.work.humanVisible";
+const HELD_VISIBLE_KEY = "repoos.work.heldVisible";
+function readCategoryVisible(key: string): boolean {
+  try {
+    return localStorage.getItem(key) !== "0";
+  } catch {
+    return true;
+  }
+}
+function persistCategoryVisible(key: string, visible: boolean): void {
+  try {
+    localStorage.setItem(key, visible ? "1" : "0");
+  } catch {
+    /* ignore quota / privacy-mode failures */
+  }
+}
+const humanVisible = ref(readCategoryVisible(HUMAN_VISIBLE_KEY));
+const heldVisible = ref(readCategoryVisible(HELD_VISIBLE_KEY));
+function toggleHumanVisible(): void {
+  humanVisible.value = !humanVisible.value;
+  persistCategoryVisible(HUMAN_VISIBLE_KEY, humanVisible.value);
+}
+function toggleHeldVisible(): void {
+  heldVisible.value = !heldVisible.value;
+  persistCategoryVisible(HELD_VISIBLE_KEY, heldVisible.value);
+}
+
+/** Ids of the tasks the two header filters currently hide. Membership is the
+ *  same as the parked lists (human: not done/archived; held: an active hold on
+ *  a live task), so what a filter removes is exactly what its bottom-left list
+ *  would show. The categories are independent: each toggle only adds its own
+ *  ids, and an overlap (a human task that is also held) hides until the task is
+ *  visible in both categories again. */
+const hiddenTaskIds = computed<ReadonlySet<string>>(() => {
+  const ids = new Set<string>();
+  if (!humanVisible.value) for (const t of repo.humanTasks) ids.add(t.id);
+  if (!heldVisible.value) for (const t of repo.heldTasks) ids.add(t.id);
+  return ids;
+});
+
+/** The board's per-status task list with the hidden categories removed. */
+function visibleByStatus(status: string): Task[] {
+  const hidden = hiddenTaskIds.value;
+  const tasks = repo.byStatus(status);
+  return hidden.size ? tasks.filter((t) => !hidden.has(t.id)) : tasks;
+}
+
 // ── #0290 Keyboard navigation over the board ─────────────────────────────
 // The board is the primary task list. Reconstruct the flat, DOM-ordered list
 // of visible cards (columns render top-to-bottom in this same order) so the
@@ -242,7 +295,7 @@ const visibleTasks = computed<Task[]>(() => {
     // In the filtered single-column view the column is force-expanded, so it is
     // always on screen even if its id sits in the persisted collapse set.
     if (!statusFilter.value && isColumnCollapsed(col.id)) continue;
-    out.push(...repo.byStatus(col.id));
+    out.push(...visibleByStatus(col.id));
   }
   return out;
 });
@@ -270,12 +323,14 @@ const BOARD_IDS = computed<readonly string[]>(() => [
  *  states swap between "collapse the empty columns" and "expand all columns".
  *  With no empty columns at all this is vacuously true, so the button acts as
  *  "expand all". Reads the shared collapse ref, so it flips the moment any
- *  column is toggled, bulk-collapsed, or auto-opened. */
-const allEmptyCollapsed = computed(() => !hasExpandedEmptyColumn(repo.byStatus, BOARD_IDS.value));
+ *  column is toggled, bulk-collapsed, or auto-opened. "Empty" means empty on
+ *  screen, so the #1141 category filters count: hiding the last visible task
+ *  in a column makes it collapsible. */
+const allEmptyCollapsed = computed(() => !hasExpandedEmptyColumn(visibleByStatus, BOARD_IDS.value));
 
 function toggleEmptyColumns(): void {
   if (allEmptyCollapsed.value) expandAll(BOARD_IDS.value);
-  else collapseAllEmpty(repo.byStatus, BOARD_IDS.value);
+  else collapseAllEmpty(visibleByStatus, BOARD_IDS.value);
 }
 
 // A task arriving in a collapsed column must be visible, whatever moved it
@@ -458,6 +513,39 @@ function openHeld(task: Task): void {
       </div>
       <div class="work-header-actions">
         <RouterLink to="/client-board" class="client-board-link">Client board</RouterLink>
+        <div
+          v-if="effectiveView === 'board'"
+          class="view-toggle queue-visibility"
+          role="group"
+          aria-label="Show or hide human and held tasks"
+        >
+          <button
+            type="button"
+            class="view-toggle-btn"
+            :class="{ active: humanVisible }"
+            :aria-pressed="humanVisible"
+            :aria-label="humanVisible ? 'Hide human-assigned tasks' : 'Show human-assigned tasks'"
+            data-testid="toggle-human-visibility"
+            @click="toggleHumanVisible"
+          >
+            <EyeOff v-if="!humanVisible" class="size-3.5" aria-hidden="true" />
+            <Eye v-else class="size-3.5" aria-hidden="true" />
+            <span>Human</span>
+          </button>
+          <button
+            type="button"
+            class="view-toggle-btn"
+            :class="{ active: heldVisible }"
+            :aria-pressed="heldVisible"
+            :aria-label="heldVisible ? 'Hide held tasks' : 'Show held tasks'"
+            data-testid="toggle-held-visibility"
+            @click="toggleHeldVisible"
+          >
+            <EyeOff v-if="!heldVisible" class="size-3.5" aria-hidden="true" />
+            <Eye v-else class="size-3.5" aria-hidden="true" />
+            <span>Held</span>
+          </button>
+        </div>
         <Button
           v-if="!statusFilter && effectiveView === 'board'"
           variant="outline"
@@ -542,7 +630,7 @@ function openHeld(task: Task): void {
           class="cdot"
           :style="{ background: filterCol!.color, boxShadow: '0 0 6px ' + filterCol!.color }"
         ></span>
-        {{ filterCol!.label }} · {{ repo.byStatus(statusFilter).length }}
+        {{ filterCol!.label }} · {{ visibleByStatus(statusFilter).length }}
       </span>
       <router-link to="/work" class="filter-clear">Show all statuses</router-link>
     </div>
@@ -554,6 +642,7 @@ function openHeld(task: Task): void {
         <BoardColumn
           :col="filterCol!"
           :bar-color="filterCol!.id === 'draft' ? DRAFT_BAR : ''"
+          :tasks="visibleByStatus(filterCol!.id)"
           empty-text="—"
           force-expand
           :drag-enabled="false"
@@ -564,6 +653,7 @@ function openHeld(task: Task): void {
         <BoardColumn
           :col="DRAFT_COL"
           :bar-color="DRAFT_BAR"
+          :tasks="visibleByStatus(DRAFT_COL.id)"
           empty-text="—"
           :highlight-id="boardKey.highlightId.value"
         />
@@ -571,6 +661,7 @@ function openHeld(task: Task): void {
           v-for="col in labeledColumns"
           :key="col.id"
           :col="col"
+          :tasks="visibleByStatus(col.id)"
           :highlight-id="boardKey.highlightId.value"
         />
       </template>
@@ -611,6 +702,25 @@ function openHeld(task: Task): void {
           Human ({{ repo.humanTasks.length }})
         </button>
         <button
+          v-if="repo.heldTasks.length"
+          type="button"
+          class="held-toggle"
+          :aria-expanded="heldExpanded"
+          data-tip="Tasks parked out of ALL automation (repoos hold)"
+          @click="toggleHeld"
+        >
+          <svg viewBox="0 0 24 24" fill="none" class="held-chevron" :class="{ open: heldExpanded }">
+            <path
+              d="m9 6 6 6-6 6"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+          Held ({{ repo.heldTasks.length }})
+        </button>
+        <button
           v-if="repo.archivedTasks.length"
           type="button"
           class="archived-toggle"
@@ -633,25 +743,6 @@ function openHeld(task: Task): void {
           </svg>
           Archived ({{ repo.archivedTasks.length }})
         </button>
-        <button
-          v-if="repo.heldTasks.length"
-          type="button"
-          class="held-toggle"
-          :aria-expanded="heldExpanded"
-          data-tip="Tasks parked out of ALL automation (repoos hold)"
-          @click="toggleHeld"
-        >
-          <svg viewBox="0 0 24 24" fill="none" class="held-chevron" :class="{ open: heldExpanded }">
-            <path
-              d="m9 6 6 6-6 6"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
-          Held ({{ repo.heldTasks.length }})
-        </button>
       </div>
       <ul v-if="humanExpanded && repo.humanTasks.length" class="human-rows">
         <li v-for="t in repo.humanTasks" :key="t.id">
@@ -663,15 +754,6 @@ function openHeld(task: Task): void {
           </button>
         </li>
       </ul>
-      <ul v-if="archivedExpanded && repo.archivedTasks.length" class="archived-rows">
-        <li v-for="t in repo.archivedTasks" :key="t.id">
-          <button type="button" class="archived-row" @click="openArchived(t)">
-            <span class="mono archived-id">#{{ t.id }}</span>
-            <span class="archived-title">{{ t.title }}</span>
-            <span class="archived-status">{{ t.status }}</span>
-          </button>
-        </li>
-      </ul>
       <ul v-if="heldExpanded && repo.heldTasks.length" class="held-rows">
         <li v-for="t in repo.heldTasks" :key="t.id">
           <button type="button" class="held-row" @click="openHeld(t)">
@@ -679,6 +761,15 @@ function openHeld(task: Task): void {
             <span class="held-title">{{ t.title }}</span>
             <span v-if="t.holdReason" class="held-reason">{{ t.holdReason }}</span>
             <span class="held-status">{{ t.status }}</span>
+          </button>
+        </li>
+      </ul>
+      <ul v-if="archivedExpanded && repo.archivedTasks.length" class="archived-rows">
+        <li v-for="t in repo.archivedTasks" :key="t.id">
+          <button type="button" class="archived-row" @click="openArchived(t)">
+            <span class="mono archived-id">#{{ t.id }}</span>
+            <span class="archived-title">{{ t.title }}</span>
+            <span class="archived-status">{{ t.status }}</span>
           </button>
         </li>
       </ul>
