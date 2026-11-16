@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/bug-make-tailnet-server-discovery-work-a
 created_at: "2026-11-16T03:38:56Z"
-updated_at: "2026-11-16T05:59:21Z"
+updated_at: "2026-11-16T07:02:01Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -93,3 +93,4 @@ Reproduce the reported behavior first with fake Tailscale and SSH executables; k
 - 2026-11-16T05:26:26Z · status review→active
 - 2026-11-16T05:48:21Z · body
 - 2026-11-16T05:59:21Z · body
+- 2026-11-16T07:02:01Z · watchdog: restarting engineer after 63m with no live process
