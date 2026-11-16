@@ -138,3 +138,4 @@ Reproduce the reported behavior first with fake Tailscale and SSH executables; k
 - 2026-11-16T08:46:41Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 130) · last assistant: Now the required scoped check. · stderr: (empty)
 - 2026-11-16T08:46:41Z · status active→review
 - 2026-11-16T08:46:41Z · message_delivered: 1 message(s)
+- 2026-11-16T08:46:41Z · note: handoff requested (cli)
