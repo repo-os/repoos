@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/work-queue-show-or-hide-human-and-held-t
 created_at: "2026-11-16T03:51:39Z"
-updated_at: "2026-11-16T03:53:24Z"
+updated_at: "2026-11-16T04:08:25Z"
 ---
 ## Problem
 
@@ -42,7 +42,6 @@ Use the attached screenshot as the layout reference. Inspect existing Work Queue
 - Reorder those bottom-left controls to: Human, Held, Archived.
 - Match the existing Work Queue control styling and interaction patterns, including accessible labels and keyboard operation.
 
-
 ## Screenshots
 
 ![Work Queue showing current bottom-left Human, Archived, Held controls and header placement](/api/tasks/1141/attachments/att_cc67c690-b8ed-4a91-8b28-e94b280c092e.png)
@@ -55,3 +54,4 @@ Use the attached screenshot as the layout reference. Inspect existing Work Queue
 - 2026-11-16T03:51:47Z · needs_input, body: Desired UX (added)
 - 2026-11-16T03:53:14Z · status inbox→ready
 - 2026-11-16T03:53:24Z · status ready→active, branch
+- 2026-11-16T04:08:25Z · body
