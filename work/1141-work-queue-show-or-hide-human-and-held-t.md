@@ -6,13 +6,16 @@ status: review
 needs_input: true
 needs_input_reason: review-failed
 needs_input_detail: "the cursor agent exited without output: ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage. Stopped 1 process(es) this turn spawned outside its process group (PIDs: 71299)."
+debug_tldr: Cursor agent hit its weekly usage limit — switch to a different reviewer agent or wait for the reset in 2 days.
+debug_tldr_at: "2026-11-16T04:21:25Z"
+debug_tldr_key: "review-failed|the cursor agent exited without output: ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage. Stopped 1 process(es) this turn spawned outside its process group (PIDs: 71299)."
 priority: p2
 area: [web, ui]
 assigned_to: ai
 created_by: t@t
 branch: feat/work-queue-show-or-hide-human-and-held-t
 created_at: "2026-11-16T03:51:39Z"
-updated_at: "2026-11-16T04:21:13Z"
+updated_at: "2026-11-16T04:21:25Z"
 review_failed_report_retries: 2
 ---
 ## Problem
