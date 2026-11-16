@@ -3,16 +3,13 @@ id: "1140"
 title: "Bug: make tailnet server discovery work across remote shells and hand-run servers"
 type: bug
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "OpenCode exited with an error. Open Raw CLI error for details. (CLI: ✗ automatic check-failure retry could not resume: This worktree already has a recorded live engineer for task #review:1140 (pid 61326))"
 priority: p1
 area: [server, core]
 assigned_to: ai
 created_by: t@t
 branch: feat/bug-make-tailnet-server-discovery-work-a
 created_at: "2026-11-16T03:38:56Z"
-updated_at: "2026-11-16T08:39:12Z"
+updated_at: "2026-11-16T08:40:18Z"
 review_passes: 3
 review_failed_report_retries: 0
 review_rounds: 2
@@ -134,3 +131,4 @@ Reproduce the reported behavior first with fake Tailscale and SSH executables; k
 - 2026-11-16T08:39:10Z · status active→review
 - 2026-11-16T08:39:10Z · note: shots: skipped — Docs site skipped: no docs shot declared
 - 2026-11-16T08:39:12Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-16T08:40:18Z · needs_input
