@@ -521,7 +521,7 @@ function openHeld(task: Task): void {
         >
           <button
             type="button"
-            class="view-toggle-btn"
+            class="queue-visibility-btn"
             :class="{ active: humanVisible }"
             :aria-pressed="humanVisible"
             :aria-label="humanVisible ? 'Hide human-assigned tasks' : 'Show human-assigned tasks'"
@@ -534,7 +534,7 @@ function openHeld(task: Task): void {
           </button>
           <button
             type="button"
-            class="view-toggle-btn"
+            class="queue-visibility-btn"
             :class="{ active: heldVisible }"
             :aria-pressed="heldVisible"
             :aria-label="heldVisible ? 'Hide held tasks' : 'Show held tasks'"
@@ -826,7 +826,8 @@ function openHeld(task: Task): void {
   border-radius: 10px;
   background: var(--panel);
 }
-.view-toggle-btn {
+.view-toggle-btn,
+.queue-visibility-btn {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -841,14 +842,21 @@ function openHeld(task: Task): void {
   font-weight: 500;
   cursor: pointer;
 }
-.view-toggle-btn:hover {
+.view-toggle-btn:hover,
+.queue-visibility-btn:hover {
   color: var(--txt);
   background: var(--nav-hover-bg);
 }
-.view-toggle-btn.active {
+.view-toggle-btn.active,
+.queue-visibility-btn.active {
   color: var(--txt);
   background: var(--bg-secondary);
   box-shadow: inset 0 0 0 1px var(--border);
+}
+.view-toggle-btn:focus-visible,
+.queue-visibility-btn:focus-visible {
+  outline: 2px solid var(--accent, var(--cyan));
+  outline-offset: 2px;
 }
 /* Reserve room at the bottom of the scrollable work queue so the pinned
    integration status bar never covers the last board rows. */

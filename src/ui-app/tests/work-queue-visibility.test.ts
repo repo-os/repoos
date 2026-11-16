@@ -115,7 +115,7 @@ describe("Work Queue category visibility (#1141)", () => {
 
     expect(visibilityIndex).toBeGreaterThan(linkIndex);
     expect(collapseIndex).toBeGreaterThan(visibilityIndex);
-    expect(wrapper.findAll(".queue-visibility .view-toggle-btn")).toHaveLength(2);
+    expect(wrapper.findAll(".queue-visibility .queue-visibility-btn")).toHaveLength(2);
   });
 
   it("hides only human-assigned tasks and restores them on a second click", async () => {
