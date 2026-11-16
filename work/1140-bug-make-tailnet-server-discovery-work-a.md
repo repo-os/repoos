@@ -2,7 +2,7 @@
 id: "1140"
 title: "Bug: make tailnet server discovery work across remote shells and hand-run servers"
 type: bug
-status: active
+status: review
 priority: p1
 area: [server, core]
 assigned_to: ai
@@ -165,4 +165,4 @@ Reproduce the reported behavior first with fake Tailscale and SSH executables; k
 - 2026-11-16T09:46:55Z · status active→review
 - 2026-11-16T09:46:55Z · message_delivered: 2 message(s)
 - 2026-11-16T09:46:55Z · note: handoff requested (cli)
-- 2026-11-16T09:56:08Z · engineer stopped by request
+- 2026-11-16T09:56:08Z · status active→review
