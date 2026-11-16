@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-11-15T23:28:09Z"
-review_passes: 3
+last_close_out_gate_ms: 70342
+last_close_out_gate_at: "2026-11-16T00:22:46.605Z"
 id: "1137"
 title: "Mobile web task detail: one full touch detail for every entry point (card view is a read-only stub; drawer tabs and close clipped)"
 type: bug
@@ -13,6 +13,8 @@ assigned_to: ai
 created_by: t@t
 branch: feat/mobile-web-task-detail-one-full-touch-de
 created_at: "2026-11-15T17:24:03Z"
+updated_at: "2026-11-16T00:22:46Z"
+review_passes: 3
 close_out_repair_count: 1
 review_rounds: 1
 routing_switches: 1
@@ -176,4 +178,5 @@ On a phone there's a single task detail, whichever way it was opened (card, sear
 - 2026-11-15T23:27:18Z · status active→review
 - 2026-11-15T23:27:18Z · message_queued at 2026-11-15T23:27:18.621Z
 - 2026-11-15T23:28:09Z · note: review pass 3: good to go
+- 2026-11-16T00:22:46Z · close-out gate completed in 70s
 
