@@ -2,14 +2,14 @@
 id: "1141"
 title: "Work queue: show or hide human and held tasks"
 type: feature
-status: ready
+status: active
 priority: p2
 area: [web, ui]
 assigned_to: ai
 created_by: t@t
-branch: ""
+branch: feat/work-queue-show-or-hide-human-and-held-t
 created_at: "2026-11-16T03:51:39Z"
-updated_at: "2026-11-16T03:53:14Z"
+updated_at: "2026-11-16T03:53:24Z"
 ---
 ## Problem
 
@@ -54,3 +54,4 @@ Use the attached screenshot as the layout reference. Inspect existing Work Queue
 - 2026-11-16T03:51:40Z · needs_input
 - 2026-11-16T03:51:47Z · needs_input, body: Desired UX (added)
 - 2026-11-16T03:53:14Z · status inbox→ready
+- 2026-11-16T03:53:24Z · status ready→active, branch
