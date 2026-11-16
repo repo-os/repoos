@@ -173,6 +173,18 @@ describe("task drawer status summary (#0952)", () => {
     expect(summary.find(".drawer-status-l2").text()).toContain("No complete report");
     expect(summary.findAll(".drawer-status-row")).toHaveLength(2);
 
+    // #1137 AC2: the shared detail a phone opens from the queue offers the
+    // retry action for a failed reviewer, so the failure is actionable.
+    await wrapper
+      .findAll("button.tab-btn")
+      .find((tab) => tab.text().includes("Review"))!
+      .trigger("click");
+    await flush();
+    expect(
+      wrapper.findAll("button").some((btn) => btn.text().trim() === "Review again"),
+      "Review again action is reachable on a failed review",
+    ).toBe(true);
+
     await wrapper
       .findAll("button.tab-btn")
       .find((tab) => tab.text().includes("Debug"))!
@@ -260,6 +272,27 @@ describe("task drawer status summary (#0952)", () => {
       "remote shot · run · 4m",
     );
     expect(summary.attributes("aria-label")).toContain("remote shot · run · 4m");
+  });
+
+  // #1137: a successful pause must be visible on the phone detail without a
+  // reload — the status line says Paused and the primary action becomes Resume.
+  it("shows Paused and Resume work after a successful pause", async () => {
+    const pinia = setup();
+    const repo = useRepoStore();
+    repo.pausedIds = ["0001"];
+    const wrapper = await mountDrawer(
+      pinia,
+      makeTask({ status: "active", branch: "feat/status-summary" }),
+    );
+
+    const summary = wrapper.find(".drawer-status-summary");
+    expect(summary.exists()).toBe(true);
+    expect(summary.find(".drawer-status-l1").text()).toContain("Paused");
+    const start = wrapper.find('[data-test-id="task-drawer-start-work"]');
+    expect(start.exists()).toBe(true);
+    expect(start.text()).toContain("Resume work");
+    expect(start.attributes("disabled")).toBeUndefined();
+    expect(wrapper.text()).not.toContain("Pause work");
   });
 
   it("uses a concise fallback when work is running without remote activity", async () => {

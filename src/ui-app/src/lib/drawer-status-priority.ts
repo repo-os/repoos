@@ -9,6 +9,10 @@ export interface DrawerStatusCandidates {
   confirmingHandoff?: boolean;
   checksFailedAfterRetries?: boolean;
   reviewerRunning?: boolean;
+  /** The agent was explicitly paused and has no live turn. Sits above
+   *  workRunning so a successful pause is visible immediately, even while the
+   *  old process is still stopping. */
+  workPaused?: boolean;
   workRunning?: boolean;
 }
 
@@ -33,6 +37,7 @@ export function selectDrawerStatus(candidates: DrawerStatusCandidates): DrawerSt
     "checksRunning",
     "confirmingHandoff",
     "reviewerRunning",
+    "workPaused",
     "workRunning",
   ];
   return priority.find((key) => candidates[key]) ?? null;

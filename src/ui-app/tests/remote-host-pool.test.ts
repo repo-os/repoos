@@ -2325,20 +2325,37 @@ describe("queue detail: position, kind and blockers (#0897)", () => {
   });
 });
 
+/**
+ * Wall-clock budget for the real-shell host-lock cases below. Every one
+ * spawns `sh`, and several sleep for a full lock poll tick (5s) or wait on a
+ * fixture marker written by another process — so their cost is scheduling,
+ * not lock work. On a full remote gate the worker can be starved: #1137's
+ * handoff run on thinkpad timed the two longest cases out at exactly
+ * 30,001ms, while the identical tree's full run on the same host passed
+ * minutes earlier. 90s leaves room for that starvation without weakening any
+ * assertion; a genuine lock hang still fails (the whole tests step has a
+ * 40-minute budget in repoos.toml).
+ */
+const HOST_LOCK_SHELL_TIMEOUT_MS = 90_000;
+
 describe("host-side lock (server + standalone CLI share one limit)", () => {
-  it("serialises two independent processes on a one-slot host", async () => {
-    const root = tmpRoot();
-    const lockRoot = join(root, "locks");
-    const marks = join(root, "marks.log");
-    const inner = `echo start >> "${marks}" && sleep 0.5 && echo end >> "${marks}"`;
-    const script = hostLockShell({ slots: 1, waitSecs: 30, lockRoot, inner });
-    const [a, b] = await Promise.all([sh(script), sh(script)]);
-    expect(a.code).toBe(0);
-    expect(b.code).toBe(0);
-    const lines = readFileSync(marks, "utf8").trim().split("\n");
-    expect(lines).toEqual(["start", "end", "start", "end"]); // never overlapping
-    expect(a.out + b.out).toContain("[lock] slot 0 acquired");
-  }, 30_000);
+  it(
+    "serialises two independent processes on a one-slot host",
+    async () => {
+      const root = tmpRoot();
+      const lockRoot = join(root, "locks");
+      const marks = join(root, "marks.log");
+      const inner = `echo start >> "${marks}" && sleep 0.5 && echo end >> "${marks}"`;
+      const script = hostLockShell({ slots: 1, waitSecs: 30, lockRoot, inner });
+      const [a, b] = await Promise.all([sh(script), sh(script)]);
+      expect(a.code).toBe(0);
+      expect(b.code).toBe(0);
+      const lines = readFileSync(marks, "utf8").trim().split("\n");
+      expect(lines).toEqual(["start", "end", "start", "end"]); // never overlapping
+      expect(a.out + b.out).toContain("[lock] slot 0 acquired");
+    },
+    HOST_LOCK_SHELL_TIMEOUT_MS,
+  );
 
   it("honors the lowest active limit when callers disagree after a live config change", async () => {
     const root = tmpRoot();
@@ -2371,163 +2388,177 @@ describe("host-side lock (server + standalone CLI share one limit)", () => {
     expect(result.out).not.toContain("SHOULD_NOT_RUN");
   });
 
-  it("lets a holder expire the waiter with a clear timeout instead of a red gate", async () => {
-    const root = tmpRoot();
-    const lockRoot = join(root, "locks");
-    const marks = join(root, "marks.log");
-    const releaseHolder = join(root, "release-holder");
-    const holder = hostLockShell({
-      slots: 1,
-      waitSecs: 30,
-      lockRoot,
-      inner: `echo start >> "${marks}" && printf 'HOLDER_STARTED\\n' && while [ ! -f "${releaseHolder}" ]; do sleep 0.1; done && echo end >> "${marks}"`,
-    });
-    const waiter = hostLockShell({
-      slots: 1,
-      waitSecs: 0, // give up immediately — used when the caller's deadline is gone
-      lockRoot,
-      inner: `echo start >> "${marks}"`,
-    });
-    let holderOutput = "";
-    let sawHolderStart = false;
-    let resolveHolderStart!: () => void;
-    let rejectHolderStart!: (error: Error) => void;
-    const holderStarted = new Promise<void>((resolve, reject) => {
-      resolveHolderStart = resolve;
-      rejectHolderStart = reject;
-    });
-    const holderProcess = spawn("sh", ["-c", holder]);
-    const held = new Promise<{ code: number | null; out: string }>((resolve) => {
-      holderProcess.stdout.on("data", (b: Buffer) => {
-        holderOutput += b.toString();
-        if (!sawHolderStart && holderOutput.includes("HOLDER_STARTED")) {
-          sawHolderStart = true;
-          resolveHolderStart();
-        }
+  it(
+    "lets a holder expire the waiter with a clear timeout instead of a red gate",
+    async () => {
+      const root = tmpRoot();
+      const lockRoot = join(root, "locks");
+      const marks = join(root, "marks.log");
+      const releaseHolder = join(root, "release-holder");
+      const holder = hostLockShell({
+        slots: 1,
+        waitSecs: 30,
+        lockRoot,
+        inner: `echo start >> "${marks}" && printf 'HOLDER_STARTED\\n' && while [ ! -f "${releaseHolder}" ]; do sleep 0.1; done && echo end >> "${marks}"`,
       });
-      holderProcess.stderr.on("data", (b: Buffer) => (holderOutput += b.toString()));
-      holderProcess.on("error", (error) => {
-        if (!sawHolderStart) rejectHolderStart(error);
+      const waiter = hostLockShell({
+        slots: 1,
+        waitSecs: 0, // give up immediately — used when the caller's deadline is gone
+        lockRoot,
+        inner: `echo start >> "${marks}"`,
       });
-      holderProcess.on("close", (code) => {
-        if (!sawHolderStart)
-          rejectHolderStart(new Error(`holder exited before acquiring its slot: ${holderOutput}`));
-        resolve({ code, out: holderOutput });
+      let holderOutput = "";
+      let sawHolderStart = false;
+      let resolveHolderStart!: () => void;
+      let rejectHolderStart!: (error: Error) => void;
+      const holderStarted = new Promise<void>((resolve, reject) => {
+        resolveHolderStart = resolve;
+        rejectHolderStart = reject;
       });
-    });
-    // The marker is printed from the inner command after the slot is acquired
-    // and the start record is written. This avoids a wall-clock polling window
-    // that could expire before a loaded host schedules the child process.
-    let timedOut: Awaited<ReturnType<typeof sh>>;
-    try {
-      await holderStarted;
-      timedOut = await sh(waiter);
-    } finally {
-      // Keep the holder alive until the waiter has definitively observed the
-      // occupied slot, independent of runner scheduling or remote load.
-      writeFileSync(releaseHolder, "release\n");
-      await held;
-    }
-    expect(timedOut!.code).toBe(HOST_LOCK_TIMEOUT_EXIT);
-    expect(timedOut!.out).toContain("[lock] timed out");
-    expect((await held).code).toBe(0);
-    // The waiter never ran the gate; the holder's slot was released afterwards.
-    expect(readFileSync(marks, "utf8").trim().split("\n")).toEqual(["start", "end"]);
-    const again = await sh(
-      hostLockShell({ slots: 1, waitSecs: 0, lockRoot, inner: `echo again >> "${marks}"` }),
-    );
-    expect(again.code).toBe(0);
-    expect(readFileSync(marks, "utf8").trim().split("\n")).toEqual(["start", "end", "again"]);
-  }, 30_000);
-
-  it("removes waiter entries and exits when its parent session disappears", async () => {
-    const root = tmpRoot();
-    const lockRoot = join(root, "locks");
-    mkdirSync(join(lockRoot, "0"), { recursive: true });
-    writeFileSync(join(lockRoot, "0", ".limit"), "1\n");
-    const script = hostLockShell({
-      slots: 1,
-      waitSecs: 3,
-      lockRoot,
-      inner: "sleep 30",
-    });
-    // A supervising shell represents sshd/the controlling session. The lock
-    // script is a child so it can observe its PPID changing when that session
-    // is killed. Its own child shell runs the script while this shell waits.
-    const quotedScript = script.replace(/'/g, "'\\''");
-    const waiters = Array.from({ length: 3 }, () => `sh -c '${quotedScript}'`).join(" & ");
-    const supervisor = spawn("sh", ["-c", `${waiters} & wait`]);
-    await tick(500);
-    const waitDir = join(lockRoot, "wait");
-    const entries = existsSync(waitDir) ? readdirSync(waitDir) : [];
-    expect(entries.length).toBeGreaterThanOrEqual(3);
-    supervisor.kill("SIGKILL");
-    const deadline = Date.now() + 6_000;
-    while (Date.now() < deadline && existsSync(waitDir) && readdirSync(waitDir).length) {
-      await tick(100);
-    }
-    expect(existsSync(waitDir) ? readdirSync(waitDir) : []).toEqual([]);
-  }, 15_000);
-
-  it("times out while deferred and removes stale dead-pid queue entries", async () => {
-    const root = tmpRoot();
-    const lockRoot = join(root, "locks");
-    const waitDir = join(lockRoot, "wait");
-    mkdirSync(waitDir, { recursive: true });
-    const shellPidPath = join(root, "shell.pid");
-    const queueReady = join(root, "queue-ready");
-    const script = hostLockShell({
-      slots: 1,
-      waitSecs: 2,
-      lockRoot,
-      inner: "echo SHOULD_NOT_RUN",
-    });
-    // Hold the lock shell before it inspects the queue so the dead PID can be
-    // created after its own PID is known and cannot be mistaken for itself.
-    const child = spawn("sh", [
-      "-c",
-      `echo $$ > "${shellPidPath}"; while [ ! -f "${queueReady}" ]; do sleep 0.02; done\n${script}`,
-    ]);
-    let output = "";
-    child.stdout.on("data", (chunk: Buffer) => (output += chunk.toString()));
-    child.stderr.on("data", (chunk: Buffer) => (output += chunk.toString()));
-    const startupDeadline = Date.now() + 2_000;
-    while (!existsSync(shellPidPath) && Date.now() < startupDeadline) await tick(10);
-    expect(existsSync(shellPidPath)).toBe(true);
-    const shellPid = Number(readFileSync(shellPidPath, "utf8").trim());
-    const deadProcess = spawn("sh", ["-c", "sleep 30"]);
-    const deadPid = deadProcess.pid;
-    expect(deadPid).toBeDefined();
-    expect(deadPid).not.toBe(shellPid);
-    deadProcess.kill("SIGKILL");
-    // `exit` fires before stdio is fully closed; wait for `close` and confirm
-    // the OS no longer recognizes the PID before the shell inspects the queue.
-    await new Promise<void>((resolve) => deadProcess.once("close", () => resolve()));
-    const reapDeadline = Date.now() + 1_000;
-    while (Date.now() < reapDeadline) {
+      const holderProcess = spawn("sh", ["-c", holder]);
+      const held = new Promise<{ code: number | null; out: string }>((resolve) => {
+        holderProcess.stdout.on("data", (b: Buffer) => {
+          holderOutput += b.toString();
+          if (!sawHolderStart && holderOutput.includes("HOLDER_STARTED")) {
+            sawHolderStart = true;
+            resolveHolderStart();
+          }
+        });
+        holderProcess.stderr.on("data", (b: Buffer) => (holderOutput += b.toString()));
+        holderProcess.on("error", (error) => {
+          if (!sawHolderStart) rejectHolderStart(error);
+        });
+        holderProcess.on("close", (code) => {
+          if (!sawHolderStart)
+            rejectHolderStart(
+              new Error(`holder exited before acquiring its slot: ${holderOutput}`),
+            );
+          resolve({ code, out: holderOutput });
+        });
+      });
+      // The marker is printed from the inner command after the slot is acquired
+      // and the start record is written. This avoids a wall-clock polling window
+      // that could expire before a loaded host schedules the child process.
+      let timedOut: Awaited<ReturnType<typeof sh>>;
       try {
-        process.kill(deadPid!, 0);
-        await tick(10);
-      } catch {
-        break;
+        await holderStarted;
+        timedOut = await sh(waiter);
+      } finally {
+        // Keep the holder alive until the waiter has definitively observed the
+        // occupied slot, independent of runner scheduling or remote load.
+        writeFileSync(releaseHolder, "release\n");
+        await held;
       }
-    }
-    expect(() => process.kill(deadPid!, 0)).toThrow();
-    writeFileSync(join(waitDir, String(deadPid!)), "999\n");
-    // A live high-priority entry forces deferral; a second dead PID entry is
-    // cleaned as the queue is inspected.
-    writeFileSync(join(waitDir, String(process.pid)), "999\n");
-    writeFileSync(queueReady, "go\n");
-    const result = await new Promise<{ code: number | null; out: string }>((resolve) => {
-      child.on("close", (code) => resolve({ code, out: output }));
-    });
-    expect(result.code).toBe(HOST_LOCK_TIMEOUT_EXIT);
-    expect(result.out).not.toContain("SHOULD_NOT_RUN");
-    // Assert the two entries this test owns directly. Other waiters may be
-    // present when the test runs alongside suites in the same process.
-    expect(existsSync(join(waitDir, String(deadPid!)))).toBe(false);
-    expect(existsSync(join(waitDir, String(process.pid)))).toBe(true);
-  }, 30_000);
+      expect(timedOut!.code).toBe(HOST_LOCK_TIMEOUT_EXIT);
+      expect(timedOut!.out).toContain("[lock] timed out");
+      expect((await held).code).toBe(0);
+      // The waiter never ran the gate; the holder's slot was released afterwards.
+      expect(readFileSync(marks, "utf8").trim().split("\n")).toEqual(["start", "end"]);
+      const again = await sh(
+        hostLockShell({ slots: 1, waitSecs: 0, lockRoot, inner: `echo again >> "${marks}"` }),
+      );
+      expect(again.code).toBe(0);
+      expect(readFileSync(marks, "utf8").trim().split("\n")).toEqual(["start", "end", "again"]);
+    },
+    HOST_LOCK_SHELL_TIMEOUT_MS,
+  );
+
+  it(
+    "removes waiter entries and exits when its parent session disappears",
+    async () => {
+      const root = tmpRoot();
+      const lockRoot = join(root, "locks");
+      mkdirSync(join(lockRoot, "0"), { recursive: true });
+      writeFileSync(join(lockRoot, "0", ".limit"), "1\n");
+      const script = hostLockShell({
+        slots: 1,
+        waitSecs: 3,
+        lockRoot,
+        inner: "sleep 30",
+      });
+      // A supervising shell represents sshd/the controlling session. The lock
+      // script is a child so it can observe its PPID changing when that session
+      // is killed. Its own child shell runs the script while this shell waits.
+      const quotedScript = script.replace(/'/g, "'\\''");
+      const waiters = Array.from({ length: 3 }, () => `sh -c '${quotedScript}'`).join(" & ");
+      const supervisor = spawn("sh", ["-c", `${waiters} & wait`]);
+      await tick(500);
+      const waitDir = join(lockRoot, "wait");
+      const entries = existsSync(waitDir) ? readdirSync(waitDir) : [];
+      expect(entries.length).toBeGreaterThanOrEqual(3);
+      supervisor.kill("SIGKILL");
+      const deadline = Date.now() + 6_000;
+      while (Date.now() < deadline && existsSync(waitDir) && readdirSync(waitDir).length) {
+        await tick(100);
+      }
+      expect(existsSync(waitDir) ? readdirSync(waitDir) : []).toEqual([]);
+    },
+    HOST_LOCK_SHELL_TIMEOUT_MS,
+  );
+
+  it(
+    "times out while deferred and removes stale dead-pid queue entries",
+    async () => {
+      const root = tmpRoot();
+      const lockRoot = join(root, "locks");
+      const waitDir = join(lockRoot, "wait");
+      mkdirSync(waitDir, { recursive: true });
+      const shellPidPath = join(root, "shell.pid");
+      const queueReady = join(root, "queue-ready");
+      const script = hostLockShell({
+        slots: 1,
+        waitSecs: 2,
+        lockRoot,
+        inner: "echo SHOULD_NOT_RUN",
+      });
+      // Hold the lock shell before it inspects the queue so the dead PID can be
+      // created after its own PID is known and cannot be mistaken for itself.
+      const child = spawn("sh", [
+        "-c",
+        `echo $$ > "${shellPidPath}"; while [ ! -f "${queueReady}" ]; do sleep 0.02; done\n${script}`,
+      ]);
+      let output = "";
+      child.stdout.on("data", (chunk: Buffer) => (output += chunk.toString()));
+      child.stderr.on("data", (chunk: Buffer) => (output += chunk.toString()));
+      const startupDeadline = Date.now() + 2_000;
+      while (!existsSync(shellPidPath) && Date.now() < startupDeadline) await tick(10);
+      expect(existsSync(shellPidPath)).toBe(true);
+      const shellPid = Number(readFileSync(shellPidPath, "utf8").trim());
+      const deadProcess = spawn("sh", ["-c", "sleep 30"]);
+      const deadPid = deadProcess.pid;
+      expect(deadPid).toBeDefined();
+      expect(deadPid).not.toBe(shellPid);
+      deadProcess.kill("SIGKILL");
+      // `exit` fires before stdio is fully closed; wait for `close` and confirm
+      // the OS no longer recognizes the PID before the shell inspects the queue.
+      await new Promise<void>((resolve) => deadProcess.once("close", () => resolve()));
+      const reapDeadline = Date.now() + 1_000;
+      while (Date.now() < reapDeadline) {
+        try {
+          process.kill(deadPid!, 0);
+          await tick(10);
+        } catch {
+          break;
+        }
+      }
+      expect(() => process.kill(deadPid!, 0)).toThrow();
+      writeFileSync(join(waitDir, String(deadPid!)), "999\n");
+      // A live high-priority entry forces deferral; a second dead PID entry is
+      // cleaned as the queue is inspected.
+      writeFileSync(join(waitDir, String(process.pid)), "999\n");
+      writeFileSync(queueReady, "go\n");
+      const result = await new Promise<{ code: number | null; out: string }>((resolve) => {
+        child.on("close", (code) => resolve({ code, out: output }));
+      });
+      expect(result.code).toBe(HOST_LOCK_TIMEOUT_EXIT);
+      expect(result.out).not.toContain("SHOULD_NOT_RUN");
+      // Assert the two entries this test owns directly. Other waiters may be
+      // present when the test runs alongside suites in the same process.
+      expect(existsSync(join(waitDir, String(deadPid!)))).toBe(false);
+      expect(existsSync(join(waitDir, String(process.pid)))).toBe(true);
+    },
+    HOST_LOCK_SHELL_TIMEOUT_MS,
+  );
 
   it("keeps the stale threshold inside the wait budget and well past the heartbeat (#0521 review)", () => {
     // A waiter only ever waits DEFAULT_HOST_LOCK_WAIT_SECS, so a stale
@@ -2570,101 +2601,113 @@ describe("host-side lock (server + standalone CLI share one limit)", () => {
     expect(res.out).not.toContain("SHOULD_NOT_RUN");
   });
 
-  it("self-clocks a waiting run against the absolute deadline, not the local relative counter", async () => {
-    const root = tmpRoot();
-    const lockRoot = join(root, "locks");
-    const marks = join(root, "marks.log");
-    const holder = hostLockShell({
-      slots: 1,
-      waitSecs: 30,
-      lockRoot,
-      inner: `echo start >> "${marks}" && sleep 20 && echo end >> "${marks}"`,
-    });
-    const held = sh(holder);
-    const grabDeadline = Date.now() + 5_000;
-    while (Date.now() < grabDeadline) {
-      if (existsSync(marks) && readFileSync(marks, "utf8").includes("start")) break;
-      await tick(20);
-    }
-    expect(readFileSync(marks, "utf8")).toContain("start");
-
-    // A deadline 2s away, but waitSecs is still 30 — without the fix this
-    // would wait the full 30s (or until the holder frees the slot).
-    const near = Math.floor(Date.now() / 1000) + 2;
-    const t0 = Date.now();
-    const waiter = await sh(
-      hostLockShell({
+  it(
+    "self-clocks a waiting run against the absolute deadline, not the local relative counter",
+    async () => {
+      const root = tmpRoot();
+      const lockRoot = join(root, "locks");
+      const marks = join(root, "marks.log");
+      const holder = hostLockShell({
         slots: 1,
         waitSecs: 30,
         lockRoot,
-        deadlineAtEpochSecs: near,
-        inner: "echo WAITER_RAN",
-      }),
-    );
-    expect(waiter.code).toBe(HOST_LOCK_TIMEOUT_EXIT);
-    expect(Date.now() - t0).toBeLessThan(15_000); // well under waitSecs' 30s
-    expect(waiter.out).not.toContain("WAITER_RAN");
-    expect((await held).code).toBe(0);
-  }, 30_000);
+        inner: `echo start >> "${marks}" && sleep 20 && echo end >> "${marks}"`,
+      });
+      const held = sh(holder);
+      const grabDeadline = Date.now() + 5_000;
+      while (Date.now() < grabDeadline) {
+        if (existsSync(marks) && readFileSync(marks, "utf8").includes("start")) break;
+        await tick(20);
+      }
+      expect(readFileSync(marks, "utf8")).toContain("start");
 
-  it("breaks an orphaned lock dir within the wait budget instead of timing out on it (#0521 review)", async () => {
-    // The shape a SIGKILLed run leaves behind: the slot dir exists but nobody
-    // heartbeats it any more. The old 40-minute threshold was longer than the
-    // 15-minute wait, so the next waiter always gave up before it could break
-    // the orphan — with the heartbeat-based threshold it recovers on its first
-    // stale sweep.
-    const root = tmpRoot();
-    const lockRoot = join(root, "locks");
-    const slot = join(lockRoot, "0");
-    mkdirSync(slot, { recursive: true });
-    // Node mtime — portable on remote validators where `touch -t` differs (#1122 mini).
-    const staleAt = new Date("2000-01-01T00:00:00Z");
-    utimesSync(slot, staleAt, staleAt);
-    try {
-      execFileSync("touch", ["-d", "@0", slot]);
-    } catch {
-      execFileSync("touch", ["-t", "197001010000", slot]);
-    }
-    expect(statSync(slot).mtimeMs).toBeLessThan(Date.now() - 60_000);
-    const marks = join(root, "marks.log");
-    const res = await sh(
-      hostLockShell({
-        slots: 1,
-        waitSecs: 15,
-        lockRoot,
-        staleMinutes: 1,
-        inner: `echo ran >> "${marks}"`,
-      }),
-    );
-    expect(res.code).toBe(0);
-    expect(res.out).toContain("[lock] slot 0 acquired");
-    expect(readFileSync(marks, "utf8")).toContain("ran");
-  }, 30_000);
+      // A deadline 2s away, but waitSecs is still 30 — without the fix this
+      // would wait the full 30s (or until the holder frees the slot).
+      const near = Math.floor(Date.now() / 1000) + 2;
+      const t0 = Date.now();
+      const waiter = await sh(
+        hostLockShell({
+          slots: 1,
+          waitSecs: 30,
+          lockRoot,
+          deadlineAtEpochSecs: near,
+          inner: "echo WAITER_RAN",
+        }),
+      );
+      expect(waiter.code).toBe(HOST_LOCK_TIMEOUT_EXIT);
+      expect(Date.now() - t0).toBeLessThan(15_000); // well under waitSecs' 30s
+      expect(waiter.out).not.toContain("WAITER_RAN");
+      expect((await held).code).toBe(0);
+    },
+    HOST_LOCK_SHELL_TIMEOUT_MS,
+  );
 
-  it("heartbeats the slot dir while the holder runs, so staleness means 'dead' not 'slow' (#0521 review)", async () => {
-    const root = tmpRoot();
-    const lockRoot = join(root, "locks");
-    const slot = join(lockRoot, "0");
-    const marks = join(root, "marks.log");
-    const run = sh(
-      hostLockShell({
-        slots: 1,
-        waitSecs: 0,
-        lockRoot,
-        heartbeatSecs: 1, // one tick per second so the test can observe it
-        inner: `echo start >> "${marks}" && sleep 5 && echo end >> "${marks}"`,
-      }),
-    );
-    const grabDeadline = Date.now() + 5_000;
-    while (Date.now() < grabDeadline && !existsSync(slot)) await tick(20);
-    expect(existsSync(slot)).toBe(true);
-    const first = statSync(slot).mtimeMs;
-    await tick(1_600); // ≥ one tick: the heartbeat must have touched the dir
-    expect(statSync(slot).mtimeMs).toBeGreaterThan(first);
-    expect((await run).code).toBe(0);
-    // Normal release still removes the dir (and kills the heartbeat).
-    expect(existsSync(slot)).toBe(false);
-  }, 30_000);
+  it(
+    "breaks an orphaned lock dir within the wait budget instead of timing out on it (#0521 review)",
+    async () => {
+      // The shape a SIGKILLed run leaves behind: the slot dir exists but nobody
+      // heartbeats it any more. The old 40-minute threshold was longer than the
+      // 15-minute wait, so the next waiter always gave up before it could break
+      // the orphan — with the heartbeat-based threshold it recovers on its first
+      // stale sweep.
+      const root = tmpRoot();
+      const lockRoot = join(root, "locks");
+      const slot = join(lockRoot, "0");
+      mkdirSync(slot, { recursive: true });
+      // Node mtime — portable on remote validators where `touch -t` differs (#1122 mini).
+      const staleAt = new Date("2000-01-01T00:00:00Z");
+      utimesSync(slot, staleAt, staleAt);
+      try {
+        execFileSync("touch", ["-d", "@0", slot]);
+      } catch {
+        execFileSync("touch", ["-t", "197001010000", slot]);
+      }
+      expect(statSync(slot).mtimeMs).toBeLessThan(Date.now() - 60_000);
+      const marks = join(root, "marks.log");
+      const res = await sh(
+        hostLockShell({
+          slots: 1,
+          waitSecs: 15,
+          lockRoot,
+          staleMinutes: 1,
+          inner: `echo ran >> "${marks}"`,
+        }),
+      );
+      expect(res.code).toBe(0);
+      expect(res.out).toContain("[lock] slot 0 acquired");
+      expect(readFileSync(marks, "utf8")).toContain("ran");
+    },
+    HOST_LOCK_SHELL_TIMEOUT_MS,
+  );
+
+  it(
+    "heartbeats the slot dir while the holder runs, so staleness means 'dead' not 'slow' (#0521 review)",
+    async () => {
+      const root = tmpRoot();
+      const lockRoot = join(root, "locks");
+      const slot = join(lockRoot, "0");
+      const marks = join(root, "marks.log");
+      const run = sh(
+        hostLockShell({
+          slots: 1,
+          waitSecs: 0,
+          lockRoot,
+          heartbeatSecs: 1, // one tick per second so the test can observe it
+          inner: `echo start >> "${marks}" && sleep 5 && echo end >> "${marks}"`,
+        }),
+      );
+      const grabDeadline = Date.now() + 5_000;
+      while (Date.now() < grabDeadline && !existsSync(slot)) await tick(20);
+      expect(existsSync(slot)).toBe(true);
+      const first = statSync(slot).mtimeMs;
+      await tick(1_600); // ≥ one tick: the heartbeat must have touched the dir
+      expect(statSync(slot).mtimeMs).toBeGreaterThan(first);
+      expect((await run).code).toBe(0);
+      // Normal release still removes the dir (and kills the heartbeat).
+      expect(existsSync(slot)).toBe(false);
+    },
+    HOST_LOCK_SHELL_TIMEOUT_MS,
+  );
 });
 
 // ── prerequisite command shape ───────────────────────────────────────────────

@@ -29,7 +29,6 @@ function workViewStubs() {
   return {
     BoardColumn: { template: "<div class='desktop-board-column' />", props: ["col"] },
     IntegrationStatusBar: { template: "<div class='integration-status-bar' />" },
-    MobileTaskDetail: { template: "<div class='mobile-task-detail-stub' />" },
     RouterLink: { template: "<a><slot /></a>" },
     Button: buttonStub,
     Select: selectStub,
@@ -429,7 +428,10 @@ describe("mobile Work queue", () => {
     }
   });
 
-  it("shows only the task detail above the queue on a narrow task route", async () => {
+  // #1137: the phone task detail is the shared TaskDrawer mounted by App.vue,
+  // not a WorkView sibling. The queue stays mounted (so Back is instant) but is
+  // hidden while a ?task= route selects the drawer.
+  it("hides the phone queue behind the shared drawer on a narrow task route", async () => {
     stubViewport(390, true);
     routeState.query = { task: "0042" };
     const repo = useRepoStore();
@@ -439,7 +441,7 @@ describe("mobile Work queue", () => {
     const wrapper = mount(WorkView, { global: { stubs: workViewStubs() } });
     await flushPromises();
 
-    expect(wrapper.find(".mobile-task-detail-stub").exists()).toBe(true);
+    expect(useUiStore().active?.id).toBe("0042");
     expect(wrapper.find("[data-testid='mobile-work-queue']").isVisible()).toBe(false);
     expect(wrapper.find(".work-page").exists()).toBe(false);
     expect(wrapper.find(".desktop-board-column").exists()).toBe(false);
