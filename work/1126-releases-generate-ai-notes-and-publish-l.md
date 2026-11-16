@@ -2,14 +2,14 @@
 id: "1126"
 title: "Releases: 'Generate AI notes and publish' - let the user choose auto-publish or notify-me when the AI draft is ready"
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: [web, server]
 assigned_to: ai
 created_by: t@t
 branch: ""
 created_at: "2026-11-15T08:14:22Z"
-updated_at: "2026-11-15T08:14:29Z"
+updated_at: "2026-11-16T23:51:37Z"
 ---
 ## Problem
 
@@ -45,3 +45,4 @@ Reuse the existing AI-draft run in ReleasesView.vue and the server release run; 
 - 2026-11-15T08:14:23Z · needs_input
 - 2026-11-15T08:14:28Z · body: Desired UX (added); Desired behavior (removed)
 - 2026-11-15T08:14:29Z · needs_input
+- 2026-11-16T23:51:37Z · status inbox→ready
