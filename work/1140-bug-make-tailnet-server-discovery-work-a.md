@@ -155,3 +155,4 @@ Reproduce the reported behavior first with fake Tailscale and SSH executables; k
 - 2026-11-16T09:32:11Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-16T09:32:11Z · status active→review
 - 2026-11-16T09:32:11Z · message_delivered: 1 message(s)
+- 2026-11-16T09:32:11Z · note: handoff requested (cli)
