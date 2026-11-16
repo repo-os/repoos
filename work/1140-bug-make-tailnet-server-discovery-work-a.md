@@ -6,13 +6,16 @@ status: review
 needs_input: true
 needs_input_reason: review-failed
 needs_input_detail: "the opencode agent exited without output: network problem reaching the model provider, not a code issue: getaddrinfo ENOTFOUND opencode.ai"
+debug_tldr: "DNS lookup for opencode.ai failed, so the reviewer never reached the model — retry the review once network or DNS is restored."
+debug_tldr_at: "2026-11-16T08:19:34Z"
+debug_tldr_key: "review-failed|the opencode agent exited without output: network problem reaching the model provider, not a code issue: getaddrinfo ENOTFOUND opencode.ai"
 priority: p1
 area: [server, core]
 assigned_to: ai
 created_by: t@t
 branch: feat/bug-make-tailnet-server-discovery-work-a
 created_at: "2026-11-16T03:38:56Z"
-updated_at: "2026-11-16T08:18:17Z"
+updated_at: "2026-11-16T08:19:34Z"
 review_failed_report_retries: 2
 review_rounds: 2
 routing_switches: 1
