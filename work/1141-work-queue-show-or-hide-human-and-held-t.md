@@ -3,6 +3,9 @@ id: "1141"
 title: "Work queue: show or hide human and held tasks"
 type: feature
 status: inbox
+needs_input: true
+needs_input_reason: underspecified
+needs_input_detail: "missing sections: Desired UX"
 priority: p2
 area: [web, ui]
 assigned_to: ai
@@ -43,3 +46,4 @@ Use the attached screenshot as the layout reference. Inspect existing Work Queue
 
 - 2026-11-16T03:51:39Z · created · t@t
 - 2026-11-16T03:51:40Z · screenshots
+- 2026-11-16T03:51:40Z · needs_input
