@@ -3,6 +3,9 @@ id: "1140"
 title: "Bug: make tailnet server discovery work across remote shells and hand-run servers"
 type: bug
 status: review
+needs_input: true
+needs_input_reason: review-failed
+needs_input_detail: "the opencode agent exited without output: network problem reaching the model provider, not a code issue: getaddrinfo ENOTFOUND opencode.ai"
 priority: p1
 area: [server, core]
 assigned_to: ai
@@ -115,3 +118,4 @@ Reproduce the reported behavior first with fake Tailscale and SSH executables; k
 - 2026-11-16T08:15:03Z · note: review pass 6: failed — no usable report
 - 2026-11-16T08:16:43Z · note: review pass 7: failed — no usable report
 - 2026-11-16T08:18:17Z · note: review pass 8: failed — no usable report
+- 2026-11-16T08:18:17Z · needs_input
