@@ -150,3 +150,4 @@ Reproduce the reported behavior first with fake Tailscale and SSH executables; k
 - 2026-11-16T09:04:09Z · CTO nudge: held — handoff gate is running
 - 2026-11-16T09:26:52Z · body
 - 2026-11-16T09:28:42Z · message_queued at 2026-11-16T09:28:42.170Z
+- 2026-11-16T09:28:42Z · handoff failed · task-file handoff failed at review · could not commit finalized engineering report: A check is running; wait for it to finish.
