@@ -2,7 +2,7 @@
 id: "1140"
 title: "Bug: make tailnet server discovery work across remote shells and hand-run servers"
 type: bug
-status: active
+status: review
 priority: p1
 area: [server, core]
 assigned_to: ai
@@ -136,3 +136,4 @@ Reproduce the reported behavior first with fake Tailscale and SSH executables; k
 - 2026-11-16T08:40:20Z · message_queued at 2026-11-16T08:40:20.048Z
 - 2026-11-16T08:46:41Z · queued message undelivered for 6m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-16T08:46:41Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 130) · last assistant: Now the required scoped check. · stderr: (empty)
+- 2026-11-16T08:46:41Z · status active→review
