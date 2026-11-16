@@ -2,14 +2,14 @@
 id: "1140"
 title: "Bug: make tailnet server discovery work across remote shells and hand-run servers"
 type: bug
-status: active
+status: review
 priority: p1
 area: [server, core]
 assigned_to: ai
 created_by: t@t
 branch: feat/bug-make-tailnet-server-discovery-work-a
 created_at: "2026-11-16T03:38:56Z"
-updated_at: "2026-11-16T07:24:00Z"
+updated_at: "2026-11-16T07:25:57Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -96,3 +96,4 @@ Reproduce the reported behavior first with fake Tailscale and SSH executables; k
 - 2026-11-16T07:02:01Z · watchdog: restarting engineer after 63m with no live process
 - 2026-11-16T07:13:19Z · body
 - 2026-11-16T07:24:00Z · body
+- 2026-11-16T07:25:57Z · status active→review
