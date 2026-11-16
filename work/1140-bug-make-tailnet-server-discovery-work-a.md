@@ -167,3 +167,4 @@ Reproduce the reported behavior first with fake Tailscale and SSH executables; k
 - 2026-11-16T09:46:55Z · note: handoff requested (cli)
 - 2026-11-16T09:56:08Z · status active→review
 - 2026-11-16T09:56:09Z · message_queued at 2026-11-16T09:56:09.020Z
+- 2026-11-16T09:56:09Z · note: shots: skipped — Docs site skipped: no docs shot declared
