@@ -131,6 +131,77 @@ describe("mobile tailnet discovery", () => {
     );
   });
 
+  it("explains configured-host fallback instead of claiming the tailnet is invisible", async () => {
+    const fetchImpl = vi.fn(async () =>
+      Promise.resolve(
+        new Response(
+          JSON.stringify({
+            ok: true,
+            servers: rows,
+            tailscaleUnavailable: true,
+            discoverySource: "configured-hosts",
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        ),
+      ),
+    );
+    const result = await fetchTailnetServers("https://bee.tailc0c173.ts.net:7499", {
+      fetchImpl: fetchImpl as unknown as typeof fetch,
+    });
+
+    expect(result.kind).toBe("ok");
+    if (result.kind === "ok") {
+      expect(result.tailscaleUnavailable).toBe(true);
+      expect(result.message).toMatch(/configured hosts/);
+      expect(result.message).not.toMatch(/can't see your tailnet/);
+    }
+  });
+
+  it("does not claim a fallback source an older server never reported", async () => {
+    const fetchImpl = vi.fn(async () =>
+      Promise.resolve(
+        new Response(JSON.stringify({ ok: true, servers: [], tailscaleUnavailable: true }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
+      ),
+    );
+    const result = await fetchTailnetServers("https://bee.tailc0c173.ts.net:7499", {
+      fetchImpl: fetchImpl as unknown as typeof fetch,
+    });
+
+    expect(result.kind).toBe("ok");
+    if (result.kind === "ok") {
+      expect(result.message).toMatch(/used its configured hosts or listed local servers only/);
+      expect(result.message).not.toMatch(/only its local servers/);
+    }
+  });
+
+  it("does not claim a configured-host fallback when the pool is empty", async () => {
+    const fetchImpl = vi.fn(async () =>
+      Promise.resolve(
+        new Response(
+          JSON.stringify({
+            ok: true,
+            servers: [],
+            tailscaleUnavailable: true,
+            discoverySource: "local-only",
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        ),
+      ),
+    );
+    const result = await fetchTailnetServers("https://bee.tailc0c173.ts.net:7499", {
+      fetchImpl: fetchImpl as unknown as typeof fetch,
+    });
+
+    expect(result.kind).toBe("ok");
+    if (result.kind === "ok") {
+      expect(result.message).toMatch(/no configured hosts/);
+      expect(result.message).not.toMatch(/configured hosts instead/);
+    }
+  });
+
   it("turns an auth refusal into a plain message instead of a scan or retry", async () => {
     const fetchImpl = vi.fn(async () =>
       Promise.resolve(

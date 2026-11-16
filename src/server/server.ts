@@ -153,7 +153,7 @@ import {
   refreshRunningServerIdentity,
   registerRunningServer,
   removeServerRegistryEntry,
-  shouldRegisterServerRegistry,
+  serverRegistryExclusion,
   updateServerRegistryEngineerCount,
 } from "../core/server-registry.js";
 import { onGitMutation } from "../core/git-activity.js";
@@ -1278,7 +1278,8 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // harnesses — keep it. Only fall through to the resolver when no port was
   // passed at all (the `repoos serve` path passes `--port` or nothing).
   const requestedPort = opts.port ?? resolveServePort(config.root, config);
-  const registerInServerRegistry = shouldRegisterServerRegistry(config, { requestedPort });
+  const registryExclusion = serverRegistryExclusion(config, { requestedPort });
+  const registerInServerRegistry = registryExclusion === null;
   const isPreviewChild = process.env.REPOOS_PREVIEW_CHILD === "1";
   const isControlPlane = requestedPort !== 0 && !isPreviewChild;
   const mode = isPreviewChild
@@ -4903,8 +4904,13 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       notificationCtx.publicOrigin = url;
 
       // Register this serve process in the lockfile so port conflicts can be
-      // detected on the next startup (0168).
-      reaper.register(actualPort, host, opts.serveLockFlags);
+      // detected on the next startup (0168). The lock also records whether the
+      // running-server registry was intentionally skipped, so `repoos status`
+      // can explain why `repoos servers` does not list this instance (#1140).
+      reaper.register(actualPort, host, opts.serveLockFlags, {
+        state: registerInServerRegistry ? "registered" : "excluded",
+        ...(registryExclusion ? { reason: registryExclusion } : {}),
+      });
       const serverStartedAt = new Date().toISOString();
       if (registerInServerRegistry) {
         try {

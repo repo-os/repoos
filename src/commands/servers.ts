@@ -14,7 +14,11 @@ import { c } from "../cli/colors.js";
 export {
   collectTailnetServers,
   parseTailnetPeers,
+  remoteFailureReason,
+  remoteShellCommand,
+  remoteShellScript,
   serversSshArgs,
+  shellQuote,
 } from "../core/tailnet-servers.js";
 export type { ListedServer, RemoteExec } from "../core/tailnet-servers.js";
 
@@ -64,7 +68,21 @@ function formatUptime(seconds: number | null | undefined): string {
   return `${Math.floor(m / 60)}h ${m % 60}m`;
 }
 
-export async function cmdServers(argv: string[]): Promise<void> {
+/** Human-readable fallback line when the local Tailscale status is unavailable. */
+export function tailnetFallbackNotice(configuredHosts: string[]): string {
+  return configuredHosts.length
+    ? `  Tailscale peer discovery unavailable; using configured hosts (${configuredHosts.join(", ")}) instead of the tailnet peer list.`
+    : "  Tailscale peer discovery unavailable and no remoteValidation.tailscaleHosts configured; showing local servers only.";
+}
+
+export interface ServersCommandDeps {
+  /** Test seam: resolve config from this root instead of the current repo. */
+  root?: string;
+  /** Test seam: replace tailnet collection (the CLI path has no network seam). */
+  collect?: typeof collectTailnetServers;
+}
+
+export async function cmdServers(argv: string[], deps: ServersCommandDeps = {}): Promise<void> {
   const json = argv.includes("--json");
   const prune = argv.includes("--prune");
   const tailscale = argv.includes("--tailscale");
@@ -92,15 +110,15 @@ export async function cmdServers(argv: string[]): Promise<void> {
     staleReason: row.staleReason,
     healthRoot: row.healthRoot,
   }));
-  const cfg = tailscale ? loadConfig(findRepoRoot()) : undefined;
+  const cfg = tailscale ? loadConfig(deps.root ?? findRepoRoot()) : undefined;
   const remoteHosts = resolveRemoteHosts(cfg?.remoteValidation);
   const result = tailscale
-    ? await collectTailnetServers(local, {
+    ? await (deps.collect ?? collectTailnetServers)(local, {
         configuredHosts: remoteHosts.map((host) => host.host),
         remoteHosts,
         remoteValidation: cfg?.remoteValidation,
       })
-    : { servers: local, tailscaleUnavailable: false };
+    : { servers: local, tailscaleUnavailable: false as const, source: "tailscale" as const };
 
   if (json) {
     console.log(
@@ -109,6 +127,7 @@ export async function cmdServers(argv: string[]): Promise<void> {
           servers: tailscale ? result.servers : localRows.map(localJsonRow),
           ...(pruned !== undefined ? { pruned } : {}),
           ...(result.tailscaleUnavailable ? { tailscaleUnavailable: true } : {}),
+          ...(tailscale && result.source ? { discoverySource: result.source } : {}),
         },
         null,
         2,
@@ -120,12 +139,9 @@ export async function cmdServers(argv: string[]): Promise<void> {
     console.log(
       c.dim(`  Pruned ${pruned} stale local registry entr${pruned === 1 ? "y" : "ies"}.`),
     );
-  if (result.tailscaleUnavailable)
-    console.log(
-      c.yellow(
-        "  Tailscale CLI unavailable; showing configured hosts where reachable and local servers.",
-      ),
-    );
+  if (result.tailscaleUnavailable) {
+    console.log(c.yellow(tailnetFallbackNotice(remoteHosts.map((host) => host.host))));
+  }
   if (!tailscale && !prune && pruned === undefined) {
     if (localRows.length === 0) {
       console.log(c.dim("  No registered RepoOS servers."));

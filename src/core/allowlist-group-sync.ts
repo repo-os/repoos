@@ -15,7 +15,12 @@
  */
 import { remoteHostUser } from "./remote-hosts.js";
 import type { AllowlistGroup } from "./allowlist-groups.js";
-import type { RemoteExec, ListedServer } from "./tailnet-servers.js";
+import {
+  classifyRemoteFailure,
+  shellQuote,
+  type RemoteExec,
+  type ListedServer,
+} from "./tailnet-servers.js";
 import type { RemoteValidationConfig, RemoteValidationHost } from "./types.js";
 
 /** How one member answered a propagation attempt. */
@@ -77,11 +82,6 @@ export function encodeGroupApplyPayload(payload: GroupApplyPayload): string {
   return Buffer.from(JSON.stringify(payload), "utf8").toString("base64");
 }
 
-/** Single-quote a path for the remote shell. */
-function shellQuote(value: string): string {
-  return `'${value.replace(/'/g, `'\\''`)}'`;
-}
-
 /**
  * The command a peer runs to apply a group payload. It `cd`s to the member's
  * repo root so the receiver can verify that *this* project declares the group
@@ -136,15 +136,7 @@ export function parseGroupApplyOutput(
 
 /** Classify an SSH/exec failure: transport problems are unreachable, the rest refused. */
 export function classifyGroupApplyFailure(error: unknown): GroupApplyStatus {
-  const message = error instanceof Error ? error.message : String(error);
-  if (
-    /ssh:|connect|could not resolve|permission denied|no route|timed? ?out|timeout|network is unreachable|connection (?:refused|closed|reset)/i.test(
-      message,
-    )
-  ) {
-    return "unreachable";
-  }
-  return "refused";
+  return classifyRemoteFailure(error).kind === "unknown" ? "refused" : "unreachable";
 }
 
 export interface PropagateOptions {
@@ -221,11 +213,11 @@ export async function propagateAllowlistGroup(
           reason: parsed.reason ?? "the remote host refused the update",
         };
       } catch (error) {
-        const status = classifyGroupApplyFailure(error);
+        const failure = classifyRemoteFailure(error);
         return {
           ...member,
-          status,
-          reason: error instanceof Error ? error.message : String(error),
+          status: failure.kind === "unknown" ? "refused" : "unreachable",
+          reason: failure.reason,
         };
       }
     }),

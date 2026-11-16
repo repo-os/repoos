@@ -742,6 +742,8 @@ export interface RepoOSConfig {
    * runtime does this; every normal command resolves the base config and leaves
    * this undefined. Runtime information, not a `repoos.toml` field of its own.
    */
+  /** True when this process was started with the preview-override mode, even if no `[preview.*]` key applied. */
+  previewOverridesRequested?: boolean;
   previewOverrides?: string[];
   /**
    * Per-project task-worktree behavior (#0373). Omitted means defaults — in

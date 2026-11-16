@@ -1452,6 +1452,10 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
   // entrypoint.
   loadDotEnv(root);
   const cfg: RepoOSConfig = { root, ...DEFAULT_CONFIG };
+  // Remember the flag, not just the keys that happened to apply: a repo with
+  // no overridable `[preview.*]` entries still counts as a preview runtime for
+  // registry and automation exclusion (#1140 review).
+  if (options.previewOverrides) cfg.previewOverridesRequested = true;
 
   const tomlPath = options.tomlPath ?? join(root, "repoos.toml");
   if (existsSync(tomlPath)) {

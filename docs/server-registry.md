@@ -60,9 +60,23 @@ Registry I/O is best-effort: failures are logged once and never block startup.
 
 - Preview children (`REPOOS_PREVIEW_CHILD=1`)
 - `repoos serve --preview-overrides` (preview config overlay active)
-- Servers rooted at a **linked task worktree**
 - Ephemeral test servers (`port: 0`)
 - Anything with `REPOOS_NO_REGISTRY=1`
+
+A hand-run `repoos serve` registers whether it runs from the main checkout or a
+linked task worktree (#1140): it is a real control plane that `repoos status`,
+`repoos servers` and tailnet discovery must agree on. Only explicit preview /
+ephemeral / opt-out markers exclude a server. (This supersedes the earlier
+"task worktree servers never register" rule from #0845; the preview markers
+already distinguish a managed preview from a manually started serve.)
+
+The serve lock records that intent (`registry: { state: "registered" |
+"excluded", reason? }`) so `repoos status` can explain a running server that
+`repoos servers` and tailnet discovery do not list. Status reconciles the lock's
+intent with the actual registry entry: `registered`, `excluded` (with the
+reason), `unregistered` (registration was intended but no entry exists), or
+`not-running`. It never claims a server is discoverable just because a process
+is alive.
 
 ## Port conflicts
 
@@ -77,6 +91,15 @@ repoos servers           # human table: port, project, root, pid, uptime, engine
 repoos servers --json    # machine-readable list + validity + activeEngineers
 repoos servers --prune   # delete stale entries (dead PID or failed health), then list
 ```
+
+`repoos servers --tailscale --json` adds remote rows and reports
+`discoverySource: "tailscale" | "configured-hosts" | "local-only"`. The latter
+two mean the local Tailscale CLI was absent: `configured-hosts` when the
+configured `remoteValidation.tailscaleHosts` pool supplied the peers, and
+`local-only` when that pool was empty too. Remote probes run through a
+non-interactive `sh -c` with a predictable `PATH`, and a failed host keeps its
+real cause (command-not-found, authentication, connection refused) instead of
+being mislabelled a timeout.
 
 Validation for each entry:
 

@@ -10,11 +10,11 @@
  * Server startup + webkit launch share the harness in ui-harness.ts with the
  * screenshot script (#0213).
  */
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { c } from "../cli/colors.js";
 import { findRepoRoot } from "../core/config.js";
+import { makeTempDir } from "../core/temp-dir.js";
 import {
   startPreviewServer,
   launchWebkit,
@@ -35,7 +35,7 @@ import {
  * recovery, no auto-launch — constant cost regardless of board size.
  */
 export function makeSmokeFixture(): string {
-  const root = mkdtempSync(join(tmpdir(), "repoos-smoke-"));
+  const root = makeTempDir("repoos-smoke-");
   mkdirSync(join(root, "work"), { recursive: true });
   writeFileSync(join(root, "repoos.toml"), 'theme = "dark"\nuiTheme = "classic"\n\n');
   // A review task with a stored report drives the send-to-engineer dialog

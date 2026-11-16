@@ -15,10 +15,8 @@
  * Every route here sits behind the server's normal auth middleware. Cross-host
  * writes use SSH credentials, so there is no unauthenticated write endpoint.
  */
-import { execFile } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { promisify } from "node:util";
 import { json, readBody } from "./utils.js";
 import type { RouteHandler } from "./types.js";
 import { pauseAllowlistEntry, resumeAllowlistEntry } from "../../core/budget-allowlist.js";
@@ -51,7 +49,7 @@ import {
   loadConfigAfterServerWrite,
 } from "../preview-config-isolation.js";
 import { resolveRemoteHosts } from "../../core/remote-hosts.js";
-import { serversSshArgs, type CollectTailnetOptions } from "../../core/tailnet-servers.js";
+import { defaultRemoteExec, type CollectTailnetOptions } from "../../core/tailnet-servers.js";
 import { listValidatedServerRegistry } from "../../core/server-registry.js";
 import { buildTailnetDiscoveryPayload } from "./servers.js";
 import { detectAgents } from "../../core/detect.js";
@@ -316,21 +314,6 @@ async function annotateLogins(
   return results.map((result) =>
     result.local && result.status === "applied" ? { ...result, notLoggedIn: clis } : result,
   );
-}
-
-const execFileAsync = promisify(execFile);
-
-async function defaultRemoteExec(
-  host: string,
-  user: string,
-  timeoutMs: number,
-  command?: string,
-): Promise<string> {
-  const { stdout } = await execFileAsync("ssh", serversSshArgs(host, user, timeoutMs, command), {
-    timeout: timeoutMs,
-    maxBuffer: 2 * 1024 * 1024,
-  });
-  return stdout.toString();
 }
 
 /**

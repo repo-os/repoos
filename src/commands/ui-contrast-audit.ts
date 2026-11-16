@@ -26,12 +26,12 @@
  * Screens whose background is an image/gradient are reported as *unchecked*
  * rather than judged — a ratio against an unknown pixel is a lie.
  */
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
-import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { c } from "../cli/colors.js";
 import { findRepoRoot, loadConfig } from "../core/config.js";
+import { makeTempDir } from "../core/temp-dir.js";
 import type { CheckThemeScope } from "../core/types.js";
 import { contrastRatio, luminance } from "./check.js";
 import { localShotStore } from "../server/shots.js";
@@ -746,7 +746,7 @@ A second column's worth of content so the board is not a single card.
 `;
 
 export function makeAuditFixture(): string {
-  const root = mkdtempSync(join(tmpdir(), "repoos-contrast-"));
+  const root = makeTempDir("repoos-contrast-");
   mkdirSync(join(root, "work"), { recursive: true });
   // A declared dev target so the `/dev` screen (#0802) renders a real card —
   // its command, URL and chosen port are text the audit must gate in every

@@ -44,6 +44,10 @@ describe("schedule automation guards", () => {
     mainConfig.previewOverrides = ["auth.enabled"];
     expect(scheduleHostileReason(mainConfig, {}, 7171)).toBe("preview-overrides");
     mainConfig.previewOverrides = [];
+    // The flag alone counts even when no overridable key applied (#1140).
+    mainConfig.previewOverridesRequested = true;
+    expect(scheduleHostileReason(mainConfig, {}, 7171)).toBe("preview-overrides");
+    mainConfig.previewOverridesRequested = false;
 
     const wtConfig = loadConfig(wt);
     wtConfig.scheduledTasks = { enabled: true };
