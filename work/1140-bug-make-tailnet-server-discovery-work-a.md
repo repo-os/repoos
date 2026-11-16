@@ -3,6 +3,9 @@ id: "1140"
 title: "Bug: make tailnet server discovery work across remote shells and hand-run servers"
 type: bug
 status: review
+needs_input: true
+needs_input_reason: review-failed
+needs_input_detail: "the cursor agent exited without output: ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage. Stopped 1 process(es) this turn spawned outside its process group (PIDs: 56957)."
 priority: p1
 area: [server, core]
 assigned_to: ai
@@ -83,3 +86,4 @@ Reproduce the reported behavior first with fake Tailscale and SSH executables; k
 - 2026-11-16T04:55:39Z · note: review pass 1: failed — no usable report
 - 2026-11-16T04:56:02Z · note: review pass 2: failed — no usable report
 - 2026-11-16T04:56:32Z · note: review pass 3: failed — no usable report
+- 2026-11-16T04:56:32Z · needs_input
