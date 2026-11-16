@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/bug-make-tailnet-server-discovery-work-a
 created_at: "2026-11-16T03:38:56Z"
-updated_at: "2026-11-16T08:37:09Z"
+updated_at: "2026-11-16T08:37:10Z"
 review_passes: 3
 review_failed_report_retries: 0
 review_rounds: 2
