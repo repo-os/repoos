@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/bug-make-tailnet-server-discovery-work-a
 created_at: "2026-11-16T03:38:56Z"
-updated_at: "2026-11-16T09:29:09Z"
+updated_at: "2026-11-16T09:32:11Z"
 review_passes: 3
 review_failed_report_retries: 0
 review_rounds: 2
@@ -152,3 +152,4 @@ Reproduce the reported behavior first with fake Tailscale and SSH executables; k
 - 2026-11-16T09:28:42Z · message_queued at 2026-11-16T09:28:42.170Z
 - 2026-11-16T09:28:42Z · handoff failed · task-file handoff failed at review · could not commit finalized engineering report: A check is running; wait for it to finish.
 - 2026-11-16T09:29:09Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-16T09:32:11Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
