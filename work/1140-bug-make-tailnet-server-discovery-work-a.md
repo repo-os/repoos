@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-16T07:34:50Z"
+review_passes: 2
 id: "1140"
 title: "Bug: make tailnet server discovery work across remote shells and hand-run servers"
 type: bug
@@ -9,10 +11,8 @@ assigned_to: ai
 created_by: t@t
 branch: feat/bug-make-tailnet-server-discovery-work-a
 created_at: "2026-11-16T03:38:56Z"
-updated_at: "2026-11-16T07:34:50Z"
 review_rounds: 1
 routing_switches: 1
-review_passes: 1
 review_failed_report_retries: 0
 ---
 ## Problem
@@ -100,3 +100,4 @@ Reproduce the reported behavior first with fake Tailscale and SSH executables; k
 - 2026-11-16T07:25:57Z · note: shots: skipped — Docs site skipped: no docs shot declared
 - 2026-11-16T07:26:40Z · message_queued at 2026-11-16T07:26:40.536Z
 - 2026-11-16T07:34:50Z · note: review pass 5: needs some work
+
