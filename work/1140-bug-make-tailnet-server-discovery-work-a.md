@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/bug-make-tailnet-server-discovery-work-a
 created_at: "2026-11-16T03:38:56Z"
-updated_at: "2026-11-16T08:27:33Z"
+updated_at: "2026-11-16T08:36:32Z"
 review_failed_report_retries: 2
 review_rounds: 2
 routing_switches: 1
@@ -117,3 +117,4 @@ Reproduce the reported behavior first with fake Tailscale and SSH executables; k
 - 2026-11-16T08:18:17Z · note: review pass 8: failed — no usable report
 - 2026-11-16T08:18:17Z · needs_input
 - 2026-11-16T08:27:33Z · needs_input (review-failed) cleared for review again by hello@repoos.org
+- 2026-11-16T08:36:32Z · note: review pass 9: needs some work
