@@ -158,3 +158,4 @@ Reproduce the reported behavior first with fake Tailscale and SSH executables; k
 - 2026-11-16T09:32:11Z · note: handoff requested (cli)
 - 2026-11-16T09:34:09Z · CTO nudge: held — handoff gate is running
 - 2026-11-16T09:45:23Z · message_queued at 2026-11-16T09:45:23.387Z
+- 2026-11-16T09:45:23Z · handoff failed · task-file handoff failed at review · Engineering report narrative is 1221 words; the hard limit is 1,200 words of narrative. Shorten it and request handoff again.
