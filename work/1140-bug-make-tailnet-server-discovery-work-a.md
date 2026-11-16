@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-16T08:16:43Z"
+review_failed_report_retries: 2
 id: "1140"
 title: "Bug: make tailnet server discovery work across remote shells and hand-run servers"
 type: bug
@@ -9,8 +11,6 @@ assigned_to: ai
 created_by: t@t
 branch: feat/bug-make-tailnet-server-discovery-work-a
 created_at: "2026-11-16T03:38:56Z"
-updated_at: "2026-11-16T08:16:43Z"
-review_failed_report_retries: 1
 review_rounds: 2
 routing_switches: 1
 routing_escalations: 1
@@ -114,3 +114,4 @@ Reproduce the reported behavior first with fake Tailscale and SSH executables; k
 - 2026-11-16T08:13:37Z · handoff failed · could not auto-retry after check failure · This worktree already has a recorded live engineer for task #review:1140 (pid 61326)
 - 2026-11-16T08:15:03Z · note: review pass 6: failed — no usable report
 - 2026-11-16T08:16:43Z · note: review pass 7: failed — no usable report
+
