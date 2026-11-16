@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/bug-make-tailnet-server-discovery-work-a
 created_at: "2026-11-16T03:38:56Z"
-updated_at: "2026-11-16T08:49:09Z"
+updated_at: "2026-11-16T08:56:32Z"
 review_passes: 3
 review_failed_report_retries: 0
 review_rounds: 2
@@ -140,3 +140,4 @@ Reproduce the reported behavior first with fake Tailscale and SSH executables; k
 - 2026-11-16T08:46:41Z · message_delivered: 1 message(s)
 - 2026-11-16T08:46:41Z · note: handoff requested (cli)
 - 2026-11-16T08:49:09Z · CTO nudge: held — handoff gate is running
+- 2026-11-16T08:56:32Z · message_queued at 2026-11-16T08:56:32.374Z
