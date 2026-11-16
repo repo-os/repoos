@@ -39,3 +39,4 @@ Inspect the existing navigation and native back behavior before implementing. Th
 - 2026-11-16T14:07:51Z · body
 - 2026-11-16T14:10:42Z · status active→review
 - 2026-11-16T14:10:42Z · message_queued at 2026-11-16T14:10:42.620Z
+- 2026-11-16T14:10:42Z · note: shots: skipped — the diff (6 changed paths) touches no capture target's globs — no UI change to capture
