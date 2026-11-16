@@ -2,7 +2,7 @@
 id: "1140"
 title: "Bug: make tailnet server discovery work across remote shells and hand-run servers"
 type: bug
-status: review
+status: active
 priority: p1
 area: [server, core]
 assigned_to: ai
