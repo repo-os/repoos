@@ -7,7 +7,6 @@ import {
   removeServerRegistryEntry,
   serverRegistrationState,
   serverRegistryExclusion,
-  shouldRegisterServerRegistry,
   writeServerRegistryEntry,
   SERVER_REGISTRY_SCHEMA,
   type ServerRegistryEntry,
@@ -48,33 +47,24 @@ function git(root: string, args: string[]): void {
   execFileSync("git", args, { cwd: root, encoding: "utf8" });
 }
 
-describe("shouldRegisterServerRegistry", () => {
-  it("returns false for preview child, requested port 0, preview overrides, and REPOOS_NO_REGISTRY", () => {
-    const base = { root: "/tmp/main", previewOverrides: undefined };
-    expect(shouldRegisterServerRegistry(base, { requestedPort: 7171 }, {})).toBe(true);
-    expect(
-      shouldRegisterServerRegistry(base, { requestedPort: 7171 }, { REPOOS_PREVIEW_CHILD: "1" }),
-    ).toBe(false);
-    expect(shouldRegisterServerRegistry(base, { requestedPort: 0 }, {})).toBe(false);
-    expect(
-      shouldRegisterServerRegistry(base, { requestedPort: 7171 }, { REPOOS_NO_REGISTRY: "1" }),
-    ).toBe(false);
-    expect(
-      shouldRegisterServerRegistry(
-        { root: "/tmp/main", previewOverrides: ["auth.enabled"] },
-        { requestedPort: 7171 },
-        {},
-      ),
-    ).toBe(false);
-  });
-
-  it("reports the exclusion reason used by `repoos status`", () => {
+describe("serverRegistryExclusion", () => {
+  it("excludes preview child, requested port 0, preview overrides, and REPOOS_NO_REGISTRY", () => {
     const base = { root: "/tmp/main", previewOverrides: undefined };
     expect(serverRegistryExclusion(base, { requestedPort: 7171 }, {})).toBeNull();
+    expect(
+      serverRegistryExclusion(base, { requestedPort: 7171 }, { REPOOS_PREVIEW_CHILD: "1" }),
+    ).toBe("preview child");
     expect(serverRegistryExclusion(base, { requestedPort: 0 }, {})).toBe("ephemeral port");
     expect(
       serverRegistryExclusion(base, { requestedPort: 7171 }, { REPOOS_NO_REGISTRY: "1" }),
     ).toBe("REPOOS_NO_REGISTRY=1");
+    expect(
+      serverRegistryExclusion(
+        { root: "/tmp/main", previewOverrides: ["auth.enabled"] },
+        { requestedPort: 7171 },
+        {},
+      ),
+    ).toBe("preview overrides");
   });
 
   it("registers a hand-run serve rooted in a linked task worktree (#1140)", () => {
@@ -88,29 +78,29 @@ describe("shouldRegisterServerRegistry", () => {
     const wt = join(main, "task-wt");
     git(main, ["worktree", "add", "-q", wt, "-b", "feat/task"]);
     expect(
-      shouldRegisterServerRegistry(
+      serverRegistryExclusion(
         { root: main, previewOverrides: undefined },
         { requestedPort: 7171 },
         {},
       ),
-    ).toBe(true);
+    ).toBeNull();
     // A manually started control-plane serve in a worktree is a real server
     // that `repoos status`, `repoos servers` and tailnet discovery must agree
     // on. Preview children are excluded by REPOOS_PREVIEW_CHILD, not by root.
     expect(
-      shouldRegisterServerRegistry(
+      serverRegistryExclusion(
         { root: wt, previewOverrides: undefined },
         { requestedPort: 7171 },
         {},
       ),
-    ).toBe(true);
+    ).toBeNull();
     expect(
-      shouldRegisterServerRegistry(
+      serverRegistryExclusion(
         { root: wt, previewOverrides: undefined },
         { requestedPort: 7171 },
         { REPOOS_PREVIEW_CHILD: "1" },
       ),
-    ).toBe(false);
+    ).toBe("preview child");
     rmSync(main, { recursive: true, force: true });
   });
 });

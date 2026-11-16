@@ -10,6 +10,7 @@ import {
   remoteShellCommand,
   remoteShellScript,
   shellQuote,
+  tailnetFallbackNotice,
   cmdServers,
   serversSshArgs,
 } from "./servers.js";
@@ -71,6 +72,25 @@ describe("repoos servers --tailscale", () => {
     expect(result.source).toBe("configured-hosts");
     expect(result.servers).toEqual([{ port: 7499, host: "bee" }]);
     expect(remoteExec).toHaveBeenCalledWith("bee", "root", 4_000, "repoos servers --json");
+  });
+
+  it("reports local-only when the Tailscale CLI and the configured pool are both absent", async () => {
+    const remoteExec = vi.fn(async () => JSON.stringify({ servers: [] }));
+    const result = await collectTailnetServers([{ host: "local", port: 7171 }], {
+      tailscaleStatus: async () => {
+        throw new Error("tailscale: not found");
+      },
+      configuredHosts: [],
+      remoteExec,
+    });
+    expect(result.tailscaleUnavailable).toBe(true);
+    expect(result.source).toBe("local-only");
+    expect(result.servers).toEqual([{ host: "local", port: 7171 }]);
+    expect(remoteExec).not.toHaveBeenCalled();
+    expect(tailnetFallbackNotice([])).toMatch(/no remoteValidation\.tailscaleHosts configured/);
+    expect(tailnetFallbackNotice(["bee", "thinkpad"])).toMatch(
+      /using configured hosts \(bee, thinkpad\)/,
+    );
   });
 
   it("uses configured per-host users and the global Tailscale user in SSH targets", async () => {
@@ -168,6 +188,22 @@ describe("repoos servers --tailscale", () => {
     });
     expect(remoteFailureReason(auth)).toMatch(/authentication failed/);
     expect(remoteFailureReason(auth)).not.toBe("timed out");
+
+    // SSH forwards the remote command's stderr. A non-executable launcher or a
+    // remote EACCES is NOT an SSH authentication failure.
+    const remoteLauncherDenied = Object.assign(new Error("Command failed: ssh ..."), {
+      code: 126,
+      stderr: "sh: 1: /home/operator/.local/bin/repoos: Permission denied\n",
+    });
+    expect(remoteFailureReason(remoteLauncherDenied)).toMatch(/remote command permission denied/);
+    expect(remoteFailureReason(remoteLauncherDenied)).not.toMatch(/authentication failed/);
+
+    const remoteFileDenied = Object.assign(new Error("Command failed: ssh ..."), {
+      code: 1,
+      stderr: "EACCES: permission denied, open '/home/operator/.repoos/servers/7499.json'\n",
+    });
+    expect(remoteFailureReason(remoteFileDenied)).toMatch(/remote command permission denied/);
+    expect(remoteFailureReason(remoteFileDenied)).not.toMatch(/authentication failed/);
 
     const refused = Object.assign(new Error("Command failed: ssh ..."), {
       code: 255,

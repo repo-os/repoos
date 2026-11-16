@@ -91,12 +91,13 @@ repoos servers --prune   # delete stale entries (dead PID or failed health), the
 ```
 
 `repoos servers --tailscale --json` adds remote rows and reports
-`discoverySource: "tailscale" | "configured-hosts"`; the latter means the local
-Tailscale CLI was absent and the configured `remoteValidation.tailscaleHosts`
-pool supplied the peers. Remote probes run through a non-interactive `sh -c`
-with a predictable `PATH`, and a failed host keeps its real cause
-(command-not-found, authentication, connection refused) instead of being
-mislabelled a timeout.
+`discoverySource: "tailscale" | "configured-hosts" | "local-only"`. The latter
+two mean the local Tailscale CLI was absent: `configured-hosts` when the
+configured `remoteValidation.tailscaleHosts` pool supplied the peers, and
+`local-only` when that pool was empty too. Remote probes run through a
+non-interactive `sh -c` with a predictable `PATH`, and a failed host keeps its
+real cause (command-not-found, authentication, connection refused) instead of
+being mislabelled a timeout.
 
 Validation for each entry:
 

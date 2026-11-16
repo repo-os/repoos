@@ -88,7 +88,8 @@ servers on my tailnet**, next to **Add server**. That action makes exactly one r
   discovered port. No part of this touches the phone's network. When the
   server's Tailscale CLI is absent or unreadable, it falls back to the
   configured `remoteValidation.tailscaleHosts` pool and reports
-  `discoverySource: "configured-hosts"` so Hub can name the fallback instead of
+  `discoverySource: "configured-hosts"`, or `"local-only"` when there is no
+  configured pool either, so Hub can name what it actually listed instead of
   claiming the tailnet is invisible.
 - The response is the same server rows `repoos servers --tailscale --json`
   reports, plus a ready-to-open `url` and an `https` flag per row. Rows that

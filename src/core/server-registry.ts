@@ -100,14 +100,6 @@ export function serverRegistryExclusion(
   return null;
 }
 
-export function shouldRegisterServerRegistry(
-  config: Pick<RepoOSConfig, "root" | "previewOverrides">,
-  opts: { requestedPort: number },
-  env: NodeJS.ProcessEnv = process.env,
-): boolean {
-  return serverRegistryExclusion(config, opts, env) === null;
-}
-
 /**
  * The registry intent a serve process records in its serve lock. Status reads
  * it to explain a running server that `repoos servers` and tailnet discovery

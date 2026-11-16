@@ -157,6 +157,31 @@ describe("mobile tailnet discovery", () => {
     }
   });
 
+  it("does not claim a configured-host fallback when the pool is empty", async () => {
+    const fetchImpl = vi.fn(async () =>
+      Promise.resolve(
+        new Response(
+          JSON.stringify({
+            ok: true,
+            servers: [],
+            tailscaleUnavailable: true,
+            discoverySource: "local-only",
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        ),
+      ),
+    );
+    const result = await fetchTailnetServers("https://bee.tailc0c173.ts.net:7499", {
+      fetchImpl: fetchImpl as unknown as typeof fetch,
+    });
+
+    expect(result.kind).toBe("ok");
+    if (result.kind === "ok") {
+      expect(result.message).toMatch(/no configured hosts/);
+      expect(result.message).not.toMatch(/configured hosts instead/);
+    }
+  });
+
   it("turns an auth refusal into a plain message instead of a scan or retry", async () => {
     const fetchImpl = vi.fn(async () =>
       Promise.resolve(

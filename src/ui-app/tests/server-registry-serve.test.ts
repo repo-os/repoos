@@ -288,7 +288,7 @@ describe("startServer running-server registry", () => {
         remoteExec: async () => JSON.stringify({ servers: [] }),
         deadlineMs: 100,
       });
-      expect(payload.discoverySource).toBe("configured-hosts");
+      expect(payload.discoverySource).toBe("local-only");
       expect(payload.servers.some((row) => row.port === port && row.host === "local")).toBe(true);
     } finally {
       await handle.close();
@@ -324,6 +324,30 @@ describe("startServer running-server registry", () => {
         deadlineMs: 100,
       });
       expect(payload.servers).toEqual([]);
+    } finally {
+      await handle.close();
+    }
+  }, 30_000);
+
+  it("keeps --preview-overrides out of the registry on a real port and explains why (#1140)", async () => {
+    const root = minimalRepo();
+    // A real `[preview.*]` overlay is what sets config.previewOverrides; the
+    // boolean startServer option alone is not enough.
+    writeFileSync(join(root, "repoos.toml"), "servePort = 0\n[preview.auth]\nenabled = false\n");
+    const port = await reservePort();
+    const handle = await startServer({
+      root,
+      host: "127.0.0.1",
+      port,
+      disableAuth: true,
+      previewOverrides: true,
+    });
+    try {
+      expect(existsSync(join(registryDir, `${port}.json`))).toBe(false);
+      const status = await collectStatus(loadConfig(root), { probeTimeoutMs: 1_000 });
+      expect(status.server.running).toBe(true);
+      expect(status.server.registration).toBe("excluded");
+      expect(status.server.registrationReason).toBe("preview overrides");
     } finally {
       await handle.close();
     }

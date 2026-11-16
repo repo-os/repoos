@@ -36,9 +36,10 @@ export interface TailnetDiscoveryPayload {
   tailscaleUnavailable: boolean;
   /**
    * `configured-hosts` when the local Tailscale CLI was absent/unreadable and
-   * the configured `remoteValidation.tailscaleHosts` pool supplied the peers.
+   * the configured `remoteValidation.tailscaleHosts` pool supplied the peers;
+   * `local-only` when the CLI was absent and that pool was empty.
    */
-  discoverySource?: "tailscale" | "configured-hosts";
+  discoverySource?: "tailscale" | "configured-hosts" | "local-only";
   /** Set when the server owner turned discovery off. */
   disabled?: boolean;
   /** Plain-language explanation Hub can show without inventing one. */

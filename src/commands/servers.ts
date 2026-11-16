@@ -68,6 +68,13 @@ function formatUptime(seconds: number | null | undefined): string {
   return `${Math.floor(m / 60)}h ${m % 60}m`;
 }
 
+/** Human-readable fallback line when the local Tailscale CLI is absent. */
+export function tailnetFallbackNotice(configuredHosts: string[]): string {
+  return configuredHosts.length
+    ? `  Tailscale CLI unavailable; using configured hosts (${configuredHosts.join(", ")}) instead of the tailnet peer list.`
+    : "  Tailscale CLI unavailable and no remoteValidation.tailscaleHosts configured; showing local servers only.";
+}
+
 export async function cmdServers(argv: string[]): Promise<void> {
   const json = argv.includes("--json");
   const prune = argv.includes("--prune");
@@ -126,14 +133,7 @@ export async function cmdServers(argv: string[]): Promise<void> {
       c.dim(`  Pruned ${pruned} stale local registry entr${pruned === 1 ? "y" : "ies"}.`),
     );
   if (result.tailscaleUnavailable) {
-    const configured = remoteHosts.map((host) => host.host);
-    console.log(
-      c.yellow(
-        configured.length
-          ? `  Tailscale CLI unavailable; using configured hosts (${configured.join(", ")}) instead of the tailnet peer list.`
-          : "  Tailscale CLI unavailable and no remoteValidation.tailscaleHosts configured; showing local servers only.",
-      ),
-    );
+    console.log(c.yellow(tailnetFallbackNotice(remoteHosts.map((host) => host.host))));
   }
   if (!tailscale && !prune && pruned === undefined) {
     if (localRows.length === 0) {

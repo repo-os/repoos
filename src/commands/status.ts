@@ -487,8 +487,11 @@ export async function collectStatus(
   const registration = running
     ? serverRegistrationState({
         root,
-        port: primary?.port ?? probePort,
-        pid: primary?.pid ?? null,
+        // Probe port is the port health answered on (primary's port by
+        // default). Using it also covers a stale lock whose PID is dead while
+        // a healthy server answers on `opts.probePort`.
+        port: probePort,
+        pid: primaryAlive ? (primary?.pid ?? null) : null,
         lockRegistry: primary?.registry ?? null,
       })
     : { state: "not-running" as const, reason: null };

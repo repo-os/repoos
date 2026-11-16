@@ -238,6 +238,12 @@ function booleanField(error: unknown, key: string): boolean | undefined {
   return typeof value === "boolean" ? value : undefined;
 }
 
+function numericField(error: unknown, key: string): number | null {
+  if (!error || typeof error !== "object") return null;
+  const value = (error as Record<string, unknown>)[key];
+  return typeof value === "number" && Number.isInteger(value) ? value : null;
+}
+
 /**
  * A local timeout (execFile killed the child, ETIMEDOUT, or an AbortSignal) is
  * the ONLY evidence that earns "timed out". Text matching is deliberately
@@ -271,50 +277,124 @@ function remoteBinaryFromCommandNotFound(text: string): string | null {
   return match?.[1] ?? null;
 }
 
+/** `Permission denied (publickey).` — SSH's own shape, not remote output. */
+const SSH_AUTH_FAILURE_RE =
+  /Permission denied \((?:publickey|password|keyboard-interactive|hostbased|gssapi)[^)]*\)/i;
+/** A remote shell refusing to execute a file (e.g. a non-executable launcher). */
+const REMOTE_PERMISSION_RE =
+  /\b(?:sh|bash|zsh|dash|ksh):[^\n]*permission denied|\bEACCES: permission denied/i;
+
 /**
- * Turn an SSH/exec failure into the user-facing reason shown by
- * `repoos servers --tailscale`. The actual cause is preserved: a missing
- * `repoos` binary, authentication failure, refused connection and a real
- * network timeout stay distinct instead of collapsing into "timed out".
+ * Is this SSH's own diagnostic text rather than the remote program's stderr?
+ * SSH exits 255 for transport/auth failures; its messages also start with
+ * `ssh:` or use the bare `Permission denied (publickey)` / host-key forms.
+ * Remote programs can print "permission denied" too, so a bare word is never
+ * enough to call something an SSH problem.
  */
-export function remoteFailureReason(error: unknown): string {
-  if (isRemoteTimeout(error)) return "timed out";
+function looksLikeSshDiagnostics(text: string, code: number | null): boolean {
+  if (code === 255) return true;
+  if (/^\s*ssh:\s/m.test(text)) return true;
+  if (SSH_AUTH_FAILURE_RE.test(text)) return true;
+  if (/^\s*Host key verification failed\.?\s*$/m.test(text)) return true;
+  if (/^\s*Could not resolve hostname\b/m.test(text)) return true;
+  return false;
+}
+
+export type RemoteFailureKind = "timeout" | "transport" | "remote-command" | "unknown";
+
+export interface RemoteFailure {
+  kind: RemoteFailureKind;
+  reason: string;
+}
+
+/**
+ * Classify an SSH/exec failure without confusing the remote program's stderr
+ * with SSH's own transport diagnostics. A remote `repoos: command not found`
+ * or `sh: …: Permission denied` stays a remote-command problem; only SSH-shaped
+ * output (or exit 255) can become an authentication/connection/timeout cause.
+ */
+export function classifyRemoteFailure(error: unknown): RemoteFailure {
+  if (isRemoteTimeout(error)) return { kind: "timeout", reason: "timed out" };
 
   const stderr = stringField(error, "stderr")?.trim() ?? "";
   const message = error instanceof Error ? error.message : String(error ?? "");
+  const code = numericField(error, "code");
   const text = stderr || message;
 
   if (/command not found|: not found\b/i.test(text)) {
     const binary = remoteBinaryFromCommandNotFound(text);
-    return `command not found${binary ? `: ${binary}` : ""} on the remote PATH`;
+    return {
+      kind: "remote-command",
+      reason: `command not found${binary ? `: ${binary}` : ""} on the remote PATH`,
+    };
   }
-  if (/\bpermission denied\b/i.test(text)) {
-    return `SSH authentication failed: ${firstErrorLine(text)}`;
+  if (stderr && REMOTE_PERMISSION_RE.test(stderr)) {
+    return {
+      kind: "remote-command",
+      reason: `remote command permission denied: ${firstErrorLine(stderr)}`,
+    };
   }
-  if (/host key verification failed/i.test(text)) {
-    return `SSH host key verification failed: ${firstErrorLine(text)}`;
+
+  const transportText = stderr || message;
+  if (stderr && looksLikeSshDiagnostics(transportText, code)) {
+    if (SSH_AUTH_FAILURE_RE.test(stderr)) {
+      return {
+        kind: "transport",
+        reason: `SSH authentication failed: ${firstErrorLine(stderr)}`,
+      };
+    }
+    if (/host key verification failed/i.test(stderr)) {
+      return {
+        kind: "transport",
+        reason: `SSH host key verification failed: ${firstErrorLine(stderr)}`,
+      };
+    }
+    if (
+      /could not resolve hostname|name or service not known|nodename nor servname/i.test(stderr)
+    ) {
+      return { kind: "transport", reason: `host not found: ${firstErrorLine(stderr)}` };
+    }
+    if (/\bconnection refused\b/i.test(stderr)) {
+      return { kind: "transport", reason: `connection refused: ${firstErrorLine(stderr)}` };
+    }
+    if (/\btimed out\b|\btimeout\b/i.test(stderr)) {
+      return { kind: "timeout", reason: "timed out" };
+    }
+    if (/\b(?:no route to host|network is unreachable)\b/i.test(stderr)) {
+      return { kind: "transport", reason: `connection failed: ${firstErrorLine(stderr)}` };
+    }
+    return { kind: "transport", reason: firstErrorLine(stderr) };
   }
-  if (/could not resolve hostname|name or service not known|nodename nor servname/i.test(text)) {
-    return `host not found: ${firstErrorLine(text)}`;
+  if (stderr) return { kind: "remote-command", reason: firstErrorLine(stderr) };
+
+  // No stderr: the message may be an SSH/exec wrapper or a test seam's Error.
+  if (looksLikeSshDiagnostics(message, code)) {
+    if (SSH_AUTH_FAILURE_RE.test(message)) {
+      return {
+        kind: "transport",
+        reason: `SSH authentication failed: ${firstErrorLine(message)}`,
+      };
+    }
+    if (/\btimed out\b|\btimeout\b/i.test(message)) return { kind: "timeout", reason: "timed out" };
+    if (/\bconnection refused\b/i.test(message)) {
+      return { kind: "transport", reason: `connection refused: ${firstErrorLine(message)}` };
+    }
+    return { kind: "transport", reason: firstErrorLine(message) };
   }
-  if (/\bconnection refused\b/i.test(text)) {
-    return `connection refused: ${firstErrorLine(text)}`;
-  }
-  if (/\btimed out\b|\btimeout\b/i.test(text)) {
-    return "timed out";
-  }
-  if (/\b(?:no route to host|network is unreachable)\b/i.test(text)) {
-    return `connection failed: ${firstErrorLine(text)}`;
-  }
-  if (stderr) return firstErrorLine(stderr);
+  if (/\btimed out\b|\btimeout\b/i.test(message)) return { kind: "timeout", reason: "timed out" };
   // Only fall back to the process message when it is not execFile's
   // "Command failed: <the whole ssh argv>" wrapper (which contains
   // ConnectTimeout even when the failure had nothing to do with time).
-  if (/^command failed:/i.test(message)) return "ssh command failed";
-  return message || "remote command failed";
+  if (/^command failed:/i.test(message)) return { kind: "unknown", reason: "ssh command failed" };
+  return { kind: "unknown", reason: message || "remote command failed" };
 }
 
-const defaultRemoteExec: RemoteExec = async (host, user, timeoutMs, command) => {
+/** User-facing reason shown by `repoos servers --tailscale`. */
+export function remoteFailureReason(error: unknown): string {
+  return classifyRemoteFailure(error).reason;
+}
+
+export const defaultRemoteExec: RemoteExec = async (host, user, timeoutMs, command) => {
   const { stdout } = await execFileAsync("ssh", serversSshArgs(host, user, timeoutMs, command), {
     timeout: timeoutMs,
     maxBuffer: 2 * 1024 * 1024,
@@ -374,11 +454,11 @@ export interface TailnetCollection {
   servers: ListedServer[];
   tailscaleUnavailable: boolean;
   /**
-   * Where the peer list came from: the local Tailscale CLI, or the configured
-   * host pool when that CLI is absent/unreadable. Surfaced so the CLI and Hub
-   * can say which mode produced the rows instead of guessing.
+   * Where the peer list came from: the local Tailscale CLI, the configured
+   * host pool when that CLI is absent, or nowhere but the local registry when
+   * the CLI is absent and no configured hosts exist.
    */
-  source: "tailscale" | "configured-hosts";
+  source: "tailscale" | "configured-hosts" | "local-only";
   /** This machine's Tailscale identity, when status parsed successfully. */
   self?: TailnetPeer;
 }
@@ -518,7 +598,11 @@ export async function collectTailnetServers(
   return {
     servers: [...localRows, ...remotes.flat()],
     tailscaleUnavailable,
-    source: tailscaleUnavailable ? "configured-hosts" : "tailscale",
+    source: tailscaleUnavailable
+      ? (options.configuredHosts ?? []).length > 0
+        ? "configured-hosts"
+        : "local-only"
+      : "tailscale",
     ...(info?.self ? { self: info.self } : {}),
   };
 }

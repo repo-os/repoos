@@ -510,6 +510,28 @@ describe("tailnet propagation (#1132)", () => {
     expect(parseGroupApplyOutput('banner\n{"applied":true}')?.applied).toBe(true);
     expect(parseGroupApplyOutput("not json")).toBeNull();
   });
+
+  it("reports a remote command-not-found with its cause, not the ssh argv", async () => {
+    const results = await propagateAllowlistGroup(
+      group,
+      [{ host: "bee", local: false, reachable: true, projectName: "neung", root: "/srv/neung" }],
+      "local",
+      {
+        remoteExec: async () => {
+          throw Object.assign(
+            new Error(
+              "Command failed: ssh -o BatchMode=yes -o ConnectTimeout=8 bee sh -c 'repoos allowlist group apply'",
+            ),
+            { code: 127, stderr: "bash: line 1: repoos: command not found\n" },
+          );
+        },
+        timeoutMs: 1000,
+      },
+    );
+    expect(results[0]!.status).toBe("unreachable");
+    expect(results[0]!.reason).toBe("command not found: repoos on the remote PATH");
+    expect(results[0]!.reason).not.toMatch(/ConnectTimeout/);
+  });
 });
 
 describe("group mutation route (#1132)", () => {
