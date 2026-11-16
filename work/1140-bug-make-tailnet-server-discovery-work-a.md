@@ -2,14 +2,14 @@
 id: "1140"
 title: "Bug: make tailnet server discovery work across remote shells and hand-run servers"
 type: bug
-status: active
+status: review
 priority: p1
 area: [server, core]
 assigned_to: ai
 created_by: t@t
 branch: feat/bug-make-tailnet-server-discovery-work-a
 created_at: "2026-11-16T03:38:56Z"
-updated_at: "2026-11-16T04:51:24Z"
+updated_at: "2026-11-16T04:54:47Z"
 ---
 ## Problem
 
@@ -76,3 +76,4 @@ Reproduce the reported behavior first with fake Tailscale and SSH executables; k
 - 2026-11-16T04:49:49Z · body
 - 2026-11-16T04:51:24Z · message_queued at 2026-11-16T04:51:24.481Z
 - 2026-11-16T04:51:24Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-16T04:54:47Z · status active→review
