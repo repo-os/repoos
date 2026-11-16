@@ -97,3 +97,4 @@ Reproduce the reported behavior first with fake Tailscale and SSH executables; k
 - 2026-11-16T07:13:19Z · body
 - 2026-11-16T07:24:00Z · body
 - 2026-11-16T07:25:57Z · status active→review
+- 2026-11-16T07:25:57Z · note: shots: skipped — Docs site skipped: no docs shot declared
