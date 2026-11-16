@@ -120,6 +120,8 @@ function fakeStatus(root: string): StatusSnapshot {
       health: "unreachable",
       healthRoot: null,
       locks: 0,
+      registration: "not-running",
+      registrationReason: null,
     },
     cli: { version: null, buildHash: null, buildAt: null },
     build: {

@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 578627
-last_close_out_gate_at: "2026-11-16T12:31:09.888Z"
 id: "1140"
 title: "Bug: make tailnet server discovery work across remote shells and hand-run servers"
 type: bug
-status: review
+status: done
 priority: p1
 area: [server, core]
+merged_commit: 9ab853ba7b0c8ab704a3b3a5be30a52d63b52f8e
 assigned_to: ai
 created_by: t@t
 branch: feat/bug-make-tailnet-server-discovery-work-a
 created_at: "2026-11-16T03:38:56Z"
 updated_at: "2026-11-16T12:31:09Z"
+last_close_out_gate_ms: 578627
+last_close_out_gate_at: "2026-11-16T12:31:09.888Z"
 review_passes: 4
 review_failed_report_retries: 0
 review_rounds: 2

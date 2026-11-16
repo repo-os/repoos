@@ -85,12 +85,19 @@ servers on my tailnet**, next to **Add server**. That action makes exactly one r
 - The *server* does the discovery: it runs `tailscale status --json`, asks each
   online peer over SSH for `repoos servers --json`, and reads the peer's
   `tailscale serve status --json` to attach the HTTPS MagicDNS URL for each
-  discovered port. No part of this touches the phone's network.
+  discovered port. No part of this touches the phone's network. When the
+  server's Tailscale CLI is absent or unreadable, it falls back to the
+  configured `remoteValidation.tailscaleHosts` pool and reports
+  `discoverySource: "configured-hosts"`, or `"local-only"` when there is no
+  configured pool either, so Hub can name what it actually listed instead of
+  claiming the tailnet is invisible.
 - The response is the same server rows `repoos servers --tailscale --json`
   reports, plus a ready-to-open `url` and an `https` flag per row. Rows that
-  could not be reached carry `unreachable: true` and a `reason`. A per-host
-  timeout and a whole-request deadline mean one slow machine cannot hang the
-  list; Hub renders the partial result and says which host failed.
+  could not be reached carry `unreachable: true` and a `reason` (for example
+  `command not found`, an authentication failure, `connection refused`, or
+  `timed out` only when a real timeout occurred). A per-host timeout and a
+  whole-request deadline mean one slow machine cannot hang the list; Hub renders
+  the partial result and says which host failed.
 - Discovery can be turned off on the server (`tailnetDiscovery = false` in
   `repoos.toml`, or Settings → General → Tailnet server discovery). The
   endpoint then returns a plain `disabled` message, and manual URL entry keeps

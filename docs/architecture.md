@@ -136,9 +136,19 @@ repo it reads "no RepoOS build" rather than the misleading "source checkout".
 
 **Machine-wide running servers:** each control-plane `repoos serve` also
 registers under `~/.repoos/servers/<port>.json` (atomic, user-only permissions).
+A hand-run serve registers whether it was started from the main checkout or a
+linked task worktree; only preview children, `--preview-overrides`, ephemeral
+port `0` and `REPOOS_NO_REGISTRY=1` are intentionally excluded.
 `repoos servers` lists and validates those entries for Hub and scripts; see
 [server-registry.md](./server-registry.md). This is not `~/.repoos/services.json`
 (managed OS services only).
+
+The serve lock records whether registration was attempted or deliberately
+skipped, and `repoos status` reconciles that intent with the registry
+(`server.registration`: `registered`, `excluded`, `unregistered`, or
+`not-running`). A running server that is missing or intentionally excluded is
+called out with its reason, so `status` never implies that `repoos servers` and
+tailnet discovery can see an instance they cannot.
 
 `repoos status --json` emits the same snapshot for agents/tooling (stable
 shape, covered by test):
@@ -149,6 +159,8 @@ shape, covered by test):
             running, port, pid, host, startedAt, startedAtSource,
             uptimeSeconds, health: "ok"|"foreign"|"unreachable",
             healthRoot, locks,
+            registration: "registered"|"excluded"|"unregistered"|"not-running",
+            registrationReason,
             version, buildHash, buildAt, managedService,
             buildState: "stale"|"same"|"unknown" },
   cli:    { version, buildHash, buildAt },

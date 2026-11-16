@@ -4,7 +4,15 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { execFileSync } from "node:child_process";
 import { createServer as createTcpServer } from "node:net";
-import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  realpathSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { startServer, type ServerHandle } from "../../server/server.js";
@@ -13,12 +21,16 @@ import {
   pruneStaleServerRegistryEntries,
   type ServerRegistryEntry,
 } from "../../core/server-registry.js";
+import { loadConfig } from "../../core/config.js";
+import { collectStatus } from "../../commands/status.js";
 import { cmdServers } from "../../commands/servers.js";
+import { buildTailnetDiscoveryPayload } from "../../server/routes/servers.js";
 
 const roots: string[] = [];
 let registryDir: string;
 let priorRegistryDir: string | undefined;
 let priorPreview: string | undefined;
+let priorNoRegistry: string | undefined;
 
 function reservePort(): Promise<number> {
   return new Promise((resolve, reject) => {
@@ -66,6 +78,7 @@ beforeEach(() => {
   process.env.REPOOS_SERVERS_REGISTRY_DIR = registryDir;
   priorPreview = process.env.REPOOS_PREVIEW_CHILD;
   delete process.env.REPOOS_PREVIEW_CHILD;
+  priorNoRegistry = process.env.REPOOS_NO_REGISTRY;
   delete process.env.REPOOS_NO_REGISTRY;
 });
 
@@ -74,6 +87,8 @@ afterEach(async () => {
   else process.env.REPOOS_SERVERS_REGISTRY_DIR = priorRegistryDir;
   if (priorPreview === undefined) delete process.env.REPOOS_PREVIEW_CHILD;
   else process.env.REPOOS_PREVIEW_CHILD = priorPreview;
+  if (priorNoRegistry === undefined) delete process.env.REPOOS_NO_REGISTRY;
+  else process.env.REPOOS_NO_REGISTRY = priorNoRegistry;
   rmSync(registryDir, { recursive: true, force: true });
   for (const r of roots.splice(0)) rmSync(r, { recursive: true, force: true });
 });
@@ -237,6 +252,140 @@ describe("startServer running-server registry", () => {
     await handle.close();
     expect(existsSync(path)).toBe(false);
   });
+
+  it("registers a hand-run serve rooted in a linked worktree so status, servers and tailnet discovery agree (#1140)", async () => {
+    const main = minimalRepo();
+    const wt = join(main, "task-wt");
+    git(main, ["worktree", "add", "-q", wt, "-b", "feat/hand-run"]);
+    const port = await reservePort();
+    const handle = await startServer({
+      root: wt,
+      host: "127.0.0.1",
+      port,
+      disableAuth: true,
+    });
+    try {
+      const path = join(registryDir, `${port}.json`);
+      expect(existsSync(path)).toBe(true);
+      const entry = JSON.parse(readFileSync(path, "utf8")) as ServerRegistryEntry;
+      expect(entry.root).toBe(realpathSync(wt));
+
+      // `repoos servers`-equivalent registry read sees it.
+      const registered = await listValidatedServerRegistry();
+      expect(registered.map((row) => row.entry.port)).toContain(port);
+
+      // `repoos status` reports it as registered, not "running but unknown".
+      const status = await collectStatus(loadConfig(wt), { probeTimeoutMs: 1_000 });
+      expect(status.server.running).toBe(true);
+      expect(status.server.registration).toBe("registered");
+      expect(status.server.registrationReason).toBeNull();
+
+      // Tailnet discovery reads the same registry; the local row is present.
+      const payload = await buildTailnetDiscoveryPayload(loadConfig(wt), {
+        tailscaleStatus: async () => {
+          throw new Error("tailscale: not found");
+        },
+        remoteExec: async () => JSON.stringify({ servers: [] }),
+        deadlineMs: 100,
+      });
+      expect(payload.discoverySource).toBe("local-only");
+      expect(payload.servers.some((row) => row.port === port && row.host === "local")).toBe(true);
+    } finally {
+      await handle.close();
+    }
+    expect(existsSync(join(registryDir, `${port}.json`))).toBe(false);
+  }, 30_000);
+
+  it("reports an intentionally unregistered running server in status (#1140)", async () => {
+    const root = minimalRepo();
+    process.env.REPOOS_NO_REGISTRY = "1";
+    const port = await reservePort();
+    const handle = await startServer({
+      root,
+      host: "127.0.0.1",
+      port,
+      disableAuth: true,
+    });
+    try {
+      // `servers`/tailnet discovery read only the registry: nothing there.
+      expect(existsSync(join(registryDir, `${port}.json`))).toBe(false);
+      expect(await listValidatedServerRegistry()).toEqual([]);
+
+      const status = await collectStatus(loadConfig(root), { probeTimeoutMs: 1_000 });
+      expect(status.server.running).toBe(true);
+      expect(status.server.registration).toBe("excluded");
+      expect(status.server.registrationReason).toBe("REPOOS_NO_REGISTRY=1");
+
+      const payload = await buildTailnetDiscoveryPayload(loadConfig(root), {
+        tailscaleStatus: async () => {
+          throw new Error("tailscale: not found");
+        },
+        remoteExec: async () => JSON.stringify({ servers: [] }),
+        deadlineMs: 100,
+      });
+      expect(payload.servers).toEqual([]);
+    } finally {
+      await handle.close();
+    }
+  }, 30_000);
+
+  it("explains a running server whose registry entry is missing across status, servers and discovery (#1140)", async () => {
+    const root = minimalRepo();
+    const port = await reservePort();
+    const handle = await startServer({
+      root,
+      host: "127.0.0.1",
+      port,
+      disableAuth: true,
+    });
+    try {
+      expect(existsSync(join(registryDir, `${port}.json`))).toBe(true);
+      // Simulate the ThinkPad mismatch: the server is healthy and its serve
+      // lock says it intended to register, but the registry entry is gone.
+      rmSync(join(registryDir, `${port}.json`));
+
+      expect(await listValidatedServerRegistry()).toEqual([]);
+      const status = await collectStatus(loadConfig(root), { probeTimeoutMs: 1_000 });
+      expect(status.server.running).toBe(true);
+      expect(status.server.registration).toBe("unregistered");
+      expect(status.server.registrationReason).toBe("no registry entry for this port");
+
+      const payload = await buildTailnetDiscoveryPayload(loadConfig(root), {
+        tailscaleStatus: async () => {
+          throw new Error("tailscale: not found");
+        },
+        remoteExec: async () => JSON.stringify({ servers: [] }),
+        deadlineMs: 100,
+      });
+      expect(payload.discoverySource).toBe("local-only");
+      expect(payload.servers).toEqual([]);
+    } finally {
+      await handle.close();
+    }
+  }, 30_000);
+
+  it("keeps --preview-overrides out of the registry on a real port and explains why (#1140)", async () => {
+    const root = minimalRepo();
+    // No `[preview.*]` keys on purpose: the flag alone must exclude the server,
+    // even though `config.previewOverrides` stays empty.
+    const port = await reservePort();
+    const handle = await startServer({
+      root,
+      host: "127.0.0.1",
+      port,
+      disableAuth: true,
+      previewOverrides: true,
+    });
+    try {
+      expect(existsSync(join(registryDir, `${port}.json`))).toBe(false);
+      const status = await collectStatus(loadConfig(root), { probeTimeoutMs: 1_000 });
+      expect(status.server.running).toBe(true);
+      expect(status.server.registration).toBe("excluded");
+      expect(status.server.registrationReason).toBe("preview overrides");
+    } finally {
+      await handle.close();
+    }
+  }, 30_000);
 
   it("keeps registry entry on close after reload handover overwrote the pid", async () => {
     const root = minimalRepo();

@@ -20,7 +20,9 @@ export function scheduleHostileReason(
   servePort?: number,
 ): ScheduleHostileReason | null {
   if (env.REPOOS_PREVIEW_CHILD === "1") return "preview-child";
-  if ((config.previewOverrides?.length ?? 0) > 0) return "preview-overrides";
+  if (config.previewOverridesRequested || (config.previewOverrides?.length ?? 0) > 0) {
+    return "preview-overrides";
+  }
   if (isLinkedWorktreeRoot(config.root)) return "linked-worktree";
   if (servePort === 0) return "ephemeral-port";
   return null;

@@ -169,6 +169,45 @@ export type RemoteExec = (
   command?: string,
 ) => Promise<string>;
 
+/**
+ * Install locations a `repoos` launcher and its Bun/Node runtime commonly use.
+ * A non-interactive SSH command inherits a minimal PATH (`/usr/bin:/bin:…`) and
+ * does not read the user's interactive shell startup files, so `repoos` is not
+ * found even though the same login works in a terminal. Prepending these known
+ * locations makes lookup predictable without a login shell or a TTY.
+ */
+export const REMOTE_PATH_PREFIX = [
+  "$HOME/.local/bin",
+  "$HOME/.bun/bin",
+  "$HOME/.npm-global/bin",
+  "/opt/homebrew/bin",
+  "/usr/local/bin",
+].join(":");
+
+/** POSIX-quote one argument for `sh` (single quotes, embedded quotes escaped). */
+export function shellQuote(value: string): string {
+  return `'${value.replace(/'/g, `'\\''`)}'`;
+}
+
+/**
+ * The remote script: a deterministic PATH followed by the command. `command`
+ * is a trusted internal constant (`repoos servers --json`, `tailscale serve
+ * status --json`), never user input; host and user travel as separate SSH argv.
+ */
+export function remoteShellScript(command: string): string {
+  return `PATH="${REMOTE_PATH_PREFIX}:$PATH"; export PATH; ${command}`;
+}
+
+/**
+ * Wrap the remote work in `sh -c '<script>'`. OpenSSH already runs the user's
+ * login shell non-interactively, which may be bash, zsh or a POSIX sh; passing
+ * one quoted argument keeps the payload valid for all of them and avoids
+ * relying on interactive rc files for PATH.
+ */
+export function remoteShellCommand(command = "repoos servers --json"): string {
+  return `sh -c ${shellQuote(remoteShellScript(command))}`;
+}
+
 export function serversSshArgs(
   host: string,
   user: string,
@@ -181,11 +220,184 @@ export function serversSshArgs(
     "-o",
     `ConnectTimeout=${Math.ceil(timeoutMs / 1000)}`,
     `${user}@${host}`,
-    command,
+    remoteShellCommand(command),
   ];
 }
 
-const defaultRemoteExec: RemoteExec = async (host, user, timeoutMs, command) => {
+function stringField(error: unknown, key: string): string | undefined {
+  if (!error || typeof error !== "object") return undefined;
+  const value = (error as Record<string, unknown>)[key];
+  if (typeof value === "string") return value;
+  if (value instanceof Uint8Array) return Buffer.from(value).toString("utf8");
+  return undefined;
+}
+
+function booleanField(error: unknown, key: string): boolean | undefined {
+  if (!error || typeof error !== "object") return undefined;
+  const value = (error as Record<string, unknown>)[key];
+  return typeof value === "boolean" ? value : undefined;
+}
+
+function numericField(error: unknown, key: string): number | null {
+  if (!error || typeof error !== "object") return null;
+  const value = (error as Record<string, unknown>)[key];
+  return typeof value === "number" && Number.isInteger(value) ? value : null;
+}
+
+/**
+ * A local timeout (execFile killed the child, ETIMEDOUT, or an AbortSignal) is
+ * the ONLY evidence that earns "timed out". Text matching is deliberately
+ * avoided here: execFile's message repeats the whole SSH argv, including
+ * `-o ConnectTimeout=4`, so a `/timeout/i` test wrongly labels every SSH
+ * failure a timeout.
+ */
+export function isRemoteTimeout(error: unknown): boolean {
+  if (stringField(error, "code") === "ETIMEDOUT") return true;
+  // execFile's maxBuffer guard kills the child too, but that is an output
+  // limit, not a network timeout (#1140 review).
+  if (stringField(error, "code") === "ERR_CHILD_PROCESS_STDIO_MAXBUFFER") return false;
+  if (stringField(error, "name") === "TimeoutError") return true;
+  if (booleanField(error, "killed") === true) return true;
+  const signal = stringField(error, "signal");
+  return typeof signal === "string" && signal.length > 0;
+}
+
+/** First meaningful line of stderr, bounded so a chatty host can't flood a row. */
+function firstErrorLine(text: string): string {
+  const line = text
+    .split(/\r?\n/)
+    .map((part) => part.trim())
+    .find((part) => part.length > 0);
+  const value = line ?? text.trim();
+  return value.length > 300 ? `${value.slice(0, 297)}…` : value;
+}
+
+function remoteBinaryFromCommandNotFound(text: string): string | null {
+  const match =
+    /command not found:\s*([\w.+-]+)/i.exec(text) ??
+    /(?:^|[\s:])([\w.+-]+):\s*command not found/i.exec(text) ??
+    /(?:^|[\s:])([\w.+-]+):\s*not found\b/i.exec(text);
+  return match?.[1] ?? null;
+}
+
+/** `Permission denied (publickey).` — SSH's own shape, not remote output. */
+const SSH_AUTH_FAILURE_RE =
+  /Permission denied \((?:publickey|password|keyboard-interactive|hostbased|gssapi)[^)]*\)/i;
+/** A remote shell refusing to execute a file (e.g. a non-executable launcher). */
+const REMOTE_PERMISSION_RE =
+  /\b(?:sh|bash|zsh|dash|ksh):[^\n]*permission denied|\bEACCES: permission denied/i;
+
+export type RemoteFailureKind = "timeout" | "transport" | "remote-command" | "unknown";
+
+export interface RemoteFailure {
+  kind: RemoteFailureKind;
+  reason: string;
+}
+
+/**
+ * Keep only the lines SSH itself wrote. OpenSSH forwards the remote command's
+ * stderr verbatim, so a remote `EACCES` or an app logging "timeout" shares the
+ * channel with `Permission denied (publickey)` and `Connection refused`. Only
+ * SSH-shaped lines may become a transport cause — a bare "permission denied"
+ * or "timeout" from the remote program must not.
+ */
+function sshDiagnosticText(text: string): string {
+  return text
+    .split(/\r?\n/)
+    .filter((line) => {
+      if (/^\s*ssh(?:-[\w-]+)?:\s/i.test(line)) return true;
+      if (/^\s*(?:ssh_exchange_identification|kex_exchange_identification):/i.test(line))
+        return true;
+      if (SSH_AUTH_FAILURE_RE.test(line)) return true;
+      if (/^\s*Host key verification failed\.?\s*$/i.test(line)) return true;
+      if (/^\s*Could not resolve hostname\b/i.test(line)) return true;
+      if (/^\s*Connection (?:closed|reset) by\b/i.test(line)) return true;
+      if (/^\s*(?:Write failed:|Read from remote host)\b/i.test(line)) return true;
+      return false;
+    })
+    .join("\n");
+}
+
+function classifySshDiagnostics(text: string): RemoteFailure {
+  if (SSH_AUTH_FAILURE_RE.test(text)) {
+    return { kind: "transport", reason: `SSH authentication failed: ${firstErrorLine(text)}` };
+  }
+  if (/host key verification failed/i.test(text)) {
+    return {
+      kind: "transport",
+      reason: `SSH host key verification failed: ${firstErrorLine(text)}`,
+    };
+  }
+  if (/could not resolve hostname|name or service not known|nodename nor servname/i.test(text)) {
+    return { kind: "transport", reason: `host not found: ${firstErrorLine(text)}` };
+  }
+  if (/\bconnection refused\b/i.test(text)) {
+    return { kind: "transport", reason: `connection refused: ${firstErrorLine(text)}` };
+  }
+  // Only SSH's own text can say this; remote output was filtered out above.
+  if (/\btimed out\b|\btimeout\b/i.test(text)) return { kind: "timeout", reason: "timed out" };
+  if (/\b(?:no route to host|network is unreachable)\b/i.test(text)) {
+    return { kind: "transport", reason: `connection failed: ${firstErrorLine(text)}` };
+  }
+  return { kind: "transport", reason: firstErrorLine(text) };
+}
+
+/**
+ * Classify an SSH/exec failure without confusing the remote program's stderr
+ * with SSH's own transport diagnostics. A remote `repoos: command not found`
+ * or `sh: …: Permission denied` stays a remote-command problem; only SSH-shaped
+ * output can become an authentication/connection/timeout cause.
+ */
+export function classifyRemoteFailure(error: unknown): RemoteFailure {
+  if (stringField(error, "code") === "ERR_CHILD_PROCESS_STDIO_MAXBUFFER") {
+    return {
+      kind: "remote-command",
+      reason: "remote output exceeded the 2 MiB limit",
+    };
+  }
+  if (isRemoteTimeout(error)) return { kind: "timeout", reason: "timed out" };
+
+  const stderr = stringField(error, "stderr")?.trim() ?? "";
+  const message = error instanceof Error ? error.message : String(error ?? "");
+  const code = numericField(error, "code");
+  const text = stderr || message;
+
+  if (/command not found|: not found\b/i.test(text)) {
+    const binary = remoteBinaryFromCommandNotFound(text);
+    return {
+      kind: "remote-command",
+      reason: `command not found${binary ? `: ${binary}` : ""} on the remote PATH`,
+    };
+  }
+  if (stderr && REMOTE_PERMISSION_RE.test(stderr)) {
+    return {
+      kind: "remote-command",
+      reason: `remote command permission denied: ${firstErrorLine(stderr)}`,
+    };
+  }
+
+  const diagnostics = sshDiagnosticText(stderr) || sshDiagnosticText(message);
+  if (diagnostics) return classifySshDiagnostics(diagnostics);
+  // Anything left is the remote program's output (or execFile's argv) — never
+  // mine it for a transport cause. Exit 255 with no stderr is still transport.
+  if (stderr) return { kind: "remote-command", reason: firstErrorLine(stderr) };
+  if (code === 255) return { kind: "transport", reason: "ssh command failed" };
+
+  // No stderr: the message may be an SSH/exec wrapper or a test seam's Error.
+  if (/\btimed out\b|\btimeout\b/i.test(message)) return { kind: "timeout", reason: "timed out" };
+  // Only fall back to the process message when it is not execFile's
+  // "Command failed: <the whole ssh argv>" wrapper (which contains
+  // ConnectTimeout even when the failure had nothing to do with time).
+  if (/^command failed:/i.test(message)) return { kind: "unknown", reason: "ssh command failed" };
+  return { kind: "unknown", reason: message || "remote command failed" };
+}
+
+/** User-facing reason shown by `repoos servers --tailscale`. */
+export function remoteFailureReason(error: unknown): string {
+  return classifyRemoteFailure(error).reason;
+}
+
+export const defaultRemoteExec: RemoteExec = async (host, user, timeoutMs, command) => {
   const { stdout } = await execFileAsync("ssh", serversSshArgs(host, user, timeoutMs, command), {
     timeout: timeoutMs,
     maxBuffer: 2 * 1024 * 1024,
@@ -244,6 +456,12 @@ export interface CollectTailnetOptions {
 export interface TailnetCollection {
   servers: ListedServer[];
   tailscaleUnavailable: boolean;
+  /**
+   * Where the peer list came from: the local Tailscale CLI, the configured
+   * host pool when that CLI is absent, or nowhere but the local registry when
+   * the CLI is absent and no configured hosts exist.
+   */
+  source: "tailscale" | "configured-hosts" | "local-only";
   /** This machine's Tailscale identity, when status parsed successfully. */
   self?: TailnetPeer;
 }
@@ -366,12 +584,11 @@ export async function collectTailnetServers(
               }) as ListedServer,
           );
         } catch (error) {
-          const reason = error instanceof Error ? error.message : String(error);
           return [
             {
               host: peer.host,
               unreachable: true,
-              reason: /timed? ?out|timeout/i.test(reason) ? "timed out" : reason,
+              reason: remoteFailureReason(error),
             },
           ];
         }
@@ -384,6 +601,11 @@ export async function collectTailnetServers(
   return {
     servers: [...localRows, ...remotes.flat()],
     tailscaleUnavailable,
+    source: tailscaleUnavailable
+      ? (options.configuredHosts ?? []).length > 0
+        ? "configured-hosts"
+        : "local-only"
+      : "tailscale",
     ...(info?.self ? { self: info.self } : {}),
   };
 }

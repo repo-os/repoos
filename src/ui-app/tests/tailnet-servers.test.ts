@@ -1,6 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 import type { RepoOSConfig } from "../../core/types.js";
-import { buildTailnetDiscoveryPayload, DISCOVERY_DISABLED_REASON } from "../routes/servers.js";
+import {
+  buildTailnetDiscoveryPayload,
+  DISCOVERY_DISABLED_REASON,
+} from "../../server/routes/servers.js";
 
 const config = (
   over: Partial<RepoOSConfig> = {},
@@ -59,6 +62,7 @@ describe("GET /api/servers/tailnet", () => {
 
     expect(payload.ok).toBe(true);
     expect(payload.tailscaleUnavailable).toBe(false);
+    expect(payload.discoverySource).toBe("tailscale");
     expect(payload.servers).toEqual([
       {
         host: "local",
@@ -128,6 +132,7 @@ describe("GET /api/servers/tailnet", () => {
     );
 
     expect(payload.tailscaleUnavailable).toBe(true);
+    expect(payload.discoverySource).toBe("configured-hosts");
     expect(payload.servers).toEqual([]);
     expect(remoteExec).toHaveBeenCalledWith("bee", "root", 4_000, "repoos servers --json");
   });

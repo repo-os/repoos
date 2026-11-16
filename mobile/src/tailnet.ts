@@ -29,6 +29,8 @@ export interface TailnetPayload {
   ok?: boolean;
   servers?: TailnetServer[];
   tailscaleUnavailable?: boolean;
+  /** `configured-hosts` means the host pool replaced an absent Tailscale CLI; `local-only` means there was no pool either. */
+  discoverySource?: "tailscale" | "configured-hosts" | "local-only";
   disabled?: boolean;
   reason?: string;
 }
@@ -258,8 +260,12 @@ export async function fetchTailnetServers(
       ...(body.tailscaleUnavailable
         ? {
             message:
-              "This server can't see your tailnet (Tailscale isn't available on it). " +
-              "Add a server manually instead.",
+              body.discoverySource === "configured-hosts"
+                ? "This server's Tailscale discovery isn't available; it listed servers from its configured hosts instead."
+                : body.discoverySource === "local-only"
+                  ? "This server's Tailscale discovery isn't available and it has no configured hosts, so only its local servers were listed."
+                  : // Older server: the source is unknowable, so no claim either way.
+                    "This server's Tailscale discovery isn't available; it used its configured hosts or listed local servers only.",
           }
         : {}),
     };

@@ -20,6 +20,7 @@ import { boardRoot, loadConfig, resolveServePort } from "../core/config.js";
 import { buildIndex } from "../core/indexer.js";
 import { checkBuildForRoot, readBuildMeta, readBuildStamp } from "../core/build.js";
 import { isManagedService } from "../core/service-manager.js";
+import { serverRegistrationState, type ServerRegistrationState } from "../core/server-registry.js";
 import { readTunnelConfig } from "../core/tunnel.js";
 import {
   readRegistry,
@@ -91,6 +92,15 @@ export interface StatusServer {
   healthRoot: string | null;
   /** Number of serve lockfiles present (a repo may run more than one port). */
   locks: number;
+  /**
+   * Whether this server is discoverable in `~/.repoos/servers` (the source for
+   * `repoos servers`, Hub and tailnet discovery). `excluded` means the server
+   * deliberately skipped registration (preview, `REPOOS_NO_REGISTRY=1`, …);
+   * `unregistered` means it intended to register but no matching entry exists.
+   */
+  registration: ServerRegistrationState | "not-running";
+  /** Plain-language reason for `excluded` / `unregistered`, when known. */
+  registrationReason: string | null;
 }
 
 export interface StatusBuild {
@@ -217,6 +227,8 @@ interface ServeLockEntry {
   startedAt: string | null;
   serveFlags: string[];
   alive: boolean;
+  /** Registry intent recorded by the serving process (#1140). */
+  registry: { state: "registered" | "excluded"; reason?: string } | null;
 }
 
 /** EPERM means "alive but not ours" — still alive. */
@@ -274,12 +286,25 @@ export function readServeLocks(root: string, cacheDir: string): ServeLockEntry[]
         host?: unknown;
         startedAt?: unknown;
         serveFlags?: unknown;
+        registry?: unknown;
       };
       const pid = typeof raw.pid === "number" && Number.isInteger(raw.pid) ? raw.pid : 0;
       const alive = pid > 0 && pid !== process.pid && pidAlive(pid);
       const serveFlags = Array.isArray(raw.serveFlags)
         ? raw.serveFlags.filter((f): f is string => typeof f === "string")
         : [];
+      const rawRegistry =
+        raw.registry && typeof raw.registry === "object"
+          ? (raw.registry as { state?: unknown; reason?: unknown })
+          : null;
+      const registryState = rawRegistry?.state;
+      const registry: ServeLockEntry["registry"] =
+        registryState === "registered" || registryState === "excluded"
+          ? {
+              state: registryState,
+              ...(typeof rawRegistry?.reason === "string" ? { reason: rawRegistry.reason } : {}),
+            }
+          : null;
       out.push({
         file,
         pid,
@@ -288,6 +313,7 @@ export function readServeLocks(root: string, cacheDir: string): ServeLockEntry[]
         startedAt: typeof raw.startedAt === "string" ? raw.startedAt : null,
         serveFlags,
         alive,
+        registry,
       });
     } catch {
       /* corrupt lockfile — ignore; `repoos serve`'s reaper will clean it up */
@@ -454,10 +480,33 @@ export async function collectStatus(
     buildAt: cliMeta.buildAt,
   };
 
+  // A running server that is intentionally absent from the registry is the
+  // ThinkPad mismatch (#1140): status trusted the serve lock while
+  // `repoos servers`/tailnet discovery read `~/.repoos/servers` and saw
+  // nothing. Reconcile both and name the reason instead of hiding it.
+  const registration = running
+    ? serverRegistrationState({
+        root,
+        // Probe port is the port health answered on (primary's port by
+        // default). Using it also covers a stale lock whose PID is dead while
+        // a healthy server answers on `opts.probePort`.
+        port: probePort,
+        pid: primaryAlive ? (primary?.pid ?? null) : null,
+        // A stale lock for a different endpoint must not label a healthy
+        // server discovered on another port. Same-port intent is kept even
+        // when `readServeLocks` cannot call the PID alive (in-process servers
+        // share the caller's PID).
+        lockRegistry: primary?.port === probePort ? (primary.registry ?? null) : null,
+      })
+    : { state: "not-running" as const, reason: null };
+
   const server: StatusServer = {
     lifecycle,
     running,
-    port: primary?.port ?? probePort,
+    // Report the port the server actually answered on; a stale primary lock
+    // for another endpoint must not be printed as the running server's port
+    // (#1140 review). With no health answer, keep the lock's diagnostic port.
+    port: health.state === "ok" ? probePort : (primary?.port ?? probePort),
     pid: primary?.pid ?? null,
     host: primary?.host ?? null,
     startedAt,
@@ -473,6 +522,8 @@ export async function collectStatus(
     health: health.state,
     healthRoot: health.root,
     locks: locks.length,
+    registration: registration.state,
+    registrationReason: registration.reason,
   };
   // Fill in the comparison now that both sides exist — the same pure function
   // `renderStatus` warns with, exposed raw for `--json` scripts (#0701).
@@ -822,6 +873,22 @@ export function renderStatus(s: StatusSnapshot, now: Date = new Date()): void {
       );
     } else if (sv.pid === null) {
       sub(c.dim("no serve lockfile — live via /api/health; restart `repoos serve` to restore it"));
+    }
+    if (sv.registration === "excluded") {
+      sub(
+        c.yellow(
+          `⚠ not in the running-server registry (${sv.registrationReason ?? "intentionally excluded"}) — ` +
+            "`repoos servers` and tailnet discovery will not list this server",
+        ),
+      );
+    } else if (sv.registration === "unregistered") {
+      sub(
+        c.yellow(
+          "⚠ running but missing from ~/.repoos/servers" +
+            (sv.registrationReason ? ` (${sv.registrationReason})` : "") +
+            " — `repoos servers` and tailnet discovery will not list it; restart `repoos serve` to republish",
+        ),
+      );
     }
     if (sv.locks > 1) sub(c.dim(`+ ${sv.locks - 1} more serve lock(s) — check other ports`));
   } else {
