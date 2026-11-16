@@ -3,9 +3,6 @@ id: "1140"
 title: "Bug: make tailnet server discovery work across remote shells and hand-run servers"
 type: bug
 status: active
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: "`needs some work` — the tests for PATH/shell construction, the `configured-hosts` fallback and the `ConnectTimeout=4` regression live outsi…"
 priority: p1
 area: [server, core]
 assigned_to: ai
@@ -125,3 +122,4 @@ Reproduce the reported behavior first with fake Tailscale and SSH executables; k
 - 2026-11-16T08:37:09Z · status review→active
 - 2026-11-16T08:37:09Z · note: send-back — returned to active for engineer follow-up
 - 2026-11-16T08:37:11Z · message_delivered: 1 message(s)
+- 2026-11-16T08:37:11Z · needs_input
