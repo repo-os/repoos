@@ -3,19 +3,13 @@ id: "1140"
 title: "Bug: make tailnet server discovery work across remote shells and hand-run servers"
 type: bug
 status: review
-needs_input: true
-needs_input_reason: review-failed
-needs_input_detail: "the cursor agent exited without output: ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage. Stopped 1 process(es) this turn spawned outside its process group (PIDs: 56957)."
-debug_tldr: "Cursor agent hit its weekly usage limit during review — switch to a different reviewer agent, or buy credits/upgrade Cursor, then retry review."
-debug_tldr_at: "2026-11-16T04:56:37Z"
-debug_tldr_key: "review-failed|the cursor agent exited without output: ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage. Stopped 1 process(es) this turn spawned outside its process group (PIDs: 56957)."
 priority: p1
 area: [server, core]
 assigned_to: ai
 created_by: t@t
 branch: feat/bug-make-tailnet-server-discovery-work-a
 created_at: "2026-11-16T03:38:56Z"
-updated_at: "2026-11-16T04:56:37Z"
+updated_at: "2026-11-16T05:13:41Z"
 review_failed_report_retries: 2
 ---
 ## Problem
@@ -90,3 +84,4 @@ Reproduce the reported behavior first with fake Tailscale and SSH executables; k
 - 2026-11-16T04:56:02Z · note: review pass 2: failed — no usable report
 - 2026-11-16T04:56:32Z · note: review pass 3: failed — no usable report
 - 2026-11-16T04:56:32Z · needs_input
+- 2026-11-16T05:13:41Z · needs_input (review-failed) cleared for review again by hello@repoos.org
