@@ -2,7 +2,7 @@
 id: "1140"
 title: "Bug: make tailnet server discovery work across remote shells and hand-run servers"
 type: bug
-status: active
+status: review
 priority: p1
 area: [server, core]
 assigned_to: ai
@@ -144,3 +144,4 @@ Reproduce the reported behavior first with fake Tailscale and SSH executables; k
 - 2026-11-16T08:56:32Z · handoff failed · task-file handoff failed at commit · could not clear the staging index: fatal: Unable to create '/Users/nick/code/nick/repoos/.git/worktrees/bug-make-tailnet-server-discovery-work-a/index.lock': File exists. · Another git process seems to be running in this repository, or the lock file may be stale
 - 2026-11-16T08:59:09Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-16T08:59:41Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-16T08:59:41Z · status active→review
