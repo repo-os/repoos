@@ -2,14 +2,14 @@
 id: "1140"
 title: "Bug: make tailnet server discovery work across remote shells and hand-run servers"
 type: bug
-status: ready
+status: active
 priority: p1
 area: [server, core]
 assigned_to: ai
 created_by: t@t
-branch: ""
+branch: feat/bug-make-tailnet-server-discovery-work-a
 created_at: "2026-11-16T03:38:56Z"
-updated_at: "2026-11-16T03:51:25Z"
+updated_at: "2026-11-16T03:51:31Z"
 ---
 ## Problem
 
@@ -43,3 +43,4 @@ Reproduce the reported behavior first with fake Tailscale and SSH executables; k
 - 2026-11-16T03:38:56Z · needs_input
 - 2026-11-16T03:39:08Z · needs_input, body: Notes for AI (added)
 - 2026-11-16T03:51:25Z · status inbox→ready
+- 2026-11-16T03:51:31Z · status ready→active, branch
