@@ -298,7 +298,7 @@ export interface RemoteFailure {
  * SSH-shaped lines may become a transport cause — a bare "permission denied"
  * or "timeout" from the remote program must not.
  */
-export function sshDiagnosticText(text: string): string {
+function sshDiagnosticText(text: string): string {
   return text
     .split(/\r?\n/)
     .filter((line) => {
