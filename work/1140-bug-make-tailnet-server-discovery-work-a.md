@@ -1,16 +1,19 @@
 ---
-updated_at: "2026-11-16T08:36:32Z"
-review_failed_report_retries: 0
 id: "1140"
 title: "Bug: make tailnet server discovery work across remote shells and hand-run servers"
 type: bug
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: "`needs some work` — the tests for PATH/shell construction, the `configured-hosts` fallback and the `ConnectTimeout=4` regression live outsi…"
 priority: p1
 area: [server, core]
 assigned_to: ai
 created_by: t@t
 branch: feat/bug-make-tailnet-server-discovery-work-a
 created_at: "2026-11-16T03:38:56Z"
+updated_at: "2026-11-16T08:36:32Z"
+review_failed_report_retries: 0
 review_rounds: 2
 routing_switches: 1
 routing_escalations: 1
@@ -118,4 +121,4 @@ Reproduce the reported behavior first with fake Tailscale and SSH executables; k
 - 2026-11-16T08:18:17Z · needs_input
 - 2026-11-16T08:27:33Z · needs_input (review-failed) cleared for review again by hello@repoos.org
 - 2026-11-16T08:36:32Z · note: review pass 9: needs some work
-
+- 2026-11-16T08:36:32Z · needs_input
