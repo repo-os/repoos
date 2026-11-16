@@ -13,8 +13,8 @@ import {
   tailnetFallbackNotice,
   cmdServers,
   serversSshArgs,
-} from "./servers.js";
-import * as registry from "../core/server-registry.js";
+} from "../../commands/servers.js";
+import * as registry from "../../core/server-registry.js";
 
 describe("repoos servers --tailscale", () => {
   it("parses online peers and excludes self and offline peers", () => {

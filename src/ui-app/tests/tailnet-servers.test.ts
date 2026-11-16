@@ -1,6 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 import type { RepoOSConfig } from "../../core/types.js";
-import { buildTailnetDiscoveryPayload, DISCOVERY_DISABLED_REASON } from "../routes/servers.js";
+import {
+  buildTailnetDiscoveryPayload,
+  DISCOVERY_DISABLED_REASON,
+} from "../../server/routes/servers.js";
 
 const config = (
   over: Partial<RepoOSConfig> = {},

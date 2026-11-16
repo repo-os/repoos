@@ -385,6 +385,8 @@ describe("collectStatus — server stopped", () => {
       // stale lock's dead port.
       expect(s.server.running).toBe(true);
       expect(s.server.health).toBe("ok");
+      // The stale lock names another port; report the port health answered on.
+      expect(s.server.port).toBe(livePort);
       expect(s.server.pid).toBe(fx.deadPid);
       expect(s.server.registration).toBe("registered");
     } finally {

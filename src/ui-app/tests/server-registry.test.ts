@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { execFileSync } from "node:child_process";
-import * as serverRegistry from "./server-registry.js";
+import * as serverRegistry from "../../core/server-registry.js";
 import {
   checkServerRegistryPortConflict,
   readServerRegistryEntry,
@@ -10,7 +10,7 @@ import {
   writeServerRegistryEntry,
   SERVER_REGISTRY_SCHEMA,
   type ServerRegistryEntry,
-} from "./server-registry.js";
+} from "../../core/server-registry.js";
 import {
   existsSync,
   mkdirSync,

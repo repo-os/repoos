@@ -645,7 +645,7 @@ timeout actually occurred — while the rest of the list is still shown. The JSO
 output includes a `host` field for every entry. `--prune` is local-only and
 cannot be combined with `--tailscale`.
 This behavior is implemented in `src/core/tailnet-servers.ts` and
-`src/commands/servers.ts`, and covered by `src/commands/servers.test.ts`.
+`src/commands/servers.ts`, and covered by `src/ui-app/tests/servers-command.test.ts`.
 
 ### `repoos review keep <id> [--json] [--port N]`
 

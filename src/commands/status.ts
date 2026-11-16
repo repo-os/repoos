@@ -503,7 +503,10 @@ export async function collectStatus(
   const server: StatusServer = {
     lifecycle,
     running,
-    port: primary?.port ?? probePort,
+    // Report the port the server actually answered on; a stale primary lock
+    // for another endpoint must not be printed as the running server's port
+    // (#1140 review). With no health answer, keep the lock's diagnostic port.
+    port: health.state === "ok" ? probePort : (primary?.port ?? probePort),
     pid: primary?.pid ?? null,
     host: primary?.host ?? null,
     startedAt,
