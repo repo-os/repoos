@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/mobile-web-task-detail-one-full-touch-de
 created_at: "2026-11-15T17:24:03Z"
-updated_at: "2026-11-16T00:23:01Z"
+updated_at: "2026-11-16T03:51:40Z"
 last_close_out_gate_ms: 70342
 last_close_out_gate_at: "2026-11-16T00:22:46.605Z"
 review_passes: 3
@@ -181,3 +181,4 @@ On a phone there's a single task detail, whichever way it was opened (card, sear
 - 2026-11-15T23:28:09Z · note: review pass 3: good to go
 - 2026-11-16T00:22:46Z · close-out gate completed in 70s
 - 2026-11-16T00:23:01Z · status done→done, release:success
+- 2026-11-16T03:51:40Z · message_dropped: 1 queued message(s) discarded — task is done
