@@ -10,17 +10,16 @@ import {
   hubBackAction,
   installHubBackButton,
   runHubBack,
-  type HubBackHandlers,
   type HubBackState,
   type BackButtonRegistration,
 } from "../../../mobile/src/back-navigation";
 
-function handlers(): HubBackHandlers & {
-  closeSheet: ReturnType<typeof vi.fn>;
-  showPicker: ReturnType<typeof vi.fn>;
-  exitApp: ReturnType<typeof vi.fn>;
-} {
-  return { closeSheet: vi.fn(), showPicker: vi.fn(), exitApp: vi.fn() };
+function handlers() {
+  return {
+    closeSheet: vi.fn<() => void>(),
+    showPicker: vi.fn<() => void>(),
+    exitApp: vi.fn<() => void>(),
+  };
 }
 
 function state(overrides: Partial<HubBackState> = {}): HubBackState {
