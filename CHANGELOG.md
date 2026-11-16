@@ -5,6 +5,50 @@ pipeline from `release-history.json`; the newest entry is also the GitHub
 release body. The full discussion of each change lives in the release notes
 and on GitHub.
 
+## [v0.5.88] - 2026-11-16
+
+Changes in this release:
+
+- chore: checkpoint bookkeeping/config before release
+- Merge branch 'repoos/integrate/1137'
+- Merge branch 'feat/mobile-web-task-detail-one-full-touch-de' into repoos/integrate/1137
+- Merge branch 'main' into feat/mobile-web-task-detail-one-full-touch-de
+- Merge branch 'repoos/integrate/1139'
+- Merge branch 'feat/mobile-web-polish-44px-tap-targets-no-io' into repoos/integrate/1139
+- WIP: engineer self-check checkpoint (#1137)
+- Merge branch 'main' into feat/mobile-web-polish-44px-tap-targets-no-io
+- Merge branch 'main' into feat/mobile-web-polish-44px-tap-targets-no-io
+- WIP: engineer self-check checkpoint (#1137)
+- Merge branch 'repoos/integrate/0579'
+- Merge branch 'main' into feat/mobile-web-polish-44px-tap-targets-no-io
+- Merge branch 'feat/wire-notarization-and-ticket-stapling-in' into repoos/integrate/0579
+- WIP: engineer self-check checkpoint (#1139)
+- WIP: engineer self-check checkpoint (#1137)
+- Merge branch 'main' into feat/mobile-web-task-detail-one-full-touch-de
+- WIP: engineer self-check checkpoint (#0579)
+- WIP: engineer self-check checkpoint (#1137)
+- WIP: engineer self-check checkpoint (#0579)
+- WIP: engineer self-check checkpoint (#1139)
+- Merge branch 'main' into feat/mobile-web-task-detail-one-full-touch-de
+- Merge branch 'repoos/integrate/1138'
+- WIP: engineer self-check checkpoint (#1137)
+- WIP: engineer self-check checkpoint (#1139)
+- Merge branch 'feat/mobile-web-work-queue-default-to-what-ne' into repoos/integrate/1138
+- Merge branch 'main' into feat/mobile-web-task-detail-one-full-touch-de
+- WIP: engineer self-check checkpoint (#1139)
+- WIP: engineer self-check checkpoint (#1137)
+- WIP: engineer self-check checkpoint (#1139)
+- Merge branch 'repoos/integrate/0576'
+- Merge branch 'feat/provision-developer-id-certificate-and-s' into repoos/integrate/0576
+- Merge branch 'repoos/integrate/1136'
+- Merge branch 'feat/integration-pipeline-bar-floats-about-25' into repoos/integrate/1136
+- Merge branch 'repoos/integrate/1134'
+- Merge branch 'feat/engineer-test-runs-outlive-the-agent-tur' into repoos/integrate/1134
+- feat(1137): implement Mobile web task detail: one full touch detail for every entry point (card view is a read-only stub; drawer tabs and close clipped)
+- WIP: engineer self-check checkpoint (#1138)
+
+[Release on GitHub](https://github.com/repo-os/repoos/releases/tag/v0.5.88)
+
 ## [v0.5.87] - 2026-11-15
 
 Fixed the app page losing its full-height layout: since the last release the main content didn't scroll properly and the bottom dock and toolbars could overlap content. The layout is restored to normal.

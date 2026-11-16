@@ -1,6 +1,12 @@
 {
   "releases": [
     {
+      "version": "0.5.88",
+      "tag": "v0.5.88",
+      "date": "2026-11-16",
+      "notes": "Changes in this release:\n\n- chore: checkpoint bookkeeping/config before release\n- Merge branch 'repoos/integrate/1137'\n- Merge branch 'feat/mobile-web-task-detail-one-full-touch-de' into repoos/integrate/1137\n- Merge branch 'main' into feat/mobile-web-task-detail-one-full-touch-de\n- Merge branch 'repoos/integrate/1139'\n- Merge branch 'feat/mobile-web-polish-44px-tap-targets-no-io' into repoos/integrate/1139\n- WIP: engineer self-check checkpoint (#1137)\n- Merge branch 'main' into feat/mobile-web-polish-44px-tap-targets-no-io\n- Merge branch 'main' into feat/mobile-web-polish-44px-tap-targets-no-io\n- WIP: engineer self-check checkpoint (#1137)\n- Merge branch 'repoos/integrate/0579'\n- Merge branch 'main' into feat/mobile-web-polish-44px-tap-targets-no-io\n- Merge branch 'feat/wire-notarization-and-ticket-stapling-in' into repoos/integrate/0579\n- WIP: engineer self-check checkpoint (#1139)\n- WIP: engineer self-check checkpoint (#1137)\n- Merge branch 'main' into feat/mobile-web-task-detail-one-full-touch-de\n- WIP: engineer self-check checkpoint (#0579)\n- WIP: engineer self-check checkpoint (#1137)\n- WIP: engineer self-check checkpoint (#0579)\n- WIP: engineer self-check checkpoint (#1139)\n- Merge branch 'main' into feat/mobile-web-task-detail-one-full-touch-de\n- Merge branch 'repoos/integrate/1138'\n- WIP: engineer self-check checkpoint (#1137)\n- WIP: engineer self-check checkpoint (#1139)\n- Merge branch 'feat/mobile-web-work-queue-default-to-what-ne' into repoos/integrate/1138\n- Merge branch 'main' into feat/mobile-web-task-detail-one-full-touch-de\n- WIP: engineer self-check checkpoint (#1139)\n- WIP: engineer self-check checkpoint (#1137)\n- WIP: engineer self-check checkpoint (#1139)\n- Merge branch 'repoos/integrate/0576'\n- Merge branch 'feat/provision-developer-id-certificate-and-s' into repoos/integrate/0576\n- Merge branch 'repoos/integrate/1136'\n- Merge branch 'feat/integration-pipeline-bar-floats-about-25' into repoos/integrate/1136\n- Merge branch 'repoos/integrate/1134'\n- Merge branch 'feat/engineer-test-runs-outlive-the-agent-tur' into repoos/integrate/1134\n- feat(1137): implement Mobile web task detail: one full touch detail for every entry point (card view is a read-only stub; drawer tabs and close clipped)\n- WIP: engineer self-check checkpoint (#1138)"
+    },
+    {
       "version": "0.5.87",
       "tag": "v0.5.87",
       "date": "2026-11-15",
