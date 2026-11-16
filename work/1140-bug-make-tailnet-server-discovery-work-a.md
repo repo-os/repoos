@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/bug-make-tailnet-server-discovery-work-a
 created_at: "2026-11-16T03:38:56Z"
-updated_at: "2026-11-16T04:54:49Z"
+updated_at: "2026-11-16T04:55:39Z"
 ---
 ## Problem
 
@@ -79,3 +79,4 @@ Reproduce the reported behavior first with fake Tailscale and SSH executables; k
 - 2026-11-16T04:54:47Z · status active→review
 - 2026-11-16T04:54:48Z · message_queued at 2026-11-16T04:54:48.293Z
 - 2026-11-16T04:54:49Z · note: shots: skipped — Docs site skipped: no docs shot declared
+- 2026-11-16T04:55:39Z · note: review pass 1: failed — no usable report
