@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/bug-make-tailnet-server-discovery-work-a
 created_at: "2026-11-16T03:38:56Z"
-updated_at: "2026-11-16T04:21:24Z"
+updated_at: "2026-11-16T04:22:34Z"
 ---
 ## Problem
 
@@ -36,7 +36,6 @@ There is a second mismatch on ThinkPad: `repoos status` reports a running hand-r
 ## Notes for AI
 Reproduce the reported behavior first with fake Tailscale and SSH executables; keep tests deterministic and do not depend on a live tailnet. Inspect the registered-server lifecycle before changing it, and preserve registry safety checks and loopback-only server binding. Use the repo's established subprocess helpers and safe argument handling; don't add runtime dependencies. Keep the fix focused on tailnet discovery, error classification, and the documented server-registration contract. Do not change another host's state while validating.
 
-
 ## Activity
 
 - 2026-11-16T03:38:56Z · created · t@t
@@ -47,3 +46,4 @@ Reproduce the reported behavior first with fake Tailscale and SSH executables; k
 - 2026-11-16T04:20:09Z · message_queued at 2026-11-16T04:20:09.528Z
 - 2026-11-16T04:20:09Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-16T04:21:24Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-16T04:22:34Z · body
