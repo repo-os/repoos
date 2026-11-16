@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/bug-make-tailnet-server-discovery-work-a
 created_at: "2026-11-16T03:38:56Z"
-updated_at: "2026-11-16T12:31:49Z"
+updated_at: "2026-11-16T14:01:36Z"
 last_close_out_gate_ms: 578627
 last_close_out_gate_at: "2026-11-16T12:31:09.888Z"
 review_passes: 4
@@ -174,3 +174,4 @@ Reproduce the reported behavior first with fake Tailscale and SSH executables; k
 - 2026-11-16T10:10:00Z · note: review pass 10: good to go
 - 2026-11-16T12:31:09Z · close-out gate completed in 579s
 - 2026-11-16T12:31:49Z · status done→done, release:success
+- 2026-11-16T14:01:36Z · message_dropped: 1 queued message(s) discarded — task is done
