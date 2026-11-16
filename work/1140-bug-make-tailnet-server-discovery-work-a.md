@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/bug-make-tailnet-server-discovery-work-a
 created_at: "2026-11-16T03:38:56Z"
-updated_at: "2026-11-16T07:25:57Z"
+updated_at: "2026-11-16T07:26:40Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
