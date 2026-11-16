@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 683465
-last_close_out_gate_at: "2026-11-16T08:38:52.861Z"
 id: "1141"
 title: "Work queue: show or hide human and held tasks"
 type: feature
-status: review
+status: done
 priority: p2
 area: [web, ui]
+merged_commit: bd85aad25031323f3ef84417eb47a6e39cd8d41e
 assigned_to: ai
 created_by: t@t
 branch: feat/work-queue-show-or-hide-human-and-held-t
 created_at: "2026-11-16T03:51:39Z"
 updated_at: "2026-11-16T08:38:52Z"
+last_close_out_gate_ms: 683465
+last_close_out_gate_at: "2026-11-16T08:38:52.861Z"
 review_passes: 1
 review_failed_report_retries: 0
 ---
