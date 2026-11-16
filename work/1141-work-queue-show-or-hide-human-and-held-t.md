@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/work-queue-show-or-hide-human-and-held-t
 created_at: "2026-11-16T03:51:39Z"
-updated_at: "2026-11-16T04:12:53Z"
+updated_at: "2026-11-16T04:16:24Z"
 ---
 ## Problem
 
@@ -46,26 +46,26 @@ Use the attached screenshot as the layout reference. Inspect existing Work Queue
 ```json
 [
 {
-  "label": "Human and Held show/hide toggles in the Work Queue header",
-  "target": "default",
-  "route": "/work",
-  "highlight": ".queue-visibility",
-  "state": "card:humanStep"
+"label": "Human and Held show/hide toggles in the Work Queue header",
+"target": "default",
+"route": "/work",
+"highlight": ".queue-visibility",
+"state": "card:humanStep"
 },
 {
-  "label": "Human tasks hidden from the board lists",
-  "target": "default",
-  "route": "/work",
-  "highlight": ".queue-visibility",
-  "steps": [
-    {
-      "click": "[data-testid='toggle-human-visibility']"
-    },
-    {
-      "waitMs": 300
-    }
-  ],
-  "state": "card:humanStep"
+"label": "Human tasks hidden from the board lists",
+"target": "default",
+"route": "/work",
+"highlight": ".queue-visibility",
+"steps": [
+  {
+    "click": "[data-testid='toggle-human-visibility']"
+  },
+  {
+    "waitMs": 300
+  }
+],
+"state": "card:humanStep"
 }
 ]
 ```
@@ -84,3 +84,4 @@ Use the attached screenshot as the layout reference. Inspect existing Work Queue
 - 2026-11-16T03:53:24Z · status ready→active, branch
 - 2026-11-16T04:08:25Z · body
 - 2026-11-16T04:12:53Z · body
+- 2026-11-16T04:16:24Z · CTO nudge: held — handoff gate is running
