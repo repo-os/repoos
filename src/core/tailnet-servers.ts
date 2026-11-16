@@ -284,22 +284,6 @@ const SSH_AUTH_FAILURE_RE =
 const REMOTE_PERMISSION_RE =
   /\b(?:sh|bash|zsh|dash|ksh):[^\n]*permission denied|\bEACCES: permission denied/i;
 
-/**
- * Is this SSH's own diagnostic text rather than the remote program's stderr?
- * SSH exits 255 for transport/auth failures; its messages also start with
- * `ssh:` or use the bare `Permission denied (publickey)` / host-key forms.
- * Remote programs can print "permission denied" too, so a bare word is never
- * enough to call something an SSH problem.
- */
-function looksLikeSshDiagnostics(text: string, code: number | null): boolean {
-  if (code === 255) return true;
-  if (/^\s*ssh:\s/m.test(text)) return true;
-  if (SSH_AUTH_FAILURE_RE.test(text)) return true;
-  if (/^\s*Host key verification failed\.?\s*$/m.test(text)) return true;
-  if (/^\s*Could not resolve hostname\b/m.test(text)) return true;
-  return false;
-}
-
 export type RemoteFailureKind = "timeout" | "transport" | "remote-command" | "unknown";
 
 export interface RemoteFailure {
@@ -308,10 +292,58 @@ export interface RemoteFailure {
 }
 
 /**
+ * Keep only the lines SSH itself wrote. OpenSSH forwards the remote command's
+ * stderr verbatim, so a remote `EACCES` or an app logging "timeout" shares the
+ * channel with `Permission denied (publickey)` and `Connection refused`. Only
+ * SSH-shaped lines may become a transport cause — a bare "permission denied"
+ * or "timeout" from the remote program must not.
+ */
+export function sshDiagnosticText(text: string): string {
+  return text
+    .split(/\r?\n/)
+    .filter((line) => {
+      if (/^\s*ssh(?:-[\w-]+)?:\s/i.test(line)) return true;
+      if (/^\s*(?:ssh_exchange_identification|kex_exchange_identification):/i.test(line))
+        return true;
+      if (SSH_AUTH_FAILURE_RE.test(line)) return true;
+      if (/^\s*Host key verification failed\.?\s*$/i.test(line)) return true;
+      if (/^\s*Could not resolve hostname\b/i.test(line)) return true;
+      if (/^\s*Connection (?:closed|reset) by\b/i.test(line)) return true;
+      if (/^\s*(?:Write failed:|Read from remote host)\b/i.test(line)) return true;
+      return false;
+    })
+    .join("\n");
+}
+
+function classifySshDiagnostics(text: string): RemoteFailure {
+  if (SSH_AUTH_FAILURE_RE.test(text)) {
+    return { kind: "transport", reason: `SSH authentication failed: ${firstErrorLine(text)}` };
+  }
+  if (/host key verification failed/i.test(text)) {
+    return {
+      kind: "transport",
+      reason: `SSH host key verification failed: ${firstErrorLine(text)}`,
+    };
+  }
+  if (/could not resolve hostname|name or service not known|nodename nor servname/i.test(text)) {
+    return { kind: "transport", reason: `host not found: ${firstErrorLine(text)}` };
+  }
+  if (/\bconnection refused\b/i.test(text)) {
+    return { kind: "transport", reason: `connection refused: ${firstErrorLine(text)}` };
+  }
+  // Only SSH's own text can say this; remote output was filtered out above.
+  if (/\btimed out\b|\btimeout\b/i.test(text)) return { kind: "timeout", reason: "timed out" };
+  if (/\b(?:no route to host|network is unreachable)\b/i.test(text)) {
+    return { kind: "transport", reason: `connection failed: ${firstErrorLine(text)}` };
+  }
+  return { kind: "transport", reason: firstErrorLine(text) };
+}
+
+/**
  * Classify an SSH/exec failure without confusing the remote program's stderr
  * with SSH's own transport diagnostics. A remote `repoos: command not found`
  * or `sh: …: Permission denied` stays a remote-command problem; only SSH-shaped
- * output (or exit 255) can become an authentication/connection/timeout cause.
+ * output can become an authentication/connection/timeout cause.
  */
 export function classifyRemoteFailure(error: unknown): RemoteFailure {
   if (isRemoteTimeout(error)) return { kind: "timeout", reason: "timed out" };
@@ -335,52 +367,14 @@ export function classifyRemoteFailure(error: unknown): RemoteFailure {
     };
   }
 
-  const transportText = stderr || message;
-  if (stderr && looksLikeSshDiagnostics(transportText, code)) {
-    if (SSH_AUTH_FAILURE_RE.test(stderr)) {
-      return {
-        kind: "transport",
-        reason: `SSH authentication failed: ${firstErrorLine(stderr)}`,
-      };
-    }
-    if (/host key verification failed/i.test(stderr)) {
-      return {
-        kind: "transport",
-        reason: `SSH host key verification failed: ${firstErrorLine(stderr)}`,
-      };
-    }
-    if (
-      /could not resolve hostname|name or service not known|nodename nor servname/i.test(stderr)
-    ) {
-      return { kind: "transport", reason: `host not found: ${firstErrorLine(stderr)}` };
-    }
-    if (/\bconnection refused\b/i.test(stderr)) {
-      return { kind: "transport", reason: `connection refused: ${firstErrorLine(stderr)}` };
-    }
-    if (/\btimed out\b|\btimeout\b/i.test(stderr)) {
-      return { kind: "timeout", reason: "timed out" };
-    }
-    if (/\b(?:no route to host|network is unreachable)\b/i.test(stderr)) {
-      return { kind: "transport", reason: `connection failed: ${firstErrorLine(stderr)}` };
-    }
-    return { kind: "transport", reason: firstErrorLine(stderr) };
-  }
+  const diagnostics = sshDiagnosticText(stderr) || sshDiagnosticText(message);
+  if (diagnostics) return classifySshDiagnostics(diagnostics);
+  // Anything left is the remote program's output (or execFile's argv) — never
+  // mine it for a transport cause. Exit 255 with no stderr is still transport.
   if (stderr) return { kind: "remote-command", reason: firstErrorLine(stderr) };
+  if (code === 255) return { kind: "transport", reason: "ssh command failed" };
 
   // No stderr: the message may be an SSH/exec wrapper or a test seam's Error.
-  if (looksLikeSshDiagnostics(message, code)) {
-    if (SSH_AUTH_FAILURE_RE.test(message)) {
-      return {
-        kind: "transport",
-        reason: `SSH authentication failed: ${firstErrorLine(message)}`,
-      };
-    }
-    if (/\btimed out\b|\btimeout\b/i.test(message)) return { kind: "timeout", reason: "timed out" };
-    if (/\bconnection refused\b/i.test(message)) {
-      return { kind: "transport", reason: `connection refused: ${firstErrorLine(message)}` };
-    }
-    return { kind: "transport", reason: firstErrorLine(message) };
-  }
   if (/\btimed out\b|\btimeout\b/i.test(message)) return { kind: "timeout", reason: "timed out" };
   // Only fall back to the process message when it is not execFile's
   // "Command failed: <the whole ssh argv>" wrapper (which contains

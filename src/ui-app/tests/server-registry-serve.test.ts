@@ -329,6 +329,41 @@ describe("startServer running-server registry", () => {
     }
   }, 30_000);
 
+  it("explains a running server whose registry entry is missing across status, servers and discovery (#1140)", async () => {
+    const root = minimalRepo();
+    const port = await reservePort();
+    const handle = await startServer({
+      root,
+      host: "127.0.0.1",
+      port,
+      disableAuth: true,
+    });
+    try {
+      expect(existsSync(join(registryDir, `${port}.json`))).toBe(true);
+      // Simulate the ThinkPad mismatch: the server is healthy and its serve
+      // lock says it intended to register, but the registry entry is gone.
+      rmSync(join(registryDir, `${port}.json`));
+
+      expect(await listValidatedServerRegistry()).toEqual([]);
+      const status = await collectStatus(loadConfig(root), { probeTimeoutMs: 1_000 });
+      expect(status.server.running).toBe(true);
+      expect(status.server.registration).toBe("unregistered");
+      expect(status.server.registrationReason).toBe("no registry entry for this port");
+
+      const payload = await buildTailnetDiscoveryPayload(loadConfig(root), {
+        tailscaleStatus: async () => {
+          throw new Error("tailscale: not found");
+        },
+        remoteExec: async () => JSON.stringify({ servers: [] }),
+        deadlineMs: 100,
+      });
+      expect(payload.discoverySource).toBe("local-only");
+      expect(payload.servers).toEqual([]);
+    } finally {
+      await handle.close();
+    }
+  }, 30_000);
+
   it("keeps --preview-overrides out of the registry on a real port and explains why (#1140)", async () => {
     const root = minimalRepo();
     // A real `[preview.*]` overlay is what sets config.previewOverrides; the

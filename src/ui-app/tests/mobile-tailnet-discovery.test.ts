@@ -157,6 +157,26 @@ describe("mobile tailnet discovery", () => {
     }
   });
 
+  it("does not claim a fallback source an older server never reported", async () => {
+    const fetchImpl = vi.fn(async () =>
+      Promise.resolve(
+        new Response(JSON.stringify({ ok: true, servers: [], tailscaleUnavailable: true }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
+      ),
+    );
+    const result = await fetchTailnetServers("https://bee.tailc0c173.ts.net:7499", {
+      fetchImpl: fetchImpl as unknown as typeof fetch,
+    });
+
+    expect(result.kind).toBe("ok");
+    if (result.kind === "ok") {
+      expect(result.message).toMatch(/only list its own local servers/);
+      expect(result.message).not.toMatch(/configured hosts/);
+    }
+  });
+
   it("does not claim a configured-host fallback when the pool is empty", async () => {
     const fetchImpl = vi.fn(async () =>
       Promise.resolve(

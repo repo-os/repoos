@@ -205,6 +205,28 @@ describe("repoos servers --tailscale", () => {
     expect(remoteFailureReason(remoteFileDenied)).toMatch(/remote command permission denied/);
     expect(remoteFailureReason(remoteFileDenied)).not.toMatch(/authentication failed/);
 
+    // The remote program may exit 255 and print its own "permission denied" /
+    // "timeout" text. Those are remote-command causes, never SSH auth/timeout.
+    const remoteOutput255 = Object.assign(new Error("Command failed: ssh ..."), {
+      code: 255,
+      stderr: "Error: request timeout while writing /tmp/repoos-cache\nPermission denied\n",
+    });
+    expect(remoteFailureReason(remoteOutput255)).not.toBe("timed out");
+    expect(remoteFailureReason(remoteOutput255)).not.toMatch(/authentication failed/);
+    expect(remoteFailureReason(remoteOutput255)).toMatch(/request timeout while writing/);
+
+    // execFile's wrapper repeats the whole argv (including ConnectTimeout=4).
+    // With no stderr it must not become a timeout or echo that argv.
+    const bareExecFailure = Object.assign(
+      new Error(
+        "Command failed: ssh -o BatchMode=yes -o ConnectTimeout=4 operator@bee sh -c 'repoos servers --json'",
+      ),
+      { code: 255, stderr: "" },
+    );
+    expect(remoteFailureReason(bareExecFailure)).not.toBe("timed out");
+    expect(remoteFailureReason(bareExecFailure)).not.toMatch(/ConnectTimeout/);
+    expect(remoteFailureReason(bareExecFailure)).toBe("ssh command failed");
+
     const refused = Object.assign(new Error("Command failed: ssh ..."), {
       code: 255,
       stderr: "ssh: connect to host bee port 22: Connection refused\n",
