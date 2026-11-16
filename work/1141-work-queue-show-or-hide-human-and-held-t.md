@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-16T05:16:54Z"
+review_failed_report_retries: 0
 id: "1141"
 title: "Work queue: show or hide human and held tasks"
 type: feature
@@ -9,8 +11,6 @@ assigned_to: ai
 created_by: t@t
 branch: feat/work-queue-show-or-hide-human-and-held-t
 created_at: "2026-11-16T03:51:39Z"
-updated_at: "2026-11-16T05:16:54Z"
-review_failed_report_retries: 2
 ---
 ## Problem
 
@@ -95,3 +95,4 @@ Use the attached screenshot as the layout reference. Inspect existing Work Queue
 - 2026-11-16T04:21:13Z · needs_input
 - 2026-11-16T05:14:13Z · needs_input (review-failed) cleared for review again by hello@repoos.org
 - 2026-11-16T05:16:54Z · note: review pass 4: good to go
+
