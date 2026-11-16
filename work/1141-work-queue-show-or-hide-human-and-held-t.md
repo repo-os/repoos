@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-16T04:20:52Z"
-review_failed_report_retries: 2
 id: "1141"
 title: "Work queue: show or hide human and held tasks"
 type: feature
@@ -11,6 +9,8 @@ assigned_to: ai
 created_by: t@t
 branch: feat/work-queue-show-or-hide-human-and-held-t
 created_at: "2026-11-16T03:51:39Z"
+updated_at: "2026-11-16T04:21:13Z"
+review_failed_report_retries: 2
 ---
 ## Problem
 
@@ -91,4 +91,4 @@ Use the attached screenshot as the layout reference. Inspect existing Work Queue
 - 2026-11-16T04:20:07Z · message_queued at 2026-11-16T04:20:07.332Z
 - 2026-11-16T04:20:32Z · note: review pass 1: failed — no usable report
 - 2026-11-16T04:20:52Z · note: review pass 2: failed — no usable report
-
+- 2026-11-16T04:21:13Z · note: review pass 3: failed — no usable report
