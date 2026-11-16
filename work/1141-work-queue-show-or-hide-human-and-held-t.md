@@ -9,9 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/work-queue-show-or-hide-human-and-held-t
 created_at: "2026-11-16T03:51:39Z"
-updated_at: "2026-11-16T07:02:02Z"
-review_passes: 1
-review_failed_report_retries: 0
+updated_at: "2026-11-16T04:20:06Z"
 ---
 ## Problem
 
@@ -44,33 +42,6 @@ Use the attached screenshot as the layout reference. Inspect existing Work Queue
 - Reorder those bottom-left controls to: Human, Held, Archived.
 - Match the existing Work Queue control styling and interaction patterns, including accessible labels and keyboard operation.
 
-## Shots
-```json
-[
-{
-"label": "Human and Held show/hide toggles in the Work Queue header",
-"target": "default",
-"route": "/work",
-"highlight": ".queue-visibility",
-"state": "card:humanStep"
-},
-{
-"label": "Human tasks hidden from the board lists",
-"target": "default",
-"route": "/work",
-"highlight": ".queue-visibility",
-"steps": [
-{
-"click": "[data-testid='toggle-human-visibility']"
-},
-{
-"waitMs": 300
-}
-],
-"state": "card:humanStep"
-}
-]
-```
 
 ## Screenshots
 
@@ -84,17 +55,4 @@ Use the attached screenshot as the layout reference. Inspect existing Work Queue
 - 2026-11-16T03:51:47Z · needs_input, body: Desired UX (added)
 - 2026-11-16T03:53:14Z · status inbox→ready
 - 2026-11-16T03:53:24Z · status ready→active, branch
-- 2026-11-16T04:08:25Z · body
-- 2026-11-16T04:12:53Z · body
-- 2026-11-16T04:16:24Z · CTO nudge: held — handoff gate is running
-- 2026-11-16T04:20:03Z · note: ui verification passed: 2 of 2 shots captured with clean console (1 shot warning)
 - 2026-11-16T04:20:06Z · status active→review
-- 2026-11-16T04:20:07Z · message_queued at 2026-11-16T04:20:07.332Z
-- 2026-11-16T04:20:32Z · note: review pass 1: failed — no usable report
-- 2026-11-16T04:20:52Z · note: review pass 2: failed — no usable report
-- 2026-11-16T04:21:13Z · note: review pass 3: failed — no usable report
-- 2026-11-16T04:21:13Z · needs_input
-- 2026-11-16T05:14:13Z · needs_input (review-failed) cleared for review again by hello@repoos.org
-- 2026-11-16T05:16:54Z · note: review pass 4: good to go
-- 2026-11-16T05:26:25Z · message_overdue: still queued after 60m without being delivered
-- 2026-11-16T07:02:02Z · message_overdue: still queued after 60m without being delivered
