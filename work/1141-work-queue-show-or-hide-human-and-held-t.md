@@ -3,6 +3,9 @@ id: "1141"
 title: "Work queue: show or hide human and held tasks"
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-failed
+needs_input_detail: "the cursor agent exited without output: ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage. Stopped 1 process(es) this turn spawned outside its process group (PIDs: 71299)."
 priority: p2
 area: [web, ui]
 assigned_to: ai
@@ -92,3 +95,4 @@ Use the attached screenshot as the layout reference. Inspect existing Work Queue
 - 2026-11-16T04:20:32Z · note: review pass 1: failed — no usable report
 - 2026-11-16T04:20:52Z · note: review pass 2: failed — no usable report
 - 2026-11-16T04:21:13Z · note: review pass 3: failed — no usable report
+- 2026-11-16T04:21:13Z · needs_input
