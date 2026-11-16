@@ -162,3 +162,4 @@ Reproduce the reported behavior first with fake Tailscale and SSH executables; k
 - 2026-11-16T09:45:23Z · handoff failed · task-file handoff failed at review · Engineering report narrative is 1221 words; the hard limit is 1,200 words of narrative. Shorten it and request handoff again.
 - 2026-11-16T09:46:55Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-16T09:46:55Z · message_queued at 2026-11-16T09:46:55.168Z
+- 2026-11-16T09:46:55Z · ↻ resuming engineer to read queued message
