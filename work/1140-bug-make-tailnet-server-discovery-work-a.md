@@ -145,3 +145,4 @@ Reproduce the reported behavior first with fake Tailscale and SSH executables; k
 - 2026-11-16T08:59:09Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-16T08:59:41Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-16T08:59:41Z · status active→review
+- 2026-11-16T08:59:41Z · message_delivered: 1 message(s)
