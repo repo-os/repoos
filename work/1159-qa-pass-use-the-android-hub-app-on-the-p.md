@@ -11,7 +11,7 @@ branch: feat/qa-pass-use-the-android-hub-app-on-the-p
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T15:51:18Z"
-updated_at: "2026-11-17T15:59:29Z"
+updated_at: "2026-11-17T16:02:25Z"
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -41,3 +41,4 @@ Use just deploy-phone only if the saved port works; otherwise do not ask Nick fo
 - 2026-11-17T15:51:41Z · status ready→active, branch
 - 2026-11-17T15:56:45Z · message_queued at 2026-11-17T15:56:45.622Z
 - 2026-11-17T15:59:29Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-17T16:02:25Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: **Blocked: the required Android device QA is incomplete.** The saved wireless adb target was unreachable, `adb devices` showed no device, and no Android SDK emulator was available. I did not install anything or run `just deploy-phone`. I u… · stderr: Reading additional input from stdin...
