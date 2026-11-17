@@ -12,7 +12,7 @@ branch: feat/verify-agents-authentication-error-guida
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T17:53:39Z"
-updated_at: "2026-11-17T22:38:29Z"
+updated_at: "2026-11-17T22:47:49Z"
 last_close_out_gate_ms: 1211892
 last_close_out_gate_at: "2026-11-17T22:38:08.018Z"
 review_passes: 2
@@ -68,3 +68,4 @@ The attached screenshot shows the unconfigured local CLI state only; do not trea
 - 2026-11-17T21:47:43Z · note: review pass 2: good to go
 - 2026-11-17T22:38:08Z · close-out gate completed in 1212s
 - 2026-11-17T22:38:29Z · status done→done, release:success
+- 2026-11-17T22:47:49Z · message_dropped: 1 queued message(s) discarded — task is done
