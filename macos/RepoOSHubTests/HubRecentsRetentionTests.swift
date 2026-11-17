@@ -243,6 +243,13 @@ final class HubRecentsRetentionTests: XCTestCase {
         XCTAssertEqual(try store.load().entries.first?.lastHealth, .healthy)
         XCTAssertEqual(try store.load().entries.first?.lastHealthAt, checkedAt)
 
+        state.recordRouteVisit(serverID: entry.id, path: "/tasks", title: "Tasks")
+        let savedAfterUnrelatedWrite = try store.load().entries.first
+        XCTAssertEqual(savedAfterUnrelatedWrite?.lastHealth, .healthy)
+        XCTAssertEqual(savedAfterUnrelatedWrite?.lastHealthAt, checkedAt)
+        XCTAssertEqual(savedAfterUnrelatedWrite?.updatedAt, editedAt)
+        XCTAssertEqual(state.entries.first?.lastHealth, .unreachable)
+
         search.scheduleSearch(query: "qa")
         try? await Task.sleep(nanoseconds: 500_000_000)
         XCTAssertEqual(search.serverLines.first?.status, .offline)

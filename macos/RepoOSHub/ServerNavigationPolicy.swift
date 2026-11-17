@@ -99,6 +99,13 @@ enum ServerWebLoadFailure: Equatable {
     case blockedNavigation(ServerNavigationBlockReason)
     case unknown(String)
 
+    var indicatesConnectivityFailure: Bool {
+        switch self {
+        case .offline, .tls, .timeout: return true
+        case .httpStatus, .blockedNavigation, .unknown: return false
+        }
+    }
+
     var title: String {
         switch self {
         case .offline: return "Server unreachable"

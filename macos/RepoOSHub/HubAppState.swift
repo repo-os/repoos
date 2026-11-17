@@ -24,8 +24,27 @@ final class HubAppState: ObservableObject {
     let attentionCoordinator: HubAttentionCoordinator
     let crossServerTaskSearch: HubCrossServerTaskSearchEngine
     private var document = ServerRegistryDocument()
+    private var volatileHealthByServerID: [UUID: VolatileServerHealth] = [:]
     private var workspaceResidencyLRU: [UUID] = []
     private var workspaceResidencyPressure: HubWorkspaceWebViewResidency.MemoryPressureLevel?
+
+    private struct VolatileServerHealth {
+        let health: HealthState
+        let checkedAt: Date?
+        let name: String
+        let repositoryName: String?
+        let localProjectPath: String?
+
+        func applying(to entry: ServerEntry) -> ServerEntry {
+            var entry = entry
+            entry.lastHealth = health
+            entry.lastHealthAt = checkedAt
+            entry.name = name
+            entry.repositoryName = repositoryName
+            entry.localProjectPath = localProjectPath
+            return entry
+        }
+    }
 
     init(
         store: ServerRegistryStore,
@@ -110,7 +129,8 @@ final class HubAppState: ObservableObject {
     func reloadFromDisk() {
         do {
             document = try store.load()
-            entries = document.entries.sorted(by: entrySort)
+            volatileHealthByServerID.removeAll()
+            publishEntries()
             if let last = document.lastSelectedServerID, entries.contains(where: { $0.id == last }) {
                 selectedServerID = last
             } else {
@@ -131,6 +151,7 @@ final class HubAppState: ObservableObject {
             crossServerTaskSearch.configure(entries: entries)
         } catch {
             document = ServerRegistryDocument()
+            volatileHealthByServerID.removeAll()
             entries = []
             selectedServerID = nil
         }
@@ -195,7 +216,7 @@ final class HubAppState: ObservableObject {
         document.entries[index].notifyActiveAgents = notifyActiveAgents
         document.entries[index].crossServerTaskSearchEnabled = crossServerTaskSearchEnabled
         document.entries[index].updatedAt = Date()
-        entries = document.entries.sorted(by: entrySort)
+        publishEntries()
         try? store.save(document)
         syncAttentionCoordinator()
         crossServerTaskSearch.configure(entries: entries)
@@ -522,7 +543,7 @@ final class HubAppState: ObservableObject {
         found.updatedAt = Date()
         do {
             try store.upsertEntry(found, in: &document)
-            entries = document.entries.sorted(by: entrySort)
+            publishEntries()
             try store.save(document)
         } catch {
             lastConnectionMessage = "Could not update the pin state locally."
@@ -562,7 +583,7 @@ final class HubAppState: ObservableObject {
         attentionCoordinator.deleteCapabilityToken(serverID: entry.id, origin: entry.originString)
         do {
             try store.removeEntry(id: entry.id, document: &document)
-            entries = document.entries.sorted(by: entrySort)
+            publishEntries()
             if selectedServerID == entry.id {
                 selectedServerID = document.lastSelectedServerID
             }
@@ -634,7 +655,7 @@ final class HubAppState: ObservableObject {
                     isPinned: draft.isPinned
                 )
                 try store.upsertEntry(entry, in: &document)
-                entries = document.entries.sorted(by: entrySort)
+                publishEntries()
                 selectedServerID = entry.id
                 document.lastSelectedServerID = entry.id
                 noteWorkspaceUsed(entry.id)
@@ -653,7 +674,7 @@ final class HubAppState: ObservableObject {
                 entry.groupName = normalizedGroup
                 entry.isPinned = draft.isPinned
                 try store.upsertEntry(entry, in: &document)
-                entries = document.entries.sorted(by: entrySort)
+                publishEntries()
                 selectedServerID = entry.id
                 document.lastSelectedServerID = entry.id
                 noteWorkspaceUsed(entry.id)
@@ -698,8 +719,19 @@ final class HubAppState: ObservableObject {
                 runtimeInfoByServerID.removeValue(forKey: id)
             }
         }
-        document.entries[index] = entry
-        entries = document.entries.sorted(by: entrySort)
+        if persistToDisk {
+            document.entries[index] = entry
+            volatileHealthByServerID.removeValue(forKey: id)
+        } else {
+            volatileHealthByServerID[id] = VolatileServerHealth(
+                health: entry.lastHealth,
+                checkedAt: entry.lastHealthAt,
+                name: entry.name,
+                repositoryName: entry.repositoryName,
+                localProjectPath: entry.localProjectPath
+            )
+        }
+        publishEntries()
 
         if selectedServerID == id, case .failure(let failure) = outcome {
             lastConnectionMessage = failure.userMessage
@@ -784,7 +816,7 @@ final class HubAppState: ObservableObject {
         guard document.entries[index].accentColorHex != normalized else { return }
         document.entries[index].accentColorHex = normalized
         document.entries[index].updatedAt = Date()
-        entries = document.entries.sorted(by: entrySort)
+        publishEntries()
         try? store.save(document)
     }
 
@@ -812,6 +844,12 @@ final class HubAppState: ObservableObject {
 
     private func persistQuietly() {
         try? store.save(document)
+    }
+
+    private func publishEntries() {
+        entries = document.entries.map { entry in
+            volatileHealthByServerID[entry.id]?.applying(to: entry) ?? entry
+        }.sorted(by: entrySort)
     }
 
     private func syncAttentionCoordinator() {
@@ -859,9 +897,19 @@ final class HubAppState: ObservableObject {
         }
         for index in ordered.indices {
             ordered[index].sortOrder = index
+            if volatileHealthByServerID[ordered[index].id] != nil,
+               let persisted = document.entries.first(where: { $0.id == ordered[index].id }) {
+                ordered[index].lastHealth = persisted.lastHealth
+                ordered[index].lastHealthAt = persisted.lastHealthAt
+                ordered[index].name = persisted.name
+                ordered[index].repositoryName = persisted.repositoryName
+                ordered[index].localProjectPath = persisted.localProjectPath
+            }
         }
         document.entries = ordered
-        self.entries = ordered
+        self.entries = ordered.map { entry in
+            volatileHealthByServerID[entry.id]?.applying(to: entry) ?? entry
+        }
         try? store.save(document)
     }
 

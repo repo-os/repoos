@@ -75,7 +75,7 @@ struct ServerWebWorkspaceView: View {
             )
         }
         .onChange(of: webModel.loadFailure) { failure in
-            guard failure != nil else { return }
+            guard failure?.indicatesConnectivityFailure == true else { return }
             Task { await appState.refreshHealth(for: entry.id) }
         }
         .onDisappear {
@@ -120,7 +120,9 @@ struct ServerWebWorkspaceView: View {
 
     private func retryWorkspace() {
         Task {
-            await appState.refreshHealth(for: entry.id)
+            if webModel.loadFailure?.indicatesConnectivityFailure == true {
+                await appState.refreshHealth(for: entry.id)
+            }
             webModel.reload()
         }
     }

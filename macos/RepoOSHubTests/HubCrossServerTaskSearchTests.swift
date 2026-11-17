@@ -34,6 +34,25 @@ final class HubCrossServerTaskSearchTests: XCTestCase {
         XCTAssertTrue(engine.remoteResults.isEmpty)
     }
 
+    @MainActor
+    func testHealthChangeRerunsCurrentQueryAgainstUpdatedServerList() async {
+        let client = StubHubTaskSearchClient(result: .failure(.unauthorized))
+        let keychain = InMemoryHubCapabilityStore()
+        let entry = makeEntry(searchEnabled: true)
+        try? keychain.saveToken(serverID: entry.id, origin: entry.originString, token: "roh_test")
+        let engine = HubCrossServerTaskSearchEngine(client: client, keychain: keychain)
+        engine.configure(entries: [entry])
+
+        engine.scheduleSearch(query: "privacy")
+        var offline = entry
+        offline.lastHealth = .unreachable
+        engine.configure(entries: [offline])
+        try? await Task.sleep(nanoseconds: 500_000_000)
+
+        XCTAssertEqual(engine.serverLines.map(\.status), [.offline])
+        XCTAssertFalse(engine.isSearching)
+    }
+
     private func makeEntry(searchEnabled: Bool) -> ServerEntry {
         ServerEntry(
             name: "Dev",

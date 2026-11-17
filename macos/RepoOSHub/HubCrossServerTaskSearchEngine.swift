@@ -12,6 +12,7 @@ final class HubCrossServerTaskSearchEngine: ObservableObject {
     private var healthByServerID: [UUID: HealthState] = [:]
     private var debounceTask: Task<Void, Never>?
     private var inFlightSearch: Task<Void, Never>?
+    private var currentQuery: String?
 
     init(
         client: HubTaskSearchFetching = HubTaskSearchClient(),
@@ -23,25 +24,28 @@ final class HubCrossServerTaskSearchEngine: ObservableObject {
 
     func configure(entries: [ServerEntry]) {
         let nextHealthByServerID = Dictionary(uniqueKeysWithValues: entries.map { ($0.id, $0.lastHealth) })
-        if nextHealthByServerID != healthByServerID {
-            cancel()
-            remoteResults = []
-            serverLines = []
-        }
+        let healthChanged = nextHealthByServerID != healthByServerID
         self.entries = entries
         healthByServerID = nextHealthByServerID
+        if healthChanged {
+            cancelWork()
+            remoteResults = []
+            serverLines = []
+            if let currentQuery { scheduleSearch(query: currentQuery) }
+        }
     }
 
     func scheduleSearch(query rawQuery: String) {
-        debounceTask?.cancel()
-        inFlightSearch?.cancel()
+        cancelWork()
         let trimmed = rawQuery.trimmingCharacters(in: .whitespacesAndNewlines)
         guard trimmed.count >= HubCrossServerTaskSearchPolicy.minQueryLength else {
+            currentQuery = nil
             remoteResults = []
             serverLines = []
             isSearching = false
             return
         }
+        currentQuery = trimmed
 
         let eligible = HubCrossServerTaskSearchPolicy.eligibleEntries(from: entries)
         serverLines = eligible.map {
@@ -57,6 +61,11 @@ final class HubCrossServerTaskSearchEngine: ObservableObject {
     }
 
     func cancel() {
+        currentQuery = nil
+        cancelWork()
+    }
+
+    private func cancelWork() {
         debounceTask?.cancel()
         inFlightSearch?.cancel()
         debounceTask = nil
