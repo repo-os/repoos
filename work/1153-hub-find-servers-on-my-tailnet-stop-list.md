@@ -169,3 +169,4 @@ Do not add runtime dependencies. The discovery endpoint exposes names/ports only
 - 2026-11-17T16:41:08Z · body
 - 2026-11-17T16:42:49Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-17T16:42:49Z · message_queued at 2026-11-17T16:42:49.320Z
+- 2026-11-17T16:42:49Z · ↻ resuming engineer to read queued message
