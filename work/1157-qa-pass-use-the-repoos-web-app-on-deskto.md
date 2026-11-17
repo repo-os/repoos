@@ -11,7 +11,7 @@ branch: feat/qa-pass-use-the-repoos-web-app-on-deskto
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T15:21:15Z"
-updated_at: "2026-11-17T16:30:49Z"
+updated_at: "2026-11-17T16:31:36Z"
 handoff_signal_retry_count: 2
 ---
 ## Problem
