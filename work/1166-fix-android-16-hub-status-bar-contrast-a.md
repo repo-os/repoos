@@ -2,7 +2,7 @@
 id: "1166"
 title: Fix Android 16 Hub status-bar contrast across themes
 type: bug
-status: review
+status: active
 priority: p2
 area: mobile
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/fix-android-16-hub-status-bar-contrast-a
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T17:55:45Z"
-updated_at: "2026-11-17T18:48:39Z"
+updated_at: "2026-11-17T18:48:40Z"
 handoff_signal_retry_count: 2
 ---
 ## Problem
