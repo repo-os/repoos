@@ -12,7 +12,7 @@ branch: feat/qa-pass-use-the-android-hub-app-on-the-p
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T15:51:18Z"
-updated_at: "2026-11-17T18:00:15Z"
+updated_at: "2026-11-17T18:00:16Z"
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-11-17T16:23:57.721Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-17T17:28:58.663Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-17T17:40:28.839Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
@@ -61,6 +61,7 @@ Human device step needed: the saved ADB target `100.117.244.33:37673` refused th
 ![theme-jelly-light.png](/api/tasks/1159/attachments/att_a4fa96a2-d6e0-4ef7-b0d3-127d5d5c728b.png)
 ![theme-jelly-dark.png](/api/tasks/1159/attachments/att_e8142426-5c66-4d13-b727-05bd3ca74bf8.png)
 ![theme-gruvbox-light.png](/api/tasks/1159/attachments/att_4eb761e3-5030-48da-9a4f-3d1dd99072a1.png)
+![theme-gruvbox-dark.png](/api/tasks/1159/attachments/att_5f9e61bb-6012-4fa1-a9ef-a1e083693d90.png)
 
 ## Activity
 
@@ -118,3 +119,4 @@ Human device step needed: the saved ADB target `100.117.244.33:37673` refused th
 - 2026-11-17T18:00:10Z · screenshots
 - 2026-11-17T18:00:12Z · screenshots
 - 2026-11-17T18:00:14Z · screenshots
+- 2026-11-17T18:00:16Z · screenshots
