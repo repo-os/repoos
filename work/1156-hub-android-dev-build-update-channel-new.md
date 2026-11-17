@@ -82,3 +82,4 @@ Follow the same shape as Tiao's implementation so all of Nick's apps behave iden
 - 2026-11-17T16:59:19Z · body
 - 2026-11-17T17:00:06Z · status active→review
 - 2026-11-17T17:00:07Z · message_queued at 2026-11-17T17:00:07.049Z
+- 2026-11-17T17:00:07Z · note: shots: skipped — the diff (21 changed paths) touches no capture target's globs — no UI change to capture
