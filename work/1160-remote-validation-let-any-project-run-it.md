@@ -3,9 +3,6 @@ id: "1160"
 title: "Remote validation: let any project run its own check command on runners"
 type: feature
 status: active
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: "`needs some work` — Docker hosts silently pass: repoos-ci's `bash -lc` entrypoint swallows the extra `bash -lc` argv, so the project gate n…"
 priority: p1
 area: core
 assigned_to: ai
@@ -14,7 +11,7 @@ branch: feat/remote-validation-let-any-project-run-it
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T17:06:33Z"
-updated_at: "2026-11-17T21:48:24Z"
+updated_at: "2026-11-17T21:48:27Z"
 review_passes: 3
 last_check_failure: "repoos check at 2026-11-17T19:55:37.402Z: repoos check failed: ui verification failed (3 issue(s)): [missing-target] Remote validation command and required tools (target \"default\"): highlight #setting-remoteValidation.command matched nothing on /settings?section=remote-validation (http://127.0.0.1:35065/settings?section=remote-validation); [missing-target] Remote runner host toolchain status (target \"default\"): click #setting-remoteValidation.enabled button: click: Timeout 5000ms exceeded. on /settings?section=remote-validation (http://… (truncated)"
 review_rounds: 2
@@ -119,3 +116,4 @@ Context: Nick's Tiao board on host bee (16 cores, encrypted btrfs, 3 projects) s
 - 2026-11-17T21:19:36Z · needs_input
 - 2026-11-17T21:48:22Z · status review→active
 - 2026-11-17T21:48:24Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-17T21:48:27Z · needs_input
