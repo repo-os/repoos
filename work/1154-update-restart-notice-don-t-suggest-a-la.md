@@ -2,7 +2,7 @@
 id: "1154"
 title: "Update/restart notice: don't suggest a launchd command for a hand-run server; offer a real restart and fix repoos restart auth (401)"
 type: bug
-status: active
+status: review
 priority: p2
 area: [web, server, cli]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/update-restart-notice-don-t-suggest-a-la
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T13:30:27Z"
-updated_at: "2026-11-17T17:26:27Z"
+updated_at: "2026-11-17T17:27:58Z"
 review_passes: 3
 last_check_failure: "repoos check at 2026-11-17T16:46:21.944Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Hand-run server restart notice (target \"default\"): loading state detected: loading text \"Loading…\" on / (http://127.0.0.1:41115/?shotState=release%3ArestartPendingLight)"
 handoff_signal_retry_count: 1
@@ -98,3 +98,4 @@ Read #1075 (the restart notice) and #1091 (`repoos restart`). A server that kill
 - 2026-11-17T17:17:48Z · needs_input
 - 2026-11-17T17:17:48Z · message_delivered: 1 message(s)
 - 2026-11-17T17:26:27Z · body
+- 2026-11-17T17:27:58Z · status active→review
