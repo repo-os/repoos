@@ -5,7 +5,11 @@
  * so the human is never told in-app. Table-driven over the canonical set.
  */
 import { describe, expect, it } from "vitest";
-import { ATTENTION_NOTICE_KINDS, NOTICE_KIND_COLOR, NOTICE_KIND_LABELS } from "../src/stores/notices";
+import {
+  ATTENTION_NOTICE_KINDS,
+  NOTICE_KIND_COLOR,
+  NOTICE_KIND_LABELS,
+} from "../src/stores/notices";
 import {
   NOTIFICATION_TYPES,
   NOTIFICATION_TYPE_DESCRIPTIONS,
