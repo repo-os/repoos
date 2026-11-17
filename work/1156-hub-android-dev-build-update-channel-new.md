@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/check-reuse.test.ts > handoff self-check reuse > CLI records clean self-check proof, partial=false on bee — fix it in the feature branch and re-run the gate"
+last_handoff_failure_sha: 193603658d88ea0dffd3c94adece5320a207a1c8
 id: "1156"
 title: "Hub Android: dev build update channel - new dev builds reach the phone from any network with one tap (no adb)"
 type: feature
@@ -69,3 +71,4 @@ Follow the same shape as Tiao's implementation so all of Nick's apps behave iden
 - 2026-11-17T16:24:08Z · ↻ resuming engineer to read queued message
 - 2026-11-17T16:24:08Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The release guard now completes cleanly, including Capacitor sync and the Gradle release-variant check. The review fixes are in place; I’m checking for generated-file drift and then running the required changed-path RepoOS check. · stderr: 2026-11-17T16:13:18.521557Z ERROR codex_core::tools::router: error=Exit code: 1 Wall time: 0 seconds Output: Failed to write file /Users/nick/code/nick/repoos-worktrees/feat/hub-android-dev-build-update-channel-new/mobile/dev-update-worker/index.ts 2026-11-17T16:15:49.695996Z ERROR codex_core::tools::router: error=Exi…
 - 2026-11-17T16:30:35Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: tests/check-reuse.test.ts > handoff self-check reuse > CLI records clean self-check proof, partial=false on bee — fix it in the feature branch and re-run the gate
+
