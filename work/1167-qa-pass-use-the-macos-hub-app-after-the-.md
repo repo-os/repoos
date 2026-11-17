@@ -5,11 +5,13 @@ type: bug
 status: inbox
 priority: p1
 area: macos
-assigned_to: ""
+assigned_to: ai
 created_by: t@t
 branch: ""
+cli_override: codex
+model_override: gpt-6-luna
 created_at: "2026-11-17T18:23:18Z"
-updated_at: "2026-11-17T18:23:18Z"
+updated_at: "2026-11-17T18:23:23Z"
 ---
 ## Problem
 
@@ -34,3 +36,4 @@ Do not edit repoos.toml. Do not create signing identities or commit app binaries
 ## Activity
 
 - 2026-11-17T18:23:18Z · created · t@t
+- 2026-11-17T18:23:23Z · cli_override, model_override
