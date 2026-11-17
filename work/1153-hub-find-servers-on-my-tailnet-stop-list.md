@@ -2,7 +2,7 @@
 id: "1153"
 title: "Hub 'Find servers on my tailnet': stop listing bare machines, hide phones, explain failures, and replace SSH discovery with an HTTPS-based one"
 type: bug
-status: review
+status: active
 priority: p2
 area: [mobile, server, core]
 assigned_to: ai
