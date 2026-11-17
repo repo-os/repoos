@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/mobile-hub-return-to-server-picker-from-
 created_at: "2026-11-17T05:37:20Z"
-updated_at: "2026-11-17T07:23:36Z"
+updated_at: "2026-11-17T07:29:35Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -35,20 +35,31 @@ Inspect the existing Hub server WebView architecture and navigation security bef
 ```json
 [
 {
-"label": "Mobile Hub top bar: project name, compact search, return logo",
-"target": "default",
-"route": "/work?repoos_hub=0123456789abcdef0123456789abcdef",
-"highlight": ".topbar",
-"viewportWidth": 390,
-"viewportHeight": 844
+  "label": "Mobile Hub top bar (dark, 360px): project name, compact search, return logo",
+  "target": "default",
+  "route": "/work?repoos_hub=0123456789abcdef0123456789abcdef",
+  "highlight": ".topbar",
+  "theme": "dark",
+  "viewportWidth": 360,
+  "viewportHeight": 800
 },
 {
-"label": "Desktop top bar unchanged: branch label and full search",
-"target": "default",
-"route": "/work",
-"highlight": ".topbar",
-"viewportWidth": 1440,
-"viewportHeight": 900
+  "label": "Mobile Hub top bar (light, 390px): project name, compact search, return logo",
+  "target": "default",
+  "route": "/work?repoos_hub=0123456789abcdef0123456789abcdef",
+  "highlight": ".topbar",
+  "theme": "light",
+  "viewportWidth": 390,
+  "viewportHeight": 844
+},
+{
+  "label": "Desktop top bar unchanged: branch label and full search",
+  "target": "default",
+  "route": "/work",
+  "highlight": ".topbar",
+  "theme": "light",
+  "viewportWidth": 1440,
+  "viewportHeight": 900
 }
 ]
 ```
@@ -96,3 +107,4 @@ Inspect the existing Hub server WebView architecture and navigation security bef
 - 2026-11-17T07:23:34Z · note: review pass 1: needs some work
 - 2026-11-17T07:23:36Z · message_delivered: 1 message(s)
 - 2026-11-17T07:23:36Z · status review→active
+- 2026-11-17T07:29:35Z · body
