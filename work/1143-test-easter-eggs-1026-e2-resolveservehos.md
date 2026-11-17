@@ -11,10 +11,10 @@ area: server
 assigned_to: ai
 created_by: t@t
 branch: feat/test-easter-eggs-1026-e2-resolveservehos
-cli_override: cursor
-model_override: composer-2.5
+cli_override: claude code
+model_override: haiku
 created_at: "2026-11-17T02:10:39Z"
-updated_at: "2026-11-17T10:44:09Z"
+updated_at: "2026-11-17T10:53:30Z"
 dev_error_count: 5
 engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-17T10:23:41.275Z\",\"kind\":\"dev-error\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-17T10:23:43.885Z\",\"kind\":\"dev-error\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-17T10:23:46.437Z\",\"kind\":\"dev-error\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-17T10:33:54.430Z\",\"kind\":\"dev-error\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-17T10:44:09.625Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -61,3 +61,4 @@ Machine-dependent test, not a product bug: `resolveServeHost` behaviour is inten
 - 2026-11-17T10:44:08Z · watchdog: restarting engineer after 10m with no live process
 - 2026-11-17T10:44:09Z · agent exited with an error (cursor) · Error: Authentication required. Please run 'agent login' first, or set CURSOR_API_KEY environment variable. Open Raw CLI error for details. (CLI: Error: Authentication required. Please run 'agent login' first, or set CURSOR_API_KEY environment variable.)
 - 2026-11-17T10:44:09Z · engineer crash recovery: surfaced instead of switching — a human-set task override (cursor + composer-2.5) is pinned, so RepoOS did not replace it (5/3 crashes in 30m)
+- 2026-11-17T10:53:30Z · cli_override, model_override
