@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-17T04:06:42Z"
-review_passes: 2
 id: "1146"
 title: "Design audit: make all RepoOS pages work better on phones"
 type: chore
@@ -13,6 +11,8 @@ branch: feat/design-audit-make-all-repoos-pages-work-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T02:53:04Z"
+updated_at: "2026-11-17T04:06:42Z"
+review_passes: 2
 last_check_failure: "repoos check at 2026-11-17T03:44:30.654Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 1
 ---
