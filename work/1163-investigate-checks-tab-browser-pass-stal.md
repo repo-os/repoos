@@ -11,7 +11,7 @@ branch: feat/investigate-checks-tab-browser-pass-stal
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T17:53:05Z"
-updated_at: "2026-11-17T21:12:46Z"
+updated_at: "2026-11-17T21:15:26Z"
 review_rounds: 2
 review_passes: 2
 handoff_signal_retry_count: 2
@@ -31,7 +31,7 @@ Reproduce direct tab clicks and page navigation without repeated screenshots. Ve
 Screenshot shows the Checks Now tab at 390px. The attempt captured the main page successfully, then slowed while iterating other tabs and screenshots. Treat this as a report of an incomplete pass until direct interaction reproduces an app fault.
 
 ## Investigation outcome
-Direct tab-click coverage passes, but review identified a separate app lifecycle defect: the Checks page kept polling /api/local-check-slots every 5 seconds after unmount. The interval is now cleared on teardown and a fake-timer regression test verifies no request fires after unmount. The capture-harness cause remains undetermined; a live 1440/390/320px both-theme pass could not be performed because browser access was unavailable in this session.
+The direct tab pass found no navigation hang. Review identified a separate app lifecycle defect: the Checks page kept polling /api/local-check-slots every 5 seconds after unmount. The interval is now cleared on teardown, and a fake-timer test verifies no request fires after unmount. The headless WebKit pass exercised the built Checks page through Now, Runs, Test suite and Check plan at 1440, 390 and 320px in both light and dark mode; all routes and selected tabs matched, and no horizontal overflow or page exception occurred. The original repeated-capture slowdown remains unattributed and is open as follow-up work; this investigation does not claim that the capture harness caused it.
 
 ## Screenshots
 
@@ -100,3 +100,4 @@ Direct tab-click coverage passes, but review identified a separate app lifecycle
 - 2026-11-17T21:12:45Z · note: ui verification passed: 1 shot captured with clean console
 - 2026-11-17T21:12:46Z · message_queued at 2026-11-17T21:12:46.728Z
 - 2026-11-17T21:12:46Z · handoff failed · task-file handoff failed at review · Engineering report draft is missing: .repoos/engineering-report-drafts/1163.md
+- 2026-11-17T21:15:26Z · body: Investigation outcome (added 1, removed 1)
