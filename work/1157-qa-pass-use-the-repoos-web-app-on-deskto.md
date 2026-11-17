@@ -63,6 +63,7 @@ Start with the Work page at 390px and the bottom dock/heads/pipeline bar overlap
 ![fix-inputs-320-light](/api/tasks/1157/attachments/att_768f429f-40cd-4e6d-baf3-df1e4fefce36.png)
 ![fix-agents-320-light](/api/tasks/1157/attachments/att_99095969-8c5b-4946-bb3b-7af40d0cb4dd.png)
 ![Work filter at 390px, light theme](/api/tasks/1157/attachments/att_2c2fc3d6-d7fd-4ac2-9caa-9f150e0e94dd.png)
+![Work filter at 390px, dark theme](/api/tasks/1157/attachments/att_8d4d3aa8-e68c-4291-ae8f-c3ec3d478706.png)
 
 ## Activity
 
@@ -179,3 +180,4 @@ Start with the Work page at 390px and the bottom dock/heads/pipeline bar overlap
 - 2026-11-17T21:15:43Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-17T21:18:09Z · body
 - 2026-11-17T21:20:32Z · screenshots
+- 2026-11-17T21:20:35Z · screenshots
