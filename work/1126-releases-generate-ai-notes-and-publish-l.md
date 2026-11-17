@@ -2,7 +2,7 @@
 id: "1126"
 title: "Releases: 'Generate AI notes and publish' - let the user choose auto-publish or notify-me when the AI draft is ready"
 type: feature
-status: active
+status: review
 priority: p2
 area: [web, server]
 assigned_to: ai
@@ -215,3 +215,4 @@ Reuse the existing AI-draft run in ReleasesView.vue and the server release run; 
 - 2026-11-17T03:17:59Z · body
 - 2026-11-17T03:34:30Z · body
 - 2026-11-17T03:37:32Z · note: ui verification passed: 2 of 2 shots captured with clean console (1 shot warning)
+- 2026-11-17T03:37:32Z · status active→review
