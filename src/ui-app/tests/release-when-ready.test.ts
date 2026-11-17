@@ -303,6 +303,30 @@ describe("Generate with AI: when the draft is ready (#1126)", () => {
     });
   });
 
+  it("a waiting NOTIFY record never claims an automatic publish is pending", async () => {
+    await mountView({
+      autoPublish: {
+        requestedAt: "2026-11-17T00:00:00Z",
+        state: "waiting",
+        mode: "notify",
+        version: "0.5.59",
+        tag: "v0.5.59",
+        notes: null,
+        knownIssues: null,
+        head: null,
+        draftKey: null,
+        error: null,
+        updatedAt: "2026-11-17T00:00:00Z",
+      },
+    });
+    await flushPromises();
+
+    const banner = document.body.querySelector("[data-test-id='release-auto-publish']");
+    expect(banner?.textContent).toContain("you'll be notified when they're ready");
+    expect(banner?.textContent).toContain("nothing is published until you press Publish");
+    expect(banner?.textContent).not.toMatch(/will publish|published only after|automatic publish/i);
+  });
+
   it("shows a server-owned failure with its reason and a Dismiss action", async () => {
     await mountView({
       autoPublish: {

@@ -217,7 +217,10 @@ const autoPublishTag = computed(() => autoPublish.value?.tag ?? "");
 const autoPublishHeadline = computed(() => {
   const record = autoPublish.value;
   if (!record) return "";
-  if (record.state === "waiting") return `Will publish ${record.tag} when the notes are ready`;
+  if (record.state === "waiting")
+    return record.mode === "notify"
+      ? `Drafting notes for ${record.tag} — you'll be notified when they're ready`
+      : `Will publish ${record.tag} when the notes are ready`;
   if (record.state === "ready") return `Notes ready — publishing ${record.tag}`;
   if (record.state === "publishing") return `Publishing ${record.tag} automatically…`;
   if (record.state === "failed")
@@ -1541,6 +1544,10 @@ onBeforeUnmount(() => {
             <div class="rel-auto-publish-text">
               <strong>{{ autoPublishHeadline }}</strong>
               <p v-if="autoPublishFailed && autoPublish?.error">{{ autoPublish.error }}</p>
+              <p v-else-if="autoPublish?.state === 'waiting' && autoPublish?.mode === 'notify'">
+                The AI draft is still running. You can close this page — you'll be notified when the
+                notes are ready, and nothing is published until you press Publish.
+              </p>
               <p v-else-if="autoPublish?.state === 'waiting'">
                 The AI draft is still running. You can close this page — the release is published
                 only after the draft lands and every Publish check passes.
@@ -1931,6 +1938,11 @@ Subject: {{ releaseEmailPreview.subject }}
                     }}</small>
                     <small v-else-if="autoPublish?.state === 'publishing'"
                       >It is safe to close this panel; progress stays on the Releases page.</small
+                    >
+                    <small v-else-if="autoPublish?.mode === 'notify'"
+                      >Your notes will appear here when the draft lands. Cancel stops the
+                      notification, not the draft; nothing is published until you press
+                      Publish.</small
                     >
                     <small v-else
                       >Your notes will appear here when the draft lands. Cancel stops the automatic
