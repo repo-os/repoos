@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-11-17T19:26:55Z"
-review_passes: 2
+last_close_out_gate_ms: 1236372
+last_close_out_gate_at: "2026-11-17T20:08:23.149Z"
 id: "1166"
 title: Fix Android 16 Hub status-bar contrast across themes
 type: bug
@@ -13,6 +13,8 @@ branch: feat/fix-android-16-hub-status-bar-contrast-a
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T17:55:45Z"
+updated_at: "2026-11-17T20:08:23Z"
+review_passes: 2
 review_rounds: 1
 last_check_failure: "repoos check at 2026-11-17T19:05:59.283Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 handoff_signal_retry_count: 2
@@ -84,4 +86,5 @@ This issue was observed on Android 16 (API 36), target SDK 36, with Android Syst
 - 2026-11-17T19:22:21Z · message_queued at 2026-11-17T19:22:21.122Z
 - 2026-11-17T19:22:21Z · note: shots: skipped — the diff (9 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-17T19:26:55Z · note: review pass 2: good to go
+- 2026-11-17T20:08:23Z · close-out gate completed in 1236s
 
