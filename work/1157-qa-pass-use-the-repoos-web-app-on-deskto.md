@@ -5,11 +5,13 @@ type: bug
 status: inbox
 priority: p1
 area: web
-assigned_to: ""
+assigned_to: ai
 created_by: t@t
 branch: ""
+cli_override: codex
+model_override: gpt-6-luna
 created_at: "2026-11-17T15:21:15Z"
-updated_at: "2026-11-17T15:21:15Z"
+updated_at: "2026-11-17T15:21:19Z"
 ---
 ## Problem
 
@@ -34,3 +36,4 @@ Start with the Work page at 390px and the bottom dock/heads/pipeline bar overlap
 ## Activity
 
 - 2026-11-17T15:21:15Z · created · t@t
+- 2026-11-17T15:21:19Z · cli_override, model_override
