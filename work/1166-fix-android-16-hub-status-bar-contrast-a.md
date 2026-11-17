@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 1236372
-last_close_out_gate_at: "2026-11-17T20:08:23.149Z"
 id: "1166"
 title: Fix Android 16 Hub status-bar contrast across themes
 type: bug
-status: review
+status: done
 priority: p2
 area: mobile
+merged_commit: 752e563e32f39aab1e5c75269568215d0d3f46b6
 assigned_to: ai
 created_by: t@t
 branch: feat/fix-android-16-hub-status-bar-contrast-a
@@ -14,6 +13,8 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T17:55:45Z"
 updated_at: "2026-11-17T20:08:23Z"
+last_close_out_gate_ms: 1236372
+last_close_out_gate_at: "2026-11-17T20:08:23.149Z"
 review_passes: 2
 review_rounds: 1
 last_check_failure: "repoos check at 2026-11-17T19:05:59.283Z: repoos check failed: reused check inputs changed during handoff — run the check again"

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Matches the Hub's initial classic-dark appearance until saved theme prefs load. -->
+    <color name="hub_window_background">#070a12</color>
+</resources>
