@@ -3,11 +3,10 @@
  * whether it runs as a managed service, a hand-run `repoos serve`, or an
  * externally supervised process (launchd KeepAlive, systemd, …).
  */
-import { boardRoot } from "../core/config.js";
+import { boardRoot, loadConfig } from "../core/config.js";
 import { restartRepoServer, type RestartPath } from "../core/server-restart.js";
 import { c } from "../cli/colors.js";
 import { locateRepoServer } from "../core/server-locate.js";
-import { loadConfig } from "../core/config.js";
 import { readLocalCliToken } from "../server/local-token.js";
 
 const PATH_LABEL: Record<RestartPath, string> = {
@@ -44,7 +43,8 @@ export async function cmdRestart(argv: string[]): Promise<void> {
       return;
     }
     if (whenIdle) console.log(c.dim("  Waiting for agents, reviews and checks to finish…"));
-    const host = server.host === "0.0.0.0" ? "127.0.0.1" : server.host;
+    // The local CLI token is deliberately accepted only over loopback.
+    const host = "127.0.0.1";
     for (;;) {
       try {
         const response = await fetch(`http://${host}:${server.port}/api/update-status`, {

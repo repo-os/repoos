@@ -34,9 +34,9 @@ const restartStatus = ref<{
   installedVersion: string | null;
   activeWork: { agents: number; checks: number };
   supervised: boolean;
-  manualCommand: string;
 } | null>(null);
 const restartPendingAction = ref(false);
+const restartAccepted = ref(false);
 const restartError = ref<string | null>(null);
 const restartOpen = ref(false);
 const releaseRun = ref<{ state: string; phase: string | null } | null>(null);
@@ -131,7 +131,6 @@ onMounted(async () => {
       installedVersion: "0.5.79",
       activeWork: { agents: 2, checks: 1 },
       supervised: false,
-      manualCommand: "repoos restart",
     };
     releaseRun.value = { state: "idle", phase: null };
     document.documentElement.dataset.theme = fixtureState.endsWith("Dark") ? "dark" : "light";
@@ -168,6 +167,10 @@ onMounted(async () => {
     restartStatusTimer = setInterval(async () => {
       try {
         restartStatus.value = await api("/api/update-status");
+        if (!restartStatus.value?.restartPending) {
+          restartAccepted.value = false;
+          restartPendingAction.value = false;
+        }
       } catch {
         /* reconnecting */
       }
@@ -195,15 +198,17 @@ async function restartInstalled(whenIdle = false, cancel = false): Promise<void>
   restartPendingAction.value = true;
   restartError.value = null;
   try {
-    await api("/api/update-status/restart", {
+    const result = await api<{ state?: string }>("/api/update-status/restart", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ whenIdle, cancel }),
     });
+    restartAccepted.value = result.state === "restarting";
+    restartPendingAction.value = restartAccepted.value;
   } catch (error) {
     restartError.value = error instanceof Error ? error.message : String(error);
   } finally {
-    restartPendingAction.value = false;
+    if (!restartAccepted.value || whenIdle || cancel) restartPendingAction.value = false;
     // The replacement server reconnects through the app's existing health loop.
     setTimeout(async () => {
       try {
@@ -277,18 +282,6 @@ async function copyCommand(): Promise<void> {
   if (copiedTimer) clearTimeout(copiedTimer);
   // A failed copy must say so — silently doing nothing looks like a dead button
   // (#1073 review).
-  copied.value = ok;
-  copyFailed.value = !ok;
-  copiedTimer = setTimeout(() => {
-    copied.value = false;
-    copyFailed.value = false;
-  }, 2000);
-}
-
-async function copyRestartCommand(): Promise<void> {
-  const command = restartStatus.value?.manualCommand ?? "";
-  const ok = command !== "" && (await copyToClipboard(command));
-  if (copiedTimer) clearTimeout(copiedTimer);
   copied.value = ok;
   copyFailed.value = !ok;
   copiedTimer = setTimeout(() => {

@@ -4478,6 +4478,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
 
   const localToken =
     config.auth?.enabled === true ? writeLocalCliToken(config.root, config.cacheDir) : null;
+  let boundServePort = requestedPort;
 
   const server = createServer(async (req, res) => {
     const method = req.method ?? "GET";
@@ -4678,7 +4679,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       // Create the route context with all necessary dependencies
       const routeContext: RouteContext = {
         config,
-        servePort: requestedPort,
+        servePort: boundServePort,
         index,
         indexReady,
         runner,
@@ -4908,6 +4909,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       }
 
       const actualPort = (server.address() as { port: number }).port;
+      boundServePort = actualPort;
       // "0.0.0.0" is a valid bind address but not a connectable one — anything
       // that needs to actually call back into this server (spawned agents via
       // runner.apiUrl, the URL handed to callers below) must use localhost
