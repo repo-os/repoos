@@ -11,7 +11,7 @@ branch: feat/update-restart-notice-don-t-suggest-a-la
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T13:30:27Z"
-updated_at: "2026-11-17T15:53:50Z"
+updated_at: "2026-11-17T15:53:52Z"
 review_rounds: 2
 review_passes: 2
 ---
@@ -74,3 +74,4 @@ Read #1075 (the restart notice) and #1091 (`repoos restart`). A server that kill
 - 2026-11-17T15:44:18Z · message_queued at 2026-11-17T15:44:18.267Z
 - 2026-11-17T15:53:50Z · note: review pass 2: needs some work
 - 2026-11-17T15:53:50Z · status review→active
+- 2026-11-17T15:53:52Z · CTO nudge: held — an undelivered message is already queued
