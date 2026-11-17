@@ -11,7 +11,7 @@ branch: feat/qa-pass-use-the-repoos-web-app-on-deskto
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T15:21:15Z"
-updated_at: "2026-11-17T20:58:20Z"
+updated_at: "2026-11-17T21:12:42Z"
 review_rounds: 2
 review_passes: 2
 last_check_failure: "repoos check at 2026-11-17T20:09:02.078Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Work queue at desktop with mobile queue behavior evidenced in attachments (target \"default\"): highlight h1 matched nothing on /work?view=board (http://127.0.0.1:33563/work?view=board)"
@@ -190,3 +190,4 @@ Start with the Work page at 390px and the bottom dock/heads/pipeline bar overlap
 - 2026-11-17T20:54:42Z · note: handoff requested (cli)
 - 2026-11-17T20:55:43Z · CTO nudge: held — handoff gate is running
 - 2026-11-17T20:58:20Z · message_delivered: 1 message(s)
+- 2026-11-17T21:12:42Z · message_queued at 2026-11-17T21:12:42.242Z
