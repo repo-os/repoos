@@ -3,12 +3,6 @@ id: "1157"
 title: "QA pass: use the RepoOS web app on desktop and phone widths, find broken things and fix them"
 type: bug
 status: active
-needs_input: true
-needs_input_reason: watchdog-stuck
-needs_input_detail: "3 automatic resume(s) in this active episode did not produce a handoff — the engineer keeps ending its turn without one. Review the transcript and resume it manually; if the conversation is poisoned, reset it with `repoos start 1157 --fresh`."
-debug_tldr: "Engineer keeps exiting without a handoff after 3 auto-resumes — open the transcript and resume manually, or run `repoos start 1157 --fresh` if it looks poisoned."
-debug_tldr_at: "2026-11-17T17:37:58Z"
-debug_tldr_key: "watchdog-stuck|3 automatic resume(s) in this active episode did not produce a handoff — the engineer keeps ending its turn without one. Review the transcript and resume it manually; if the conversation is poisoned, reset it with `repoos start 1157 --fresh`."
 priority: p1
 area: web
 assigned_to: ai
@@ -17,7 +11,7 @@ branch: feat/qa-pass-use-the-repoos-web-app-on-deskto
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T15:21:15Z"
-updated_at: "2026-11-17T17:37:58Z"
+updated_at: "2026-11-17T17:47:43Z"
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-11-17T16:50:57.959Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-17T17:19:58.428Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-17T17:28:43.649Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
@@ -82,3 +76,4 @@ Start with the Work page at 390px and the bottom dock/heads/pipeline bar overlap
 - 2026-11-17T17:30:51Z · body
 - 2026-11-17T17:32:41Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The QA pass found no confirmed responsive defect. I reviewed the screenshot contact sheets for all 24 page states at 1440, 390, and 320px in light and dark themes. The matrix records no horizontal overflow; the bottom-scroll sweep reached … · stderr: Reading additional input from stdin...
 - 2026-11-17T17:37:43Z · watchdog: escalated to needs_input · 3 automatic resume(s) in this active episode produced no handoff
+- 2026-11-17T17:47:43Z · watchdog: restarting engineer after 10m with no live process
