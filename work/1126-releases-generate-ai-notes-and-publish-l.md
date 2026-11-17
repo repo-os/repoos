@@ -1,6 +1,4 @@
 ---
-check_retry_count: 1
-last_check_failure: "repoos check at 2026-11-17T06:45:16.889Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 id: "1126"
 title: "Releases: 'Generate AI notes and publish' - let the user choose auto-publish or notify-me when the AI draft is ready"
 type: feature
@@ -13,7 +11,9 @@ branch: feat/releases-generate-ai-notes-and-publish-l
 cli_override: opencode
 model_override: opencode-go/glm-5.3-flash
 created_at: "2026-11-15T08:14:22Z"
-updated_at: "2026-11-17T06:45:13Z"
+updated_at: "2026-11-17T06:46:50Z"
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-17T06:45:16.889Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 review_rounds: 2
 review_passes: 2
 dev_error_count: 8
@@ -245,4 +245,4 @@ Reuse the existing AI-draft run in ReleasesView.vue and the server release run; 
 - 2026-11-17T06:14:57Z · CTO nudge: held — handoff gate is running
 - 2026-11-17T06:15:13Z · status active→review
 - 2026-11-17T06:45:13Z · message_queued at 2026-11-17T06:45:13.882Z
-
+- 2026-11-17T06:46:50Z · note: shots: failed — browser capture cancelled
