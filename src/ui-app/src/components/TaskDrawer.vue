@@ -5489,7 +5489,7 @@ watch(
 
       <!-- TASK DETAIL -->
       <template v-else-if="ui.active">
-        <div class="drawer-head">
+        <div class="drawer-head task-detail-head">
           <button
             type="button"
             class="drawer-mobile-back"
@@ -5499,7 +5499,7 @@ watch(
             <ArrowLeft aria-hidden="true" />
             <span>Queue</span>
           </button>
-          <div class="drawer-head-main" style="flex: 1">
+          <div class="drawer-head-main">
             <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 7px">
               <CopyableNumber
                 :label="`#${ui.active.id}`"

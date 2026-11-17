@@ -47,15 +47,7 @@ const dashLabel = (status: string) => {
 
 <template>
   <div class="page-scroll">
-    <div
-      class="page-header"
-      style="
-        display: flex;
-        align-items: flex-end;
-        justify-content: space-between;
-        margin-bottom: 20px;
-      "
-    >
+    <div class="page-header">
       <div>
         <div class="page-title">Mission Control</div>
         <div class="page-desc">{{ repoName }} · live from {{ repo.origin }}</div>

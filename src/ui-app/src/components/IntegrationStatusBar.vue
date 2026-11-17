@@ -452,6 +452,13 @@ const planEmpty = computed(() => {
   return Boolean(plan) && isGenuinelyEmptyPlan(plan!);
 });
 
+/**
+ * #1145: a phone has no room for an ambient strip that only says "idle". The
+ * bar hides there when there is nothing to act on — but an empty check plan is
+ * attention-required, so it stays visible in that state.
+ */
+const idleAndQuiet = computed(() => idle.value && !planEmpty.value);
+
 const filingSetupTask = ref(false);
 
 async function fileSetupTask(): Promise<void> {
@@ -469,7 +476,7 @@ async function fileSetupTask(): Promise<void> {
 </script>
 
 <template>
-  <div class="ibar-wrap" :class="{ collapsed }">
+  <div class="ibar-wrap" :class="{ collapsed, 'is-idle': idleAndQuiet }">
     <!-- Collapsed thin strip: one row with a summary pill + expand toggle -->
     <div
       v-if="collapsed"
@@ -484,10 +491,18 @@ async function fileSetupTask(): Promise<void> {
     >
       <span
         class="strip-dot"
-        :class="{ idle, run: !idle && !active?.failed, err: active?.failed }"
+        :class="{
+          idle: idleAndQuiet,
+          warn: idle && planEmpty,
+          run: !idle && !active?.failed,
+          err: active?.failed,
+        }"
       ></span>
       <span class="strip-label">
-        <template v-if="idle">Integration pipeline idle</template>
+        <template v-if="idle">
+          <template v-if="planEmpty">No checks configured — open for details</template>
+          <template v-else>Integration pipeline idle</template>
+        </template>
         <template v-else-if="active">
           <span class="mono">#{{ active.taskId }}</span>
           <template v-if="active.failed"> integration failed</template>
@@ -1150,6 +1165,11 @@ async function fileSetupTask(): Promise<void> {
   box-shadow: 0 0 8px var(--red);
 }
 
+/* Attention-required while otherwise idle: no check plan (#1145). */
+.strip-dot.warn {
+  background: var(--amber);
+}
+
 .strip-label {
   flex: 1;
   min-width: 0;
@@ -1181,6 +1201,13 @@ async function fileSetupTask(): Promise<void> {
    no longer touches the viewport edge, so give it a card look rather than
    the dock's top-border/upward-shadow treatment. */
 @media (max-width: 719.98px) {
+  /* #1145: an idle pipeline is ambient desktop chrome, not phone content. A
+     quiet bar floats over the queue and hides the last card. Active, failed,
+     stalled and attention-required (no check plan) states stay visible. */
+  .ibar-wrap.is-idle {
+    display: none;
+  }
+
   .ibar-wrap {
     /* Float over the content; mobile pages use the full available width. */
     right: 12px;
