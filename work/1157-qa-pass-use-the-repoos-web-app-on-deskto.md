@@ -82,3 +82,4 @@ Start with the Work page at 390px and the bottom dock/heads/pipeline bar overlap
 - 2026-11-17T17:47:59Z · handoff failed · task-file handoff failed at commit · no implementation found since the branch diverged; use no_source_change: true to force a no-op handoff
 - 2026-11-17T17:48:18Z · note: handoff requested (cli)
 - 2026-11-17T17:48:22Z · message_queued at 2026-11-17T17:48:22.413Z
+- 2026-11-17T17:48:22Z · handoff failed · task-file handoff failed at commit · no implementation found since the branch diverged; use no_source_change: true to force a no-op handoff
