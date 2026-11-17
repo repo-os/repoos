@@ -177,6 +177,80 @@ interface UnpushedReleaseNotes {
 }
 const notesRun = ref<ReleaseNotesRun | null>(null);
 /**
+ * The server-owned "when the draft is ready" promise (#1126). The panel never
+ * publishes from the browser: it asks the server to remember the choice, and
+ * this view polls the record so a reload or a closed drawer shows the same
+ * "will publish…" state and can still cancel it.
+ */
+interface ReleaseAutoPublish {
+  requestedAt: string;
+  state: "waiting" | "ready" | "publishing" | "succeeded" | "failed" | "cancelled" | "notified";
+  mode: "publish" | "notify";
+  version: string;
+  tag: string;
+  notes: string | null;
+  knownIssues: string | null;
+  head: string | null;
+  draftKey: string | null;
+  error: string | null;
+  updatedAt: string;
+}
+const autoPublish = ref<ReleaseAutoPublish | null>(null);
+/** The remembered Settings answer the modal preselects. */
+const defaultWhenReady = ref<"publish" | "notify">("notify");
+const autoPublishError = ref("");
+const autoPublishBusy = ref(false);
+const autoPublishActive = computed(
+  () =>
+    autoPublish.value?.state === "waiting" ||
+    autoPublish.value?.state === "ready" ||
+    autoPublish.value?.state === "publishing",
+);
+const autoPublishFailed = computed(() => autoPublish.value?.state === "failed");
+/**
+ * A pending publish is tied to this exact tag; the panel says so instead of
+ * letting the generic notes/run wording imply "someday".
+ */
+const autoPublishTag = computed(() => autoPublish.value?.tag ?? "");
+const autoPublishHeadline = computed(() => {
+  const record = autoPublish.value;
+  if (!record) return "";
+  if (record.state === "waiting") return `Will publish ${record.tag} when the notes are ready`;
+  if (record.state === "ready") return `Notes ready — publishing ${record.tag}`;
+  if (record.state === "publishing") return `Publishing ${record.tag} automatically…`;
+  if (record.state === "failed") return `${record.tag} was not published automatically`;
+  return "";
+});
+
+/**
+ * The "what happens when the notes are ready" chooser (#1126). This is the
+ * small shared dialog the Generate button opens — never a native confirm — and
+ * the version/tag it shows is the exact one an automatic publish would use.
+ */
+const whenReadyOpen = ref(false);
+const whenReadyChoice = ref<"publish" | "notify">("notify");
+const confirmGeneratePublish = ref(false);
+/** The choice being started once any replace-notes confirmation is settled. */
+const pendingGenerate = ref<{
+  whenReady: "publish" | "notify";
+  version: string;
+  tag: string;
+} | null>(null);
+const generateTag = computed(() => {
+  const version = newVersion.value || suggestedVersion.value;
+  return version ? `${tagPrefix.value}${version}` : "";
+});
+/** Generate notes and publish may fill Suggested next itself, like Cut Next. */
+const canGeneratePublish = computed(
+  () =>
+    canOpen.value &&
+    !running.value &&
+    !generatingNotes.value &&
+    !autoPublishActive.value &&
+    (newVersionValid.value || (!newVersion.value && !!suggestedVersion.value)),
+);
+
+/**
  * The newest AI draft that was generated but never pushed with a release
  * (#0641). Shown as a card below the notes field so an operator can decide
  * whether to reuse it for a retry after a failed cut.
@@ -269,6 +343,10 @@ function tickStopIfNeeded(): void {
   // The Debugger's tl;dr lands after the failure does — keep polling for it.
   if (run.value?.state === "failed" && run.value.tldrPending) return;
   if (generatingNotes.value) return; // a POST may be in flight — don't drop polling
+  // A waiting/ready/publishing promise is server-owned (#1126): poll it even
+  // while no draft or cut is running, so the page reflects a reload/cancel and
+  // an auto-publish that starts after the draft lands.
+  if (autoPublishActive.value) return;
   stopPolling();
 }
 
@@ -278,6 +356,7 @@ function startPolling(): void {
     now.value = Date.now();
     void pollRun();
     void pollNotesRun();
+    void pollAutoPublish();
   }, 1000);
 }
 
@@ -691,6 +770,7 @@ function openConfirm(): void {
   void syncNotesRunAtOpen();
   void fillSavedNotes();
   void loadUnpushedNotes();
+  void pollAutoPublish();
   void pollRun();
 }
 
@@ -745,10 +825,11 @@ function confirmNotesReplace(): void {
   const action = pendingNotesReplace.value;
   pendingNotesReplace.value = null;
   if (action === "use-saved") {
+    pendingGenerate.value = null;
     const saved = unpushedNotes.value;
     if (saved) applyUnpushedNotes(saved);
   } else if (action === "generate") {
-    void runGenerateNotes();
+    void runGenerateNotes(pendingGenerate.value);
   }
 }
 
@@ -895,29 +976,155 @@ function cutNext(): void {
   newVersion.value = suggestedVersion.value;
 }
 
+// ---------------------------------------------------------------------------
+// "When the AI draft is ready" (#1126)
+// ---------------------------------------------------------------------------
+
+interface AutoPublishResponse {
+  autoPublish: ReleaseAutoPublish | null;
+  defaultWhenReady?: "publish" | "notify";
+}
+
+/** Apply a server snapshot; `defaults` updates the modal's remembered answer. */
+function applyAutoPublish(next: ReleaseAutoPublish | null, defaults?: "publish" | "notify"): void {
+  autoPublish.value = next;
+  if (defaults && !whenReadyOpen.value) defaultWhenReady.value = defaults;
+  autoPublishError.value = "";
+  if (next?.state === "failed" && next.error) autoPublishError.value = next.error;
+  // A notify promise is tied to the version the human chose. Landing from its
+  // notification link should leave the panel ready to publish, not asking
+  // them to retype the version (the notes fill from the draft cache).
+  if (
+    next?.mode === "notify" &&
+    next.version &&
+    !newVersion.value &&
+    confirmOpen.value &&
+    !running.value
+  ) {
+    newVersion.value = next.version;
+  }
+  tickStopIfNeeded();
+}
+
+/** Poll the durable promise alongside the two tracked runs. */
+async function pollAutoPublish(): Promise<void> {
+  try {
+    const data = await api<AutoPublishResponse>("/api/release/notes/auto-publish");
+    applyAutoPublish(data.autoPublish ?? null, data.defaultWhenReady);
+  } catch {
+    // Keep the last visible state through a server hiccup.
+  }
+}
+
 /**
- * Start an AI draft of the notes from the commits since the last release.
- * Never cuts a release. The server runs the draft detached (#0605): the POST
- * returns the run state immediately, and the poll machinery above fills the
- * field the moment the run succeeds — a failure surfaces in `notesError`
- * with whatever the operator typed untouched. When the server already holds
- * a draft for this exact commit context it answers synchronously with the
- * stored text and `cached` marks it, so a retry after a failed cut doesn't
- * wait on the agent again. Generation replaces the field, so confirm first
- * when that would discard something the operator typed.
+ * Cancel before the cut starts, or dismiss a terminal failure. The server owns
+ * the switch, so a slow page or a second tab cannot leave a stale "will
+ * publish" behind.
  */
-async function generateNotes(): Promise<void> {
-  if (generatingNotes.value || running.value) return;
+async function cancelAutoPublish(): Promise<void> {
+  if (autoPublishBusy.value) return;
+  autoPublishBusy.value = true;
+  try {
+    const data = await api<AutoPublishResponse>("/api/release/notes/auto-publish", {
+      method: "DELETE",
+    });
+    applyAutoPublish(data.autoPublish ?? null);
+    if (data.autoPublish?.state === "cancelled") {
+      notesHint.value =
+        "Automatic publish cancelled. The AI draft is still here to review or edit.";
+    }
+  } catch (err) {
+    autoPublishError.value = err instanceof Error ? err.message : String(err);
+  } finally {
+    autoPublishBusy.value = false;
+  }
+}
+
+/** Remember the answer in repoos.toml through the Settings config route. */
+function saveWhenReadyDefault(choice: "publish" | "notify"): void {
+  defaultWhenReady.value = choice;
+  void api("/api/config", JSON_OPTS("PATCH", { "release.notesWhenReady": choice })).catch(() => {
+    // The choice still applies to this run; only the remembered default fails.
+  });
+}
+
+/** Open the chooser from Generate with AI, preselecting the saved answer. */
+function openWhenReady(): void {
+  if (generatingNotes.value || running.value || autoPublishActive.value) return;
+  whenReadyChoice.value = defaultWhenReady.value;
+  whenReadyOpen.value = true;
+}
+
+/**
+ * Start the draft after the chooser. Publishing needs a concrete version now:
+ * the promise is for that exact tag, so fill Suggested next when the field is
+ * empty and refuse an invalid value rather than silently choosing one.
+ */
+function confirmWhenReady(): void {
+  const choice = whenReadyChoice.value;
+  const version = newVersion.value || suggestedVersion.value || "";
+  if (choice === "publish" && !SEMVER.test(version)) {
+    notesError.value = "Enter a valid version (or use Cut Next) before publishing automatically.";
+    whenReadyOpen.value = false;
+    return;
+  }
+  whenReadyOpen.value = false;
+  saveWhenReadyDefault(choice);
+  startDraftWithChoice(choice, version);
+}
+
+/** The Generate notes and publish shortcut: confirm the exact tag, then option 1. */
+function openGeneratePublish(): void {
+  if (generatingNotes.value || running.value || autoPublishActive.value) return;
+  if (!newVersion.value) newVersion.value = suggestedVersion.value ?? "";
+  if (!newVersionValid.value) {
+    notesError.value = "Enter a valid version (or use Cut Next) before generating and publishing.";
+    return;
+  }
+  confirmGeneratePublish.value = true;
+}
+
+function confirmGenerateAndPublish(): void {
+  confirmGeneratePublish.value = false;
+  const version = newVersion.value || suggestedVersion.value || "";
+  if (!SEMVER.test(version)) {
+    notesError.value = "Enter a valid version (or use Cut Next) before generating and publishing.";
+    return;
+  }
+  saveWhenReadyDefault("publish");
+  startDraftWithChoice("publish", version);
+}
+
+/** Hold the choice through a possible replace-notes confirmation, then run it. */
+function startDraftWithChoice(choice: "publish" | "notify", version: string): void {
+  const tag = version ? `${tagPrefix.value}${version}` : "";
+  pendingGenerate.value = { whenReady: choice, version, tag };
   if (notes.value.trim()) {
     pendingNotesReplace.value = "generate";
     return;
   }
-  await runGenerateNotes();
+  void runGenerateNotes(pendingGenerate.value);
 }
 
-/** The actual draft request, once any replace confirmation has been settled. */
-async function runGenerateNotes(): Promise<void> {
+/**
+ * Start an AI draft of the notes from the commits since the last release.
+ * Never cuts a release by itself: the server runs the draft detached (#0605),
+ * and `choice` tells it what to do when the draft lands (#1126). When the
+ * server already holds a draft for this exact commit context it answers
+ * synchronously with the stored text; an auto-publish then goes straight to the
+ * guarded cut without spending another agent run.
+ */
+async function runGenerateNotes(
+  choice?: { whenReady: "publish" | "notify"; version: string; tag: string } | null,
+): Promise<void> {
   if (generatingNotes.value || running.value) return;
+  const whenReady = choice ?? pendingGenerate.value;
+  pendingGenerate.value = null;
+  const version = whenReady?.version ?? (newVersion.value || suggestedVersion.value || "");
+  if (whenReady) {
+    // The promise is tied to the exact version/tag; make the panel show it.
+    if (version) newVersion.value = version;
+  }
   generatingNotes.value = true;
   notesError.value = "";
   notesHint.value = "";
@@ -930,10 +1137,21 @@ async function runGenerateNotes(): Promise<void> {
       commitCount?: number;
       cached?: boolean;
       cachedAt?: string | null;
+      autoPublish?: ReleaseAutoPublish | null;
     }>(
       "/api/release/notes",
-      JSON_OPTS("POST", { version: newVersion.value || suggestedVersion.value || undefined }),
+      JSON_OPTS("POST", {
+        version: version || undefined,
+        ...(whenReady
+          ? {
+              whenReady: whenReady.whenReady,
+              confirmTag: whenReady.tag,
+              knownIssues: knownIssues.value.trim() || undefined,
+            }
+          : {}),
+      }),
     );
+    if (result.autoPublish !== undefined) applyAutoPublish(result.autoPublish);
     if (result.run) {
       // 202: the run is tracked server-side now — fill the field when it
       // lands (the poll was started above and `applyNotesRun` re-arms it).
@@ -955,6 +1173,7 @@ async function runGenerateNotes(): Promise<void> {
   } catch (err) {
     notesError.value = err instanceof Error ? err.message : String(err);
   } finally {
+    pendingGenerate.value = null;
     if (notesRun.value?.state !== "running") {
       generatingNotes.value = false;
       tickStopIfNeeded();
@@ -963,7 +1182,14 @@ async function runGenerateNotes(): Promise<void> {
 }
 
 async function release(): Promise<void> {
-  if (!canOpen.value || !newVersionValid.value || running.value || generatingNotes.value) return;
+  if (
+    !canOpen.value ||
+    !newVersionValid.value ||
+    running.value ||
+    generatingNotes.value ||
+    autoPublishActive.value
+  )
+    return;
   running.value = true;
   // A prior failure stays promoted while the retry runs — it is replaced by
   // a new failure or cleared by success in pollRun (#0622). Under #0621 the
@@ -1190,14 +1416,16 @@ function elapsed(): string {
 onMounted(() => {
   // Deep link for shots/docs (`/releases?drawer=cut`): opens the panel without
   // a click. It is view-only on a dirty tree or off the release branch — the
-  // publish button and release() are still gated on `canOpen`.
-  if (new URLSearchParams(window.location.search).get("drawer") === "cut") confirmOpen.value = true;
+  // publish button and release() are still gated on `canOpen`. Route through
+  // openConfirm so a notification link also picks up a saved draft (#1126).
+  if (new URLSearchParams(window.location.search).get("drawer") === "cut") openConfirm();
   applyReleaseRunFixture();
   void load();
   void loadDistribution();
   void loadReleaseEmail();
   void pollRun();
   void pollNotesRun();
+  void pollAutoPublish();
   startPolling();
 });
 onBeforeUnmount(() => {
@@ -1241,6 +1469,44 @@ onBeforeUnmount(() => {
         </div>
 
         <template v-else>
+          <!-- The server-owned promise from Generate with AI (#1126): visible
+             even when the cut panel is closed, and cancellable until the cut
+             actually starts. -->
+          <section
+            v-if="autoPublish && (autoPublishActive || autoPublishFailed)"
+            class="rel-auto-publish"
+            :class="{ 'rel-auto-publish--failed': autoPublishFailed }"
+            :role="autoPublishFailed ? 'alert' : 'status'"
+            data-test-id="release-auto-publish"
+          >
+            <div class="rel-auto-publish-text">
+              <strong>{{ autoPublishHeadline }}</strong>
+              <p v-if="autoPublishFailed && autoPublish?.error">{{ autoPublish.error }}</p>
+              <p v-else-if="autoPublish?.state === 'waiting'">
+                The AI draft is still running. You can close this page — the release is published
+                only after the draft lands and every Publish check passes.
+              </p>
+              <p v-else-if="autoPublish?.state === 'ready'">
+                The draft is in, and the release is starting through the same checks as Publish.
+              </p>
+              <p v-else-if="autoPublish?.state === 'publishing'">
+                It is safe to leave; progress shows here when you return.
+              </p>
+            </div>
+            <Button
+              v-if="!autoPublish?.state || autoPublish.state !== 'publishing'"
+              variant="outline"
+              size="sm"
+              type="button"
+              :disabled="autoPublishBusy"
+              @click="cancelAutoPublish"
+            >
+              {{ autoPublishFailed ? "Dismiss" : "Cancel" }}
+            </Button>
+          </section>
+          <p v-if="autoPublishError && !autoPublishFailed" class="rel-error" role="alert">
+            {{ autoPublishError }}
+          </p>
           <section class="rel-card">
             <div class="rel-card-head">
               <div>
@@ -1589,6 +1855,41 @@ Subject: {{ releaseEmailPreview.subject }}
                   >.
                 </p>
 
+                <!-- The promise is page-level, but the panel can cover the
+                   banner that shows it (#1126). Repeat it here so Publish
+                   being disabled is explained and Cancel is still reachable. -->
+                <div
+                  v-if="autoPublishActive || autoPublishFailed"
+                  class="rel-panel-autopublish"
+                  :class="{ failed: autoPublishFailed }"
+                  :role="autoPublishFailed ? 'alert' : 'status'"
+                  data-test-id="release-panel-auto-publish"
+                >
+                  <div>
+                    <strong>{{ autoPublishHeadline }}</strong>
+                    <small v-if="autoPublishFailed && autoPublish?.error">{{
+                      autoPublish.error
+                    }}</small>
+                    <small v-else-if="autoPublish?.state === 'publishing'"
+                      >It is safe to close this panel; progress stays on the Releases page.</small
+                    >
+                    <small v-else
+                      >Your notes will appear here when the draft lands. Cancel stops the automatic
+                      publish, not the draft.</small
+                    >
+                  </div>
+                  <Button
+                    v-if="autoPublish?.state !== 'publishing'"
+                    variant="outline"
+                    size="sm"
+                    type="button"
+                    :disabled="autoPublishBusy"
+                    @click="cancelAutoPublish"
+                  >
+                    {{ autoPublishFailed ? "Dismiss" : "Cancel" }}
+                  </Button>
+                </div>
+
                 <dl class="rel-panel-facts">
                   <div>
                     <dt>Currently published</dt>
@@ -1718,16 +2019,29 @@ Subject: {{ releaseEmailPreview.subject }}
                     <label class="rel-field-label" for="rel-notes">
                       Release notes <span class="rel-optional">optional</span>
                     </label>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      type="button"
-                      :disabled="generatingNotes"
-                      @click="generateNotes"
-                    >
-                      <Sparkles class="btn-ico" aria-hidden="true" />
-                      {{ generatingNotes ? "Drafting…" : "Generate with AI" }}
-                    </Button>
+                    <div class="rel-notes-head-actions">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        type="button"
+                        :disabled="generatingNotes || running || autoPublishActive"
+                        data-test-id="release-generate-notes"
+                        @click="openWhenReady"
+                      >
+                        <Sparkles class="btn-ico" aria-hidden="true" />
+                        {{ generatingNotes ? "Drafting…" : "Generate with AI" }}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        type="button"
+                        :disabled="!canGeneratePublish"
+                        data-test-id="release-generate-and-publish"
+                        @click="openGeneratePublish"
+                      >
+                        Generate notes and publish
+                      </Button>
+                    </div>
                   </div>
                   <textarea
                     id="rel-notes"
@@ -1822,7 +2136,9 @@ Subject: {{ releaseEmailPreview.subject }}
               <div class="release-drawer-actions">
                 <Button
                   variant="accent"
-                  :disabled="!canOpen || !newVersionValid || running || generatingNotes"
+                  :disabled="
+                    !canOpen || !newVersionValid || running || generatingNotes || autoPublishActive
+                  "
                   @click="release"
                 >
                   {{ running ? "Publishing…" : newTag ? `Publish ${newTag}` : "Publish" }}
@@ -1843,12 +2159,86 @@ Subject: {{ releaseEmailPreview.subject }}
       confirm-label="Replace notes"
       @update:open="
         (v) => {
-          if (!v) pendingNotesReplace = null;
+          if (!v) {
+            pendingNotesReplace = null;
+            pendingGenerate = null;
+          }
         }
       "
       @confirm="confirmNotesReplace"
     >
       {{ notesReplaceDesc }}
+    </ConfirmDialog>
+
+    <!-- The "what happens when the draft is ready" chooser (#1126). Shared
+       dialog primitives, keyboard- and touch-usable; closing it chooses
+       nothing and starts nothing. -->
+    <Dialog :open="whenReadyOpen" @update:open="whenReadyOpen = $event">
+      <DialogOverlay />
+      <DialogContent class="cc-modal rel-whenready">
+        <div class="cc-modal-head">
+          <DialogTitle>When the AI notes are ready</DialogTitle>
+          <DialogClose class="close-x" aria-label="Close">×</DialogClose>
+        </div>
+        <DialogDescription class="cc-modal-desc">
+          RepoOS drafts the release notes from the commits since the last release. Choose what
+          should happen when the draft for
+          <strong>{{ generateTag || "this release" }}</strong> is ready.
+        </DialogDescription>
+        <fieldset class="rel-whenready-options">
+          <legend class="rel-sr-only">What to do when the AI draft is ready</legend>
+          <label
+            class="rel-whenready-option"
+            :class="{ selected: whenReadyChoice === 'publish' }"
+            data-test-id="release-when-ready-publish"
+          >
+            <input v-model="whenReadyChoice" type="radio" value="publish" />
+            <span>
+              <strong>Publish automatically</strong>
+              <small>
+                As soon as the notes land, publish {{ generateTag || "the release" }} with them. It
+                still runs every Publish check; a blocker cancels it and tells you why.
+              </small>
+            </span>
+          </label>
+          <label
+            class="rel-whenready-option"
+            :class="{ selected: whenReadyChoice === 'notify' }"
+            data-test-id="release-when-ready-notify"
+          >
+            <input v-model="whenReadyChoice" type="radio" value="notify" />
+            <span>
+              <strong>Notify me</strong>
+              <small>
+                Send a notification when the draft is ready, with the notes filled in, so you can
+                review and press Publish yourself.
+              </small>
+            </span>
+          </label>
+        </fieldset>
+        <p v-if="whenReadyChoice === 'publish'" class="rel-whenready-note">
+          Nothing is published if the draft fails or comes back empty, the working tree is dirty,
+          the tag already exists, new commits land, or the checks fail. A failed automatic publish
+          never retries itself.
+        </p>
+        <div class="cc-modal-actions">
+          <DialogClose as-child><Button variant="outline">Cancel</Button></DialogClose>
+          <Button variant="accent" @click="confirmWhenReady">Generate notes</Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+
+    <ConfirmDialog
+      :open="confirmGeneratePublish"
+      :title="`Generate notes and publish ${generateTag}?`"
+      confirm-label="Generate notes and publish"
+      @update:open="confirmGeneratePublish = $event"
+      @confirm="confirmGenerateAndPublish"
+    >
+      RepoOS drafts the release notes, then publishes
+      <strong>{{ generateTag }}</strong> automatically through the same checks as the Publish
+      button. If the draft fails or anything blocks the release, nothing is published and you'll be
+      told why.
     </ConfirmDialog>
   </div>
 </template>

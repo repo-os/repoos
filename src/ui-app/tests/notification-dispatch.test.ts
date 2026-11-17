@@ -7,6 +7,7 @@ import { tmpdir } from "node:os";
 import {
   dispatchNotification,
   notificationContextFromConfig,
+  notifyReleaseNotesReady,
   NtfyNotificationProvider,
   type NotificationPayload,
   type NotificationProvider,
@@ -129,6 +130,29 @@ describe("ntfy agent failure parity", () => {
     sent.length = 0;
     // @ts-expect-error cleanup
     delete globalThis.fetch;
+  });
+
+  it("delivers a release notes-ready notification to ntfy without task metadata (#1126)", () => {
+    // @ts-expect-error test stub
+    globalThis.fetch = (
+      _url: string,
+      init: { body?: string; headers?: Record<string, string> },
+    ) => {
+      sent.push({ body: init?.body ?? "", headers: init?.headers ?? {} });
+      return Promise.resolve({ ok: true, status: 200 });
+    };
+    const root = mkdtempSync(join(tmpdir(), "repoos-notif-release-notes-"));
+    const ctx = notificationContextFromConfig(
+      config(root, { ntfyEnabled: true, ntfyTopic: "repoos_test" }),
+      null,
+      "https://repoos.example",
+    );
+    notifyReleaseNotesReady(ctx, { tag: "v1.2.3" });
+    expect(sent).toHaveLength(1);
+    expect(sent[0]!.body).toBe(
+      "📝 Release notes ready · v1.2.3\nReview the draft and publish v1.2.3.",
+    );
+    expect(sent[0]!.body).not.toContain("#");
   });
 
   it("delivers Needs you for task.agent_failed", () => {

@@ -1066,6 +1066,14 @@ export interface ReleaseConfig {
   repository?: string;
   /** Optional workflow path, shown as release context (not executed by RepoOS). */
   workflow?: string;
+  /**
+   * Remembered answer to "what should happen when the AI draft is ready?"
+   * (#1126): publish the release automatically, or notify the human to review
+   * and press Publish. The release panel preselects this and writes it back on
+   * the next choice; a repo with no value behaves as `notify` (nothing is ever
+   * published unless the human opted in for that exact version).
+   */
+  notesWhenReady?: "publish" | "notify";
   /** Mail the team when a release goes out (#1071). Off unless enabled. */
   email?: ReleaseEmailConfig;
 }

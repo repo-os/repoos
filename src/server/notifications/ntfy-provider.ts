@@ -28,6 +28,9 @@ const NTFY_KINDS = new Set<NotificationKind>([
   "task.needs_input",
   "task.agent_failed",
   "task.done",
+  "release.notes_ready",
+  "release.notes_failed",
+  "release.auto_publish_failed",
 ]);
 
 export function ntfyBaseUrl(config: RepoOSConfig): string {

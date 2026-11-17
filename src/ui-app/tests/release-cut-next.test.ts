@@ -112,6 +112,26 @@ function button(root: ParentNode, label: string): HTMLButtonElement | undefined 
   );
 }
 
+/**
+ * Generate with AI now opens the #1126 "when the notes are ready" chooser. The
+ * default answer is Notify me, which every pre-existing draft test wants.
+ */
+async function generateWithAI(
+  panel: ParentNode,
+  choice: "publish" | "notify" = "notify",
+): Promise<void> {
+  button(panel, "Generate with AI")!.click();
+  await flushPromises();
+  const dialog = document.body.querySelector<HTMLElement>(".rel-whenready");
+  expect(dialog).toBeTruthy();
+  if (choice === "publish") {
+    dialog!.querySelector<HTMLInputElement>("input[value='publish']")!.click();
+    await flushPromises();
+  }
+  button(dialog!, "Generate notes")!.click();
+  await flushPromises();
+}
+
 async function mountView(): Promise<void> {
   mockApi();
   wrapper = mount(ReleasesView, { attachTo: document.body, global: { plugins: [createPinia()] } });
@@ -396,8 +416,7 @@ describe("AI release notes cache reuse (#0590)", () => {
     await flushPromises();
     const panel = await openPanel();
 
-    button(panel, "Generate with AI")!.click();
-    await flushPromises();
+    await generateWithAI(panel);
 
     expect(panel.querySelector<HTMLTextAreaElement>("#rel-notes")!.value).toContain("Highlights");
     const hint = panel.querySelector(".rel-notes-hint");
@@ -527,8 +546,7 @@ describe("AI release notes tracked run (#0605)", () => {
     await flushPromises();
     const panel = await openPanel();
 
-    button(panel, "Generate with AI")!.click();
-    await flushPromises();
+    await generateWithAI(panel);
 
     // The tracked run is in flight: Drafting state on and the poll alive.
     expect(button(panel, "Drafting…")!.disabled).toBe(true);
@@ -833,8 +851,7 @@ describe("AI release notes tracked run (#0605)", () => {
     await flushPromises();
     const panel = await openPanel();
 
-    button(panel, "Generate with AI")!.click();
-    await flushPromises();
+    await generateWithAI(panel);
 
     draftingState = { ...idleRun(), state: "failed", error: "The agent returned nothing usable." };
     await vi.advanceTimersByTimeAsync(1000);
@@ -1061,8 +1078,7 @@ describe("Unpushed AI release notes card (#0641)", () => {
     // The newest cache entry is now B; the generate response carries B and the
     // card must re-read the endpoint rather than keep showing A.
     currentUnpushed = unpushed({ notes: "## Draft B\n- new" });
-    button(panel, "Generate with AI")!.click();
-    await flushPromises();
+    await generateWithAI(panel);
 
     expect(panel.querySelector<HTMLTextAreaElement>("#rel-notes")!.value).toContain("Draft B");
     expect(panel.querySelector("[data-test-id='unpushed-release-notes']")).toBeNull();

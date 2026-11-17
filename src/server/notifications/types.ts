@@ -13,7 +13,10 @@ export type NotificationKind =
   | "task.server_failed"
   | "task.agent_failed"
   | "task.agent_completed"
-  | "task.done";
+  | "task.done"
+  | "release.notes_ready"
+  | "release.notes_failed"
+  | "release.auto_publish_failed";
 
 export interface NotificationAction {
   label: string;

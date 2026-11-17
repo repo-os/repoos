@@ -13,6 +13,9 @@ import {
   notificationForMergeConflict,
   notificationForMovedToReview,
   notificationForNeedsInput,
+  notificationForReleaseAutoPublishFailed,
+  notificationForReleaseNotesFailed,
+  notificationForReleaseNotesReady,
   notificationForReviewFeedback,
   notificationForServerFailed,
   notificationForStatusChange,
@@ -20,6 +23,7 @@ import {
 } from "./spec.js";
 import { progressFailureNotification } from "./progress.js";
 import type {
+  NotificationAction,
   NotificationDispatchContext,
   NotificationKind,
   NotificationPayload,
@@ -165,6 +169,87 @@ export function notifyAgentFailed(
   dispatchNotification(
     ctx,
     basePayload(ctx, task, "task.agent_failed", spec, spec.subtitle ?? detail ?? ""),
+  );
+}
+
+/**
+ * Release lifecycle notifications (#1126). These deliberately do not carry a
+ * task: the event belongs to the repository's release, so providers must not
+ * render a task id or task-action buttons. `taskId` is empty and every release
+ * renderer special-cases the `release.` kinds.
+ */
+function releaseLink(ctx: NotificationDispatchContext): {
+  link: string;
+  actions?: NotificationAction[];
+} {
+  const path = "/releases?drawer=cut";
+  const link = ctx.publicOrigin ? `${ctx.publicOrigin.replace(/\/+$/, "")}${path}` : path;
+  return {
+    link,
+    actions: link.startsWith("http") ? [{ label: "Open release", url: link }] : undefined,
+  };
+}
+
+function releasePayload(
+  ctx: NotificationDispatchContext,
+  kind: "release.notes_ready" | "release.notes_failed" | "release.auto_publish_failed",
+  tag: string,
+  spec: ReturnType<typeof notificationForReleaseNotesReady>,
+  summary: string,
+): NotificationPayload {
+  return {
+    kind,
+    severity: spec.severity,
+    repositoryName: projectDisplayName(ctx.config.root),
+    taskId: "",
+    taskTitle: tag || "release",
+    status: "done",
+    summary,
+    ...releaseLink(ctx),
+    headline: spec.headline,
+    subtitle: spec.subtitle,
+  };
+}
+
+/** The draft is ready; the human can review it and press Publish. */
+export function notifyReleaseNotesReady(
+  ctx: NotificationDispatchContext,
+  opts: { tag: string },
+): void {
+  const spec = notificationForReleaseNotesReady(opts.tag);
+  dispatchNotification(
+    ctx,
+    releasePayload(
+      ctx,
+      "release.notes_ready",
+      opts.tag,
+      spec,
+      "The AI release notes are ready. Review the draft and publish the release.",
+    ),
+  );
+}
+
+/** The draft failed or came back empty — nothing will be published from it. */
+export function notifyReleaseNotesFailed(
+  ctx: NotificationDispatchContext,
+  opts: { tag: string; reason?: string },
+): void {
+  const spec = notificationForReleaseNotesFailed(opts.tag, opts.reason);
+  dispatchNotification(
+    ctx,
+    releasePayload(ctx, "release.notes_failed", opts.tag, spec, spec.subtitle ?? ""),
+  );
+}
+
+/** A requested automatic publish was blocked; the tag did not ship. */
+export function notifyReleaseAutoPublishFailed(
+  ctx: NotificationDispatchContext,
+  opts: { tag: string; reason?: string },
+): void {
+  const spec = notificationForReleaseAutoPublishFailed(opts.tag, opts.reason);
+  dispatchNotification(
+    ctx,
+    releasePayload(ctx, "release.auto_publish_failed", opts.tag, spec, spec.subtitle ?? ""),
   );
 }
 

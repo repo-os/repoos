@@ -20,6 +20,8 @@ export type AttentionSeverity = "info" | "warning" | "error";
 /** Every attention kind the bell and API expose. */
 export type AttentionKind =
   | "releaseNotesReady"
+  | "releaseNotesFailed"
+  | "releaseAutoPublishFailed"
   | "releaseSucceeded"
   | "releaseFailed"
   | "closeOutSucceeded"
@@ -76,6 +78,8 @@ export interface RecordedAttentionEvent {
     | "gitLock"
     | "engineerRecoveryFailed"
     | "releaseEmailFailed"
+    | "releaseNotesFailed"
+    | "releaseAutoPublishFailed"
     | "serverCrash"
     | "processSignalFailure";
   taskId: string | null;
@@ -142,6 +146,8 @@ const CLOSE_OUT_KIND: Record<
 
 const SEVERITY: Record<AttentionKind, AttentionSeverity> = {
   releaseNotesReady: "info",
+  releaseNotesFailed: "warning",
+  releaseAutoPublishFailed: "error",
   releaseSucceeded: "info",
   closeOutSucceeded: "info",
   taskReview: "info",
@@ -332,7 +338,7 @@ export function buildAttentionFeed(input: AttentionFeedInput): AttentionFeed {
       taskId: null,
       message: "Release notes ready",
       detail: "AI draft finished — review it on the Releases page.",
-      link: "/releases",
+      link: "/releases?drawer=cut",
       at: notesRun.updatedAt ?? eventKey,
     });
   }
@@ -414,8 +420,10 @@ export function buildAttentionFeed(input: AttentionFeedInput): AttentionFeed {
         ? `/work?task=${ev.taskId}`
         : ev.id.startsWith("agentFailure:")
           ? "/agents"
-          : ev.kind === "releaseEmailFailed"
-            ? "/releases"
+          : ev.kind === "releaseEmailFailed" ||
+              ev.kind === "releaseNotesFailed" ||
+              ev.kind === "releaseAutoPublishFailed"
+            ? "/releases?drawer=cut"
             : null,
       at: ev.at,
     });

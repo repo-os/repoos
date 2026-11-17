@@ -119,6 +119,48 @@ function releaseEmailAttentionId(version: string): string {
   return `releaseEmailFailed:${version}`;
 }
 
+/**
+ * The AI notes draft failed or came back empty (#1126). One item per draft
+ * attempt, so a new attempt cannot hide a different failure.
+ */
+export function notifyAttentionReleaseNotesFailed(
+  tag: string,
+  reason: string,
+  at = new Date().toISOString(),
+): void {
+  if (!attentionEvents) return;
+  attentionEvents.record({
+    id: `releaseNotesFailed:${tag}:${at}`,
+    kind: "releaseNotesFailed",
+    taskId: null,
+    message: tag ? `${tag} release notes failed` : "Release notes failed",
+    detail: reason.slice(0, 240) || "The AI draft did not finish. Nothing was published.",
+    at,
+  });
+  bumpAttention?.();
+}
+
+/**
+ * An automatic publish was blocked before it could start, or its cut failed
+ * (#1126). The tag did not ship.
+ */
+export function notifyAttentionReleaseAutoPublishFailed(
+  tag: string,
+  reason: string,
+  at = new Date().toISOString(),
+): void {
+  if (!attentionEvents) return;
+  attentionEvents.record({
+    id: `releaseAutoPublishFailed:${tag}:${at}`,
+    kind: "releaseAutoPublishFailed",
+    taskId: null,
+    message: `${tag} was not published automatically`,
+    detail: reason.slice(0, 240) || "A release blocker stopped the automatic publish.",
+    at,
+  });
+  bumpAttention?.();
+}
+
 /** One durable bell item per exhausted model pair, even when many tasks fail. */
 export function notifyAttentionProviderUsageLimit(
   cli: string,
