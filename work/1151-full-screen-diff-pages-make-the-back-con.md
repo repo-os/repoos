@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/full-screen-diff-pages-make-the-back-con
 created_at: "2026-11-17T03:32:44Z"
-updated_at: "2026-11-17T05:40:20Z"
+updated_at: "2026-11-17T05:44:57Z"
 last_close_out_gate_ms: 627689
 last_close_out_gate_at: "2026-11-17T05:40:04.547Z"
 review_passes: 1
@@ -82,3 +82,4 @@ Use the screenshots attached to #1146 and #1151; inspect light and dark themes a
 - 2026-11-17T05:12:47Z · note: review pass 2: good to go
 - 2026-11-17T05:40:04Z · close-out gate completed in 628s
 - 2026-11-17T05:40:20Z · status done→done, release:success
+- 2026-11-17T05:44:57Z · message_dropped: 1 queued message(s) discarded — task is done
