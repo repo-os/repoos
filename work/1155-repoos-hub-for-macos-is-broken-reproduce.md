@@ -11,7 +11,7 @@ branch: feat/repoos-hub-for-macos-is-broken-reproduce
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T14:36:24Z"
-updated_at: "2026-11-17T14:36:30Z"
+updated_at: "2026-11-17T14:38:47Z"
 ---
 ## Problem
 
