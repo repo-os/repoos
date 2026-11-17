@@ -68,6 +68,7 @@ Start with the Work page at 390px and the bottom dock/heads/pipeline bar overlap
 ![Inputs byline at 390px, dark theme](/api/tasks/1157/attachments/att_44a4639b-b13a-4d50-9696-3367f5f500c3.png)
 ![Task drawer status at 390px, light theme](/api/tasks/1157/attachments/att_bb2db198-4d34-4e45-b5fb-5d2f727a506c.png)
 ![Task drawer status at 390px, dark theme](/api/tasks/1157/attachments/att_6073a805-0a32-4ac0-bdbb-eb19f9daf784.png)
+![Secrets environment picker at 320px, light theme](/api/tasks/1157/attachments/att_61ea02da-e433-48e6-9479-b3cd487c29af.png)
 
 ## Activity
 
@@ -189,3 +190,4 @@ Start with the Work page at 390px and the bottom dock/heads/pipeline bar overlap
 - 2026-11-17T21:20:41Z · screenshots
 - 2026-11-17T21:20:44Z · screenshots
 - 2026-11-17T21:20:47Z · screenshots
+- 2026-11-17T21:20:50Z · screenshots
