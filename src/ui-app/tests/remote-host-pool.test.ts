@@ -474,6 +474,8 @@ function poolFixture(opts: {
   /** Like infraFailOn but only the first run per host (#0745 recovery). */
   infraFailOnceOn?: string[];
   retryOtherHosts?: boolean;
+  command?: string;
+  requiredTools?: string[];
   healthRetryMs?: number;
   containerImage?: string;
   /** Simulated host-lock holders per host (#0705). */
@@ -525,6 +527,8 @@ function poolFixture(opts: {
       tailscaleHosts: opts.hosts,
       maxConcurrent: opts.maxConcurrent,
       containerImage: opts.containerImage,
+      command: opts.command,
+      requiredTools: opts.requiredTools,
       retryOtherHosts: opts.retryOtherHosts,
     },
   } as unknown as RepoOSConfig;
@@ -616,7 +620,7 @@ function poolFixture(opts: {
           }
           return {
             code: 0,
-            output: `prereq ok ${RUNNER_SCRIPT_MIRROR_TOKEN}=1 ${PREREQ_OK_TOKEN}`,
+            output: `prereq ok ${RUNNER_SCRIPT_MIRROR_TOKEN}=1 ${RUNNER_SCRIPT_COMMAND_TOKEN}=1 ${PREREQ_OK_TOKEN}`,
             timedOut: false,
           };
         }
@@ -947,7 +951,12 @@ describe("background host probing (#0683)", () => {
     writeFileSync(join(root, "f.txt"), "x");
     execFileSync("git", ["add", "."], { cwd: root });
     execFileSync("git", ["commit", "-qm", "init"], { cwd: root });
-    const f = poolFixture({ hosts: [{ host: "a" }], unreachable: ["a"] });
+    const f = poolFixture({
+      hosts: [{ host: "a" }],
+      unreachable: ["a"],
+      command: "./scripts/ci-remote.sh",
+      requiredTools: ["java", "node"],
+    });
     for (let i = 0; i < 20 && !f.runner.hostStatus()?.[0]?.probed; i++) {
       await tick();
     }
@@ -1030,7 +1039,14 @@ describe("TailscaleRunner pool dispatch (#0521)", () => {
   });
 
   it("runs two jobs on two hosts and queues a third until one frees", async () => {
-    const f = poolFixture({ hosts: [{ host: "a" }, { host: "b" }] });
+    const f = poolFixture({
+      hosts: [
+        { host: "a", runner: "native" },
+        { host: "b", runner: "native" },
+      ],
+      command: "./scripts/ci-remote.sh",
+      requiredTools: ["java", "node"],
+    });
     const chunks3: string[] = [];
     const job1 = f.runner.validate(opts("0001"));
     const job2 = f.runner.validate(opts("0002"));
@@ -1040,6 +1056,11 @@ describe("TailscaleRunner pool dispatch (#0521)", () => {
 
     const job3 = f.runner.validate(opts("0003", { onChunk: (c: string) => chunks3.push(c) }));
     await tick();
+    for (const host of ["a", "b"]) {
+      expect(f.cmds[host]![0]).toContain("REPOOS_VALIDATION_COMMAND");
+      expect(f.cmds[host]![0]).toContain("./scripts/ci-remote.sh");
+      expect(f.cmds[host]![0]).toContain("export REPOOS_VALIDATION_COMMAND=");
+    }
     expect(f.pending()).toHaveLength(2); // both hosts busy → job3 waits
     expect(chunks3.join("")).toContain("queued behind 2 other remote run(s)");
     expect(chunks3.join("")).toContain("waiting for a runner on");
@@ -1559,7 +1580,7 @@ describe("failover to another host (#0632)", () => {
         if (cmd.includes(PREREQ_OK_TOKEN)) {
           return {
             code: 0,
-            output: `prereq ok ${RUNNER_SCRIPT_MIRROR_TOKEN}=1 ${PREREQ_OK_TOKEN}`,
+            output: `prereq ok ${RUNNER_SCRIPT_MIRROR_TOKEN}=1 ${RUNNER_SCRIPT_COMMAND_TOKEN}=1 ${PREREQ_OK_TOKEN}`,
             timedOut: false,
           };
         }
@@ -1741,7 +1762,7 @@ describe("pool LRU tie-break across idle hosts (#0890)", () => {
               }
             : {
                 code: 0,
-                output: `prereq ok ${RUNNER_SCRIPT_MIRROR_TOKEN}=1 ${PREREQ_OK_TOKEN}`,
+                output: `prereq ok ${RUNNER_SCRIPT_MIRROR_TOKEN}=1 ${RUNNER_SCRIPT_COMMAND_TOKEN}=1 ${PREREQ_OK_TOKEN}`,
                 timedOut: false,
               };
         }
@@ -2837,6 +2858,7 @@ describe("per-host prerequisite probe", () => {
     expect(custom).toContain("GRADLE_USER_HOME=/repoos-cache/gradle");
     expect(custom).toContain("REPOOS_OFFLOAD_BROWSER_STEPS");
     expect(custom).toContain("REPOOS_BROWSER_CAPTURE_MODE");
+    expect(custom).toContain("-e REPOOS_VALIDATION_COMMAND");
   });
 
   it("checks the bun cache dir is writable on a native host", () => {
@@ -3243,7 +3265,7 @@ describe("hang detector (#0729)", () => {
         if (cmd.includes(PREREQ_OK_TOKEN)) {
           return {
             code: 0,
-            output: `prereq ok ${RUNNER_SCRIPT_MIRROR_TOKEN}=1 ${PREREQ_OK_TOKEN}`,
+            output: `prereq ok ${RUNNER_SCRIPT_MIRROR_TOKEN}=1 ${RUNNER_SCRIPT_COMMAND_TOKEN}=1 ${PREREQ_OK_TOKEN}`,
             timedOut: false,
           };
         }
@@ -4178,7 +4200,7 @@ describe("runner memory health dispatch (#0901)", () => {
         if (cmd.includes(PREREQ_OK_TOKEN)) {
           return {
             code: 0,
-            output: `prereq ok ${RUNNER_SCRIPT_MIRROR_TOKEN}=1 ${PREREQ_OK_TOKEN}`,
+            output: `prereq ok ${RUNNER_SCRIPT_MIRROR_TOKEN}=1 ${RUNNER_SCRIPT_COMMAND_TOKEN}=1 ${PREREQ_OK_TOKEN}`,
             timedOut: false,
           };
         }

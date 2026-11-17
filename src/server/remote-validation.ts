@@ -1427,9 +1427,10 @@ export function classifyRemoteExecFailure(run: {
     };
   }
   if (
-    code === VALIDATE_EXIT_SETUP ||
-    code === VALIDATE_EXIT_CONTAINER ||
-    code === VALIDATE_EXIT_TRANSPORT
+    !remoteRunHasGateExit(output) &&
+    (code === VALIDATE_EXIT_SETUP ||
+      code === VALIDATE_EXIT_CONTAINER ||
+      code === VALIDATE_EXIT_TRANSPORT)
   ) {
     const cause =
       code === VALIDATE_EXIT_SETUP
@@ -2960,7 +2961,7 @@ export function validateScriptArgs(
   // only $4 as the changed ref) still receives a valid positional layout.
   if (mirrorPath) args.push(remotePathShellWord(mirrorPath));
   const captureEnv = browserCapture
-    ? `REPOOS_BROWSER_CAPTURE_MODE=${shellQuote(browserCapture.operation)} ` +
+    ? `export REPOOS_BROWSER_CAPTURE_MODE=${shellQuote(browserCapture.operation)} ` +
       `REPOOS_BROWSER_CAPTURE_TASK=${shellQuote(browserCapture.taskId)} ` +
       `REPOOS_BROWSER_CAPTURE_BRANCH=${shellQuote(browserCapture.branch)} ` +
       (browserCapture.entry
@@ -2970,9 +2971,15 @@ export function validateScriptArgs(
       // it instead of planning from the (possibly stale) bundled branch (#0854).
       (browserCapture.canonical
         ? `REPOOS_BROWSER_CAPTURE_CANONICAL=${shellQuote(JSON.stringify(browserCapture.canonical))} `
-        : "")
+        : "") +
+      "; "
     : "";
   return `${captureEnv}${selectValidateScriptCommand()}; "$REPOOS_VALIDATE_SCRIPT" ${args.join(" ")}`;
+}
+
+/** Export remote-run context before the script selector starts a new shell statement. */
+export function exportRemoteEnvironment(assignments: readonly string[], command: string): string {
+  return assignments.length ? `export ${assignments.join(" ")}; ${command}` : command;
 }
 
 export function defaultRemoteExec(): RemoteExecDeps {
@@ -4055,10 +4062,12 @@ export class RemoteValidationRunner implements RemoteValidator {
             message: `running build + test on ${host.ip}${changedNote}`,
           },
         );
-        const commandEnv = rv.command ? `REPOOS_VALIDATION_COMMAND=${shellQuote(rv.command)} ` : "";
-        const cmd =
-          commandEnv +
-          (control ? `REPOOS_CONTAINER=${shellQuote(control.container)} ` : "") +
+        const commandEnv = [
+          ...(rv.command ? [`REPOOS_VALIDATION_COMMAND=${shellQuote(rv.command)}`] : []),
+          ...(control ? [`REPOOS_CONTAINER=${shellQuote(control.container)}`] : []),
+        ];
+        const cmd = exportRemoteEnvironment(
+          commandEnv,
           validateScriptArgs(
             remoteBundle,
             opts.candidateSha,
@@ -4066,7 +4075,8 @@ export class RemoteValidationRunner implements RemoteValidator {
             remoteTestRef ?? undefined,
             upload.mirrorPath || undefined,
             opts.browserCapture,
-          );
+          ),
+        );
         if (opts.browserCapture && control) {
           const signal = control.controller.signal;
           const containerName = control.container;
@@ -7109,15 +7119,22 @@ export class TailscaleRunner implements RemoteValidator {
           },
         );
         const offloadBrowser = offloadBrowserStepsEnabled(this.config) ? "1" : "0";
-        const customCommandEnv = rv.command
-          ? `REPOOS_VALIDATION_COMMAND=${shellQuote(rv.command)} REPOOS_ARTIFACTS_DIR=${shellQuote(paths.artifacts)} `
-          : "";
-        const inner =
-          customCommandEnv +
-          `REPOOS_SLOT="$_rvslot" REPOOS_CONTAINER=${shellQuote(containerName)} ` +
-          `REPOOS_CACHE_VOLUME=${shellQuote(CACHE_VOLUME_NAME)} REPOOS_CI_IMAGE=${shellQuote(image)} ` +
-          `${REPOOS_OFFLOAD_BROWSER_STEPS}=${offloadBrowser} ` +
-          `REPOOS_CHECK_PROFILE=${shellQuote(opts.checkProfile ?? (opts.phase === "close-out" || opts.phase === "release" ? "full" : "default"))} ` +
+        const innerEnv = [
+          ...(rv.command
+            ? [
+                `REPOOS_VALIDATION_COMMAND=${shellQuote(rv.command)}`,
+                `REPOOS_ARTIFACTS_DIR=${shellQuote(paths.artifacts)}`,
+              ]
+            : []),
+          `REPOOS_SLOT="$_rvslot"`,
+          `REPOOS_CONTAINER=${shellQuote(containerName)}`,
+          `REPOOS_CACHE_VOLUME=${shellQuote(CACHE_VOLUME_NAME)}`,
+          `REPOOS_CI_IMAGE=${shellQuote(image)}`,
+          `${REPOOS_OFFLOAD_BROWSER_STEPS}=${offloadBrowser}`,
+          `REPOOS_CHECK_PROFILE=${shellQuote(opts.checkProfile ?? (opts.phase === "close-out" || opts.phase === "release" ? "full" : "default"))}`,
+        ];
+        const inner = exportRemoteEnvironment(
+          innerEnv,
           validateScriptArgs(
             remoteBundle,
             opts.candidateSha,
@@ -7125,7 +7142,8 @@ export class TailscaleRunner implements RemoteValidator {
             remoteTestRef ?? undefined,
             upload.mirrorPath || undefined,
             opts.browserCapture,
-          );
+          ),
+        );
         const waitSecs =
           opts.deadlineAt !== undefined
             ? deadlineLockWaitSecs(opts.deadlineAt)

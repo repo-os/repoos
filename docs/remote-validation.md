@@ -947,6 +947,16 @@ Linux would be a guess this file can't verify). Today nothing declares
 `runsOn` — native Swift/Xcode steps don't exist in the gate yet; keep them
 local until they do.
 
+`runner = "native"` selects how the host executes the command; it is not a
+routing capability by itself. Set `os` and `labels` to describe the tools that
+the host actually has, then use those values in build/tests steps' `runsOn`
+when a project needs a particular toolchain. A project command with no
+`runsOn` requirement can use any healthy eligible host. When all eligible
+hosts are busy, it queues across that pool; when remote infrastructure fails,
+`remoteValidation.fallbackToLocal = true` lets the local check plan run. A
+project command is not executed locally as a substitute for the local check
+plan.
+
 #### Cross-process limit (the host lock)
 
 The per-host cap above lives in one server process. A standalone `repoos check`

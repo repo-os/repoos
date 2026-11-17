@@ -38,6 +38,7 @@ import {
   parseValidateScriptCommandSupport,
   isRunnerBundleTransportMismatch,
   validateScriptArgs,
+  exportRemoteEnvironment,
   validateScriptInstallCommand,
   remoteChangedTestScope,
   RUNNER_SCRIPT_MIRROR_TOKEN,
@@ -156,6 +157,15 @@ describe("classifyRemoteExecFailure (#0745)", () => {
       output: "error: EACCES accessing temporary directory\n",
     });
     expect(cls).toMatchObject({ kind: "infra", transient: true, markHostDegraded: true });
+  });
+
+  it.each([3, 4, 5])("treats project gate exit %i as a test failure", (code) => {
+    const cls = classifyRemoteExecFailure({
+      code,
+      timedOut: false,
+      output: `[validate] gate exit ${code}\nproject command failed\n`,
+    });
+    expect(cls).toMatchObject({ kind: "test", transient: false, markHostDegraded: false });
   });
 
   it("treats gate exit plus failures as test (no retry)", () => {
@@ -1798,5 +1808,74 @@ describe("validateScriptArgs positional layout", () => {
     // shellQuote wraps the JSON in single quotes and escapes embedded ones.
     const json = token!.replace(/^'(.*)'$/, "$1").replace(/'\\''/g, "'");
     expect(JSON.parse(json)).toEqual(canonical);
+  });
+
+  it("exports the run environment through the generated shell command", () => {
+    const home = mkdtempSync(join(tmpdir(), "repoos-validate-args-home-"));
+    const runner = join(home, ".local", "bin", "repoos-validate");
+    mkdirSync(join(home, ".local", "bin"), { recursive: true });
+    writeFileSync(
+      runner,
+      [
+        "#!/bin/sh",
+        'printf \'%s\\n\' "$REPOOS_VALIDATION_COMMAND" "$REPOOS_CONTAINER" "$REPOOS_SLOT" "$REPOOS_CACHE_VOLUME" "$REPOOS_CI_IMAGE" "$REPOOS_CHECK_PROFILE" "$REPOOS_OFFLOAD_BROWSER_STEPS" "$REPOOS_BROWSER_CAPTURE_MODE" "$REPOOS_BROWSER_CAPTURE_TASK" "$REPOOS_BROWSER_CAPTURE_BRANCH" "$REPOOS_BROWSER_CAPTURE_ENTRY" "$REPOOS_BROWSER_CAPTURE_CANONICAL" "$@" > "$HOME/result"',
+        "",
+      ].join("\n"),
+      { mode: 0o755 },
+    );
+    try {
+      const command = exportRemoteEnvironment(
+        [
+          "REPOOS_VALIDATION_COMMAND='scripts/ci-remote.sh && echo done'",
+          "REPOOS_CONTAINER='repoos-validate-test'",
+          "REPOOS_SLOT='2'",
+          "REPOOS_CACHE_VOLUME='repoos-cache-test'",
+          "REPOOS_CI_IMAGE='tiao-ci'",
+          "REPOOS_CHECK_PROFILE='full'",
+          "REPOOS_OFFLOAD_BROWSER_STEPS='1'",
+        ],
+        validateScriptArgs(
+          "/tmp/candidate.bundle",
+          "a".repeat(40),
+          "/tmp/artifacts",
+          undefined,
+          undefined,
+          {
+            operation: "shots",
+            branch: "feat/capture",
+            taskId: "1160",
+            entry: { route: "/settings" },
+            canonical: {
+              task: { body: "Tiao fixture", area: "core" },
+              config: {},
+              plan: { entries: [], errors: [], skips: [], collapsed: [] },
+            },
+          },
+        ),
+      );
+      execFileSync("bash", ["-c", command], {
+        encoding: "utf8",
+        env: { ...process.env, HOME: home },
+      });
+      expect(readFileSync(join(home, "result"), "utf8").trim().split("\n")).toEqual([
+        "scripts/ci-remote.sh && echo done",
+        "repoos-validate-test",
+        "2",
+        "repoos-cache-test",
+        "tiao-ci",
+        "full",
+        "1",
+        "shots",
+        "1160",
+        "feat/capture",
+        '{"route":"/settings"}',
+        '{"task":{"body":"Tiao fixture","area":"core"},"config":{},"plan":{"entries":[],"errors":[],"skips":[],"collapsed":[]}}',
+        "/tmp/candidate.bundle",
+        "a".repeat(40),
+        "/tmp/artifacts",
+      ]);
+    } finally {
+      rmSync(home, { recursive: true, force: true });
+    }
   });
 });

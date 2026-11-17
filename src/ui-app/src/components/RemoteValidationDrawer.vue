@@ -335,8 +335,8 @@ const hetznerSteps: { label: string; body: string; cmd?: string }[] = [
           <DialogTitle class="tunnel-title">Remote validation runner</DialogTitle>
           <DialogDescription class="tunnel-description">
             Status: <strong>{{ statusLabel }}</strong
-            >. Runs <code>bun run build</code> + <code>bun run test</code> on a remote machine so
-            the close-out gate isn't starved of memory on this machine.
+            >. Runs this project's configured validation command on a remote runner. Host status
+            below includes the declared toolchain checks.
           </DialogDescription>
         </div>
         <DialogClose class="close-x" aria-label="Close remote validation setup">
