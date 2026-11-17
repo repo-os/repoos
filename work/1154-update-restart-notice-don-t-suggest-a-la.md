@@ -3,6 +3,9 @@ id: "1154"
 title: "Update/restart notice: don't suggest a launchd command for a hand-run server; offer a real restart and fix repoos restart auth (401)"
 type: bug
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: `needs some work` — the bound-port change silently disables the ephemeral-port schedule guard; the handoff shot is also stale for HEAD.
 priority: p2
 area: [web, server, cli]
 assigned_to: ai
@@ -101,3 +104,4 @@ Read #1075 (the restart notice) and #1091 (`repoos restart`). A server that kill
 - 2026-11-17T17:27:58Z · status active→review
 - 2026-11-17T17:34:18Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
 - 2026-11-17T17:34:19Z · note: review pass 4: needs some work
+- 2026-11-17T17:34:19Z · needs_input
