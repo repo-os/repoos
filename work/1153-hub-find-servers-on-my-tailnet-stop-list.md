@@ -106,3 +106,4 @@ Do not add runtime dependencies. The discovery endpoint exposes names/ports only
 - 2026-11-17T13:30:11Z · handoff failed · task-file handoff failed at check · repoos check failed: tests — ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
 - 2026-11-17T13:30:39Z · note: adopted orphaned engineer pid 74706
 - 2026-11-17T13:35:38Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-17T13:35:38Z · queued message undelivered for 5m and the engineer produced no output — ending the turn so it is delivered
