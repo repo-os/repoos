@@ -11,7 +11,7 @@ branch: feat/investigate-checks-tab-browser-pass-stal
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T17:53:05Z"
-updated_at: "2026-11-17T20:59:18Z"
+updated_at: "2026-11-17T21:07:48Z"
 review_rounds: 2
 review_passes: 2
 handoff_signal_retry_count: 2
@@ -96,3 +96,4 @@ Direct tab-click coverage passes, but review identified a separate app lifecycle
 - 2026-11-17T20:58:26Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — task-file handoff failed at review · Engineering report draft is missing: .repoos/engineering-report-drafts/1163.md · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
 - 2026-11-17T20:58:27Z · note: handoff requested (cli)
 - 2026-11-17T20:59:18Z · CTO nudge: held — handoff gate is running
+- 2026-11-17T21:07:48Z · message_delivered: 1 message(s)
