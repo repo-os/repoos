@@ -12,7 +12,7 @@ branch: feat/qa-pass-use-the-android-hub-app-on-the-p
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T15:51:18Z"
-updated_at: "2026-11-17T18:00:27Z"
+updated_at: "2026-11-17T18:06:31Z"
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-11-17T16:23:57.721Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-17T17:28:58.663Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-17T17:40:28.839Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
@@ -32,9 +32,7 @@ Every Hub screen works on the phone: server list, add server, edit/remove, Setti
 - [ ] The report lists each screen checked, the defects found, fixed and filed; no screen is reported without a screenshot. Never capture anything except the phone or emulator screen, and do not install anything but the dev variant.
 
 ## Notes for AI
-Use `just deploy-phone` only if the saved port works; otherwise do not ask Nick for secrets. Do not edit `repoos.toml`.
-
-Human device step needed: the saved ADB target `100.117.244.33:37673` refused the connection on 2026-11-18; `adb devices -l` was empty and no emulator executable was available. Desktop browser fixtures were inspected but do not satisfy the phone/emulator screenshot or native Android interaction criteria. Please split the remaining device pass into a held human task (or provide an available Android device/emulator) before this QA task is resumed. No device results are claimed.
+The Pixel 8 Android 16 (API 36) emulator was available and used after the saved ADB phone target refused connection. Only org.repoos.mobile.dev was installed. Emulator screenshots are attached to this task. Picker, Add server, edit/remove, Settings, all eight themes in light and dark, no-trusted-server tailnet discovery, example.org in-app open/return via Android back gesture, lock rejection and successful biometric retry were checked. Two defects were fixed with regression tests: URL validation text failed to clear on input, and rejected authentication dismissed the lock overlay. Dark status-bar contrast was filed separately as #1166 with screenshot. The only acceptance gap is discovery against a reachable trusted RepoOS server: dev.repoos.org was unreachable, so no discovery rows or successful RepoOS connection are claimed. Follow-up #1162 is human-assigned and depends on #1159; provide a reachable trusted server and complete the live discovery check before closing this QA task.
 
 ## Screenshots
 
@@ -132,3 +130,4 @@ Human device step needed: the saved ADB target `100.117.244.33:37673` refused th
 - 2026-11-17T18:00:23Z · screenshots
 - 2026-11-17T18:00:25Z · screenshots
 - 2026-11-17T18:00:27Z · screenshots
+- 2026-11-17T18:06:31Z · body: Notes for AI (added 1, removed 2)
