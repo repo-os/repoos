@@ -51,7 +51,7 @@ struct ServerWebWorkspaceView: View {
                 WebLoadFailureOverlay(
                     origin: entry.originString,
                     failure: failure,
-                    onRetry: webModel.reload,
+                    onRetry: retryWorkspace,
                     onEdit: { appState.presentEditServer(entry) },
                     onRemove: { appState.deleteServer(entry) },
                     onClearSession: { appState.clearWebsiteSession(for: entry.id) },
@@ -73,6 +73,10 @@ struct ServerWebWorkspaceView: View {
                 onOpen: webModel.openPendingExternalURL,
                 onDismiss: webModel.dismissExternalPrompt
             )
+        }
+        .onChange(of: webModel.loadFailure) { failure in
+            guard failure?.indicatesConnectivityFailure == true else { return }
+            Task { await appState.refreshHealth(for: entry.id) }
         }
         .onDisappear {
             if appState.selectedServerID == entry.id {
@@ -111,6 +115,15 @@ struct ServerWebWorkspaceView: View {
             if isReady {
                 webModel.loadRootPage()
             }
+        }
+    }
+
+    private func retryWorkspace() {
+        Task {
+            if webModel.loadFailure?.indicatesConnectivityFailure == true {
+                await appState.refreshHealth(for: entry.id)
+            }
+            webModel.reload()
         }
     }
 }

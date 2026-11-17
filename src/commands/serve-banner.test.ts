@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { formatServeBindBannerValue, renderServeBanner } from "./serve.js";
+import {
+  effectiveServeBannerNetwork,
+  formatServeBindBannerValue,
+  renderServeBanner,
+} from "./serve.js";
 
 describe("renderServeBanner", () => {
   const rows = [
@@ -37,6 +41,21 @@ describe("renderServeBanner", () => {
     expect(formatServeBindBannerValue("0.0.0.0", false)).not.toContain("Tailscale detected");
     expect(formatServeBindBannerValue("0.0.0.0", true)).toContain("Tailscale detected");
     expect(formatServeBindBannerValue("192.168.1.5", false)).toContain("192.168.1.5");
+  });
+
+  it("reports the effective loopback bind for auth-less previews", () => {
+    const network = effectiveServeBannerNetwork("127.0.0.1", true);
+    expect(network).toEqual({ bindHost: "127.0.0.1", tailscaleDetected: false });
+    expect(formatServeBindBannerValue(network.bindHost, network.tailscaleDetected)).toContain(
+      "localhost only",
+    );
+  });
+
+  it("keeps the Tailnet banner for an effective all-interface listener", () => {
+    expect(effectiveServeBannerNetwork("0.0.0.0", true)).toEqual({
+      bindHost: "0.0.0.0",
+      tailscaleDetected: true,
+    });
   });
 
   it("splits an HTTPS warning into problem, fix and link", () => {

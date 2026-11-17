@@ -5,9 +5,11 @@ final class HubBadgeTransitionTests: XCTestCase {
     func testDockBadgeSumsAttentionAcrossServers() {
         let a = UUID()
         let b = UUID()
+        let offline = UUID()
         let entries = [
-            ServerEntry(id: a, name: "A", origin: URL(string: "https://a.test")!, attentionAggregationEnabled: true),
-            ServerEntry(id: b, name: "B", origin: URL(string: "https://b.test")!, attentionAggregationEnabled: true),
+            ServerEntry(id: a, name: "A", origin: URL(string: "https://a.test")!, lastHealth: .healthy, attentionAggregationEnabled: true),
+            ServerEntry(id: b, name: "B", origin: URL(string: "https://b.test")!, lastHealth: .healthy, attentionAggregationEnabled: true),
+            ServerEntry(id: offline, name: "Offline", origin: URL(string: "https://offline.test")!, lastHealth: .unreachable, attentionAggregationEnabled: true),
         ]
         let snapshots = [
             ServerAttentionSnapshot(
@@ -22,6 +24,14 @@ final class HubBadgeTransitionTests: XCTestCase {
                 serverID: b,
                 freshness: .fresh,
                 counts: HubAttentionCounts(activeAgents: 0, reviewReadyTasks: 1, needsInputTasks: 0),
+                fetchedAt: Date(),
+                lastError: nil,
+                hasCapability: true
+            ),
+            ServerAttentionSnapshot(
+                serverID: offline,
+                freshness: .fresh,
+                counts: HubAttentionCounts(activeAgents: 0, reviewReadyTasks: 50, needsInputTasks: 40),
                 fetchedAt: Date(),
                 lastError: nil,
                 hasCapability: true

@@ -107,7 +107,13 @@ final class ServerRegistryStore: @unchecked Sendable {
 }
 
 extension ServerRegistryStore {
-    static func applicationSupportDirectory(appName: String = "RepoOS Hub") -> URL {
+    static func applicationSupportDirectory(
+        appName: String = "RepoOS Hub",
+        environment: [String: String] = ProcessInfo.processInfo.environment
+    ) -> URL {
+        if let override = environment["REPOOS_HUB_SUPPORT_DIRECTORY"], !override.isEmpty {
+            return URL(fileURLWithPath: override, isDirectory: true)
+        }
         let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
         return base.appendingPathComponent(appName, isDirectory: true)
     }

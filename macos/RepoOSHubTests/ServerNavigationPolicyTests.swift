@@ -176,4 +176,13 @@ final class ServerNavigationPolicyTests: XCTestCase {
             .tls
         )
     }
+
+    func testOnlyConnectivityFailuresTriggerHealthRefresh() {
+        XCTAssertTrue(ServerWebLoadFailure.offline.indicatesConnectivityFailure)
+        XCTAssertTrue(ServerWebLoadFailure.tls.indicatesConnectivityFailure)
+        XCTAssertTrue(ServerWebLoadFailure.timeout.indicatesConnectivityFailure)
+        XCTAssertFalse(ServerWebLoadFailure.httpStatus(503).indicatesConnectivityFailure)
+        XCTAssertFalse(ServerWebLoadFailure.blockedNavigation(.foreignOrigin).indicatesConnectivityFailure)
+        XCTAssertFalse(ServerWebLoadFailure.unknown("failed").indicatesConnectivityFailure)
+    }
 }

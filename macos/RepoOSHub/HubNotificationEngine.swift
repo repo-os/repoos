@@ -116,7 +116,10 @@ enum HubNotificationEngine {
         }
         let entryMap = Dictionary(uniqueKeysWithValues: entries.map { ($0.id, $0) })
         let total = snapshots.reduce(0) { partial, snapshot in
-            guard let entry = entryMap[snapshot.serverID], entry.attentionAggregationEnabled else { return partial }
+            guard let entry = entryMap[snapshot.serverID],
+                  entry.attentionAggregationEnabled,
+                  entry.lastHealth == .healthy
+            else { return partial }
             guard snapshot.freshness != .unavailable, let counts = snapshot.counts else { return partial }
             return partial + counts.attentionTotal
         }
