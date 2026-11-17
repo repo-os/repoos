@@ -96,3 +96,4 @@ Context: Nick's Tiao board on host bee (16 cores, encrypted btrfs, 3 projects) s
 - 2026-11-17T20:10:43Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-17T20:15:43Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-17T20:16:16Z · queued message undelivered for 6m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-17T20:16:16Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code unknown) · last assistant: The isolation fix now clears the new project-command variable plus the other runner-injected root/artifact paths from spawned test environments. The isolation regression test passes locally; I’m rerunning the full check to confirm both it … · stderr: (empty)
