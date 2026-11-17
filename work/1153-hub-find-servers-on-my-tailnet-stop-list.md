@@ -173,3 +173,4 @@ Do not add runtime dependencies. The discovery endpoint exposes names/ports only
 - 2026-11-17T16:42:49Z · status active→review
 - 2026-11-17T16:42:49Z · message_delivered: 2 message(s)
 - 2026-11-17T16:42:59Z · message_queued at 2026-11-17T16:42:59.372Z
+- 2026-11-17T16:42:59Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
