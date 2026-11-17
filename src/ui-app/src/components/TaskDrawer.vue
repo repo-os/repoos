@@ -6394,9 +6394,10 @@ watch(
             </div>
           </div>
         </div>
-        <!-- #1137: on a phone the seven tabs cannot shrink to fit. Opt this
-             strip into horizontal scrolling so every tab (and the expand
-             control) stays reachable by touch instead of being clipped. -->
+        <!-- #1137/#1147: on a phone the seven tabs cannot shrink to fit. The
+             scroll modifier keeps them reachable at intermediate widths; the
+             phone stylesheet wraps the strip so every tab is visible at once
+             instead of hiding the last ones off-screen. -->
         <div class="drawer-tabs" :class="{ 'drawer-tabs-scroll': isNarrow }">
           <button
             type="button"
