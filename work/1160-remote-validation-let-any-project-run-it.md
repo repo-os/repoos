@@ -1,6 +1,4 @@
 ---
-check_retry_count: 1
-last_check_failure: "repoos check at 2026-11-17T19:55:37.402Z: repoos check failed: ui verification failed (3 issue(s)): [missing-target] Remote validation command and required tools (target \"default\"): highlight #setting-remoteValidation.command matched nothing on /settings?section=remote-validation (http://127.0.0.1:35065/settings?section=remote-validation); [missing-target] Remote runner host toolchain status (target \"default\"): click #setting-remoteValidation.enabled button: click: Timeout 5000ms exceeded. on /settings?section=remote-validation (http://… (truncated)"
 id: "1160"
 title: "Remote validation: let any project run its own check command on runners"
 type: feature
@@ -13,7 +11,9 @@ branch: feat/remote-validation-let-any-project-run-it
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T17:06:33Z"
-updated_at: "2026-11-17T19:55:37Z"
+updated_at: "2026-11-17T19:56:18Z"
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-17T19:55:37.402Z: repoos check failed: ui verification failed (3 issue(s)): [missing-target] Remote validation command and required tools (target \"default\"): highlight #setting-remoteValidation.command matched nothing on /settings?section=remote-validation (http://127.0.0.1:35065/settings?section=remote-validation); [missing-target] Remote runner host toolchain status (target \"default\"): click #setting-remoteValidation.enabled button: click: Timeout 5000ms exceeded. on /settings?section=remote-validation (http://… (truncated)"
 review_rounds: 2
 review_passes: 2
 ---
@@ -37,24 +37,24 @@ Context: Nick's Tiao board on host bee (16 cores, encrypted btrfs, 3 projects) s
 ```json
 [
 {
-"label": "Remote validation command and required tools",
-"target": "default",
-"route": "/settings?section=remote-validation",
-"highlight": "#setting-remoteValidation.command"
+  "label": "Remote validation command and required tools",
+  "target": "default",
+  "route": "/settings?section=remote-validation",
+  "highlight": "[id=\"setting-remoteValidation.command\"]"
 },
 {
-"label": "Remote runner host toolchain status",
-"target": "default",
-"route": "/settings?section=remote-validation",
-"highlight": ".rvr-hosts",
-"steps": [
-{
-"click": "#setting-remoteValidation.enabled button"
-},
-{
-"waitMs": 300
-}
-]
+  "label": "Remote runner host toolchain status",
+  "target": "default",
+  "route": "/settings?section=remote-validation",
+  "highlight": ".rvr-hosts",
+  "steps": [
+    {
+      "click": "[id=\"setting-remoteValidation.enabled\"] button"
+    },
+    {
+      "waitMs": 300
+    }
+  ]
 }
 ]
 ```
@@ -91,4 +91,4 @@ Context: Nick's Tiao board on host bee (16 cores, encrypted btrfs, 3 projects) s
 - 2026-11-17T19:55:33Z · note: ui verification failed: ui verification failed (3 issue(s)): [missing-target] Remote validation command and required tools (target "default"): highlight #setting-remoteValidation.command matched nothing on /settings?section=remote-validation (http://127.0.0.1:35065/settings?section=remote-validation); [missing-target] Remote runner host toolchain status (target "default"): click #setting-remoteValidation.enabled button: click: Timeout 5000ms exceeded. on /settings?section=remote-validation (http
 - 2026-11-17T19:55:34Z · message_queued at 2026-11-17T19:55:34.081Z
 - 2026-11-17T19:55:37Z · message_delivered: 1 message(s)
-
+- 2026-11-17T19:56:18Z · body
