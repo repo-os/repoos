@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/full-screen-diff-pages-make-the-back-con
 created_at: "2026-11-17T03:32:44Z"
-updated_at: "2026-11-17T04:45:24Z"
+updated_at: "2026-11-17T04:45:28Z"
 ---
 ## Problem
 At 390×844, the Back control on the full-screen diff view measures 76×28 CSS px, below the app's 44×44 mobile touch-target convention. The shared DiffView is routed at /tasks/:taskId/diff, /tasks/:taskId/conflict-diff, /repo/working-diff and /repo/commits/:sha, so each entry point has the same issue.
@@ -67,3 +67,4 @@ Use the screenshots attached to #1146 and #1151; inspect light and dark themes a
 - 2026-11-17T04:44:35Z · CTO nudge: held — handoff gate is running
 - 2026-11-17T04:45:22Z · note: ui verification failed: ui verification failed (3 issue(s)): [request] HTTP 404 for http://127.0.0.1:35645/api/tasks/1151/diff (http://127.0.0.1:35645/api/tasks/1151/diff); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:35645/api/tasks/1151/diff); [missing-target] Task diff at 390px: Back is a 44px touch target (dark) (target "default"): loading state detected: loading text "Loading diff…" on /tasks/1151/diff (http://127.0.0.1:35645/tas
 - 2026-11-17T04:45:24Z · message_queued at 2026-11-17T04:45:24.948Z
+- 2026-11-17T04:45:28Z · message_delivered: 1 message(s)
