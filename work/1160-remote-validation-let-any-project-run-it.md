@@ -11,7 +11,7 @@ branch: feat/remote-validation-let-any-project-run-it
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T17:06:33Z"
-updated_at: "2026-11-17T19:04:51Z"
+updated_at: "2026-11-17T19:12:55Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -55,3 +55,4 @@ Context: Nick's Tiao board on host bee (16 cores, encrypted btrfs, 3 projects) s
 - 2026-11-17T19:04:49Z · note: ui verification passed: 1 shot captured with clean console (1 shot warning)
 - 2026-11-17T19:04:51Z · status active→review
 - 2026-11-17T19:04:51Z · message_queued at 2026-11-17T19:04:51.878Z
+- 2026-11-17T19:12:55Z · note: review pass 2: needs some work
