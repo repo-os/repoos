@@ -629,6 +629,93 @@ async function runUISmokeTest(): Promise<void> {
       }
     }
 
+    // Exercise the actual Checks route across the responsive matrix that
+    // prompted #1163. Keep screenshots out of this loop: the goal is to
+    // isolate page navigation/layout from repeated capture work.
+    {
+      const checksPage = await context.newPage();
+      const checksPageErrors: string[] = [];
+      checksPage.on("pageerror", (err) => {
+        if (!err.message.includes("/api/") || !err.message.includes("access control checks")) {
+          checksPageErrors.push(err.message);
+        }
+      });
+      const tabs = [
+        { label: "Now", query: "now" },
+        { label: "Runs", query: "runs" },
+        { label: "Test suite", query: "test-suite" },
+        { label: "Check plan", query: "plan" },
+      ] as const;
+      const widths = [1440, 390, 320] as const;
+
+      try {
+        for (const appearance of ["light", "dark"] as const) {
+          // The app reads its appearance preference during startup.
+          await checksPage.goto(server.url, { waitUntil: "load", timeout: 20_000 });
+          await checksPage.evaluate((theme) => {
+            localStorage.setItem("repoos.theme", theme);
+          }, appearance);
+
+          for (const width of widths) {
+            await checksPage.setViewportSize({ width, height: width < 600 ? 812 : 900 });
+            await checksPage.goto(new URL("/checks?tab=now", server.url).toString(), {
+              waitUntil: "load",
+              timeout: 20_000,
+            });
+            await checksPage.waitForFunction(
+              () =>
+                document.querySelector(".ck-title") !== null &&
+                document.querySelector('[role="tab"][aria-selected="true"]') !== null,
+              { timeout: 10_000 },
+            );
+
+            const renderedAppearance = await checksPage.evaluate(
+              () => document.documentElement.dataset.theme,
+            );
+            if (renderedAppearance !== appearance) {
+              throw new Error(
+                `Checks theme mismatch at ${width}px: expected ${appearance}, got ${renderedAppearance}`,
+              );
+            }
+
+            for (const tab of tabs) {
+              await checksPage.click(`button[role="tab"]:has-text("${tab.label}")`, {
+                timeout: 5_000,
+              });
+              await checksPage.waitForTimeout(50);
+              const state = await checksPage.evaluate(() => {
+                const selected = document.querySelector('[role="tab"][aria-selected="true"]');
+                return {
+                  query: new URL(window.location.href).searchParams.get("tab"),
+                  selected: selected?.textContent?.trim(),
+                  scrollWidth: document.body.scrollWidth,
+                  viewportWidth: window.innerWidth,
+                };
+              });
+              if (state.query !== tab.query || state.selected !== tab.label) {
+                throw new Error(
+                  `Checks ${tab.label} navigation failed at ${width}px (${appearance}): ` +
+                    `query=${state.query}, selected=${state.selected}`,
+                );
+              }
+              if (state.scrollWidth > state.viewportWidth) {
+                throw new Error(
+                  `Checks ${tab.label} overflows at ${width}px (${appearance}): ` +
+                    `body scrollWidth ${state.scrollWidth} > viewport ${state.viewportWidth}`,
+                );
+              }
+            }
+          }
+        }
+        if (checksPageErrors.length > 0) {
+          throw new Error(`Checks page errors: ${checksPageErrors.join("; ")}`);
+        }
+      } finally {
+        await checksPage.close();
+      }
+      console.log(c.dim("  · Checks tabs passed at 1440, 390 and 320px in light and dark mode"));
+    }
+
     // Check for zero console errors
     {
       // Tolerate failed-resource errors only for the known-benign stats 404

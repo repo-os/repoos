@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 226797
-last_close_out_gate_at: "2026-11-17T21:51:54.891Z"
 id: "1163"
 title: Investigate Checks tab browser pass stall
 type: bug
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: 712fc309e99f74aec6c909d39a862138a63ad11f
 assigned_to: ai
 created_by: t@t
 branch: feat/investigate-checks-tab-browser-pass-stal
@@ -14,6 +13,8 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T17:53:05Z"
 updated_at: "2026-11-17T21:51:54Z"
+last_close_out_gate_ms: 226797
+last_close_out_gate_at: "2026-11-17T21:51:54.891Z"
 review_passes: 3
 review_rounds: 2
 handoff_signal_retry_count: 2
