@@ -62,3 +62,4 @@ Screenshot shows the Checks Now tab at 390px. The attempt captured the main page
 - 2026-11-17T19:56:22Z · body
 - 2026-11-17T19:57:34Z · handoff_deferred: 3 queued message(s) must be read before review
 - 2026-11-17T19:57:35Z · message_queued at 2026-11-17T19:57:35.118Z
+- 2026-11-17T19:57:35Z · ↻ resuming engineer to read queued message
