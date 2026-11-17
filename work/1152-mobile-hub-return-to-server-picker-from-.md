@@ -113,3 +113,4 @@ Inspect the existing Hub server WebView architecture and navigation security bef
 - 2026-11-17T07:47:21Z · CTO nudge: held — remote validation is running
 - 2026-11-17T07:54:41Z · body
 - 2026-11-17T07:56:55Z · status active→review
+- 2026-11-17T07:56:55Z · note: shots: skipped — 6 shots already captured — an engineer-made capture pre-empts the automatic one
