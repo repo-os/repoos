@@ -2,14 +2,14 @@
 id: "1147"
 title: "Mobile task detail: make tabs and preview guidance reachable"
 type: bug
-status: inbox
+status: ready
 priority: p1
 area: web
 assigned_to: ai
 created_by: t@t
 branch: ""
 created_at: "2026-11-17T03:06:27Z"
-updated_at: "2026-11-17T05:14:03Z"
+updated_at: "2026-11-17T05:14:11Z"
 ---
 ## Problem
 At 390×844, the mobile task detail tab strip continues beyond the viewport and the preview-target helper wraps one or two words per line beside its selector. The cramped title/header alignment and Mission Control heading alignment are owned by #1145 and are excluded from this follow-up.
@@ -39,3 +39,4 @@ Use the attached 390×844 screenshot. Inspect both themes and a long task title.
 - 2026-11-17T03:32:32Z · body: Problem (added 1, removed 1); Desired UX (added 1, removed 1); Acceptance criteria (added 3, removed 3); Notes for AI (added 1, removed 1)
 - 2026-11-17T03:32:42Z · title
 - 2026-11-17T05:14:03Z · needs_input
+- 2026-11-17T05:14:11Z · status inbox→ready
