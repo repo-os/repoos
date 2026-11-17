@@ -11,7 +11,7 @@ branch: feat/hub-find-servers-on-my-tailnet-stop-list
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T10:06:23Z"
-updated_at: "2026-11-17T12:58:35Z"
+updated_at: "2026-11-17T13:02:47Z"
 review_rounds: 2
 review_passes: 2
 dev_error_count: 5
@@ -87,3 +87,4 @@ Do not add runtime dependencies. The discovery endpoint exposes names/ports only
 - 2026-11-17T12:58:35Z · status active→review
 - 2026-11-17T12:58:35Z · message_queued at 2026-11-17T12:58:35.477Z
 - 2026-11-17T12:58:35Z · note: shots: skipped — Docs site skipped: no docs shot declared
+- 2026-11-17T13:02:47Z · note: review pass 3: needs some work
