@@ -278,23 +278,34 @@ const RESULT_ICON: Record<string, string> = {
       <div>
         <h1 class="ck-title">Checks</h1>
         <p class="ck-sub">
-          <template v-if="activeTab === 'plan'">
-            What <code>repoos check</code> runs for this repo, which profile selects what, and why a
-            step is skipped. Nothing here runs a command — it reads the same plan the gate resolves.
-          </template>
-          <template v-else-if="activeTab === 'test-suite'">
-            Run the test suite on this machine or on the configured remote validation runner. Output
-            streams here while the run is in progress.
-          </template>
-          <template v-else-if="activeTab === 'runs'">
-            Every check run — local and remote, handoff and close-out — with its machine, duration,
-            scope and outcome. Sortable, so "how long does a full suite take on mini?" has an
-            answer.
-          </template>
-          <template v-else>
-            Close-out queue and each remote host: what is running, queued, or hung right now. Live —
-            refreshes every few seconds.
-          </template>
+          <span class="ck-sub-desktop">
+            <template v-if="activeTab === 'plan'">
+              What <code>repoos check</code> runs for this repo, which profile selects what, and why
+              a step is skipped. Nothing here runs a command — it reads the same plan the gate
+              resolves.
+            </template>
+            <template v-else-if="activeTab === 'test-suite'">
+              Run the test suite on this machine or on the configured remote validation runner.
+              Output streams here while the run is in progress.
+            </template>
+            <template v-else-if="activeTab === 'runs'">
+              Every check run — local and remote, handoff and close-out — with its machine,
+              duration, scope and outcome. Sortable, so "how long does a full suite take on mini?"
+              has an answer.
+            </template>
+            <template v-else>
+              Close-out queue and each remote host: what is running, queued, or hung right now. Live
+              — refreshes every few seconds.
+            </template>
+          </span>
+          <span class="ck-sub-mobile">
+            <template v-if="activeTab === 'plan'">See what the check plan runs.</template>
+            <template v-else-if="activeTab === 'test-suite'"
+              >Run tests and follow their output.</template
+            >
+            <template v-else-if="activeTab === 'runs'">Review recent check results.</template>
+            <template v-else>See checks running and waiting now.</template>
+          </span>
         </p>
       </div>
       <div class="ck-actions">
@@ -303,9 +314,13 @@ const RESULT_ICON: Record<string, string> = {
           href="https://docs.repoos.org/check"
           target="_blank"
           rel="noreferrer"
-          >How checks work ↗</a
+          ><span class="ck-action-desktop">How checks work ↗</span
+          ><span class="ck-action-mobile">Help</span></a
         >
-        <a class="ck-help-link" href="/settings?tab=toml">Edit check plan</a>
+        <a class="ck-help-link" href="/settings?tab=toml"
+          ><span class="ck-action-desktop">Edit check plan</span
+          ><span class="ck-action-mobile">Edit plan</span></a
+        >
         <Button
           v-if="activeTab === 'plan'"
           variant="ghost"
@@ -759,6 +774,47 @@ const RESULT_ICON: Record<string, string> = {
 .ck-sub code {
   font-family: var(--mono);
   color: var(--txt);
+}
+.ck-sub-mobile,
+.ck-action-mobile {
+  display: none;
+}
+@media (max-width: 719.98px) {
+  .ck-head {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .ck-sub {
+    display: block;
+    margin-top: 2px;
+  }
+  .ck-sub-desktop,
+  .ck-action-desktop {
+    display: none;
+  }
+  .ck-sub-mobile,
+  .ck-action-mobile {
+    display: inline;
+  }
+  .ck-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .ck-help-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 42px;
+    padding: 0 8px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    text-align: center;
+    font-size: 13px;
+  }
 }
 .ck-loading,
 .ck-err {
