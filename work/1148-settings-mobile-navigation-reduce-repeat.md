@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/settings-mobile-navigation-reduce-repeat
 created_at: "2026-11-17T03:06:33Z"
-updated_at: "2026-11-17T04:20:09Z"
+updated_at: "2026-11-17T04:35:14Z"
 ---
 ## Problem
 At 390×844, /settings shows a six-item page navigation grid, followed by a long wrapping row of topic chips (Themes, Activity animation, General, Performance, Model routing, Close-out, Automation & approval, Screenshots, Attachments, Background service, Publishing, Release emails, Remote validation, Board, and more). Both layers consume most of the initial viewport before selected setting controls.
@@ -30,70 +30,70 @@ Use the attached phone screenshot. Check long labels and both theme families. Th
 ```json
 [
 {
-  "label": "Phone 390px: single tab rail beside the collapsed Sections control",
-  "target": "default",
-  "route": "/settings",
-  "highlight": ".settings-mobile-nav",
-  "assert": [
-    {
-      "selector": ".settings-mobile-nav-btn",
-      "label": "all seven page tabs remain in the phone rail",
-      "count": 7
-    },
-    {
-      "selector": ".settings-section-jump-btn",
-      "label": "sections live behind one compact control",
-      "text": "Browse all"
-    }
-  ],
-  "theme": "light",
-  "viewportWidth": 390,
-  "viewportHeight": 844
+"label": "Phone 390px: single tab rail beside the collapsed Sections control",
+"target": "default",
+"route": "/settings",
+"highlight": ".settings-mobile-nav",
+"assert": [
+  {
+    "selector": ".settings-mobile-nav-btn",
+    "label": "all seven page tabs remain in the phone rail",
+    "count": 7
+  },
+  {
+    "selector": ".settings-section-jump-btn",
+    "label": "sections live behind one compact control",
+    "text": "Browse all"
+  }
+],
+"theme": "light",
+"viewportWidth": 390,
+"viewportHeight": 844
 },
 {
-  "label": "Phone 390px dark: section list open, long labels intact",
-  "target": "default",
-  "route": "/settings",
-  "highlight": ".settings-section-nav--phone",
-  "steps": [
-    {
-      "click": ".settings-section-jump-btn"
-    },
-    {
-      "waitMs": 250
-    }
-  ],
-  "assert": [
-    {
-      "selector": ".settings-section-nav--phone .settings-section-chip",
-      "label": "every General section stays reachable",
-      "minCount": 14
-    },
-    {
-      "selector": ".settings-section-nav--phone",
-      "label": "long section labels render",
-      "text": "Automation & approval"
-    }
-  ],
-  "theme": "dark",
-  "viewportWidth": 390,
-  "viewportHeight": 844
+"label": "Phone 390px dark: section list open, long labels intact",
+"target": "default",
+"route": "/settings",
+"highlight": ".settings-section-nav--phone",
+"steps": [
+  {
+    "click": ".settings-section-jump-btn"
+  },
+  {
+    "waitMs": 250
+  }
+],
+"assert": [
+  {
+    "selector": ".settings-section-nav--phone .settings-section-chip",
+    "label": "every General section stays reachable",
+    "minCount": 14
+  },
+  {
+    "selector": ".settings-section-nav--phone",
+    "label": "long section labels render",
+    "text": "Automation & approval"
+  }
+],
+"theme": "dark",
+"viewportWidth": 390,
+"viewportHeight": 844
 },
 {
-  "label": "Desktop Settings composition unchanged",
-  "target": "default",
-  "route": "/settings",
-  "highlight": ".settings-section-nav",
-  "assert": [
-    {
-      "selector": ".settings-tabs .settings-tab-btn",
-      "label": "desktop tab strip is intact",
-      "minCount": 7
-    }
-  ],
-  "theme": "light",
-  "viewportWidth": 1440,
-  "viewportHeight": 900
+"label": "Desktop Settings composition unchanged",
+"target": "default",
+"route": "/settings",
+"highlight": ".settings-section-nav",
+"assert": [
+  {
+    "selector": ".settings-tabs .settings-tab-btn",
+    "label": "desktop tab strip is intact",
+    "minCount": 7
+  }
+],
+"theme": "light",
+"viewportWidth": 1440,
+"viewportHeight": 900
 }
 ]
 ```
@@ -114,3 +114,4 @@ Use the attached phone screenshot. Check long labels and both theme families. Th
 - 2026-11-17T04:02:53Z · body
 - 2026-11-17T04:08:19Z · body
 - 2026-11-17T04:20:09Z · body
+- 2026-11-17T04:35:14Z · body
