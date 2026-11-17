@@ -11,7 +11,7 @@ branch: feat/hub-android-dev-build-update-channel-new
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T14:48:18Z"
-updated_at: "2026-11-17T16:11:27Z"
+updated_at: "2026-11-17T16:11:46Z"
 handoff_signal_retry_count: 2
 review_rounds: 1
 review_passes: 1
@@ -62,3 +62,4 @@ Follow the same shape as Tiao's implementation so all of Nick's apps behave iden
 - 2026-11-17T16:09:58Z · note: handoff requested (cli)
 - 2026-11-17T16:10:38Z · CTO nudge: held — handoff gate is running
 - 2026-11-17T16:11:27Z · message_delivered: 1 message(s)
+- 2026-11-17T16:11:46Z · note: Review round 1 fixes requested
