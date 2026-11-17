@@ -11,7 +11,7 @@ branch: feat/test-easter-eggs-1026-e2-resolveservehos
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-17T02:10:39Z"
-updated_at: "2026-11-17T10:57:10Z"
+updated_at: "2026-11-17T10:59:04Z"
 dev_error_count: 5
 ---
 ## Problem
@@ -63,3 +63,4 @@ Machine-dependent test, not a product bug: `resolveServeHost` behaviour is inten
 - 2026-11-17T10:57:10Z · status active→review
 - 2026-11-17T10:57:10Z · message_queued at 2026-11-17T10:57:10.733Z
 - 2026-11-17T10:57:10Z · note: shots: skipped — the diff (3 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-11-17T10:59:04Z · note: review pass 1: good to go
