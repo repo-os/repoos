@@ -6,6 +6,9 @@ status: active
 needs_input: true
 needs_input_reason: watchdog-stuck
 needs_input_detail: "3 automatic resume(s) in this active episode did not produce a handoff — the engineer keeps ending its turn without one. Review the transcript and resume it manually; if the conversation is poisoned, reset it with `repoos start 1157 --fresh`."
+debug_tldr: "Engineer keeps exiting without a handoff after 3 auto-resumes — open the transcript and resume manually, or run `repoos start 1157 --fresh` if it looks poisoned."
+debug_tldr_at: "2026-11-17T17:37:58Z"
+debug_tldr_key: "watchdog-stuck|3 automatic resume(s) in this active episode did not produce a handoff — the engineer keeps ending its turn without one. Review the transcript and resume it manually; if the conversation is poisoned, reset it with `repoos start 1157 --fresh`."
 priority: p1
 area: web
 assigned_to: ai
@@ -14,7 +17,7 @@ branch: feat/qa-pass-use-the-repoos-web-app-on-deskto
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T15:21:15Z"
-updated_at: "2026-11-17T17:37:43Z"
+updated_at: "2026-11-17T17:37:58Z"
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-11-17T16:50:57.959Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-17T17:19:58.428Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-17T17:28:43.649Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
