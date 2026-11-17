@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/mobile-hub-return-to-server-picker-from-
 created_at: "2026-11-17T05:37:20Z"
-updated_at: "2026-11-17T06:09:57Z"
+updated_at: "2026-11-17T06:10:42Z"
 ---
 ## Problem
 In RepoOS Hub on mobile, a connected server can accumulate many pages of navigation history and the user must repeatedly go back to leave the server and return to the native Hub server picker. On narrow screens the top bar also hides the current project name while giving an oversized search field significant width. The attached desktop and mobile screenshots show the current top bar.
@@ -40,3 +40,4 @@ Inspect the existing Hub server WebView architecture and navigation security bef
 - 2026-11-17T05:50:12Z · status ready→active, branch
 - 2026-11-17T06:09:57Z · message_queued at 2026-11-17T06:09:57.531Z
 - 2026-11-17T06:09:57Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-17T06:10:42Z · body
