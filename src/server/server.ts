@@ -4679,7 +4679,13 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       // Create the route context with all necessary dependencies
       const routeContext: RouteContext = {
         config,
-        servePort: boundServePort,
+        // The port REQUESTED at startup: schedule guards use 0 as the
+        // "ephemeral harness, never run schedules" sentinel (#1154 review).
+        servePort: requestedPort,
+        // The port actually bound, for the restart command and helper.
+        get boundPort() {
+          return boundServePort;
+        },
         index,
         indexReady,
         runner,

@@ -218,7 +218,7 @@ export const getUpdateStatus: RouteHandler = (ctx, _req, res) => {
     supervisorPlatform: status.supervisorPlatform,
     supervisorReason: status.supervisorReason,
     restartFailure,
-    restartCommand: restartCliCommand(ctx.config.root, ctx.servePort),
+    restartCommand: restartCliCommand(ctx.config.root, ctx.boundPort ?? ctx.servePort),
   });
 };
 
@@ -237,7 +237,7 @@ export const restartInstalledUpgrade: RouteHandler = async (ctx, req, res) => {
       state: "manual",
       reason:
         "Could not determine how this server is supervised, so RepoOS cannot restart it safely.",
-      command: restartCliCommand(ctx.config.root, ctx.servePort),
+      command: restartCliCommand(ctx.config.root, ctx.boundPort ?? ctx.servePort),
     });
   }
   restartFailure = null;
@@ -250,7 +250,7 @@ export const restartInstalledUpgrade: RouteHandler = async (ctx, req, res) => {
         idleRestartPending = false;
         if (idleRestartTimer) clearInterval(idleRestartTimer);
         idleRestartTimer = null;
-        void restartHelper(ctx.config.root, ctx.servePort).then((result) => {
+        void restartHelper(ctx.config.root, ctx.boundPort ?? ctx.servePort).then((result) => {
           if (!result.ok) {
             restartFailure = result.reason;
             ctx.logger.system("error", `installed-upgrade restart failed: ${result.reason}`);
@@ -261,12 +261,12 @@ export const restartInstalledUpgrade: RouteHandler = async (ctx, req, res) => {
     return json(res, 202, { state: "waiting-for-idle" });
   }
   // The helper must outlive this process and uses the CLI's verified restart path.
-  const helper = await restartHelper(ctx.config.root, ctx.servePort);
+  const helper = await restartHelper(ctx.config.root, ctx.boundPort ?? ctx.servePort);
   if (!helper.ok)
     return json(res, 503, {
       state: "manual",
       reason: helper.reason,
-      command: restartCliCommand(ctx.config.root, ctx.servePort),
+      command: restartCliCommand(ctx.config.root, ctx.boundPort ?? ctx.servePort),
     });
   res.writeHead(202, { "Content-Type": "application/json" });
   res.end(JSON.stringify({ state: "restarting" }));
