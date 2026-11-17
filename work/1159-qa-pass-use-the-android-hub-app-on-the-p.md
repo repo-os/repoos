@@ -12,7 +12,7 @@ branch: feat/qa-pass-use-the-android-hub-app-on-the-p
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T15:51:18Z"
-updated_at: "2026-11-17T18:29:45Z"
+updated_at: "2026-11-17T18:29:46Z"
 review_rounds: 1
 review_passes: 1
 handoff_signal_retry_count: 2
@@ -152,3 +152,4 @@ The Pixel 8 Android 16 (API 36) emulator was available and used after the saved 
 - 2026-11-17T18:24:30Z · status review→active
 - 2026-11-17T18:24:33Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-17T18:29:45Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-11-17T18:29:46Z · note: handoff requested (cli)
