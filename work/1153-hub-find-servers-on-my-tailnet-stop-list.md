@@ -86,3 +86,4 @@ Do not add runtime dependencies. The discovery endpoint exposes names/ports only
 - 2026-11-17T12:56:33Z · body
 - 2026-11-17T12:58:35Z · status active→review
 - 2026-11-17T12:58:35Z · message_queued at 2026-11-17T12:58:35.477Z
+- 2026-11-17T12:58:35Z · note: shots: skipped — Docs site skipped: no docs shot declared
