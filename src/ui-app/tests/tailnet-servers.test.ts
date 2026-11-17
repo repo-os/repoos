@@ -4,7 +4,7 @@ import {
   buildTailnetDiscoveryPayload,
   DISCOVERY_DISABLED_REASON,
 } from "../../server/routes/servers.js";
-import { parseTailnetInfo } from "../../core/tailnet-servers.js";
+import { parseTailnetInfo, tailnetPeerFailureReason } from "../../core/tailnet-servers.js";
 
 const config = (
   over: Partial<RepoOSConfig> = {},
@@ -25,6 +25,25 @@ const status = () =>
   });
 
 describe("GET /api/servers/tailnet", () => {
+  it.each([
+    [
+      Object.assign(new Error("Permission denied (publickey)."), {
+        stderr: "Permission denied (publickey).",
+      }),
+      "thinkpad",
+      "no SSH key from thinkpad",
+    ],
+    [
+      Object.assign(new Error("connect: Connection refused"), {
+        stderr: "ssh: connect to host muse port 22: Connection refused",
+      }),
+      "muse",
+      "SSH is off on muse",
+    ],
+  ])("explains SSH failures with a plain fix", (failure, host, expected) => {
+    expect(tailnetPeerFailureReason(failure, host)).toBe(expected);
+  });
+
   it("filters mobile devices by OS or device model without dropping generic phone-named servers", () => {
     const info = parseTailnetInfo(
       JSON.stringify({
@@ -303,6 +322,31 @@ describe("GET /api/servers/tailnet", () => {
         port: 7171,
         url: "https://bee.tail.ts.net",
         https: true,
+      },
+    ]);
+    expect(remoteExec).not.toHaveBeenCalled();
+  });
+
+  it("keeps a peer that disabled discovery in the collapsed machine-failure results", async () => {
+    const remoteExec = vi.fn(async () => {
+      throw new Error("SSH should not run for a current peer endpoint");
+    });
+    const payload = await buildTailnetDiscoveryPayload(config(), {
+      localRows: [],
+      tailscaleStatus: async () =>
+        JSON.stringify({
+          Peer: { bee: { HostName: "bee", DNSName: "bee.tail.ts.net", Online: true } },
+        }),
+      httpDiscovery: async () =>
+        JSON.stringify({ discoveryVersion: 1, disabled: true, servers: [] }),
+      remoteExec,
+    });
+    expect(payload.servers).toEqual([
+      {
+        host: "bee",
+        dnsName: "bee.tail.ts.net",
+        unreachable: true,
+        reason: "tailnet discovery is turned off on this machine",
       },
     ]);
     expect(remoteExec).not.toHaveBeenCalled();

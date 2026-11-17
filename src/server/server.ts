@@ -326,6 +326,7 @@ import {
 } from "./notifications/index.js";
 import { AgentSupervisor } from "./supervisor.js";
 import { TaskWatchdog } from "./task-watchdog.js";
+import { startTailnetDiscoveryListener } from "./tailnet-discovery-listener.js";
 import { startProviderUsageLimitProbes } from "./provider-usage-limit-probe.js";
 import {
   bootstrapTelegramAtBoot,
@@ -4949,6 +4950,14 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           logServerRegistryError(logger, "register", e);
         }
       }
+      const stopTailnetDiscovery =
+        registerInServerRegistry && host === "0.0.0.0"
+          ? startTailnetDiscoveryListener(config, (error) =>
+              logger.system("warn", "Tailnet discovery listener failed", {
+                error: error instanceof Error ? error.message : String(error),
+              }),
+            )
+          : () => {};
       const handle: ServerHandle = {
         url,
         port: actualPort,
@@ -5049,6 +5058,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
             runningServerRegistry = null;
           }
           reaper.unregister();
+          stopTailnetDiscovery();
           await closeHttp();
           if (isControlPlane) {
             logger.system("info", "RepoOS control plane stopped", {

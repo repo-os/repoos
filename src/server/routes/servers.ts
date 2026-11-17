@@ -27,6 +27,7 @@ import {
   type ListedServer,
 } from "../../core/tailnet-servers.js";
 import type { RepoOSConfig } from "../../core/types.js";
+import type { IncomingMessage } from "node:http";
 
 export const DISCOVERY_DISABLED_REASON =
   "Tailnet discovery is turned off on this server. Add a server manually, or enable it in Settings.";
@@ -122,45 +123,65 @@ export const getTailnetServers: RouteHandler = async (ctx, _req, res) => {
   return json(res, 200, await buildTailnetDiscoveryPayload(ctx.config));
 };
 
-/** Small, credential-free payload used only by a Tailscale Serve peer probe. */
-export const getTailnetPeerDiscovery: RouteHandler = async (ctx, req, res) => {
-  const socketAddress = req.socket.remoteAddress?.replace(/^::ffff:/, "") ?? "";
-  const proxiedByTailscaleServe =
-    (socketAddress === "127.0.0.1" || socketAddress === "::1") &&
-    typeof req.headers["tailscale-user-login"] === "string" &&
-    req.headers["tailscale-user-login"].length > 0;
-  const source = socketAddress;
-  const isTailnetSource =
-    source.startsWith("fd7a:115c:a1e0:") ||
-    (() => {
-      const octets = source.split(".").map(Number);
-      return (
-        octets.length === 4 &&
-        octets.every((part) => Number.isInteger(part) && part >= 0 && part <= 255) &&
-        octets[0] === 100 &&
-        octets[1] >= 64 &&
-        octets[1] <= 127
-      );
-    })();
-  if (!isTailnetSource && !proxiedByTailscaleServe)
-    return json(res, 403, { ok: false, error: "Tailnet access required." });
-  if (ctx.config.tailnetDiscovery === false)
-    return json(res, 200, { ok: true, discoveryVersion: 1, disabled: true, servers: [] });
-  const rows = await listValidatedServerRegistry();
-  const httpsByPort: Record<number, string> = await localTailnetServeUrls().catch(() => ({}));
-  return json(res, 200, {
-    ok: true,
-    discoveryVersion: 1,
-    servers: rows
-      .filter((row) => row.valid)
-      .map((row) => ({
-        host: "local",
-        projectName: row.entry.projectName,
-        port: row.entry.port,
-        root: row.entry.root,
-        allowlistGroup: row.entry.allowlistGroup,
-        valid: row.valid,
-        ...(httpsByPort[row.entry.port] ? { url: httpsByPort[row.entry.port], https: true } : {}),
-      })),
-  });
-};
+function normalizedAddress(value: string | undefined): string {
+  return (value ?? "")
+    .trim()
+    .replace(/^::ffff:/, "")
+    .toLowerCase();
+}
+
+function isTailnetAddress(address: string): boolean {
+  if (address.startsWith("fd7a:115c:a1e0:")) return true;
+  const octets = address.split(".").map(Number);
+  return (
+    octets.length === 4 &&
+    octets.every((part) => Number.isInteger(part) && part >= 0 && part <= 255) &&
+    octets[0] === 100 &&
+    octets[1] >= 64 &&
+    octets[1] <= 127
+  );
+}
+
+/** Validate the direct socket address; forwarded or loopback requests are never trusted. */
+export function isTailnetPeerDiscoveryRequest(req: IncomingMessage): boolean {
+  const socketAddress = normalizedAddress(req.socket.remoteAddress);
+  return isTailnetAddress(socketAddress);
+}
+
+export interface TailnetPeerDiscoveryHandlerDeps {
+  listRows?: typeof listValidatedServerRegistry;
+  serveUrls?: typeof localTailnetServeUrls;
+}
+
+/** Small, credential-free payload used only by a direct Tailnet peer request. */
+export function createTailnetPeerDiscoveryHandler(
+  deps: TailnetPeerDiscoveryHandlerDeps = {},
+): RouteHandler {
+  return async (ctx, req, res) => {
+    if (!isTailnetPeerDiscoveryRequest(req))
+      return json(res, 403, { ok: false, error: "Tailnet access required." });
+    if (ctx.config.tailnetDiscovery === false)
+      return json(res, 200, { ok: true, discoveryVersion: 1, disabled: true, servers: [] });
+    const rows = await (deps.listRows ?? listValidatedServerRegistry)();
+    const httpsByPort: Record<number, string> = await (
+      deps.serveUrls ?? localTailnetServeUrls
+    )().catch(() => ({}));
+    return json(res, 200, {
+      ok: true,
+      discoveryVersion: 1,
+      servers: rows
+        .filter((row) => row.valid)
+        .map((row) => ({
+          host: "local",
+          projectName: row.entry.projectName,
+          port: row.entry.port,
+          root: row.entry.root,
+          allowlistGroup: row.entry.allowlistGroup,
+          valid: row.valid,
+          ...(httpsByPort[row.entry.port] ? { url: httpsByPort[row.entry.port], https: true } : {}),
+        })),
+    });
+  };
+}
+
+export const getTailnetPeerDiscovery = createTailnetPeerDiscoveryHandler();

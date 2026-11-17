@@ -133,10 +133,13 @@ servers on my tailnet**, next to **Add server**. That action makes exactly one r
   JSON routes advertise `Access-Control-Allow-Origin: *`, which browsers reject
   for credentialed requests).
 - The *server* does the discovery: it runs `tailscale status --json` and probes
-  online peers in parallel over their Tailscale HTTPS Serve listener on ports
-  443, 8443 and 10000. The peer listener returns each project's own Serve URL
-  and the shared server row fields; older RepoOS peers fall back to SSH and
-  `tailscale serve status --json`. Peer identity is the peer's MagicDNS name (`bee`,
+  each online peer's machine-level listener on TCP port 41641, bound directly
+  to the peer's Tailscale IPv4 address. The HTTP request travels inside
+  Tailscale's encrypted WireGuard connection, so the listener sees the real
+  peer socket address and does not trust proxy headers. Its response includes
+  each project's own HTTPS Serve URL and shared server row fields. Older
+  RepoOS peers fall back to SSH and `tailscale serve status --json`. Peer
+  identity is the peer's MagicDNS name (`bee`,
   `thinkpad`), not Tailscale's display `HostName`: duplicate display names stay
   distinct, and a machine whose display name contains spaces or punctuation is
   reached at its MagicDNS name. The display name is kept as `displayName` for a

@@ -3,14 +3,14 @@
  * `GET /api/servers/tailnet` endpoint the mobile Hub calls.
  *
  * Discovery runs entirely on the machine that owns the trust relationship: the
- * Tailscale CLI lists online peers, and each peer is queried over HTTPS before
- * falling back to SSH for older installations. The phone never scans — it asks one
+ * Tailscale CLI lists online peers, and each peer is queried over a listener
+ * bound to its Tailnet interface before falling back to SSH for older
+ * installations. The phone never scans — it asks one
  * server it already trusts. Keeping this in `src/core` means the CLI and the
  * server cannot drift into two slightly different discovery implementations.
  */
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import { TAILSCALE_HTTPS_PORTS } from "./tailscale.js";
 import { remoteHostUser } from "./remote-hosts.js";
 import type { RemoteValidationConfig, RemoteValidationHost } from "./types.js";
 
@@ -20,6 +20,8 @@ const execFileAsync = promisify(execFile);
 export const HOST_TIMEOUT_MS = 4_000;
 /** Whole-request budget for one discovery pass; slow hosts become `unreachable`. */
 export const DISCOVERY_DEADLINE_MS = 20_000;
+/** Machine-level HTTP endpoint bound directly to the Tailscale interface. */
+export const TAILNET_DISCOVERY_PORT = 41641;
 /** `tailscale status --json` is local and cheap; never let it hold a request. */
 const TAILSCALE_STATUS_TIMEOUT_MS = 2_000;
 /** URL enrichment is a nicety; a slow `serve status` must not hide servers. */
@@ -452,6 +454,14 @@ export function remoteFailureReason(error: unknown): string {
   return classifyRemoteFailure(error).reason;
 }
 
+/** Plain fixes for the Hub's collapsed machine-failure group. */
+export function tailnetPeerFailureReason(error: unknown, host: string): string {
+  const failure = classifyRemoteFailure(error);
+  if (/SSH authentication failed/i.test(failure.reason)) return `no SSH key from ${host}`;
+  if (/connection refused/i.test(failure.reason)) return `SSH is off on ${host}`;
+  return failure.reason;
+}
+
 export const defaultRemoteExec: RemoteExec = async (host, user, timeoutMs, command) => {
   const { stdout } = await execFileAsync("ssh", serversSshArgs(host, user, timeoutMs, command), {
     timeout: timeoutMs,
@@ -526,40 +536,29 @@ export interface CollectTailnetOptions {
 }
 
 async function defaultHttpDiscovery(peer: TailnetPeer, timeoutMs: number): Promise<string | null> {
-  const ports = TAILSCALE_HTTPS_PORTS;
-  const eachTimeout = Math.max(1, timeoutMs);
-  const probes = ports.flatMap((port) => [
-    `https://${peer.dnsName ?? peer.host}${port === 443 ? "" : `:${port}`}/api/servers/discovery`,
-    `http://${peer.dnsName ?? peer.host}:${port}/api/servers/discovery`,
-  ]);
-  const results = await Promise.all(
-    probes.map(async (url) => {
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), eachTimeout);
-      try {
-        const response = await fetch(url, {
-          signal: controller.signal,
-          headers: { Accept: "application/json" },
-        });
-        if (!response.ok) return null;
-        const text = await response.text();
-        const payload = JSON.parse(text) as {
-          discoveryVersion?: number;
-          disabled?: boolean;
-          servers?: unknown[];
-        };
-        return payload.discoveryVersion === 1 &&
-          (payload.disabled === true || Array.isArray(payload.servers))
-          ? text
-          : null;
-      } catch {
-        return null;
-      } finally {
-        clearTimeout(timer);
-      }
-    }),
-  );
-  return results.find((result) => result !== null) ?? null;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch(
+      `http://${peer.dnsName ?? peer.host}:${TAILNET_DISCOVERY_PORT}/api/servers/discovery`,
+      { signal: controller.signal, headers: { Accept: "application/json" } },
+    );
+    if (!response.ok) return null;
+    const text = await response.text();
+    const payload = JSON.parse(text) as {
+      discoveryVersion?: number;
+      disabled?: boolean;
+      servers?: unknown[];
+    };
+    return payload.discoveryVersion === 1 &&
+      (payload.disabled === true || Array.isArray(payload.servers))
+      ? text
+      : null;
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 export interface TailnetCollection {
@@ -680,7 +679,15 @@ export async function collectTailnetServers(
               /* non-RepoOS service: try SSH */
             }
             if (payload?.discoveryVersion === 1) {
-              if (payload.disabled) return [];
+              if (payload.disabled)
+                return [
+                  {
+                    host: peer.host,
+                    ...displayFields,
+                    unreachable: true,
+                    reason: "tailnet discovery is turned off on this machine",
+                  },
+                ];
               if (Array.isArray(payload.servers)) {
                 return payload.servers.map((server) => ({
                   ...server,
@@ -737,7 +744,7 @@ export async function collectTailnetServers(
               host: peer.host,
               ...displayFields,
               unreachable: true,
-              reason: remoteFailureReason(error),
+              reason: tailnetPeerFailureReason(error, peer.host),
             },
           ];
         }
