@@ -17,10 +17,6 @@ const mocks = vi.hoisted(() => ({
   init: vi.fn(async () => undefined),
 }));
 
-vi.mock("@capacitor/app", () => ({ App: { addListener: vi.fn(), exitApp: vi.fn() } }), {
-  virtual: true,
-});
-
 vi.mock("../../../mobile/src/app-state", async () => {
   const { ref } = await import("vue");
   return {
@@ -66,7 +62,7 @@ vi.mock("../../../mobile/src/lock", () => ({
 }));
 vi.mock("../../../mobile/src/platform", () => ({
   loadHubDevUpdateConfig: vi.fn(async () => ({ installedCommit: "test", enabled: false })),
-  resolveShellPlatform: () => "android",
+  resolveShellPlatform: () => "web",
 }));
 vi.mock("../../../mobile/src/fixture", () => ({
   readHubFixture: () => null,

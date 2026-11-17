@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref, computed } from "vue";
 import { Settings } from "lucide-vue-next";
-import { App } from "@capacitor/app";
 import {
   init,
   servers,
@@ -77,12 +76,15 @@ let unmounted = false;
 
 onMounted(async () => {
   document.documentElement.classList.add(`platform-${platform.value}`);
+  const capacitorApp = platform.value === "android" ? (await import("@capacitor/app")).App : null;
 
   // Android consumes the system back gesture once a listener exists, so map
   // every local Hub route explicitly instead of relying on WebView history.
   disposeBackButton = await installHubBackButton({
     platform: platform.value,
-    subscribe: (listener) => App.addListener("backButton", listener),
+    subscribe: (listener) =>
+      capacitorApp?.addListener("backButton", listener) ??
+      Promise.resolve({ remove: () => undefined }),
     getState: () => ({
       route: route.value,
       sheetOpen: sheetOpen.value,
@@ -92,7 +94,7 @@ onMounted(async () => {
       closeSheet,
       showPicker: backToPicker,
       exitApp: () => {
-        void App.exitApp();
+        void capacitorApp?.exitApp();
       },
     },
   });
