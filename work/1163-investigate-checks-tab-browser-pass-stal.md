@@ -86,3 +86,4 @@ Direct tab-click coverage passes, but review identified a separate app lifecycle
 - 2026-11-17T20:33:41Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-17T20:33:41Z · message_queued at 2026-11-17T20:33:41.191Z
 - 2026-11-17T20:33:41Z · ↻ resuming engineer to read queued message
+- 2026-11-17T20:33:41Z · message_delivered: 2 message(s)
