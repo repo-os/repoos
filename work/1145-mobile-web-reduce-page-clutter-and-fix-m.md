@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 526758
-last_close_out_gate_at: "2026-11-17T04:08:01.079Z"
 id: "1145"
 title: "Mobile web: reduce page clutter and fix More sheet readability"
 type: bug
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: cb308838019707459456eb0048afcdc10b1ed49a
 assigned_to: ai
 created_by: t@t
 branch: feat/mobile-web-reduce-page-clutter-and-fix-m
 created_at: "2026-11-17T02:52:23Z"
 updated_at: "2026-11-17T04:08:01Z"
+last_close_out_gate_ms: 526758
+last_close_out_gate_at: "2026-11-17T04:08:01.079Z"
 review_passes: 1
 dev_error_count: 1
 ---

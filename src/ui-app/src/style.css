@@ -5810,6 +5810,11 @@
   flex: 1;
   min-width: 0;
 }
+/* The task detail's title/chips column (its narrow override is under #1145). */
+.drawer-head-main {
+  flex: 1;
+  min-width: 0;
+}
 /* #0569: the header title is an in-place editor. The text reads as the plain
    title until clicked, when an input takes over the same slot. */
 .task-title-text {
@@ -9765,7 +9770,11 @@
   border: 1px solid var(--border);
   border-bottom: 0;
   border-radius: 20px 20px 0 0;
-  background: var(--panel);
+  /* Opaque in every theme (#1145): --panel is deliberately translucent in the
+     classic, gruvbox, catppuccin, hypercolor and solarized themes, which let
+     the page underneath show through this sheet and made its links hard to
+     read. --panel-solid is the same surface at full opacity. */
+  background: var(--panel-solid);
   box-shadow: 0 -18px 56px rgba(0, 0, 0, 0.3);
 }
 .mobile-more-grip {
@@ -9818,6 +9827,24 @@
   margin-left: auto;
   color: var(--txt-faint);
   font-size: 22px;
+}
+/* #1145: a phone gets the page title and its controls, not the repeated
+   explanation underneath. The shared .page-desc and Releases' own .rel-sub are
+   reference copy on desktop; on a phone they push the first actionable row
+   below the fold (Stories, Settings, Dev, Context, Inputs, Secrets, Agents,
+   Releases). Every control and every status control stays. */
+@media (max-width: 719.98px) {
+  .page-desc,
+  .rel-sub,
+  .ck-sub,
+  .dep-sub {
+    display: none;
+  }
+  /* Save failures are not explanation — the store surfaces them inline, so
+     keep that one line on a phone (Settings, Agents). */
+  .page-desc:has(.save-msg.err) {
+    display: block;
+  }
 }
 @media (min-width: 720px) {
   .mobile-more-layer {
@@ -17171,6 +17198,26 @@
      past the right edge on long header chips. */
   .drawer-head-main {
     min-width: 0;
+  }
+  /* #1145: the task title used to share the first header row with the Queue
+     button, so a long title wrapped in a ~290px column that started halfway
+     across the screen. Put the meta row and title on their own full-width
+     row below the back/close controls: the title then starts at the same
+     16px content edge as everything else in the drawer. */
+  .task-detail-head {
+    flex-wrap: wrap;
+    row-gap: 10px;
+  }
+  .task-detail-head .drawer-mobile-back {
+    order: 1;
+  }
+  .task-detail-head .close-x {
+    order: 2;
+    margin-left: auto;
+  }
+  .task-detail-head .drawer-head-main {
+    order: 3;
+    flex: 1 1 100%;
   }
   .drawer-mobile-back {
     display: inline-flex;
