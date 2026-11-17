@@ -11,7 +11,7 @@ branch: feat/remote-validation-let-any-project-run-it
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T17:06:33Z"
-updated_at: "2026-11-17T19:13:13Z"
+updated_at: "2026-11-17T19:24:16Z"
 review_rounds: 2
 review_passes: 2
 ---
@@ -30,6 +30,32 @@ Any project can offload its pre-review and close-out gate to the runner pool. Ad
 
 ## Notes for AI
 Context: Nick's Tiao board on host bee (16 cores, encrypted btrfs, 3 projects) shows load 60-80 and landing timeouts; mini (Apple Silicon, quiet) and ThinkPad (8 cores) are idle-ish. Interim mitigations in use: close-out timeout raised to 30 min, engineer caps. Related: #0520, #0521, #0667, #0907, #0912.
+
+## Shots
+```json
+[
+{
+  "label": "Remote validation command and required tools",
+  "target": "default",
+  "route": "/settings?section=remote-validation",
+  "highlight": "#setting-remoteValidation.command"
+},
+{
+  "label": "Remote runner host toolchain status",
+  "target": "default",
+  "route": "/settings?section=remote-validation",
+  "highlight": ".rvr-hosts",
+  "steps": [
+    {
+      "click": "#setting-remoteValidation.enabled button"
+    },
+    {
+      "waitMs": 300
+    }
+  ]
+}
+]
+```
 
 ## Activity
 
@@ -58,3 +84,4 @@ Context: Nick's Tiao board on host bee (16 cores, encrypted btrfs, 3 projects) s
 - 2026-11-17T19:12:55Z · note: review pass 2: needs some work
 - 2026-11-17T19:12:55Z · message_delivered: 1 message(s)
 - 2026-11-17T19:12:55Z · status review→active
+- 2026-11-17T19:24:16Z · body
