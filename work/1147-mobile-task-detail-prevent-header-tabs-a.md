@@ -2,14 +2,14 @@
 id: "1147"
 title: "Mobile task detail: make tabs and preview guidance reachable"
 type: bug
-status: active
+status: review
 priority: p1
 area: web
 assigned_to: ai
 created_by: t@t
 branch: feat/mobile-task-detail-make-tabs-and-preview
 created_at: "2026-11-17T03:06:27Z"
-updated_at: "2026-11-17T05:49:34Z"
+updated_at: "2026-11-17T05:49:35Z"
 last_check_failure: "repoos check at 2026-11-17T05:37:46.311Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Phone task detail at 320px: all tabs and the expand control on screen (target \"default\"): loading state detected: loading text \"Loading full diff… this may take a momen\" on /work?task=9999&tab=changes (http://127.0.0.1:43923/work?task=9999&tab=changes&shotState=drawer%3AreviewWithBranch)"
 ---
 ## Problem
@@ -97,3 +97,4 @@ Use the attached 390×844 screenshot. Inspect both themes and a long task title.
 - 2026-11-17T05:41:39Z · body
 - 2026-11-17T05:46:25Z · body
 - 2026-11-17T05:49:34Z · note: ui verification passed: 2 of 2 shots captured with clean console
+- 2026-11-17T05:49:35Z · status active→review
