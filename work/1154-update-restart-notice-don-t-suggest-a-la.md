@@ -11,7 +11,7 @@ branch: feat/update-restart-notice-don-t-suggest-a-la
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T13:30:27Z"
-updated_at: "2026-11-17T14:57:45Z"
+updated_at: "2026-11-17T15:00:38Z"
 ---
 ## Problem
 
@@ -44,3 +44,4 @@ Read #1075 (the restart notice) and #1091 (`repoos restart`). A server that kill
 - 2026-11-17T14:36:08Z · status inbox→ready
 - 2026-11-17T14:36:10Z · status ready→active, branch
 - 2026-11-17T14:57:45Z · body
+- 2026-11-17T15:00:38Z · CTO nudge: held — handoff gate is running
