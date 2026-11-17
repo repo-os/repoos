@@ -2,7 +2,7 @@
 id: "1153"
 title: "Hub 'Find servers on my tailnet': stop listing bare machines, hide phones, explain failures, and replace SSH discovery with an HTTPS-based one"
 type: bug
-status: active
+status: review
 priority: p2
 area: [mobile, server, core]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/hub-find-servers-on-my-tailnet-stop-list
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T10:06:23Z"
-updated_at: "2026-11-17T13:55:16Z"
+updated_at: "2026-11-17T13:55:17Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: tests — ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯"
 last_handoff_failure_sha: 94e5e304643bc47fafe6924ef6a9cc8f16822ba9
 review_passes: 3
@@ -122,4 +122,4 @@ Do not add runtime dependencies. The discovery endpoint exposes names/ports only
 - 2026-11-17T13:54:40Z · status active→review
 - 2026-11-17T13:54:40Z · message_delivered: 2 message(s)
 - 2026-11-17T13:54:41Z · note: handoff requested (cli)
-- 2026-11-17T13:55:16Z · engineer stopped by request
+- 2026-11-17T13:55:17Z · status active→review
