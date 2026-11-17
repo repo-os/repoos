@@ -613,6 +613,12 @@
   .search-input kbd {
     display: none;
   }
+  /* The phone bar is already at its width budget and a preview capture still
+     sets the marker; it is developer chrome, not a user action, so keep it off
+     narrow screens rather than letting it crowd the project name (#1152). */
+  .preview-build-banner {
+    display: none;
+  }
 }
 /* A touch device has no keyboard-shortcut affordance: hide the ⌘K chip in the
    header pill and the navigate/open/close legend in the palette footer
