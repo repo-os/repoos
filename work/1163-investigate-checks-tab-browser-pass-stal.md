@@ -68,3 +68,4 @@ Screenshot shows the Checks Now tab at 390px. The attempt captured the main page
 - 2026-11-17T20:08:36Z · CTO nudge: held — handoff gate is running
 - 2026-11-17T20:18:23Z · status active→review
 - 2026-11-17T20:18:23Z · message_queued at 2026-11-17T20:18:23.330Z
+- 2026-11-17T20:18:23Z · note: shots: skipped — the diff (3 changed paths) touches no capture target's globs — no UI change to capture
