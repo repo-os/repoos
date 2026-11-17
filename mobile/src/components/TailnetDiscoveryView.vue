@@ -131,7 +131,10 @@ function isSelected(key: string): boolean {
           </ul>
         </details>
 
-        <p v-if="!projectServers.length && !failedServers.length && !message && !error" class="hint">
+        <p
+          v-if="!projectServers.length && !failedServers.length && !message && !error"
+          class="hint"
+        >
           No RepoOS servers answered from this server's tailnet.
         </p>
       </template>

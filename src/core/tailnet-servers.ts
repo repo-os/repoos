@@ -95,7 +95,9 @@ function isUnsupportedMobilePeer(peer: TailnetStatusPeer): boolean {
   const tags = peer.Tags ?? [];
   return (
     UNSUPPORTED_MOBILE_OS.has(os) ||
-    /\b(?:nothing[- ]phone(?:\b|\s*\()|iphone\b|ipad\b|pixel[- ](?:phone|tablet)\b|galaxy[- ](?:phone|tab)\b|android[- ]phone\b)/.test(name) ||
+    /\b(?:nothing[- ]phone(?:\b|\s*\()|iphone\b|ipad\b|pixel[- ](?:phone|tablet)\b|galaxy[- ](?:phone|tab)\b|android[- ]phone\b)/.test(
+      name,
+    ) ||
     tags.some((tag) => /(?:mobile|phone|tablet)/i.test(tag))
   );
 }
@@ -530,17 +532,33 @@ async function defaultHttpDiscovery(peer: TailnetPeer, timeoutMs: number): Promi
     `https://${peer.dnsName ?? peer.host}${port === 443 ? "" : `:${port}`}/api/servers/discovery`,
     `http://${peer.dnsName ?? peer.host}:${port}/api/servers/discovery`,
   ]);
-  const results = await Promise.all(probes.map(async (url) => {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), eachTimeout);
-    try {
-      const response = await fetch(url, { signal: controller.signal, headers: { Accept: "application/json" } });
-      if (!response.ok) return null;
-      const text = await response.text();
-      const payload = JSON.parse(text) as { discoveryVersion?: number; disabled?: boolean; servers?: unknown[] };
-      return payload.discoveryVersion === 1 && (payload.disabled === true || Array.isArray(payload.servers)) ? text : null;
-    } catch { return null; } finally { clearTimeout(timer); }
-  }));
+  const results = await Promise.all(
+    probes.map(async (url) => {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), eachTimeout);
+      try {
+        const response = await fetch(url, {
+          signal: controller.signal,
+          headers: { Accept: "application/json" },
+        });
+        if (!response.ok) return null;
+        const text = await response.text();
+        const payload = JSON.parse(text) as {
+          discoveryVersion?: number;
+          disabled?: boolean;
+          servers?: unknown[];
+        };
+        return payload.discoveryVersion === 1 &&
+          (payload.disabled === true || Array.isArray(payload.servers))
+          ? text
+          : null;
+      } catch {
+        return null;
+      } finally {
+        clearTimeout(timer);
+      }
+    }),
+  );
   return results.find((result) => result !== null) ?? null;
 }
 
@@ -647,27 +665,33 @@ export async function collectTailnetServers(
             Math.min(timeoutMs, 3_000),
           );
           if (discovered) {
-            let payload: { discoveryVersion?: number; disabled?: boolean; servers?: Record<string, unknown>[] } | null = null;
+            let payload: {
+              discoveryVersion?: number;
+              disabled?: boolean;
+              servers?: Record<string, unknown>[];
+            } | null = null;
             try {
               payload = JSON.parse(discovered) as {
                 discoveryVersion?: number;
                 disabled?: boolean;
                 servers?: Record<string, unknown>[];
               };
-            } catch { /* non-RepoOS service: try SSH */ }
-            if (payload?.discoveryVersion === 1) {
-            if (payload.disabled) return [];
-            if (Array.isArray(payload.servers)) {
-              return payload.servers.map((server) => ({
-                ...server,
-                host: peer.host,
-                ...(peer.dnsName ? { dnsName: peer.dnsName } : {}),
-                ...displayFields,
-                ...(typeof server.url === "string"
-                  ? { https: server.url.startsWith("https://") }
-                  : {}),
-              })) as ListedServer[];
+            } catch {
+              /* non-RepoOS service: try SSH */
             }
+            if (payload?.discoveryVersion === 1) {
+              if (payload.disabled) return [];
+              if (Array.isArray(payload.servers)) {
+                return payload.servers.map((server) => ({
+                  ...server,
+                  host: peer.host,
+                  ...(peer.dnsName ? { dnsName: peer.dnsName } : {}),
+                  ...displayFields,
+                  ...(typeof server.url === "string"
+                    ? { https: server.url.startsWith("https://") }
+                    : {}),
+                })) as ListedServer[];
+              }
             }
           }
           // The two reads are independent; running them together keeps a host

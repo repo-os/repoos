@@ -26,12 +26,16 @@ const status = () =>
 
 describe("GET /api/servers/tailnet", () => {
   it("filters mobile devices by OS or device model without dropping generic phone-named servers", () => {
-    const info = parseTailnetInfo(JSON.stringify({ Peer: {
-      nothing: { HostName: "Nothing Phone (3a)", DNSName: "nothing.tail.ts.net", Online: true },
-      dnsPhone: { HostName: "nothing", DNSName: "nothing-phone.tail.ts.net", Online: true },
-      ios: { HostName: "ipad", OS: "iOS", Online: true },
-      server: { HostName: "phone-01", OS: "linux", Online: true },
-    } }));
+    const info = parseTailnetInfo(
+      JSON.stringify({
+        Peer: {
+          nothing: { HostName: "Nothing Phone (3a)", DNSName: "nothing.tail.ts.net", Online: true },
+          dnsPhone: { HostName: "nothing", DNSName: "nothing-phone.tail.ts.net", Online: true },
+          ios: { HostName: "ipad", OS: "iOS", Online: true },
+          server: { HostName: "phone-01", OS: "linux", Online: true },
+        },
+      }),
+    );
     expect(info.peers.map((peer) => peer.host)).toEqual(["phone-01"]);
   });
 
@@ -274,7 +278,16 @@ describe("GET /api/servers/tailnet", () => {
         peer.host === "bee"
           ? JSON.stringify({
               discoveryVersion: 1,
-              servers: [{ projectName: "api", port: 7171, root: "/srv/api", valid: true, allowlistGroup: "agents", url: "https://bee.tail.ts.net" }],
+              servers: [
+                {
+                  projectName: "api",
+                  port: 7171,
+                  root: "/srv/api",
+                  valid: true,
+                  allowlistGroup: "agents",
+                  url: "https://bee.tail.ts.net",
+                },
+              ],
             })
           : null,
       remoteExec,

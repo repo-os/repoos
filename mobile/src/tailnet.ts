@@ -135,18 +135,30 @@ export function mergeTailnetResults(
       const hostname = new URL(server.url).hostname.toLowerCase();
       savedByHost.set(hostname, server.url);
       savedByHost.set(hostname.split(".")[0] ?? hostname, server.url);
-    } catch { /* invalid saved entries cannot reconcile a peer */ }
+    } catch {
+      /* invalid saved entries cannot reconcile a peer */
+    }
   }
 
   for (const row of rows) {
     if (row.unreachable || !row.url) {
-      const aliases = [row.host, row.dnsName, row.displayName].filter((value): value is string => !!value)
+      const aliases = [row.host, row.dnsName, row.displayName]
+        .filter((value): value is string => !!value)
         .map((value) => value.toLowerCase().replace(/\.$/, ""));
       const savedUrl = aliases.map((alias) => savedByHost.get(alias)).find(Boolean);
       if (savedUrl) {
         const key = `saved-host:${row.host}`;
         if (unreachable.some((entry) => entry.key === key)) continue;
-        unreachable.push({ key, url: savedUrl, name: nameFor(row), host: row.host, saved: true, https: true, selectable: false, note: "Already saved" });
+        unreachable.push({
+          key,
+          url: savedUrl,
+          name: nameFor(row),
+          host: row.host,
+          saved: true,
+          https: true,
+          selectable: false,
+          note: "Already saved",
+        });
         continue;
       }
       const key = `unreachable:${row.host}${row.port ? `:${row.port}` : ""}`;
