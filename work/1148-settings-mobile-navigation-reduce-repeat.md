@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 354793
-last_close_out_gate_at: "2026-11-17T07:20:40.395Z"
 id: "1148"
 title: "Settings mobile navigation: reduce repeated topic-chip density"
 type: chore
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: 34c5a20981a431b3ee4d94389b89384447a1868a
 assigned_to: ai
 created_by: t@t
 branch: feat/settings-mobile-navigation-reduce-repeat
 created_at: "2026-11-17T03:06:33Z"
 updated_at: "2026-11-17T07:20:40Z"
+last_close_out_gate_ms: 354793
+last_close_out_gate_at: "2026-11-17T07:20:40.395Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-17T05:13:57.562Z: repoos check failed: rendered-contrast — · div#setting-release.email.to.setting-row > div.setting-info > div.setting-desc — #686e76 on #161b23 = 3.36 (need ≥4.5, 11px) [settings] \"Addresses that receive each release email, one message per a\""
 review_rounds: 1
