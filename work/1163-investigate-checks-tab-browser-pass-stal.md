@@ -12,7 +12,7 @@ branch: feat/investigate-checks-tab-browser-pass-stal
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T17:53:05Z"
-updated_at: "2026-11-17T21:52:56Z"
+updated_at: "2026-11-17T22:18:25Z"
 last_close_out_gate_ms: 226797
 last_close_out_gate_at: "2026-11-17T21:51:54.891Z"
 review_passes: 3
@@ -126,3 +126,4 @@ The direct tab pass found no navigation hang. Review identified a separate app l
 - 2026-11-17T21:35:03Z · note: review pass 3: good to go
 - 2026-11-17T21:51:54Z · close-out gate completed in 227s
 - 2026-11-17T21:52:56Z · status done→done, release:success
+- 2026-11-17T22:18:25Z · message_dropped: 1 queued message(s) discarded — task is done
