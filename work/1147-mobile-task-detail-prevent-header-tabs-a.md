@@ -36,13 +36,13 @@ Use the attached 390×844 screenshot. Inspect both themes and a long task title.
 "highlight": ".quickbar-row > .preview-hint",
 "steps": [
 {
-  "waitFor": ".drawer-tabs"
+"waitFor": ".drawer-tabs"
 },
 {
-  "waitFor": ".quickbar-row > .preview-hint"
+"waitFor": ".quickbar-row > .preview-hint"
 },
 {
-  "waitMs": 300
+"waitMs": 300
 }
 ],
 "state": "drawer:reviewWithBranch",
@@ -57,10 +57,10 @@ Use the attached 390×844 screenshot. Inspect both themes and a long task title.
 "highlight": ".drawer-tabs",
 "steps": [
 {
-  "waitFor": ".drawer-tabs"
+"waitFor": ".drawer-tabs"
 },
 {
-  "waitMs": 300
+"waitMs": 300
 }
 ],
 "state": "drawer:reviewWithBranch",
@@ -90,3 +90,4 @@ Use the attached 390×844 screenshot. Inspect both themes and a long task title.
 - 2026-11-17T05:31:58Z · body
 - 2026-11-17T05:34:57Z · CTO nudge: held — handoff gate is running
 - 2026-11-17T05:37:43Z · note: ui verification failed: ui verification failed (1 issue(s)): [missing-target] Phone task detail at 320px: all tabs and the expand control on screen (target "default"): loading state detected: loading text "Loading full diff… this may take a momen" on /work?task=9999&tab=changes (http://127.0.0.1:43923/work?task=9999&tab=changes&shotState=drawer%3AreviewWithBranch)
+- 2026-11-17T05:37:43Z · message_queued at 2026-11-17T05:37:43.252Z
