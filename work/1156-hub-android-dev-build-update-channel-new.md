@@ -2,7 +2,7 @@
 id: "1156"
 title: "Hub Android: dev build update channel - new dev builds reach the phone from any network with one tap (no adb)"
 type: feature
-status: review
+status: active
 priority: p1
 area: [mobile, infra]
 assigned_to: ai
