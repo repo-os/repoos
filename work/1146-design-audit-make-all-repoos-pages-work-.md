@@ -53,3 +53,4 @@ Use strong visual and product design judgment. Inspect rendered pages and theme 
 - 2026-11-17T03:21:25Z · message_delivered: 1 message(s)
 - 2026-11-17T03:23:08Z · status active→review
 - 2026-11-17T03:23:08Z · message_queued at 2026-11-17T03:23:08.385Z
+- 2026-11-17T03:23:08Z · note: shots: skipped — the diff (3 changed paths) touches no capture target's globs — no UI change to capture
