@@ -12,7 +12,7 @@ branch: feat/qa-pass-use-the-android-hub-app-on-the-p
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T15:51:18Z"
-updated_at: "2026-11-17T18:24:30Z"
+updated_at: "2026-11-17T18:24:33Z"
 review_rounds: 1
 review_passes: 1
 handoff_signal_retry_count: 2
@@ -150,3 +150,4 @@ The Pixel 8 Android 16 (API 36) emulator was available and used after the saved 
 - 2026-11-17T18:18:43Z · note: shots: skipped — the diff (8 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-17T18:24:30Z · note: review pass 1: needs some work
 - 2026-11-17T18:24:30Z · status review→active
+- 2026-11-17T18:24:33Z · CTO nudge: held — an undelivered message is already queued
