@@ -284,6 +284,99 @@ materialize_changed_test_base() {
 }
 materialize_changed_test_base
 
+# A project-owned command replaces the RepoOS-specific Bun install/build/test
+# sequence. Run it inside the configured CI image from the same verified tree;
+# this keeps Docker hosts useful for non-Bun projects when their image includes
+# the declared toolchain.
+# REPOOS_VALIDATE_COMMAND: capability marker consumed by the host probe.
+if [ -n "${REPOOS_VALIDATION_COMMAND:-}" ]; then
+  echo "[validate] running configured command in $IMAGE: $REPOOS_VALIDATION_COMMAND"
+  # Keep build caches across disposable checkouts, especially Gradle's often
+  # large Android dependency cache. The volume is shared only by this runner's
+  # configured validation slots and is prepared for the SSH user's uid.
+  if ! docker volume create "$CACHE_VOLUME" >/dev/null; then
+    echo "[validate] FATAL: could not create project cache volume (docker)" >&2
+    exit 5
+  fi
+  if ! docker run --rm -v "$CACHE_VOLUME":/repoos-cache -u 0 "$IMAGE" \
+    "mkdir -p /repoos-cache/home /repoos-cache/gradle /repoos-cache/npm /repoos-cache/bun && chown -R $(id -u):$(id -g) /repoos-cache"; then
+    echo "[validate] FATAL: could not prepare project cache volume (docker)" >&2
+    exit 5
+  fi
+  RUNNER_COMMAND=$(cat <<'RUNNER_EOF'
+set -o pipefail
+if [ -n "$REPOOS_BROWSER_CAPTURE_MODE" ]; then
+  if [ -n "$REPOOS_BROWSER_CAPTURE_BRANCH" ]; then
+    git checkout --detach "$SHA"
+    mkdir -p "/repo-worktrees/$(dirname "$REPOOS_BROWSER_CAPTURE_BRANCH")"
+    git worktree add -b "$REPOOS_BROWSER_CAPTURE_BRANCH" "/repo-worktrees/$REPOOS_BROWSER_CAPTURE_BRANCH" "$SHA"
+    cd "/repo-worktrees/$REPOOS_BROWSER_CAPTURE_BRANCH"
+    bun install --frozen-lockfile || exit 4
+  fi
+  echo '[validate] gate started' | tee /artifacts/test-output.log
+  bun scripts/remote-runner/capture-browser.ts "$REPOOS_BROWSER_CAPTURE_TASK" "$REPOOS_BROWSER_CAPTURE_MODE" /artifacts/browser-capture 2>&1 | tee -a /artifacts/test-output.log
+  code=${PIPESTATUS[0]}
+else
+  echo '[validate] gate started' | tee /artifacts/test-output.log
+  bash -lc "$REPOOS_VALIDATION_COMMAND" 2>&1 | tee -a /artifacts/test-output.log
+  code=${PIPESTATUS[0]}
+  if [ "$code" -eq 0 ] && [ "$REPOOS_OFFLOAD_BROWSER_STEPS" = 1 ]; then
+    if [ -f /repo/dist/cli/index.js ]; then
+      bun /repo/dist/cli/index.js check --profile "$REPOOS_CHECK_PROFILE" --step ui-smoke --step rendered-contrast 2>&1 | tee -a /artifacts/browser-gate.log
+      code=${PIPESTATUS[0]}
+    else
+      echo "[validate] browser offload requested, but the project command did not produce /repo/dist/cli/index.js" | tee /artifacts/browser-gate.log
+      code=1
+    fi
+  fi
+fi
+exit "$code"
+RUNNER_EOF
+)
+  set +e
+  docker run --rm \
+    --name "$CONTAINER" \
+    -v "$WORK/repo":/repo \
+    -v "$WORKTREES":/repo-worktrees \
+    -v "$ART":/artifacts \
+    -v "$CACHE_VOLUME":/repoos-cache \
+    -e HOME=/repoos-cache/home \
+    -e GRADLE_USER_HOME=/repoos-cache/gradle \
+    -e npm_config_cache=/repoos-cache/npm \
+    -e BUN_INSTALL_CACHE_DIR=/repoos-cache/bun \
+    -e REPOOS_CACHE_DIR=/repoos-cache \
+    -e REPOOS_ROOT=/repo \
+    -e REPOOS_ARTIFACTS_DIR=/artifacts \
+    -e "REPOOS_VALIDATION_COMMAND=${REPOOS_VALIDATION_COMMAND:-}" \
+    -e SHA="$SHA" \
+    -e "REPOOS_OFFLOAD_BROWSER_STEPS=${REPOOS_OFFLOAD_BROWSER_STEPS:-}" \
+    -e "REPOOS_CHECK_PROFILE=${REPOOS_CHECK_PROFILE:-default}" \
+    -e "REPOOS_BROWSER_CAPTURE_MODE=${REPOOS_BROWSER_CAPTURE_MODE:-}" \
+    -e "REPOOS_BROWSER_CAPTURE_TASK=${REPOOS_BROWSER_CAPTURE_TASK:-}" \
+    -e "REPOOS_BROWSER_CAPTURE_BRANCH=${REPOOS_BROWSER_CAPTURE_BRANCH:-}" \
+    -e "REPOOS_BROWSER_CAPTURE_ENTRY=${REPOOS_BROWSER_CAPTURE_ENTRY:-}" \
+    -e "REPOOS_BROWSER_CAPTURE_CANONICAL=${REPOOS_BROWSER_CAPTURE_CANONICAL:-}" \
+    -w /repo \
+    --user "$(id -u):$(id -g)" \
+    --entrypoint bash "$IMAGE" -lc "$RUNNER_COMMAND"
+  CODE=${PIPESTATUS[0]}
+  set -e
+  GATE_STARTED=0
+  grep -Fq '[validate] gate started' "$ART/test-output.log" && GATE_STARTED=1 || true
+  if [ "$GATE_STARTED" -eq 0 ] && { [ "$CODE" -eq 125 ] || [ "$CODE" -eq 126 ] || [ "$CODE" -eq 127 ]; }; then
+    echo "[validate] container could not start (docker exit $CODE)" >&2
+    exit 5
+  fi
+  if [ "$CODE" -eq 4 ] && [ "$GATE_STARTED" -eq 0 ]; then
+    echo "[validate] setup failed (exit 4)" >&2
+    exit 4
+  fi
+  if [ "$GATE_STARTED" -eq 1 ]; then
+    echo "[validate] gate exit $CODE"
+  fi
+  exit "$CODE"
+fi
+
 # Run Docker as the SSH user's uid:gid so all files it creates are owned by
 # that user.  This means _rvcleanup needs no Docker chown step — a plain
 # rm -rf works.  Chown the bun-cache volume to match before the main run.

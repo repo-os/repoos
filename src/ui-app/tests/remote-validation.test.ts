@@ -35,11 +35,14 @@ import {
   mirrorProbeCommand,
   MIRROR_BASE_REF,
   parseValidateScriptMirrorSupport,
+  parseValidateScriptCommandSupport,
   isRunnerBundleTransportMismatch,
   validateScriptArgs,
+  exportRemoteEnvironment,
   validateScriptInstallCommand,
   remoteChangedTestScope,
   RUNNER_SCRIPT_MIRROR_TOKEN,
+  RUNNER_SCRIPT_COMMAND_TOKEN,
   PREREQ_OK_TOKEN,
   VALIDATE_SCRIPT,
   defaultRemoteExec,
@@ -104,7 +107,11 @@ function isValidateScriptMirrorProbe(cmd: string): boolean {
 function fakeExec(over: Partial<RemoteExecDeps> = {}): RemoteExecDeps {
   const baseRunRemote = vi.fn(async (_h, cmd, onChunk): Promise<RemoteExecResult> => {
     if (isValidateScriptMirrorProbe(cmd)) {
-      return { code: 0, output: `${RUNNER_SCRIPT_MIRROR_TOKEN}=1\n`, timedOut: false };
+      return {
+        code: 0,
+        output: `${RUNNER_SCRIPT_MIRROR_TOKEN}=1\n${RUNNER_SCRIPT_COMMAND_TOKEN}=1\n`,
+        timedOut: false,
+      };
     }
     onChunk("build ok\ntest ok\n");
     return { code: 0, output: "build ok\ntest ok\n", timedOut: false };
@@ -154,6 +161,15 @@ describe("classifyRemoteExecFailure (#0745)", () => {
       output: "error: EACCES accessing temporary directory\n",
     });
     expect(cls).toMatchObject({ kind: "infra", transient: true, markHostDegraded: true });
+  });
+
+  it.each([3, 4, 5])("treats project gate exit %i as a test failure", (code) => {
+    const cls = classifyRemoteExecFailure({
+      code,
+      timedOut: false,
+      output: `[validate] gate exit ${code}\nproject command failed\n`,
+    });
+    expect(cls).toMatchObject({ kind: "test", transient: false, markHostDegraded: false });
   });
 
   it("treats gate exit plus failures as test (no retry)", () => {
@@ -422,6 +438,39 @@ describe("RemoteValidationRunner", () => {
     expect(existsSync(r.logPath("0999"))).toBe(true);
     expect(readFileSync(r.logPath("0999"), "utf8")).toContain("PASSED");
     await r.dispose();
+  });
+
+  it("refuses a project command when an adopted Hetzner snapshot has an old runner script", async () => {
+    config.remoteValidation!.command = "./scripts/ci-remote.sh";
+    const h = fakeHetzner();
+    const exec = fakeExec({
+      runRemote: vi.fn(async (_host, cmd, onChunk): Promise<RemoteExecResult> => {
+        if (isValidateScriptMirrorProbe(cmd)) {
+          return {
+            code: 0,
+            output: `${RUNNER_SCRIPT_MIRROR_TOKEN}=1\n${RUNNER_SCRIPT_COMMAND_TOKEN}=0\n`,
+            timedOut: false,
+          };
+        }
+        onChunk("stock gate must not run\n");
+        return { code: 0, output: "stock gate must not run\n", timedOut: false };
+      }),
+    });
+    const runner = new RemoteValidationRunner(config, undefined, {
+      hetzner: h.client,
+      exec,
+      timings: FAST,
+    });
+    try {
+      const result = await runner.validate(opts());
+      expect(result.ok).toBe(false);
+      expect(result.detail).toContain("does not support remoteValidation.command");
+      expect(result.detail).toContain("update it with ssh root@203.0.113.");
+      expect(exec.uploadFile).not.toHaveBeenCalled();
+      expect(exec.runRemote).toHaveBeenCalledTimes(1);
+    } finally {
+      await runner.dispose();
+    }
   });
 
   it("warns and uses full-suite mode when changed ref does not resolve (#0695)", async () => {
@@ -1604,6 +1653,12 @@ describe("validate.sh compatibility (#0725)", () => {
     expect(parseValidateScriptMirrorSupport(PREREQ_OK_TOKEN)).toBe(false);
   });
 
+  it("parses project-command support from the host probe", () => {
+    expect(parseValidateScriptCommandSupport(`${RUNNER_SCRIPT_COMMAND_TOKEN}=1`)).toBe(true);
+    expect(parseValidateScriptCommandSupport(`${RUNNER_SCRIPT_COMMAND_TOKEN}=0`)).toBe(false);
+    expect(parseValidateScriptCommandSupport(PREREQ_OK_TOKEN)).toBe(false);
+  });
+
   it("detects bundle transport mismatches for a single legacy retry", () => {
     expect(
       isRunnerBundleTransportMismatch(
@@ -1654,7 +1709,9 @@ describe("validate.sh compatibility (#0725)", () => {
       });
       expect(refs).toContain("HEAD");
       const legacyCall = validateScriptArgs("~/.b", candidateSha, "~/.art", "main");
-      expect(legacyCall).toBe(`/opt/repoos/validate.sh ~/.b ${candidateSha} ~/.art 'main'`);
+      expect(legacyCall).toContain('REPOOS_VALIDATE_SCRIPT="$HOME/.local/bin/repoos-validate"');
+      expect(legacyCall).toContain("REPOOS_VALIDATE_SCRIPT='/opt/repoos/validate.sh'");
+      expect(legacyCall).toContain(`"$REPOOS_VALIDATE_SCRIPT" ~/.b ${candidateSha} ~/.art 'main'`);
       expect(legacyCall).not.toContain("repoos-cache");
       expect(validateScriptArgs("~/.b", candidateSha, "~/.art", "main", "~/.mirror")).toContain(
         `"$HOME"/'.mirror'`,
@@ -1667,7 +1724,11 @@ describe("validate.sh compatibility (#0725)", () => {
   it("formats a one-line install command for the host owner", () => {
     const cmd = validateScriptInstallCommand("nick", "bee");
     expect(cmd).toContain("nick@bee");
-    expect(cmd).toContain("/opt/repoos/validate.sh");
+    expect(cmd).toContain("~/.local/bin/repoos-validate");
+    expect(cmd).not.toContain("sudo");
+    expect(validateScriptInstallCommand("nick", "mini", "native")).toContain(
+      "validate-macos.sh ~/.local/bin/repoos-validate",
+    );
   });
 });
 
@@ -1732,7 +1793,7 @@ describe("remote mirror helpers (#0717)", () => {
         "~/.artifacts",
         undefined,
         mirrorPath,
-      ).replace(/^\/opt\/repoos\/validate\.sh /, "");
+      ).replace(/^.*; "\$REPOOS_VALIDATE_SCRIPT" /, "");
       const passedMirror = execFileSync("sh", ["-c", `set -- ${args}; printf '%s' "$5"`], {
         encoding: "utf8",
         env: { ...process.env, HOME: home },
@@ -1750,19 +1811,20 @@ describe("remote mirror helpers (#0717)", () => {
 describe("validateScriptArgs positional layout", () => {
   const sha = "a".repeat(40);
   it("keeps the mirror path in $5 when there is no changed ref", () => {
-    expect(validateScriptArgs("~/.b", sha, "~/.art", undefined, "~/.mirror")).toBe(
-      `/opt/repoos/validate.sh ~/.b ${sha} ~/.art '' "$HOME"/'.mirror'`,
-    );
+    const command = validateScriptArgs("~/.b", sha, "~/.art", undefined, "~/.mirror");
+    expect(command).toContain('"$REPOOS_VALIDATE_SCRIPT" ~/.b');
+    expect(command).toContain(`${sha} ~/.art '' "$HOME"/'.mirror'`);
   });
   it("keeps the changed ref in $4 and the mirror in $5", () => {
-    expect(validateScriptArgs("~/.b", sha, "~/.art", "main", "~/.mirror")).toBe(
-      `/opt/repoos/validate.sh ~/.b ${sha} ~/.art 'main' "$HOME"/'.mirror'`,
-    );
+    const command = validateScriptArgs("~/.b", sha, "~/.art", "main", "~/.mirror");
+    expect(command).toContain('"$REPOOS_VALIDATE_SCRIPT" ~/.b');
+    expect(command).toContain(`${sha} ~/.art 'main' "$HOME"/'.mirror'`);
   });
   it("sends the legacy 3-argument call when neither is set", () => {
-    expect(validateScriptArgs("~/.b", sha, "~/.art")).toBe(
-      `/opt/repoos/validate.sh ~/.b ${sha} ~/.art`,
-    );
+    const command = validateScriptArgs("~/.b", sha, "~/.art");
+    expect(command).toContain('"$REPOOS_VALIDATE_SCRIPT" ~/.b');
+    expect(command).toContain(`${sha} ~/.art`);
+    expect(command).not.toContain("''");
   });
 
   it("carries the canonical capture context as a shell env prelude (#0854)", () => {
@@ -1783,5 +1845,78 @@ describe("validateScriptArgs positional layout", () => {
     // shellQuote wraps the JSON in single quotes and escapes embedded ones.
     const json = token!.replace(/^'(.*)'$/, "$1").replace(/'\\''/g, "'");
     expect(JSON.parse(json)).toEqual(canonical);
+  });
+
+  it("exports the run environment through the generated shell command", () => {
+    const home = mkdtempSync(join(tmpdir(), "repoos-validate-args-home-"));
+    const runner = join(home, ".local", "bin", "repoos-validate");
+    mkdirSync(join(home, ".local", "bin"), { recursive: true });
+    writeFileSync(
+      runner,
+      [
+        "#!/bin/sh",
+        'printf \'%s\\n\' "$REPOOS_VALIDATION_COMMAND" "$REPOOS_CONTAINER" "$REPOOS_SLOT" "$REPOOS_CACHE_VOLUME" "$REPOOS_CI_IMAGE" "$REPOOS_CHECK_PROFILE" "$REPOOS_OFFLOAD_BROWSER_STEPS" "$REPOOS_BROWSER_CAPTURE_MODE" "$REPOOS_BROWSER_CAPTURE_TASK" "$REPOOS_BROWSER_CAPTURE_BRANCH" "$REPOOS_BROWSER_CAPTURE_ENTRY" "$REPOOS_BROWSER_CAPTURE_CANONICAL" "$@" > "$HOME/result"',
+        "",
+      ].join("\n"),
+      { mode: 0o755 },
+    );
+    try {
+      const command = exportRemoteEnvironment(
+        [
+          "REPOOS_VALIDATION_COMMAND='scripts/ci-remote.sh && echo done'",
+          "REPOOS_CONTAINER='repoos-validate-test'",
+          "REPOOS_SLOT='2'",
+          "REPOOS_CACHE_VOLUME='repoos-cache-test'",
+          "REPOOS_CI_IMAGE='tiao-ci'",
+          "REPOOS_CHECK_PROFILE='full'",
+          "REPOOS_OFFLOAD_BROWSER_STEPS='1'",
+        ],
+        validateScriptArgs(
+          "/tmp/candidate.bundle",
+          "a".repeat(40),
+          "/tmp/artifacts",
+          undefined,
+          undefined,
+          {
+            operation: "shots",
+            branch: "feat/capture",
+            taskId: "1160",
+            entry: {
+              target: "default",
+              route: "/settings",
+              provenance: { kind: "declared", label: "settings" },
+            },
+            canonical: {
+              task: { body: "Tiao fixture", area: "core" },
+              config: {},
+              plan: { entries: [], errors: [], skips: [], collapsed: [] },
+            },
+          },
+        ),
+      );
+      execFileSync("bash", ["-c", command], {
+        encoding: "utf8",
+        env: { ...process.env, HOME: home },
+      });
+      expect(readFileSync(join(home, "result"), "utf8").trim().split("\n")).toEqual([
+        "scripts/ci-remote.sh && echo done",
+        "repoos-validate-test",
+        "2",
+        "repoos-cache-test",
+        "tiao-ci",
+        "full",
+        "1",
+        "shots",
+        "1160",
+        "feat/capture",
+        '{"target":"default","route":"/settings","provenance":{"kind":"declared","label":"settings"}}',
+        '{"task":{"body":"Tiao fixture","area":"core"},"config":{},"plan":{"entries":[],"errors":[],"skips":[],"collapsed":[]}}',
+        "/tmp/candidate.bundle",
+        "a".repeat(40),
+        "/tmp/artifacts",
+      ]);
+    } finally {
+      rmSync(home, { recursive: true, force: true });
+    }
   });
 });

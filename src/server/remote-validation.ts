@@ -564,6 +564,8 @@ export interface RemoteHostStatus {
    * (mirror path argument). Set by the prerequisite probe; absent until probed.
    */
   validateScriptMirrorSupported?: boolean;
+  /** Cached from the prerequisite probe; project commands require this. */
+  validateScriptCommandSupported?: boolean;
   /** One-line install command to refresh `validate.sh` on this host (#0725). */
   validateScriptInstallCommand?: string;
   /**
@@ -996,16 +998,35 @@ interface RemoteEventContext {
 
 /** The gate script every host must carry, and the token a passing probe prints. */
 export const VALIDATE_SCRIPT = "/opt/repoos/validate.sh";
+export const USER_VALIDATE_SCRIPT = "$HOME/.local/bin/repoos-validate";
 export const PREREQ_OK_TOKEN = "REPOOS_PREREQ_OK";
 /** Printed by {@link prereqProbeCommand} when `validate.sh` supports mirror upload. */
 export const RUNNER_SCRIPT_MIRROR_TOKEN = "REPOOS_VALIDATE_MIRROR";
+/** Printed by {@link prereqProbeCommand} when `validate.sh` honors project commands. */
+export const RUNNER_SCRIPT_COMMAND_TOKEN = "REPOOS_VALIDATE_COMMAND";
+
+/** Select the user install first; keep the sudo-installed path for older setups. */
+function selectValidateScriptCommand(): string {
+  return (
+    `REPOOS_VALIDATE_SCRIPT="${USER_VALIDATE_SCRIPT}"; ` +
+    '[ -x "$REPOOS_VALIDATE_SCRIPT" ] || REPOOS_VALIDATE_SCRIPT=' +
+    shellQuote(VALIDATE_SCRIPT)
+  );
+}
 
 /** One-line command an owner can run to install an up-to-date `validate.sh`. */
-export function validateScriptInstallCommand(user: string, host: string): string {
+export function validateScriptInstallCommand(
+  user: string,
+  host: string,
+  runner: "docker" | "native" = "docker",
+): string {
   const target = `${user}@${host}`;
+  const script = runner === "native" ? "validate-macos.sh" : "validate.sh";
   return (
     `ssh ${target} 'git clone --depth 1 git@github.com:repo-os/repoos.git ~/.repoos-build && ` +
-    `sudo install -Dm755 ~/.repoos-build/scripts/remote-runner/validate.sh ${VALIDATE_SCRIPT} && ` +
+    `mkdir -p ~/.local/bin && ` +
+    `cp ~/.repoos-build/scripts/remote-runner/${script} ~/.local/bin/repoos-validate && ` +
+    `chmod 755 ~/.local/bin/repoos-validate && ` +
     `rm -rf ~/.repoos-build && echo done'`
   );
 }
@@ -1013,6 +1034,10 @@ export function validateScriptInstallCommand(user: string, host: string): string
 /** Parse mirror support from a prerequisite-probe transcript (#0725). */
 export function parseValidateScriptMirrorSupport(output: string): boolean {
   return output.includes(`${RUNNER_SCRIPT_MIRROR_TOKEN}=1`);
+}
+
+export function parseValidateScriptCommandSupport(output: string): boolean {
+  return output.includes(`${RUNNER_SCRIPT_COMMAND_TOKEN}=1`);
 }
 
 /**
@@ -1402,9 +1427,10 @@ export function classifyRemoteExecFailure(run: {
     };
   }
   if (
-    code === VALIDATE_EXIT_SETUP ||
-    code === VALIDATE_EXIT_CONTAINER ||
-    code === VALIDATE_EXIT_TRANSPORT
+    !remoteRunHasGateExit(output) &&
+    (code === VALIDATE_EXIT_SETUP ||
+      code === VALIDATE_EXIT_CONTAINER ||
+      code === VALIDATE_EXIT_TRANSPORT)
   ) {
     const cause =
       code === VALIDATE_EXIT_SETUP
@@ -2266,7 +2292,7 @@ export function mergeHostLockIntoStatus(
  * conflated the two concerns into one `os` switch. `runner` says explicitly
  * which toolchain THIS host actually uses (default "docker" — the
  * maintained `just setup-<host>` path; "native" opts in via
- * `just setup-<host>-native`, macOS only today), independent of its `os`.
+ * `just setup-<host>-native`, on Linux or macOS), independent of its `os`.
  *
  * For `runner: "docker"` (the default), also checks the CONFIGURED image
  * (`remoteValidation.containerImage`, default "repoos-ci") actually exists
@@ -2277,15 +2303,21 @@ export function mergeHostLockIntoStatus(
 export function prereqProbeCommand(
   runner?: "docker" | "native",
   containerImage = "repoos-ci",
+  requiredTools: readonly string[] = [],
+  customCommand = false,
 ): string {
   const image = containerImage.trim().replace(/'/g, "") || "repoos-ci";
-  const lines =
-    runner === "native"
-      ? [
-          'command -v git >/dev/null 2>&1 || { echo "git not found on PATH"; exit 1; }',
-          "(command -v bun >/dev/null 2>&1 || [ -x /opt/homebrew/bin/bun ]) || " +
-            '{ echo "bun not found (install it, e.g. brew install bun)"; exit 1; }',
-        ]
+  const nativeTools = ["git", ...new Set([...requiredTools, ...(!customCommand ? ["bun"] : [])])];
+  const nativeProbe = `bash -lc ${shellQuote(
+    `export PATH="/opt/homebrew/bin:$PATH"; missing=; for tool in ${nativeTools.map(shellQuote).join(" ")}; do ` +
+      'command -v "$tool" >/dev/null 2>&1 || { echo "$tool not found on login PATH"; missing=1; }; ' +
+      'done; [ -z "$missing" ] || exit 1',
+  )}`;
+  const dockerTools = [...new Set([...requiredTools, ...(!customCommand ? ["bun"] : [])])];
+  const lines = [selectValidateScriptCommand()];
+  lines.push(
+    ...(runner === "native"
+      ? [nativeProbe]
       : [
           // git runs on the HOST for every runner, not just native — the
           // clone/checkout step in validate.sh happens before `docker run`
@@ -2297,7 +2329,13 @@ export function prereqProbeCommand(
           'docker info >/dev/null 2>&1 || { echo "docker daemon not reachable (is docker running?)"; exit 1; }',
           `docker image inspect ${shellQuote(image)} >/dev/null 2>&1 || ` +
             `{ echo ${shellQuote(`image '${image}' not found — build it (just setup-<host>) or fix remoteValidation.containerImage`)}; exit 1; }`,
-        ];
+          ...(dockerTools.length
+            ? [
+                `docker run --rm --entrypoint bash ${shellQuote(image)} -lc ${shellQuote(`missing=; for tool in ${dockerTools.map(shellQuote).join(" ")}; do command -v "$tool" >/dev/null 2>&1 || { echo "$tool not found in runner image login PATH"; missing=1; }; done; [ -z "$missing" ] || exit 1`)} || { echo "one or more required tools are unavailable in runner image"; exit 1; }`,
+              ]
+            : []),
+        ]),
+  );
   lines.push(
     ...(runner === "native"
       ? [
@@ -2308,10 +2346,14 @@ export function prereqProbeCommand(
           // file, a full/read-only volume) used to be reported healthy and
           // fail its first real job on `bun install` — this probe never
           // touched that path at all (#0521 review, criterion 6).
-          '_rvcache="$HOME/.cache/repoos-bun" && ' +
-            'mkdir -p "$_rvcache" 2>/dev/null && ' +
-            'touch "$_rvcache/.repoos-probe" 2>/dev/null && rm -f "$_rvcache/.repoos-probe" 2>/dev/null || ' +
-            '{ echo "bun cache dir $_rvcache is not writable"; exit 1; }',
+          ...(customCommand
+            ? []
+            : [
+                '_rvcache="$HOME/.cache/repoos-bun" && ' +
+                  'mkdir -p "$_rvcache" 2>/dev/null && ' +
+                  'touch "$_rvcache/.repoos-probe" 2>/dev/null && rm -f "$_rvcache/.repoos-probe" 2>/dev/null || ' +
+                  '{ echo "bun cache dir $_rvcache is not writable"; exit 1; }',
+              ]),
         ]
       : [
           // Reap containers left behind by a killed/hung run (#0729): the
@@ -2335,21 +2377,30 @@ export function prereqProbeCommand(
           // validate.sh runs — chown as root, then write as uid 1000 — for
           // ground truth instead of approximating it (#0521 review, third
           // round).
-          `docker volume create ${CACHE_VOLUME_NAME} >/dev/null 2>&1 && ` +
-            `docker run --rm -v ${CACHE_VOLUME_NAME}:/bun-cache -u 0 ${shellQuote(image)} ` +
-            `"chown 1000:1000 /bun-cache" >/dev/null 2>&1 && ` +
-            `docker run --rm -v ${CACHE_VOLUME_NAME}:/bun-cache -u 1000 ${shellQuote(image)} ` +
-            `"touch /bun-cache/.repoos-probe && rm -f /bun-cache/.repoos-probe" >/dev/null 2>&1 || ` +
-            `{ echo "bun cache volume ${CACHE_VOLUME_NAME} is not writable by the container even after chown as root"; exit 1; }`,
+          ...(customCommand
+            ? []
+            : [
+                `docker volume create ${CACHE_VOLUME_NAME} >/dev/null 2>&1 && ` +
+                  `docker run --rm -v ${CACHE_VOLUME_NAME}:/bun-cache -u 0 ${shellQuote(image)} ` +
+                  `"chown 1000:1000 /bun-cache" >/dev/null 2>&1 && ` +
+                  `docker run --rm -v ${CACHE_VOLUME_NAME}:/bun-cache -u 1000 ${shellQuote(image)} ` +
+                  `"touch /bun-cache/.repoos-probe && rm -f /bun-cache/.repoos-probe" >/dev/null 2>&1 || ` +
+                  `{ echo "bun cache volume ${CACHE_VOLUME_NAME} is not writable by the container even after chown as root"; exit 1; }`,
+              ]),
         ]),
-    `[ -f ${VALIDATE_SCRIPT} ] || ` +
-      `{ echo "missing ${VALIDATE_SCRIPT} — run the per-host install (docs/remote-validation.md)"; exit 1; }`,
+    `[ -f "$REPOOS_VALIDATE_SCRIPT" ] || ` +
+      `{ echo "missing runner script at ${VALIDATE_SCRIPT} or ~/.local/bin/repoos-validate — run the per-host install (docs/remote-validation.md)"; exit 1; }`,
     // Single-quoted '${3' is a fixed-string grep for the artifacts argument the
     // #0520 validate.sh reads; older copies lack it.
-    "grep -qF '${3' " +
-      `${VALIDATE_SCRIPT} || ` +
-      `{ echo "outdated ${VALIDATE_SCRIPT}: it must accept the artifacts dir as its third argument — re-run the per-host install"; exit 1; }`,
-    `grep -q MIRROR ${VALIDATE_SCRIPT} && echo ${RUNNER_SCRIPT_MIRROR_TOKEN}=1 || echo ${RUNNER_SCRIPT_MIRROR_TOKEN}=0`,
+    "grep -qF '${3' \"$REPOOS_VALIDATE_SCRIPT\" || " +
+      `{ echo "outdated runner script: it must accept the artifacts dir as its third argument — re-run the per-host install"; exit 1; }`,
+    `grep -q MIRROR "$REPOOS_VALIDATE_SCRIPT" && echo ${RUNNER_SCRIPT_MIRROR_TOKEN}=1 || echo ${RUNNER_SCRIPT_MIRROR_TOKEN}=0`,
+    `grep -qF '${RUNNER_SCRIPT_COMMAND_TOKEN}' "$REPOOS_VALIDATE_SCRIPT" && echo ${RUNNER_SCRIPT_COMMAND_TOKEN}=1 || echo ${RUNNER_SCRIPT_COMMAND_TOKEN}=0`,
+    ...(customCommand
+      ? [
+          `grep -qF '${RUNNER_SCRIPT_COMMAND_TOKEN}' "$REPOOS_VALIDATE_SCRIPT" || { echo "outdated runner script: project command support is required; re-run the per-host install"; exit 1; }`,
+        ]
+      : []),
     `echo ${PREREQ_OK_TOKEN}`,
   );
   return lines.join(" &&\n");
@@ -2898,19 +2949,19 @@ export function validateScriptArgs(
   mirrorPath?: string,
   browserCapture?: ValidateOptions["browserCapture"],
 ): string {
-  const parts = [VALIDATE_SCRIPT, remoteBundle, candidateSha, artifactsDir];
+  const args = [remoteBundle, candidateSha, artifactsDir];
   const ref = changedRef?.trim();
   // $4 is the changed ref and $5 the mirror path. When a mirror is passed
   // without a changed ref (handoff and close-out run the full suite), $4 must
   // still be present as an empty placeholder: otherwise the mirror path lands
   // in $4, the script sees no mirror and clones the mirror-ref bundle directly
   // ("cloned an empty repository") — the 2026-10-07 regression after #0717.
-  if (ref || mirrorPath) parts.push(ref ? shellQuote(ref) : "''");
+  if (ref || mirrorPath) args.push(ref ? shellQuote(ref) : "''");
   // Mirror path is appended last so an older installed validate.sh (which reads
   // only $4 as the changed ref) still receives a valid positional layout.
-  if (mirrorPath) parts.push(remotePathShellWord(mirrorPath));
+  if (mirrorPath) args.push(remotePathShellWord(mirrorPath));
   const captureEnv = browserCapture
-    ? `REPOOS_BROWSER_CAPTURE_MODE=${shellQuote(browserCapture.operation)} ` +
+    ? `export REPOOS_BROWSER_CAPTURE_MODE=${shellQuote(browserCapture.operation)} ` +
       `REPOOS_BROWSER_CAPTURE_TASK=${shellQuote(browserCapture.taskId)} ` +
       `REPOOS_BROWSER_CAPTURE_BRANCH=${shellQuote(browserCapture.branch)} ` +
       (browserCapture.entry
@@ -2920,9 +2971,15 @@ export function validateScriptArgs(
       // it instead of planning from the (possibly stale) bundled branch (#0854).
       (browserCapture.canonical
         ? `REPOOS_BROWSER_CAPTURE_CANONICAL=${shellQuote(JSON.stringify(browserCapture.canonical))} `
-        : "")
+        : "") +
+      "; "
     : "";
-  return `${captureEnv}${parts.join(" ")}`;
+  return `${captureEnv}${selectValidateScriptCommand()}; "$REPOOS_VALIDATE_SCRIPT" ${args.join(" ")}`;
+}
+
+/** Export remote-run context before the script selector starts a new shell statement. */
+export function exportRemoteEnvironment(assignments: readonly string[], command: string): string {
+  return assignments.length ? `export ${assignments.join(" ")}; ${command}` : command;
 }
 
 export function defaultRemoteExec(): RemoteExecDeps {
@@ -3479,6 +3536,8 @@ export class RemoteValidationRunner implements RemoteValidator {
   private idleTimer: ReturnType<typeof setTimeout> | null = null;
   /** Per-VM cache of whether `validate.sh` supports mirror upload (#0725). */
   private readonly validateScriptMirrorByIp = new Map<string, boolean>();
+  /** Per-VM cache of whether the installed script supports project commands. */
+  private readonly validateScriptCommandByIp = new Map<string, boolean>();
   private lifetimeTimer: ReturnType<typeof setTimeout> | null = null;
   private activeJobs = 0;
   private readonly activeRunRegistry = new ActiveRemoteRunRegistry();
@@ -3662,12 +3721,18 @@ export class RemoteValidationRunner implements RemoteValidator {
     this.activeRunRegistry.set(info, taskId);
   }
 
-  private async probeValidateScriptMirror(host: RemoteHost): Promise<boolean> {
+  private async probeValidateScriptFeatures(
+    host: RemoteHost,
+  ): Promise<{ mirror: boolean; command: boolean }> {
     const cmd =
-      `grep -q MIRROR ${VALIDATE_SCRIPT} && echo ${RUNNER_SCRIPT_MIRROR_TOKEN}=1 || ` +
-      `echo ${RUNNER_SCRIPT_MIRROR_TOKEN}=0`;
+      `${selectValidateScriptCommand()}; ` +
+      `(grep -q MIRROR "$REPOOS_VALIDATE_SCRIPT" && echo ${RUNNER_SCRIPT_MIRROR_TOKEN}=1 || echo ${RUNNER_SCRIPT_MIRROR_TOKEN}=0); ` +
+      `(grep -qF '${RUNNER_SCRIPT_COMMAND_TOKEN}' "$REPOOS_VALIDATE_SCRIPT" && echo ${RUNNER_SCRIPT_COMMAND_TOKEN}=1 || echo ${RUNNER_SCRIPT_COMMAND_TOKEN}=0)`;
     const res = await this.exec.runRemote(host, cmd, () => {}, this.timings.probeTimeoutMs);
-    return parseValidateScriptMirrorSupport(res.output);
+    return {
+      mirror: parseValidateScriptMirrorSupport(res.output),
+      command: parseValidateScriptCommandSupport(res.output),
+    };
   }
 
   async validate(opts: ValidateOptions): Promise<CheckSummary> {
@@ -3910,13 +3975,23 @@ export class RemoteValidationRunner implements RemoteValidator {
         opts.taskId,
       );
       let incrementalUpload = this.validateScriptMirrorByIp.get(host.ip);
-      if (incrementalUpload !== true) {
+      let scriptSupportsCommand = this.validateScriptCommandByIp.get(host.ip);
+      if (incrementalUpload === undefined || (rv.command && scriptSupportsCommand === undefined)) {
+        const features = await this.probeValidateScriptFeatures(host);
         if (incrementalUpload === undefined) {
-          incrementalUpload = await this.probeValidateScriptMirror(host);
+          incrementalUpload = features.mirror;
           this.validateScriptMirrorByIp.set(host.ip, incrementalUpload);
-        } else {
-          incrementalUpload = false;
         }
+        if (scriptSupportsCommand === undefined) {
+          scriptSupportsCommand = features.command;
+          this.validateScriptCommandByIp.set(host.ip, scriptSupportsCommand);
+        }
+      }
+      if (rv.command && !scriptSupportsCommand) {
+        const detail =
+          `installed runner script on ${host.ip} does not support remoteValidation.command; update it with ` +
+          validateScriptInstallCommand(this.sshUser, host.ip, "docker");
+        return withScope(this.infraFail(detail, { taskId: opts.taskId, host: host.ip }));
       }
       let upload: SuccessfulUpload | null = null;
       let run: RemoteExecResult | null = null;
@@ -4005,8 +4080,12 @@ export class RemoteValidationRunner implements RemoteValidator {
             message: `running build + test on ${host.ip}${changedNote}`,
           },
         );
-        const cmd =
-          (control ? `REPOOS_CONTAINER=${shellQuote(control.container)} ` : "") +
+        const commandEnv = [
+          ...(rv.command ? [`REPOOS_VALIDATION_COMMAND=${shellQuote(rv.command)}`] : []),
+          ...(control ? [`REPOOS_CONTAINER=${shellQuote(control.container)}`] : []),
+        ];
+        const cmd = exportRemoteEnvironment(
+          commandEnv,
           validateScriptArgs(
             remoteBundle,
             opts.candidateSha,
@@ -4014,7 +4093,8 @@ export class RemoteValidationRunner implements RemoteValidator {
             remoteTestRef ?? undefined,
             upload.mirrorPath || undefined,
             opts.browserCapture,
-          );
+          ),
+        );
         if (opts.browserCapture && control) {
           const signal = control.controller.signal;
           const containerName = control.container;
@@ -4402,6 +4482,8 @@ interface PoolHostState {
   healthFails: number;
   /** Cached from the prerequisite probe (#0725). */
   validateScriptMirrorSupported?: boolean;
+  /** Cached from the prerequisite probe; project commands require this. */
+  validateScriptCommandSupported?: boolean;
   probing?: Promise<void>;
   /** Temporarily blocks dispatch while the periodic reaper mutates Docker state. */
   reaping?: boolean;
@@ -4657,6 +4739,10 @@ export class TailscaleHostPool {
   private readonly root?: string;
   /** The image every host's Docker prerequisite probe must find (#0521 review). */
   private containerImage: string;
+  /** Changes to a project's native toolchain invalidate each cached host probe. */
+  private toolchainSignature: string;
+  private requiredTools: string[];
+  private customCommand: boolean;
   /** Monotonic counter behind the least-recently-used tie-break (#0890). */
   private useSeq = 0;
   private backgroundProbeTimer?: ReturnType<typeof setInterval>;
@@ -4682,6 +4768,9 @@ export class TailscaleHostPool {
       opts.pressureOptions ??
       (() => ({ enabled: true, thresholds: pressureThresholds(undefined) }));
     this.containerImage = rv?.containerImage ?? "repoos-ci";
+    this.toolchainSignature = JSON.stringify([rv?.command ?? "", rv?.requiredTools ?? []]);
+    this.requiredTools = rv?.requiredTools ?? [];
+    this.customCommand = Boolean(rv?.command);
     const key = opts.keyPath ?? "";
     this.keyPath = key && existsSync(key) ? key : undefined;
     for (const spec of resolveRemoteHosts(rv)) {
@@ -4710,6 +4799,11 @@ export class TailscaleHostPool {
     const nextContainerImage = rv?.containerImage ?? "repoos-ci";
     const imageChanged = this.containerImage !== nextContainerImage;
     this.containerImage = nextContainerImage;
+    const nextToolchainSignature = JSON.stringify([rv?.command ?? "", rv?.requiredTools ?? []]);
+    const toolchainChanged = this.toolchainSignature !== nextToolchainSignature;
+    this.toolchainSignature = nextToolchainSignature;
+    this.requiredTools = rv?.requiredTools ?? [];
+    this.customCommand = Boolean(rv?.command);
     const wanted = resolveRemoteHosts(rv);
     const wantedByHost = new Map(wanted.map((h) => [h.host, h]));
 
@@ -4737,6 +4831,7 @@ export class TailscaleHostPool {
       const nextUser = rv ? remoteHostUser(rv, spec) : "root";
       const reprobe =
         imageChanged ||
+        toolchainChanged ||
         hostRunner(existing.spec) !== hostRunner(spec) ||
         existing.ssh.user !== nextUser;
       existing.removed = undefined;
@@ -5270,7 +5365,12 @@ export class TailscaleHostPool {
           serverStats: s.serverStats ?? { available: false },
           hungRuns: s.hungRuns ? s.hungRuns.map((r) => ({ ...r })) : undefined,
           validateScriptMirrorSupported: s.validateScriptMirrorSupported,
-          validateScriptInstallCommand: validateScriptInstallCommand(s.ssh.user, s.spec.host),
+          validateScriptCommandSupported: s.validateScriptCommandSupported,
+          validateScriptInstallCommand: validateScriptInstallCommand(
+            s.ssh.user,
+            s.spec.host,
+            hostRunner(s.spec),
+          ),
           pressure: s.pressure,
           pressureCheckEnabled: this.pressureEnabled(),
           pressureThresholds: this.pressureOptions().thresholds,
@@ -5868,13 +5968,22 @@ export class TailscaleHostPool {
     try {
       const res = await this.exec.runRemote(
         s.ssh,
-        prereqProbeCommand(hostRunner(s.spec), this.containerImage),
+        prereqProbeCommand(
+          hostRunner(s.spec),
+          this.containerImage,
+          this.requiredTools,
+          this.customCommand,
+        ),
         () => {},
         this.probeTimeoutMs,
       );
-      ok = res.code === 0 && res.output.includes(PREREQ_OK_TOKEN);
+      s.validateScriptMirrorSupported = parseValidateScriptMirrorSupport(res.output);
+      s.validateScriptCommandSupported = parseValidateScriptCommandSupport(res.output);
+      ok =
+        res.code === 0 &&
+        res.output.includes(PREREQ_OK_TOKEN) &&
+        (!this.customCommand || s.validateScriptCommandSupported);
       if (ok) {
-        s.validateScriptMirrorSupported = parseValidateScriptMirrorSupport(res.output);
         if (!s.validateScriptMirrorSupported) {
           this.logger?.system(
             "info",
@@ -5884,9 +5993,12 @@ export class TailscaleHostPool {
       }
       if (!ok) {
         const why = tail(res.output, 5, 600);
-        detail = formatProbeReachabilityDetail(
-          `prerequisite check failed (exit ${res.code ?? "signal"}): ${why}`,
-        );
+        detail =
+          this.customCommand && !s.validateScriptCommandSupported
+            ? `installed runner script does not support remoteValidation.command; update it with ${validateScriptInstallCommand(s.ssh.user, s.spec.host, hostRunner(s.spec))}`
+            : formatProbeReachabilityDetail(
+                `prerequisite check failed (exit ${res.code ?? "signal"}): ${why}`,
+              );
       }
     } catch (e) {
       detail = formatProbeReachabilityDetail(`prerequisite check failed: ${(e as Error).message}`);
@@ -7025,11 +7137,22 @@ export class TailscaleRunner implements RemoteValidator {
           },
         );
         const offloadBrowser = offloadBrowserStepsEnabled(this.config) ? "1" : "0";
-        const inner =
-          `REPOOS_SLOT="$_rvslot" REPOOS_CONTAINER=${shellQuote(containerName)} ` +
-          `REPOOS_CACHE_VOLUME=${shellQuote(CACHE_VOLUME_NAME)} REPOOS_CI_IMAGE=${shellQuote(image)} ` +
-          `${REPOOS_OFFLOAD_BROWSER_STEPS}=${offloadBrowser} ` +
-          `REPOOS_CHECK_PROFILE=${shellQuote(opts.checkProfile ?? (opts.phase === "close-out" || opts.phase === "release" ? "full" : "default"))} ` +
+        const innerEnv = [
+          ...(rv.command
+            ? [
+                `REPOOS_VALIDATION_COMMAND=${shellQuote(rv.command)}`,
+                `REPOOS_ARTIFACTS_DIR=${shellQuote(paths.artifacts)}`,
+              ]
+            : []),
+          `REPOOS_SLOT="$_rvslot"`,
+          `REPOOS_CONTAINER=${shellQuote(containerName)}`,
+          `REPOOS_CACHE_VOLUME=${shellQuote(CACHE_VOLUME_NAME)}`,
+          `REPOOS_CI_IMAGE=${shellQuote(image)}`,
+          `${REPOOS_OFFLOAD_BROWSER_STEPS}=${offloadBrowser}`,
+          `REPOOS_CHECK_PROFILE=${shellQuote(opts.checkProfile ?? (opts.phase === "close-out" || opts.phase === "release" ? "full" : "default"))}`,
+        ];
+        const inner = exportRemoteEnvironment(
+          innerEnv,
           validateScriptArgs(
             remoteBundle,
             opts.candidateSha,
@@ -7037,7 +7160,8 @@ export class TailscaleRunner implements RemoteValidator {
             remoteTestRef ?? undefined,
             upload.mirrorPath || undefined,
             opts.browserCapture,
-          );
+          ),
+        );
         const waitSecs =
           opts.deadlineAt !== undefined
             ? deadlineLockWaitSecs(opts.deadlineAt)

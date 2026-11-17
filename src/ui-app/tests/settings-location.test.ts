@@ -68,7 +68,7 @@ describe("resolveSettingLocation", () => {
     ).toEqual({ tab: "advanced", hasUiRow: true });
   });
 
-  it("routes schema-only remote validation keys to repoos.toml", () => {
+  it("routes unknown remote validation keys to repoos.toml", () => {
     const loc = resolveSettingLocation(
       "remoteValidation.tailscaleHost",
       field({ key: "remoteValidation.tailscaleHost" }),
@@ -101,6 +101,20 @@ describe("resolveSettingLocation", () => {
       ),
     ).toEqual({ tab: "general", hasUiRow: true });
     expect(isGeneralSchemaFieldKey("remoteValidation.healthCheck")).toBe(true);
+  });
+
+  it("gives the project command and required runner tools rendered Remote validation rows", () => {
+    for (const [key, type] of [
+      ["remoteValidation.command", "string"],
+      ["remoteValidation.requiredTools", "array"],
+    ] as const) {
+      expect(resolveSettingLocation(key, field({ key, type }), ctx)).toEqual({
+        tab: "general",
+        hasUiRow: true,
+      });
+      expect(isGeneralSchemaFieldKey(key)).toBe(true);
+      expect(generalSectionForKey(key)).toBe("remote-validation");
+    }
   });
 
   it("gives Git status acceleration a rendered General row", () => {

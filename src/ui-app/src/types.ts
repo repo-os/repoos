@@ -1153,6 +1153,8 @@ export interface RemoteHostStatusView {
   };
   /** Set after the prerequisite probe (#0725). */
   validateScriptMirrorSupported?: boolean;
+  /** True when the installed runner script can dispatch remoteValidation.command. */
+  validateScriptCommandSupported?: boolean;
   validateScriptInstallCommand?: string;
   /** Memory health sampled from the host (#0901). */
   pressure?: {
