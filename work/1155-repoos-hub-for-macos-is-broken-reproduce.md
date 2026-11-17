@@ -51,3 +51,4 @@ Read macos/README.md and the 'RepoOS Hub for macOS' section of README.md first. 
 - 2026-11-17T14:40:47Z · message_queued at 2026-11-17T14:40:47.693Z
 - 2026-11-17T14:41:54Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-17T14:41:54Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code unknown) · last assistant: After isolating scan tests from the live registry, the full macOS unit-test suite passes. The fixture also now asserts that a populated registry does not invoke fallback scanning, which is the behavior that caused the original machine-depe… · stderr: Reading additional input from stdin...
+- 2026-11-17T14:41:54Z · message_delivered: 4 message(s)
