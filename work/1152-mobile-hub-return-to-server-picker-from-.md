@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/mobile-hub-return-to-server-picker-from-
 created_at: "2026-11-17T05:37:20Z"
-updated_at: "2026-11-17T07:56:55Z"
+updated_at: "2026-11-17T07:56:56Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -114,3 +114,4 @@ Inspect the existing Hub server WebView architecture and navigation security bef
 - 2026-11-17T07:54:41Z · body
 - 2026-11-17T07:56:55Z · status active→review
 - 2026-11-17T07:56:55Z · note: shots: skipped — 6 shots already captured — an engineer-made capture pre-empts the automatic one
+- 2026-11-17T07:56:56Z · message_queued at 2026-11-17T07:56:56.032Z
