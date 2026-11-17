@@ -1,5 +1,6 @@
 ---
 updated_at: "2026-11-17T19:23:48Z"
+review_passes: 1
 review_timeout_retries: 0
 id: "1157"
 title: "QA pass: use the RepoOS web app on desktop and phone widths, find broken things and fix them"
@@ -101,4 +102,5 @@ Start with the Work page at 390px and the bottom dock/heads/pipeline bar overlap
 - 2026-11-17T19:03:22Z · needs_input
 - 2026-11-17T19:18:10Z · needs_input (review-failed) cleared for review again by human
 - 2026-11-17T19:23:48Z · note: review pass 4: needs some work
+
 
