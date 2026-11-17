@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/mobile-hub-return-to-server-picker-from-
 created_at: "2026-11-17T05:37:20Z"
-updated_at: "2026-11-17T06:46:56Z"
+updated_at: "2026-11-17T06:48:47Z"
 handoff_signal_retry_count: 2
 ---
 ## Problem
@@ -73,3 +73,4 @@ Inspect the existing Hub server WebView architecture and navigation security bef
 - 2026-11-17T06:44:32Z · watchdog: check wait escalated · waiting: system load is high (9.2× per CPU, limit 3×) — waiting for headroom before starting more work; wait exceeds the handoff deadline for 30m · next step: investigate the abnormal wait; the flag clears when the check starts
 - 2026-11-17T06:46:56Z · needs_input
 - 2026-11-17T06:46:56Z · message_delivered: 1 message(s)
+- 2026-11-17T06:48:47Z · queued message undelivered for 16m and the engineer produced no output — ending the turn so it is delivered
