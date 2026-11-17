@@ -11,7 +11,7 @@ branch: feat/fix-android-16-hub-status-bar-contrast-a
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T17:55:45Z"
-updated_at: "2026-11-17T18:50:11Z"
+updated_at: "2026-11-17T18:52:56Z"
 handoff_signal_retry_count: 2
 ---
 ## Problem
@@ -59,3 +59,4 @@ This issue was observed on Android 16 (API 36), target SDK 36, with Android Syst
 - 2026-11-17T18:48:40Z · note: handoff requested (cli)
 - 2026-11-17T18:50:11Z · message_queued at 2026-11-17T18:50:11.711Z
 - 2026-11-17T18:50:11Z · handoff failed · task-file handoff failed at review · Engineering report draft is missing: .repoos/engineering-report-drafts/1166.md
+- 2026-11-17T18:52:56Z · message_delivered: 1 message(s)
