@@ -724,6 +724,19 @@ final class HubAppState: ObservableObject {
             document.entries[index] = entry
             volatileHealthByServerID.removeValue(forKey: id)
         } else {
+            // Startup reachability is deliberately volatile, but identity learned
+            // from a successful loopback response must survive an offline relaunch.
+            // Copy only identity fields so the sweep never persists health or times.
+            let persistedEntry = document.entries[index]
+            let identityChanged = persistedEntry.name != entry.name
+                || persistedEntry.repositoryName != entry.repositoryName
+                || persistedEntry.localProjectPath != entry.localProjectPath
+            if identityChanged {
+                document.entries[index].name = entry.name
+                document.entries[index].repositoryName = entry.repositoryName
+                document.entries[index].localProjectPath = entry.localProjectPath
+                try? store.save(document)
+            }
             volatileHealthByServerID[id] = VolatileServerHealth(
                 health: entry.lastHealth,
                 checkedAt: entry.lastHealthAt,

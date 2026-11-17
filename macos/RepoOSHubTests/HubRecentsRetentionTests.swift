@@ -254,6 +254,79 @@ final class HubRecentsRetentionTests: XCTestCase {
     }
 
     @MainActor
+    func testStartupLearnedLocalIdentitySurvivesEditAndOfflineRelaunch() async throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("hub-startup-identity-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        let store = ServerRegistryStore(directoryURL: directory)
+        let originalUpdatedAt = Date(timeIntervalSince1970: 100)
+        let originalCheckedAt = Date(timeIntervalSince1970: 200)
+        let entry = ServerEntry(
+            name: ServerOriginNormalizer.defaultDisplayName(for: URL(string: "http://127.0.0.1:7171")!),
+            origin: URL(string: "http://127.0.0.1:7171")!,
+            updatedAt: originalUpdatedAt,
+            lastHealth: .unreachable,
+            lastHealthAt: originalCheckedAt
+        )
+        var document = ServerRegistryDocument()
+        try store.upsertEntry(entry, in: &document)
+        try store.save(document)
+
+        let learnedPath = "/tmp/repoos-startup-project"
+        let state = HubAppState(
+            store: store,
+            healthChecker: StubHealthChecker(),
+            attentionCoordinator: HubAttentionCoordinator()
+        )
+        await state.refreshHealth(
+            for: entry.id,
+            using: SequencedHealthChecker([
+                .success(projectName: "RepoOS", projectPath: learnedPath)
+            ]),
+            persistToDisk: false
+        )
+
+        let afterSweep = try XCTUnwrap(store.load().entries.first)
+        XCTAssertEqual(afterSweep.name, "RepoOS")
+        XCTAssertEqual(afterSweep.repositoryName, "RepoOS")
+        XCTAssertEqual(afterSweep.localProjectPath, learnedPath)
+        XCTAssertEqual(afterSweep.lastHealth, .unreachable)
+        XCTAssertEqual(afterSweep.lastHealthAt, originalCheckedAt)
+        XCTAssertEqual(afterSweep.updatedAt, originalUpdatedAt)
+
+        let editError = await state.saveFromEditor(
+            ServerEditorDraft(
+                mode: .edit(entry),
+                name: "My RepoOS",
+                originText: "http://127.0.0.1:7171",
+                groupName: "",
+                accentColorHex: "",
+                iconSymbolName: "",
+                isPinned: false
+            )
+        )
+        XCTAssertNil(editError)
+        XCTAssertEqual(state.entries.first?.localProjectPath, learnedPath)
+
+        let relaunched = HubAppState(
+            store: store,
+            healthChecker: OfflineHealthChecker(),
+            attentionCoordinator: HubAttentionCoordinator()
+        )
+        await relaunched.refreshAllHealth()
+        let offlineEntry = try XCTUnwrap(relaunched.entries.first)
+        XCTAssertEqual(offlineEntry.lastHealth, .unreachable)
+        XCTAssertTrue(ServerActionsMenuModel.canManageLocalService(offlineEntry))
+        XCTAssertTrue(
+            ServerActionsMenuModel.sections(for: offlineEntry)
+                .flatMap(\.items)
+                .contains { $0.action == .startLocalService }
+        )
+    }
+
+    @MainActor
     func testStartupHealthRefreshUpdatesMemoryAndSearchWithoutWritingRegistry() async throws {
         let directory = FileManager.default.temporaryDirectory
             .appendingPathComponent("hub-startup-health-\(UUID().uuidString)", isDirectory: true)

@@ -137,6 +137,7 @@ struct ServerEntry: Identifiable, Codable, Equatable, Sendable {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(id, forKey: .id)
         try container.encode(name, forKey: .name)
+        try container.encodeIfPresent(repositoryName, forKey: .repositoryName)
         try container.encode(originString, forKey: .originString)
         try container.encode(createdAt, forKey: .createdAt)
         try container.encode(updatedAt, forKey: .updatedAt)
