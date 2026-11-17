@@ -11,7 +11,7 @@ branch: feat/qa-pass-use-the-repoos-web-app-on-deskto
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T15:21:15Z"
-updated_at: "2026-11-17T19:46:04Z"
+updated_at: "2026-11-17T19:46:05Z"
 review_rounds: 1
 review_passes: 1
 review_timeout_retries: 0
@@ -41,6 +41,7 @@ Start with the Work page at 390px and the bottom dock/heads/pipeline bar overlap
 ## Screenshots
 
 ![320px Work queue after filter reflow fix, light theme](/api/tasks/1157/attachments/att_8b163472-2a9a-46b8-9f62-3d90cf1c0c71.png)
+![320px Work queue after filter reflow fix, dark theme](/api/tasks/1157/attachments/att_21e82da1-73e5-45c4-98da-07938689b42b.png)
 
 ## Activity
 
@@ -112,3 +113,4 @@ Start with the Work page at 390px and the bottom dock/heads/pipeline bar overlap
 - 2026-11-17T19:26:52Z · message_delivered: 1 message(s)
 - 2026-11-17T19:27:22Z · note: Returning task to active to address round 1 review findings.
 - 2026-11-17T19:46:02Z · screenshots
+- 2026-11-17T19:46:05Z · screenshots
