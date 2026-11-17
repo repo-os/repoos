@@ -154,3 +154,4 @@ Do not add runtime dependencies. The discovery endpoint exposes names/ports only
 - 2026-11-17T15:51:15Z · needs_input
 - 2026-11-17T15:53:49Z · message_delivered: 1 message(s)
 - 2026-11-17T16:10:38Z · message_queued at 2026-11-17T16:10:38.304Z
+- 2026-11-17T16:10:38Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
