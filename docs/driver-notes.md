@@ -20,6 +20,30 @@ What happened, what I did, and what RepoOS could do better — with the evidence
 
 ## Entries
 
+## STANDING ORDER FROM NICK (2026-11-17) — read this first, every agent, every harness
+
+This applies to ANY agent driving this board (Claude Code, Codex, Cursor, Muse,
+Grok, or anything else), not just one tool. Nick has repeated it several times;
+do not make him say it again.
+
+1. **Keep 3 engineers running at all times.** `repoos list` should show 3 tasks
+   `active` with a live engineer. The moment a task lands, goes to review, is
+   stopped or crashes, start another one in the same check-in.
+2. **Never sit idle because "nothing obvious is next".** If there is no
+   complete-spec candidate, create work: file and start a task to fix something
+   broken, test the app on desktop web and on mobile widths (and the native Hub
+   apps) and fix what you find, or take the next complete-spec inbox task. Ask
+   Nick only if you are genuinely unsure, and keep working meanwhile.
+3. **Fix broken things now.** If a task is stuck, a check is flaky, an agent is
+   failing, or an app is broken, fix or file-and-start it. Change the engineer
+   (`repoos override <id> --cli <cli> --model <model>`, allowlisted pairs only)
+   when the current one fails. Do not wait for Nick.
+4. Still never: cut a release or run `repoos done` without Nick's say-so
+   (he has said "click Move to done on any task with a green review"), commit
+   to main outside the AGENTS.md exceptions, start #1055 (on hold) or #1124
+   (his call), or work around the pressure guard.
+
+
 ## 2026-10-07 — the brief replaces the hand-written handoff
 
 Nine of the planks in the 2026-10-06/07 overnight run were routine, rule-shaped

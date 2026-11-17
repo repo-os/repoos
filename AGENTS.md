@@ -50,7 +50,9 @@ human. Treat any harness memory as a cache of what the repo says.
 | Work that still needs doing | A task via `repoos new` — never a note-to-self |
 | How a *user* of RepoOS does something | `user-docs/` |
 
-Driving the board? Start with `repoos driver brief` and `docs/driver-notes.md`.
+Driving the board? Start with `repoos driver brief` and `docs/driver-notes.md` — its top
+section is Nick's standing order: **keep 3 engineers running at all times**, start another the
+moment one lands, and fix broken things instead of idling. It applies to every agent.
 Re-read a task's live state (`repoos list`, `repoos landable <id>`) before every
 action on it; never act on memory, summaries or loop prompts (#0879).
 
