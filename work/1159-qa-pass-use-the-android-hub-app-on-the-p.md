@@ -11,7 +11,7 @@ branch: feat/qa-pass-use-the-android-hub-app-on-the-p
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T15:51:18Z"
-updated_at: "2026-11-17T17:21:15Z"
+updated_at: "2026-11-17T17:23:29Z"
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-11-17T16:23:57.721Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
@@ -62,3 +62,4 @@ Human device step needed: the saved ADB target `100.117.244.33:37673` refused th
 - 2026-11-17T17:20:43Z · body: Notes for AI (added 2, removed 1)
 - 2026-11-17T17:20:43Z · message_queued at 2026-11-17T17:20:43.912Z
 - 2026-11-17T17:21:15Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The Android QA pass is **blocked**: the saved ADB target refused the connection, no device was attached, and no emulator was available. I used the Android web fixtures and visually inspected screenshots of the server list, Add server, tail… · stderr: Reading additional input from stdin...
+- 2026-11-17T17:23:29Z · message_delivered: 1 message(s)
