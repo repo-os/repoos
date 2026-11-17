@@ -713,6 +713,21 @@ function lastActivity(story: { lastActivity: string | null }): string {
     flex-wrap: wrap;
     gap: 10px;
   }
+  .story-name-row {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+  .story-name {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    overflow-wrap: anywhere;
+  }
+  .story-excerpt {
+    display: block;
+    overflow: visible;
+    -webkit-line-clamp: unset;
+  }
   .story-progress-wrap {
     order: 3;
     width: 100%;
@@ -729,6 +744,24 @@ function lastActivity(story: { lastActivity: string | null }): string {
   }
   .story-card {
     position: relative;
+  }
+  .story-live-row {
+    align-items: flex-start;
+    min-height: 44px;
+    padding-top: 10px;
+    padding-bottom: 10px;
+  }
+  .story-live-dot {
+    margin-top: 5px;
+  }
+  .story-live-title {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    overflow-wrap: anywhere;
+  }
+  .story-live-cue {
+    margin-top: 1px;
   }
 }
 </style>

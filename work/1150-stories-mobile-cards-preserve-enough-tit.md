@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 658349
-last_close_out_gate_at: "2026-11-17T13:15:36.019Z"
 id: "1150"
 title: "Stories mobile cards: preserve enough title and summary to identify work"
 type: chore
-status: review
+status: done
 priority: p3
 area: web
+merged_commit: 852ee73df7ad49d527fcd4fb9e9ada61b880bca6
 assigned_to: ai
 created_by: t@t
 branch: feat/stories-mobile-cards-preserve-enough-tit
@@ -14,6 +13,8 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T03:08:02Z"
 updated_at: "2026-11-17T13:15:36Z"
+last_close_out_gate_ms: 658349
+last_close_out_gate_at: "2026-11-17T13:15:36.019Z"
 review_passes: 1
 ---
 ## Problem
