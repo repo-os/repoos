@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-17T19:55:59.395Z: repoos check failed: ui verification failed (2 issue(s)): [missing-target] Work queue narrow filter controls after reflow (target \"default\"): highlight .mobile-queue-row matched nothing on /work?view=board (http://127.0.0.1:40675/work?view=board); [missing-target] Task drawer status select on its own row (target \"default\"): loading state detected: loading text \"Loading full diff… this may take a momen\" on /work?task=1157&tab=changes (http://127.0.0.1:40675/work)"
 id: "1157"
 title: "QA pass: use the RepoOS web app on desktop and phone widths, find broken things and fix them"
 type: bug
@@ -153,3 +155,4 @@ Start with the Work page at 390px and the bottom dock/heads/pipeline bar overlap
 - 2026-11-17T19:55:39Z · CTO nudge: held — handoff gate is running
 - 2026-11-17T19:55:56Z · note: ui verification failed: ui verification failed (2 issue(s)): [missing-target] Work queue narrow filter controls after reflow (target "default"): highlight .mobile-queue-row matched nothing on /work?view=board (http://127.0.0.1:40675/work?view=board); [missing-target] Task drawer status select on its own row (target "default"): loading state detected: loading text "Loading full diff… this may take a momen" on /work?task=1157&tab=changes (http://127.0.0.1:40675/work)
 - 2026-11-17T19:55:56Z · message_queued at 2026-11-17T19:55:56.380Z
+
