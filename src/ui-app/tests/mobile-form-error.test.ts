@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { errorAfterServerUrlInput } from "../../../mobile/src/form-validation.js";
-import { lockOverlayShouldRemainOpen } from "../../../mobile/src/lock.js";
+import { lockOverlayShouldRemainOpen } from "../../../mobile/src/lock-state.js";
 
 describe("Hub add-server URL validation", () => {
   it("clears a missing URL error as soon as a URL is entered", () => {
