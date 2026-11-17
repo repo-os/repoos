@@ -36,3 +36,4 @@ Start with src/core/tailnet-servers.ts: peer identity currently prefers HostName
 - 2026-11-17T02:39:13Z · status ready→active, branch
 - 2026-11-17T02:53:44Z · body
 - 2026-11-17T02:57:20Z · status active→review
+- 2026-11-17T02:57:20Z · message_queued at 2026-11-17T02:57:20.730Z
