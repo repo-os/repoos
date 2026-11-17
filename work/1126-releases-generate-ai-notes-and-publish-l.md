@@ -3,13 +3,17 @@ id: "1126"
 title: "Releases: 'Generate AI notes and publish' - let the user choose auto-publish or notify-me when the AI draft is ready"
 type: feature
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: the agent process exited with an error — open the task to see the full output
 priority: p2
 area: [web, server]
 assigned_to: ai
 created_by: t@t
 branch: feat/releases-generate-ai-notes-and-publish-l
 created_at: "2026-11-15T08:14:22Z"
-updated_at: "2026-11-17T00:29:21Z"
+updated_at: "2026-11-17T00:29:34Z"
+dev_error_count: 1
 ---
 ## Problem
 
@@ -50,3 +54,5 @@ Reuse the existing AI-draft run in ReleasesView.vue and the server release run; 
 - 2026-11-17T00:26:52Z · message_queued at 2026-11-17T00:26:52.655Z
 - 2026-11-17T00:26:52Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-17T00:29:21Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-17T00:29:34Z · note: stopped orphaned engineer pid 47559
+- 2026-11-17T00:29:34Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
