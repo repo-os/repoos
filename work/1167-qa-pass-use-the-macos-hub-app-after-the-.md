@@ -3,6 +3,9 @@ id: "1167"
 title: "QA pass: use the macOS Hub app after the #1155 fix, find broken things and fix them"
 type: bug
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: `needs some work` — code is sound; `user-docs/macos-hub.md` still documents the pre-branch subtitle and badge behaviour this diff replaces.
 priority: p1
 area: macos
 assigned_to: ai
@@ -92,3 +95,4 @@ Do not edit repoos.toml. Do not create signing identities or commit app binaries
 - 2026-11-17T21:09:15Z · note: shots: skipped — the diff (28 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-17T21:09:49Z · message_queued at 2026-11-17T21:09:49.486Z
 - 2026-11-17T21:19:29Z · note: review pass 4: needs some work
+- 2026-11-17T21:19:29Z · needs_input
