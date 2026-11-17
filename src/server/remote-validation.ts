@@ -2331,7 +2331,7 @@ export function prereqProbeCommand(
             `{ echo ${shellQuote(`image '${image}' not found — build it (just setup-<host>) or fix remoteValidation.containerImage`)}; exit 1; }`,
           ...(dockerTools.length
             ? [
-                `docker run --rm ${shellQuote(image)} bash -lc ${shellQuote(`missing=; for tool in ${dockerTools.map(shellQuote).join(" ")}; do command -v "$tool" >/dev/null 2>&1 || { echo "$tool not found in runner image login PATH"; missing=1; }; done; [ -z "$missing" ] || exit 1`)} || { echo "one or more required tools are unavailable in runner image"; exit 1; }`,
+                `docker run --rm --entrypoint bash ${shellQuote(image)} -lc ${shellQuote(`missing=; for tool in ${dockerTools.map(shellQuote).join(" ")}; do command -v "$tool" >/dev/null 2>&1 || { echo "$tool not found in runner image login PATH"; missing=1; }; done; [ -z "$missing" ] || exit 1`)} || { echo "one or more required tools are unavailable in runner image"; exit 1; }`,
               ]
             : []),
         ]),

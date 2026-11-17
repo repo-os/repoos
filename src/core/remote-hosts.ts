@@ -157,7 +157,6 @@ export function hostRunner(host: RemoteValidationHost): "docker" | "native" {
 export function hostCapabilities(host: RemoteValidationHost): string[] {
   const caps = new Set<string>();
   if (host.os?.trim()) caps.add(host.os.trim().toLowerCase());
-  if (host.runner === "native") caps.add("native");
   for (const label of host.labels ?? []) if (label.trim()) caps.add(label.trim().toLowerCase());
   return [...caps];
 }

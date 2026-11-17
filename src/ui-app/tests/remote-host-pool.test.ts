@@ -2813,7 +2813,7 @@ describe("per-host prerequisite probe", () => {
   it("checks declared toolchain executables inside a configured Docker image", () => {
     const cmd = prereqProbeCommand("docker", "tiao-ci", ["java", "node"], true);
     expect(cmd).toContain("docker image inspect 'tiao-ci'");
-    expect(cmd).toContain("docker run --rm 'tiao-ci' bash -lc");
+    expect(cmd).toContain("docker run --rm --entrypoint bash 'tiao-ci' -lc");
     expect(cmd).toContain("java");
     expect(cmd).toContain("node");
     expect(cmd).toContain("not found in runner image login PATH");
@@ -2860,6 +2860,9 @@ describe("per-host prerequisite probe", () => {
     expect(custom).toContain("REPOOS_OFFLOAD_BROWSER_STEPS");
     expect(custom).toContain("REPOOS_BROWSER_CAPTURE_MODE");
     expect(custom).toContain('-e "REPOOS_VALIDATION_COMMAND=${REPOOS_VALIDATION_COMMAND:-}"');
+    expect(custom).toContain('--entrypoint bash "$IMAGE" -lc "$RUNNER_COMMAND"');
+    expect(custom).toContain("[validate] gate started");
+    expect(custom).toContain('"$CODE" -eq 125');
   });
 
   it("checks the bun cache dir is writable on a native host", () => {
@@ -2911,9 +2914,9 @@ describe("hostRunner", () => {
     expect(hostRunner({ host: "mini", runner: "docker" })).toBe("docker");
   });
 
-  it("exposes native execution as a dispatch capability for project commands", () => {
-    expect(hostSatisfies({ host: "linux", os: "linux", runner: "native" }, ["native"])).toBe(true);
-    expect(hostSatisfies({ host: "linux", os: "linux" }, ["native"])).toBe(false);
+  it("keeps runner implementation separate from dispatch capabilities", () => {
+    expect(hostSatisfies({ host: "linux", os: "linux", runner: "native" }, ["linux"])).toBe(true);
+    expect(hostSatisfies({ host: "linux", os: "linux", runner: "native" }, ["native"])).toBe(false);
   });
 });
 

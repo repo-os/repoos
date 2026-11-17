@@ -307,10 +307,12 @@ if [ -n "$REPOOS_BROWSER_CAPTURE_MODE" ]; then
     cd "/repo-worktrees/$REPOOS_BROWSER_CAPTURE_BRANCH"
     bun install --frozen-lockfile || exit 4
   fi
-  bun scripts/remote-runner/capture-browser.ts "$REPOOS_BROWSER_CAPTURE_TASK" "$REPOOS_BROWSER_CAPTURE_MODE" /artifacts/browser-capture 2>&1 | tee /artifacts/test-output.log
+  echo '[validate] gate started' | tee /artifacts/test-output.log
+  bun scripts/remote-runner/capture-browser.ts "$REPOOS_BROWSER_CAPTURE_TASK" "$REPOOS_BROWSER_CAPTURE_MODE" /artifacts/browser-capture 2>&1 | tee -a /artifacts/test-output.log
   code=${PIPESTATUS[0]}
 else
-  bash -lc "$REPOOS_VALIDATION_COMMAND" 2>&1 | tee /artifacts/test-output.log
+  echo '[validate] gate started' | tee /artifacts/test-output.log
+  bash -lc "$REPOOS_VALIDATION_COMMAND" 2>&1 | tee -a /artifacts/test-output.log
   code=${PIPESTATUS[0]}
   if [ "$code" -eq 0 ] && [ "$REPOOS_OFFLOAD_BROWSER_STEPS" = 1 ]; then
     if [ -f /repo/dist/cli/index.js ]; then
@@ -350,10 +352,20 @@ RUNNER_EOF
     -e "REPOOS_BROWSER_CAPTURE_CANONICAL=${REPOOS_BROWSER_CAPTURE_CANONICAL:-}" \
     -w /repo \
     --user "$(id -u):$(id -g)" \
-    "$IMAGE" bash -lc "$RUNNER_COMMAND"
+    --entrypoint bash "$IMAGE" -lc "$RUNNER_COMMAND"
   CODE=${PIPESTATUS[0]}
   set -e
-  echo "[validate] gate exit $CODE"
+  if [ "$CODE" -eq 125 ] || [ "$CODE" -eq 126 ] || [ "$CODE" -eq 127 ]; then
+    echo "[validate] container could not start (docker exit $CODE)" >&2
+    exit 5
+  fi
+  if [ "$CODE" -eq 4 ] && ! grep -Fq '[validate] gate started' "$ART/test-output.log"; then
+    echo "[validate] setup failed (exit 4)" >&2
+    exit 4
+  fi
+  if grep -Fq '[validate] gate started' "$ART/test-output.log"; then
+    echo "[validate] gate exit $CODE"
+  fi
   exit "$CODE"
 fi
 
