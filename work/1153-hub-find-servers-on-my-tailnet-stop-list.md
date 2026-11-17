@@ -2,7 +2,7 @@
 id: "1153"
 title: "Hub 'Find servers on my tailnet': stop listing bare machines, hide phones, explain failures, and replace SSH discovery with an HTTPS-based one"
 type: bug
-status: active
+status: review
 priority: p2
 area: [mobile, server, core]
 assigned_to: ai
@@ -171,3 +171,4 @@ Do not add runtime dependencies. The discovery endpoint exposes names/ports only
 - 2026-11-17T16:42:49Z · message_queued at 2026-11-17T16:42:49.320Z
 - 2026-11-17T16:42:49Z · ↻ resuming engineer to read queued message
 - 2026-11-17T16:42:49Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The retry is green: all 739 test files passed (9,902 tests; 14 skipped), and the UI smoke, contrast audit, and user-docs build passed. I’m confirming the report draft and current task state, then I’ll request handoff. · stderr: 2026-11-17T16:18:48.337629Z ERROR codex_core::util: Custom tool call output is missing for call id: call_2175e259c1ed429398dd7a25f50ebd04 2026-11-17T16:18:52.422107Z ERROR codex_core::tools::router: error=write_stdin failed: Unknown process id 64565 2026-11-17T16:18:52.453534Z ERROR codex_core::util: Custom tool call …
+- 2026-11-17T16:42:49Z · status active→review
