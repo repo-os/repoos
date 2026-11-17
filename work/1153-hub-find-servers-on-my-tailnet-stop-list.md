@@ -146,3 +146,4 @@ Do not add runtime dependencies. The discovery endpoint exposes names/ports only
 - 2026-11-17T14:55:38Z · CTO nudge: held — handoff gate is running
 - 2026-11-17T15:11:59Z · note: ui verification passed: 1 shot captured with clean console (1 shot warning)
 - 2026-11-17T15:12:00Z · status active→review
+- 2026-11-17T15:12:00Z · message_queued at 2026-11-17T15:12:00.826Z
