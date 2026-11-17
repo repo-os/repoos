@@ -11,7 +11,7 @@ branch: feat/qa-pass-use-the-repoos-web-app-on-deskto
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T15:21:15Z"
-updated_at: "2026-11-17T19:51:30Z"
+updated_at: "2026-11-17T19:55:39Z"
 review_rounds: 1
 review_passes: 1
 review_timeout_retries: 0
@@ -150,3 +150,4 @@ Start with the Work page at 390px and the bottom dock/heads/pipeline bar overlap
 - 2026-11-17T19:46:17Z · screenshots
 - 2026-11-17T19:48:13Z · body
 - 2026-11-17T19:51:30Z · body
+- 2026-11-17T19:55:39Z · CTO nudge: held — handoff gate is running
