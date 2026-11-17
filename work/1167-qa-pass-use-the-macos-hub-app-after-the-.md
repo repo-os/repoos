@@ -11,7 +11,7 @@ branch: feat/qa-pass-use-the-macos-hub-app-after-the-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T18:23:18Z"
-updated_at: "2026-11-17T18:23:31Z"
+updated_at: "2026-11-17T18:50:14Z"
 ---
 ## Problem
 
@@ -39,3 +39,4 @@ Do not edit repoos.toml. Do not create signing identities or commit app binaries
 - 2026-11-17T18:23:23Z · cli_override, model_override
 - 2026-11-17T18:23:28Z · status inbox→ready
 - 2026-11-17T18:23:31Z · status ready→active, branch
+- 2026-11-17T18:50:14Z · body
