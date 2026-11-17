@@ -323,6 +323,7 @@ const RESULT_ICON: Record<string, string> = {
         >
         <Button
           v-if="activeTab === 'plan'"
+          class="ck-refresh"
           variant="ghost"
           size="sm"
           :disabled="loading"
@@ -808,12 +809,16 @@ const RESULT_ICON: Record<string, string> = {
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: 42px;
+    min-height: 44px;
     padding: 0 8px;
     border: 1px solid var(--border);
     border-radius: 8px;
     text-align: center;
     font-size: 13px;
+  }
+  .ck-refresh {
+    grid-column: 1 / -1;
+    min-height: 44px;
   }
 }
 .ck-loading,
