@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 627689
-last_close_out_gate_at: "2026-11-17T05:40:04.547Z"
 id: "1151"
 title: "Full-screen diff pages: make the Back control meet the 44px touch target"
 type: bug
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: fdfe32798b993040a12acf288e30af008e66a274
 assigned_to: ai
 created_by: t@t
 branch: feat/full-screen-diff-pages-make-the-back-con
 created_at: "2026-11-17T03:32:44Z"
 updated_at: "2026-11-17T05:40:04Z"
+last_close_out_gate_ms: 627689
+last_close_out_gate_at: "2026-11-17T05:40:04.547Z"
 review_passes: 1
 last_check_failure: "repoos check at 2026-11-17T04:45:29.271Z: repoos check failed: ui verification failed (3 issue(s)): [request] HTTP 404 for http://127.0.0.1:35645/api/tasks/1151/diff (http://127.0.0.1:35645/api/tasks/1151/diff); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:35645/api/tasks/1151/diff); [missing-target] Task diff at 390px: Back is a 44px touch target (dark) (target \"default\"): loading state detected: loading text \"Loading diff…\" on /tasks/1151/diff (http://127.0.0.1:35645/tasks/… (truncated)"
 ---
