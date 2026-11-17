@@ -2,7 +2,7 @@
 id: "1156"
 title: "Hub Android: dev build update channel - new dev builds reach the phone from any network with one tap (no adb)"
 type: feature
-status: inbox
+status: ready
 priority: p1
 area: [mobile, infra]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: ""
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T14:48:18Z"
-updated_at: "2026-11-17T15:21:05Z"
+updated_at: "2026-11-17T15:21:09Z"
 ---
 ## Problem
 
@@ -41,3 +41,4 @@ Follow the same shape as Tiao's implementation so all of Nick's apps behave iden
 
 - 2026-11-17T14:48:18Z · created · t@t
 - 2026-11-17T15:21:05Z · cli_override, model_override
+- 2026-11-17T15:21:09Z · status inbox→ready
