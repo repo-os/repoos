@@ -11,7 +11,7 @@ branch: feat/qa-pass-use-the-repoos-web-app-on-deskto
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T15:21:15Z"
-updated_at: "2026-11-17T20:08:59Z"
+updated_at: "2026-11-17T20:09:01Z"
 last_check_failure: "repoos check at 2026-11-17T19:55:59.395Z: repoos check failed: ui verification failed (2 issue(s)): [missing-target] Work queue narrow filter controls after reflow (target \"default\"): highlight .mobile-queue-row matched nothing on /work?view=board (http://127.0.0.1:40675/work?view=board); [missing-target] Task drawer status select on its own row (target \"default\"): loading state detected: loading text \"Loading full diff… this may take a momen\" on /work?task=1157&tab=changes (http://127.0.0.1:40675/work)"
 review_rounds: 1
 review_passes: 1
@@ -161,3 +161,4 @@ Start with the Work page at 390px and the bottom dock/heads/pipeline bar overlap
 - 2026-11-17T20:05:39Z · CTO nudge: held — handoff gate is running
 - 2026-11-17T20:08:57Z · note: ui verification failed: ui verification failed (1 issue(s)): [missing-target] Work queue at desktop with mobile queue behavior evidenced in attachments (target "default"): highlight h1 matched nothing on /work?view=board (http://127.0.0.1:33563/work?view=board)
 - 2026-11-17T20:08:59Z · message_queued at 2026-11-17T20:08:59.064Z
+- 2026-11-17T20:09:01Z · message_delivered: 1 message(s)
