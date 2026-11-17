@@ -12,7 +12,7 @@ branch: feat/qa-pass-use-the-android-hub-app-on-the-p
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T15:51:18Z"
-updated_at: "2026-11-17T19:06:42Z"
+updated_at: "2026-11-17T19:10:38Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: check-fmt:check — Formatting failed — run `bun run fmt` to fix:"
 last_handoff_failure_sha: 6408707035a76319101d84f6762c66fd175dd784
 review_rounds: 1
@@ -164,3 +164,4 @@ The Pixel 8 Android 16 (API 36) emulator was available and used after the saved 
 - 2026-11-17T18:50:39Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-17T18:54:52Z · message_delivered: 2 message(s)
 - 2026-11-17T19:06:42Z · body
+- 2026-11-17T19:10:38Z · CTO nudge: held — handoff gate is running
