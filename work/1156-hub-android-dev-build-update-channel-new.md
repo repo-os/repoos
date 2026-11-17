@@ -73,3 +73,4 @@ Follow the same shape as Tiao's implementation so all of Nick's apps behave iden
 - 2026-11-17T16:35:38Z · CTO nudge: held — handoff gate is running
 - 2026-11-17T16:42:57Z · status active→review
 - 2026-11-17T16:42:57Z · message_queued at 2026-11-17T16:42:57.357Z
+- 2026-11-17T16:42:57Z · note: shots: skipped — the diff (19 changed paths) touches no capture target's globs — no UI change to capture
