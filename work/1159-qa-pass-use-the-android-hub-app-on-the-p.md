@@ -11,7 +11,7 @@ branch: feat/qa-pass-use-the-android-hub-app-on-the-p
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T15:51:18Z"
-updated_at: "2026-11-17T17:17:50Z"
+updated_at: "2026-11-17T17:20:43Z"
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-11-17T16:23:57.721Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
@@ -31,8 +31,10 @@ Every Hub screen works on the phone: server list, add server, edit/remove, Setti
 - [ ] The report lists each screen checked, the defects found, fixed and filed; no screen is reported without a screenshot. Never capture anything except the phone or emulator screen, and do not install anything but the dev variant.
 
 ## Notes for AI
+Use `just deploy-phone` only if the saved port works; otherwise do not ask Nick for secrets. Do not edit `repoos.toml`.
 
-Use just deploy-phone only if the saved port works; otherwise do not ask Nick for secrets. Do not edit repoos.toml.
+Human device step needed: the saved ADB target `100.117.244.33:37673` refused the connection on 2026-11-18; `adb devices -l` was empty and no emulator executable was available. Desktop browser fixtures were inspected but do not satisfy the phone/emulator screenshot or native Android interaction criteria. Please split the remaining device pass into a held human task (or provide an available Android device/emulator) before this QA task is resumed. No device results are claimed.
+
 
 ## Activity
 
@@ -57,3 +59,4 @@ Use just deploy-phone only if the saved port works; otherwise do not ask Nick fo
 - 2026-11-17T17:12:28Z · body
 - 2026-11-17T17:12:49Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: **Blocked: device QA is incomplete.** The saved phone target’s port was unreachable, `adb devices -l` showed no device, and no Android emulator or SDK was available. I did not install anything or run `just deploy-phone`. I could not captur… · stderr: Reading additional input from stdin...
 - 2026-11-17T17:17:50Z · CTO action: restart-stalled-agent (fresh) · agent exited without emitting the handoff signal
+- 2026-11-17T17:20:43Z · body: Notes for AI (added 2, removed 1)
