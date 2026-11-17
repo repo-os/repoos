@@ -181,3 +181,4 @@ Start with the Work page at 390px and the bottom dock/heads/pipeline bar overlap
 - 2026-11-17T20:38:51Z · body
 - 2026-11-17T20:39:42Z · status active→review
 - 2026-11-17T20:42:33Z · note: shots: failed — browser capture cancelled
+- 2026-11-17T20:42:33Z · handoff failed · check failed after 2 automatic retries · ui verification failed: timed out waiting for the task's browser capture
