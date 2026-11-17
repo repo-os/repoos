@@ -11,8 +11,10 @@ area: mobile
 assigned_to: ai
 created_by: t@t
 branch: ""
+cli_override: codex
+model_override: gpt-6-luna
 created_at: "2026-11-17T17:55:45Z"
-updated_at: "2026-11-17T17:56:18Z"
+updated_at: "2026-11-17T18:23:40Z"
 ---
 ## Problem
 On Android 16 (API 36), the Hub theme changes the status-bar icon style but the status-bar background remains a light system strip. In Dark appearance, white status icons are nearly invisible against that light strip. Android 16 ignores the status-bar color request for apps targeting API 36, so the native edge-to-edge treatment needs a platform-aware fix.
@@ -46,3 +48,4 @@ This issue was observed on Android 16 (API 36), target SDK 36, with Android Syst
 - 2026-11-17T17:55:47Z · needs_input
 - 2026-11-17T17:56:16Z · body: Problem (added); Acceptance criteria (added); Reproduction (added); Evidence (added); Notes for AI (added); Problem\nOn Android 16 (API 36), the Hub theme changes the status-bar icon style but the status bar background remains a light system strip. In dark appearance, white status icons become nearly invisible against that light strip. The status bar color API is ignored for apps targeting API 36, so the native edge-to-edge treatment needs a platform-aware fix.\n\n## Reproduction\n1. Install RepoOS Hub Dev on an Android 16 device or emulator.\n2. Open Settings and choose Dark appearance.\n3. Observe the system status bar above the app.\n\n## Expected\nStatus bar background and icon colors maintain readable contrast with the active Hub theme without covering the top content.\n\n## Evidence\nCaptured on the Pixel 8 API 36 emulator during task #1159: theme-classic-dark.png. The white status icons are faint against the light status-bar strip.\n (removed)
 - 2026-11-17T17:56:18Z · screenshots
+- 2026-11-17T18:23:40Z · cli_override, model_override
