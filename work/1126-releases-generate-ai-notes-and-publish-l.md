@@ -11,7 +11,7 @@ branch: feat/releases-generate-ai-notes-and-publish-l
 cli_override: opencode
 model_override: opencode-go/glm-5.3-flash
 created_at: "2026-11-15T08:14:22Z"
-updated_at: "2026-11-17T06:46:57Z"
+updated_at: "2026-11-17T07:00:08Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-17T06:45:16.889Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 review_rounds: 2
@@ -247,3 +247,4 @@ Reuse the existing AI-draft run in ReleasesView.vue and the server release run; 
 - 2026-11-17T06:45:13Z · message_queued at 2026-11-17T06:45:13.882Z
 - 2026-11-17T06:46:50Z · note: shots: failed — browser capture cancelled
 - 2026-11-17T06:46:57Z · message_delivered: 1 message(s)
+- 2026-11-17T07:00:08Z · body
