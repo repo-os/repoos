@@ -391,6 +391,22 @@ describe("phone task detail layout guards (#1137)", () => {
     expect(css).toMatch(/\.drawer-tabs-scroll \.tab-btn\s*\{[^}]*flex:\s*none/s);
   });
 
+  it("wraps the phone tab strip so no tab or the expand control hides off-screen", () => {
+    expect(css).toMatch(
+      /@media \(max-width: 719\.98px\)[\s\S]*?\.drawer-tabs-scroll\s*\{[^}]*flex-wrap:\s*wrap;[^}]*overflow-x:\s*visible/s,
+    );
+    // Labels stay on one line; the strip grows by rows, not by squeezing them.
+    expect(css).toMatch(
+      /\.drawer-tabs-scroll \.tab-btn\s*\{[^}]*white-space:\s*nowrap;[^}]*flex:\s*none/s,
+    );
+  });
+
+  it("gives preview helper copy a full, readable line on a phone", () => {
+    expect(css).toMatch(
+      /@media \(max-width: 719\.98px\)[\s\S]*?\.quickbar-row > \.preview-hint\s*\{[^}]*flex:\s*1 1 100%;[^}]*max-width:\s*52ch/s,
+    );
+  });
+
   it("keeps the close and back controls on-screen and at least 44x44", () => {
     expect(drawerSource).toContain('aria-label="Close task detail"');
     expect(drawerSource).toContain('aria-label="Back to Work queue"');

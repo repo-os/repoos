@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 212267
-last_close_out_gate_at: "2026-11-17T07:14:11.737Z"
 id: "1147"
 title: "Mobile task detail: make tabs and preview guidance reachable"
 type: bug
-status: review
+status: done
 priority: p1
 area: web
+merged_commit: a9b658ac5e3f62f81ddc8e97942468e1d42d1c3a
 assigned_to: ai
 created_by: t@t
 branch: feat/mobile-task-detail-make-tabs-and-preview
 created_at: "2026-11-17T03:06:27Z"
 updated_at: "2026-11-17T07:14:11Z"
+last_close_out_gate_ms: 212267
+last_close_out_gate_at: "2026-11-17T07:14:11.737Z"
 review_passes: 1
 last_check_failure: "repoos check at 2026-11-17T05:37:46.311Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Phone task detail at 320px: all tabs and the expand control on screen (target \"default\"): loading state detected: loading text \"Loading full diff… this may take a momen\" on /work?task=9999&tab=changes (http://127.0.0.1:43923/work?task=9999&tab=changes&shotState=drawer%3AreviewWithBranch)"
 ---
