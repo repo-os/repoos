@@ -11,7 +11,7 @@ branch: feat/qa-pass-use-the-macos-hub-app-after-the-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T18:23:18Z"
-updated_at: "2026-11-17T22:43:31Z"
+updated_at: "2026-11-17T22:57:31Z"
 review_passes: 5
 review_rounds: 2
 handoff_signal_retry_count: 2
