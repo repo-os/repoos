@@ -13,6 +13,7 @@ const noticeBell = readFileSync(resolve(root, "components/NoticeBell.vue"), "utf
 const searchBar = readFileSync(resolve(root, "components/SearchBar.vue"), "utf8");
 const workView = readFileSync(resolve(root, "views/WorkView.vue"), "utf8");
 const agentsView = readFileSync(resolve(root, "views/AgentsView.vue"), "utf8");
+const diffView = readFileSync(resolve(root, "views/DiffView.vue"), "utf8");
 const sidebar = readFileSync(resolve(root, "components/Sidebar.vue"), "utf8");
 const indexHtml = readFileSync(resolve(appRoot, "index.html"), "utf8");
 
@@ -120,6 +121,21 @@ describe("mobile web polish (#1139)", () => {
       /@media \(max-width: 900px\)\s*\{[\s\S]*?\.agent-tabs\s*\{[^}]*flex-wrap:\s*wrap;[^}]*overflow-x:\s*visible/s,
     );
     expect(agentsView).toContain('class="agent-tabs"');
+  });
+
+  it("gives the full-screen diff Back control a 44px phone touch target (#1151)", () => {
+    // DiffView styles are scoped to the SFC, so the phone floor lives there.
+    expect(diffView).toMatch(
+      /@media \(max-width: 719\.98px\), \(pointer: coarse\)\s*\{[\s\S]*?\.diff-back-btn\s*\{[^}]*min-width:\s*44px;[^}]*min-height:\s*44px/s,
+    );
+    // The keyboard-only hint goes away on the same breakpoint, so the taller
+    // control does not cost the filename any horizontal room.
+    expect(diffView).toMatch(
+      /@media \(max-width: 719\.98px\), \(pointer: coarse\)\s*\{[\s\S]*?\.diff-back-esc-hint\s*\{[^}]*display:\s*none/s,
+    );
+    expect(diffView).toMatch(
+      /\.diff-back-btn:focus-visible\s*\{[^}]*outline:\s*2px solid var\(--ring\)/s,
+    );
   });
 
   it("ships an installable PWA that opens Work with an iOS icon", () => {
