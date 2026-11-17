@@ -13,8 +13,6 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T15:51:18Z"
 updated_at: "2026-11-17T19:56:09Z"
-last_handoff_failure_fingerprint: "check|repoos check failed: check-fmt:check — Formatting failed — run `bun run fmt` to fix:"
-last_handoff_failure_sha: 6408707035a76319101d84f6762c66fd175dd784
 review_rounds: 1
 review_passes: 1
 handoff_signal_retry_count: 2
@@ -178,3 +176,4 @@ The Pixel 8 Android 16 (API 36) emulator was available and used after the saved 
 - 2026-11-17T19:54:46Z · message_delivered: 2 message(s)
 - 2026-11-17T19:55:39Z · CTO nudge: held — handoff gate is running
 - 2026-11-17T19:56:09Z · status active→review
+
