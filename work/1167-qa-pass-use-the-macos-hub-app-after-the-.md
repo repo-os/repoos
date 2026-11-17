@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "1167"
 title: "QA pass: use the macOS Hub app after the #1155 fix, find broken things and fix them"
 type: bug
@@ -41,3 +42,4 @@ Do not edit repoos.toml. Do not create signing identities or commit app binaries
 - 2026-11-17T18:23:31Z · status ready→active, branch
 - 2026-11-17T18:50:14Z · body
 - 2026-11-17T18:52:56Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: I fixed the sidebar subtitle defect: when a server had a repository name, the row showed that name instead of the saved URL. The subtitle now always shows the origin, with a regression test in [ServerSidebarRowLayoutTests.swift](/Users/nic… · stderr: Reading additional input from stdin... 2026-11-17T18:47:04.025907Z ERROR codex_core::tools::router: error=exec_command failed: CreateProcess { message: "Rejected(\"`/bin/zsh -lc \\\"launchctl unsetenv REPOOS_HUB_SUPPORT_DIRECTORY && rm -rf /Users/nick/Library/Caches/RepoOS/task-1167-registry /Users/nick/Library/Caches…
+
