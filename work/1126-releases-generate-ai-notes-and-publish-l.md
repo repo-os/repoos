@@ -3,16 +3,13 @@ id: "1126"
 title: "Releases: 'Generate AI notes and publish' - let the user choose auto-publish or notify-me when the AI draft is ready"
 type: feature
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "OpenCode exited with an error. Open Raw CLI error for details. (CLI: network problem reaching the model provider, not a code issue: ConnectionRefused: Unable to connect. Is the computer able to access the url?)"
 priority: p2
 area: [web, server]
 assigned_to: ai
 created_by: t@t
 branch: feat/releases-generate-ai-notes-and-publish-l
 created_at: "2026-11-15T08:14:22Z"
-updated_at: "2026-11-17T01:17:20Z"
+updated_at: "2026-11-17T01:17:22Z"
 dev_error_count: 3
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-11-17T01:15:53.373Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-11-17T01:17:20.842Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -156,3 +153,4 @@ Reuse the existing AI-draft run in ReleasesView.vue and the server release run; 
 - 2026-11-17T01:15:54Z · needs_input
 - 2026-11-17T01:17:20Z · agent exited with an error (opencode) · OpenCode exited with an error. Open Raw CLI error for details. (CLI: network problem reaching the model provider, not a code issue: ConnectionRefused: Unable to connect. Is the computer able to access the url?)
 - 2026-11-17T01:17:20Z · engineer crash recovery: resuming opencode + opencode-go/deepseek-v4.1-flash (2/3 crashes in 30m) · OpenCode exited with an error. Open Raw CLI error for details. (CLI: network problem reaching the model provider, not a code issue: ConnectionRefused: Unable to connect. Is the computer able to access the url?)
+- 2026-11-17T01:17:22Z · needs_input
