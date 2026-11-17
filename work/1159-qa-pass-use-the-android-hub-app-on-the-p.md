@@ -13,7 +13,7 @@ branch: feat/qa-pass-use-the-android-hub-app-on-the-p
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T15:51:18Z"
-updated_at: "2026-11-17T20:34:51Z"
+updated_at: "2026-11-17T20:35:21Z"
 last_close_out_gate_ms: 992947
 last_close_out_gate_at: "2026-11-17T20:34:20.634Z"
 review_passes: 2
@@ -184,3 +184,4 @@ The Pixel 8 Android 16 (API 36) emulator was available and used after the saved 
 - 2026-11-17T20:04:24Z · note: review pass 2: good to go
 - 2026-11-17T20:34:20Z · close-out gate completed in 993s
 - 2026-11-17T20:34:51Z · message_dropped: 1 queued message(s) discarded — task is done
+- 2026-11-17T20:35:21Z · status done→done, release:success
