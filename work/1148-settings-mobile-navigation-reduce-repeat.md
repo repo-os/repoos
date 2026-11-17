@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/settings-mobile-navigation-reduce-repeat
 created_at: "2026-11-17T03:06:33Z"
-updated_at: "2026-11-17T06:07:53Z"
+updated_at: "2026-11-17T07:15:18Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-17T05:13:57.562Z: repoos check failed: rendered-contrast — · div#setting-release.email.to.setting-row > div.setting-info > div.setting-desc — #686e76 on #161b23 = 3.36 (need ≥4.5, 11px) [settings] \"Addresses that receive each release email, one message per a\""
 review_rounds: 1
@@ -144,3 +144,4 @@ Use the attached phone screenshot. Check long labels and both theme families. Th
 - 2026-11-17T06:05:50Z · note: shots: failed — browser capture cancelled
 - 2026-11-17T06:05:53Z · handoff failed · could not auto-retry after check failure · This worktree already has a recorded live engineer for task #review:1148 (pid 1911)
 - 2026-11-17T06:07:53Z · note: review pass 2: good to go
+- 2026-11-17T07:15:18Z · message_overdue: still queued after 60m without being delivered
