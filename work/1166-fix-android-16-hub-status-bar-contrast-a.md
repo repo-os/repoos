@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "1166"
 title: Fix Android 16 Hub status-bar contrast across themes
 type: bug
@@ -49,3 +50,4 @@ This issue was observed on Android 16 (API 36), target SDK 36, with Android Syst
 - 2026-11-17T18:23:46Z · status inbox→ready
 - 2026-11-17T18:23:49Z · status ready→active, needs_input, branch
 - 2026-11-17T18:29:03Z · message_queued at 2026-11-17T18:29:03.587Z
+
