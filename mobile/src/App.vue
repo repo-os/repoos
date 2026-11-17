@@ -27,7 +27,7 @@ import {
   addSelectedDiscovered,
 } from "./app-state";
 import { openServer, onBrowserEvents } from "./browser";
-import { verifyWithDeviceLock } from "./lock";
+import { lockOverlayShouldRemainOpen, verifyWithDeviceLock } from "./lock";
 import type { ServerEntry } from "./types";
 import HubLogo from "./components/HubLogo.vue";
 import ServerListView from "./components/ServerListView.vue";
@@ -40,6 +40,7 @@ import { resolveShellPlatform } from "./platform";
 import { fixtureInitialRoute, readHubFixture } from "./fixture";
 import { impactHeavy } from "./haptics";
 import { installHubBackButton, type HubRoute } from "./back-navigation";
+import { errorAfterServerUrlInput } from "./form-validation";
 import type { AppearanceMode, DesignThemeId } from "./theme";
 
 type Route = HubRoute;
@@ -108,8 +109,12 @@ onUnmounted(() => {
 async function gateLock(_serverId: string | null): Promise<boolean> {
   lockOpen.value = true;
   const ok = await verifyWithDeviceLock("Unlock RepoOS Hub to continue");
-  lockOpen.value = false;
+  lockOpen.value = lockOverlayShouldRemainOpen(ok);
   return ok;
+}
+
+async function retryLock() {
+  await gateLock(null);
 }
 
 async function onSelect(server: ServerEntry) {
@@ -232,7 +237,7 @@ async function onLockScope(scope: "reopen" | "server") {
       </button>
     </header>
 
-    <LockOverlay :open="lockOpen" />
+    <LockOverlay :open="lockOpen" @retry="retryLock" />
 
     <main class="main-pane">
       <ServerListView
@@ -291,7 +296,7 @@ async function onLockScope(scope: "reopen" | "server") {
         :platform="platform"
         @back="backToPicker"
         @update:name="(v) => (formName = v)"
-        @update:url="(v) => (formUrl = v)"
+        @update:url="(v) => { formUrl = v; formError = errorAfterServerUrlInput(formError, v); }"
         @submit="submitAdd"
       />
     </main>

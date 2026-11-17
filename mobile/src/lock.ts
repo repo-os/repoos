@@ -37,4 +37,8 @@ export async function verifyWithDeviceLock(reason: string): Promise<boolean> {
   }
 }
 
+export function lockOverlayShouldRemainOpen(verified: boolean): boolean {
+  return !verified;
+}
+
 export type { LockSettings, ServerEntry };
