@@ -10,11 +10,10 @@ assigned_to: human
 created_by: t@t
 branch: ""
 created_at: "2026-11-17T17:33:14Z"
-updated_at: "2026-11-17T17:33:52Z"
+updated_at: "2026-11-17T18:06:44Z"
 ---
 ## Purpose
-
-Complete the native Android device QA that #1159 cannot perform without an available phone or emulator. The saved wireless ADB target refused the connection on 2026-11-18, and no emulator was available. This task is held until a device is available.
+Complete the remaining live tailnet discovery check for #1159 using an available Android phone or emulator and a reachable trusted RepoOS server. The saved wireless ADB target refused connection on 2026-11-18; a Pixel 8 Android 16 emulator has since been used for the native UI pass, but the attempted dev.repoos.org endpoint was unreachable, so discovery results remain unverified.
 
 ## Step-by-step guide
 
@@ -37,3 +36,4 @@ _Assigned to a human, not an AI agent. No `## Notes for AI` is required here; th
 
 - 2026-11-17T17:33:14Z · created · t@t
 - 2026-11-17T17:33:52Z · depends_on
+- 2026-11-17T18:06:44Z · body: Purpose (added 1, removed 1)
