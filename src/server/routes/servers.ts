@@ -123,6 +123,25 @@ export const getTailnetServers: RouteHandler = async (ctx, _req, res) => {
 
 /** Small, credential-free payload used only by a Tailscale Serve peer probe. */
 export const getTailnetPeerDiscovery: RouteHandler = async (_ctx, req, res) => {
+  const socketAddress = req.socket.remoteAddress?.replace(/^::ffff:/, "") ?? "";
+  const forwarded = req.headers["x-forwarded-for"]?.toString().split(",")[0]?.trim();
+  const source =
+    (socketAddress === "127.0.0.1" || socketAddress === "::1") && forwarded
+      ? forwarded.replace(/^::ffff:/, "")
+      : socketAddress;
+  const isTailnetSource =
+    source.startsWith("fd7a:115c:a1e0:") ||
+    (() => {
+      const octets = source.split(".").map(Number);
+      return (
+        octets.length === 4 &&
+        octets.every((part) => Number.isInteger(part) && part >= 0 && part <= 255) &&
+        octets[0] === 100 &&
+        octets[1] >= 64 &&
+        octets[1] <= 127
+      );
+    })();
+  if (!isTailnetSource) return json(res, 403, { ok: false, error: "Tailnet access required." });
   const rows = await listValidatedServerRegistry();
   const authority = req.headers.host;
   return json(res, 200, {
