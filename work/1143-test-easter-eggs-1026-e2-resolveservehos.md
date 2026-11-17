@@ -11,7 +11,7 @@ branch: feat/test-easter-eggs-1026-e2-resolveservehos
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-17T02:10:39Z"
-updated_at: "2026-11-17T10:53:31Z"
+updated_at: "2026-11-17T10:55:10Z"
 dev_error_count: 5
 engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-17T10:23:41.275Z\",\"kind\":\"dev-error\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-17T10:23:43.885Z\",\"kind\":\"dev-error\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-17T10:23:46.437Z\",\"kind\":\"dev-error\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-17T10:33:54.430Z\",\"kind\":\"dev-error\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-17T10:44:09.625Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -60,3 +60,4 @@ Machine-dependent test, not a product bug: `resolveServeHost` behaviour is inten
 - 2026-11-17T10:44:09Z · engineer crash recovery: surfaced instead of switching — a human-set task override (cursor + composer-2.5) is pinned, so RepoOS did not replace it (5/3 crashes in 30m)
 - 2026-11-17T10:53:30Z · cli_override, model_override
 - 2026-11-17T10:53:31Z · needs_input
+- 2026-11-17T10:55:10Z · body
