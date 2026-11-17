@@ -11,7 +11,7 @@ branch: feat/hub-find-servers-on-my-tailnet-stop-list
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T10:06:23Z"
-updated_at: "2026-11-17T14:50:24Z"
+updated_at: "2026-11-17T14:50:38Z"
 review_passes: 4
 review_rounds: 2
 dev_error_count: 5
@@ -137,3 +137,4 @@ Do not add runtime dependencies. The discovery endpoint exposes names/ports only
 - 2026-11-17T14:50:24Z · queued message undelivered for 5m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-17T14:50:24Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code unknown) · last assistant: The focused tailnet and CLI tests now pass (51 tests). The prior full run’s remaining failures were stale timeout expectations after extending the probe budget and a saved custom-domain case that should be reported as saved; I’ve updated b… · stderr: Reading additional input from stdin... 2026-11-17T14:30:09.259029Z ERROR codex_core::tools::router: error=apply_patch verification failed: Failed to find expected lines in /Users/nick/code/nick/repoos-worktrees/feat/hub-find-servers-on-my-tailnet-stop-list/src/ui-app/tests/tailnet-peer-discovery-route.test.ts: expect(…
 - 2026-11-17T14:50:24Z · message_delivered: 1 message(s)
+- 2026-11-17T14:50:38Z · message_queued at 2026-11-17T14:50:38.057Z
