@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 392167
-last_close_out_gate_at: "2026-11-17T05:16:57.040Z"
 id: "1146"
 title: "Design audit: make all RepoOS pages work better on phones"
 type: chore
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: 6c416579dd2ddab3cf9e9a21c1105b9874f8f76c
 assigned_to: ai
 created_by: t@t
 branch: feat/design-audit-make-all-repoos-pages-work-
@@ -14,6 +13,8 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T02:53:04Z"
 updated_at: "2026-11-17T05:16:57Z"
+last_close_out_gate_ms: 392167
+last_close_out_gate_at: "2026-11-17T05:16:57.040Z"
 review_passes: 2
 last_check_failure: "repoos check at 2026-11-17T03:44:30.654Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 1
