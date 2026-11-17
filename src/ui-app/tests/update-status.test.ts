@@ -3,6 +3,7 @@ import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { EventEmitter } from "node:events";
+import { Readable } from "node:stream";
 
 const mocks = vi.hoisted(() => ({
   readInstallVersion: vi.fn(() => "999.0.0"),
@@ -173,7 +174,7 @@ describe("installed upgrade status and restart route", () => {
     expect(capture.body()).toMatchObject({
       state: "manual",
       reason: "EACCES",
-      command: "repoos restart",
+      command: "repoos restart --root /fake/project --port 7123",
     });
   });
 
@@ -193,12 +194,13 @@ describe("installed upgrade status and restart route", () => {
   it("waits for hand-run servers when requested to restart when idle", async () => {
     setRestartHelperForTests(async () => ({ ok: true }));
     const capture = responseCapture();
-    await restartInstalledUpgrade(
-      context(),
-      { url: "/", method: "POST", body: JSON.stringify({ whenIdle: true }) } as never,
-      capture.res,
-      {},
-    );
+    const request = Readable.from([JSON.stringify({ whenIdle: true })]) as Readable & {
+      url: string;
+      method: string;
+    };
+    request.url = "/";
+    request.method = "POST";
+    await restartInstalledUpgrade(context(), request as never, capture.res, {});
     expect(capture.status()).toBe(202);
     expect(capture.body()).toEqual({ state: "waiting-for-idle" });
     expect(mocks.spawn).not.toHaveBeenCalled();
