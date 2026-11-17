@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-17T10:59:04Z"
-review_passes: 1
 id: "1143"
 title: "Test: easter-eggs #1026 E2 resolveServeHost default fails on machines running Tailscale"
 type: feature
@@ -10,10 +8,10 @@ area: server
 assigned_to: ai
 created_by: t@t
 branch: feat/test-easter-eggs-1026-e2-resolveservehos
-cli_override: claude code
-model_override: haiku
+cli_override: cursor
+model_override: composer-2.5
 created_at: "2026-11-17T02:10:39Z"
-dev_error_count: 5
+updated_at: "2026-11-17T10:57:10Z"
 ---
 ## Problem
 
@@ -44,25 +42,4 @@ Machine-dependent test, not a product bug: `resolveServeHost` behaviour is inten
 - 2026-11-17T10:23:30Z · cli_override, model_override
 - 2026-11-17T10:23:35Z · status inbox→ready
 - 2026-11-17T10:23:37Z · status ready→active, branch
-- 2026-11-17T10:23:41Z · agent exited with an error (cursor) · Error: Authentication required. Please run 'agent login' first, or set CURSOR_API_KEY environment variable. Open Raw CLI error for details. (CLI: Error: Authentication required. Please run 'agent login' first, or set CURSOR_API_KEY environment variable.)
-- 2026-11-17T10:23:41Z · engineer crash recovery: resuming cursor + composer-2.5 (1/3 crashes in 30m) · Error: Authentication required. Please run 'agent login' first, or set CURSOR_API_KEY environment variable. Open Raw CLI error for details. (CLI: Error: Authentication required. Please run 'agent login' first, or set CURSOR_API_KEY envir…
-- 2026-11-17T10:23:42Z · needs_input
-- 2026-11-17T10:23:43Z · agent exited with an error (cursor) · Error: Authentication required. Please run 'agent login' first, or set CURSOR_API_KEY environment variable. Open Raw CLI error for details. (CLI: Error: Authentication required. Please run 'agent login' first, or set CURSOR_API_KEY environment variable.)
-- 2026-11-17T10:23:43Z · engineer crash recovery: resuming cursor + composer-2.5 (2/3 crashes in 30m) · Error: Authentication required. Please run 'agent login' first, or set CURSOR_API_KEY environment variable. Open Raw CLI error for details. (CLI: Error: Authentication required. Please run 'agent login' first, or set CURSOR_API_KEY envir…
-- 2026-11-17T10:23:45Z · needs_input
-- 2026-11-17T10:23:46Z · agent exited with an error (cursor) · Error: Authentication required. Please run 'agent login' first, or set CURSOR_API_KEY environment variable. Open Raw CLI error for details. (CLI: Error: Authentication required. Please run 'agent login' first, or set CURSOR_API_KEY environment variable.)
-- 2026-11-17T10:23:46Z · engineer crash recovery: surfaced instead of switching — a human-set task override (cursor + composer-2.5) is pinned, so RepoOS did not replace it (3/3 crashes in 30m)
-- 2026-11-17T10:33:53Z · watchdog: restarting engineer after 10m with no live process
-- 2026-11-17T10:33:54Z · agent exited with an error (cursor) · Error: Authentication required. Please run 'agent login' first, or set CURSOR_API_KEY environment variable. Open Raw CLI error for details. (CLI: Error: Authentication required. Please run 'agent login' first, or set CURSOR_API_KEY environment variable.)
-- 2026-11-17T10:33:54Z · engineer crash recovery: surfaced instead of switching — a human-set task override (cursor + composer-2.5) is pinned, so RepoOS did not replace it (4/3 crashes in 30m)
-- 2026-11-17T10:44:08Z · watchdog: restarting engineer after 10m with no live process
-- 2026-11-17T10:44:09Z · agent exited with an error (cursor) · Error: Authentication required. Please run 'agent login' first, or set CURSOR_API_KEY environment variable. Open Raw CLI error for details. (CLI: Error: Authentication required. Please run 'agent login' first, or set CURSOR_API_KEY environment variable.)
-- 2026-11-17T10:44:09Z · engineer crash recovery: surfaced instead of switching — a human-set task override (cursor + composer-2.5) is pinned, so RepoOS did not replace it (5/3 crashes in 30m)
-- 2026-11-17T10:53:30Z · cli_override, model_override
-- 2026-11-17T10:53:31Z · needs_input
-- 2026-11-17T10:55:10Z · body
 - 2026-11-17T10:57:10Z · status active→review
-- 2026-11-17T10:57:10Z · message_queued at 2026-11-17T10:57:10.733Z
-- 2026-11-17T10:57:10Z · note: shots: skipped — the diff (3 changed paths) touches no capture target's globs — no UI change to capture
-- 2026-11-17T10:59:04Z · note: review pass 1: good to go
-
