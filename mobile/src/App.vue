@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref, computed } from "vue";
 import { Settings } from "lucide-vue-next";
+import { App } from "@capacitor/app";
 import {
   init,
   servers,
@@ -27,6 +28,7 @@ import {
 } from "./app-state";
 import { openServer, onBrowserEvents } from "./browser";
 import { lockOverlayShouldRemainOpen, verifyWithDeviceLock } from "./lock";
+import { serverToOpenAfterLockRetry, type LockContext } from "./lock-context";
 import type { ServerEntry } from "./types";
 import HubLogo from "./components/HubLogo.vue";
 import ServerListView from "./components/ServerListView.vue";
@@ -49,8 +51,6 @@ import {
 } from "./dev-updates";
 
 type Route = HubRoute;
-type LockContext = { kind: "reopen" } | { kind: "server"; server: ServerEntry };
-
 const route = ref<Route>("picker");
 const sheetServer = ref<ServerEntry | null>(null);
 const sheetName = ref("");
@@ -76,15 +76,11 @@ let unmounted = false;
 
 onMounted(async () => {
   document.documentElement.classList.add(`platform-${platform.value}`);
-  const capacitorApp = platform.value === "android" ? (await import("@capacitor/app")).App : null;
-
   // Android consumes the system back gesture once a listener exists, so map
   // every local Hub route explicitly instead of relying on WebView history.
   disposeBackButton = await installHubBackButton({
     platform: platform.value,
-    subscribe: (listener) =>
-      capacitorApp?.addListener("backButton", listener) ??
-      Promise.resolve({ remove: () => undefined }),
+    subscribe: (listener) => App.addListener("backButton", listener),
     getState: () => ({
       route: route.value,
       sheetOpen: sheetOpen.value,
@@ -94,7 +90,7 @@ onMounted(async () => {
       closeSheet,
       showPicker: backToPicker,
       exitApp: () => {
-        void capacitorApp?.exitApp();
+        void App.exitApp();
       },
     },
   });
@@ -139,7 +135,8 @@ async function retryLock() {
   const context = lockContext.value;
   if (!context) return;
   const ok = await gateLock(context);
-  if (ok && context.kind === "server") await openSelectedServer(context.server);
+  const server = serverToOpenAfterLockRetry(context, ok);
+  if (server) await openSelectedServer(server);
 }
 
 function cancelLock() {
