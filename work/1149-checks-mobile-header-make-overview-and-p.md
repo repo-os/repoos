@@ -2,7 +2,7 @@
 id: "1149"
 title: "Checks mobile header: make overview and page actions fit the narrow layout"
 type: chore
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/checks-mobile-header-make-overview-and-p
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T03:06:39Z"
-updated_at: "2026-11-17T11:10:04Z"
+updated_at: "2026-11-17T11:15:27Z"
 ---
 ## Problem
 At 390×844 on /checks, explanatory copy occupies about five lines while two help/config links sit in a narrow right column and wrap awkwardly. The header then competes with a tab row and the empty-state panel.
@@ -41,3 +41,4 @@ Use the attached phone screenshot. Inspect both the empty state and a populated 
 - 2026-11-17T11:09:59Z · cli_override, model_override
 - 2026-11-17T11:10:01Z · status inbox→ready
 - 2026-11-17T11:10:04Z · status ready→active, branch
+- 2026-11-17T11:15:27Z · status active→review
