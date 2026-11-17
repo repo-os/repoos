@@ -11,7 +11,7 @@ branch: feat/qa-pass-use-the-repoos-web-app-on-deskto
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T15:21:15Z"
-updated_at: "2026-11-17T20:09:15Z"
+updated_at: "2026-11-17T20:12:47Z"
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-11-17T20:09:02.078Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Work queue at desktop with mobile queue behavior evidenced in attachments (target \"default\"): highlight h1 matched nothing on /work?view=board (http://127.0.0.1:33563/work?view=board)"
 review_rounds: 1
@@ -44,22 +44,22 @@ Start with the Work page at 390px and the bottom dock/heads/pipeline bar overlap
 ```json
 [
 {
-  "label": "Work queue page with narrow mobile evidence in attachments",
-  "target": "default",
-  "route": "/work?view=board",
-  "highlight": ".page-title"
+"label": "Work queue page with narrow mobile evidence in attachments",
+"target": "default",
+"route": "/work?view=board",
+"highlight": ".page-title"
 },
 {
-  "label": "Task drawer status select",
-  "target": "default",
-  "route": "/work?task=1157&tab=task",
-  "highlight": ".task-status-select"
+"label": "Task drawer status select",
+"target": "default",
+"route": "/work?task=1157&tab=task",
+"highlight": ".task-status-select"
 },
 {
-  "label": "Input author byline wrapping",
-  "target": "default",
-  "route": "/inputs",
-  "highlight": ".input-byline"
+"label": "Input author byline wrapping",
+"target": "default",
+"route": "/inputs",
+"highlight": ".input-byline"
 }
 ]
 ```
@@ -164,3 +164,4 @@ Start with the Work page at 390px and the bottom dock/heads/pipeline bar overlap
 - 2026-11-17T20:08:59Z · message_queued at 2026-11-17T20:08:59.064Z
 - 2026-11-17T20:09:01Z · message_delivered: 1 message(s)
 - 2026-11-17T20:09:15Z · body
+- 2026-11-17T20:12:47Z · body
