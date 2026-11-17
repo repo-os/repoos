@@ -1,11 +1,8 @@
 ---
-updated_at: "2026-11-17T19:23:48Z"
-review_passes: 1
-review_timeout_retries: 0
 id: "1157"
 title: "QA pass: use the RepoOS web app on desktop and phone widths, find broken things and fix them"
 type: bug
-status: review
+status: active
 priority: p1
 area: web
 assigned_to: ai
@@ -14,6 +11,10 @@ branch: feat/qa-pass-use-the-repoos-web-app-on-deskto
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T15:21:15Z"
+updated_at: "2026-11-17T19:23:49Z"
+review_rounds: 1
+review_passes: 1
+review_timeout_retries: 0
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-11-17T16:50:57.959Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-17T17:19:58.428Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-17T17:28:43.649Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
@@ -102,5 +103,4 @@ Start with the Work page at 390px and the bottom dock/heads/pipeline bar overlap
 - 2026-11-17T19:03:22Z · needs_input
 - 2026-11-17T19:18:10Z · needs_input (review-failed) cleared for review again by human
 - 2026-11-17T19:23:48Z · note: review pass 4: needs some work
-
-
+- 2026-11-17T19:23:49Z · status review→active
