@@ -17,19 +17,19 @@ if rg -Fq "hub-dev-updates.repoos.org" www; then
   echo "Dev update endpoint leaked into the release web bundle." >&2
   exit 1
 fi
-if [ -n "${REPOOS_HUB_DEV_UPDATE_TOKEN:-}" ] && REPOOS_CHANNEL_TOKEN="$REPOOS_HUB_DEV_UPDATE_TOKEN" bun -e '
-  const token = Bun.env.REPOOS_CHANNEL_TOKEN;
-  for (const path of new Bun.Glob("**/*").scanSync("www")) {
-    const file = Bun.file(`www/${path}`);
-    if ((await file.text()).includes(token)) {
-      console.error("Dev channel token leaked into the release web bundle.");
-      process.exit(1);
+if [ -n "${REPOOS_HUB_DEV_UPDATE_TOKEN:-}" ]; then
+  if ! REPOOS_CHANNEL_TOKEN="$REPOOS_HUB_DEV_UPDATE_TOKEN" bun -e '
+    const token = Bun.env.REPOOS_CHANNEL_TOKEN;
+    for (const path of new Bun.Glob("**/*").scanSync("www")) {
+      const file = Bun.file(`www/${path}`);
+      if ((await file.text()).includes(token)) {
+        console.error("Dev channel token leaked into the release web bundle.");
+        process.exit(1);
+      }
     }
-  }
-'; then
-  :
-else
-  echo "Dev channel token leaked into the release web bundle." >&2
-  exit 1
+  '; then
+    echo "Dev channel token leaked into the release web bundle." >&2
+    exit 1
+  fi
 fi
 echo "Release web bundle has no dev update endpoint."
