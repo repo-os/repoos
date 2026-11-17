@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 962089
-last_close_out_gate_at: "2026-11-17T16:07:00.821Z"
 id: "1155"
 title: "RepoOS Hub for macOS is broken: reproduce, diagnose and fix, then test on a real build"
 type: bug
-status: review
+status: done
 priority: p1
 area: macos
+merged_commit: 664044930ec4da085b52c824940eba60de908fb4
 assigned_to: ai
 created_by: t@t
 branch: feat/repoos-hub-for-macos-is-broken-reproduce
@@ -14,6 +13,8 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T14:36:24Z"
 updated_at: "2026-11-17T16:07:00Z"
+last_close_out_gate_ms: 962089
+last_close_out_gate_at: "2026-11-17T16:07:00.821Z"
 review_passes: 2
 review_rounds: 1
 ---
