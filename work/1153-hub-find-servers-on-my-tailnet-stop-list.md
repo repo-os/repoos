@@ -11,7 +11,7 @@ branch: feat/hub-find-servers-on-my-tailnet-stop-list
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T10:06:23Z"
-updated_at: "2026-11-17T16:42:50Z"
+updated_at: "2026-11-17T16:42:59Z"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/check-docs-only-cli.test.ts > cmdCheck docs/bookkeeping shortcut (#1059) > classifies a work-only diff and skips the full suite on thinkpad — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: e1b1e693693ec27e46b2e70d284ec6202a069a30
 review_passes: 5
@@ -172,3 +172,4 @@ Do not add runtime dependencies. The discovery endpoint exposes names/ports only
 - 2026-11-17T16:42:49Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The retry is green: all 739 test files passed (9,902 tests; 14 skipped), and the UI smoke, contrast audit, and user-docs build passed. I’m confirming the report draft and current task state, then I’ll request handoff. · stderr: 2026-11-17T16:18:48.337629Z ERROR codex_core::util: Custom tool call output is missing for call id: call_2175e259c1ed429398dd7a25f50ebd04 2026-11-17T16:18:52.422107Z ERROR codex_core::tools::router: error=write_stdin failed: Unknown process id 64565 2026-11-17T16:18:52.453534Z ERROR codex_core::util: Custom tool call …
 - 2026-11-17T16:42:49Z · status active→review
 - 2026-11-17T16:42:49Z · message_delivered: 2 message(s)
+- 2026-11-17T16:42:59Z · message_queued at 2026-11-17T16:42:59.372Z
