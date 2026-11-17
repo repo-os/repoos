@@ -62,3 +62,4 @@ Machine-dependent test, not a product bug: `resolveServeHost` behaviour is inten
 - 2026-11-17T10:55:10Z · body
 - 2026-11-17T10:57:10Z · status active→review
 - 2026-11-17T10:57:10Z · message_queued at 2026-11-17T10:57:10.733Z
+- 2026-11-17T10:57:10Z · note: shots: skipped — the diff (3 changed paths) touches no capture target's globs — no UI change to capture
