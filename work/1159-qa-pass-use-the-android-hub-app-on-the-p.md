@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-11-17T20:04:24Z"
-review_passes: 2
+last_close_out_gate_ms: 992947
+last_close_out_gate_at: "2026-11-17T20:34:20.634Z"
 id: "1159"
 title: "QA pass: use the Android Hub app on the phone, find broken things and fix them"
 type: bug
@@ -14,6 +14,8 @@ branch: feat/qa-pass-use-the-android-hub-app-on-the-p
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T15:51:18Z"
+updated_at: "2026-11-17T20:34:20Z"
+review_passes: 2
 review_rounds: 1
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-11-17T16:23:57.721Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-17T17:28:58.663Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-17T17:40:28.839Z\",\"reason\":\"clean-exit-without-handoff\"}]"
@@ -179,4 +181,5 @@ The Pixel 8 Android 16 (API 36) emulator was available and used after the saved 
 - 2026-11-17T19:56:09Z · message_queued at 2026-11-17T19:56:09.689Z
 - 2026-11-17T19:56:09Z · note: shots: skipped — the diff (12 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-17T20:04:24Z · note: review pass 2: good to go
+- 2026-11-17T20:34:20Z · close-out gate completed in 993s
 
