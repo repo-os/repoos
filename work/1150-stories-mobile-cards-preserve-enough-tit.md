@@ -1,4 +1,6 @@
 ---
+last_close_out_gate_ms: 658349
+last_close_out_gate_at: "2026-11-17T13:15:36.019Z"
 id: "1150"
 title: "Stories mobile cards: preserve enough title and summary to identify work"
 type: chore
@@ -11,7 +13,7 @@ branch: feat/stories-mobile-cards-preserve-enough-tit
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T03:08:02Z"
-updated_at: "2026-11-17T13:10:17Z"
+updated_at: "2026-11-17T13:15:36Z"
 review_passes: 1
 ---
 ## Problem
@@ -60,3 +62,5 @@ Use the attached phone screenshot and inspect a story with a long description an
 - 2026-11-17T11:59:06Z · message_queued at 2026-11-17T11:59:06.030Z
 - 2026-11-17T12:01:22Z · note: review pass 1: good to go
 - 2026-11-17T13:10:17Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-17T13:15:36Z · close-out gate completed in 658s
+
