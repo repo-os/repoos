@@ -443,6 +443,27 @@ describe("AI release notes cache reuse (#0590)", () => {
     });
   });
 
+  it("does not POST the cachedOnly lookup during a shot capture (read-only preview)", async () => {
+    // A preview child answers 405 to every POST, and the handoff gate records
+    // that as a failed request — the saved-draft lookup must stay silent there.
+    window.history.replaceState(null, "", "/?shotState=release:cutReady");
+    try {
+      mockApi();
+      wrapper = mount(ReleasesView, {
+        attachTo: document.body,
+        global: { plugins: [createPinia()] },
+      });
+      await flushPromises();
+      const panel = await openPanel();
+      await flushPromises();
+
+      expect(panel).toBeTruthy();
+      expect(api.mock.calls.some(([path]) => path === "/api/release/notes")).toBe(false);
+    } finally {
+      window.history.replaceState(null, "", "/");
+    }
+  });
+
   it("keeps the typed version across a page reload (remount)", async () => {
     mockApi(releaseStatus(), notesResponse({}));
     wrapper = mount(ReleasesView, {

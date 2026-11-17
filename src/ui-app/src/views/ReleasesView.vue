@@ -857,6 +857,11 @@ function confirmNotesReplace(): void {
  */
 async function fillSavedNotes(): Promise<void> {
   if (notes.value.trim() || generatingNotes.value || running.value) return;
+  // Shot captures run against a read-only preview child where every POST
+  // answers 405 and the handoff gate records that as a failed request. The
+  // preview worktree has no meaningful saved draft to reuse either, so keep
+  // captures clean and skip the lookup there (#1126).
+  if (isShotPreviewCaptureActive(window.location)) return;
   try {
     const result = await api<{
       notes?: string | null;
