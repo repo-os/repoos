@@ -135,3 +135,4 @@ Use the attached phone screenshot. Check long labels and both theme families. Th
 - 2026-11-17T05:32:58Z · body
 - 2026-11-17T05:34:59Z · CTO nudge: held — handoff gate is running
 - 2026-11-17T05:51:19Z · handoff failed · remote validation failed: test failure: tests/agent-review.test.ts > agent review before human sign-off (#0101) > flags needs_input instead of parking silently once auto-bounce rounds are used up on thinkpad — fix it in the feature branch and re-run the gate
+- 2026-11-17T05:51:19Z · message_queued at 2026-11-17T05:51:19.887Z
