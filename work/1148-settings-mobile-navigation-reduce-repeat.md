@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/settings-mobile-navigation-reduce-repeat
 created_at: "2026-11-17T03:06:33Z"
-updated_at: "2026-11-17T05:15:55Z"
+updated_at: "2026-11-17T05:25:31Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-17T05:13:57.562Z: repoos check failed: rendered-contrast — · div#setting-release.email.to.setting-row > div.setting-info > div.setting-desc — #686e76 on #161b23 = 3.36 (need ≥4.5, 11px) [settings] \"Addresses that receive each release email, one message per a\""
 review_rounds: 1
@@ -131,3 +131,4 @@ Use the attached phone screenshot. Check long labels and both theme families. Th
 - 2026-11-17T05:13:54Z · message_queued at 2026-11-17T05:13:54.345Z
 - 2026-11-17T05:13:57Z · message_delivered: 1 message(s)
 - 2026-11-17T05:15:55Z · body
+- 2026-11-17T05:25:31Z · CTO nudge: held — machine under pressure (system load is high (27.6× per CPU, limit 3×) — waiting for headroom before starting more work)
