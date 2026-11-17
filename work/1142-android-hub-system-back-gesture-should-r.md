@@ -1,4 +1,6 @@
 ---
+last_close_out_gate_ms: 785912
+last_close_out_gate_at: "2026-11-17T00:29:18.357Z"
 id: "1142"
 title: "Android Hub: system back gesture should return from tailnet discovery"
 type: bug
@@ -11,7 +13,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/android-hub-system-back-gesture-should-r
 created_at: "2026-11-16T14:01:00Z"
-updated_at: "2026-11-16T23:51:47Z"
+updated_at: "2026-11-17T00:29:18Z"
 review_passes: 1
 ---
 ## Problem
@@ -43,3 +45,5 @@ Inspect the existing navigation and native back behavior before implementing. Th
 - 2026-11-16T14:10:42Z · note: shots: skipped — the diff (6 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-16T14:13:56Z · note: review pass 1: good to go
 - 2026-11-16T23:51:47Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-17T00:29:18Z · close-out gate completed in 786s
+
