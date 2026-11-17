@@ -770,6 +770,10 @@ function nextFile(): void {
   background: var(--nav-hover-bg);
   color: var(--txt);
 }
+.diff-back-btn:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
 
 .diff-back-esc-hint {
   font-family: "JetBrains Mono", monospace;
@@ -781,6 +785,22 @@ function nextFile(): void {
   flex-shrink: 0;
   font-weight: normal;
   line-height: 1.2;
+}
+
+/* Phones and touch input: the desktop 25px-tall chip is a missed thumb target
+   (#1151). Raise Back to the app's 44px floor — it already clears 44px wide —
+   and drop the keyboard-only esc hint on the same breakpoint so the taller
+   control frees horizontal room for the filename instead of taking any. */
+@media (max-width: 719.98px), (pointer: coarse) {
+  .diff-back-btn {
+    min-width: 44px;
+    min-height: 44px;
+    justify-content: center;
+    padding: 0 12px;
+  }
+  .diff-back-esc-hint {
+    display: none;
+  }
 }
 
 .diff-page-file {
