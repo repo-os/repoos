@@ -11,8 +11,10 @@ area: web
 assigned_to: ai
 created_by: t@t
 branch: ""
+cli_override: codex
+model_override: gpt-6-luna
 created_at: "2026-11-17T17:53:05Z"
-updated_at: "2026-11-17T17:54:07Z"
+updated_at: "2026-11-17T19:17:49Z"
 ---
 During task #1157 responsive QA, a Playwright pass attempted to visit Checks tabs Now, Runs, Test Suite and Check Plan across 1440, 390 and 320px in both themes. It captured the Now tab at 390px, then the repeated interaction/screenshot run slowed and was stopped before the other tabs were verified. The default Checks route works and rendered without a page exception in the main screenshot matrix, so this report does not establish a product regression. Reproduce tab navigation directly and determine whether the stall is in the app or in repeated screenshot capture; if a product issue reproduces, fix it with a regression test. Evidence attached.
 
@@ -41,3 +43,4 @@ Screenshot shows the Checks Now tab at 390px. The attempt captured the main page
 - 2026-11-17T17:53:57Z · body: Desired UX (added)
 - 2026-11-17T17:54:02Z · body: Acceptance criteria (added)
 - 2026-11-17T17:54:07Z · body: Notes for AI (added)
+- 2026-11-17T19:17:49Z · cli_override, model_override
