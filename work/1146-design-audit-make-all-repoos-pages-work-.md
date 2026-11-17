@@ -11,7 +11,7 @@ branch: feat/design-audit-make-all-repoos-pages-work-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T02:53:04Z"
-updated_at: "2026-11-17T03:36:51Z"
+updated_at: "2026-11-17T03:37:26Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -34,18 +34,18 @@ Use strong visual and product design judgment. Inspect rendered pages and theme 
 ```json
 [
 {
-  "label": "Search field meets the 44px phone touch target",
-  "target": "default",
-  "route": "/",
-  "highlight": ".search-overlay-input",
-  "steps": [
-    {
-      "click": "button.search-input"
-    },
-    {
-      "waitFor": ".search-overlay-input"
-    }
-  ]
+"label": "Search field meets the 44px phone touch target",
+"target": "default",
+"route": "/",
+"highlight": ".search-overlay-input",
+"steps": [
+  {
+    "click": "button.search-input"
+  },
+  {
+    "waitFor": ".search-overlay-input"
+  }
+]
 }
 ]
 ```
