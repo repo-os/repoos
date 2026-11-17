@@ -1,5 +1,16 @@
+<script setup lang="ts">
+withDefaults(defineProps<{ size?: number }>(), { size: 14 });
+</script>
+
 <template>
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false">
+  <svg
+    :width="size"
+    :height="size"
+    viewBox="0 0 24 24"
+    fill="none"
+    aria-hidden="true"
+    focusable="false"
+  >
     <path
       d="M12 2L4 7v10l8 5 8-5V7l-8-5z"
       stroke="var(--cyan)"

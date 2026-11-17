@@ -615,8 +615,10 @@
   }
   /* The phone bar is already at its width budget and a preview capture still
      sets the marker; it is developer chrome, not a user action, so keep it off
-     narrow screens rather than letting it crowd the project name (#1152). */
-  .preview-build-banner {
+     narrow screens rather than letting it crowd the project name (#1152).
+     Scoped to `.topbar` so it beats the later base `.preview-build-banner`
+     rule by specificity, not source order. */
+  .topbar .preview-build-banner {
     display: none;
   }
 }

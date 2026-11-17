@@ -128,7 +128,8 @@ Tap a server to open its RepoOS web UI. On a phone the top bar keeps the current
 project name visible and turns search into a compact icon button. To leave the
 server and go back to the Hub's server picker, tap the RepoOS mark at the top
 left: it returns to the picker in one action, however many pages you visited in
-the server. Android's system back still moves through the server's own history.
+the server. The sign-in screen's mark works the same way if your session
+expires. Android's system back still moves through the server's own history.
 
 The logo is a Hub-only control. In a normal phone or desktop browser the same
 mark is decorative, and the desktop top bar keeps its branch label and full

@@ -92,13 +92,21 @@ one-action return, and it does **not** add a native bridge:
    removes the parameter from the visible URL. When the user activates the
    logo, it performs a full-page navigation to
    `/__repoos_hub/return-to-picker#hub-return=<token>`. The fragment keeps the
-   token out of the HTTP request.
+   token out of the HTTP request. The login screen's existing logo is the same
+   return action, so an expired session does not trap the user.
 3. The server answers that path with a tiny public, script-free landing page
    (`serveHubReturn`) so the navigation completes immediately.
 4. The shell's existing `browserPageNavigationCompleted` listener accepts it
    only when the URL's origin is exactly the origin it opened, the path is
-   exactly the return path, and the fragment carries **this open's** token;
-   then it closes the InAppBrowser. Every other navigation continues normally.
+   exactly the return path (or a `blob:` document on that origin), and the
+   fragment carries **this open's** token; then it closes the InAppBrowser.
+   Every other navigation continues normally.
+
+Before navigating, the SPA probes the landing page with a short deadline. If
+the server or network is down, that navigation would never complete and the
+WebView would stay open, so it falls back to an in-memory `blob:` document with
+the same origin and token (and a link back to the server). That needs no
+network and still satisfies the shell's origin/token check.
 
 This is the existing supported navigation contract, not a privileged API. An
 untrusted same-origin page could at most dismiss its own browser view; it

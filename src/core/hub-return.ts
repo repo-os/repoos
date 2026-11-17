@@ -94,22 +94,42 @@ export function hubReturnHref(session: HubReturnSession): string {
 }
 
 /**
+ * Offline fallback: a `blob:` document created by the SPA now. It needs no
+ * network, keeps the server origin, and carries the same per-open token in the
+ * fragment. The shell accepts it only when its origin matches the open and the
+ * token matches, so an unreachable server still leaves the browser.
+ */
+export function hubFallbackHref(session: HubReturnSession, blobUrl: string): string {
+  const url = new URL(blobUrl);
+  if (url.protocol !== "blob:" || url.origin !== session.origin) {
+    throw new Error("The Hub fallback must be a blob URL on the current server origin.");
+  }
+  return `${blobUrl}${HUB_RETURN_HASH_PREFIX}${session.token}`;
+}
+
+/**
  * True only for this open's exact origin, return path and token. The shell
  * calls this before dismissing the browser; normal navigation must never
- * match.
+ * match. A blob URL from the same origin is the offline fallback.
  */
 export function isHubReturnHref(
   href: string,
   session: HubReturnSession | null | undefined,
 ): boolean {
   if (!session || !isHubReturnToken(session.token)) return false;
-  const url = webOrigin(href);
-  if (!url) return false;
+  let url: URL;
+  try {
+    url = new URL(href);
+  } catch {
+    return false;
+  }
+  const expectedHash = `${HUB_RETURN_HASH_PREFIX}${session.token}`;
+  if (url.hash !== expectedHash || url.origin !== session.origin) return false;
+  if (url.protocol === "blob:") return true;
   return (
-    url.origin === session.origin &&
+    (url.protocol === "https:" || url.protocol === "http:") &&
     url.pathname === HUB_RETURN_PATH &&
-    url.search === "" &&
-    url.hash === `${HUB_RETURN_HASH_PREFIX}${session.token}`
+    url.search === ""
   );
 }
 
@@ -122,4 +142,31 @@ export function hubNavigationAction(
   session: HubReturnSession | null | undefined,
 ): HubNavigationAction {
   return isHubReturnHref(href, session) ? "close-browser" : "continue";
+}
+
+/** Effects the shell applies to one completed navigation (unit-test seam). */
+export interface HubNavigationHandlers {
+  closeBrowser: () => void;
+  navigated?: (url: string) => void;
+  returned?: () => void;
+}
+
+/**
+ * Apply one completed WebView navigation. Only an exact return match closes
+ * the browser; everything else is forwarded as normal navigation.
+ */
+export function applyHubNavigation(
+  href: string | undefined,
+  session: HubReturnSession | null | undefined,
+  handlers: HubNavigationHandlers,
+): HubNavigationAction {
+  if (!href) return "continue";
+  const action = hubNavigationAction(href, session);
+  if (action === "close-browser") {
+    handlers.closeBrowser();
+    handlers.returned?.();
+    return action;
+  }
+  handlers.navigated?.(href);
+  return action;
 }

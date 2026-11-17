@@ -75,11 +75,19 @@ describe("mobile web polish (#1139)", () => {
       /@media \(max-width: 719\.98px\)\s*\{[\s\S]*?\.repo-pill-wrapper\s*\{[^}]*flex:\s*1 1 auto;[^}]*min-width:\s*0/s,
     );
     expect(topBar).toMatch(
-      /@media \(max-width: 900px\)\s*\{[\s\S]*?\.logo-trigger\s*\{[^}]*width:\s*44px;[^}]*height:\s*44px/s,
+      /@media \(max-width: 900px\)\s*\{[\s\S]*?\.logo-trigger\s*\{[^}]*width:\s*44px;[^}]*height:\s*44px;[^}]*margin-inline:\s*-6px/s,
     );
     expect(topBar).toContain(':aria-label="`Repo colour');
     expect(noticeBell).toMatch(
       /@media \(max-width: 900px\)\s*\{[\s\S]*?\.notice-bell-trigger\s*\{[^}]*width:\s*44px;[^}]*height:\s*44px/s,
+    );
+  });
+
+  it("keeps the preview marker from crowding the phone project name", () => {
+    // The base `.preview-build-banner` rule is much later in the stylesheet,
+    // so the hide rule must win by specificity rather than source order.
+    expect(css).toMatch(
+      /@media \(max-width: 719\.98px\)\s*\{[\s\S]*?\.topbar \.preview-build-banner\s*\{[^}]*display:\s*none/s,
     );
   });
 

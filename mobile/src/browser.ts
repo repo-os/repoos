@@ -21,8 +21,8 @@
  */
 import { InAppBrowser, DefaultWebViewOptions, iOSViewStyle } from "@capacitor/inappbrowser";
 import {
+  applyHubNavigation,
   createHubReturnToken,
-  hubNavigationAction,
   withHubContext,
   type HubReturnSession,
 } from "../../src/core/hub-return.js";
@@ -94,14 +94,14 @@ export function onBrowserEvents(handlers: {
   }).then((h) => (closedHandle = h));
 
   InAppBrowser.addListener("browserPageNavigationCompleted", (data: NavEvent) => {
-    if (!data.url) return;
-    if (hubNavigationAction(data.url, activeSession) === "close-browser") {
-      activeSession = null;
-      void InAppBrowser.close();
-      handlers.returned?.();
-      return;
-    }
-    handlers.navigated?.(data.url);
+    applyHubNavigation(data.url, activeSession, {
+      closeBrowser: () => {
+        activeSession = null;
+        void InAppBrowser.close();
+      },
+      navigated: handlers.navigated,
+      returned: handlers.returned,
+    });
   }).then((h) => (navHandle = h));
 
   return () => {

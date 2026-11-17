@@ -30,7 +30,7 @@ const hubSession = readHubShellSession();
 
 function onLogoActivate(): void {
   if (!hubSession) return;
-  returnToHubServerPicker(hubSession);
+  void returnToHubServerPicker(hubSession);
 }
 
 const isDark = computed(() => config.effectiveTheme === "dark");
@@ -696,11 +696,12 @@ watch(repoName, () => {
 @media (max-width: 900px) {
   /* The mark stays 30px visually, but the button's hit area is 44x44. The
      negative inline margins keep the original 30px layout width so the bar
-     does not spend space on the padding. */
+     does not spend space on the padding. -6px matches the phone gap, so the
+     enlarged hit box never overlaps the next control. */
   .logo-trigger {
     width: 44px;
     height: 44px;
-    margin-inline: -7px;
+    margin-inline: -6px;
   }
   .help-menu-trigger,
   .user-menu-trigger {

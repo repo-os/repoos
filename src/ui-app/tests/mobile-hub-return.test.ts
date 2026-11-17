@@ -11,7 +11,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import {
+  applyHubNavigation,
   createHubReturnToken,
+  hubFallbackHref,
   hubNavigationAction,
   hubReturnHref,
   isHubReturnHref,
@@ -91,10 +93,74 @@ describe("hub return contract", () => {
     expect(hubNavigationAction(href, null)).toBe("continue");
   });
 
-  it("asks the shell to navigate to the return href", () => {
+  it("accepts the same-origin offline blob fallback but not another origin", () => {
+    const blob = "blob:https://repo.example.com/0d1c2b3a-0000-4000-8000-000000000000";
+    const href = hubFallbackHref(session(), blob);
+    expect(href.endsWith(`#hub-return=${"a".repeat(32)}`)).toBe(true);
+    expect(isHubReturnHref(href, session())).toBe(true);
+    expect(isHubReturnHref(href, session({ origin: "https://evil.example.com" }))).toBe(false);
+    expect(() => hubFallbackHref(session(), "blob:https://evil.example.com/uuid")).toThrow();
+  });
+
+  it("navigates to the landing page when the server is reachable", async () => {
     const navigate = vi.fn<(href: string) => void>();
-    returnToHubServerPicker(session(), navigate);
+    await returnToHubServerPicker(session(), {
+      navigate,
+      reachable: async () => true,
+    });
     expect(navigate).toHaveBeenCalledWith(hubReturnHref(session()));
+  });
+
+  it("falls back to an in-memory blob when the server cannot be reached", async () => {
+    const navigate = vi.fn<(href: string) => void>();
+    const createBlob = vi.fn(
+      (_html: string) => "blob:https://repo.example.com/0d1c2b3a-0000-4000-8000-000000000000",
+    );
+    await returnToHubServerPicker(session(), {
+      navigate,
+      reachable: async () => false,
+      createBlob,
+    });
+    expect(createBlob).toHaveBeenCalledOnce();
+    expect(createBlob.mock.calls[0]?.[0]).toContain("Returning to RepoOS Hub");
+    expect(createBlob.mock.calls[0]?.[0]).toContain('href="https://repo.example.com/"');
+    expect(navigate).toHaveBeenCalledWith(
+      hubFallbackHref(
+        session(),
+        "blob:https://repo.example.com/0d1c2b3a-0000-4000-8000-000000000000",
+      ),
+    );
+  });
+
+  it("applies exactly one close or one normal navigation", () => {
+    const closeBrowser = vi.fn<() => void>();
+    const navigated = vi.fn<(href: string) => void>();
+    const returned = vi.fn<() => void>();
+
+    expect(applyHubNavigation(undefined, session(), { closeBrowser, navigated, returned })).toBe(
+      "continue",
+    );
+    expect(navigated).not.toHaveBeenCalled();
+
+    expect(
+      applyHubNavigation("https://repo.example.com/work", session(), {
+        closeBrowser,
+        navigated,
+        returned,
+      }),
+    ).toBe("continue");
+    expect(navigated).toHaveBeenCalledWith("https://repo.example.com/work");
+    expect(closeBrowser).not.toHaveBeenCalled();
+
+    expect(
+      applyHubNavigation(hubReturnHref(session()), session(), {
+        closeBrowser,
+        navigated,
+        returned,
+      }),
+    ).toBe("close-browser");
+    expect(closeBrowser).toHaveBeenCalledOnce();
+    expect(returned).toHaveBeenCalledOnce();
   });
 });
 
@@ -140,7 +206,7 @@ describe("native shell wiring", () => {
     expect(browser).toMatch(/createHubReturnToken\(\)/);
     expect(browser).toMatch(/withHubContext\(url, token\)/);
     expect(browser).toContain("browserPageNavigationCompleted");
-    expect(browser).toMatch(/hubNavigationAction\(data\.url, activeSession\)/);
+    expect(browser).toMatch(/applyHubNavigation\(data\.url, activeSession/);
     expect(browser).toMatch(/InAppBrowser\.close\(\)/);
   });
 
@@ -148,5 +214,13 @@ describe("native shell wiring", () => {
     expect(browser).not.toContain("addJavascriptInterface");
     expect(browser).not.toContain("messageHandlers");
     expect(browser).not.toContain("injectJavaScript");
+  });
+
+  it("offers the return on the login screen when a session expired mid-use", () => {
+    const login = readFileSync(resolve(__dirname, "../src/views/LoginView.vue"), "utf8");
+    expect(login).toContain("readHubShellSession");
+    expect(login).toContain('data-testid="login-return-to-picker"');
+    expect(login).toContain("Return to RepoOS Hub server picker");
+    expect(login).toMatch(/class="login-logo login-logo-button"/);
   });
 });
