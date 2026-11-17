@@ -142,3 +142,4 @@ The Pixel 8 Android 16 (API 36) emulator was available and used after the saved 
 - 2026-11-17T18:11:44Z · message_delivered: 1 message(s)
 - 2026-11-17T18:14:19Z · body
 - 2026-11-17T18:15:23Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The current board confirms the Pixel 8 emulator QA was completed, with screenshots attached. The two fixes and regression tests are in the branch history, and the existing report draft records the device pass and remaining gap. `REPOOS_CHE… · stderr: (empty)
+- 2026-11-17T18:17:51Z · note: handoff requested (cli)
