@@ -11,7 +11,7 @@ branch: feat/update-restart-notice-don-t-suggest-a-la
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T13:30:27Z"
-updated_at: "2026-11-17T16:54:14Z"
+updated_at: "2026-11-17T16:55:38Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-17T16:46:21.944Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Hand-run server restart notice (target \"default\"): loading state detected: loading text \"Loading…\" on / (http://127.0.0.1:41115/?shotState=release%3ArestartPendingLight)"
 handoff_signal_retry_count: 1
@@ -89,3 +89,4 @@ Read #1075 (the restart notice) and #1091 (`repoos restart`). A server that kill
 - 2026-11-17T16:46:18Z · message_queued at 2026-11-17T16:46:18.836Z
 - 2026-11-17T16:46:21Z · message_delivered: 1 message(s)
 - 2026-11-17T16:54:14Z · body
+- 2026-11-17T16:55:38Z · CTO nudge: held — handoff gate is running
