@@ -20,6 +20,7 @@ import { mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { writeChildStdin } from "./child-stdin.js";
 import { resolveBinary, KNOWN_AGENTS } from "./detect.js";
+import { cursorAuthErrorHint } from "./cursor-auth.js";
 import { sanitizeSpawnArgs } from "./spawn-args.js";
 import { COPILOT_MODEL_IDS } from "./copilot-models.js";
 
@@ -513,7 +514,8 @@ const cursorAdapter: ModelSourceAdapter = {
       timeoutMs: opts.timeoutMs ?? MODELS_TIMEOUT_MS,
       cwd: opts.cwd,
     });
-    const error = probeError(bin, out, opts.timeoutMs ?? MODELS_TIMEOUT_MS);
+    const rawError = probeError(bin, out, opts.timeoutMs ?? MODELS_TIMEOUT_MS);
+    const error = rawError ? (cursorAuthErrorHint(rawError) ?? rawError) : undefined;
     return {
       supported: true,
       models: ["default", ...parseCursorModels(out.text)],

@@ -12,6 +12,7 @@ import { accessSync, constants, readdirSync } from "node:fs";
 import { basename, delimiter, join } from "node:path";
 import { AGENT_CLIS } from "./config.js";
 import { compatibilityForAgent, type AgentCompatibility } from "./agent-compatibility.js";
+import { CURSOR_LOGIN_COMMAND } from "./cursor-auth.js";
 
 /** A coding agent RepoOS knows about, regardless of whether it is installed. */
 export interface KnownAgent {
@@ -191,7 +192,7 @@ export const KNOWN_AGENTS: KnownAgent[] = [
     binary: "cursor-agent",
     drivable: true,
     installHint: "curl https://cursor.com/install -fsS | bash",
-    authHint: "cursor-agent login   (or export CURSOR_API_KEY=<key>)",
+    authHint: `${CURSOR_LOGIN_COMMAND}   (or export CURSOR_API_KEY=<key>)`,
     authCheckArgs: ["status", "--format", "json"],
     capability: "Print mode with stream-JSON, session resume, and model selection",
   },

@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 1211892
-last_close_out_gate_at: "2026-11-17T22:38:08.018Z"
 id: "1165"
 title: Verify Agents authentication error guidance
 type: bug
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: 3c21f9bf898d24bf5bed3183d41de12c67e1a01b
 assigned_to: ai
 created_by: t@t
 branch: feat/verify-agents-authentication-error-guida
@@ -14,6 +13,8 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T17:53:39Z"
 updated_at: "2026-11-17T22:38:08Z"
+last_close_out_gate_ms: 1211892
+last_close_out_gate_at: "2026-11-17T22:38:08.018Z"
 review_passes: 2
 handoff_signal_retry_count: 2
 review_rounds: 1

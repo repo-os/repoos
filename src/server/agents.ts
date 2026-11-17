@@ -17,6 +17,7 @@ import {
 } from "../core/agent-run-tmpdir.js";
 import { agentSilenceCountsAsStalled } from "../core/active-task-card.js";
 import { agentSpawnErrorMessage } from "../core/agent-spawn-error.js";
+import { CURSOR_LOGIN_COMMAND } from "../core/cursor-auth.js";
 import { copilotAutoTierModelArgs, enrichAgentFailureDetail } from "../core/copilot-auto-tier.js";
 import { copilotNamedModelArgs } from "../core/copilot-models.js";
 import { formatAgentFailure } from "../core/agent-failure.js";
@@ -3048,7 +3049,7 @@ export function parseMuseEvent(raw: string): MuseParseResult | null {
 const CURSOR_ERROR_HINTS: ReadonlyArray<{ re: RegExp; hint: string }> = [
   {
     re: /\bnot (?:logged in|authenticated|signed in)\b|authentication required|unauthorized|\b401\b|\b403\b|invalid api key/i,
-    hint: "Cursor Agent authentication required — run `cursor-agent login` (or set CURSOR_API_KEY) and restart the turn.",
+    hint: `Cursor Agent authentication required — run \`${CURSOR_LOGIN_COMMAND}\` (or set CURSOR_API_KEY) and restart the turn.`,
   },
   {
     re: /\bpermission denied\b|\bnot allowed\b|\bdenied\b|requires approval|approval required/i,
