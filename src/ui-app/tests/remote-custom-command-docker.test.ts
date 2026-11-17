@@ -1,6 +1,14 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { execFileSync } from "node:child_process";
-import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  chmodSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 
@@ -29,7 +37,10 @@ describe("custom Docker validation command", () => {
     writeFileSync(join(source, "project.txt"), "fixture\n");
     execFileSync("git", ["add", "project.txt"], { cwd: source });
     execFileSync("git", ["commit", "-qm", "fixture"], { cwd: source });
-    const sha = execFileSync("git", ["rev-parse", "HEAD"], { cwd: source, encoding: "utf8" }).trim();
+    const sha = execFileSync("git", ["rev-parse", "HEAD"], {
+      cwd: source,
+      encoding: "utf8",
+    }).trim();
     const bundle = join(root, "candidate.bundle");
     execFileSync("git", ["bundle", "create", bundle, "--all"], { cwd: source });
 
@@ -75,28 +86,26 @@ exit 0
       repoRoot = parent;
     }
     const script = join(repoRoot, "scripts/remote-runner/validate.sh");
-    const output = execFileSync(
-      "bash",
-      [script, bundle, sha, artifacts],
-      {
-        encoding: "utf8",
-        env: {
-          ...process.env,
-          HOME: home,
-          PATH: `${bin}:${process.env.PATH ?? ""}`,
-          HOST_ARTIFACTS: artifacts,
-          DOCKER_ARGS_LOG: dockerArgs,
-          REPOOS_CI_IMAGE: "tiao-ci",
-          REPOOS_VALIDATION_COMMAND: "printf 'custom-project-gate-ran\\n'",
-        },
+    const output = execFileSync("bash", [script, bundle, sha, artifacts], {
+      encoding: "utf8",
+      env: {
+        ...process.env,
+        HOME: home,
+        PATH: `${bin}:${process.env.PATH ?? ""}`,
+        HOST_ARTIFACTS: artifacts,
+        DOCKER_ARGS_LOG: dockerArgs,
+        REPOOS_CI_IMAGE: "tiao-ci",
+        REPOOS_VALIDATION_COMMAND: "printf 'custom-project-gate-ran\\n'",
       },
-    );
+    });
 
     expect(output).toContain("[validate] gate exit 0");
     expect(existsSync(dockerArgs)).toBe(true);
     const argv = readFileSync(dockerArgs, "utf8");
     expect(argv).toContain("--entrypoint\nbash\ntiao-ci\n-lc\n");
-    expect(argv).toContain("bash -lc \"$REPOOS_VALIDATION_COMMAND\"");
-    expect(readFileSync(join(artifacts, "test-output.log"), "utf8")).toContain("custom-project-gate-ran");
+    expect(argv).toContain('bash -lc "$REPOOS_VALIDATION_COMMAND"');
+    expect(readFileSync(join(artifacts, "test-output.log"), "utf8")).toContain(
+      "custom-project-gate-ran",
+    );
   });
 });
