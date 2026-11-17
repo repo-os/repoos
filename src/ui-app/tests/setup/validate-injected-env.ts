@@ -17,6 +17,10 @@
  */
 export const VALIDATE_INJECTED_ENV_KEYS = [
   "REPOOS_ROOT",
+  "REPOOS_CACHE_DIR",
+  "REPOOS_ARTIFACTS_DIR",
+  // Selects the user project gate inside the container; never leak into child checks.
+  "REPOOS_VALIDATION_COMMAND",
   "REPOOS_OFFLOAD_BROWSER_STEPS",
   "REPOOS_CHECK_PROFILE",
   // Set on a spawned local check by the parent after remote browser steps ran.
