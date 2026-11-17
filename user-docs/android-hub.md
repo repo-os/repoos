@@ -111,12 +111,34 @@ can also carry an APK; they are listed on the releases page but do not take the
 - **Each server gets an isolated WebView.** Server content runs without the
   Capacitor bridge, so it cannot call native APIs or read another server's
   storage. Sign-in cookies stay in that isolated container.
-- **No discovery or analytics.** The app does not scan your network for
-  servers, report usage, or create a central account. You add a server by its
-  exact HTTPS origin (loopback HTTP is supported for local development).
+- **No network scanning.** The app does not scan your network, report usage, or
+  create a central account. You add a server by its exact HTTPS origin (loopback
+  HTTP is supported for local development). Optional **Find servers on my
+  tailnet** asks one server you already saved for the RepoOS servers it can see;
+  the phone itself never scans or broadcasts.
+- **Discovery results stay local.** Only the rows you explicitly select are
+  saved, and the server is never told which rows you chose.
 
 The full threat model, origin-isolation guarantees, and WebView compatibility
 notes live in [`docs/mobile-architecture.md`](https://github.com/repo-os/repoos/blob/main/docs/mobile-architecture.md).
+
+## Find servers on my tailnet
+
+Once you have saved one server you trust, the picker offers **Find servers on my
+tailnet**. The phone makes one request to that saved server; the server runs
+`tailscale status` and SSH on its own machine and returns the RepoOS servers it
+can see, with HTTPS MagicDNS URLs. Your phone never scans the tailnet. Peers are
+identified by their MagicDNS names, so two machines with the same display name
+stay distinct and a Mac with spaces in its name is still reached correctly.
+Phones and tablets on the tailnet are skipped because they cannot run a RepoOS
+server.
+
+The request is a normal authenticated API call, so the saved server must have a
+signed-in session for it to succeed. The native app's isolated WebView session
+is not available to the shell, so an auth-enabled server may answer with a
+sign-in message. Use the web Hub served from that same origin (where the session
+cookie is sent), or add the server by URL. Reachable rows with an HTTPS URL can
+be selected and added; plain-HTTP rows stay visible with a **Needs HTTPS** note.
 
 ## Troubleshooting
 

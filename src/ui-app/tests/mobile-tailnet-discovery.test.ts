@@ -104,6 +104,35 @@ describe("mobile tailnet discovery", () => {
     ]);
   });
 
+  it("uses a peer's readable Tailscale display name when no project is advertised", () => {
+    const merged = mergeTailnetResults(
+      [
+        {
+          host: "mini",
+          displayName: "Peck’s Mac mini",
+          port: 7499,
+          url: "https://mini.tailc0c173.ts.net:7499",
+          https: true,
+        },
+      ],
+      [],
+    );
+
+    expect(merged).toEqual([
+      {
+        key: "https://mini.tailc0c173.ts.net:7499",
+        url: "https://mini.tailc0c173.ts.net:7499",
+        name: "Peck’s Mac mini",
+        host: "mini",
+        port: 7499,
+        https: true,
+        saved: false,
+        selectable: true,
+        note: undefined,
+      },
+    ]);
+  });
+
   it("calls the authenticated endpoint with the platform cookie jar", async () => {
     const fetchImpl = vi.fn(async () =>
       Promise.resolve(
@@ -214,6 +243,8 @@ describe("mobile tailnet discovery", () => {
 
     expect(result.kind).toBe("auth");
     expect(result.kind === "auth" && result.message).toMatch(/signed-in session/i);
+    expect(result.kind === "auth" && result.message).toMatch(/web Hub/i);
+    expect(result.kind === "auth" && result.message).toMatch(/add a server manually/i);
     expect(fetchImpl).toHaveBeenCalledTimes(1);
   });
 

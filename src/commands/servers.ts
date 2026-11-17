@@ -167,9 +167,11 @@ export async function cmdServers(argv: string[], deps: ServersCommandDeps = {}):
     return;
   }
   for (const row of result.servers) {
+    const display =
+      row.displayName && row.displayName !== row.host ? `  ${c.dim(`(${row.displayName})`)}` : "";
     if (row.unreachable) {
       console.log(
-        `  ${c.cyan(row.host.padEnd(16))}  ${c.yellow("unreachable")}  ${row.reason ?? "unknown error"}`,
+        `  ${c.cyan(row.host.padEnd(16))}  ${c.yellow("unreachable")}  ${row.reason ?? "unknown error"}${display}`,
       );
       continue;
     }
@@ -178,7 +180,7 @@ export async function cmdServers(argv: string[], deps: ServersCommandDeps = {}):
         ? c.yellow(row.staleReason ? `stale (${row.staleReason})` : "stale")
         : c.green("ok");
     console.log(
-      `  ${c.cyan(row.host.padEnd(16))}  ${String(row.port ?? "—").padStart(5)}  ${status}  ${c.bold(row.projectName ?? "RepoOS")}  ${c.dim(formatUptime(row.uptimeSeconds ?? null))}`,
+      `  ${c.cyan(row.host.padEnd(16))}  ${String(row.port ?? "—").padStart(5)}  ${status}  ${c.bold(row.projectName ?? "RepoOS")}  ${c.dim(formatUptime(row.uptimeSeconds ?? null))}${display}`,
     );
     if (row.root) console.log(`         ${c.dim(row.root)}`);
   }

@@ -90,6 +90,91 @@ describe("GET /api/servers/tailnet", () => {
     );
   });
 
+  it("reports duplicate HostNames individually by MagicDNS identity and skips mobile peers", async () => {
+    const remoteExec = vi.fn(
+      async (host: string, _user: string, _timeout: number, command?: string) => {
+        if (command === "tailscale serve status --json") {
+          return JSON.stringify({
+            Web: {
+              [`${host}.tailc0c173.ts.net:443`]: {
+                Handlers: { "/": { Proxy: "http://127.0.0.1:7499" } },
+              },
+            },
+          });
+        }
+        return JSON.stringify({
+          servers: [{ port: 7499, projectName: `${host}-project` }],
+        });
+      },
+    );
+
+    const payload = await buildTailnetDiscoveryPayload(config(), {
+      localRows: [],
+      tailscaleStatus: async () =>
+        JSON.stringify({
+          Peer: {
+            a: {
+              HostName: "omarchy",
+              DNSName: "bee.tailc0c173.ts.net.",
+              OS: "linux",
+              Online: true,
+            },
+            b: {
+              HostName: "omarchy",
+              DNSName: "thinkpad.tailc0c173.ts.net.",
+              OS: "linux",
+              Online: true,
+            },
+            c: {
+              HostName: "Peck’s Mac mini",
+              DNSName: "mini.tailc0c173.ts.net.",
+              OS: "macOS",
+              Online: true,
+            },
+            phone: {
+              HostName: "Nothing Phone (3a)",
+              DNSName: "nothing-phone.tailc0c173.ts.net.",
+              OS: "android",
+              Online: true,
+            },
+          },
+        }),
+      remoteExec,
+    });
+
+    expect(payload.servers).toEqual([
+      {
+        host: "bee",
+        displayName: "omarchy",
+        port: 7499,
+        projectName: "bee-project",
+        url: "https://bee.tailc0c173.ts.net",
+        https: true,
+      },
+      {
+        host: "thinkpad",
+        displayName: "omarchy",
+        port: 7499,
+        projectName: "thinkpad-project",
+        url: "https://thinkpad.tailc0c173.ts.net",
+        https: true,
+      },
+      {
+        host: "mini",
+        displayName: "Peck’s Mac mini",
+        port: 7499,
+        projectName: "mini-project",
+        url: "https://mini.tailc0c173.ts.net",
+        https: true,
+      },
+    ]);
+    const probed = remoteExec.mock.calls
+      .filter(([, , , command]) => command === "repoos servers --json")
+      .map(([host]) => host);
+    expect(probed).toEqual(["bee", "thinkpad", "mini"]);
+    expect(probed).not.toContain("nothing-phone");
+  });
+
   it("reports a plain HTTP URL when the peer has no HTTPS serve mapping", async () => {
     const payload = await buildTailnetDiscoveryPayload(config(), {
       localRows: [],
