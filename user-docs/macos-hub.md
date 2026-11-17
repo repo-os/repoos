@@ -194,8 +194,8 @@ Every server shows a status color:
 | Invalid response | yellow | Reachable, but `/api/health` did not report `ok: true` — probably not a RepoOS server |
 
 Hover the row for details (last checked time, repository, address), and click
-the info/badge control for a details popover with runtime info and attention
-counts.
+the info/badge control for a details popover with runtime info. Attention counts
+show in the popover only while the server is reachable.
 
 Health is **advisory**: a failed check never changes your saved entry. The
 sidebar stays fully usable while a server is offline — selecting an offline
@@ -321,18 +321,20 @@ counts:
 
 ### Where attention appears
 
-- **Sidebar badges** — on the subtitle row under each server name (origin URL or
-  repository label), trailing up to three small badges: blue = in review,
-  orange = needs input, purple = active agents (capped at `9+`). The server
-  name row stays badge-free; narrow sidebars may clip the subtitle before the
-  badges.
+- **Sidebar badges** — on the subtitle row under each server name (the
+  server's origin URL), trailing up to three small badges: blue = in review,
+  orange = needs input, purple = active agents (capped at `9+`). Badges are
+  shown only for a healthy (reachable) server; an offline or unhealthy server
+  shows none. The server name row stays badge-free; narrow sidebars may clip
+  the subtitle before the badges.
 - **Server details popover** — the exact counts, with a plain-language
   explanation of what each means.
 - **Native notifications** — fired when a count *increases* (a task lands in
   review, a task waits for input, agents start from zero). Clicking one opens
   the server at the right page (`/work` or `/agents`).
 - **Dock badge** — an optional badge summing *in-review + needs-input* across
-  all servers with attention enabled.
+  healthy servers with attention enabled; offline or unhealthy servers are not
+  counted.
 
 ### Enabling and disabling it
 
@@ -377,13 +379,13 @@ Attention is **polled**, not pushed:
   selected server, ≤ 6 min for background servers), **stale** when it's older,
   and **unavailable** when there's no capability or the server rejected it.
 
-Badges keep showing the **last known counts** until the next successful poll,
-which means a "stale" or offline badge reflects the last successful read, not
-the current state. The details popover tells you how fresh a summary is. In
-particular:
+While a server is healthy, badges show the **last known counts** until the next
+successful poll, so a "stale" badge reflects the last successful read, not the
+current state. Row, tab and popover badges are hidden when a server is offline or
+unhealthy. The details popover tells you how fresh a summary is. In particular:
 
-- A server that goes **offline** keeps its last counts on screen but stops
-  updating; the summary eventually goes stale/unavailable.
+- A server that goes **offline** stops contributing counts: its badges disappear
+  and the summary eventually goes stale/unavailable.
 - **Don't make a decision on a stale or offline number** — open the server and
   look at the live board.
 
@@ -623,9 +625,10 @@ Work through, in order:
 
 ### The Dock badge is wrong
 
-It sums *in-review + needs-input* only across servers with attention enabled,
-and it falls back to the last known counts when a server is stale — check the
-server details popover for freshness. Disable it in **Hub settings → Dock badge
+It sums *in-review + needs-input* only across healthy servers with attention
+enabled; offline or unhealthy servers are left out, and a stale (but healthy)
+server contributes its last known counts — check the server details popover for
+freshness. Disable it in **Hub settings → Dock badge
 total** (the sidebar gear, or `⌘,`).
 
 ## Further reading
