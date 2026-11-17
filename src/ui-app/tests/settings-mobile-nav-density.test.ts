@@ -133,9 +133,9 @@ describe("Settings phone navigation density (#1148)", () => {
     const wrapper = await mountSettings();
 
     expect(wrapper.find(".settings-section-jump-value").text()).toBe("Automation & approval");
-    expect(
-      wrapper.find(".settings-section-nav--phone .settings-section-chip.active").text(),
-    ).toBe("Automation & approval");
+    expect(wrapper.find(".settings-section-nav--phone .settings-section-chip.active").text()).toBe(
+      "Automation & approval",
+    );
 
     wrapper.unmount();
   });
