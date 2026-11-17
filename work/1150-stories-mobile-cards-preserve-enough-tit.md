@@ -2,7 +2,7 @@
 id: "1150"
 title: "Stories mobile cards: preserve enough title and summary to identify work"
 type: chore
-status: active
+status: review
 priority: p3
 area: web
 assigned_to: ai
@@ -55,3 +55,4 @@ Use the attached phone screenshot and inspect a story with a long description an
 - 2026-11-17T11:42:25Z · body
 - 2026-11-17T11:46:21Z · CTO nudge: held — handoff gate is running
 - 2026-11-17T11:59:05Z · note: ui verification passed: 1 of 1 shot captured with clean console
+- 2026-11-17T11:59:05Z · status active→review
