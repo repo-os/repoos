@@ -11,7 +11,7 @@ branch: feat/checks-mobile-header-make-overview-and-p
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T03:06:39Z"
-updated_at: "2026-11-17T11:25:48Z"
+updated_at: "2026-11-17T11:27:01Z"
 review_passes: 1
 ---
 ## Problem
@@ -32,33 +32,33 @@ Use the attached phone screenshot. Inspect both the empty state and a populated 
 ```json
 [
 {
-  "label": "Checks plan actions at 390px",
-  "target": "default",
-  "route": "/checks?tab=plan",
-  "highlight": ".ck-actions",
-  "theme": "light",
-  "viewportWidth": 390,
-  "viewportHeight": 844
+"label": "Checks plan actions at 390px",
+"target": "default",
+"route": "/checks?tab=plan",
+"highlight": ".ck-actions",
+"theme": "light",
+"viewportWidth": 390,
+"viewportHeight": 844
 },
 {
-  "label": "Checks history at 320px",
-  "target": "default",
-  "route": "/checks?tab=runs",
-  "highlight": ".ck-head",
-  "state": "checks:timings",
-  "theme": "light",
-  "viewportWidth": 320,
-  "viewportHeight": 844
+"label": "Checks history at 320px",
+"target": "default",
+"route": "/checks?tab=runs",
+"highlight": ".ck-head",
+"state": "checks:timings",
+"theme": "light",
+"viewportWidth": 320,
+"viewportHeight": 844
 },
 {
-  "label": "Checks history in dark theme",
-  "target": "default",
-  "route": "/checks?tab=runs",
-  "highlight": ".ck-head",
-  "state": "checks:timings",
-  "theme": "dark",
-  "viewportWidth": 390,
-  "viewportHeight": 844
+"label": "Checks history in dark theme",
+"target": "default",
+"route": "/checks?tab=runs",
+"highlight": ".ck-head",
+"state": "checks:timings",
+"theme": "dark",
+"viewportWidth": 390,
+"viewportHeight": 844
 }
 ]
 ```
@@ -86,3 +86,4 @@ Use the attached phone screenshot. Inspect both the empty state and a populated 
 - 2026-11-17T11:25:01Z · message_delivered: 1 message(s)
 - 2026-11-17T11:25:02Z · status review→active
 - 2026-11-17T11:25:48Z · body
+- 2026-11-17T11:27:01Z · body
