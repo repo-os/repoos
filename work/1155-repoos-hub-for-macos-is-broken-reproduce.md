@@ -5,11 +5,13 @@ type: bug
 status: inbox
 priority: p1
 area: macos
-assigned_to: ""
+assigned_to: ai
 created_by: t@t
 branch: ""
+cli_override: codex
+model_override: gpt-6-luna
 created_at: "2026-11-17T14:36:24Z"
-updated_at: "2026-11-17T14:36:24Z"
+updated_at: "2026-11-17T14:36:27Z"
 ---
 ## Problem
 
@@ -34,3 +36,4 @@ Read macos/README.md and the 'RepoOS Hub for macOS' section of README.md first. 
 ## Activity
 
 - 2026-11-17T14:36:24Z · created · t@t
+- 2026-11-17T14:36:27Z · cli_override, model_override
