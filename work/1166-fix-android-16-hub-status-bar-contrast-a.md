@@ -11,7 +11,7 @@ branch: feat/fix-android-16-hub-status-bar-contrast-a
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T17:55:45Z"
-updated_at: "2026-11-17T19:04:51Z"
+updated_at: "2026-11-17T19:05:36Z"
 handoff_signal_retry_count: 2
 ---
 ## Problem
@@ -65,3 +65,4 @@ This issue was observed on Android 16 (API 36), target SDK 36, with Android Syst
 - 2026-11-17T18:54:55Z · orphaned run process stopped · pid 40054 · ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new -o ConnectTimeout=15 -o ServerAliveInterval · cpu 0s · age 1m
 - 2026-11-17T19:02:49Z · message_delivered: 2 message(s)
 - 2026-11-17T19:04:51Z · body
+- 2026-11-17T19:05:36Z · CTO nudge: held — handoff gate is running
