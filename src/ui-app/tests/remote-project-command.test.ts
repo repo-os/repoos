@@ -54,15 +54,17 @@ describe("remote project command", () => {
     git(["bundle", "create", bundle, "--all"]);
 
     const config = loadConfig(project);
-    expect(config.remoteValidation?.command).toBe("./scripts/ci-remote.sh");
+    const command = config.remoteValidation?.command;
+    expect(command).toBe("./scripts/ci-remote.sh");
     expect(config.remoteValidation?.requiredTools).toEqual(["java", "node"]);
+    if (!command) throw new Error("fixture remoteValidation.command did not load");
 
     const output = execFileSync("bash", [runnerScript, bundle, sha, artifacts], {
       encoding: "utf8",
       env: {
         ...process.env,
         HOME: home,
-        REPOOS_VALIDATION_COMMAND: config.remoteValidation.command,
+        REPOOS_VALIDATION_COMMAND: command,
         REPOOS_ARTIFACTS_DIR: artifacts,
         PATH: process.env.PATH ?? "/usr/bin:/bin",
       },
