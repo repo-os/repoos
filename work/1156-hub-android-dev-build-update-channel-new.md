@@ -17,7 +17,6 @@ last_handoff_failure_sha: 193603658d88ea0dffd3c94adece5320a207a1c8
 handoff_signal_retry_count: 2
 review_rounds: 1
 review_passes: 1
-deferred_handoff_resume_count: 1
 ---
 ## Problem
 
