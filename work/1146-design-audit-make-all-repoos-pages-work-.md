@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-17T03:44:30.654Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 id: "1146"
 title: "Design audit: make all RepoOS pages work better on phones"
 type: chore
@@ -119,3 +121,4 @@ Use strong visual and product design judgment. Inspect rendered pages and theme 
 - 2026-11-17T03:42:14Z · body
 - 2026-11-17T03:44:27Z · message_queued at 2026-11-17T03:44:27.469Z
 - 2026-11-17T03:44:30Z · message_delivered: 1 message(s)
+
