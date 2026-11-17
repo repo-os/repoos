@@ -2,8 +2,10 @@ import { describe, expect, it, vi } from "vitest";
 import {
   fetchTailnetServers,
   mergeTailnetResults,
+  tailnetDiscoveryMessage,
   type TailnetServer,
 } from "../../../mobile/src/tailnet";
+import { serverUrlOf, validateServer } from "../../../mobile/src/reachability";
 
 const rows: TailnetServer[] = [
   { host: "bee", port: 7499, projectName: "dev", url: "https://dev.repoos.org", https: true },
@@ -33,6 +35,33 @@ const rows: TailnetServer[] = [
 ];
 
 describe("mobile tailnet discovery", () => {
+  it("preserves a Serve path when validating and requesting a server", async () => {
+    expect(serverUrlOf("https://bee.tail.ts.net/repoos/")).toBe("https://bee.tail.ts.net/repoos");
+    const fetchImpl = vi.fn(
+      async () => new Response(JSON.stringify({ status: "ok" }), { status: 200 }),
+    );
+    await expect(
+      validateServer("https://bee.tail.ts.net/repoos", 500, fetchImpl),
+    ).resolves.toMatchObject({
+      ok: true,
+    });
+    expect(fetchImpl).toHaveBeenCalledWith(
+      "https://bee.tail.ts.net/repoos/api/health",
+      expect.any(Object),
+    );
+  });
+
+  it("requests discovery below a saved Serve path", async () => {
+    const fetchImpl = vi.fn(
+      async () => new Response(JSON.stringify({ ok: true, servers: [] }), { status: 200 }),
+    );
+    await fetchTailnetServers("https://bee.tail.ts.net/repoos", { fetchImpl });
+    expect(fetchImpl).toHaveBeenCalledWith(
+      "https://bee.tail.ts.net/repoos/api/servers/tailnet",
+      expect.any(Object),
+    );
+  });
+
   it("de-duplicates by origin and merges results with the saved list", () => {
     const merged = mergeTailnetResults(rows, [{ url: "https://dev.repoos.org" }]);
 
@@ -70,6 +99,28 @@ describe("mobile tailnet discovery", () => {
     expect(merged.some((entry) => entry.name === "nightly-again")).toBe(false);
   });
 
+  it("marks reachable and unreachable custom-domain projects saved by a unique project name", () => {
+    const rows: TailnetServer[] = [
+      {
+        host: "bee",
+        port: 7171,
+        projectName: "work",
+        url: "https://bee.tail.ts.net/work",
+        https: true,
+      },
+      { host: "thinkpad", unreachable: true, projectName: "work", reason: "timed out" },
+    ];
+    const merged = mergeTailnetResults(rows, [
+      { url: "https://projects.example.test/work", name: "work" },
+    ]);
+    expect(merged[0]).toMatchObject({ saved: true, selectable: false, note: "Already saved" });
+    expect(merged[1]).toMatchObject({
+      host: "thinkpad",
+      saved: true,
+      note: "Already saved",
+    });
+  });
+
   it("prefers the HTTPS view when the same origin is reported as plain HTTP first", () => {
     const merged = mergeTailnetResults(
       [
@@ -102,6 +153,89 @@ describe("mobile tailnet discovery", () => {
         note: undefined,
       },
     ]);
+  });
+
+  it("marks an unreachable peer as saved when its host matches a saved server URL", () => {
+    const merged = mergeTailnetResults(
+      [{ host: "bee", dnsName: "bee.tail.ts.net", unreachable: true, reason: "timed out" }],
+      [{ url: "https://bee.tail.ts.net" }],
+    );
+    expect(merged).toHaveLength(1);
+    expect(merged[0]).toMatchObject({ saved: true, selectable: false, note: "Already saved" });
+  });
+
+  it("keeps Serve path URLs distinct even when projects share the same origin", () => {
+    const merged = mergeTailnetResults(
+      [
+        { host: "bee", projectName: "api", url: "https://bee.tail.ts.net/api", https: true },
+        { host: "bee", projectName: "web", url: "https://bee.tail.ts.net/web/", https: true },
+      ],
+      [{ url: "https://bee.tail.ts.net/api" }],
+    );
+    expect(merged.map(({ key, url }) => [key, url])).toEqual([
+      ["https://bee.tail.ts.net/api", "https://bee.tail.ts.net/api"],
+      ["https://bee.tail.ts.net/web", "https://bee.tail.ts.net/web"],
+    ]);
+    expect(merged.map(({ saved }) => saved)).toEqual([true, false]);
+  });
+
+  it("reconciles multiple reachable custom-domain saved projects by project name", () => {
+    const merged = mergeTailnetResults(
+      [
+        { host: "bee", projectName: "api", url: "https://bee.tail.ts.net/api", https: true },
+        {
+          host: "thinkpad",
+          projectName: "jobs",
+          url: "https://thinkpad.tail.ts.net/jobs",
+          https: true,
+        },
+      ],
+      [
+        { url: "https://custom.example/api", name: "api" },
+        { url: "https://custom.example/jobs", name: "jobs" },
+      ],
+    );
+    expect(merged).toHaveLength(2);
+    expect(merged.map((row) => row.saved)).toEqual([true, true]);
+  });
+
+  it("does not mark every same-named project as saved when one custom-domain project is saved", () => {
+    const merged = mergeTailnetResults(
+      [
+        { host: "bee", projectName: "work", url: "https://bee.tail.ts.net:7001", https: true },
+        {
+          host: "thinkpad",
+          projectName: "work",
+          url: "https://thinkpad.tail.ts.net:7002",
+          https: true,
+        },
+      ],
+      [{ url: "https://work.example.test", name: "work" }],
+    );
+    expect(merged.map(({ saved }) => saved)).toEqual([false, false]);
+  });
+
+  it("keeps two saved Serve paths on the same machine as separate saved rows", () => {
+    const merged = mergeTailnetResults(
+      [{ host: "bee", dnsName: "bee.tail.ts.net", unreachable: true, reason: "timed out" }],
+      [
+        { url: "https://bee.tail.ts.net/api", name: "api" },
+        { url: "https://bee.tail.ts.net/web", name: "web" },
+      ],
+    );
+    expect(merged.map((entry) => entry.url)).toEqual([
+      "https://bee.tail.ts.net/api",
+      "https://bee.tail.ts.net/web",
+    ]);
+    expect(merged.map((entry) => entry.name)).toEqual(["api", "web"]);
+  });
+
+  it("does not show the already-saved empty message when only machines failed", () => {
+    const failed = mergeTailnetResults(
+      [{ host: "muse", unreachable: true, reason: "SSH is off on muse" }],
+      [],
+    );
+    expect(tailnetDiscoveryMessage(failed, 0)).toBe("");
   });
 
   it("uses a peer's readable Tailscale display name when no project is advertised", () => {

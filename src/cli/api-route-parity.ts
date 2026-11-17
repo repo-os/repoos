@@ -126,6 +126,7 @@ const UI_ONLY_MATCHERS: Matcher[] = [
   // cannot run the CLI, and the CLI's own `repoos servers --tailscale` reads
   // the same core directly rather than this authenticated endpoint.
   exact("GET", "/api/servers/tailnet"),
+  exact("GET", "/api/servers/discovery"),
   under("/api/telegram/"),
   exact("GET", "/api/index"),
   exact("GET", "/api/board"),

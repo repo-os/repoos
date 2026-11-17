@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 118772
-last_close_out_gate_at: "2026-11-17T17:11:58.958Z"
 id: "1153"
 title: "Hub 'Find servers on my tailnet': stop listing bare machines, hide phones, explain failures, and replace SSH discovery with an HTTPS-based one"
 type: bug
-status: review
+status: done
 priority: p2
 area: [mobile, server, core]
+merged_commit: 31a0f452cf648430de56e798caa7b0763d688155
 assigned_to: ai
 created_by: t@t
 branch: feat/hub-find-servers-on-my-tailnet-stop-list
@@ -14,6 +13,8 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T10:06:23Z"
 updated_at: "2026-11-17T17:11:58Z"
+last_close_out_gate_ms: 118772
+last_close_out_gate_at: "2026-11-17T17:11:58.958Z"
 review_passes: 6
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/check-docs-only-cli.test.ts > cmdCheck docs/bookkeeping shortcut (#1059) > classifies a work-only diff and skips the full suite on thinkpad — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: e1b1e693693ec27e46b2e70d284ec6202a069a30

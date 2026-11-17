@@ -101,10 +101,12 @@ non-interactive `sh -c` with a predictable `PATH`, and a failed host keeps its
 real cause (command-not-found, authentication, connection refused) instead of
 being mislabelled a timeout. Discovered peers are identified by their MagicDNS
 name (the first DNS label of `DNSName`), not the display `HostName`; that keeps
-duplicate display names distinct and avoids SSH-ing into names with spaces or
+duplicate display names distinct and avoids probing names with spaces or
 punctuation. The readable `HostName` is retained as `displayName`. Unsupported
-mobile peers (Android/iOS) are skipped, while explicitly configured hosts are
-still probed.
+mobile peers (Android/iOS, detected from peer OS, model name, or tags) are
+skipped, while explicitly configured hosts are still probed. Discovery payloads
+contain project names, ports, and tailnet HTTPS URLs; they do not expose project
+paths or access tokens.
 
 Validation for each entry:
 
