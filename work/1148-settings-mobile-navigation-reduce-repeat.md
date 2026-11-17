@@ -2,14 +2,14 @@
 id: "1148"
 title: "Settings mobile navigation: reduce repeated topic-chip density"
 type: chore
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
 branch: feat/settings-mobile-navigation-reduce-repeat
 created_at: "2026-11-17T03:06:33Z"
-updated_at: "2026-11-17T04:44:29Z"
+updated_at: "2026-11-17T04:44:32Z"
 ---
 ## Problem
 At 390×844, /settings shows a six-item page navigation grid, followed by a long wrapping row of topic chips (Themes, Activity animation, General, Performance, Model routing, Close-out, Automation & approval, Screenshots, Attachments, Background service, Publishing, Release emails, Remote validation, Board, and more). Both layers consume most of the initial viewport before selected setting controls.
@@ -36,14 +36,14 @@ Use the attached phone screenshot. Check long labels and both theme families. Th
 "highlight": ".settings-mobile-nav",
 "assert": [
 {
-  "selector": ".settings-mobile-nav-btn",
-  "label": "all seven page tabs remain in the phone rail",
-  "count": 7
+"selector": ".settings-mobile-nav-btn",
+"label": "all seven page tabs remain in the phone rail",
+"count": 7
 },
 {
-  "selector": ".settings-section-jump-btn",
-  "label": "sections live behind one compact control",
-  "text": "Browse all"
+"selector": ".settings-section-jump-btn",
+"label": "sections live behind one compact control",
+"text": "Browse all"
 }
 ],
 "theme": "light",
@@ -57,22 +57,22 @@ Use the attached phone screenshot. Check long labels and both theme families. Th
 "highlight": ".settings-section-nav--phone",
 "steps": [
 {
-  "click": ".settings-section-jump-btn"
+"click": ".settings-section-jump-btn"
 },
 {
-  "waitMs": 250
+"waitMs": 250
 }
 ],
 "assert": [
 {
-  "selector": ".settings-section-nav--phone .settings-section-chip",
-  "label": "every General section stays reachable",
-  "minCount": 14
+"selector": ".settings-section-nav--phone .settings-section-chip",
+"label": "every General section stays reachable",
+"minCount": 14
 },
 {
-  "selector": ".settings-section-nav--phone",
-  "label": "long section labels render",
-  "text": "Automation & approval"
+"selector": ".settings-section-nav--phone",
+"label": "long section labels render",
+"text": "Automation & approval"
 }
 ],
 "theme": "dark",
@@ -86,9 +86,9 @@ Use the attached phone screenshot. Check long labels and both theme families. Th
 "highlight": ".settings-section-nav",
 "assert": [
 {
-  "selector": ".settings-tabs .settings-tab-btn",
-  "label": "desktop tab strip is intact",
-  "minCount": 7
+"selector": ".settings-tabs .settings-tab-btn",
+"label": "desktop tab strip is intact",
+"minCount": 7
 }
 ],
 "theme": "light",
@@ -116,3 +116,4 @@ Use the attached phone screenshot. Check long labels and both theme families. Th
 - 2026-11-17T04:20:09Z · body
 - 2026-11-17T04:35:14Z · body
 - 2026-11-17T04:44:29Z · note: ui verification passed: 3 of 3 shots captured with clean console
+- 2026-11-17T04:44:32Z · status active→review
