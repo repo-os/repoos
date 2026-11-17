@@ -41,6 +41,15 @@ export function resetUpdateStatusCacheForTests(): void {
   supervisedCache = null;
 }
 
+type RestartHelper = (
+  root: string,
+  port: number | undefined,
+) => Promise<{ ok: true } | { ok: false; reason: string }>;
+let restartHelper: RestartHelper = spawnHandRunRestartHelper;
+export function setRestartHelperForTests(helper: RestartHelper | null): void {
+  restartHelper = helper ?? spawnHandRunRestartHelper;
+}
+
 /** Start the CLI outside the server process so it can stop and relaunch it. */
 export function spawnHandRunRestartHelper(
   root: string,
@@ -48,25 +57,29 @@ export function spawnHandRunRestartHelper(
   deps: RestartHelperDeps = {},
 ): Promise<{ ok: true } | { ok: false; reason: string }> {
   return new Promise((resolve) => {
-  try {
-    const { bin, needsCliEntry } = (deps.binary ?? repoosBinary)();
-    const entry = compiledCliEntry();
-    if (needsCliEntry && !(deps.exists ?? existsSync)(entry))
-      return { ok: false, reason: `CLI entry not found at ${entry}` };
-    const args = [...(needsCliEntry ? [entry] : []), "restart", "--force"];
-    if (!port || port <= 0) return resolve({ ok: false, reason: "The server's bound port is unavailable." });
-    args.push("--port", String(port));
-    const helper = (deps.spawn ?? spawn)(bin, args, {
-      cwd: root,
-      detached: true,
-      stdio: "ignore",
-      env: process.env,
-    });
-    helper.once("error", (error) => resolve({ ok: false, reason: error.message }));
-    helper.once("spawn", () => { helper.unref(); resolve({ ok: true }); });
-  } catch (error) {
-    resolve({ ok: false, reason: error instanceof Error ? error.message : String(error) });
-  }
+    try {
+      const { bin, needsCliEntry } = (deps.binary ?? repoosBinary)();
+      const entry = compiledCliEntry();
+      if (needsCliEntry && !(deps.exists ?? existsSync)(entry))
+        return resolve({ ok: false, reason: `CLI entry not found at ${entry}` });
+      const args = [...(needsCliEntry ? [entry] : []), "restart", "--force"];
+      if (!port || port <= 0)
+        return resolve({ ok: false, reason: "The server's bound port is unavailable." });
+      args.push("--port", String(port));
+      const helper = (deps.spawn ?? spawn)(bin, args, {
+        cwd: root,
+        detached: true,
+        stdio: "ignore",
+        env: process.env,
+      });
+      helper.once("error", (error) => resolve({ ok: false, reason: error.message }));
+      helper.once("spawn", () => {
+        helper.unref();
+        resolve({ ok: true });
+      });
+    } catch (error) {
+      resolve({ ok: false, reason: error instanceof Error ? error.message : String(error) });
+    }
   });
 }
 
@@ -185,7 +198,7 @@ export const restartInstalledUpgrade: RouteHandler = async (ctx, req, res) => {
   if (!status.supervised) {
     // The server cannot stop and relaunch itself: the helper must outlive this
     // process and use the CLI's verified hand-run restart path.
-    const helper = await spawnHandRunRestartHelper(ctx.config.root, ctx.servePort);
+    const helper = await restartHelper(ctx.config.root, ctx.servePort);
     if (!helper.ok) {
       return json(res, 503, {
         state: "manual",
@@ -204,7 +217,7 @@ export const restartInstalledUpgrade: RouteHandler = async (ctx, req, res) => {
         idleRestartPending = false;
         if (idleRestartTimer) clearInterval(idleRestartTimer);
         idleRestartTimer = null;
-        void spawnHandRunRestartHelper(ctx.config.root, ctx.servePort).then((result) => {
+        void restartHelper(ctx.config.root, ctx.servePort).then((result) => {
           if (!result.ok)
             ctx.logger.system("error", `installed-upgrade restart failed: ${result.reason}`);
         });
@@ -212,8 +225,9 @@ export const restartInstalledUpgrade: RouteHandler = async (ctx, req, res) => {
     }
     return json(res, 202, { state: "waiting-for-idle" });
   }
-  const helper = await spawnHandRunRestartHelper(ctx.config.root, ctx.servePort);
-  if (!helper.ok) return json(res, 503, { state: "manual", reason: helper.reason, command: "repoos restart" });
+  const helper = await restartHelper(ctx.config.root, ctx.servePort);
+  if (!helper.ok)
+    return json(res, 503, { state: "manual", reason: helper.reason, command: "repoos restart" });
   res.writeHead(202, { "Content-Type": "application/json" });
   res.end(JSON.stringify({ state: "restarting" }));
   // The helper is detached and has confirmed its spawn before the response.

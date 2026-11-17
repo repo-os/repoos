@@ -20,7 +20,14 @@ vi.mock("../../commands/upgrade.js", () => ({
 }));
 vi.mock("../../core/supervisor-detect.js", () => ({ detectSupervisor: mocks.detectSupervisor }));
 
-import { getUpdateStatus, isRestartSupervised, resetUpdateStatusCacheForTests, restartInstalledUpgrade, spawnHandRunRestartHelper } from "../../server/routes/info.js";
+import {
+  getUpdateStatus,
+  isRestartSupervised,
+  resetUpdateStatusCacheForTests,
+  restartInstalledUpgrade,
+  setRestartHelperForTests,
+  spawnHandRunRestartHelper,
+} from "../../server/routes/info.js";
 
 function context() {
   return {
@@ -70,14 +77,27 @@ describe("installed upgrade status and restart route", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     resetUpdateStatusCacheForTests();
+    setRestartHelperForTests(null);
     mocks.readInstallVersion.mockReturnValue("999.0.0");
     mocks.detectSupervisor.mockReturnValue({ kind: "none" });
   });
 
   it.each([
     [{ kind: "none" }, false],
-    [{ kind: "external", info: { platform: "launchd", job: "x", manualCommand: "launchctl kickstart x" } }, true],
-    [{ kind: "external", info: { platform: "systemd", job: "x", manualCommand: "systemctl restart x" } }, true],
+    [
+      {
+        kind: "external",
+        info: { platform: "launchd", job: "x", manualCommand: "launchctl kickstart x" },
+      },
+      true,
+    ],
+    [
+      {
+        kind: "external",
+        info: { platform: "systemd", job: "x", manualCommand: "systemctl restart x" },
+      },
+      true,
+    ],
     [{ kind: "managed", job: "com.repoos.serve.test" }, true],
   ] as const)("classifies supervisor state %#", (result, expected) => {
     expect(isRestartSupervised(result)).toBe(expected);
@@ -103,37 +123,56 @@ describe("installed upgrade status and restart route", () => {
     }).then((result) => {
       expect(result).toEqual({ ok: true });
       expect(mocks.spawn).toHaveBeenCalledWith(
-      "bun",
-      ["restart", "--force", "--port", "7123"],
-      expect.objectContaining({ cwd: "/fake/project", detached: true, stdio: "ignore" }),
+        "bun",
+        ["restart", "--force", "--port", "7123"],
+        expect.objectContaining({ cwd: "/fake/project", detached: true, stdio: "ignore" }),
       );
     });
   });
 
   it("returns 503 with a manual command when helper spawning fails", async () => {
-    mocks.spawn.mockImplementationOnce(() => {
-      const child = new EventEmitter() as EventEmitter & { unref: () => void };
-      child.unref = vi.fn();
-      queueMicrotask(() => child.emit("error", Object.assign(new Error("EACCES"), { message: "EACCES" })));
-      return child;
-    });
+    setRestartHelperForTests(async () => ({ ok: false, reason: "EACCES" }));
     const capture = responseCapture();
-    await restartInstalledUpgrade(context(), { url: "/", method: "POST" } as never, capture.res, {});
+    await restartInstalledUpgrade(
+      context(),
+      { url: "/", method: "POST" } as never,
+      capture.res,
+      {},
+    );
     expect(capture.status()).toBe(503);
-    expect(capture.body()).toMatchObject({ state: "manual", reason: "EACCES", command: "repoos restart" });
+    expect(capture.body()).toMatchObject({
+      state: "manual",
+      reason: "EACCES",
+      command: "repoos restart",
+    });
   });
 
   it("returns 202 for a hand-run restart only after the helper spawns", async () => {
+    setRestartHelperForTests(async () => ({ ok: true }));
     const capture = responseCapture();
-    await restartInstalledUpgrade(context(), { url: "/", method: "POST" } as never, capture.res, {});
+    await restartInstalledUpgrade(
+      context(),
+      { url: "/", method: "POST" } as never,
+      capture.res,
+      {},
+    );
     expect(capture.status()).toBe(202);
     expect(capture.body()).toEqual({ state: "restarting" });
   });
 
   it("keeps the supervised restart route on the helper path", async () => {
-    mocks.detectSupervisor.mockReturnValue({ kind: "external", info: { platform: "launchd", job: "external", manualCommand: "launchctl kickstart external" } });
+    setRestartHelperForTests(async () => ({ ok: true }));
+    mocks.detectSupervisor.mockReturnValue({
+      kind: "external",
+      info: { platform: "launchd", job: "external", manualCommand: "launchctl kickstart external" },
+    });
     const capture = responseCapture();
-    await restartInstalledUpgrade(context(), { url: "/", method: "POST" } as never, capture.res, {});
+    await restartInstalledUpgrade(
+      context(),
+      { url: "/", method: "POST" } as never,
+      capture.res,
+      {},
+    );
     expect(capture.status()).toBe(202);
     expect(capture.body()).toEqual({ state: "restarting" });
     expect(mocks.spawn).toHaveBeenCalled();
@@ -141,15 +180,20 @@ describe("installed upgrade status and restart route", () => {
 
   it("returns 503 rather than starting an unscoped helper without the actual port", async () => {
     const capture = responseCapture();
-    await restartInstalledUpgrade({
-      config: { root: "/fake/project" },
-      servePort: 0,
-      index: { snapshot: () => ({ tasks: [] }) },
-      runner: { running: () => [{ id: "agent" }] },
-      reviews: { runningCount: () => 0 },
-      closeOutLock: { closingOut: () => false },
-      logger: { system: vi.fn() },
-    } as never, { url: "/", method: "POST" } as never, capture.res, {});
+    await restartInstalledUpgrade(
+      {
+        config: { root: "/fake/project" },
+        servePort: 0,
+        index: { snapshot: () => ({ tasks: [] }) },
+        runner: { running: () => [{ id: "agent" }] },
+        reviews: { runningCount: () => 0 },
+        closeOutLock: { closingOut: () => false },
+        logger: { system: vi.fn() },
+      } as never,
+      { url: "/", method: "POST" } as never,
+      capture.res,
+      {},
+    );
     expect(capture.status()).toBe(503);
     expect(capture.body().reason).toMatch(/bound port is unavailable/);
     expect(mocks.spawn).not.toHaveBeenCalled();
