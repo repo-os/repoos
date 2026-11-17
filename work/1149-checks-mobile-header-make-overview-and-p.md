@@ -12,9 +12,21 @@ assigned_to: ai
 created_by: t@t
 branch: ""
 created_at: "2026-11-17T03:06:39Z"
-updated_at: "2026-11-17T03:06:42Z"
+updated_at: "2026-11-17T03:07:51Z"
 ---
-At 390×844 on /checks, explanatory copy uses roughly five lines, while the two help/config links are pushed into a narrow right column and wrap awkwardly. The page then shows a separate tab row and empty-state panel. Condense the introductory copy and place actions in a predictable mobile row or menu so the page title, purpose, and key actions scan cleanly.\n\nAcceptance: at 390px and 320px, the intro is concise, links have touch-sized targets and do not form a narrow side column, tabs remain reachable, and desktop behavior is preserved.
+## Problem
+At 390×844 on /checks, explanatory copy occupies about five lines while two help/config links sit in a narrow right column and wrap awkwardly. The header then competes with a tab row and the empty-state panel.
+
+## Desired UX
+The Checks heading, concise purpose and key actions scan in a predictable order on narrow screens.
+
+## Acceptance criteria
+- At 390px and 320px, introductory copy is concise.
+- Help and configuration actions have touch-sized targets and do not form a narrow side column.
+- Tabs remain reachable and desktop behavior is preserved.
+
+## Notes for AI
+Use the attached phone screenshot. Inspect both the empty state and a populated check-history state, in light and dark themes.
 
 ## Screenshots
 
@@ -25,3 +37,4 @@ At 390×844 on /checks, explanatory copy uses roughly five lines, while the two 
 - 2026-11-17T03:06:39Z · created · t@t
 - 2026-11-17T03:06:41Z · screenshots
 - 2026-11-17T03:06:42Z · needs_input
+- 2026-11-17T03:07:51Z · body: Problem (added); Desired UX (added); Acceptance criteria (added); Notes for AI (added)
