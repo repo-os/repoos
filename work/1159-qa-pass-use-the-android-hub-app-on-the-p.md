@@ -55,6 +55,7 @@ Human device step needed: the saved ADB target `100.117.244.33:37673` refused th
 ![theme-classic-light.png](/api/tasks/1159/attachments/att_0e95601b-b893-47a8-b3fc-d1fe9a6cf854.png)
 ![theme-classic-dark.png](/api/tasks/1159/attachments/att_64053aaa-bc77-4bde-a971-8ab2ce30cc35.png)
 ![theme-clear-light.png](/api/tasks/1159/attachments/att_00f5be1d-0ced-4af6-bc49-0ea73a36c233.png)
+![theme-clear-dark.png](/api/tasks/1159/attachments/att_3d219cd6-f953-4ca7-aecd-3cb9537bd867.png)
 
 ## Activity
 
@@ -106,3 +107,4 @@ Human device step needed: the saved ADB target `100.117.244.33:37673` refused th
 - 2026-11-17T17:59:59Z · screenshots
 - 2026-11-17T18:00:01Z · screenshots
 - 2026-11-17T18:00:03Z · screenshots
+- 2026-11-17T18:00:05Z · screenshots
