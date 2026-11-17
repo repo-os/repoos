@@ -12,18 +12,20 @@ assigned_to: human
 created_by: t@t
 branch: ""
 created_at: "2026-11-17T15:22:50Z"
-updated_at: "2026-11-17T15:22:50Z"
+updated_at: "2026-11-17T16:19:27Z"
 ---
 ## Step-by-step guide
+This setup requires Nick's Cloudflare account. Complete it after task #1156 lands on main.
 
-This setup requires Nick's Cloudflare account and must be completed after task #1156 is reviewed/landed.
+1. In Cloudflare, create a private R2 bucket named `repoos-hub-dev-updates` in the same account used for the RepoOS site. Do not attach the bucket directly to a public custom domain and do not enable public listing; only the Worker should read the bucket.
+2. In `mobile/dev-update-worker/wrangler.jsonc`, confirm the R2 bucket binding and the route `hub-dev-updates.repoos.org/*` use the RepoOS Cloudflare zone. In DNS, create/enable the proxied hostname required for the Worker route. Deployments must serve through the Worker, which checks the token and sends `X-Robots-Tag: noindex, nofollow, noarchive` and CORS headers.
+3. Create a Cloudflare API token scoped to the RepoOS account with permission to deploy Workers, update Worker secrets, manage the `repoos-hub-dev-updates` R2 bucket, and inspect the zone route. Save the account ID and token in your private secret manager; never put either value in a task or chat.
+4. Generate the channel path token once with a local secure random generator, for example `openssl rand -hex 32`. Save `REPOOS_HUB_DEV_UPDATE_TOKEN=<value>`, `CLOUDFLARE_API_TOKEN=<value>`, and `CLOUDFLARE_ACCOUNT_ID=<value>` in `.repoos/dev-update-channel.env` at the RepoOS checkout root. Set file permissions to owner read/write only. Do not print the values or commit the file.
+5. In the GitHub repository's Settings → Secrets and variables → Actions → Repository secrets, add exactly these three secrets: `REPOOS_HUB_DEV_UPDATE_TOKEN`, `CLOUDFLARE_API_TOKEN`, and `CLOUDFLARE_ACCOUNT_ID`. Use the same values as the local secret file. Never paste secret values into issues, task files, chat, or logs.
+6. After a push to main, confirm the “Publish Hub Android dev build” workflow succeeds. Its first run deploys the Worker, stores the channel token as a Worker secret, builds the `.dev` APK and publishes the APK plus `latest.json` to the private R2 bucket.
+7. On the phone, open RepoOS Hub Dev on mobile data. Confirm the update prompt appears for a newer commit, choose Download now, approve Android's install prompt, and verify the app opens with its existing server data intact. Confirm Settings → Dev updates shows the installed commit and Check now works. Report only whether each check passed; do not send secret values.
+8. To rotate the path token, generate a replacement locally, update the local file and the matching GitHub secret, let the workflow deploy the new Worker secret and publish a build containing the new token, install that build, then delete old channel objects. Do not put either token in the task.
 
-1. In Cloudflare, create an R2 bucket named `repoos-hub-dev-updates` in the same account used for the RepoOS site.
-2. Attach the bucket to the custom domain `hub-dev-updates.repoos.org` and wait until Cloudflare reports it active. Do not enable public bucket listing. The public custom domain serves only objects whose names include the channel token.
-3. Create a Cloudflare API token scoped to this account and bucket with R2 object read/write access. Store it in the normal local secret manager as `CLOUDFLARE_API_TOKEN`; never paste it into a task, chat, repository, or shell command.
-4. Generate a random 32-byte channel path token locally (for example with `openssl rand -hex 32`) and save it as `REPOOS_HUB_DEV_UPDATE_TOKEN` in the gitignored `.repoos/dev-update-channel.env` file at the RepoOS checkout root. Use restrictive file permissions. Do not send the token to anyone or commit the file.
-5. Confirm the normal Cloudflare Wrangler login/token configuration can access the bucket, then tell the engineer only that setup is complete (do not include either secret).
-6. To rotate the channel path token later, replace the local value, publish a fresh APK and metadata under the new path, verify it on the phone, then remove the old token's objects. The app's next dev build receives the new path through the same ignored secret file.
 
 ## Scope
 
@@ -36,3 +38,4 @@ _Assigned to a human, not an AI agent. No `## Notes for AI` is required here; th
 ## Activity
 
 - 2026-11-17T15:22:50Z · created · t@t
+- 2026-11-17T16:19:27Z · body: Step-by-step guide (added 9, removed 7)
