@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-11-17T21:35:03Z"
-review_passes: 3
+last_close_out_gate_ms: 226797
+last_close_out_gate_at: "2026-11-17T21:51:54.891Z"
 id: "1163"
 title: Investigate Checks tab browser pass stall
 type: bug
@@ -13,6 +13,8 @@ branch: feat/investigate-checks-tab-browser-pass-stal
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T17:53:05Z"
+updated_at: "2026-11-17T21:51:54Z"
+review_passes: 3
 review_rounds: 2
 handoff_signal_retry_count: 2
 ---
@@ -121,4 +123,5 @@ The direct tab pass found no navigation hang. Review identified a separate app l
 - 2026-11-17T21:31:55Z · status active→review
 - 2026-11-17T21:31:55Z · message_queued at 2026-11-17T21:31:55.711Z
 - 2026-11-17T21:35:03Z · note: review pass 3: good to go
+- 2026-11-17T21:51:54Z · close-out gate completed in 227s
 
