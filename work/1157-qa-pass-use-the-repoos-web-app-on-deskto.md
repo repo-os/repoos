@@ -11,7 +11,7 @@ branch: feat/qa-pass-use-the-repoos-web-app-on-deskto
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T15:21:15Z"
-updated_at: "2026-11-17T17:13:35Z"
+updated_at: "2026-11-17T17:14:52Z"
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-11-17T16:50:57.959Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
@@ -68,3 +68,4 @@ Start with the Work page at 390px and the bottom dock/heads/pipeline bar overlap
 - 2026-11-17T17:07:57Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-17T17:10:01Z · message_delivered: 1 message(s)
 - 2026-11-17T17:13:35Z · body
+- 2026-11-17T17:14:52Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The QA report draft is at [.repoos/engineering-report-drafts/1157.md](/Users/nick/code/nick/repoos-worktrees/feat/qa-pass-use-the-repoos-web-app-on-deskto/.repoos/engineering-report-drafts/1157.md). It records the screenshot coverage, insp… · stderr: Reading additional input from stdin... 2026-11-17T17:14:24.716975Z ERROR codex_core::tools::router: error=apply_patch verification failed: Failed to find expected lines in /Users/nick/code/nick/repoos-worktrees/feat/qa-pass-use-the-repoos-web-app-on-deskto/.repoos/engineering-report-drafts/1157.md: The no-auth server …
