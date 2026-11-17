@@ -294,6 +294,27 @@ describe("ChecksView default tab (#0738)", () => {
     expect(wrapper.text()).toContain("No local check slots are currently in use.");
   });
 
+  it("navigates through every Checks tab by click without losing the route", async () => {
+    const { router, wrapper } = await mountChecks("/checks?tab=now");
+    const tabs = [
+      ["Now", "now"],
+      ["Runs", "runs"],
+      ["Test suite", "test-suite"],
+      ["Check plan", "plan"],
+    ] as const;
+
+    for (const [label, tab] of tabs) {
+      const control = wrapper.findAll('[role="tab"]').find((node) => node.text() === label);
+      expect(control).toBeDefined();
+      await control!.trigger("click");
+      await flushPromises();
+      expect(router.currentRoute.value.query.tab).toBe(tab);
+      expect(wrapper.get(`[role="tab"][aria-selected="true"]`).text()).toBe(label);
+    }
+
+    wrapper.unmount();
+  });
+
   it("describes a live stale check by its last heartbeat, while a fresh heartbeat stays clear", async () => {
     const { wrapper } = await mountChecks("/checks?tab=now", [
       {
