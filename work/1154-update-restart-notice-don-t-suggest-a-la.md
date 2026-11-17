@@ -12,7 +12,7 @@ branch: feat/update-restart-notice-don-t-suggest-a-la
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T13:30:27Z"
-updated_at: "2026-11-17T19:05:56Z"
+updated_at: "2026-11-17T19:06:38Z"
 last_close_out_gate_ms: 1044823
 last_close_out_gate_at: "2026-11-17T19:05:32.042Z"
 review_passes: 5
@@ -113,3 +113,4 @@ Read #1075 (the restart notice) and #1091 (`repoos restart`). A server that kill
 - 2026-11-17T18:43:24Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-17T19:05:32Z · close-out gate completed in 1045s
 - 2026-11-17T19:05:56Z · message_dropped: 1 queued message(s) discarded — task is done
+- 2026-11-17T19:06:38Z · status done→done, release:success
