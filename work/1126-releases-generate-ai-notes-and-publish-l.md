@@ -3,16 +3,13 @@ id: "1126"
 title: "Releases: 'Generate AI notes and publish' - let the user choose auto-publish or notify-me when the AI draft is ready"
 type: feature
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "Automatic recovery could not restart the engineer: This worktree already has a recorded live engineer for task #1126 (pid 57100)"
 priority: p2
 area: [web, server]
 assigned_to: ai
 created_by: t@t
 branch: feat/releases-generate-ai-notes-and-publish-l
 created_at: "2026-11-15T08:14:22Z"
-updated_at: "2026-11-17T00:38:22Z"
+updated_at: "2026-11-17T00:38:36Z"
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-11-17T00:29:34.833Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -55,10 +52,10 @@ Reuse the existing AI-draft run in ReleasesView.vue and the server release run; 
 "highlight": ".rel-whenready",
 "steps": [
 {
-  "click": "[data-test-id=\"release-generate-notes\"]"
+"click": "[data-test-id=\"release-generate-notes\"]"
 },
 {
-  "waitMs": 400
+"waitMs": 400
 }
 ]
 },
@@ -98,3 +95,4 @@ Reuse the existing AI-draft run in ReleasesView.vue and the server release run; 
 - 2026-11-17T00:35:31Z · body
 - 2026-11-17T00:38:21Z · watchdog: restarting engineer because a queued message waited 11m with no live process
 - 2026-11-17T00:38:22Z · watchdog: active-without-engineer recovery failed — This worktree already has a recorded live engineer for task #1126 (pid 57100)
+- 2026-11-17T00:38:36Z · watchdog: restarting engineer because a queued message waited 12m with no live process
