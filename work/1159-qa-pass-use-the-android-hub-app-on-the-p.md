@@ -145,3 +145,4 @@ The Pixel 8 Android 16 (API 36) emulator was available and used after the saved 
 - 2026-11-17T18:17:51Z · note: handoff requested (cli)
 - 2026-11-17T18:18:42Z · status active→review
 - 2026-11-17T18:18:43Z · message_queued at 2026-11-17T18:18:43.128Z
+- 2026-11-17T18:18:43Z · note: shots: skipped — the diff (8 changed paths) touches no capture target's globs — no UI change to capture
