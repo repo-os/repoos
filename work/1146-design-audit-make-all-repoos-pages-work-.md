@@ -39,12 +39,12 @@ Use strong visual and product design judgment. Inspect rendered pages and theme 
 "route": "/",
 "highlight": ".search-overlay-input",
 "steps": [
-  {
-    "click": "button.search-input"
-  },
-  {
-    "waitFor": ".search-overlay-input"
-  }
+{
+  "click": "button.search-input"
+},
+{
+  "waitFor": ".search-overlay-input"
+}
 ]
 }
 ]
@@ -69,6 +69,7 @@ Use strong visual and product design judgment. Inspect rendered pages and theme 
 ![Checks at 390×844](/api/tasks/1146/attachments/att_e7d4d69a-496d-4efc-b2ae-4b78510123d2.png)
 ![Stories at 390×844](/api/tasks/1146/attachments/att_ca5230a8-67ed-4111-a63a-dc2b49211151.png)
 ![More sheet dark at 390×844](/api/tasks/1146/attachments/att_4d736d97-d652-4d02-923d-326a3c3e4822.png)
+![Task conflict diff route at 390×844; Back control is 76×28px](/api/tasks/1146/attachments/att_07cb3d3a-2d5c-47bd-bd7a-72f4ccb8d5c8.png)
 
 ## Activity
 
@@ -104,3 +105,4 @@ Use strong visual and product design judgment. Inspect rendered pages and theme 
 - 2026-11-17T03:35:56Z · screenshots
 - 2026-11-17T03:35:58Z · screenshots
 - 2026-11-17T03:36:51Z · body
+- 2026-11-17T03:37:26Z · screenshots
