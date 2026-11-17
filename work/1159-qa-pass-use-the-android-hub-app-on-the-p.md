@@ -12,7 +12,7 @@ branch: feat/qa-pass-use-the-android-hub-app-on-the-p
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T15:51:18Z"
-updated_at: "2026-11-17T18:06:54Z"
+updated_at: "2026-11-17T18:06:55Z"
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-11-17T16:23:57.721Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-17T17:28:58.663Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-17T17:40:28.839Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
@@ -66,6 +66,7 @@ The Pixel 8 Android 16 (API 36) emulator was available and used after the saved 
 ![theme-solarized-dark.png](/api/tasks/1159/attachments/att_074995c0-f43d-4666-bfc9-7b384b1ea453.png)
 ![theme-hypercolor-light.png](/api/tasks/1159/attachments/att_53d21987-c43f-457b-b990-2e4e41329aa1.png)
 ![theme-hypercolor-dark.png](/api/tasks/1159/attachments/att_6a7e00cf-904f-4c2f-bd41-27e1d12a7cd3.png)
+![lock-unlocked.png — successful biometric retry returned to the Hub picker](/api/tasks/1159/attachments/att_e4ee97d2-8c8c-4136-881e-0999ae0554dc.png)
 
 ## Activity
 
@@ -132,3 +133,4 @@ The Pixel 8 Android 16 (API 36) emulator was available and used after the saved 
 - 2026-11-17T18:00:27Z · screenshots
 - 2026-11-17T18:06:31Z · body: Notes for AI (added 1, removed 2)
 - 2026-11-17T18:06:31Z · message_queued at 2026-11-17T18:06:31.612Z
+- 2026-11-17T18:06:55Z · screenshots
