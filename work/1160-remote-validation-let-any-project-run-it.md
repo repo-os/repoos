@@ -11,7 +11,7 @@ branch: feat/remote-validation-let-any-project-run-it
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T17:06:33Z"
-updated_at: "2026-11-17T20:48:58Z"
+updated_at: "2026-11-17T20:48:59Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-17T19:55:37.402Z: repoos check failed: ui verification failed (3 issue(s)): [missing-target] Remote validation command and required tools (target \"default\"): highlight #setting-remoteValidation.command matched nothing on /settings?section=remote-validation (http://127.0.0.1:35065/settings?section=remote-validation); [missing-target] Remote runner host toolchain status (target \"default\"): click #setting-remoteValidation.enabled button: click: Timeout 5000ms exceeded. on /settings?section=remote-validation (http://… (truncated)"
 review_rounds: 2
@@ -106,3 +106,4 @@ Context: Nick's Tiao board on host bee (16 cores, encrypted btrfs, 3 projects) s
 - 2026-11-17T20:48:57Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The changed-path check is green now, including the remote gate and local guards. I’m recording the final environment-isolation correction in the report draft, then I’ll request handoff again with the repaired shot selectors. · stderr: 2026-11-17T20:16:18.855046Z ERROR codex_core::util: Custom tool call output is missing for call id: call_2a452156ae5449a9870fe6a7d4dc70a0 2026-11-17T20:16:24.188966Z ERROR codex_core::tools::router: error=write_stdin failed: Unknown process id 44192 2026-11-17T20:16:24.198948Z ERROR codex_core::util: Custom tool call …
 - 2026-11-17T20:48:57Z · status active→review
 - 2026-11-17T20:48:57Z · message_delivered: 2 message(s)
+- 2026-11-17T20:48:59Z · CTO nudge: held — handoff gate is running
