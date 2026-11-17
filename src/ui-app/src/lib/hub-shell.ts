@@ -72,7 +72,8 @@ export function claimHubContext(
 
 /**
  * The current native-Hub session, whether the token came from this URL (direct
- * open) or sessionStorage (login round-trip). Null in a normal browser.
+ * open), the `redirect` target of a login page, or sessionStorage (login
+ * round-trip). Null in a normal browser.
  */
 export function readHubShellSession(
   location: Pick<Location, "href" | "origin" | "search"> = window.location,
@@ -82,11 +83,32 @@ export function readHubShellSession(
     remember(fromUrl.token);
     return fromUrl;
   }
+  const fromRedirect = readHubContextFromRedirect(location.search, location.origin);
+  if (fromRedirect) {
+    remember(fromRedirect.token);
+    return fromRedirect;
+  }
   const token = rememberedToken();
   if (!token) return null;
   // sessionStorage is per origin, so the current origin is the one bound to
   // this token; the shell enforces the same origin on the native side.
   return { origin: location.origin, token };
+}
+
+/**
+ * A cold unauthenticated open can be redirected to
+ * `/login?redirect=%2F%3Frepoos_hub%3D…`; read the token from that target so
+ * the login logo is still the return action.
+ */
+function readHubContextFromRedirect(search: string, origin: string): HubReturnSession | null {
+  const redirect = new URLSearchParams(search).get("redirect");
+  if (!redirect) return null;
+  try {
+    const context = readHubContext(new URL(redirect, origin).toString());
+    return context?.origin === origin ? context : null;
+  } catch {
+    return null;
+  }
 }
 
 /**

@@ -188,6 +188,17 @@ describe("hub shell context in the SPA", () => {
     });
   });
 
+  it("reads the token from a login redirect target on a cold open", () => {
+    const token = "f".repeat(32);
+    window.history.replaceState(
+      {},
+      "",
+      `/login?redirect=${encodeURIComponent(`/?${HUB_CONTEXT_PARAM}=${token}`)}`,
+    );
+    expect(readHubShellSession()).toEqual({ origin: window.location.origin, token });
+    expect(sessionStorage.getItem("repoos.hub.returnToken")).toBe(token);
+  });
+
   it("stays inert in a normal browser tab", () => {
     expect(claimHubContext()).toBeNull();
     expect(readHubShellSession()).toBeNull();
