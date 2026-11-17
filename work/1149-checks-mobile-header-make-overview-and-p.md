@@ -8,8 +8,10 @@ area: web
 assigned_to: ai
 created_by: t@t
 branch: ""
+cli_override: codex
+model_override: gpt-6-luna
 created_at: "2026-11-17T03:06:39Z"
-updated_at: "2026-11-17T08:14:31Z"
+updated_at: "2026-11-17T11:09:59Z"
 ---
 ## Problem
 At 390×844 on /checks, explanatory copy occupies about five lines while two help/config links sit in a narrow right column and wrap awkwardly. The header then competes with a tab row and the empty-state panel.
@@ -36,3 +38,4 @@ Use the attached phone screenshot. Inspect both the empty state and a populated 
 - 2026-11-17T03:06:42Z · needs_input
 - 2026-11-17T03:07:51Z · body: Problem (added); Desired UX (added); Acceptance criteria (added); Notes for AI (added)
 - 2026-11-17T08:14:31Z · needs_input
+- 2026-11-17T11:09:59Z · cli_override, model_override
