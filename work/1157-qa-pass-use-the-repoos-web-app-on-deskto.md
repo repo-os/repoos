@@ -77,3 +77,4 @@ Start with the Work page at 390px and the bottom dock/heads/pipeline bar overlap
 - 2026-11-17T17:32:41Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The QA pass found no confirmed responsive defect. I reviewed the screenshot contact sheets for all 24 page states at 1440, 390, and 320px in light and dark themes. The matrix records no horizontal overflow; the bottom-scroll sweep reached … · stderr: Reading additional input from stdin...
 - 2026-11-17T17:37:43Z · watchdog: escalated to needs_input · 3 automatic resume(s) in this active episode produced no handoff
 - 2026-11-17T17:47:43Z · watchdog: restarting engineer after 10m with no live process
+- 2026-11-17T17:47:54Z · note: handoff requested (cli)
