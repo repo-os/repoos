@@ -156,3 +156,4 @@ The Pixel 8 Android 16 (API 36) emulator was available and used after the saved 
 - 2026-11-17T18:30:38Z · CTO nudge: held — handoff gate is running
 - 2026-11-17T18:38:13Z · message_delivered: 1 message(s)
 - 2026-11-17T18:46:04Z · message_queued at 2026-11-17T18:46:04.482Z
+- 2026-11-17T18:46:04Z · handoff failed · task-file handoff failed at check · repoos check failed: check-fmt:check — Formatting failed — run `bun run fmt` to fix:
