@@ -10287,8 +10287,11 @@
     color: var(--cyan);
   }
   .settings-mobile-nav-btn:focus-visible {
+    /* This rail scrolls, and a scroll container clips at its padding box: a
+       +2px ring would sit outside it and never paint. Draw the ring inside the
+       pill instead, like .settings-tab-btn. */
     outline: 2px solid var(--cyan);
-    outline-offset: 2px;
+    outline-offset: -2px;
   }
   /* Phone section picker: a compact one-row control that names the active
      section, with the full chip list behind it. */
@@ -10397,6 +10400,11 @@
     border-radius: 10px;
     text-align: left;
     overflow-wrap: anywhere;
+  }
+  /* The phone chip list scrolls, so its padding box clips an outer focus ring;
+     draw the ring inside each chip like the tab strip does. */
+  .settings-page .settings-section-nav--phone .settings-section-chip:focus-visible {
+    outline-offset: -2px;
   }
   .settings-page .activity-animation-controls {
     grid-template-columns: minmax(0, 1fr);

@@ -7,6 +7,8 @@
  * chip row unchanged.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { flushPromises, mount } from "@vue/test-utils";
 import { reactive } from "vue";
 import { createPinia, setActivePinia } from "pinia";
@@ -187,5 +189,31 @@ describe("Settings phone navigation density (#1148)", () => {
     });
 
     wrapper.unmount();
+  });
+});
+
+describe("Settings phone scroll containers keep focus rings visible (#1148)", () => {
+  const css = readFileSync(resolve(__dirname, "../src/style.css"), "utf8");
+
+  // A scroll container clips at its padding box, so a focus ring at +2px never
+  // paints on the first/last item. Every focusable row we put inside one must
+  // draw its ring inside the control.
+  const cases = [
+    {
+      name: "phone tab rail",
+      rule: /\.settings-mobile-nav-btn:focus-visible\s*\{[^}]*outline-offset:\s*-2px/s,
+    },
+    {
+      name: "phone section list",
+      rule: /\.settings-section-nav--phone \.settings-section-chip:focus-visible\s*\{[^}]*outline-offset:\s*-2px/s,
+    },
+  ];
+
+  it.each(cases)("keeps the $name ring inside the scrolling padding box", ({ rule }) => {
+    expect(css).toMatch(rule);
+  });
+
+  it("leaves the non-scrolling desktop chip ring outside the control", () => {
+    expect(css).toMatch(/\.settings-section-chip:focus-visible\s*\{[^}]*outline-offset:\s*2px/s);
   });
 });
