@@ -1,11 +1,25 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
+import { ref, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useAuthStore } from "../stores/auth";
+import RepoLogoMark from "../components/RepoLogoMark.vue";
+import { readHubShellSession, returnToHubServerPicker } from "../lib/hub-shell";
 
 const route = useRoute();
 const router = useRouter();
 const auth = useAuthStore();
+
+/**
+ * The login screen is part of the connected server, so an expired session must
+ * not trap the user in the native WebView (#1152). When the Hub context is
+ * remembered, the existing login logo doubles as the return-to-picker action.
+ */
+const hubSession = readHubShellSession();
+
+function onLogoActivate(): void {
+  if (!hubSession) return;
+  void returnToHubServerPicker(hubSession);
+}
 
 // Auth status
 const authEnabled = ref(false);
@@ -166,21 +180,18 @@ function googleLogin(): void {
   <div class="login-page">
     <div class="login-card">
       <div class="login-header">
-        <div class="login-logo">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-            <path
-              d="M12 2L4 7v10l8 5 8-5V7l-8-5z"
-              stroke="var(--cyan)"
-              stroke-width="2"
-              stroke-linejoin="round"
-            />
-            <path
-              d="M12 7v10M8 9.5v5M16 9.5v5"
-              stroke="var(--violet)"
-              stroke-width="1.5"
-              stroke-linecap="round"
-            />
-          </svg>
+        <button
+          v-if="hubSession"
+          type="button"
+          class="login-logo login-logo-button"
+          aria-label="Return to RepoOS Hub server picker"
+          data-testid="login-return-to-picker"
+          @click="onLogoActivate"
+        >
+          <RepoLogoMark :size="20" />
+        </button>
+        <div v-else class="login-logo" aria-hidden="true">
+          <RepoLogoMark :size="20" />
         </div>
         <div>
           <h1>RepoOS</h1>
@@ -380,6 +391,19 @@ function googleLogin(): void {
 .login-logo svg {
   position: relative;
   z-index: 1;
+}
+
+.login-logo-button {
+  border: 0;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.login-logo-button:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 3px;
 }
 
 .login-header h1 {

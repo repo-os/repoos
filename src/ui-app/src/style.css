@@ -590,16 +590,36 @@
   .topbar {
     gap: 6px;
     padding: 0 8px;
+    min-width: 0;
   }
-  /* The search pill grows into the space the desktop spacer used; a 44px floor
-     keeps it a valid touch target at 360px. */
+  /* The project chip grows into the space the desktop spacer used; the search
+     becomes a compact 44x44 icon button so the name stays visible (#1152). */
   .topbar .spacer {
     display: none;
   }
   .search-wrap {
-    flex: 1 1 44px;
-    max-width: none;
+    flex: 0 0 44px;
+    width: 44px;
+    max-width: 44px;
     min-width: 44px;
+  }
+  .search-input {
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    justify-content: center;
+  }
+  .search-placeholder,
+  .search-input kbd {
+    display: none;
+  }
+  /* The phone bar is already at its width budget and a preview capture still
+     sets the marker; it is developer chrome, not a user action, so keep it off
+     narrow screens rather than letting it crowd the project name (#1152).
+     Scoped to `.topbar` so it beats the later base `.preview-build-banner`
+     rule by specificity, not source order. */
+  .topbar .preview-build-banner {
+    display: none;
   }
 }
 /* A touch device has no keyboard-shortcut affordance: hide the ⌘K chip in the

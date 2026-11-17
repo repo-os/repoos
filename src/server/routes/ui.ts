@@ -1,6 +1,7 @@
 import type { RouteContext, RouteHandler } from "./types.js";
 import { serveStaticUi, UI_MIME } from "./helpers.js";
 import { projectDisplayName } from "../../core/config.js";
+import { HUB_RETURN_PATH } from "../../core/hub-return.js";
 
 /** Read the optional repo color from the `c` query param, or null when absent/invalid. */
 function colorFromUrl(req: { url?: string }): string | null {
@@ -155,6 +156,55 @@ export const serveStaticFile: RouteHandler = (ctx, _req, res, params) => {
     res.writeHead(404, { "Content-Type": "text/plain" });
     res.end("Not found");
   }
+};
+
+/**
+ * Landing page for the native Hub's "return to server picker" navigation
+ * (#1152). The shell watches for this exact path in its existing WebView
+ * navigation event and closes back to the picker; the page exists so that
+ * navigation completes instantly without booting the SPA. It carries no
+ * scripts, no data and no auth, and is safe to serve publicly.
+ */
+export const serveHubReturn: RouteHandler = (_ctx, _req, res) => {
+  res.writeHead(200, {
+    "Content-Type": "text/html; charset=utf-8",
+    "Cache-Control": "no-store",
+    "Access-Control-Allow-Origin": "*",
+    "Content-Security-Policy":
+      "default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+    "X-Robots-Tag": "noindex",
+  });
+  res.end(`<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>Returning to RepoOS Hub</title>
+    <style>
+      :root { color-scheme: light dark; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+        background: Canvas;
+        color: CanvasText;
+        font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+        text-align: center;
+      }
+      p { margin: 0; }
+      small { display: block; margin-top: 8px; opacity: 0.7; }
+    </style>
+  </head>
+  <body>
+    <div>
+      <p>Returning to RepoOS Hub\u2026</p>
+      <small>If nothing happens, reopen the server from the Hub server picker.</small>
+    </div>
+  </body>
+</html>`);
 };
 
 // Icon rendering function - will be called from main server with the repo's

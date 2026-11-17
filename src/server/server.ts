@@ -111,6 +111,7 @@ import { countEngineerCapUsage } from "../core/engineer-slot.js";
 import { shouldRunAutomaticTaskLifecycle } from "./task-transitions.js";
 import { readBuildMeta } from "../core/build.js";
 import { injectBuildHashIntoUiIndex } from "../core/ui-index.js";
+import { HUB_RETURN_PATH } from "../core/hub-return.js";
 import { createRepoOS } from "../core/repoos.js";
 import { ensureInputNumbers } from "../core/input.js";
 import { ensureStoryNumbers } from "../core/story-definition-files.js";
@@ -528,6 +529,7 @@ import {
   serveManifest,
   serveAppleTouchIcon,
   serveIcon,
+  serveHubReturn,
   setIconRenderer,
   // Auth routes
   authStatus,
@@ -4452,6 +4454,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
 
   // UI routes
   router.register("GET", "/manifest.webmanifest", serveManifest);
+  router.register("GET", HUB_RETURN_PATH, serveHubReturn);
   router.register("GET", "/apple-touch-icon.png", serveAppleTouchIcon);
   router.register("GET", "/apple-touch-icon-precomposed.png", serveAppleTouchIcon);
   router.register("GET", /^\/icons\/icon-(\d+)\.png$/, serveIcon);
@@ -4514,6 +4517,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           "/manifest.webmanifest",
           "/apple-touch-icon.png",
           "/apple-touch-icon-precomposed.png",
+          // The native Hub's return-to-picker navigation must land even if the
+          // server session expired while the WebView was open (#1152).
+          HUB_RETURN_PATH,
         ];
         const isPublicRoute =
           PUBLIC_PREFIXES.some((p) => path.startsWith(p)) ||
