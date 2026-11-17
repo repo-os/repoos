@@ -131,6 +131,7 @@ describe("repoos servers --tailscale", () => {
         }),
       annotateUrls: false,
       remoteExec,
+      httpDiscovery: async () => null,
     });
 
     expect(result.servers).toEqual([
