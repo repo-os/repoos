@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/mobile-web-reduce-page-clutter-and-fix-m
 created_at: "2026-11-17T02:52:23Z"
-updated_at: "2026-11-17T03:18:56Z"
+updated_at: "2026-11-17T03:23:37Z"
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-11-17T03:01:13.692Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -49,3 +49,4 @@ On a phone, page headings and content start at a consistent left edge, essential
 - 2026-11-17T03:01:13Z · engineer crash recovery: resuming opencode + opencode-go/deepseek-v4.1-flash (1/3 crashes in 30m) · the agent process exited with an error — open the task to see the full output. Open Raw CLI error for details. (CLI: the agent process exited with an error — open the task to see the full output)
 - 2026-11-17T03:01:15Z · needs_input
 - 2026-11-17T03:18:56Z · body
+- 2026-11-17T03:23:37Z · body
