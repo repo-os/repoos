@@ -329,6 +329,7 @@ import {
 } from "./notifications/index.js";
 import { AgentSupervisor } from "./supervisor.js";
 import { TaskWatchdog } from "./task-watchdog.js";
+import { startTailnetDiscoveryListener } from "./tailnet-discovery-listener.js";
 import { startProviderUsageLimitProbes } from "./provider-usage-limit-probe.js";
 import {
   bootstrapTelegramAtBoot,
@@ -567,6 +568,7 @@ import {
   hubTaskSearch,
   // Tailnet discovery for the native Hub (#1127)
   getTailnetServers,
+  getTailnetPeerDiscovery,
   // Machine-local allowlist groups and their tailnet propagation (#1132)
   getAllowlistGroup,
   mutateAllowlistGroup,
@@ -1665,6 +1667,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
                 runningServerRegistry.port,
                 fresh.root,
                 fresh.budget?.allowlistGroup,
+                fresh.tailnetDiscovery,
               );
             } catch (e) {
               logServerRegistryError(logger, "refresh", e);
@@ -4451,9 +4454,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("POST", /^\/api\/auth\/hub-capabilities\/([^/]+)\/rotate$/, rotateHubCapability);
   router.register("GET", "/api/hub/v1/summary", hubSummary);
   router.register("GET", "/api/hub/v1/tasks/search", hubTaskSearch);
-  // Server-assisted tailnet discovery (#1127) — authenticated like every other
-  // /api route; the mobile Hub asks a trusted server instead of scanning.
+  // Server-assisted tailnet discovery (#1127).
   router.register("GET", "/api/servers/tailnet", getTailnetServers);
+  router.register("GET", "/api/servers/discovery", getTailnetPeerDiscovery);
 
   // Background service management routes (0185)
   router.register("GET", "/api/service/status", getServiceStatusRoute);
@@ -4530,6 +4533,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           "/api/release/email/unsubscribe",
         ];
         const PUBLIC_PATHS = [
+          "/api/servers/discovery",
           "/login",
           "/manifest.webmanifest",
           "/apple-touch-icon.png",
@@ -4943,6 +4947,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
             root: config.root,
             version: readBuildMeta().version ?? "unknown",
             allowlistGroup: config.budget?.allowlistGroup,
+            tailnetDiscovery: config.tailnetDiscovery,
             startedAt: serverStartedAt,
           });
           runningServerRegistry = {
@@ -4964,6 +4969,13 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           logServerRegistryError(logger, "register", e);
         }
       }
+      const stopTailnetDiscovery = registerInServerRegistry
+        ? startTailnetDiscoveryListener((error) =>
+            logger.system("warn", "Tailnet discovery listener failed", {
+              error: error instanceof Error ? error.message : String(error),
+            }),
+          )
+        : () => {};
       const handle: ServerHandle = {
         url,
         port: actualPort,
@@ -5064,6 +5076,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
             runningServerRegistry = null;
           }
           reaper.unregister();
+          stopTailnetDiscovery();
           await closeHttp();
           if (isControlPlane) {
             logger.system("info", "RepoOS control plane stopped", {

@@ -3,8 +3,9 @@
  * `GET /api/servers/tailnet` endpoint the mobile Hub calls.
  *
  * Discovery runs entirely on the machine that owns the trust relationship: the
- * Tailscale CLI lists online peers, and each peer is asked over SSH for its
- * `repoos servers --json`. The phone never scans or broadcasts — it asks one
+ * Tailscale CLI lists online peers, and each peer is queried over a listener
+ * bound to its Tailnet interface before falling back to SSH for older
+ * installations. The phone never scans — it asks one
  * server it already trusts. Keeping this in `src/core` means the CLI and the
  * server cannot drift into two slightly different discovery implementations.
  */
@@ -16,9 +17,13 @@ import type { RemoteValidationConfig, RemoteValidationHost } from "./types.js";
 const execFileAsync = promisify(execFile);
 
 /** Per-command budget for one remote host. */
-export const HOST_TIMEOUT_MS = 4_000;
+export const HOST_TIMEOUT_MS = 8_000;
 /** Whole-request budget for one discovery pass; slow hosts become `unreachable`. */
-export const DISCOVERY_DEADLINE_MS = 8_000;
+export const DISCOVERY_DEADLINE_MS = 25_000;
+/** Machine-level HTTP endpoint bound directly to the Tailscale interface. */
+export const TAILNET_DISCOVERY_PORT = 41641;
+/** Leave time for the peer listener's local Tailscale URL enrichment. */
+const HTTP_DISCOVERY_TIMEOUT_MS = 7_000;
 /** `tailscale status --json` is local and cheap; never let it hold a request. */
 const TAILSCALE_STATUS_TIMEOUT_MS = 2_000;
 /** URL enrichment is a nicety; a slow `serve status` must not hide servers. */
@@ -50,6 +55,7 @@ interface TailnetStatusPeer {
   DNSName?: string;
   Online?: boolean;
   OS?: string;
+  Tags?: string[];
 }
 
 interface TailnetStatus {
@@ -88,7 +94,16 @@ const DNS_LABEL_RE = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/i;
 const UNSUPPORTED_MOBILE_OS = new Set(["android", "ios", "ipados", "tvos", "watchos"]);
 
 function isUnsupportedMobilePeer(peer: TailnetStatusPeer): boolean {
-  return UNSUPPORTED_MOBILE_OS.has((peer.OS ?? "").trim().toLowerCase());
+  const os = (peer.OS ?? "").trim().toLowerCase();
+  const name = `${peer.HostName ?? ""} ${peer.DNSName ?? ""}`.trim().toLowerCase();
+  const tags = peer.Tags ?? [];
+  return (
+    UNSUPPORTED_MOBILE_OS.has(os) ||
+    /\b(?:nothing[- ]phone(?:\b|\s*\()|iphone\b|ipad\b|pixel[- ](?:phone|tablet)\b|galaxy[- ](?:phone|tab)\b|android[- ]phone\b)/.test(
+      name,
+    ) ||
+    tags.some((tag) => /(?:mobile|phone|tablet)/i.test(tag))
+  );
 }
 
 /** Normalize a MagicDNS name and reject anything that is not DNS-safe. */
@@ -441,6 +456,14 @@ export function remoteFailureReason(error: unknown): string {
   return classifyRemoteFailure(error).reason;
 }
 
+/** Plain fixes for the Hub's collapsed machine-failure group. */
+export function tailnetPeerFailureReason(error: unknown, host: string): string {
+  const failure = classifyRemoteFailure(error);
+  if (/SSH authentication failed/i.test(failure.reason)) return `no SSH key from ${host}`;
+  if (/connection refused/i.test(failure.reason)) return `SSH is off on ${host}`;
+  return failure.reason;
+}
+
 export const defaultRemoteExec: RemoteExec = async (host, user, timeoutMs, command) => {
   const { stdout } = await execFileAsync("ssh", serversSshArgs(host, user, timeoutMs, command), {
     timeout: timeoutMs,
@@ -465,6 +488,21 @@ async function defaultTailscaleServeStatus(): Promise<string> {
   return stdout.toString();
 }
 
+/** Local HTTPS mappings used by this machine-level discovery listener. */
+export async function localTailnetServeUrls(): Promise<Record<number, string>> {
+  const [statusJson, serveJson] = await Promise.all([
+    defaultTailscaleStatus().catch(() => "{}"),
+    defaultTailscaleServeStatus().catch(() => "{}"),
+  ]);
+  const status = JSON.parse(statusJson) as { Self?: TailnetStatusPeer };
+  const self = peerFromStatus(status.Self);
+  const serveUrls = parseTailscaleServeUrls(serveJson);
+  // The Serve status keys already contain the machine's canonical TLS name.
+  // Reading status here also ensures the endpoint is only advertised by a
+  // machine that has a live Tailscale identity.
+  return self ? serveUrls : {};
+}
+
 /** Resolve `promise`, or `fallback()` once `ms` elapses. Never rejects. */
 async function within<T>(promise: Promise<T>, ms: number, fallback: () => T): Promise<T> {
   let timer: ReturnType<typeof setTimeout> | undefined;
@@ -487,6 +525,8 @@ export interface CollectTailnetOptions {
   remoteHosts?: RemoteValidationHost[];
   remoteValidation?: RemoteValidationConfig;
   remoteExec?: RemoteExec;
+  /** Test seam for peer HTTP discovery; default uses fetch with an abort timeout. */
+  httpDiscovery?: (peer: TailnetPeer, timeoutMs: number) => Promise<string | null>;
   /** Per-remote-command budget. Defaults to {@link HOST_TIMEOUT_MS}. */
   timeoutMs?: number;
   /** Whole-pass budget. Defaults to {@link DISCOVERY_DEADLINE_MS}. */
@@ -495,6 +535,35 @@ export interface CollectTailnetOptions {
   annotateUrls?: boolean;
   /** Test seam for the deadline clock. */
   now?: () => number;
+}
+
+export async function defaultHttpDiscovery(
+  peer: TailnetPeer,
+  timeoutMs: number,
+): Promise<string | null> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch(
+      `http://${peer.dnsName ?? peer.host}:${TAILNET_DISCOVERY_PORT}/api/servers/discovery`,
+      { signal: controller.signal, headers: { Accept: "application/json" } },
+    );
+    if (!response.ok) return null;
+    const text = await response.text();
+    const payload = JSON.parse(text) as {
+      discoveryVersion?: number;
+      disabled?: boolean;
+      servers?: unknown[];
+    };
+    return payload.discoveryVersion === 1 &&
+      (payload.disabled === true || Array.isArray(payload.servers))
+      ? text
+      : null;
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 export interface TailnetCollection {
@@ -595,6 +664,49 @@ export async function collectTailnetServers(
         : hostConfig.user?.trim() || "root";
       const work = async (): Promise<ListedServer[]> => {
         try {
+          const discovered = await (options.httpDiscovery ?? defaultHttpDiscovery)(
+            peer,
+            Math.min(timeoutMs, HTTP_DISCOVERY_TIMEOUT_MS),
+          );
+          if (discovered) {
+            let payload: {
+              discoveryVersion?: number;
+              disabled?: boolean;
+              servers?: Record<string, unknown>[];
+            } | null = null;
+            try {
+              payload = JSON.parse(discovered) as {
+                discoveryVersion?: number;
+                disabled?: boolean;
+                servers?: Record<string, unknown>[];
+              };
+            } catch {
+              /* non-RepoOS service: try SSH */
+            }
+            if (payload?.discoveryVersion === 1) {
+              if (payload.disabled)
+                return [
+                  {
+                    host: peer.host,
+                    ...(peer.dnsName ? { dnsName: peer.dnsName } : {}),
+                    ...displayFields,
+                    unreachable: true,
+                    reason: "tailnet discovery is turned off on this machine",
+                  },
+                ];
+              if (Array.isArray(payload.servers)) {
+                return payload.servers.map((server) => ({
+                  ...server,
+                  host: peer.host,
+                  ...(peer.dnsName ? { dnsName: peer.dnsName } : {}),
+                  ...displayFields,
+                  ...(typeof server.url === "string"
+                    ? { https: server.url.startsWith("https://") }
+                    : {}),
+                })) as ListedServer[];
+              }
+            }
+          }
           // The two reads are independent; running them together keeps a host
           // inside the per-host budget instead of spending it twice.
           const [serversJson, serveJson] = await Promise.all([
@@ -638,7 +750,7 @@ export async function collectTailnetServers(
               host: peer.host,
               ...displayFields,
               unreachable: true,
-              reason: remoteFailureReason(error),
+              reason: tailnetPeerFailureReason(error, peer.host),
             },
           ];
         }

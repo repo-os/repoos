@@ -4,6 +4,12 @@ import {
   buildTailnetDiscoveryPayload,
   DISCOVERY_DISABLED_REASON,
 } from "../../server/routes/servers.js";
+import {
+  defaultHttpDiscovery,
+  parseTailnetInfo,
+  tailnetPeerFailureReason,
+  TAILNET_DISCOVERY_PORT,
+} from "../../core/tailnet-servers.js";
 
 const config = (
   over: Partial<RepoOSConfig> = {},
@@ -24,6 +30,56 @@ const status = () =>
   });
 
 describe("GET /api/servers/tailnet", () => {
+  it("probes the machine discovery endpoint on the shared port and accepts only version 1", async () => {
+    const fetchSpy = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(
+        new Response(JSON.stringify({ discoveryVersion: 1, servers: [{ port: 7171 }] })),
+      );
+    await expect(
+      defaultHttpDiscovery({ host: "bee", dnsName: "bee.tail.ts.net" }, 500),
+    ).resolves.toContain('"discoveryVersion":1');
+    expect(fetchSpy).toHaveBeenCalledWith(
+      `http://bee.tail.ts.net:${TAILNET_DISCOVERY_PORT}/api/servers/discovery`,
+      expect.objectContaining({ headers: { Accept: "application/json" } }),
+    );
+    fetchSpy.mockRestore();
+  });
+
+  it.each([
+    [
+      Object.assign(new Error("Permission denied (publickey)."), {
+        stderr: "Permission denied (publickey).",
+      }),
+      "thinkpad",
+      "no SSH key from thinkpad",
+    ],
+    [
+      Object.assign(new Error("connect: Connection refused"), {
+        stderr: "ssh: connect to host muse port 22: Connection refused",
+      }),
+      "muse",
+      "SSH is off on muse",
+    ],
+  ])("explains SSH failures with a plain fix", (failure, host, expected) => {
+    expect(tailnetPeerFailureReason(failure, host)).toBe(expected);
+  });
+
+  it("filters mobile devices by OS or device model without dropping generic phone-named servers", () => {
+    const info = parseTailnetInfo(
+      JSON.stringify({
+        Peer: {
+          nothing: { HostName: "Nothing Phone (3a)", DNSName: "nothing.tail.ts.net", Online: true },
+          dnsPhone: { HostName: "nothing", DNSName: "nothing-phone.tail.ts.net", Online: true },
+          ios: { HostName: "ipad", OS: "iOS", Online: true },
+          tagged: { HostName: "companion", OS: "linux", Tags: ["tag:mobile"], Online: true },
+          server: { HostName: "phone-01", OS: "linux", Online: true },
+        },
+      }),
+    );
+    expect(info.peers.map((peer) => peer.host)).toEqual(["phone-01"]);
+  });
+
   it("lists local and remote servers with HTTPS MagicDNS URLs and partial failures", async () => {
     const remoteExec = vi.fn(
       async (host: string, _user: string, _timeout: number, command?: string) => {
@@ -57,6 +113,7 @@ describe("GET /api/servers/tailnet", () => {
           },
         }),
       remoteExec,
+      httpDiscovery: async () => null,
       deadlineMs: 50,
     });
 
@@ -140,6 +197,7 @@ describe("GET /api/servers/tailnet", () => {
           },
         }),
       remoteExec,
+      httpDiscovery: async () => null,
     });
 
     expect(payload.servers).toEqual([
@@ -184,6 +242,7 @@ describe("GET /api/servers/tailnet", () => {
         if (command === "tailscale serve status --json") return "{}";
         return JSON.stringify({ servers: [{ port: 7499, projectName: "plain" }] });
       },
+      httpDiscovery: async () => null,
     });
 
     expect(payload.servers).toEqual([
@@ -213,13 +272,40 @@ describe("GET /api/servers/tailnet", () => {
           throw new Error("tailscale: not found");
         },
         remoteExec,
+        httpDiscovery: async () => null,
       },
     );
 
     expect(payload.tailscaleUnavailable).toBe(true);
     expect(payload.discoverySource).toBe("configured-hosts");
     expect(payload.servers).toEqual([]);
-    expect(remoteExec).toHaveBeenCalledWith("bee", "root", 4_000, "repoos servers --json");
+    expect(remoteExec).toHaveBeenCalledWith("bee", "root", 8_000, "repoos servers --json");
+  });
+
+  it("omits opted-out sibling projects from local tailnet results", async () => {
+    const payload = await buildTailnetDiscoveryPayload(config(), {
+      registryRows: async () =>
+        [
+          {
+            entry: { port: 7171, projectName: "hidden", tailnetDiscovery: false },
+            valid: true,
+            uptimeSeconds: 10,
+          },
+          {
+            entry: { port: 7172, projectName: "visible" },
+            valid: true,
+            uptimeSeconds: 20,
+          },
+        ] as never,
+      tailscaleStatus: async () => {
+        throw new Error("tailscale: not found");
+      },
+      remoteExec: async () => JSON.stringify({ servers: [] }),
+      deadlineMs: 100,
+    });
+    expect(
+      payload.servers.filter((row) => row.host === "local").map((row) => row.projectName),
+    ).toEqual(["visible"]);
   });
 
   it("refuses to run discovery when the server owner turned it off", async () => {
@@ -229,6 +315,7 @@ describe("GET /api/servers/tailnet", () => {
       localRows: [],
       tailscaleStatus: statusSpy,
       remoteExec,
+      httpDiscovery: async () => null,
     });
 
     expect(payload).toEqual({
@@ -239,6 +326,77 @@ describe("GET /api/servers/tailnet", () => {
       reason: DISCOVERY_DISABLED_REASON,
     });
     expect(statusSpy).not.toHaveBeenCalled();
+    expect(remoteExec).not.toHaveBeenCalled();
+  });
+
+  it("discovers peer projects over HTTPS without invoking SSH", async () => {
+    const remoteExec = vi.fn(async () => {
+      throw new Error("SSH must not run");
+    });
+    const payload = await buildTailnetDiscoveryPayload(config(), {
+      localRows: [],
+      tailscaleStatus: async () =>
+        JSON.stringify({
+          Peer: {
+            bee: { HostName: "bee", DNSName: "bee.tail.ts.net.", OS: "linux", Online: true },
+          },
+        }),
+      httpDiscovery: async (peer) =>
+        peer.host === "bee"
+          ? JSON.stringify({
+              discoveryVersion: 1,
+              servers: [
+                {
+                  projectName: "api",
+                  port: 7171,
+                  root: "/srv/api",
+                  valid: true,
+                  allowlistGroup: "agents",
+                  url: "https://bee.tail.ts.net",
+                },
+              ],
+            })
+          : null,
+      remoteExec,
+    });
+    expect(payload.servers).toEqual([
+      {
+        host: "bee",
+        dnsName: "bee.tail.ts.net",
+        projectName: "api",
+        root: "/srv/api",
+        valid: true,
+        allowlistGroup: "agents",
+        port: 7171,
+        url: "https://bee.tail.ts.net",
+        https: true,
+      },
+    ]);
+    expect(remoteExec).not.toHaveBeenCalled();
+  });
+
+  it("keeps a peer that disabled discovery in the collapsed machine-failure results", async () => {
+    const remoteExec = vi.fn(async () => {
+      throw new Error("SSH should not run for a current peer endpoint");
+    });
+    const payload = await buildTailnetDiscoveryPayload(config(), {
+      localRows: [],
+      tailscaleStatus: async () =>
+        JSON.stringify({
+          Peer: { bee: { HostName: "bee", DNSName: "bee.tail.ts.net", Online: true } },
+        }),
+      httpDiscovery: async () =>
+        JSON.stringify({ discoveryVersion: 1, disabled: true, servers: [] }),
+      remoteExec,
+    });
+    expect(payload.servers).toEqual([
+      {
+        host: "bee",
+        dnsName: "bee.tail.ts.net",
+        unreachable: true,
+        reason: "tailnet discovery is turned off on this machine",
+      },
+    ]);
     expect(remoteExec).not.toHaveBeenCalled();
   });
 });

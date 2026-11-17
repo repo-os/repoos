@@ -22,10 +22,12 @@ import { listValidatedServerRegistry } from "../../core/server-registry.js";
 import {
   collectTailnetServers,
   DISCOVERY_DEADLINE_MS,
+  localTailnetServeUrls,
   type CollectTailnetOptions,
   type ListedServer,
 } from "../../core/tailnet-servers.js";
 import type { RepoOSConfig } from "../../core/types.js";
+import type { IncomingMessage } from "node:http";
 
 export const DISCOVERY_DISABLED_REASON =
   "Tailnet discovery is turned off on this server. Add a server manually, or enable it in Settings.";
@@ -49,10 +51,13 @@ export interface TailnetDiscoveryPayload {
 export interface TailnetDiscoveryDeps {
   /** Test seam: replace the registry-backed local server list. */
   localRows?: ListedServer[];
+  /** Test seam for per-project registry settings used to build local rows. */
+  registryRows?: () => Promise<Awaited<ReturnType<typeof listValidatedServerRegistry>>>;
   /** Test seams passed straight to `collectTailnetServers`. */
   tailscaleStatus?: () => Promise<string>;
   localServeStatus?: () => Promise<string>;
   remoteExec?: CollectTailnetOptions["remoteExec"];
+  httpDiscovery?: CollectTailnetOptions["httpDiscovery"];
   deadlineMs?: number;
   now?: () => number;
 }
@@ -77,22 +82,24 @@ export async function buildTailnetDiscoveryPayload(
 
   const localRows =
     deps.localRows ??
-    (await listValidatedServerRegistry()).map((row): ListedServer => ({
-      host: "local",
-      port: row.entry.port,
-      pid: row.entry.pid,
-      root: row.entry.root,
-      projectName: row.entry.projectName,
-      version: row.entry.version,
-      startedAt: row.entry.startedAt,
-      activeEngineers: row.entry.activeEngineers ?? 0,
-      engineersUpdatedAt: row.entry.engineersUpdatedAt ?? null,
-      allowlistGroup: row.entry.allowlistGroup,
-      uptimeSeconds: row.uptimeSeconds,
-      valid: row.valid,
-      staleReason: row.staleReason,
-      healthRoot: row.healthRoot,
-    }));
+    (await (deps.registryRows ?? listValidatedServerRegistry)())
+      .filter((row) => row.entry.tailnetDiscovery !== false)
+      .map((row): ListedServer => ({
+        host: "local",
+        port: row.entry.port,
+        pid: row.entry.pid,
+        root: row.entry.root,
+        projectName: row.entry.projectName,
+        version: row.entry.version,
+        startedAt: row.entry.startedAt,
+        activeEngineers: row.entry.activeEngineers ?? 0,
+        engineersUpdatedAt: row.entry.engineersUpdatedAt ?? null,
+        allowlistGroup: row.entry.allowlistGroup,
+        uptimeSeconds: row.uptimeSeconds,
+        valid: row.valid,
+        staleReason: row.staleReason,
+        healthRoot: row.healthRoot,
+      }));
 
   const remoteHosts = resolveRemoteHosts(config.remoteValidation);
   const result = await collectTailnetServers(localRows, {
@@ -104,6 +111,7 @@ export async function buildTailnetDiscoveryPayload(
     ...(deps.tailscaleStatus ? { tailscaleStatus: deps.tailscaleStatus } : {}),
     ...(deps.localServeStatus ? { localServeStatus: deps.localServeStatus } : {}),
     ...(deps.remoteExec ? { remoteExec: deps.remoteExec } : {}),
+    ...(deps.httpDiscovery ? { httpDiscovery: deps.httpDiscovery } : {}),
     ...(deps.now ? { now: deps.now } : {}),
   });
 
@@ -118,3 +126,66 @@ export async function buildTailnetDiscoveryPayload(
 export const getTailnetServers: RouteHandler = async (ctx, _req, res) => {
   return json(res, 200, await buildTailnetDiscoveryPayload(ctx.config));
 };
+
+function normalizedAddress(value: string | undefined): string {
+  return (value ?? "")
+    .trim()
+    .replace(/^::ffff:/, "")
+    .toLowerCase();
+}
+
+function isTailnetAddress(address: string): boolean {
+  if (address.startsWith("fd7a:115c:a1e0:")) return true;
+  const octets = address.split(".").map(Number);
+  return (
+    octets.length === 4 &&
+    octets.every((part) => Number.isInteger(part) && part >= 0 && part <= 255) &&
+    octets[0] === 100 &&
+    octets[1] >= 64 &&
+    octets[1] <= 127
+  );
+}
+
+/** Validate the direct socket address; forwarded or loopback requests are never trusted. */
+export function isTailnetPeerDiscoveryRequest(req: IncomingMessage): boolean {
+  const socketAddress = normalizedAddress(req.socket.remoteAddress);
+  return isTailnetAddress(socketAddress);
+}
+
+export interface TailnetPeerDiscoveryHandlerDeps {
+  listRows?: typeof listValidatedServerRegistry;
+  serveUrls?: typeof localTailnetServeUrls;
+}
+
+/** Small, credential-free payload used only by a direct Tailnet peer request. */
+export function createTailnetPeerDiscoveryHandler(
+  deps: TailnetPeerDiscoveryHandlerDeps = {},
+): RouteHandler {
+  return async (_ctx, req, res) => {
+    if (!isTailnetPeerDiscoveryRequest(req))
+      return json(res, 403, { ok: false, error: "Tailnet access required." });
+    const rows = await (deps.listRows ?? listValidatedServerRegistry)();
+    const httpsByPort: Record<number, string> = await (
+      deps.serveUrls ?? localTailnetServeUrls
+    )().catch(() => ({}));
+    const servers = rows
+      // The listener is machine-wide; each project stores its own opt-out.
+      .filter((row) => row.valid && row.entry.tailnetDiscovery !== false)
+      .map((row) => ({
+        host: "local",
+        projectName: row.entry.projectName,
+        port: row.entry.port,
+        root: row.entry.root,
+        allowlistGroup: row.entry.allowlistGroup,
+        valid: row.valid,
+        ...(httpsByPort[row.entry.port] ? { url: httpsByPort[row.entry.port], https: true } : {}),
+      }));
+    return json(res, 200, {
+      ok: true,
+      discoveryVersion: 1,
+      ...(servers.length ? { servers } : { disabled: true, reason: DISCOVERY_DISABLED_REASON }),
+    });
+  };
+}
+
+export const getTailnetPeerDiscovery = createTailnetPeerDiscoveryHandler();

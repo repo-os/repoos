@@ -634,8 +634,9 @@ export interface RepoOSConfig {
    * Allow a signed-in RepoOS Hub client (mobile) to ask this server for the
    * RepoOS servers it can see on the owner's Tailscale tailnet, via
    * `GET /api/servers/tailnet`. On by default; `false` makes the endpoint
-   * refuse without running discovery. Discovery itself happens on this server
-   * (Tailscale CLI + SSH), never on the phone.
+   * refuse without running discovery. This server probes online peers over
+   * its tailnet discovery listener, with SSH fallback for older RepoOS servers;
+   * the phone never scans the network. `false` hides this project's registry row.
    */
   tailnetDiscovery?: boolean;
   /**

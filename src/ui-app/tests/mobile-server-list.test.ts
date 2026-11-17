@@ -224,4 +224,28 @@ describe("mobile tailnet discovery message", () => {
     expect(results.find('[data-testid="hub-discovery-add-manual"]').exists()).toBe(false);
     expect(results.find('[data-testid="hub-add-discovered"]').exists()).toBe(true);
   });
+
+  it("shows failed machines only inside the collapsed failure group", () => {
+    const wrapper = mountDiscovery({
+      servers: [
+        {
+          key: "unreachable:muse",
+          url: "",
+          name: "muse",
+          host: "muse",
+          https: false,
+          saved: false,
+          selectable: false,
+          note: "Unreachable — SSH is off on muse",
+        },
+      ],
+    });
+    const group = wrapper.find('[data-testid="hub-tailnet-failures"]');
+    expect(group.exists()).toBe(true);
+    expect((group.element as HTMLDetailsElement).open).toBe(false);
+    expect(group.text()).toContain("Couldn't check these machines (1)");
+    expect(group.text()).toContain("SSH is off on muse");
+    expect(wrapper.find('[data-testid="hub-tailnet-result"]').exists()).toBe(false);
+    expect(wrapper.text()).not.toContain("Every server found is already saved");
+  });
 });
