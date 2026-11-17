@@ -11,7 +11,7 @@ branch: feat/qa-pass-use-the-repoos-web-app-on-deskto
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T15:21:15Z"
-updated_at: "2026-11-17T21:25:00Z"
+updated_at: "2026-11-17T21:40:43Z"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/agent-review.test.ts > agent review before human sign-off (#0101) > gates follow-up creation before the freeze and rejects Land anyway without an eligible review on thinkpad — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: 121f350123544f935cc91124afd200aede44bb8e
 review_rounds: 2
@@ -216,3 +216,4 @@ Start with the Work page at 390px and the bottom dock/heads/pipeline bar overlap
 - 2026-11-17T21:25:00Z · queued message undelivered for 12m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-17T21:25:00Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code unknown) · last assistant: The required check has started against checkpoint `e325abd`, including the new browser geometry test. The remote build is underway; no new failure has appeared so far. · stderr: (empty)
 - 2026-11-17T21:25:00Z · message_delivered: 1 message(s)
+- 2026-11-17T21:40:43Z · message_queued at 2026-11-17T21:40:43.145Z
