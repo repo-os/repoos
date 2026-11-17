@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/mobile-hub-return-to-server-picker-from-
 created_at: "2026-11-17T05:37:20Z"
-updated_at: "2026-11-17T06:48:47Z"
+updated_at: "2026-11-17T06:48:48Z"
 handoff_signal_retry_count: 2
 ---
 ## Problem
@@ -74,3 +74,4 @@ Inspect the existing Hub server WebView architecture and navigation security bef
 - 2026-11-17T06:46:56Z · needs_input
 - 2026-11-17T06:46:56Z · message_delivered: 1 message(s)
 - 2026-11-17T06:48:47Z · queued message undelivered for 16m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-17T06:48:48Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 130) · last assistant: Implementation and focused tests are in place, and both the web UI and mobile web bundles build. Now I'm running the scoped gate. · stderr: (empty)
