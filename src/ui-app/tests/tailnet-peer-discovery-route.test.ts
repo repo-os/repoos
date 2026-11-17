@@ -177,7 +177,7 @@ describe("GET /api/servers/discovery", () => {
     } as AllowlistGroup;
     await propagateAllowlistGroup(group, members, "air", {
       remoteExec: async (_host, _user, _timeout, command) => {
-        commands.push(command);
+        commands.push(command ?? "");
         return JSON.stringify({ applied: true });
       },
     });
