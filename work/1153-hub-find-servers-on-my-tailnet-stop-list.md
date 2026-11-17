@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: "check|repoos check failed: tests — ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯"
+last_handoff_failure_sha: 94e5e304643bc47fafe6924ef6a9cc8f16822ba9
 id: "1153"
 title: "Hub 'Find servers on my tailnet': stop listing bare machines, hide phones, explain failures, and replace SSH discovery with an HTTPS-based one"
 type: bug
@@ -102,3 +104,4 @@ Do not add runtime dependencies. The discovery endpoint exposes names/ports only
 - 2026-11-17T13:21:55Z · CTO nudge: held — handoff gate is running
 - 2026-11-17T13:30:11Z · message_queued at 2026-11-17T13:30:11.359Z
 - 2026-11-17T13:30:11Z · handoff failed · task-file handoff failed at check · repoos check failed: tests — ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
