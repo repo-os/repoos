@@ -11,7 +11,7 @@ branch: feat/releases-generate-ai-notes-and-publish-l
 cli_override: opencode
 model_override: opencode-go/glm-5.3-flash
 created_at: "2026-11-15T08:14:22Z"
-updated_at: "2026-11-17T04:47:45Z"
+updated_at: "2026-11-17T04:50:47Z"
 review_rounds: 1
 review_passes: 1
 last_check_failure: "repoos check at 2026-11-17T02:59:51.120Z: repoos check failed: ui verification failed (6 issue(s)): [console] Failed to preconnect to https://fonts.googleapis.com/. Error: The Internet connection appears to be offline.; [console] Failed to preconnect to https://fonts.gstatic.com/. Error: The Internet connection appears to be offline.; [request] Failed to load resource: The Internet connection appears to be offline. (https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Sora:wght@400;500;600;700;800&family=P… (truncated)"
@@ -227,3 +227,4 @@ Reuse the existing AI-draft run in ReleasesView.vue and the server release run; 
 - 2026-11-17T04:44:36Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-17T04:47:45Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-17T04:47:45Z · message_delivered: 1 message(s)
+- 2026-11-17T04:50:47Z · body
