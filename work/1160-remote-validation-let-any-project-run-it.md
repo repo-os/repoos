@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-17T18:00:02Z"
+review_passes: 1
 id: "1160"
 title: "Remote validation: let any project run its own check command on runners"
 type: feature
@@ -11,7 +13,6 @@ branch: feat/remote-validation-let-any-project-run-it
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T17:06:33Z"
-updated_at: "2026-11-17T18:00:02Z"
 ---
 ## Problem
 Remote validation runners only work for projects shaped like the RepoOS repo. The remote half is a fixed `validate.sh` that runs `bun install --frozen-lockfile && bun run build && bun run test` inside the `repoos-ci` image. A project's own `[[check.steps]]` plan (Gradle/Android unit tests, worker and web checks, site builds) is not run remotely, and `docs/remote-validation.md` says "A future `remoteValidation.command` override is not implemented yet". Result: the Tiao project (Android + web + Cloudflare worker, 1 host `bee` running 3 projects) hits load averages of 60-80, close-outs time out (#0131, #0148) and reviews and checks stall, while idle machines (mini, ThinkPad) cannot help. Engineer sessions on runners (#0904, ADR 0009) are design only. Setting up runners for non-bun projects is impossible today.
@@ -45,3 +46,4 @@ Context: Nick's Tiao board on host bee (16 cores, encrypted btrfs, 3 projects) s
 - 2026-11-17T17:54:27Z · message_queued at 2026-11-17T17:54:27.561Z
 - 2026-11-17T17:54:27Z · note: shots: skipped — Docs site skipped: no docs shot declared
 - 2026-11-17T18:00:02Z · note: review pass 1: needs some work
+
