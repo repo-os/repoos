@@ -83,3 +83,4 @@ Direct tab-click coverage passes, but review identified a separate app lifecycle
 - 2026-11-17T20:30:42Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-17T20:32:08Z · body
 - 2026-11-17T20:33:41Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-17T20:33:41Z · message_queued at 2026-11-17T20:33:41.191Z
