@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-17T22:57:31Z"
+review_passes: 6
 id: "1167"
 title: "QA pass: use the macOS Hub app after the #1155 fix, find broken things and fix them"
 type: bug
@@ -11,8 +13,6 @@ branch: feat/qa-pass-use-the-macos-hub-app-after-the-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T18:23:18Z"
-updated_at: "2026-11-17T22:57:31Z"
-review_passes: 5
 review_rounds: 2
 handoff_signal_retry_count: 2
 ---
@@ -106,3 +106,4 @@ Do not edit repoos.toml. Do not create signing identities or commit app binaries
 - 2026-11-17T22:43:31Z · note: shots: skipped — Docs site skipped: no docs shot declared
 - 2026-11-17T22:57:31Z · message_queued at 2026-11-17T22:57:31.521Z
 - 2026-11-17T22:57:31Z · note: review pass 6: good to go
+
