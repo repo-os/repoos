@@ -2,7 +2,7 @@
 id: "1163"
 title: Investigate Checks tab browser pass stall
 type: bug
-status: review
+status: active
 priority: p2
 area: web
 assigned_to: ai
@@ -12,6 +12,7 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T17:53:05Z"
 updated_at: "2026-11-17T20:23:49Z"
+review_rounds: 1
 review_passes: 1
 handoff_signal_retry_count: 2
 ---
@@ -72,3 +73,4 @@ Screenshot shows the Checks Now tab at 390px. The attempt captured the main page
 - 2026-11-17T20:18:23Z · note: shots: skipped — the diff (3 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-17T20:23:49Z · note: review pass 1: needs some work
 - 2026-11-17T20:23:49Z · message_delivered: 1 message(s)
+- 2026-11-17T20:23:49Z · status review→active
