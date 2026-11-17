@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-17T19:05:59.283Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 id: "1166"
 title: Fix Android 16 Hub status-bar contrast across themes
 type: bug
@@ -67,3 +69,4 @@ This issue was observed on Android 16 (API 36), target SDK 36, with Android Syst
 - 2026-11-17T19:04:51Z · body
 - 2026-11-17T19:05:36Z · CTO nudge: held — handoff gate is running
 - 2026-11-17T19:05:56Z · message_queued at 2026-11-17T19:05:56.544Z
+
