@@ -43,6 +43,7 @@ Start with the Work page at 390px and the bottom dock/heads/pipeline bar overlap
 ![320px Work queue after filter reflow fix, light theme](/api/tasks/1157/attachments/att_8b163472-2a9a-46b8-9f62-3d90cf1c0c71.png)
 ![320px Work queue after filter reflow fix, dark theme](/api/tasks/1157/attachments/att_21e82da1-73e5-45c4-98da-07938689b42b.png)
 ![320px task drawer status row and verified Changes tab](/api/tasks/1157/attachments/att_39583280-edaa-480a-b0ad-807b44f9af66.png)
+![320px task drawer with Tokens tab selected](/api/tasks/1157/attachments/att_112106f5-f5e4-4614-9c3b-c11d02103e4c.png)
 
 ## Activity
 
@@ -116,3 +117,4 @@ Start with the Work page at 390px and the bottom dock/heads/pipeline bar overlap
 - 2026-11-17T19:46:02Z · screenshots
 - 2026-11-17T19:46:05Z · screenshots
 - 2026-11-17T19:46:07Z · screenshots
+- 2026-11-17T19:46:09Z · screenshots
