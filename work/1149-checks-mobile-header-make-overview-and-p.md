@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 68005
-last_close_out_gate_at: "2026-11-17T11:41:07.254Z"
 id: "1149"
 title: "Checks mobile header: make overview and page actions fit the narrow layout"
 type: chore
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: 2cf4d54354e9ef3c995cfe272f664cb1f4f97c29
 assigned_to: ai
 created_by: t@t
 branch: feat/checks-mobile-header-make-overview-and-p
@@ -14,6 +13,8 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T03:06:39Z"
 updated_at: "2026-11-17T11:41:07Z"
+last_close_out_gate_ms: 68005
+last_close_out_gate_at: "2026-11-17T11:41:07.254Z"
 review_passes: 2
 ---
 ## Problem
