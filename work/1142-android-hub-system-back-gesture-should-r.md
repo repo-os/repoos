@@ -1,19 +1,20 @@
 ---
-last_close_out_gate_ms: 785912
-last_close_out_gate_at: "2026-11-17T00:29:18.357Z"
 id: "1142"
 title: "Android Hub: system back gesture should return from tailnet discovery"
 type: bug
-status: review
+status: done
 human_step_override: Cleared needs-human-step flag (sticky until acceptance criteria change)
 human_step_override_key: 2ce14031
 priority: p2
 area: mobile
+merged_commit: 78751cdbdaca19097f4b0680c58272735d3b9a43
 assigned_to: ai
 created_by: t@t
 branch: feat/android-hub-system-back-gesture-should-r
 created_at: "2026-11-16T14:01:00Z"
 updated_at: "2026-11-17T00:29:18Z"
+last_close_out_gate_ms: 785912
+last_close_out_gate_at: "2026-11-17T00:29:18.357Z"
 review_passes: 1
 ---
 ## Problem

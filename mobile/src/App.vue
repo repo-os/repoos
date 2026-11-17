@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { onMounted, ref, computed } from "vue";
+import { onMounted, onUnmounted, ref, computed } from "vue";
 import { Settings } from "lucide-vue-next";
+import { App } from "@capacitor/app";
 import {
   init,
   servers,
@@ -38,9 +39,10 @@ import LockOverlay from "./components/LockOverlay.vue";
 import { resolveShellPlatform } from "./platform";
 import { fixtureInitialRoute, readHubFixture } from "./fixture";
 import { impactHeavy } from "./haptics";
+import { installHubBackButton, type HubRoute } from "./back-navigation";
 import type { AppearanceMode, DesignThemeId } from "./theme";
 
-type Route = "picker" | "settings" | "add" | "edit" | "discover";
+type Route = HubRoute;
 
 const route = ref<Route>("picker");
 const sheetServer = ref<ServerEntry | null>(null);
@@ -58,8 +60,32 @@ const appVersion = "0.1.0";
 
 const sheetOpen = computed(() => sheetServer.value !== null);
 
+let disposeBackButton: (() => Promise<void>) | null = null;
+let unmounted = false;
+
 onMounted(async () => {
   document.documentElement.classList.add(`platform-${platform.value}`);
+
+  // Android consumes the system back gesture once a listener exists, so map
+  // every local Hub route explicitly instead of relying on WebView history.
+  disposeBackButton = await installHubBackButton({
+    platform: platform.value,
+    subscribe: (listener) => App.addListener("backButton", listener),
+    getState: () => ({
+      route: route.value,
+      sheetOpen: sheetOpen.value,
+      lockOpen: lockOpen.value,
+    }),
+    handlers: {
+      closeSheet,
+      showPicker: backToPicker,
+      exitApp: () => {
+        void App.exitApp();
+      },
+    },
+  });
+  if (unmounted) await disposeBackButton();
+
   const fx = readHubFixture();
   const initial = fixtureInitialRoute(fx);
   if (initial === "settings") route.value = "settings";
@@ -72,6 +98,11 @@ onMounted(async () => {
   if (lockSettings.value.enabled && lockSettings.value.scope === "reopen") {
     await gateLock(null);
   }
+});
+
+onUnmounted(() => {
+  unmounted = true;
+  void disposeBackButton?.();
 });
 
 async function gateLock(_serverId: string | null): Promise<boolean> {
