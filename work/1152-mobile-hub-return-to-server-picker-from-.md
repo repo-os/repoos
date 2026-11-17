@@ -65,3 +65,4 @@ Inspect the existing Hub server WebView architecture and navigation security bef
 - 2026-11-17T06:10:42Z · body
 - 2026-11-17T06:11:37Z · body
 - 2026-11-17T06:14:30Z · queued message undelivered for 5m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-17T06:14:30Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 130) · last assistant: Implementation and focused tests are in place, and both the web UI and mobile web bundles build. Now I'm running the scoped gate. · stderr: (empty)
