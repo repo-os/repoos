@@ -11,7 +11,7 @@ branch: feat/investigate-checks-tab-browser-pass-stal
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T17:53:05Z"
-updated_at: "2026-11-17T20:23:49Z"
+updated_at: "2026-11-17T20:25:47Z"
 review_rounds: 1
 review_passes: 1
 handoff_signal_retry_count: 2
@@ -29,6 +29,9 @@ Reproduce direct tab clicks and page navigation without repeated screenshots. Ve
 
 ## Notes for AI
 Screenshot shows the Checks Now tab at 390px. The attempt captured the main page successfully, then slowed while iterating other tabs and screenshots. Treat this as a report of an incomplete pass until direct interaction reproduces an app fault.
+
+## Investigation outcome
+Direct tab-click coverage passes, but review identified a separate app lifecycle defect: the Checks page kept polling /api/local-check-slots every 5 seconds after unmount. The interval is now cleared on teardown and a fake-timer regression test verifies no request fires after unmount. The capture-harness cause remains undetermined; a live 1440/390/320px both-theme pass could not be performed because browser access was unavailable in this session.
 
 ## Screenshots
 
@@ -74,3 +77,4 @@ Screenshot shows the Checks Now tab at 390px. The attempt captured the main page
 - 2026-11-17T20:23:49Z · note: review pass 1: needs some work
 - 2026-11-17T20:23:49Z · message_delivered: 1 message(s)
 - 2026-11-17T20:23:49Z · status review→active
+- 2026-11-17T20:25:47Z · body: Investigation outcome (added)
