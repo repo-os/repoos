@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "1163"
 title: Investigate Checks tab browser pass stall
 type: bug
@@ -44,3 +45,4 @@ Screenshot shows the Checks Now tab at 390px. The attempt captured the main page
 - 2026-11-17T19:17:56Z · status inbox→ready
 - 2026-11-17T19:17:59Z · status ready→active, needs_input, branch
 - 2026-11-17T19:23:13Z · message_queued at 2026-11-17T19:23:13.390Z
+
