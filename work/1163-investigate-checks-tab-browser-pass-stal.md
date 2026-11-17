@@ -11,7 +11,7 @@ branch: feat/investigate-checks-tab-browser-pass-stal
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T17:53:05Z"
-updated_at: "2026-11-17T21:25:43Z"
+updated_at: "2026-11-17T21:28:45Z"
 review_rounds: 2
 review_passes: 2
 handoff_signal_retry_count: 2
@@ -111,3 +111,4 @@ The direct tab pass found no navigation hang. Review identified a separate app l
 - 2026-11-17T21:19:33Z · message_delivered: 3 message(s)
 - 2026-11-17T21:25:43Z · message_queued at 2026-11-17T21:25:43.132Z
 - 2026-11-17T21:25:43Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-17T21:28:45Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
