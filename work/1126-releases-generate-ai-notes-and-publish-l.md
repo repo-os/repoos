@@ -11,7 +11,7 @@ branch: feat/releases-generate-ai-notes-and-publish-l
 cli_override: opencode
 model_override: opencode-go/glm-5.3-flash
 created_at: "2026-11-15T08:14:22Z"
-updated_at: "2026-11-17T02:34:34Z"
+updated_at: "2026-11-17T02:36:32Z"
 last_check_failure: "repoos check at 2026-11-17T02:13:01.166Z: repoos check failed: ui verification failed (2 issue(s)): [request] HTTP 405 for http://127.0.0.1:34441/api/release/notes (http://127.0.0.1:34441/api/release/notes); [request] Failed to load resource: the server responded with a status of 405 (Method Not Allowed) (http://127.0.0.1:34441/api/release/notes)"
 dev_error_count: 8
 engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\"}"
@@ -196,4 +196,4 @@ Reuse the existing AI-draft run in ReleasesView.vue and the server release run; 
 - 2026-11-17T02:13:01Z · message_delivered: 1 message(s)
 - 2026-11-17T02:33:43Z · body
 - 2026-11-17T02:34:34Z · CTO nudge: held — handoff gate is running
-
+- 2026-11-17T02:36:32Z · note: ui verification passed: 2 of 2 shots captured with clean console (1 shot warning)
