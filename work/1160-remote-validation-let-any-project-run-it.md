@@ -42,3 +42,4 @@ Context: Nick's Tiao board on host bee (16 cores, encrypted btrfs, 3 projects) s
 - 2026-11-17T17:21:15Z · message_delivered: 1 message(s)
 - 2026-11-17T17:52:00Z · body
 - 2026-11-17T17:54:27Z · status active→review
+- 2026-11-17T17:54:27Z · message_queued at 2026-11-17T17:54:27.561Z
