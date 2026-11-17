@@ -205,6 +205,49 @@ final class HubRecentsRetentionTests: XCTestCase {
         XCTAssertEqual(state.entries.first?.name, "RepoOS")
         XCTAssertEqual(state.entries.first?.repositoryName, "RepoOS")
     }
+
+    @MainActor
+    func testStartupHealthRefreshUpdatesMemoryAndSearchWithoutWritingRegistry() async throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("hub-startup-health-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        let store = ServerRegistryStore(directoryURL: directory)
+        let editedAt = Date(timeIntervalSince1970: 100)
+        let checkedAt = Date(timeIntervalSince1970: 200)
+        let entry = ServerEntry(
+            name: "QA local",
+            origin: URL(string: "http://127.0.0.1:7171")!,
+            updatedAt: editedAt,
+            lastHealth: .healthy,
+            lastHealthAt: checkedAt,
+            crossServerTaskSearchEnabled: true
+        )
+        var document = ServerRegistryDocument()
+        try store.upsertEntry(entry, in: &document)
+        try store.save(document)
+
+        let search = HubCrossServerTaskSearchEngine()
+        let state = HubAppState(
+            store: store,
+            healthChecker: OfflineHealthChecker(),
+            attentionCoordinator: HubAttentionCoordinator(),
+            crossServerTaskSearch: search
+        )
+        await state.refreshAllHealth()
+
+        XCTAssertEqual(state.entries.first?.lastHealth, .unreachable)
+        XCTAssertNotNil(state.entries.first?.lastHealthAt)
+        XCTAssertEqual(state.entries.first?.updatedAt, editedAt)
+        XCTAssertEqual(try store.load().entries.first?.lastHealth, .healthy)
+        XCTAssertEqual(try store.load().entries.first?.lastHealthAt, checkedAt)
+
+        search.scheduleSearch(query: "qa")
+        try? await Task.sleep(nanoseconds: 500_000_000)
+        XCTAssertEqual(search.serverLines.first?.status, .offline)
+        XCTAssertFalse(search.isSearching)
+    }
 }
 
 private struct StubHealthChecker: HealthChecking {
@@ -212,5 +255,11 @@ private struct StubHealthChecker: HealthChecking {
 
     func checkHealth(origin: URL) async -> HealthCheckOutcome {
         .success(projectName: projectName)
+    }
+}
+
+private struct OfflineHealthChecker: HealthChecking {
+    func checkHealth(origin: URL) async -> HealthCheckOutcome {
+        .failure(.network("Offline"))
     }
 }

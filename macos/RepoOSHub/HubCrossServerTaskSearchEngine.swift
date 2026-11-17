@@ -9,6 +9,7 @@ final class HubCrossServerTaskSearchEngine: ObservableObject {
     private let client: HubTaskSearchFetching
     private let keychain: HubCapabilityStoring
     private var entries: [ServerEntry] = []
+    private var healthByServerID: [UUID: HealthState] = [:]
     private var debounceTask: Task<Void, Never>?
     private var inFlightSearch: Task<Void, Never>?
 
@@ -21,11 +22,14 @@ final class HubCrossServerTaskSearchEngine: ObservableObject {
     }
 
     func configure(entries: [ServerEntry]) {
-        self.entries = entries
-        if debounceTask == nil && inFlightSearch == nil {
+        let nextHealthByServerID = Dictionary(uniqueKeysWithValues: entries.map { ($0.id, $0.lastHealth) })
+        if nextHealthByServerID != healthByServerID {
+            cancel()
             remoteResults = []
             serverLines = []
         }
+        self.entries = entries
+        healthByServerID = nextHealthByServerID
     }
 
     func scheduleSearch(query rawQuery: String) {

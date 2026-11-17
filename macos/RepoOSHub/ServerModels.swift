@@ -235,10 +235,7 @@ enum ReachabilityTransition {
 
     static func applyHealthCheck(to entry: inout ServerEntry, outcome: HealthCheckOutcome, checkedAt: Date = Date()) {
         entry.lastHealth = healthState(after: outcome, previous: entry.lastHealth)
-        if case .success(_, _, _) = outcome {
-            entry.lastHealthAt = checkedAt
-        }
-        entry.updatedAt = checkedAt
+        entry.lastHealthAt = checkedAt
     }
 }
 

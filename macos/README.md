@@ -88,6 +88,30 @@ secret scanning does not decode — never copy DerivedData or result bundles int
 the tree for verification. `just macos-build`, `just macos-test`, and
 `macos/scripts/hub-snapshots.sh` already point outside the repo.
 
+### Isolated QA registry
+
+The Hub normally stores saved servers in
+`~/Library/Application Support/RepoOS Hub/servers.json`. Before launching a QA
+build, set `REPOOS_HUB_SUPPORT_DIRECTORY` on the Hub process to a disposable
+directory. For example, in Xcode add this under **Run → Arguments → Environment
+Variables** before pressing Run:
+
+```text
+REPOOS_HUB_SUPPORT_DIRECTORY=$HOME/Library/Caches/RepoOS/hub-qa-support
+```
+
+For a command-line launch, pass it directly to the app executable:
+
+```sh
+derived_data="$HOME/Library/Caches/RepoOS/macos-derived-data"
+env REPOOS_HUB_SUPPORT_DIRECTORY="$HOME/Library/Caches/RepoOS/hub-qa-support" \
+  "$derived_data/Build/Products/Debug/RepoOS Hub.app/Contents/MacOS/RepoOS Hub"
+```
+
+Setting `HOME` alone does not redirect the macOS Application Support directory.
+Use an isolated registry before the first launch; do not use your regular Hub
+registry for QA.
+
 ### Layout snapshots
 
 The Hub has no browser preview. `macos/scripts/hub-snapshots.sh` renders the

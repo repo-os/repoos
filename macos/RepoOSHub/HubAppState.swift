@@ -673,7 +673,11 @@ final class HubAppState: ObservableObject {
         }
     }
 
-    func refreshHealth(for id: UUID, using checker: (any HealthChecking)? = nil) async {
+    func refreshHealth(
+        for id: UUID,
+        using checker: (any HealthChecking)? = nil,
+        persistToDisk: Bool = true
+    ) async {
         guard let index = document.entries.firstIndex(where: { $0.id == id }),
               let origin = document.entries[index].originURL
         else { return }
@@ -703,7 +707,10 @@ final class HubAppState: ObservableObject {
             lastConnectionMessage = nil
         }
 
-        try? store.save(document)
+        if persistToDisk {
+            try? store.save(document)
+        }
+        crossServerTaskSearch.configure(entries: entries)
     }
 
     func performLocalServiceAction(_ action: LocalRepoOSServiceAction, for entry: ServerEntry) async {
@@ -754,9 +761,9 @@ final class HubAppState: ObservableObject {
         return false
     }
 
-    private func refreshAllHealth() async {
+    func refreshAllHealth() async {
         for entry in entries {
-            await refreshHealth(for: entry.id)
+            await refreshHealth(for: entry.id, persistToDisk: false)
         }
     }
 

@@ -810,6 +810,8 @@ export function shouldReapStrayServeProcesses(
 export interface ServerHandle {
   url: string;
   port: number;
+  /** Effective listener address after auth-less preview loopback enforcement. */
+  bindHost: string;
   close: (reason?: string) => Promise<void>;
   index: LiveIndex;
   /**
@@ -4979,6 +4981,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       const handle: ServerHandle = {
         url,
         port: actualPort,
+        bindHost: host,
         index,
         ...(config.previewOverrides?.length ? { previewOverrides: config.previewOverrides } : {}),
         close: async (reason: string = "handle.close") => {
