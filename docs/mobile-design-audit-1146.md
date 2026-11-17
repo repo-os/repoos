@@ -2,77 +2,61 @@
 
 ## Scope and method
 
-Rendered app captures were reviewed at **390 × 844 CSS px** in light mode and
-selected dark-mode routes. The reviewed surfaces include Mission Control,
-Work, task detail, Search, More, Settings, Stories, Releases, Agents, Checks,
-Inputs, Context, Deployments, Secrets, Dev and the client board. Task detail
-used `/work?task=1146&tab=changes`; Search and More were inspected as overlays.
-Capture files were kept in the task worktree under `.repoos/audit-1146/` and
-the focused findings below were attached to their RepoOS follow-up tasks.
+I inspected the auth-less worktree app at **390 × 844 CSS px** with touch emulation. Routes covered `/login`, `/`, `/work`, `/work?task=1146&tab=changes`, `/stories`, `/releases`, `/agents`, `/settings`, `/checks`, `/inputs`, `/repo`, `/deployments`, `/secrets`, `/dev`, `/client-board`, `/tasks/1146/diff`, `/tasks/1146/conflict-diff`, `/repo/working-diff` and `/repo/commits/075b3cf1d`. I opened Search and More and sampled long task/story text, release status, empty Checks and diff states. Mission Control, Search and principal page families were inspected in both themes.
 
-This is browser-rendered evidence for the stated viewport, not certification on
-physical iOS or Android devices. The sampled page roots fit the viewport width,
-and sampled visible controls were at least 40px high. Those checks do not catch
-internal clipping or content compressed into unusable columns, which appeared
-in the task detail and Checks screens.
+The document records only rendered findings. Captures cited below are RepoOS task attachments, so they remain available with the report; no evidence depends on ignored worktree files. These browser captures are evidence for the stated viewport, not certification on physical iOS or Android devices.
+
+**Touch-target method:** I measured visible buttons, links, form controls and tabs against the **44 × 44 CSS px** floor. Sampled controls on all regular pages and both sheets meet it after the Search adjustment below. All four full-screen diff routes share a **76 × 28px Back control**; #1151 tracks the 16px height deficit. This corrects the earlier 40px threshold.
+
+**Contrast method:** Computed foreground/nearest-surface pairs for visible headings, body text, links, buttons and labels on Mission Control, Work, task detail, Stories, Settings, Checks and DiffView were at least **4.5:1** in both themes. This DOM-color sample does not certify every icon or status tint. The More backdrop visibly reveals content beneath it; #1145 owns that issue.
 
 ## Prioritized findings
 
-| Priority | Route and viewport | Finding and user impact | Evidence / disposition |
+| Priority | Route and viewport | Finding and user impact | RepoOS evidence / disposition |
 | --- | --- | --- | --- |
-| P1 | `/work?task=1146&tab=changes`, 390 × 844, light + dark | Task title, identifiers, status and actions share a cramped header; the task tabs continue beyond the viewport. Preview-target helper text wraps one word at a time beside the selector, consuming substantial height. Users have difficulty scanning task identity and reaching the full set of detail tabs. | `.repoos/audit-1146/03-work-task-1146-tab-changes.png`, `dark-task.png`; follow-up #1147 |
-| P1 | `/settings`, 390 × 844, light + dark | A six-item settings section grid is followed by a second long row-wrap of topic chips before the selected content. Repeated navigation consumes the first screen and makes the hierarchy unclear. | `.repoos/audit-1146/07-settings.png`, `dark-settings.png`; follow-up #1148 |
-| P2 | `/checks`, 390 × 844, light + dark | The long introductory paragraph sits beside two actions in a narrow column. The copy breaks into short lines and the actions lack a clear position in the mobile reading order. | `.repoos/audit-1146/08-checks.png`, `dark-checks.png`; follow-up #1149 |
-| P2 | `/stories`, 390 × 844, light + dark | Story summaries and nested task titles truncate early. Progress and status remain visible, but the labels do not always identify the underlying work without opening each story. | `.repoos/audit-1146/04-stories.png`, `dark-stories.png`; follow-up #1150 |
-| P2 | `/`, 390 × 844, light | Mission Control title and repository address are centered while the New task action is right aligned. This differs from the left-aligned page pattern and gives the technical URL more prominence than the primary action. | `.repoos/audit-1146/01-control.png`, `15-control-light.png`; retain for a later focused task |
-| P3 | Search overlay, 390 × 844, dark + light | The placeholder approaches the close affordance and appears clipped. Verify with a long entered query before changing the field layout; current evidence is insufficient to establish a functional obstruction. | `.repoos/audit-1146/search-overlay.png`, `16-search-dark.png`; monitor |
-| Existing work | More sheet and Work, 390 × 844 | More sheet allows underlying page content to show through; the idle integration status pill competes with the page and bottom navigation. | `more-sheet.png`; explicitly covered by #1145, no duplicate filed |
+| P1 | `/work?task=1146&tab=changes`, 390 × 844, light + dark | The tab strip clips and preview-target helper copy wraps one word at a time. **Title/header alignment is excluded**; #1145 owns the shifted title. | [Task detail light](</api/tasks/1146/attachments/att_3288185f-f19a-4c49-a9e4-cc1bfaa02ae5.png>), [dark](</api/tasks/1146/attachments/att_6efc7e54-a9fb-4e32-97f0-b723de9fad9b.png>); #1147 covers tabs/helper only. |
+| P1 | `/settings`, 390 × 844, light + dark | A six-item section grid is followed by a second row-wrap of topic chips before settings content, consuming the first screen. | [Settings light](</api/tasks/1146/attachments/att_f71233b1-a5a3-42ee-93b8-6c567d554094.png>), [dark](</api/tasks/1146/attachments/att_17240e43-207b-4a19-9e85-6bf5c75131ad.png>); #1148. |
+| P2 | `/checks`, 390 × 844, light + dark | A five-line intro and two actions squeezed into a side column compete with the tabs. | [Checks light](</api/tasks/1146/attachments/att_e7d4d69a-496d-4efc-b2ae-4b78510123d2.png>), [dark](</api/tasks/1146/attachments/att_558a7105-b050-4b2f-889a-db6879b7231f.png>); #1149. |
+| P2 | `/stories`, 390 × 844, light + dark | Truncated story summaries and task names obscure record identity even though progress/status remain visible. | [Stories light](</api/tasks/1146/attachments/att_ca5230a8-67ed-4111-a63a-dc2b49211151.png>), [dark](</api/tasks/1146/attachments/att_6df36a4a-1683-4c03-822c-650e4cb21f64.png>); #1150. |
+| P2 | `/tasks/:taskId/diff`, `/tasks/:taskId/conflict-diff`, `/repo/working-diff`, `/repo/commits/:sha`, 390 × 844, light | The shared full-screen DiffView Back control measures 76 × 28px. Its height is 16px below the 44px touch-target floor. The captured routes rendered the empty “No diff available” state, so diff content density was not assessed. | [Task diff](</api/tasks/1146/attachments/att_70c63801-e82f-43d3-8177-b29236a23138.png>), [conflict diff](</api/tasks/1146/attachments/att_07cb3d3a-2d5c-47bd-bd7a-72f4ccb8d5c8.png>), [working diff](</api/tasks/1146/attachments/att_be523a58-813a-4672-bd5b-600336d1c301.png>), [commit diff](</api/tasks/1146/attachments/att_ad8c5752-83b7-4790-a754-6c41baa7caa2.png>); follow-up #1151. |
+| P2 | Mission Control `/`, 390 × 844, light + dark | Centered title/URL and right-aligned New task differ from other page headings. **#1145 owns this alignment.** | [Light](</api/tasks/1146/attachments/att_c86d65fc-dbee-4e0f-b33d-11ef27b6c373.png>), [dark](</api/tasks/1146/attachments/att_4886c697-7e10-4a40-b77a-87214da01776.png>); #1145. |
+| Fixed in this audit | Search overlay, 390 × 844, light + dark | The search input initially measured 240 × 36px. I added a 44px mobile minimum height; after rebuilding it measures 240 × 44px, and the close target is 44 × 44px. | [Search overlay dark](</api/tasks/1146/attachments/att_91b39c22-9ce0-4507-8b6f-abb238f8bf62.png>), [Search overlay light](</api/tasks/1146/attachments/att_d2841e59-395c-4ce8-b86d-cdc50b6cb2df.png>); `src/ui-app/src/style.css`. |
+| Existing work | More sheet and Work bottom overlay, 390 × 844 | Underlying content shows through the More sheet; the idle integration pill competes with the bottom navigation. | [More sheet](</api/tasks/1146/attachments/att_4d736d97-d652-4d02-923d-326a3c3e4822.png>); #1145. |
 
 ## Route sweep notes
 
-| Surface | Route / state reviewed | Observation |
+| Surface | Route / state | Observation |
 | --- | --- | --- |
-| Mission Control | `/` | Fits width; title and repo URL alignment differ from other page headings. |
-| Work queue | `/work` | Single-column queue is readable in the captured populated state; long task titles wrap. Idle integration chrome is tracked by #1145. |
-| Task detail | `/work?task=1146&tab=changes` | Header density and tab clipping; see P1. |
-| Search | Search overlay | Field and close control fit; placeholder requires a longer-query state check. |
-| More | More sheet | Background opacity issue belongs to #1145. |
-| Settings | `/settings` | Repeated section navigation delays access to settings content; see P1. |
-| Stories | `/stories` | Long labels truncate; see P2. |
+| Login | `/login` | Standalone login route rendered within 390px; no sampled control was below 44 × 44px. [Capture](</api/tasks/1146/attachments/att_47b0da96-5bb2-49fc-a122-0527f9c01b53.png>) |
+| Mission Control | `/` | Fits width. Heading alignment is assigned to #1145. Light and dark captures attached above. |
+| Work queue | `/work` | Single-column queue is readable in the populated state; long titles wrap naturally. Idle pipeline overlay belongs to #1145. |
+| Task detail | `/work?task=1146&tab=changes` | Tab clipping and helper text wrapping; see P1. Title/header work belongs to #1145. |
+| Search | Overlay on `/` | Input was 36px high; now 44px. Search field and close target meet the floor. [Dark capture](</api/tasks/1146/attachments/att_91b39c22-9ce0-4507-8b6f-abb238f8bf62.png>), [light capture](</api/tasks/1146/attachments/att_d2841e59-395c-4ce8-b86d-cdc50b6cb2df.png>) |
+| More | Sheet on `/work` | Sheet actions meet the floor; backdrop readability issue belongs to #1145. |
+| Settings | `/settings` | Repeated section navigation delays access to controls; see P1. |
+| Stories | `/stories` | Several long labels truncate; see P2. |
 | Releases | `/releases` | Status and branch warning remain readable; warning wraps over several lines, appropriate to its importance. |
-| Agents | `/agents` | Secondary tabs and a long error notice add density; active tab and notice remain legible in the sampled state. |
-| Checks | `/checks` | Intro/action composition is cramped; see P2. |
+| Agents | `/agents` | Secondary tabs and a long notice add density; sampled labels remain legible. |
+| Checks | `/checks` | Intro/actions composition is cramped; see P2. |
 | Inputs | `/inputs` | Rendered within viewport in sampled state. |
-| Context / Repo | `/repo` | Rendered within viewport in sampled state. |
+| Context | `/repo` | Rendered within viewport in sampled state. |
 | Deployments | `/deployments` | Rendered within viewport in sampled state. |
 | Secrets | `/secrets` | Auth-less preview lacks signed-in secret data; this is a preview limitation, not a layout finding. |
 | Dev | `/dev` | Rendered within viewport in sampled state. |
 | Client board | `/client-board` | Rendered within viewport in sampled state. |
-
-The sweep includes both light and dark samples for core pages, task detail,
-Settings, Stories, Releases, Agents, Checks and Repo/Context. Additional
-secondary states such as long typed Search queries, 320px-wide devices, and
-signed-in Secrets data should be checked when their follow-ups are implemented.
+| Task diff | `/tasks/1146/diff` | Empty state; Back is 76 × 28px. |
+| Conflict diff | `/tasks/1146/conflict-diff` | Empty state; Back is 76 × 28px. |
+| Working diff | `/repo/working-diff` | Empty state; Back is 76 × 28px. |
+| Commit diff | `/repo/commits/075b3cf1d` | Empty state; Back is 76 × 28px. |
 
 ## Cross-page patterns and recommendations
 
-1. **Design mobile hierarchy inside the page, not only in the global frame.**
-   The shell and bottom navigation are consistent, but page-specific title,
-   intro, action and tab regions still assume desktop horizontal space.
-2. **Prevent local overflow and compression.** A page can fit the viewport
-   while its tab strip clips or a helper label collapses into one-word lines.
-   Give tab strips a deliberate scroll/fade affordance or a compact alternative;
-   stack helper text and controls when a side-by-side layout becomes too narrow.
-3. **Show one navigation layer at a time.** Settings should prioritize section
-   choice and the active content, rather than presenting a section grid and a
-   second topic index in sequence above the controls.
-4. **Preserve identity in dense lists.** Use enough title width or a secondary
-   line so long story/task names distinguish records without opening each row.
-5. **Keep page heading alignment consistent.** Use the same content edge for
-   title and primary action; demote technical repository metadata when it is
-   not needed for the immediate decision.
+1. **Page-local layouts still assume desktop width.** The shell and bottom navigation are consistent, but headers, intro/action groups and tab strips need their own phone hierarchy.
+2. **Measure touch targets at their rendered bounds.** A route can have no page-level overflow and still expose short controls. Use 44 × 44px as the shared floor; the shared DiffView Back control needs correction.
+3. **Prevent local clipping and compressed copy.** Make tabs reachable with a deliberate scroll affordance or compact alternative; stack helper text and controls when the side-by-side layout becomes too narrow.
+4. **Show one settings navigation layer at a time.** Prioritize section choice and active controls over repeated navigation above the fold.
+5. **Preserve identity in dense lists.** Give long story/task names enough room or a clear expansion affordance.
+6. **Keep heading alignment consistent.** Mission Control alignment is included in #1145; task detail title alignment is also owned there.
+7. **Check contrast and overlay opacity across themes.** The sampled text pairs pass 4.5:1 in both themes. The More sheet backdrop remains the known exception under #1145.
 
-No UI implementation was made in this audit. The four substantial page-level
-findings have focused tasks (#1147–#1150); Mission Control and Search remain
-lower-priority recommendations for future work. The More sheet and idle
-pipeline findings remain in #1145's scope.
+The Search input is the only small cohesive implementation in this audit. The remaining substantial issues have focused tasks (#1147–#1151); the title alignment, Mission Control alignment and More/pipeline overlays remain with #1145.
