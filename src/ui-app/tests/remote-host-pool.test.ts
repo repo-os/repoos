@@ -2859,7 +2859,7 @@ describe("per-host prerequisite probe", () => {
     expect(custom).toContain("GRADLE_USER_HOME=/repoos-cache/gradle");
     expect(custom).toContain("REPOOS_OFFLOAD_BROWSER_STEPS");
     expect(custom).toContain("REPOOS_BROWSER_CAPTURE_MODE");
-    expect(custom).toContain("-e REPOOS_VALIDATION_COMMAND");
+    expect(custom).toContain('-e "REPOOS_VALIDATION_COMMAND=${REPOOS_VALIDATION_COMMAND:-}"');
   });
 
   it("checks the bun cache dir is writable on a native host", () => {
