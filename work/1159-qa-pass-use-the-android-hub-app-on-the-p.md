@@ -12,7 +12,7 @@ branch: feat/qa-pass-use-the-android-hub-app-on-the-p
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T15:51:18Z"
-updated_at: "2026-11-17T17:35:05Z"
+updated_at: "2026-11-17T17:35:25Z"
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-11-17T16:23:57.721Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-17T17:28:58.663Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
@@ -67,3 +67,4 @@ Human device step needed: the saved ADB target `100.117.244.33:37673` refused th
 - 2026-11-17T17:28:58Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 1/3
 - 2026-11-17T17:33:54Z · depends_on
 - 2026-11-17T17:35:05Z · body
+- 2026-11-17T17:35:25Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The Android QA pass is still blocked: the saved ADB target refused connection, and `adb devices -l` showed no device. I captured no Android screenshots and made no claims about screens or defects. Created held human task **#1162** for the … · stderr: Reading additional input from stdin...
