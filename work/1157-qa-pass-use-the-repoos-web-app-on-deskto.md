@@ -11,7 +11,7 @@ branch: feat/qa-pass-use-the-repoos-web-app-on-deskto
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T15:21:15Z"
-updated_at: "2026-11-17T20:42:33Z"
+updated_at: "2026-11-17T20:48:26Z"
 last_check_failure: "repoos check at 2026-11-17T20:09:02.078Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Work queue at desktop with mobile queue behavior evidenced in attachments (target \"default\"): highlight h1 matched nothing on /work?view=board (http://127.0.0.1:33563/work?view=board)"
 review_rounds: 1
 review_passes: 1
