@@ -77,3 +77,4 @@ Do not edit repoos.toml. Do not create signing identities or commit app binaries
 - 2026-11-17T20:17:13Z · body
 - 2026-11-17T20:18:25Z · CTO nudge: held — handoff gate is running
 - 2026-11-17T20:18:26Z · status active→review
+- 2026-11-17T20:18:26Z · message_queued at 2026-11-17T20:18:26.943Z
