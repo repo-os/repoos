@@ -3,9 +3,6 @@ id: "1143"
 title: "Test: easter-eggs #1026 E2 resolveServeHost default fails on machines running Tailscale"
 type: feature
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "engineer keeps crashing (4 in 30m): a human-set task override (cursor + composer-2.5) is pinned, so RepoOS did not replace it. Review the crash detail and either fix the environment, change the override, or resume manually. If the conversation itself is poisoned (it repeats the same failure), reset it with `repoos start 1143 --fresh`."
 priority: p3
 area: server
 assigned_to: ai
@@ -14,7 +11,7 @@ branch: feat/test-easter-eggs-1026-e2-resolveservehos
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-17T02:10:39Z"
-updated_at: "2026-11-17T10:33:54Z"
+updated_at: "2026-11-17T10:44:08Z"
 dev_error_count: 4
 engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-17T10:23:41.275Z\",\"kind\":\"dev-error\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-17T10:23:43.885Z\",\"kind\":\"dev-error\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-17T10:23:46.437Z\",\"kind\":\"dev-error\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-17T10:33:54.430Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -58,3 +55,4 @@ Machine-dependent test, not a product bug: `resolveServeHost` behaviour is inten
 - 2026-11-17T10:33:53Z · watchdog: restarting engineer after 10m with no live process
 - 2026-11-17T10:33:54Z · agent exited with an error (cursor) · Error: Authentication required. Please run 'agent login' first, or set CURSOR_API_KEY environment variable. Open Raw CLI error for details. (CLI: Error: Authentication required. Please run 'agent login' first, or set CURSOR_API_KEY environment variable.)
 - 2026-11-17T10:33:54Z · engineer crash recovery: surfaced instead of switching — a human-set task override (cursor + composer-2.5) is pinned, so RepoOS did not replace it (4/3 crashes in 30m)
+- 2026-11-17T10:44:08Z · watchdog: restarting engineer after 10m with no live process
