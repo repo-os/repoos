@@ -757,6 +757,11 @@ build-mobile: build-android build-ios
 deploy-phone *FLAGS:
     bun scripts/deploy-phone.ts {{FLAGS}}
 
+# build and publish the private Android dev update channel
+[group('mobile')]
+publish-dev:
+    bash scripts/publish-dev.sh
+
 # ── release ──────────────────────────────────────────────────────────────
 
 # show the released version (package.json) vs the latest git tag
