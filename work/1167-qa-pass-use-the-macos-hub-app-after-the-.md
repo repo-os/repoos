@@ -51,3 +51,4 @@ Do not edit repoos.toml. Do not create signing identities or commit app binaries
 - 2026-11-17T19:11:34Z · body
 - 2026-11-17T19:12:25Z · status active→review
 - 2026-11-17T19:12:26Z · message_queued at 2026-11-17T19:12:26.108Z
+- 2026-11-17T19:12:26Z · note: shots: skipped — the diff (6 changed paths) touches no capture target's globs — no UI change to capture
