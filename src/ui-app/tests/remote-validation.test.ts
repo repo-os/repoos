@@ -1872,7 +1872,7 @@ describe("validateScriptArgs positional layout", () => {
         "shots",
         "1160",
         "feat/capture",
-        '{"route":"/settings"}',
+        '{"target":"default","route":"/settings","provenance":{"kind":"declared","label":"settings"}}',
         '{"task":{"body":"Tiao fixture","area":"core"},"config":{},"plan":{"entries":[],"errors":[],"skips":[],"collapsed":[]}}',
         "/tmp/candidate.bundle",
         "a".repeat(40),
