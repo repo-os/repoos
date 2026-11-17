@@ -92,9 +92,11 @@ function isUnsupportedMobilePeer(peer: TailnetStatusPeer): boolean {
   const os = (peer.OS ?? "").trim().toLowerCase();
   const name = (peer.HostName ?? "").trim().toLowerCase();
   const tags = peer.Tags ?? [];
-  return UNSUPPORTED_MOBILE_OS.has(os) ||
+  return (
+    UNSUPPORTED_MOBILE_OS.has(os) ||
     /\b(?:phone|iphone|ipad|tablet|pixel|nothing phone|galaxy tab)\b/.test(name) ||
-    tags.some((tag) => /(?:mobile|phone|tablet)/i.test(tag));
+    tags.some((tag) => /(?:mobile|phone|tablet)/i.test(tag))
+  );
 }
 
 /** Normalize a MagicDNS name and reject anything that is not DNS-safe. */
@@ -622,7 +624,10 @@ export async function collectTailnetServers(
         : hostConfig.user?.trim() || "root";
       const work = async (): Promise<ListedServer[]> => {
         try {
-          const discovered = await (options.httpDiscovery ?? defaultHttpDiscovery)(peer, Math.min(timeoutMs, 750));
+          const discovered = await (options.httpDiscovery ?? defaultHttpDiscovery)(
+            peer,
+            Math.min(timeoutMs, 750),
+          );
           if (discovered) {
             const payload = JSON.parse(discovered) as { servers?: Record<string, unknown>[] };
             if (Array.isArray(payload.servers)) {
@@ -630,7 +635,9 @@ export async function collectTailnetServers(
                 ...server,
                 host: peer.host,
                 ...displayFields,
-                ...(typeof server.url === "string" ? { https: server.url.startsWith("https://") } : {}),
+                ...(typeof server.url === "string"
+                  ? { https: server.url.startsWith("https://") }
+                  : {}),
               })) as ListedServer[];
             }
           }

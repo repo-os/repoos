@@ -127,10 +127,12 @@ export const getTailnetPeerDiscovery: RouteHandler = async (_ctx, req, res) => {
   const authority = req.headers.host;
   return json(res, 200, {
     ok: true,
-    servers: rows.filter((row) => row.valid).map((row) => ({
-      projectName: row.entry.projectName,
-      port: row.entry.port,
-      ...(authority ? { url: `https://${authority}` } : {}),
-    })),
+    servers: rows
+      .filter((row) => row.valid)
+      .map((row) => ({
+        projectName: row.entry.projectName,
+        port: row.entry.port,
+        ...(authority ? { url: `https://${authority}` } : {}),
+      })),
   });
 };

@@ -22,8 +22,12 @@ const emit = defineEmits<{
 }>();
 
 const selectableCount = computed(() => props.servers.filter((server) => server.selectable).length);
-const failedServers = computed(() => props.servers.filter((server) => server.note?.startsWith("Unreachable")));
-const projectServers = computed(() => props.servers.filter((server) => !server.note?.startsWith("Unreachable")));
+const failedServers = computed(() =>
+  props.servers.filter((server) => server.note?.startsWith("Unreachable")),
+);
+const projectServers = computed(() =>
+  props.servers.filter((server) => !server.note?.startsWith("Unreachable")),
+);
 
 function isSelected(key: string): boolean {
   return props.selected.includes(key);
@@ -109,13 +113,19 @@ function isSelected(key: string): boolean {
           </li>
         </ul>
 
-        <details v-if="failedServers.length" class="discovery-failures" data-testid="hub-tailnet-failures">
+        <details
+          v-if="failedServers.length"
+          class="discovery-failures"
+          data-testid="hub-tailnet-failures"
+        >
           <summary>Couldn't check these machines ({{ failedServers.length }})</summary>
           <ul class="discovery-list">
             <li v-for="server in failedServers" :key="server.key" class="discovery-failure-row">
               <span class="server-meta">
                 <span class="server-name">{{ server.name }}</span>
-                <span class="reachability unreachable">{{ server.note?.replace(/^Unreachable\s*—?\s*/, "") }}</span>
+                <span class="reachability unreachable">{{
+                  server.note?.replace(/^Unreachable\s*—?\s*/, "")
+                }}</span>
               </span>
             </li>
           </ul>
