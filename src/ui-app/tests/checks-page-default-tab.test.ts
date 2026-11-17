@@ -67,6 +67,7 @@ function pipelineActive(taskId = "0737"): IntegrationPipelineSnapshot {
 }
 
 afterEach(() => {
+  vi.useRealTimers();
   vi.unstubAllGlobals();
   invalidatePageDataPrefix("check-plan:");
 });
@@ -292,6 +293,43 @@ describe("ChecksView default tab (#0738)", () => {
     expect(parseChecksTab(router.currentRoute.value.query.tab)).toBe("now");
     expect(wrapper.find(".ck-local-slots").exists()).toBe(true);
     expect(wrapper.text()).toContain("No local check slots are currently in use.");
+  });
+
+  it("navigates through every Checks tab by click without losing the route", async () => {
+    const { router, wrapper } = await mountChecks("/checks?tab=now");
+    const tabs = [
+      ["Now", "now"],
+      ["Runs", "runs"],
+      ["Test suite", "test-suite"],
+      ["Check plan", "plan"],
+    ] as const;
+
+    for (const [label, tab] of tabs) {
+      const control = wrapper.findAll('[role="tab"]').find((node) => node.text() === label);
+      expect(control, `${label} tab`).toBeTruthy();
+      await control!.trigger("click");
+      await flushPromises();
+      expect(router.currentRoute.value.query.tab).toBe(tab);
+      expect(wrapper.get(`[role="tab"][aria-selected="true"]`).text()).toBe(label);
+    }
+
+    wrapper.unmount();
+  });
+
+  it("clears the local slot poll when the Checks view unmounts", async () => {
+    vi.useFakeTimers();
+    const { wrapper } = await mountChecks("/checks?tab=now");
+    const fetchMock = vi.mocked(fetch);
+    const localSlotRequestCount = () =>
+      fetchMock.mock.calls.filter(([url]) => String(url).includes("/api/local-check-slots")).length;
+    const requestsBeforeUnmount = localSlotRequestCount();
+    expect(requestsBeforeUnmount).toBeGreaterThan(0);
+
+    wrapper.unmount();
+    await vi.advanceTimersByTimeAsync(5000);
+    await flushPromises();
+
+    expect(localSlotRequestCount()).toBe(requestsBeforeUnmount);
   });
 
   it("describes a live stale check by its last heartbeat, while a fresh heartbeat stays clear", async () => {

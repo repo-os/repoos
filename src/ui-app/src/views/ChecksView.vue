@@ -117,6 +117,7 @@ const localSlotHolders = ref<
 const localSlotQueue = ref<Array<{ taskId: string; position: number; since: string }>>([]);
 const activeCheckRuns = ref<TaskCheckRun[]>([]);
 let activeCheckPoll: number | undefined;
+let localSlotPoll: number | undefined;
 
 async function loadActiveChecks(): Promise<void> {
   try {
@@ -136,6 +137,7 @@ onMounted(() => {
 });
 onBeforeUnmount(() => {
   if (activeCheckPoll !== undefined) window.clearInterval(activeCheckPoll);
+  if (localSlotPoll !== undefined) window.clearInterval(localSlotPoll);
 });
 
 async function loadLocalSlotHolders(): Promise<void> {
@@ -170,7 +172,7 @@ async function releaseWedgedSlot(holder: (typeof localSlotHolders.value)[number]
 
 onMounted(() => {
   void loadLocalSlotHolders();
-  window.setInterval(() => {
+  localSlotPoll = window.setInterval(() => {
     if (document.visibilityState === "visible") void loadLocalSlotHolders();
   }, 5000);
 });
