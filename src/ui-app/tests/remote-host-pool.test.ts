@@ -453,6 +453,7 @@ function poolFixture(opts: {
   hosts: Array<{
     host: string;
     os?: string;
+    runner?: "native" | "docker";
     user?: string;
     maxConcurrent?: number;
     labels?: string[];

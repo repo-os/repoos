@@ -1844,7 +1844,11 @@ describe("validateScriptArgs positional layout", () => {
             operation: "shots",
             branch: "feat/capture",
             taskId: "1160",
-            entry: { route: "/settings" },
+            entry: {
+              target: "default",
+              route: "/settings",
+              provenance: { kind: "declared", label: "settings" },
+            },
             canonical: {
               task: { body: "Tiao fixture", area: "core" },
               config: {},
