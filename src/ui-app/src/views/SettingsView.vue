@@ -633,8 +633,18 @@ const mobileNavRef = ref<HTMLElement | null>(null);
 
 function revealActiveMobileTab(): void {
   if (!isNarrow.value) return;
-  const active = mobileNavRef.value?.querySelector<HTMLElement>(".settings-mobile-nav-btn.active");
-  active?.scrollIntoView?.({ block: "nearest", inline: "nearest" });
+  const rail = mobileNavRef.value;
+  const active = rail?.querySelector<HTMLElement>(".settings-mobile-nav-btn.active");
+  if (!rail || !active) return;
+  // Scroll the rail itself, never the page: a `scrollIntoView` here would yank
+  // the page back up to the rail whenever the viewport crosses the breakpoint
+  // while the user is reading a lower section (review round 1).
+  const railRect = rail.getBoundingClientRect();
+  const activeRect = active.getBoundingClientRect();
+  const start = activeRect.left - railRect.left;
+  const end = start + activeRect.width;
+  if (start < 0) rail.scrollLeft += start - 8;
+  else if (end > rail.clientWidth) rail.scrollLeft += end - rail.clientWidth + 8;
 }
 
 watch(
@@ -652,6 +662,20 @@ onMounted(async () => {
   await nextTick();
   revealActiveMobileTab();
 });
+
+// Tapping anywhere outside the disclosure dismisses it. The panel is inline,
+// not a modal, so this only needs to close the list — no focus move.
+function onDocumentPointerDown(e: Event): void {
+  if (!sectionMenuOpen.value) return;
+  const target = e.target as Node | null;
+  if (!target) return;
+  if (sectionMenuBtn.value?.contains(target)) return;
+  if (document.getElementById("settings-section-jump-panel")?.contains(target)) return;
+  sectionMenuOpen.value = false;
+}
+
+onMounted(() => document.addEventListener("pointerdown", onDocumentPointerDown, true));
+onUnmounted(() => document.removeEventListener("pointerdown", onDocumentPointerDown, true));
 
 const activityAnimationEnabledField = computed(() =>
   config.schema.find((f) => f.key === "activityAnimationEnabled"),

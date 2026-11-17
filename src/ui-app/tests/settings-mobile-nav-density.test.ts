@@ -159,14 +159,54 @@ describe("Settings phone navigation density (#1148)", () => {
     wrapper.unmount();
   });
 
-  it("brings the active tab into view on a deep link", async () => {
+  it("scrolls the rail to the active tab without moving the page", async () => {
     stubViewport(true);
-    routeState.query = { tab: "security" };
+    routeState.query = { tab: "general" };
     const wrapper = await mountSettings();
 
-    const active = wrapper.find(".settings-mobile-nav-btn.active").element;
+    const rail = wrapper.find(".settings-mobile-nav").element as HTMLElement;
+    // Give the rail a real viewport so the reveal maths has something to do:
+    // the target pill starts outside the visible strip.
+    rail.getBoundingClientRect = () =>
+      ({ left: 0, top: 0, right: 390, bottom: 44, width: 390, height: 44 }) as DOMRect;
+    Object.defineProperty(rail, "clientWidth", { value: 390, configurable: true });
+    rail.scrollLeft = 0;
+    wrapper.findAll(".settings-mobile-nav-btn").forEach((btn, index) => {
+      (btn.element as HTMLElement).getBoundingClientRect = () =>
+        ({
+          left: index * 100,
+          top: 0,
+          right: index * 100 + 80,
+          bottom: 44,
+          width: 80,
+          height: 44,
+        }) as DOMRect;
+    });
+
+    const target = wrapper.findAll(".settings-mobile-nav-btn")[4]!;
+    await target.trigger("click");
+    await flushPromises();
+    await flushPromises();
+
+    expect(rail.scrollLeft).toBeGreaterThan(0);
+    // The reveal must never fall back to scrolling the page.
     const scrollSpy = Element.prototype.scrollIntoView as unknown as ReturnType<typeof vi.fn>;
-    expect(scrollSpy.mock.contexts).toContain(active);
+    expect(scrollSpy.mock.contexts).not.toContain(target.element);
+
+    wrapper.unmount();
+  });
+
+  it("dismisses the section list on a tap outside it", async () => {
+    stubViewport(true);
+    const wrapper = await mountSettings();
+
+    await wrapper.find(".settings-section-jump-btn").trigger("click");
+    expect(wrapper.find(".settings-section-nav--phone").isVisible()).toBe(true);
+
+    document.body.dispatchEvent(new Event("pointerdown", { bubbles: true }));
+    await flushPromises();
+    expect(wrapper.find(".settings-section-nav--phone").isVisible()).toBe(false);
+    expect(wrapper.find(".settings-section-jump-btn").attributes("aria-expanded")).toBe("false");
 
     wrapper.unmount();
   });
@@ -215,5 +255,11 @@ describe("Settings phone scroll containers keep focus rings visible (#1148)", ()
 
   it("leaves the non-scrolling desktop chip ring outside the control", () => {
     expect(css).toMatch(/\.settings-section-chip:focus-visible\s*\{[^}]*outline-offset:\s*2px/s);
+  });
+
+  it("keeps phone controls at the 44px touch target and snaps the rail", () => {
+    expect(css).toMatch(/\.settings-page \.settings-section-chip\s*\{[^}]*min-height:\s*44px/s);
+    expect(css).toMatch(/\.settings-mobile-nav\s*\{[^}]*scroll-snap-type:\s*x proximity/s);
+    expect(css).toMatch(/\.settings-mobile-nav-btn\s*\{[^}]*scroll-snap-align:\s*start/s);
   });
 });

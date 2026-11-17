@@ -10262,6 +10262,7 @@
     overscroll-behavior-x: contain;
     scrollbar-width: none;
     -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x proximity;
   }
   .settings-mobile-nav::-webkit-scrollbar {
     display: none;
@@ -10279,6 +10280,7 @@
     font-size: 13px;
     font-weight: 600;
     white-space: nowrap;
+    scroll-snap-align: start;
     cursor: pointer;
   }
   .settings-mobile-nav-btn.active {
@@ -10390,7 +10392,7 @@
     overscroll-behavior: contain;
   }
   .settings-page .settings-section-chip {
-    min-height: 40px;
+    min-height: 44px;
     padding: 8px 12px;
     white-space: normal;
   }
