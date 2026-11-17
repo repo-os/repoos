@@ -67,3 +67,4 @@ Screenshot shows the Checks Now tab at 390px. The attempt captured the main page
 - 2026-11-17T20:07:38Z · body
 - 2026-11-17T20:08:36Z · CTO nudge: held — handoff gate is running
 - 2026-11-17T20:18:23Z · status active→review
+- 2026-11-17T20:18:23Z · message_queued at 2026-11-17T20:18:23.330Z
