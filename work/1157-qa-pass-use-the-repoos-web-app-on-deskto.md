@@ -11,7 +11,7 @@ branch: feat/qa-pass-use-the-repoos-web-app-on-deskto
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T15:21:15Z"
-updated_at: "2026-11-17T21:40:43Z"
+updated_at: "2026-11-17T21:42:42Z"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/agent-review.test.ts > agent review before human sign-off (#0101) > gates follow-up creation before the freeze and rejects Land anyway without an eligible review on thinkpad — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: 121f350123544f935cc91124afd200aede44bb8e
 review_rounds: 2
@@ -218,3 +218,4 @@ Start with the Work page at 390px and the bottom dock/heads/pipeline bar overlap
 - 2026-11-17T21:25:00Z · message_delivered: 1 message(s)
 - 2026-11-17T21:40:43Z · message_queued at 2026-11-17T21:40:43.145Z
 - 2026-11-17T21:40:43Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-17T21:42:42Z · CTO nudge: held — an undelivered message is already queued
