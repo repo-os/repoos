@@ -60,3 +60,4 @@ The attached screenshot shows the unconfigured local CLI state only; do not trea
 - 2026-11-17T21:40:32Z · body
 - 2026-11-17T21:40:43Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-17T21:42:39Z · status active→review
+- 2026-11-17T21:42:39Z · message_queued at 2026-11-17T21:42:39.968Z
