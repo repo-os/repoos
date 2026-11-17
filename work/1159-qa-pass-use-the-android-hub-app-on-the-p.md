@@ -12,7 +12,7 @@ branch: feat/qa-pass-use-the-android-hub-app-on-the-p
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T15:51:18Z"
-updated_at: "2026-11-17T18:14:19Z"
+updated_at: "2026-11-17T18:15:23Z"
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-11-17T16:23:57.721Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-17T17:28:58.663Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-17T17:40:28.839Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
@@ -141,3 +141,4 @@ The Pixel 8 Android 16 (API 36) emulator was available and used after the saved 
 - 2026-11-17T18:11:44Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code unknown) · last assistant: The remote build and scoped tests passed, but the local formatting guard found one formatting issue in `App.vue` and correctly skipped dependent steps. I’m applying the repository formatter and rerunning the required check so the final res… · stderr: Reading additional input from stdin... 2026-11-17T17:57:07.473607Z ERROR codex_core::tools::router: error=unable to locate image at `/Users/nick/code/nick/repoos-worktrees/feat/qa-pass-use-the-android-hub-app-on-the-p/.repoos/qa1159/lock-fail-closed-final.png`: No such file or directory (os error 2)
 - 2026-11-17T18:11:44Z · message_delivered: 1 message(s)
 - 2026-11-17T18:14:19Z · body
+- 2026-11-17T18:15:23Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The current board confirms the Pixel 8 emulator QA was completed, with screenshots attached. The two fixes and regression tests are in the branch history, and the existing report draft records the device pass and remaining gap. `REPOOS_CHE… · stderr: (empty)
