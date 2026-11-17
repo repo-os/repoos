@@ -13,10 +13,7 @@
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
         <item name="android:background">@null</item>
-        <!-- Android 15+ enforces transparent system bars for target SDK 35+.
-             Let the themed WebView surface behind the status bar provide its
-             background; automatic contrast scrims can wash out dark themes. -->
-        <item name="android:enforceStatusBarContrast">false</item>
+        <item name="android:windowBackground">@color/hub_window_background</item>
     </style>
 
 
