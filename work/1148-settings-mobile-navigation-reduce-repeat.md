@@ -12,9 +12,22 @@ assigned_to: ai
 created_by: t@t
 branch: ""
 created_at: "2026-11-17T03:06:33Z"
-updated_at: "2026-11-17T03:06:37Z"
+updated_at: "2026-11-17T03:07:49Z"
 ---
-At 390×844 on /settings, page navigation first appears as a six-item grid and then as a long wrap of topic chips (Themes, Activity animation, General, Performance, Model routing, Close-out, Automation & approval, Screenshots, Attachments, Background service, Publishing, Release emails, Remote validation, Board, and more). Both layers consume most of the initial viewport before the selected setting content. Rework the mobile information architecture so users can reach a setting category and its controls with less scanning and scrolling, while keeping search and section context available.\n\nAcceptance: at 390px, the initial view presents one clear navigation layer and useful selected-section content; secondary topics remain discoverable; keyboard/touch navigation and active state remain clear; desktop composition is unchanged.
+## Problem
+At 390×844, /settings shows a six-item page navigation grid, followed by a long wrapping row of topic chips (Themes, Activity animation, General, Performance, Model routing, Close-out, Automation & approval, Screenshots, Attachments, Background service, Publishing, Release emails, Remote validation, Board, and more). Both layers consume most of the initial viewport before selected setting controls.
+
+## Desired UX
+A phone user can reach a setting category and its controls with less scanning and scrolling while retaining search and section context.
+
+## Acceptance criteria
+- At 390px the initial view presents one clear navigation layer and useful selected-section content.
+- Secondary topics remain discoverable and the active section is clear.
+- Keyboard and touch navigation remain usable.
+- Desktop composition is unchanged.
+
+## Notes for AI
+Use the attached phone screenshot. Check long labels and both theme families. This is a follow-up refinement to the completed mobile Settings composition work.
 
 ## Screenshots
 
@@ -25,3 +38,4 @@ At 390×844 on /settings, page navigation first appears as a six-item grid and t
 - 2026-11-17T03:06:33Z · created · t@t
 - 2026-11-17T03:06:35Z · screenshots
 - 2026-11-17T03:06:37Z · needs_input
+- 2026-11-17T03:07:49Z · body: Problem (added); Desired UX (added); Acceptance criteria (added); Notes for AI (added)
