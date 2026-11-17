@@ -1,6 +1,6 @@
 import type { ServerResponse } from "node:http";
-import { readFileSync, readdirSync } from "node:fs";
-import { join } from "node:path";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { join, resolve } from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { EventEmitter } from "node:events";
 import { Readable } from "node:stream";
@@ -54,8 +54,14 @@ function responseCapture() {
 
 describe("installed upgrade status and restart route", () => {
   it("does not hardcode the current package version in test fixtures", () => {
-    const current = (JSON.parse(readFileSync("package.json", "utf8")) as { version: string })
-      .version;
+    let repoRoot = process.cwd();
+    while (!existsSync(join(repoRoot, "package.json")) && repoRoot !== resolve(repoRoot, ".."))
+      repoRoot = resolve(repoRoot, "..");
+    const current = (
+      JSON.parse(readFileSync(join(repoRoot, "package.json"), "utf8")) as {
+        version: string;
+      }
+    ).version;
     const exactVersion = [`"${current}"`, `'${current}'`];
     const scan = (dir: string): string[] =>
       readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
@@ -66,12 +72,12 @@ describe("installed upgrade status and restart route", () => {
             ? [path]
             : [];
       });
-    const offenders = scan("src")
+    const offenders = scan(join(repoRoot, "src"))
       .filter((file) => {
         const source = readFileSync(file, "utf8");
         return exactVersion.some((literal) => source.includes(literal));
       })
-      .map((file) => file.replace(`${process.cwd()}/`, ""));
+      .map((file) => file.replace(`${repoRoot}/`, ""));
     expect(offenders).toEqual([]);
   });
 
@@ -192,9 +198,10 @@ describe("installed upgrade status and restart route", () => {
   });
 
   it("waits for hand-run servers when requested to restart when idle", async () => {
-    setRestartHelperForTests(async () => ({ ok: true }));
+    const helper = vi.fn(async () => ({ ok: true as const }));
+    setRestartHelperForTests(helper);
     const capture = responseCapture();
-    const request = Readable.from([JSON.stringify({ whenIdle: true })]) as Readable & {
+    const request = Readable.from([Buffer.from(JSON.stringify({ whenIdle: true }))]) as Readable & {
       url: string;
       method: string;
     };
@@ -203,7 +210,7 @@ describe("installed upgrade status and restart route", () => {
     await restartInstalledUpgrade(context(), request as never, capture.res, {});
     expect(capture.status()).toBe(202);
     expect(capture.body()).toEqual({ state: "waiting-for-idle" });
-    expect(mocks.spawn).not.toHaveBeenCalled();
+    expect(helper).not.toHaveBeenCalled();
   });
 
   it("does not promise an automatic restart when supervisor detection is uncertain", async () => {
