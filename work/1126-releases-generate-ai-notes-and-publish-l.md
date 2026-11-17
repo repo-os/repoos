@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/releases-generate-ai-notes-and-publish-l
 created_at: "2026-11-15T08:14:22Z"
-updated_at: "2026-11-17T00:48:52Z"
+updated_at: "2026-11-17T00:56:03Z"
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-11-17T00:29:34.833Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -45,27 +45,32 @@ Reuse the existing AI-draft run in ReleasesView.vue and the server release run; 
 ```json
 [
 {
-"label": "Generate with AI asks auto-publish or notify, showing the tag",
-"target": "default",
-"route": "/releases?drawer=cut",
-"highlight": ".rel-whenready",
-"steps": [
-{
-  "waitFor": "[data-test-id=\"release-generate-notes\"]"
+  "label": "Generate with AI asks publish automatically or notify, showing the exact tag",
+  "target": "default",
+  "route": "/releases",
+  "highlight": ".rel-whenready",
+  "steps": [
+    {
+      "click": "[data-test-id=\"cut-release-open\"]"
+    },
+    {
+      "waitMs": 400
+    },
+    {
+      "click": "[data-test-id=\"release-generate-notes\"]"
+    },
+    {
+      "waitMs": 400
+    }
+  ],
+  "state": "release:cutReady"
 },
 {
-  "click": "[data-test-id=\"release-generate-notes\"]"
-},
-{
-  "waitFor": ".rel-whenready"
-}
-]
-},
-{
-"label": "Generate notes and publish shortcut in the cut panel",
-"target": "default",
-"route": "/releases?drawer=cut",
-"highlight": "[data-test-id=\"release-generate-and-publish\"]"
+  "label": "Will publish v0.6.1 when the notes are ready, with Cancel",
+  "target": "default",
+  "route": "/releases",
+  "highlight": "[data-test-id=\"release-auto-publish\"]",
+  "state": "release:autoPublishWaiting"
 }
 ]
 ```
@@ -141,3 +146,4 @@ Reuse the existing AI-draft run in ReleasesView.vue and the server release run; 
 - 2026-11-17T00:45:11Z · body
 - 2026-11-17T00:48:51Z · watchdog: restarting engineer because a queued message waited 22m with no live process
 - 2026-11-17T00:48:52Z · message_delivered: 1 message(s)
+- 2026-11-17T00:56:03Z · body
