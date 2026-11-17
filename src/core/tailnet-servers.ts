@@ -683,6 +683,7 @@ export async function collectTailnetServers(
                 return [
                   {
                     host: peer.host,
+                    ...(peer.dnsName ? { dnsName: peer.dnsName } : {}),
                     ...displayFields,
                     unreachable: true,
                     reason: "tailnet discovery is turned off on this machine",
