@@ -8,8 +8,10 @@ area: web
 assigned_to: ai
 created_by: t@t
 branch: ""
+cli_override: codex
+model_override: gpt-6-luna
 created_at: "2026-11-17T02:53:04Z"
-updated_at: "2026-11-17T02:53:05Z"
+updated_at: "2026-11-17T02:53:14Z"
 ---
 ## Problem
 The phone experience across RepoOS pages needs a coherent design review: headings shift, unnecessary explanatory text consumes space, cards and controls feel dense, and some layers are difficult to read. The five attached screenshots show examples, including Mission Control, More, Stories, Work queue and task detail.
@@ -38,3 +40,4 @@ Use strong visual and product design judgment. Inspect rendered pages and theme 
 
 - 2026-11-17T02:53:04Z · created · t@t
 - 2026-11-17T02:53:05Z · screenshots
+- 2026-11-17T02:53:14Z · cli_override, model_override
