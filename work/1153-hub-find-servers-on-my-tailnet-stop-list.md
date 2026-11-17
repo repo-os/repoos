@@ -2,7 +2,7 @@
 id: "1153"
 title: "Hub 'Find servers on my tailnet': stop listing bare machines, hide phones, explain failures, and replace SSH discovery with an HTTPS-based one"
 type: bug
-status: inbox
+status: ready
 priority: p2
 area: [mobile, server, core]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: ""
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-17T10:06:23Z"
-updated_at: "2026-11-17T10:23:21Z"
+updated_at: "2026-11-17T10:23:24Z"
 ---
 ## Problem
 
@@ -44,3 +44,4 @@ Do not add runtime dependencies. The discovery endpoint exposes names/ports only
 
 - 2026-11-17T10:06:23Z · created · t@t
 - 2026-11-17T10:23:21Z · cli_override, model_override
+- 2026-11-17T10:23:24Z · status inbox→ready
