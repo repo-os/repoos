@@ -1737,6 +1737,28 @@ onUnmounted(() => {
                         :disabled="config.saving"
                         @update:checked="(v: boolean) => (form[f.key] = v)"
                       />
+                      <Input
+                        v-else-if="f.type === 'string'"
+                        :model-value="String(form[f.key] ?? '')"
+                        type="text"
+                        :placeholder="
+                          f.key === 'remoteValidation.command' ? './scripts/ci-remote.sh' : ''
+                        "
+                        :disabled="config.saving"
+                        @update:model-value="(v) => (form[f.key] = v)"
+                      />
+                      <Input
+                        v-else-if="f.type === 'array'"
+                        :model-value="
+                          Array.isArray(form[f.key])
+                            ? form[f.key].join(', ')
+                            : String(form[f.key] ?? '')
+                        "
+                        type="text"
+                        placeholder="java, gradle, node"
+                        :disabled="config.saving"
+                        @update:model-value="(v) => (form[f.key] = v)"
+                      />
                       <span
                         v-else-if="f.type === 'number' && fieldDurationUnit(f)"
                         class="duration-field"
@@ -1975,6 +1997,30 @@ onUnmounted(() => {
                         :checked="!!form[f.key]"
                         :disabled="config.saving"
                         @update:checked="(v: boolean) => (form[f.key] = v)"
+                      />
+                      <Input
+                        v-else-if="f.type === 'string' || f.type === 'array'"
+                        :model-value="
+                          Array.isArray(form[f.key])
+                            ? form[f.key].join(', ')
+                            : String(form[f.key] ?? '')
+                        "
+                        :placeholder="
+                          f.key === 'remoteValidation.command'
+                            ? './scripts/ci-remote.sh'
+                            : 'java, gradle, node'
+                        "
+                        :disabled="config.saving"
+                        @update:model-value="
+                          (v) =>
+                            (form[f.key] =
+                              f.type === 'array'
+                                ? v
+                                    .split(',')
+                                    .map((tool) => tool.trim())
+                                    .filter(Boolean)
+                                : v)
+                        "
                       />
                     </div>
                   </div>

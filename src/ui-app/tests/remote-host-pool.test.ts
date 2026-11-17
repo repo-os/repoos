@@ -19,7 +19,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import type { RepoOSConfig } from "../../core/types.js";
 import { loadConfig } from "../../core/config.js";
 import { getCheckStore } from "../../core/check-store.js";
@@ -44,6 +44,7 @@ import {
   HOST_LOCK_TIMEOUT_EXIT,
   PREREQ_OK_TOKEN,
   RUNNER_SCRIPT_MIRROR_TOKEN,
+  RUNNER_SCRIPT_COMMAND_TOKEN,
   HostsUnavailableError,
   HangWatchdog,
   RemoteValidationRunner,
@@ -2725,13 +2726,14 @@ describe("per-host prerequisite probe", () => {
     expect(cmd).toContain("grep -qF '${3'");
     expect(cmd).toContain(PREREQ_OK_TOKEN);
     expect(cmd).toContain(RUNNER_SCRIPT_MIRROR_TOKEN);
-    expect(cmd).not.toContain("bun not found");
+    expect(cmd).toContain(`${RUNNER_SCRIPT_COMMAND_TOKEN}=1`);
+    expect(cmd).toContain(`${RUNNER_SCRIPT_COMMAND_TOKEN}=0`);
   });
 
   it('checks docker when runner is explicitly "docker"', () => {
     const cmd = prereqProbeCommand("docker");
     expect(cmd).toContain("docker info");
-    expect(cmd).not.toContain("bun not found");
+    expect(cmd).toContain("bun");
     // git DOES run on the host for docker too — checked separately below
     // (#0521 review: validate.sh's git clone happens before docker run).
   });
@@ -2769,34 +2771,72 @@ describe("per-host prerequisite probe", () => {
     // `just setup-<host>-native` / validate-macos.sh). `runner` says
     // explicitly which one a given host actually uses, independent of `os`.
     const cmd = prereqProbeCommand("native");
-    expect(cmd).toContain("for tool in 'git' 'bun'");
-    expect(cmd).toContain('echo "$tool not found on PATH"');
+    expect(cmd).toContain("bash -lc");
+    expect(cmd).toContain("git");
+    expect(cmd).toContain("bun");
+    expect(cmd).toContain('echo "$tool not found on login PATH"');
+    expect(cmd).toContain("/opt/homebrew/bin:$PATH");
     expect(cmd).not.toContain("docker info");
     expect(cmd).toContain(PREREQ_OK_TOKEN);
   });
 
   it("checks all declared native toolchain executables and skips Bun assumptions for a project command", () => {
     const cmd = prereqProbeCommand("native", "repoos-ci", ["java", "gradle", "node"], true);
-    expect(cmd).toContain("for tool in 'git' 'java' 'gradle' 'node'");
-    expect(cmd).toContain('echo "$tool not found on PATH"');
-    expect(cmd).not.toContain("bun not found");
+    for (const tool of ["git", "java", "gradle", "node"]) expect(cmd).toContain(tool);
+    expect(cmd).toContain('echo "$tool not found on login PATH"');
+    expect(cmd).not.toContain("'bun'");
     expect(cmd).not.toContain("docker info");
   });
 
   it("checks declared toolchain executables inside a configured Docker image", () => {
     const cmd = prereqProbeCommand("docker", "tiao-ci", ["java", "node"], true);
     expect(cmd).toContain("docker image inspect 'tiao-ci'");
-    expect(cmd).toContain("docker run --rm 'tiao-ci'");
+    expect(cmd).toContain("docker run --rm 'tiao-ci' bash -lc");
     expect(cmd).toContain("java");
     expect(cmd).toContain("node");
-    expect(cmd).toContain("not found in runner image");
+    expect(cmd).toContain("not found in runner image login PATH");
   });
 
   it("uses the Bun prerequisite only for the stock native gate", () => {
     const cmd = prereqProbeCommand("native", "repoos-ci", [], true);
-    expect(cmd).toContain("for tool in 'git'");
+    expect(cmd).toContain("git");
     expect(cmd).not.toContain("'bun'");
-    expect(cmd).toContain('echo "$tool not found on PATH"');
+    expect(cmd).toContain('echo "$tool not found on login PATH"');
+  });
+
+  it("keeps Bun in the probe when requiredTools are set but the stock command is used", () => {
+    const native = prereqProbeCommand("native", "repoos-ci", ["java", "node"]);
+    for (const tool of ["git", "java", "node", "bun"]) expect(native).toContain(tool);
+    const docker = prereqProbeCommand("docker", "repoos-ci", ["java", "node"]);
+    for (const tool of ["java", "node", "bun"]) expect(docker).toContain(tool);
+    expect(docker).toContain("one or more required tools are unavailable");
+  });
+
+  it("checks runner scripts from the dispatcher path and asks stale scripts to be updated", () => {
+    const cmd = prereqProbeCommand("native", "repoos-ci", ["java"], true);
+    expect(cmd).toContain('REPOOS_VALIDATE_SCRIPT="$HOME/.local/bin/repoos-validate"');
+    expect(cmd).toContain("/opt/repoos/validate.sh");
+    expect(cmd).toContain("project command support is required");
+    expect(cmd).toContain("bash -lc");
+  });
+
+  it("keeps custom Docker runner lifecycle, caches, and browser handoff wired", () => {
+    let repoRoot = process.cwd();
+    while (!existsSync(join(repoRoot, "scripts/remote-runner/validate.sh"))) {
+      const parent = dirname(repoRoot);
+      if (parent === repoRoot) throw new Error("could not locate repository root");
+      repoRoot = parent;
+    }
+    const script = readFileSync(join(repoRoot, "scripts/remote-runner/validate.sh"), "utf8");
+    const custom = script.slice(
+      script.indexOf('if [ -n "${REPOOS_VALIDATION_COMMAND:-}" ]'),
+      script.indexOf("# Run Docker as the SSH user's uid:gid"),
+    );
+    expect(custom).toContain('--name "$CONTAINER"');
+    expect(custom).toContain('-v "$CACHE_VOLUME":/repoos-cache');
+    expect(custom).toContain("GRADLE_USER_HOME=/repoos-cache/gradle");
+    expect(custom).toContain("REPOOS_OFFLOAD_BROWSER_STEPS");
+    expect(custom).toContain("REPOOS_BROWSER_CAPTURE_MODE");
   });
 
   it("checks the bun cache dir is writable on a native host", () => {

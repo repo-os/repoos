@@ -174,7 +174,7 @@ setup-mini-native:
 setup-linux-native host:
     just _setup-runner-native {{host}}
 
-# internal: provision a remote macOS host as a NATIVE (no-Docker) runner —
+# internal: provision a remote Linux or macOS host as a NATIVE (no-Docker) runner —
 # usage: just _setup-runner-native <host>
 [group('runner')]
 [private]
@@ -186,15 +186,10 @@ _setup-runner-native host:
     echo "==> verifying git on $HOST"
     ssh "$HOST" "git --version"
 
-    echo "==> installing validate-macos.sh on $HOST"
+    echo "==> installing native validate script on $HOST (user-level, no sudo)"
     ssh "$HOST" 'mkdir -p ~/.repoos-build'
     scp scripts/remote-runner/validate-macos.sh "$HOST:~/.repoos-build/"
-    ssh -t "$HOST" "
-        sudo mkdir -p /opt/repoos &&
-        sudo install -m 755 ~/.repoos-build/validate-macos.sh /opt/repoos/validate.sh &&
-        rm -rf ~/.repoos-build &&
-        echo done
-    "
+    ssh "$HOST" 'mkdir -p ~/.local/bin && cp ~/.repoos-build/validate-macos.sh ~/.local/bin/repoos-validate && chmod 755 ~/.local/bin/repoos-validate && rm -rf ~/.repoos-build && echo done'
 
     echo "==> installing declared engineer CLIs (non-interactive)"
     repoos runners setup "$HOST" || true

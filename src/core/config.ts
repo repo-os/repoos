@@ -4063,13 +4063,13 @@ export function getConfigSchema(): ConfigFieldMeta[] {
     },
     {
       key: "remoteValidation.requiredTools",
-      label: "Remote validation: native runner tools",
+      label: "Remote validation: required runner tools",
       type: "array",
       tier: "restart",
       restartRequired: true,
       default: [],
       description:
-        "Executables that native runner hosts must provide (for example java, gradle, node). Missing tools are named in the host probe result.",
+        "Comma-separated executables the runner must provide (for example java, gradle, node). Native hosts check their login shell; Docker hosts check the configured image. Missing tools are named in the host probe result.",
     },
     {
       key: "remoteValidation.tailscaleHost",

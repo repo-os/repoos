@@ -23,7 +23,7 @@ describe("remote project command", () => {
     mkdirSync(home, { recursive: true });
     writeFileSync(
       join(project, "repoos.toml"),
-      '[remoteValidation]\ncommand = "./scripts/ci-remote.sh"\n' +
+      "[remoteValidation]\ncommand = \"./scripts/ci-remote.sh && printf 'command chain passed\\n'\"\n" +
         'requiredTools = ["java", "node"]\n',
     );
     writeFileSync(
@@ -55,7 +55,7 @@ describe("remote project command", () => {
 
     const config = loadConfig(project);
     const command = config.remoteValidation?.command;
-    expect(command).toBe("./scripts/ci-remote.sh");
+    expect(command).toContain("./scripts/ci-remote.sh && printf");
     expect(config.remoteValidation?.requiredTools).toEqual(["java", "node"]);
     if (!command) throw new Error("fixture remoteValidation.command did not load");
 
@@ -70,6 +70,7 @@ describe("remote project command", () => {
       },
     });
     expect(output).toContain("HEAD verified");
+    expect(output).toContain("command chain passed");
     expect(output).toMatch(/Tiao checks at .*runner-home\/\.repoos-validate\.[^/]+\/repo/);
     expect(readFileSync(join(artifacts, "test-output.log"), "utf8")).toContain("Tiao checks at");
     expect(readFileSync(join(artifacts, "tiao-check.txt"), "utf8")).toContain("passed");

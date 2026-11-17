@@ -590,9 +590,12 @@ const hetznerSteps: { label: string; body: string; cmd?: string }[] = [
             <span v-if="h.probed && h.healthy" class="rvr-host-meta">
               validate.sh:
               {{
-                h.validateScriptMirrorSupported
-                  ? "incremental uploads"
-                  : "legacy (full bundle only)"
+                [
+                  h.validateScriptMirrorSupported ? "incremental uploads" : "full bundles",
+                  h.validateScriptCommandSupported === false
+                    ? "no project commands"
+                    : "project commands",
+                ].join(" · ")
               }}
             </span>
             <span v-if="h.lastRun" class="rvr-host-meta"

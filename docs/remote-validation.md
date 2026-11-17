@@ -1,8 +1,9 @@
 # Remote Validation Runner
 
 Written 2026-08-28. Updated 2026-09-22 to add the Tailscale provider,
-2026-09-27 to pool multiple Tailscale hosts (#0521), and 2026-10-06 for
-incremental bundle upload via a per-host mirror (#0717).
+2026-09-27 to pool multiple Tailscale hosts (#0521), 2026-10-06 for
+incremental bundle upload via a per-host mirror (#0717), and 2026-11-18 for
+project-owned validation commands (#1160).
 Runs the expensive half of the close-out gate on a remote machine instead of
 the developer's machine. Two providers are supported: **hetzner** (disposable
 cloud VM, the original) and **tailscale** (one or more persistent machines on
@@ -620,8 +621,9 @@ since the result is identical either way):
 
 - **`runner = "docker"` (default).** Linux or macOS, in a fresh `repoos-ci`
   container. Requires Docker (Docker Desktop on macOS).
-- **`runner = "native"` (macOS only today).** No Docker: `bun install` +
-  `bun run build` + `bun run test` directly on the host.
+- **`runner = "native"`.** Linux or macOS, no Docker. The stock gate runs
+  directly on the host; a configured `remoteValidation.command` runs the
+  project's command with the declared toolchain in the SSH user's login environment.
 
 **One-time setup per host.** The `just` recipes are the maintained path for
 both:
@@ -631,12 +633,15 @@ just setup-bee                          # Linux (Arch), Docker
 just setup-thinkpad                     # Linux (Arch), Docker
 just setup-mini                         # macOS, Docker (Docker Desktop)
 just setup-mini-native                  # macOS, native — no Docker
+just setup-linux-native bee              # Linux, native — no Docker
 just _setup-runner <host> <arch|macos>         # any other Docker host
-just _setup-runner-native <host>               # any other native macOS host
+just _setup-runner-native <host>               # any other native Linux/macOS host
 ```
 
-Each installs the matching `validate.sh` at `/opt/repoos/validate.sh` on the
-host. **Set `runner` on that host's config row to match what you installed**
+Docker recipes install `validate.sh` at `/opt/repoos/validate.sh` (sudo).
+Native recipes install `~/.local/bin/repoos-validate` for the SSH user (no
+sudo). RepoOS prefers the user-level script and falls back to `/opt` for older
+setups. **Set `runner` on that host's config row to match what you installed**
 — the per-host prerequisite probe (below) checks the toolchain `runner` says
 to expect, so a mismatch (e.g. a native install left at the default
 `runner = "docker"`) reports the host unhealthy even though it works.
@@ -650,15 +655,16 @@ it says explicitly which toolchain a given host uses, independent of its
 platform.
 
 The scripts on hosts are **copies**: after updating RepoOS re-run the setup
-above, otherwise an old `validate.sh` ignores the third (artifacts) argument —
-the per-host prerequisite check below reports exactly that.
+above. The prerequisite check verifies artifact support, mirror support, and
+project-command support. When a project command is configured, an old script
+is marked unhealthy with an update command instead of silently running Bun.
 
 #### Rolling out incremental bundle upload (#0717 / #0725)
 
 RepoOS 2026-10-07+ uploads partial git bundles when the host's installed
-`validate.sh` understands the optional **mirror-path** argument (the copy in
+the installed validator understands the optional **mirror-path** argument (the copy in
 `scripts/remote-runner/validate.sh` in this repo). The prerequisite probe
-(`grep MIRROR` on `/opt/repoos/validate.sh`) caches that per host:
+(`grep MIRROR` on the selected user-level or `/opt` script) caches that per host:
 
 - **Current script** — RepoOS probes the host mirror, uploads only new commits
   when possible, and passes the mirror path as the fifth argument.
@@ -674,9 +680,11 @@ RepoOS 2026-10-07+ uploads partial git bundles when the host's installed
 Update every pool host after pulling a RepoOS release that includes #0717:
 
 ```bash
-# Example — replace bee with your host alias; needs sudo on the host.
+# Example — replace bee with your host alias; installs for the SSH user, no sudo.
 ssh bee 'git clone --depth 1 git@github.com:repo-os/repoos.git ~/.repoos-build && \
-  sudo install -Dm755 ~/.repoos-build/scripts/remote-runner/validate.sh /opt/repoos/validate.sh && \
+  mkdir -p ~/.local/bin && \
+  cp ~/.repoos-build/scripts/remote-runner/validate.sh ~/.local/bin/repoos-validate && \
+  chmod 755 ~/.local/bin/repoos-validate && \
   rm -rf ~/.repoos-build && echo done'
 ```
 
@@ -688,14 +696,19 @@ next health check.
 
 The default `remoteValidation.containerImage` is **`repoos-ci`**: the image RepoOS
 uses to dogfood its own repo (`Dockerfile.ci` in this repository). It is a
-generic Bun + git + Node toolchain — **no Postgres or other services**. Inside
-the container, `/opt/repoos/validate.sh` runs a **fixed** sequence (not your
-project's `[[check.steps]]` plan):
+generic Bun + git + Node toolchain — **no Postgres or other services**. With no
+command override, the validator runs RepoOS's stock sequence:
 
 `bun install --frozen-lockfile && bun run build && <repoos dist shim> && bun run test`
 
-That shim exists so the in-container `repoos check` matches RepoOS self-hosting;
-other projects still get `bun install`, `bun run build`, and `bun run test` only.
+That shim exists so the in-container `repoos check` matches RepoOS self-hosting.
+With `remoteValidation.command`, the validator runs that project command in the
+verified checkout instead. Docker project commands get a persistent named
+volume for their home and package caches. `GRADLE_USER_HOME`,
+`npm_config_cache`, `BUN_INSTALL_CACHE_DIR`, and `REPOOS_CACHE_DIR` point into
+that volume, so a disposable checkout does not discard expensive downloads.
+Browser capture and configured browser-step offload remain available for
+RepoOS projects whose command produces `dist/cli/index.js`.
 
 **Other repos** can reuse the same pattern with their own image name in
 `containerImage`, but you must build and tag that image **on every pool host**
@@ -747,25 +760,25 @@ mkdir -p "$REPOOS_ARTIFACTS_DIR"
 cp app/build/reports/tests/testDebugUnitTest/index.html "$REPOOS_ARTIFACTS_DIR/android-unit-tests.html"
 ```
 
-Install the runner script into the SSH user's home (no sudo):
+Install the native runner script into the SSH user's dispatcher path (no sudo):
 
 ```bash
 mkdir -p ~/.local/bin
 cp scripts/remote-runner/validate-macos.sh ~/.local/bin/repoos-validate
 chmod 755 ~/.local/bin/repoos-validate
-sudo install -Dm755 scripts/remote-runner/validate-macos.sh /opt/repoos/validate.sh
 ```
 
-The current dispatcher invokes `/opt/repoos/validate.sh`, so that final
-installation still requires sudo; JDK, Gradle, Node and project caches can be
-installed user-level (for example SDKMAN for JDK, `nvm` for Node, and the
-Gradle wrapper shipped with the project). The Android SDK can live under
+RepoOS invokes `~/.local/bin/repoos-validate` when present, then falls back to
+`/opt/repoos/validate.sh` for existing installations. JDK, Gradle, Node and
+project caches can be installed user-level (for example SDKMAN for JDK, `nvm`
+for Node, and the Gradle wrapper shipped with the project). The Android SDK can live under
 `$HOME/Android/Sdk`; add its `platform-tools` and `cmdline-tools/latest/bin`
 directories to the SSH user's login `PATH`. Native execution runs the declared command from the
 checked-out project and keeps the same verified SHA, logs, artifacts, queue,
 retry and local-fallback behavior as the stock gate. Configure the host's
-`os`/`labels` according to the toolchain it actually has. Docker hosts continue
-to use the stock image gate and its per-host image prerequisite.
+`os`/`labels` according to the toolchain it actually has. Docker hosts run the
+same project command inside their configured image; the probe checks that
+image's declared tools and keeps persistent package caches between runs.
 
 #### Follow-up order for remote engineer sessions
 
@@ -902,14 +915,14 @@ two rows: the remote suite on the host, then the local guards on this machine.
 A `[[check.steps]]` row can declare `runsOn = ["macos"]` (any capability
 string; a host provides its `os` plus its `labels`, case-insensitive). The
 job's requirement is the union of `runsOn` across only the plan's `build`-
-and `tests`-kind steps — NOT every step. The remote host never runs the
-check plan step-by-step; `validate.sh` runs the fixed sequence
-`bun install && bun run build && bun run test`, which is exactly the work
-those two kinds represent. A step of any other kind (or a raw custom
-`command` step), even one declaring its own `runsOn`, always runs locally as
-part of `repoos check` regardless — so its capability requirement must not
-constrain which remote host the job needs (a prior version unioned every
-step's `runsOn` here; that was a real bug, not just conservative — a project
+and `tests`-kind steps — NOT every step. Without a command override, the
+remote host runs `bun install && bun run build && bun run test`. With
+`remoteValidation.command`, it runs that project command. A step of any other
+kind (or a raw custom `command` step), even one declaring its own `runsOn`,
+always runs locally as part of `repoos check` regardless — so its capability
+requirement must not constrain which remote host the job needs (a prior
+version unioned every step's `runsOn` here; that was a real bug, not just
+conservative — a project
 with a macOS-only *local* gate and only Linux remote hosts would
 config-error its entire remote build+test over a capability the remote
 portion never used, #0521 review). Deliberately still not profile- or

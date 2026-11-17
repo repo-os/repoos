@@ -35,11 +35,13 @@ import {
   mirrorProbeCommand,
   MIRROR_BASE_REF,
   parseValidateScriptMirrorSupport,
+  parseValidateScriptCommandSupport,
   isRunnerBundleTransportMismatch,
   validateScriptArgs,
   validateScriptInstallCommand,
   remoteChangedTestScope,
   RUNNER_SCRIPT_MIRROR_TOKEN,
+  RUNNER_SCRIPT_COMMAND_TOKEN,
   PREREQ_OK_TOKEN,
   VALIDATE_SCRIPT,
   defaultRemoteExec,
@@ -1604,6 +1606,12 @@ describe("validate.sh compatibility (#0725)", () => {
     expect(parseValidateScriptMirrorSupport(PREREQ_OK_TOKEN)).toBe(false);
   });
 
+  it("parses project-command support from the host probe", () => {
+    expect(parseValidateScriptCommandSupport(`${RUNNER_SCRIPT_COMMAND_TOKEN}=1`)).toBe(true);
+    expect(parseValidateScriptCommandSupport(`${RUNNER_SCRIPT_COMMAND_TOKEN}=0`)).toBe(false);
+    expect(parseValidateScriptCommandSupport(PREREQ_OK_TOKEN)).toBe(false);
+  });
+
   it("detects bundle transport mismatches for a single legacy retry", () => {
     expect(
       isRunnerBundleTransportMismatch(
@@ -1667,7 +1675,11 @@ describe("validate.sh compatibility (#0725)", () => {
   it("formats a one-line install command for the host owner", () => {
     const cmd = validateScriptInstallCommand("nick", "bee");
     expect(cmd).toContain("nick@bee");
-    expect(cmd).toContain("/opt/repoos/validate.sh");
+    expect(cmd).toContain("~/.local/bin/repoos-validate");
+    expect(cmd).not.toContain("sudo");
+    expect(validateScriptInstallCommand("nick", "mini", "native")).toContain(
+      "validate-macos.sh ~/.local/bin/repoos-validate",
+    );
   });
 });
 
@@ -1750,19 +1762,20 @@ describe("remote mirror helpers (#0717)", () => {
 describe("validateScriptArgs positional layout", () => {
   const sha = "a".repeat(40);
   it("keeps the mirror path in $5 when there is no changed ref", () => {
-    expect(validateScriptArgs("~/.b", sha, "~/.art", undefined, "~/.mirror")).toBe(
-      `/opt/repoos/validate.sh ~/.b ${sha} ~/.art '' "$HOME"/'.mirror'`,
-    );
+    const command = validateScriptArgs("~/.b", sha, "~/.art", undefined, "~/.mirror");
+    expect(command).toContain('"$REPOOS_VALIDATE_SCRIPT" ~/.b');
+    expect(command).toContain(`${sha} ~/.art '' "$HOME"/'.mirror'`);
   });
   it("keeps the changed ref in $4 and the mirror in $5", () => {
-    expect(validateScriptArgs("~/.b", sha, "~/.art", "main", "~/.mirror")).toBe(
-      `/opt/repoos/validate.sh ~/.b ${sha} ~/.art 'main' "$HOME"/'.mirror'`,
-    );
+    const command = validateScriptArgs("~/.b", sha, "~/.art", "main", "~/.mirror");
+    expect(command).toContain('"$REPOOS_VALIDATE_SCRIPT" ~/.b');
+    expect(command).toContain(`${sha} ~/.art 'main' "$HOME"/'.mirror'`);
   });
   it("sends the legacy 3-argument call when neither is set", () => {
-    expect(validateScriptArgs("~/.b", sha, "~/.art")).toBe(
-      `/opt/repoos/validate.sh ~/.b ${sha} ~/.art`,
-    );
+    const command = validateScriptArgs("~/.b", sha, "~/.art");
+    expect(command).toContain('"$REPOOS_VALIDATE_SCRIPT" ~/.b');
+    expect(command).toContain(`${sha} ~/.art`);
+    expect(command).not.toContain("''");
   });
 
   it("carries the canonical capture context as a shell env prelude (#0854)", () => {

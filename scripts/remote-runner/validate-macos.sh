@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# REPOOS_VALIDATE_COMMAND: capability marker consumed by the host probe.
 #
 # Native remote validation runner (no Docker; Linux or macOS).
 # Invoked by RepoOS over ssh as:
@@ -49,9 +50,32 @@ export REPOOS_ARTIFACTS_DIR="$ART"
 set +e
 (
   set -o pipefail
-  if [ -n "${REPOOS_VALIDATION_COMMAND:-}" ]; then
+  if [ -n "${REPOOS_BROWSER_CAPTURE_MODE:-}" ]; then
+    if [ -n "${REPOOS_BROWSER_CAPTURE_BRANCH:-}" ]; then
+      git checkout --detach "$SHA"
+      CAPTURE_WORKTREE="$HOME/.repoos-worktrees/$REPOOS_BROWSER_CAPTURE_BRANCH"
+      mkdir -p "$(dirname "$CAPTURE_WORKTREE")"
+      git worktree add -b "$REPOOS_BROWSER_CAPTURE_BRANCH" "$CAPTURE_WORKTREE" "$SHA"
+      cd "$CAPTURE_WORKTREE"
+      bun install --frozen-lockfile || exit 4
+    fi
+    bun scripts/remote-runner/capture-browser.ts \
+      "$REPOOS_BROWSER_CAPTURE_TASK" "$REPOOS_BROWSER_CAPTURE_MODE" "$ART/browser-capture"
+  elif [ -n "${REPOOS_VALIDATION_COMMAND:-}" ]; then
     echo "[validate] running configured command: $REPOOS_VALIDATION_COMMAND"
-    bash -lc "$REPOOS_VALIDATION_COMMAND"
+    bash -lc 'export PATH="/opt/homebrew/bin:$PATH"; eval "$REPOOS_VALIDATION_COMMAND"'
+    CODE=$?
+    if [ "$CODE" -eq 0 ] && [ "${REPOOS_OFFLOAD_BROWSER_STEPS:-}" = "1" ]; then
+      if [ -f "$WORK/repo/dist/cli/index.js" ]; then
+        bun "$WORK/repo/dist/cli/index.js" check \
+          --profile "${REPOOS_CHECK_PROFILE:-default}" --step ui-smoke --step rendered-contrast
+        CODE=$?
+      else
+        echo "[validate] browser offload requested, but the project command did not produce dist/cli/index.js" >&2
+        CODE=1
+      fi
+    fi
+    exit "$CODE"
   else
     bun install --frozen-lockfile \
       && bun run build \
