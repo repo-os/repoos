@@ -199,6 +199,25 @@ describe("AI notes: publish automatically or notify me (#1126)", () => {
     expect(started.notes).toBe("- Fixed a thing");
   });
 
+  it("a cached-draft lookup (reload or second tab) never rewrites a live publishing cut", async () => {
+    const cfg = config();
+    const starter = vi.fn();
+    draft();
+    await postNotes(cfg, { version: "1.2.4", confirmTag: "v1.2.4", whenReady: "publish" }, starter);
+    const before = await waitForPending(cfg);
+    expect(before.state).toBe("publishing");
+
+    // The panel's fillSavedNotes() posts a cache-only lookup; with the draft
+    // cached, that settles again. It must leave the live cut untouched.
+    const again = await postNotes(cfg, { cachedOnly: true }, starter);
+    expect(again.statusCode).toBe(200);
+    const after = readReleaseAutoPublish(cfg)!;
+    expect(after.state).toBe("publishing");
+    expect(after.requestedAt).toBe(before.requestedAt);
+    expect(after.error).toBeNull();
+    expect(starter).toHaveBeenCalledTimes(1);
+  });
+
   it("notify mode records the draft and never starts a release", async () => {
     const cfg = config();
     const starter = vi.fn();

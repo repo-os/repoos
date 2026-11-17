@@ -341,6 +341,17 @@ function writeAutoPublishState(
 ): ReleaseAutoPublishRecord | null {
   const current = readReleaseAutoPublish(config);
   if (!current || current.requestedAt !== requestedAt) return null;
+  // A live cut is outward-facing: once `publishing`, only its own outcome
+  // (succeeded/failed) may rewrite the record. A cached-draft settle, a second
+  // tab or a stray failure must never flip it back to `ready`/`waiting`.
+  if (
+    current.state === "publishing" &&
+    patch.state !== undefined &&
+    patch.state !== "succeeded" &&
+    patch.state !== "failed"
+  ) {
+    return null;
+  }
   const next: ReleaseAutoPublishRecord = { ...current, ...patch, updatedAt: stamp() };
   writeReleaseAutoPublish(config, next);
   return next;
@@ -395,10 +406,14 @@ function failAutoPublish(
   requestedAt: string,
   reason: string,
   kind: "publish" | "notes" = "publish",
+  fromPublishing = false,
 ): void {
   const current = readReleaseAutoPublish(ctx.config);
   if (!current || current.requestedAt !== requestedAt) return;
   if (!isReleaseAutoPublishActive(current)) return;
+  // Only the restart-recovery path may fail a record that is mid-cut; every
+  // other failure (draft errors, cached-hit settles) must leave a live cut alone.
+  if (current.state === "publishing" && !fromPublishing) return;
   const next = writeAutoPublishState(ctx.config, requestedAt, {
     state: "failed",
     error: reason,
@@ -426,7 +441,7 @@ function failAutoPublish(
  */
 function failPendingOnDraftError(ctx: NotesRunContext, err: unknown): void {
   const pending = readReleaseAutoPublish(ctx.config);
-  if (!isReleaseAutoPublishActive(pending)) return;
+  if (!isReleaseAutoPublishActive(pending) || pending.state === "publishing") return;
   const msg = err instanceof Error ? err.message : String(err);
   failAutoPublish(
     ctx,
@@ -449,7 +464,9 @@ function settleAutoPublishAfterDraft(
 ): Promise<void> {
   const current = readReleaseAutoPublish(ctx.config);
   if (!current) return Promise.resolve();
-  if (!isReleaseAutoPublishActive(current)) return Promise.resolve(); // cancelled while drafting
+  // Settle only from `waiting`: a cached-draft hit (reload, second tab) while the
+  // cut is `ready`/`publishing` must not rewrite the record.
+  if (current.state !== "waiting") return Promise.resolve();
   if (!notes.trim()) {
     failAutoPublish(
       ctx,
@@ -595,6 +612,7 @@ export async function resumeReleaseAutoPublish(ctx: NotesRunContext): Promise<vo
       current.requestedAt,
       `RepoOS restarted while ${current.tag} was publishing and did not retry automatically. Check whether the tag exists, then publish manually if needed.`,
       "publish",
+      true,
     );
   }
 }
