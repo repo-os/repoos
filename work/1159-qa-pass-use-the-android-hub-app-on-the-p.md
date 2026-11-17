@@ -177,3 +177,4 @@ The Pixel 8 Android 16 (API 36) emulator was available and used after the saved 
 - 2026-11-17T19:55:39Z · CTO nudge: held — handoff gate is running
 - 2026-11-17T19:56:09Z · status active→review
 - 2026-11-17T19:56:09Z · message_queued at 2026-11-17T19:56:09.689Z
+- 2026-11-17T19:56:09Z · note: shots: skipped — the diff (12 changed paths) touches no capture target's globs — no UI change to capture
