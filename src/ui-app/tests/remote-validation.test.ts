@@ -1662,7 +1662,9 @@ describe("validate.sh compatibility (#0725)", () => {
       });
       expect(refs).toContain("HEAD");
       const legacyCall = validateScriptArgs("~/.b", candidateSha, "~/.art", "main");
-      expect(legacyCall).toBe(`/opt/repoos/validate.sh ~/.b ${candidateSha} ~/.art 'main'`);
+      expect(legacyCall).toContain('REPOOS_VALIDATE_SCRIPT="$HOME/.local/bin/repoos-validate"');
+      expect(legacyCall).toContain("REPOOS_VALIDATE_SCRIPT='/opt/repoos/validate.sh'");
+      expect(legacyCall).toContain(`"$REPOOS_VALIDATE_SCRIPT" ~/.b ${candidateSha} ~/.art 'main'`);
       expect(legacyCall).not.toContain("repoos-cache");
       expect(validateScriptArgs("~/.b", candidateSha, "~/.art", "main", "~/.mirror")).toContain(
         `"$HOME"/'.mirror'`,
@@ -1744,7 +1746,7 @@ describe("remote mirror helpers (#0717)", () => {
         "~/.artifacts",
         undefined,
         mirrorPath,
-      ).replace(/^\/opt\/repoos\/validate\.sh /, "");
+      ).replace(/^.*; "\$REPOOS_VALIDATE_SCRIPT" /, "");
       const passedMirror = execFileSync("sh", ["-c", `set -- ${args}; printf '%s' "$5"`], {
         encoding: "utf8",
         env: { ...process.env, HOME: home },
