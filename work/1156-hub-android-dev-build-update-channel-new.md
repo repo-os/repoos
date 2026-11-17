@@ -5,11 +5,13 @@ type: feature
 status: inbox
 priority: p1
 area: [mobile, infra]
-assigned_to: ""
+assigned_to: ai
 created_by: t@t
 branch: ""
+cli_override: codex
+model_override: gpt-6-luna
 created_at: "2026-11-17T14:48:18Z"
-updated_at: "2026-11-17T14:48:18Z"
+updated_at: "2026-11-17T15:21:05Z"
 ---
 ## Problem
 
@@ -38,3 +40,4 @@ Follow the same shape as Tiao's implementation so all of Nick's apps behave iden
 ## Activity
 
 - 2026-11-17T14:48:18Z · created · t@t
+- 2026-11-17T15:21:05Z · cli_override, model_override
