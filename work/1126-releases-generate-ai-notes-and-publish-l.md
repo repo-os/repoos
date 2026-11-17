@@ -181,3 +181,4 @@ Reuse the existing AI-draft run in ReleasesView.vue and the server release run; 
 - 2026-11-17T01:59:34Z · message_queued at 2026-11-17T01:59:34.343Z
 - 2026-11-17T01:59:34Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-17T02:02:38Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-17T02:02:38Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 130) · last assistant: The report draft exists and the worktree is clean — this session is a resume after crashes, and the implementation appears complete. The queued CTO message asks me to run verification and hand off. Let me run the scoped check. · stderr: (empty)
