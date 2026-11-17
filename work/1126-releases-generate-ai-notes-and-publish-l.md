@@ -173,3 +173,4 @@ Reuse the existing AI-draft run in ReleasesView.vue and the server release run; 
 - 2026-11-17T01:34:40Z · engineer crash recovery: surfaced instead of switching — RepoOS already switched this task once (opencode + opencode-go/glm-5.3-flash); it will not chain another automatic switch (4/3 crashes in 30m)
 - 2026-11-17T01:44:53Z · watchdog: restarting engineer after 10m with no live process
 - 2026-11-17T01:54:34Z · message_queued at 2026-11-17T01:54:34.335Z
+- 2026-11-17T01:54:34Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
