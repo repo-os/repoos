@@ -117,3 +117,4 @@ Use the attached phone screenshot. Check long labels and both theme families. Th
 - 2026-11-17T04:35:14Z · body
 - 2026-11-17T04:44:29Z · note: ui verification passed: 3 of 3 shots captured with clean console
 - 2026-11-17T04:44:32Z · status active→review
+- 2026-11-17T04:44:32Z · message_queued at 2026-11-17T04:44:32.962Z
