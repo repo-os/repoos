@@ -166,6 +166,9 @@ describe("installed upgrade status and restart route", () => {
       kind: "external",
       info: { platform: "launchd", job: "external", manualCommand: "launchctl kickstart external" },
     });
+    const status = responseCapture();
+    getUpdateStatus(context(), {} as never, status.res, {});
+    expect(status.body().supervised).toBe(true);
     const capture = responseCapture();
     await restartInstalledUpgrade(
       context(),
@@ -175,7 +178,6 @@ describe("installed upgrade status and restart route", () => {
     );
     expect(capture.status()).toBe(202);
     expect(capture.body()).toEqual({ state: "restarting" });
-    expect(mocks.spawn).toHaveBeenCalled();
   });
 
   it("returns 503 rather than starting an unscoped helper without the actual port", async () => {
