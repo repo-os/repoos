@@ -1,19 +1,20 @@
 ---
-last_close_out_gate_ms: 747634
-last_close_out_gate_at: "2026-11-17T03:57:35.160Z"
 id: "1144"
 title: Fix tailnet server discovery using MagicDNS peer identities
 type: bug
-status: review
+status: done
 human_step_override: Cleared needs-human-step flag (sticky until acceptance criteria change)
 human_step_override_key: 2558bc2b
 priority: p1
 area: [server, core, mobile]
+merged_commit: b21982f0ec7c3446882737f1ed24237e81b4a5e8
 assigned_to: ai
 created_by: t@t
 branch: feat/fix-tailnet-server-discovery-using-magic
 created_at: "2026-11-17T02:38:50Z"
 updated_at: "2026-11-17T03:57:35Z"
+last_close_out_gate_ms: 747634
+last_close_out_gate_at: "2026-11-17T03:57:35.160Z"
 review_passes: 1
 incomplete_review_retries: 1
 ---

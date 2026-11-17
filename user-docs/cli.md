@@ -644,6 +644,16 @@ appear as `unreachable` with their real cause — `command not found`,
 timeout actually occurred — while the rest of the list is still shown. The JSON
 output includes a `host` field for every entry. `--prune` is local-only and
 cannot be combined with `--tailscale`.
+
+Peer identity comes from Tailscale's **MagicDNS name**, not its display
+`HostName`: the first DNS label (`bee`, `thinkpad`, `mini`) is what SSH and
+de-duplication use. Two machines that both report `HostName = "omarchy"` are
+therefore kept as separate peers, and a Mac whose display name contains spaces
+or punctuation is reached at its MagicDNS name instead. When the display name
+differs, it is preserved as a separate `displayName` field (and shown in the
+text table) so the machine is still recognisable. Unsupported mobile peers
+(Android and iOS/iPadOS devices) are skipped instead of producing a misleading
+SSH failure; explicitly configured hosts are still probed as before.
 This behavior is implemented in `src/core/tailnet-servers.ts` and
 `src/commands/servers.ts`, and covered by `src/ui-app/tests/servers-command.test.ts`.
 

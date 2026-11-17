@@ -33,6 +33,124 @@ describe("repoos servers --tailscale", () => {
     ).toEqual(["bee", "thinkpad"]);
   });
 
+  it("uses MagicDNS identities when HostNames are duplicated or contain display punctuation", () => {
+    expect(
+      parseTailnetPeers(
+        JSON.stringify({
+          Self: { HostName: "omarchy", DNSName: "air.tailc0c173.ts.net." },
+          Peer: {
+            a: {
+              HostName: "omarchy",
+              DNSName: "bee.tailc0c173.ts.net.",
+              OS: "linux",
+              Online: true,
+            },
+            b: {
+              HostName: "omarchy",
+              DNSName: "thinkpad.tailc0c173.ts.net.",
+              OS: "linux",
+              Online: true,
+            },
+            c: {
+              HostName: "Peck’s Mac mini",
+              DNSName: "mini.tailc0c173.ts.net.",
+              OS: "macOS",
+              Online: true,
+            },
+            d: { HostName: "Peck’s Mac mini", OS: "macOS", Online: true },
+          },
+        }),
+      ),
+    ).toEqual(["bee", "thinkpad", "mini"]);
+  });
+
+  it("skips unsupported mobile peers instead of reporting misleading SSH failures", async () => {
+    const remoteExec = vi.fn(async () => JSON.stringify({ servers: [] }));
+    const result = await collectTailnetServers([], {
+      tailscaleStatus: async () =>
+        JSON.stringify({
+          Peer: {
+            phone: {
+              HostName: "Nothing Phone (3a)",
+              DNSName: "nothing-phone.tailc0c173.ts.net.",
+              OS: "android",
+              Online: true,
+            },
+            tablet: {
+              HostName: "iPad",
+              DNSName: "ipad.tailc0c173.ts.net.",
+              OS: "iOS",
+              Online: true,
+            },
+            bee: {
+              HostName: "omarchy",
+              DNSName: "bee.tailc0c173.ts.net.",
+              OS: "linux",
+              Online: true,
+            },
+          },
+        }),
+      remoteExec,
+    });
+
+    expect(result.servers).toEqual([]);
+    expect(remoteExec).toHaveBeenCalledTimes(1);
+    expect(remoteExec).toHaveBeenCalledWith("bee", "root", 4_000, "repoos servers --json");
+  });
+
+  it("probes duplicate-HostName peers individually by MagicDNS name", async () => {
+    const remoteExec = vi.fn(
+      async (host: string, _user: string, _timeout: number, command?: string) => {
+        if (command === "tailscale serve status --json") return "{}";
+        return JSON.stringify({ servers: [{ port: 7499, projectName: `${host}-project` }] });
+      },
+    );
+    const result = await collectTailnetServers([], {
+      tailscaleStatus: async () =>
+        JSON.stringify({
+          Peer: {
+            a: {
+              HostName: "omarchy",
+              DNSName: "bee.tailc0c173.ts.net.",
+              OS: "linux",
+              Online: true,
+            },
+            b: {
+              HostName: "omarchy",
+              DNSName: "thinkpad.tailc0c173.ts.net.",
+              OS: "linux",
+              Online: true,
+            },
+            c: {
+              HostName: "Peck’s Mac mini",
+              DNSName: "mini.tailc0c173.ts.net.",
+              OS: "macOS",
+              Online: true,
+            },
+          },
+        }),
+      annotateUrls: false,
+      remoteExec,
+    });
+
+    expect(result.servers).toEqual([
+      { host: "bee", displayName: "omarchy", port: 7499, projectName: "bee-project" },
+      { host: "thinkpad", displayName: "omarchy", port: 7499, projectName: "thinkpad-project" },
+      {
+        host: "mini",
+        displayName: "Peck’s Mac mini",
+        port: 7499,
+        projectName: "mini-project",
+      },
+    ]);
+    const probed = remoteExec.mock.calls
+      .filter(([, , , command]) => command === "repoos servers --json")
+      .map(([host]) => host);
+    expect(probed).toEqual(["bee", "thinkpad", "mini"]);
+    expect(probed).not.toContain("omarchy");
+    expect(probed).not.toContain("Peck’s Mac mini");
+  });
+
   it("lists local and remote entries with hosts, continuing after a timed out peer", async () => {
     const remoteExec = vi.fn(async (host: string, _user: string) => {
       if (host === "slow") throw new Error("Command timed out");

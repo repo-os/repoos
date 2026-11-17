@@ -13,6 +13,8 @@ import type { ServerEntry } from "./types";
 /** One row as returned by the server endpoint. */
 export interface TailnetServer {
   host: string;
+  /** Readable Tailscale machine name when it differs from the MagicDNS host. */
+  displayName?: string;
   port?: number;
   projectName?: string;
   root?: string;
@@ -89,6 +91,8 @@ function displayOrigin(input: string): string | null {
 function nameFor(row: TailnetServer): string {
   const project = row.projectName?.trim();
   if (project) return project;
+  const display = row.displayName?.trim();
+  if (display) return display;
   if (row.host && row.port) return `${row.host}:${row.port}`;
   return row.host || "RepoOS server";
 }
@@ -229,7 +233,8 @@ export async function fetchTailnetServers(
         kind: "auth",
         message:
           "This server needs a signed-in session before it can list your tailnet. " +
-          "Open the server once in Hub, then try again — or add a server manually.",
+          "Open the server in a browser, sign in, and use the web Hub from that same origin — " +
+          "or add a server manually.",
       };
     }
     if (res.status === 404) {
