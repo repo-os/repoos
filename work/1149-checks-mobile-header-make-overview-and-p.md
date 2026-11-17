@@ -12,7 +12,7 @@ branch: feat/checks-mobile-header-make-overview-and-p
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T03:06:39Z"
-updated_at: "2026-11-17T11:41:07Z"
+updated_at: "2026-11-17T11:41:21Z"
 last_close_out_gate_ms: 68005
 last_close_out_gate_at: "2026-11-17T11:41:07.254Z"
 review_passes: 2
@@ -96,4 +96,4 @@ Use the attached phone screenshot. Inspect both the empty state and a populated 
 - 2026-11-17T11:30:28Z · message_queued at 2026-11-17T11:30:28.284Z
 - 2026-11-17T11:32:10Z · note: review pass 2: good to go
 - 2026-11-17T11:41:07Z · close-out gate completed in 68s
-
+- 2026-11-17T11:41:21Z · status done→done, release:success
