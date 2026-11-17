@@ -11,7 +11,7 @@ branch: feat/investigate-checks-tab-browser-pass-stal
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T17:53:05Z"
-updated_at: "2026-11-17T20:51:38Z"
+updated_at: "2026-11-17T20:53:14Z"
 review_rounds: 1
 review_passes: 1
 handoff_signal_retry_count: 2
@@ -90,3 +90,4 @@ Direct tab-click coverage passes, but review identified a separate app lifecycle
 - 2026-11-17T20:51:35Z · note: ui verification passed: 1 shot captured with clean console
 - 2026-11-17T20:51:37Z · status active→review
 - 2026-11-17T20:51:38Z · message_queued at 2026-11-17T20:51:38.027Z
+- 2026-11-17T20:53:14Z · note: review pass 2: needs some work
