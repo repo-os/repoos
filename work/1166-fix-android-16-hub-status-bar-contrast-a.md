@@ -11,7 +11,7 @@ branch: feat/fix-android-16-hub-status-bar-contrast-a
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T17:55:45Z"
-updated_at: "2026-11-17T19:10:36Z"
+updated_at: "2026-11-17T19:15:49Z"
 last_check_failure: "repoos check at 2026-11-17T19:05:59.283Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 handoff_signal_retry_count: 2
 ---
@@ -73,3 +73,4 @@ This issue was observed on Android 16 (API 36), target SDK 36, with Android Syst
 - 2026-11-17T19:10:36Z · status active→review
 - 2026-11-17T19:10:36Z · message_queued at 2026-11-17T19:10:36.680Z
 - 2026-11-17T19:10:36Z · note: shots: skipped — the diff (3 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-11-17T19:15:49Z · note: review pass 1: back to the drawing board
