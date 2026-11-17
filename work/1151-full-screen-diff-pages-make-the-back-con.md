@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-17T04:45:29.271Z: repoos check failed: ui verification failed (3 issue(s)): [request] HTTP 404 for http://127.0.0.1:35645/api/tasks/1151/diff (http://127.0.0.1:35645/api/tasks/1151/diff); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:35645/api/tasks/1151/diff); [missing-target] Task diff at 390px: Back is a 44px touch target (dark) (target \"default\"): loading state detected: loading text \"Loading diff…\" on /tasks/1151/diff (http://127.0.0.1:35645/tasks/… (truncated)"
 id: "1151"
 title: "Full-screen diff pages: make the Back control meet the 44px touch target"
 type: bug
@@ -68,3 +70,4 @@ Use the screenshots attached to #1146 and #1151; inspect light and dark themes a
 - 2026-11-17T04:45:22Z · note: ui verification failed: ui verification failed (3 issue(s)): [request] HTTP 404 for http://127.0.0.1:35645/api/tasks/1151/diff (http://127.0.0.1:35645/api/tasks/1151/diff); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:35645/api/tasks/1151/diff); [missing-target] Task diff at 390px: Back is a 44px touch target (dark) (target "default"): loading state detected: loading text "Loading diff…" on /tasks/1151/diff (http://127.0.0.1:35645/tas
 - 2026-11-17T04:45:24Z · message_queued at 2026-11-17T04:45:24.948Z
 - 2026-11-17T04:45:28Z · message_delivered: 1 message(s)
+
