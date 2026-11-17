@@ -37,6 +37,7 @@ Use strong visual and product design judgment. Inspect rendered pages and theme 
 ![1000072372](/api/tasks/1146/attachments/att_d2862b9a-fdd6-49fa-956f-f719e8499dde.png)
 ![1000072373](/api/tasks/1146/attachments/att_9907d426-6620-4c35-89c1-a5ece676d8d8.png)
 ![1000072374](/api/tasks/1146/attachments/att_1210fbb9-6f97-459a-b173-a86ec4dd82a2.png)
+![Mission Control light at 390×844](/api/tasks/1146/attachments/att_c86d65fc-dbee-4e0f-b33d-11ef27b6c373.png)
 
 ## Activity
 
@@ -59,3 +60,4 @@ Use strong visual and product design judgment. Inspect rendered pages and theme 
 - 2026-11-17T03:27:39Z · note: review pass 1: needs some work
 - 2026-11-17T03:27:39Z · message_delivered: 1 message(s)
 - 2026-11-17T03:27:40Z · status review→active
+- 2026-11-17T03:33:22Z · screenshots
