@@ -3,6 +3,9 @@ id: "1157"
 title: "QA pass: use the RepoOS web app on desktop and phone widths, find broken things and fix them"
 type: bug
 status: review
+needs_input: true
+needs_input_reason: review-failed
+needs_input_detail: the opencode agent timed out after 15 minutes
 priority: p1
 area: web
 assigned_to: ai
@@ -98,3 +101,4 @@ Start with the Work page at 390px and the bottom dock/heads/pipeline bar overlap
 - 2026-11-17T18:48:17Z · needs_input (review-failed) cleared for review again by human
 - 2026-11-17T18:58:25Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-17T19:03:22Z · note: review pass 3: timed out after 15 minutes — no report; human needed
+- 2026-11-17T19:03:22Z · needs_input
