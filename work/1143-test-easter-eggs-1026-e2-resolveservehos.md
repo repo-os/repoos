@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 885993
-last_close_out_gate_at: "2026-11-17T11:24:46.404Z"
 id: "1143"
 title: "Test: easter-eggs #1026 E2 resolveServeHost default fails on machines running Tailscale"
 type: feature
-status: review
+status: done
 priority: p3
 area: server
+merged_commit: b179e0e4049565e05f946f0282cf6f2494f40666
 assigned_to: ai
 created_by: t@t
 branch: feat/test-easter-eggs-1026-e2-resolveservehos
@@ -14,6 +13,8 @@ cli_override: claude code
 model_override: haiku
 created_at: "2026-11-17T02:10:39Z"
 updated_at: "2026-11-17T11:24:46Z"
+last_close_out_gate_ms: 885993
+last_close_out_gate_at: "2026-11-17T11:24:46.404Z"
 review_passes: 1
 dev_error_count: 5
 ---
