@@ -284,6 +284,28 @@ materialize_changed_test_base() {
 }
 materialize_changed_test_base
 
+# A project-owned command replaces the RepoOS-specific Bun install/build/test
+# sequence. Run it inside the configured CI image from the same verified tree;
+# this keeps Docker hosts useful for non-Bun projects when their image includes
+# the declared toolchain.
+if [ -n "${REPOOS_VALIDATION_COMMAND:-}" ]; then
+  echo "[validate] running configured command in $IMAGE: $REPOOS_VALIDATION_COMMAND"
+  set +e
+  docker run --rm \
+    -v "$WORK/repo":/repo \
+    -v "$ART":/artifacts \
+    -e HOME=/repo \
+    -e REPOOS_ROOT=/repo \
+    -e REPOOS_ARTIFACTS_DIR=/artifacts \
+    -w /repo \
+    --user "$(id -u):$(id -g)" \
+    "$IMAGE" bash -lc "$REPOOS_VALIDATION_COMMAND" 2>&1 | tee "$ART/test-output.log"
+  CODE=${PIPESTATUS[0]}
+  set -e
+  echo "[validate] gate exit $CODE"
+  exit "$CODE"
+fi
+
 # Run Docker as the SSH user's uid:gid so all files it creates are owned by
 # that user.  This means _rvcleanup needs no Docker chown step — a plain
 # rm -rf works.  Chown the bun-cache volume to match before the main run.

@@ -8,8 +8,8 @@ the developer's machine. Two providers are supported: **hetzner** (disposable
 cloud VM, the original) and **tailscale** (one or more persistent machines on
 your tailnet). A tailscale host runs the gate one of two ways, set per host
 (default: Docker — see "Docker vs. native" below): in a fresh Docker
-container (Linux or macOS via Docker Desktop), or, on macOS only, natively
-with no Docker at all. Both are real, maintained setup paths.
+container (Linux or macOS via Docker Desktop), or natively on Linux/macOS with
+no Docker at all. Both are maintained setup paths.
 
 ## Remote browser capture cleanup (#1060)
 

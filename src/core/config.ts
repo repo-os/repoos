@@ -4059,7 +4059,7 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       restartRequired: true,
       default: "",
       description:
-        "Optional project-relative command run from the verified checkout on a native Tailscale host. Leave empty for the stock RepoOS build and test gate.",
+        "Optional project-relative command run from the verified checkout on a Tailscale or Hetzner runner. Native hosts run it directly; Docker hosts need an image with its toolchain. Leave empty for the stock RepoOS build and test gate.",
     },
     {
       key: "remoteValidation.requiredTools",

@@ -2783,6 +2783,15 @@ describe("per-host prerequisite probe", () => {
     expect(cmd).not.toContain("docker info");
   });
 
+  it("checks declared toolchain executables inside a configured Docker image", () => {
+    const cmd = prereqProbeCommand("docker", "tiao-ci", ["java", "node"], true);
+    expect(cmd).toContain("docker image inspect 'tiao-ci'");
+    expect(cmd).toContain("docker run --rm 'tiao-ci'");
+    expect(cmd).toContain("java");
+    expect(cmd).toContain("node");
+    expect(cmd).toContain("not found in runner image");
+  });
+
   it("uses the Bun prerequisite only for the stock native gate", () => {
     const cmd = prereqProbeCommand("native", "repoos-ci", [], true);
     expect(cmd).not.toContain("bun not found");

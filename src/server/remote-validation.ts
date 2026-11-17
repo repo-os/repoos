@@ -2281,21 +2281,18 @@ export function prereqProbeCommand(
   customCommand = false,
 ): string {
   const image = containerImage.trim().replace(/'/g, "") || "repoos-ci";
+  const nativeTools = [
+    "git",
+    ...(requiredTools.length ? requiredTools : customCommand ? [] : ["bun"]),
+  ];
+  const nativeProbe =
+    `missing=; for tool in ${nativeTools.map(shellQuote).join(" ")}; do ` +
+    'if [ "$tool" = bun ] && [ -x /opt/homebrew/bin/bun ]; then continue; fi; ' +
+    'command -v "$tool" >/dev/null 2>&1 || { echo "$tool not found on PATH"; missing=1; }; ' +
+    'done; [ -z "$missing" ] || exit 1';
   const lines =
     runner === "native"
-      ? [
-          'command -v git >/dev/null 2>&1 || { echo "git not found on PATH"; exit 1; }',
-          ...(requiredTools.length
-            ? [
-                `missing=; for tool in ${requiredTools.map(shellQuote).join(" ")}; do command -v "$tool" >/dev/null 2>&1 || { echo "$tool not found on PATH"; missing=1; }; done; [ -z "$missing" ] || exit 1`,
-              ]
-            : customCommand
-              ? []
-              : [
-                  "(command -v bun >/dev/null 2>&1 || [ -x /opt/homebrew/bin/bun ]) || " +
-                    '{ echo "bun not found (install it, e.g. brew install bun)"; exit 1; }',
-                ]),
-        ]
+      ? [nativeProbe]
       : [
           // git runs on the HOST for every runner, not just native — the
           // clone/checkout step in validate.sh happens before `docker run`
@@ -2307,6 +2304,11 @@ export function prereqProbeCommand(
           'docker info >/dev/null 2>&1 || { echo "docker daemon not reachable (is docker running?)"; exit 1; }',
           `docker image inspect ${shellQuote(image)} >/dev/null 2>&1 || ` +
             `{ echo ${shellQuote(`image '${image}' not found — build it (just setup-<host>) or fix remoteValidation.containerImage`)}; exit 1; }`,
+          ...(requiredTools.length
+            ? [
+                `docker run --rm ${shellQuote(image)} sh -lc ${shellQuote(`missing=; for tool in ${requiredTools.map(shellQuote).join(" ")}; do command -v "$tool" >/dev/null 2>&1 || { echo "$tool not found in runner image"; missing=1; }; done; [ -z "$missing" ] || exit 1`)} || { echo "one or more declared tools are unavailable in runner image"; exit 1; }`,
+              ]
+            : []),
         ];
   lines.push(
     ...(runner === "native"
@@ -2318,7 +2320,7 @@ export function prereqProbeCommand(
           // file, a full/read-only volume) used to be reported healthy and
           // fail its first real job on `bun install` — this probe never
           // touched that path at all (#0521 review, criterion 6).
-          ...(requiredTools.length
+          ...(requiredTools.length || customCommand
             ? []
             : [
                 '_rvcache="$HOME/.cache/repoos-bun" && ' +
@@ -2349,12 +2351,16 @@ export function prereqProbeCommand(
           // validate.sh runs — chown as root, then write as uid 1000 — for
           // ground truth instead of approximating it (#0521 review, third
           // round).
-          `docker volume create ${CACHE_VOLUME_NAME} >/dev/null 2>&1 && ` +
-            `docker run --rm -v ${CACHE_VOLUME_NAME}:/bun-cache -u 0 ${shellQuote(image)} ` +
-            `"chown 1000:1000 /bun-cache" >/dev/null 2>&1 && ` +
-            `docker run --rm -v ${CACHE_VOLUME_NAME}:/bun-cache -u 1000 ${shellQuote(image)} ` +
-            `"touch /bun-cache/.repoos-probe && rm -f /bun-cache/.repoos-probe" >/dev/null 2>&1 || ` +
-            `{ echo "bun cache volume ${CACHE_VOLUME_NAME} is not writable by the container even after chown as root"; exit 1; }`,
+          ...(customCommand
+            ? []
+            : [
+                `docker volume create ${CACHE_VOLUME_NAME} >/dev/null 2>&1 && ` +
+                  `docker run --rm -v ${CACHE_VOLUME_NAME}:/bun-cache -u 0 ${shellQuote(image)} ` +
+                  `"chown 1000:1000 /bun-cache" >/dev/null 2>&1 && ` +
+                  `docker run --rm -v ${CACHE_VOLUME_NAME}:/bun-cache -u 1000 ${shellQuote(image)} ` +
+                  `"touch /bun-cache/.repoos-probe && rm -f /bun-cache/.repoos-probe" >/dev/null 2>&1 || ` +
+                  `{ echo "bun cache volume ${CACHE_VOLUME_NAME} is not writable by the container even after chown as root"; exit 1; }`,
+              ]),
         ]),
     `[ -f ${VALIDATE_SCRIPT} ] || ` +
       `{ echo "missing ${VALIDATE_SCRIPT} — run the per-host install (docs/remote-validation.md)"; exit 1; }`,
@@ -4019,7 +4025,9 @@ export class RemoteValidationRunner implements RemoteValidator {
             message: `running build + test on ${host.ip}${changedNote}`,
           },
         );
+        const commandEnv = rv.command ? `REPOOS_VALIDATION_COMMAND=${shellQuote(rv.command)} ` : "";
         const cmd =
+          commandEnv +
           (control ? `REPOOS_CONTAINER=${shellQuote(control.container)} ` : "") +
           validateScriptArgs(
             remoteBundle,
@@ -6623,7 +6631,6 @@ export class TailscaleRunner implements RemoteValidator {
       return this.infraFail("remote validation is disabled", dispatch);
     }
     const capabilities = (opts.capabilities ?? []).map((c) => c.trim()).filter(Boolean);
-    if (rv.command && !capabilities.includes("native")) capabilities.push("native");
     const emit = (s: string): void => {
       this.appendLog(opts.taskId, s);
       opts.onChunk?.(s);
