@@ -1,295 +1,352 @@
 import AppKit
 import SwiftUI
 import XCTest
+
 @testable import RepoOSHub
 
 final class HubAppAppearanceTests: XCTestCase {
-    func testTrafficLightCorrectionOffsetsNativeControls() {
-        XCTAssertEqual(HubTrafficLightPositioning.correctionTransform.tx, 15, accuracy: 0.01)
-        XCTAssertEqual(HubTrafficLightPositioning.correctionTransform.ty, -4, accuracy: 0.01)
+  func testTrafficLightCorrectionOffsetsNativeControls() {
+    XCTAssertEqual(HubTrafficLightPositioning.correctionTransform.tx, 15, accuracy: 0.01)
+    XCTAssertEqual(HubTrafficLightPositioning.correctionTransform.ty, -4, accuracy: 0.01)
+  }
+
+  func testTrafficLightInsetIncludesTranslatedControlExtent() {
+    let nativeFrameMaxX: CGFloat = 86
+    let inset = HubTrafficLightPositioning.reservedInset(frameMaxX: nativeFrameMaxX)
+
+    XCTAssertEqual(inset, 109, accuracy: 0.01)
+    XCTAssertGreaterThanOrEqual(
+      inset,
+      nativeFrameMaxX + HubTrafficLightPositioning.horizontalAdjustment + 8
+    )
+  }
+
+  func testEmptyStripIsTheOnlyWindowBackgroundDragRegion() {
+    let emptySpace = HubWindowDragRegionView(frame: NSRect(x: 0, y: 0, width: 100, height: 40))
+
+    XCTAssertTrue(emptySpace.mouseDownCanMoveWindow)
+  }
+
+  @MainActor
+  func testTabDropLoadsTheDraggedIdentifierAndCompletes() async {
+    let source = UUID()
+    let target = UUID()
+    let provider = NSItemProvider(object: source.uuidString as NSString)
+    let finished = expectation(description: "drop provider finishes loading")
+    var movedPair: (UUID, UUID)?
+
+    let accepted = HubServerTabDropHandler.accept(
+      providers: [provider],
+      target: target,
+      onMove: { movedPair = ($0, $1) },
+      onCompletion: { finished.fulfill() }
+    )
+
+    XCTAssertTrue(accepted)
+    await fulfillment(of: [finished], timeout: 2)
+    XCTAssertEqual(movedPair?.0, source)
+    XCTAssertEqual(movedPair?.1, target)
+  }
+
+  func testDefaultsToSystem() {
+    XCTAssertEqual(HubGlobalPreferences.default.appearance, .system)
+    XCTAssertNil(HubGlobalPreferences.default.appearance.colorScheme)
+  }
+
+  func testColorSchemeMapping() {
+    XCTAssertNil(HubAppAppearance.system.colorScheme)
+    XCTAssertEqual(HubAppAppearance.light.colorScheme, .light)
+    XCTAssertEqual(HubAppAppearance.dark.colorScheme, .dark)
+    XCTAssertNil(HubAppAppearance.system.appKitAppearance)
+    XCTAssertEqual(HubAppAppearance.light.appKitAppearance?.name, .aqua)
+    XCTAssertEqual(HubAppAppearance.dark.appKitAppearance?.name, .darkAqua)
+  }
+
+  func testSystemWindowSurfaceResolvesForBothMacAppearances() {
+    let aqua = NSAppearance(named: .aqua)!
+    let darkAqua = NSAppearance(named: .darkAqua)!
+    let lightSurface = HubAppAppearance.windowBackgroundColor(
+      for: .system,
+      systemAppearance: aqua
+    )
+    let darkSurface = HubAppAppearance.windowBackgroundColor(
+      for: .system,
+      systemAppearance: darkAqua
+    )
+
+    XCTAssertGreaterThan(relativeLuminance(lightSurface), relativeLuminance(darkSurface))
+    XCTAssertEqual(
+      relativeLuminance(
+        HubAppAppearance.windowBackgroundColor(for: .light, systemAppearance: darkAqua)),
+      relativeLuminance(lightSurface),
+      accuracy: 0.01
+    )
+    XCTAssertEqual(
+      relativeLuminance(HubAppAppearance.windowBackgroundColor(for: .dark, systemAppearance: aqua)),
+      relativeLuminance(darkSurface),
+      accuracy: 0.01
+    )
+  }
+
+  func testShellAndSelectedTabSurfacesStayDistinctInBothAppearances() {
+    var shellLuminances: [ColorScheme: CGFloat] = [:]
+    for (scheme, appearance) in [
+      (ColorScheme.light, NSAppearance(named: .aqua)!),
+      (ColorScheme.dark, NSAppearance(named: .darkAqua)!),
+    ] {
+      let shellColor = HubAppAppearance.system.shellBackgroundNSColor(
+        for: scheme,
+        systemAppearance: appearance
+      )
+      let selectedTab = HubAppAppearance.system.selectedTabBackgroundNSColor(
+        for: scheme,
+        systemAppearance: appearance
+      )
+
+      XCTAssertGreaterThan(
+        abs(relativeLuminance(selectedTab) - relativeLuminance(shellColor)),
+        0.03,
+        "Selected tab should have a distinct surface for \(scheme) appearance"
+      )
+      shellLuminances[scheme] = relativeLuminance(shellColor)
+    }
+    XCTAssertGreaterThan(shellLuminances[.light]!, shellLuminances[.dark]!)
+  }
+
+  private func relativeLuminance(_ color: NSColor) -> CGFloat {
+    let rgb = color.usingColorSpace(.deviceRGB)!
+    return 0.2126 * rgb.redComponent + 0.7152 * rgb.greenComponent + 0.0722 * rgb.blueComponent
+  }
+
+  func testLegacyRegistryFileDefaultsAppearanceToSystem() throws {
+    let json = """
+      {"notificationsEnabled":false,"dockBadgeEnabled":false}
+      """.data(using: .utf8)!
+    let decoded = try JSONDecoder().decode(HubGlobalPreferences.self, from: json)
+    XCTAssertEqual(decoded.appearance, .system)
+    XCTAssertFalse(decoded.notificationsEnabled)
+    XCTAssertFalse(decoded.dockBadgeEnabled)
+  }
+
+  func testUnknownAppearanceValueDefaultsToSystemInsteadOfThrowing() throws {
+    // Written by a future build, read by this one: must not throw (which
+    // would wipe the registry in reloadFromDisk's catch) and must keep
+    // the other preferences intact.
+    let json = """
+      {"notificationsEnabled":false,"dockBadgeEnabled":true,"appearance":"holographic"}
+      """.data(using: .utf8)!
+    let decoded = try JSONDecoder().decode(HubGlobalPreferences.self, from: json)
+    XCTAssertEqual(decoded.appearance, .system)
+    XCTAssertFalse(decoded.notificationsEnabled)
+    XCTAssertTrue(decoded.dockBadgeEnabled)
+  }
+
+  func testAppearanceRoundTripsThroughRegistryDocument() throws {
+    var document = ServerRegistryDocument()
+    document.hubGlobalPreferences.appearance = .dark
+    let data = try JSONEncoder().encode(document)
+    let reloaded = try JSONDecoder().decode(ServerRegistryDocument.self, from: data)
+    XCTAssertEqual(reloaded.hubGlobalPreferences.appearance, .dark)
+  }
+
+  func testAppearanceRoundTripsEachCase() throws {
+    for appearance in HubAppAppearance.allCases {
+      var prefs = HubGlobalPreferences.default
+      prefs.appearance = appearance
+      let data = try JSONEncoder().encode(prefs)
+      let reloaded = try JSONDecoder().decode(HubGlobalPreferences.self, from: data)
+      XCTAssertEqual(reloaded.appearance, appearance)
+    }
+  }
+
+  func testSidebarVisibilityMapsCollapsedFlag() {
+    XCTAssertEqual(HubSidebarVisibility.visibility(isCollapsed: true), .detailOnly)
+    XCTAssertEqual(HubSidebarVisibility.visibility(isCollapsed: false), .all)
+    XCTAssertTrue(HubSidebarVisibility.isCollapsed(.detailOnly))
+    XCTAssertFalse(HubSidebarVisibility.isCollapsed(.all))
+  }
+
+  /// Only an explicit `.detailOnly` counts as collapsed; the system passes
+  /// `.automatic` through the binding during split-view setup and a resize
+  /// must not persist a bogus collapsed state (#0855).
+  func testOnlyDetailOnlyCountsAsCollapsed() {
+    XCTAssertFalse(HubSidebarVisibility.isCollapsed(.automatic))
+    XCTAssertFalse(HubSidebarVisibility.isCollapsed(.doubleColumn))
+  }
+
+  func testSidebarCollapsedFlagRoundTripsThroughDefaultsKey() {
+    let defaults = UserDefaults.standard
+    let key = HubSidebarVisibility.collapsedDefaultsKey
+    let original = defaults.object(forKey: key)
+    defer {
+      if let original {
+        defaults.set(original, forKey: key)
+      } else {
+        defaults.removeObject(forKey: key)
+      }
     }
 
-    func testTrafficLightInsetIncludesTranslatedControlExtent() {
-        let nativeFrameMaxX: CGFloat = 86
-        let inset = HubTrafficLightPositioning.reservedInset(frameMaxX: nativeFrameMaxX)
+    defaults.set(true, forKey: key)
+    XCTAssertEqual(
+      HubSidebarVisibility.visibility(isCollapsed: defaults.bool(forKey: key)),
+      .detailOnly
+    )
+    defaults.set(false, forKey: key)
+    XCTAssertEqual(
+      HubSidebarVisibility.visibility(isCollapsed: defaults.bool(forKey: key)),
+      .all
+    )
+  }
 
-        XCTAssertEqual(inset, 109, accuracy: 0.01)
-        XCTAssertGreaterThanOrEqual(
-            inset,
-            nativeFrameMaxX + HubTrafficLightPositioning.horizontalAdjustment + 8
-        )
+  /// The workspace window keeps a native titled window (traffic lights,
+  /// drag, resize, fullscreen) while hiding the title text and the toolbar
+  /// row so the sidebar can run to the top edge (#0855).
+  func testWorkspaceWindowChromeHidesTitleAndToolbarButKeepsNativeControls() {
+    let window = NSWindow(
+      contentRect: NSRect(x: 0, y: 0, width: 900, height: 600),
+      styleMask: [.titled, .closable, .miniaturizable, .resizable],
+      backing: .buffered,
+      defer: false
+    )
+    window.toolbar = NSToolbar(identifier: "HubChromeTestToolbar")
+    window.title = "RepoOS"
+    // Capture the default control frames after the hidden/transparent
+    // titlebar style is in place; AppKit recalculates these when the style
+    // mask changes.
+    window.styleMask.insert(.fullSizeContentView)
+    window.titleVisibility = .hidden
+    window.titlebarAppearsTransparent = true
+    window.titlebarSeparatorStyle = .none
+    hideHubNativeToolbarRow(window)
+    let controlTypes: [NSWindow.ButtonType] = [.closeButton, .miniaturizeButton, .zoomButton]
+    for type in controlTypes {
+      window.standardWindowButton(type)?.isHidden = false
+    }
+    let controls = controlTypes.compactMap { window.standardWindowButton($0) }
+    XCTAssertEqual(controls.count, 3)
+
+    configureHubWorkspaceWindowChrome(window)
+
+    XCTAssertEqual(window.titleVisibility, .hidden)
+    XCTAssertTrue(window.titlebarAppearsTransparent)
+    XCTAssertEqual(window.titlebarSeparatorStyle, .none)
+    // Hiding the drawn title must keep the title itself for accessibility,
+    // Mission Control, and the app switcher.
+    XCTAssertEqual(window.title, "RepoOS")
+    XCTAssertTrue(window.styleMask.contains(.fullSizeContentView))
+    XCTAssertTrue(window.styleMask.contains(.titled))
+    XCTAssertTrue(window.styleMask.contains(.closable))
+    XCTAssertTrue(window.styleMask.contains(.miniaturizable))
+    XCTAssertTrue(window.styleMask.contains(.resizable))
+    XCTAssertFalse(window.isMovableByWindowBackground)
+    XCTAssertNotNil(window.standardWindowButton(.closeButton))
+    XCTAssertNotNil(window.standardWindowButton(.miniaturizeButton))
+    XCTAssertNotNil(window.standardWindowButton(.zoomButton))
+    // The transparent titlebar must never take the traffic lights with it
+    // (#0857).
+    XCTAssertEqual(window.standardWindowButton(.closeButton)?.isHidden, false)
+    XCTAssertEqual(window.standardWindowButton(.miniaturizeButton)?.isHidden, false)
+    XCTAssertEqual(window.standardWindowButton(.zoomButton)?.isHidden, false)
+    XCTAssertEqual(window.toolbar?.isVisible, false)
+    HubTrafficLightPositioning.apply(to: window)
+    for button in controls {
+      XCTAssertEqual(button.layer?.affineTransform().tx ?? -1, 15)
+      XCTAssertEqual(button.layer?.affineTransform().ty ?? 1, -4)
     }
 
-    func testEmptyStripIsTheOnlyWindowBackgroundDragRegion() {
-        let emptySpace = HubWindowDragRegionView(frame: NSRect(x: 0, y: 0, width: 100, height: 40))
-
-        XCTAssertTrue(emptySpace.mouseDownCanMoveWindow)
+    // Window appearance updates repeat this method. The correction must
+    // remain fixed rather than walking the traffic lights on each update.
+    configureHubWorkspaceWindowChrome(window)
+    for button in controls {
+      XCTAssertEqual(button.layer?.affineTransform().tx ?? -1, 15)
+      XCTAssertEqual(button.layer?.affineTransform().ty ?? 1, -4)
     }
 
-    @MainActor
-    func testTabDropLoadsTheDraggedIdentifierAndCompletes() async {
-        let source = UUID()
-        let target = UUID()
-        let provider = NSItemProvider(object: source.uuidString as NSString)
-        let finished = expectation(description: "drop provider finishes loading")
-        var movedPair: (UUID, UUID)?
-
-        let accepted = HubServerTabDropHandler.accept(
-            providers: [provider],
-            target: target,
-            onMove: { movedPair = ($0, $1) },
-            onCompletion: { finished.fulfill() }
-        )
-
-        XCTAssertTrue(accepted)
-        await fulfillment(of: [finished], timeout: 2)
-        XCTAssertEqual(movedPair?.0, source)
-        XCTAssertEqual(movedPair?.1, target)
+    // Model native relayout during resize/fullscreen. Reapplication uses
+    // the same offset and does not accumulate additional movement.
+    for button in controls {
+      button.setFrameOrigin(CGPoint(x: button.frame.minX + 3, y: button.frame.minY + 4))
     }
-
-    func testDefaultsToSystem() {
-        XCTAssertEqual(HubGlobalPreferences.default.appearance, .system)
-        XCTAssertNil(HubGlobalPreferences.default.appearance.colorScheme)
+    HubTrafficLightPositioning.apply(to: window)
+    for button in controls {
+      XCTAssertEqual(button.layer?.affineTransform().tx ?? -1, 15)
+      XCTAssertEqual(button.layer?.affineTransform().ty ?? 1, -4)
     }
+  }
 
-    func testColorSchemeMapping() {
-        XCTAssertNil(HubAppAppearance.system.colorScheme)
-        XCTAssertEqual(HubAppAppearance.light.colorScheme, .light)
-        XCTAssertEqual(HubAppAppearance.dark.colorScheme, .dark)
-        XCTAssertNil(HubAppAppearance.system.appKitAppearance)
-        XCTAssertEqual(HubAppAppearance.light.appKitAppearance?.name, .aqua)
-        XCTAssertEqual(HubAppAppearance.dark.appKitAppearance?.name, .darkAqua)
-    }
+  /// `makeNSView` can run before SwiftUI assigns the scene's NSWindow, so the
+  /// chrome must be applied when AppKit actually attaches the host view —
+  /// otherwise the WindowGroup's "RepoOS" title stayed visible over the web
+  /// content (#0878).
+  func testChromeViewAppliesHiddenTitleWhenAttachedToWindow() {
+    let window = NSWindow(
+      contentRect: NSRect(x: 0, y: 0, width: 900, height: 600),
+      styleMask: [.titled, .closable, .miniaturizable, .resizable],
+      backing: .buffered,
+      defer: false
+    )
+    window.title = "RepoOS"
+    let chromeView = HubWindowChromeView(appearance: .system)
 
-    func testLegacyRegistryFileDefaultsAppearanceToSystem() throws {
-        let json = """
-        {"notificationsEnabled":false,"dockBadgeEnabled":false}
-        """.data(using: .utf8)!
-        let decoded = try JSONDecoder().decode(HubGlobalPreferences.self, from: json)
-        XCTAssertEqual(decoded.appearance, .system)
-        XCTAssertFalse(decoded.notificationsEnabled)
-        XCTAssertFalse(decoded.dockBadgeEnabled)
-    }
+    XCTAssertNil(chromeView.window)
+    XCTAssertEqual(window.titleVisibility, .visible)
 
-    func testUnknownAppearanceValueDefaultsToSystemInsteadOfThrowing() throws {
-        // Written by a future build, read by this one: must not throw (which
-        // would wipe the registry in reloadFromDisk's catch) and must keep
-        // the other preferences intact.
-        let json = """
-        {"notificationsEnabled":false,"dockBadgeEnabled":true,"appearance":"holographic"}
-        """.data(using: .utf8)!
-        let decoded = try JSONDecoder().decode(HubGlobalPreferences.self, from: json)
-        XCTAssertEqual(decoded.appearance, .system)
-        XCTAssertFalse(decoded.notificationsEnabled)
-        XCTAssertTrue(decoded.dockBadgeEnabled)
-    }
+    window.contentView = chromeView
 
-    func testAppearanceRoundTripsThroughRegistryDocument() throws {
-        var document = ServerRegistryDocument()
-        document.hubGlobalPreferences.appearance = .dark
-        let data = try JSONEncoder().encode(document)
-        let reloaded = try JSONDecoder().decode(ServerRegistryDocument.self, from: data)
-        XCTAssertEqual(reloaded.hubGlobalPreferences.appearance, .dark)
-    }
+    XCTAssertEqual(chromeView.window, window)
+    XCTAssertEqual(window.titleVisibility, .hidden)
+    XCTAssertTrue(window.styleMask.contains(.fullSizeContentView))
+    XCTAssertTrue(window.styleMask.contains(.titled))
+    XCTAssertNotNil(window.standardWindowButton(.closeButton))
+    XCTAssertNotNil(window.standardWindowButton(.miniaturizeButton))
+    XCTAssertNotNil(window.standardWindowButton(.zoomButton))
+    XCTAssertEqual(window.title, "RepoOS")
+  }
 
-    func testAppearanceRoundTripsEachCase() throws {
-        for appearance in HubAppAppearance.allCases {
-            var prefs = HubGlobalPreferences.default
-            prefs.appearance = appearance
-            let data = try JSONEncoder().encode(prefs)
-            let reloaded = try JSONDecoder().decode(HubGlobalPreferences.self, from: data)
-            XCTAssertEqual(reloaded.appearance, appearance)
-        }
-    }
+  /// The collapsed-sidebar reveal tab is a narrow, edge-attached chevron with
+  /// the required accessibility label (#0857).
+  func testSidebarRevealTabSpecification() {
+    XCTAssertGreaterThanOrEqual(HubSidebarRevealTabMetrics.width, 22)
+    XCTAssertLessThanOrEqual(HubSidebarRevealTabMetrics.width, 26)
+    XCTAssertEqual(HubSidebarRevealTabMetrics.systemImage, "chevron.right")
+    XCTAssertEqual(HubSidebarRevealTabMetrics.accessibilityLabel, "Show Sidebar")
+  }
 
-    func testSidebarVisibilityMapsCollapsedFlag() {
-        XCTAssertEqual(HubSidebarVisibility.visibility(isCollapsed: true), .detailOnly)
-        XCTAssertEqual(HubSidebarVisibility.visibility(isCollapsed: false), .all)
-        XCTAssertTrue(HubSidebarVisibility.isCollapsed(.detailOnly))
-        XCTAssertFalse(HubSidebarVisibility.isCollapsed(.all))
-    }
+  /// Rounded on the trailing edge only, so the tab sits flush against the
+  /// window's left edge.
+  func testSidebarRevealTabShapeIsSquareOnLeadingEdge() {
+    let rect = CGRect(
+      x: 0,
+      y: 0,
+      width: HubSidebarRevealTabMetrics.width,
+      height: HubSidebarRevealTabMetrics.height
+    )
+    let path = HubSidebarRevealTabShape(cornerRadius: HubSidebarRevealTabMetrics.cornerRadius)
+      .path(in: rect)
 
-    /// Only an explicit `.detailOnly` counts as collapsed; the system passes
-    /// `.automatic` through the binding during split-view setup and a resize
-    /// must not persist a bogus collapsed state (#0855).
-    func testOnlyDetailOnlyCountsAsCollapsed() {
-        XCTAssertFalse(HubSidebarVisibility.isCollapsed(.automatic))
-        XCTAssertFalse(HubSidebarVisibility.isCollapsed(.doubleColumn))
-    }
+    XCTAssertTrue(path.contains(CGPoint(x: rect.minX + 1, y: rect.minY + 1)))
+    XCTAssertFalse(path.contains(CGPoint(x: rect.maxX - 1, y: rect.minY + 1)))
+    XCTAssertFalse(path.contains(CGPoint(x: rect.maxX - 1, y: rect.maxY - 1)))
+  }
 
-    func testSidebarCollapsedFlagRoundTripsThroughDefaultsKey() {
-        let defaults = UserDefaults.standard
-        let key = HubSidebarVisibility.collapsedDefaultsKey
-        let original = defaults.object(forKey: key)
-        defer {
-            if let original {
-                defaults.set(original, forKey: key)
-            } else {
-                defaults.removeObject(forKey: key)
-            }
-        }
-
-        defaults.set(true, forKey: key)
-        XCTAssertEqual(
-            HubSidebarVisibility.visibility(isCollapsed: defaults.bool(forKey: key)),
-            .detailOnly
-        )
-        defaults.set(false, forKey: key)
-        XCTAssertEqual(
-            HubSidebarVisibility.visibility(isCollapsed: defaults.bool(forKey: key)),
-            .all
-        )
-    }
-
-    /// The workspace window keeps a native titled window (traffic lights,
-    /// drag, resize, fullscreen) while hiding the title text and the toolbar
-    /// row so the sidebar can run to the top edge (#0855).
-    func testWorkspaceWindowChromeHidesTitleAndToolbarButKeepsNativeControls() {
-        let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 900, height: 600),
-            styleMask: [.titled, .closable, .miniaturizable, .resizable],
-            backing: .buffered,
-            defer: false
-        )
-        window.toolbar = NSToolbar(identifier: "HubChromeTestToolbar")
-        window.title = "RepoOS"
-        // Capture the default control frames after the hidden/transparent
-        // titlebar style is in place; AppKit recalculates these when the style
-        // mask changes.
-        window.styleMask.insert(.fullSizeContentView)
-        window.titleVisibility = .hidden
-        window.titlebarAppearsTransparent = true
-        window.titlebarSeparatorStyle = .none
-        hideHubNativeToolbarRow(window)
-        let controlTypes: [NSWindow.ButtonType] = [.closeButton, .miniaturizeButton, .zoomButton]
-        for type in controlTypes {
-            window.standardWindowButton(type)?.isHidden = false
-        }
-        let controls = controlTypes.compactMap { window.standardWindowButton($0) }
-        XCTAssertEqual(controls.count, 3)
-
-        configureHubWorkspaceWindowChrome(window)
-
-        XCTAssertEqual(window.titleVisibility, .hidden)
-        XCTAssertTrue(window.titlebarAppearsTransparent)
-        XCTAssertEqual(window.titlebarSeparatorStyle, .none)
-        // Hiding the drawn title must keep the title itself for accessibility,
-        // Mission Control, and the app switcher.
-        XCTAssertEqual(window.title, "RepoOS")
-        XCTAssertTrue(window.styleMask.contains(.fullSizeContentView))
-        XCTAssertTrue(window.styleMask.contains(.titled))
-        XCTAssertTrue(window.styleMask.contains(.closable))
-        XCTAssertTrue(window.styleMask.contains(.miniaturizable))
-        XCTAssertTrue(window.styleMask.contains(.resizable))
-        XCTAssertFalse(window.isMovableByWindowBackground)
-        XCTAssertNotNil(window.standardWindowButton(.closeButton))
-        XCTAssertNotNil(window.standardWindowButton(.miniaturizeButton))
-        XCTAssertNotNil(window.standardWindowButton(.zoomButton))
-        // The transparent titlebar must never take the traffic lights with it
-        // (#0857).
-        XCTAssertEqual(window.standardWindowButton(.closeButton)?.isHidden, false)
-        XCTAssertEqual(window.standardWindowButton(.miniaturizeButton)?.isHidden, false)
-        XCTAssertEqual(window.standardWindowButton(.zoomButton)?.isHidden, false)
-        XCTAssertEqual(window.toolbar?.isVisible, false)
-        HubTrafficLightPositioning.apply(to: window)
-        for button in controls {
-            XCTAssertEqual(button.layer?.affineTransform().tx ?? -1, 15)
-            XCTAssertEqual(button.layer?.affineTransform().ty ?? 1, -4)
-        }
-
-        // Window appearance updates repeat this method. The correction must
-        // remain fixed rather than walking the traffic lights on each update.
-        configureHubWorkspaceWindowChrome(window)
-        for button in controls {
-            XCTAssertEqual(button.layer?.affineTransform().tx ?? -1, 15)
-            XCTAssertEqual(button.layer?.affineTransform().ty ?? 1, -4)
-        }
-
-        // Model native relayout during resize/fullscreen. Reapplication uses
-        // the same offset and does not accumulate additional movement.
-        for button in controls {
-            button.setFrameOrigin(CGPoint(x: button.frame.minX + 3, y: button.frame.minY + 4))
-        }
-        HubTrafficLightPositioning.apply(to: window)
-        for button in controls {
-            XCTAssertEqual(button.layer?.affineTransform().tx ?? -1, 15)
-            XCTAssertEqual(button.layer?.affineTransform().ty ?? 1, -4)
-        }
-    }
-
-    /// `makeNSView` can run before SwiftUI assigns the scene's NSWindow, so the
-    /// chrome must be applied when AppKit actually attaches the host view —
-    /// otherwise the WindowGroup's "RepoOS" title stayed visible over the web
-    /// content (#0878).
-    func testChromeViewAppliesHiddenTitleWhenAttachedToWindow() {
-        let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 900, height: 600),
-            styleMask: [.titled, .closable, .miniaturizable, .resizable],
-            backing: .buffered,
-            defer: false
-        )
-        window.title = "RepoOS"
-        let chromeView = HubWindowChromeView(appearance: .system)
-
-        XCTAssertNil(chromeView.window)
-        XCTAssertEqual(window.titleVisibility, .visible)
-
-        window.contentView = chromeView
-
-        XCTAssertEqual(chromeView.window, window)
-        XCTAssertEqual(window.titleVisibility, .hidden)
-        XCTAssertTrue(window.styleMask.contains(.fullSizeContentView))
-        XCTAssertTrue(window.styleMask.contains(.titled))
-        XCTAssertNotNil(window.standardWindowButton(.closeButton))
-        XCTAssertNotNil(window.standardWindowButton(.miniaturizeButton))
-        XCTAssertNotNil(window.standardWindowButton(.zoomButton))
-        XCTAssertEqual(window.title, "RepoOS")
-    }
-
-    /// The collapsed-sidebar reveal tab is a narrow, edge-attached chevron with
-    /// the required accessibility label (#0857).
-    func testSidebarRevealTabSpecification() {
-        XCTAssertGreaterThanOrEqual(HubSidebarRevealTabMetrics.width, 22)
-        XCTAssertLessThanOrEqual(HubSidebarRevealTabMetrics.width, 26)
-        XCTAssertEqual(HubSidebarRevealTabMetrics.systemImage, "chevron.right")
-        XCTAssertEqual(HubSidebarRevealTabMetrics.accessibilityLabel, "Show Sidebar")
-    }
-
-    /// Rounded on the trailing edge only, so the tab sits flush against the
-    /// window's left edge.
-    func testSidebarRevealTabShapeIsSquareOnLeadingEdge() {
-        let rect = CGRect(
-            x: 0,
-            y: 0,
-            width: HubSidebarRevealTabMetrics.width,
-            height: HubSidebarRevealTabMetrics.height
-        )
-        let path = HubSidebarRevealTabShape(cornerRadius: HubSidebarRevealTabMetrics.cornerRadius)
-            .path(in: rect)
-
-        XCTAssertTrue(path.contains(CGPoint(x: rect.minX + 1, y: rect.minY + 1)))
-        XCTAssertFalse(path.contains(CGPoint(x: rect.maxX - 1, y: rect.minY + 1)))
-        XCTAssertFalse(path.contains(CGPoint(x: rect.maxX - 1, y: rect.maxY - 1)))
-    }
-
-    func testDockIconFollowsChosenAppearanceRegardlessOfSystem() throws {
-        let light = NSAppearance(named: .aqua)!
-        let dark = NSAppearance(named: .darkAqua)!
-        XCTAssertEqual(
-            DockIconAppearanceController.assetName(for: dark, override: .light),
-            NSImage.Name("DockIconLight")
-        )
-        XCTAssertEqual(
-            DockIconAppearanceController.assetName(for: light, override: .dark),
-            NSImage.Name("DockIconDark")
-        )
-        XCTAssertEqual(
-            DockIconAppearanceController.assetName(for: light, override: .system),
-            NSImage.Name("DockIconLight")
-        )
-        XCTAssertEqual(
-            DockIconAppearanceController.assetName(for: dark, override: .system),
-            NSImage.Name("DockIconDark")
-        )
-    }
+  func testDockIconFollowsChosenAppearanceRegardlessOfSystem() throws {
+    let light = NSAppearance(named: .aqua)!
+    let dark = NSAppearance(named: .darkAqua)!
+    XCTAssertEqual(
+      DockIconAppearanceController.assetName(for: dark, override: .light),
+      NSImage.Name("DockIconLight")
+    )
+    XCTAssertEqual(
+      DockIconAppearanceController.assetName(for: light, override: .dark),
+      NSImage.Name("DockIconDark")
+    )
+    XCTAssertEqual(
+      DockIconAppearanceController.assetName(for: light, override: .system),
+      NSImage.Name("DockIconLight")
+    )
+    XCTAssertEqual(
+      DockIconAppearanceController.assetName(for: dark, override: .system),
+      NSImage.Name("DockIconDark")
+    )
+  }
 }

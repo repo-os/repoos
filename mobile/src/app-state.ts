@@ -6,10 +6,11 @@
 import { ref, computed } from "vue";
 import type { ServerEntry, LockSettings, ReachabilityState } from "./types";
 import * as store from "./store";
-import { validateServer, originOf } from "./reachability";
+import { validateServer, serverUrlOf } from "./reachability";
 import {
   fetchTailnetServers,
   mergeTailnetResults,
+  tailnetDiscoveryMessage,
   type DiscoveredServer,
   type TailnetServer,
 } from "./tailnet";
@@ -136,19 +137,19 @@ export interface AddResult {
  * or an error string. The caller persists via `persist()`.
  */
 export async function addServer(name: string, url: string): Promise<AddResult> {
-  const origin = originOf(url);
-  if (!origin) return { error: "Enter an HTTPS URL (e.g. https://dev.repoos.org)." };
-  // Duplicate guard by normalized origin.
-  if (servers.value.some((s) => originOf(s.url) === origin)) {
+  const serverUrl = serverUrlOf(url);
+  if (!serverUrl) return { error: "Enter an HTTPS URL (e.g. https://dev.repoos.org)." };
+  // Distinct Serve paths can map to different RepoOS projects on one host.
+  if (servers.value.some((s) => serverUrlOf(s.url) === serverUrl)) {
     return { error: "That server is already saved." };
   }
   const reach = await validateServer(url);
   if (!reach.ok) return { error: reach.error ?? "Unreachable." };
 
-  const trimmedName = name.trim() || origin.replace("https://", "");
+  const trimmedName = name.trim() || serverUrl.replace("https://", "");
   const entry: ServerEntry = {
     id: uuid(),
-    url: origin,
+    url: serverUrl,
     name: trimmedName,
     order: servers.value.length,
     createdAt: Date.now(),
@@ -213,13 +214,7 @@ export async function discoverTailnet(): Promise<void> {
   }
   const results = mergeTailnetResults(outcome.servers, servers.value);
   const selectable = results.filter((result) => result.selectable);
-  const message =
-    outcome.message ??
-    (results.length === 0
-      ? "No RepoOS servers were found on the tailnet from this server."
-      : selectable.length === 0
-        ? "Every server found is already saved or can't be added yet."
-        : "");
+  const message = tailnetDiscoveryMessage(results, selectable.length, outcome.message);
   discovery.value = {
     status: "ready",
     trustedName: trusted.name,

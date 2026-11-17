@@ -4014,8 +4014,8 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       default: true,
       description:
         "Let a signed-in RepoOS Hub on your phone ask this server which RepoOS servers it can " +
-        "see on your Tailscale tailnet. Discovery runs here (Tailscale CLI + SSH); the phone " +
-        "makes no scans. Turn off to refuse the request; adding servers manually still works.",
+        "see on your Tailscale tailnet. Discovery uses HTTP over Tailscale with SSH fallback; the phone " +
+        "makes no scans. Turn off to hide this project's registry row from peers; manual adds still work.",
     },
     {
       key: "remoteValidation.enabled",

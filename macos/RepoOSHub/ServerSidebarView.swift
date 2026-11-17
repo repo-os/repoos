@@ -3,6 +3,7 @@ import SwiftUI
 
 struct ServerSidebarView: View {
     @EnvironmentObject private var appState: HubAppState
+    @Environment(\.colorScheme) private var colorScheme
     @Binding var columnVisibility: NavigationSplitViewVisibility
 
     private var serverSelection: Binding<UUID?> {
@@ -22,6 +23,7 @@ struct ServerSidebarView: View {
                 serverList
             }
         }
+        .navigationSplitViewColumnWidth(min: 240, ideal: 280, max: 360)
     }
 
     private var serverList: some View {
@@ -88,12 +90,7 @@ struct ServerSidebarView: View {
     }
 
     private var sidebarBackground: Color {
-        switch appState.hubGlobalPreferences.appearance {
-        case .dark:
-            return Color(red: 0.12, green: 0.12, blue: 0.12)
-        case .light, .system:
-            return .white
-        }
+        appState.hubGlobalPreferences.appearance.shellBackgroundColor(for: colorScheme)
     }
 }
 
@@ -235,6 +232,7 @@ struct ServerSidebarRow: View {
         VStack(alignment: .leading, spacing: 2) {
             Text(entry.name)
                 .lineLimit(1)
+                .foregroundStyle(.primary)
                 .frame(maxWidth: .infinity, alignment: .leading)
             // The subtitle yields width to the fixed-size badges (see sizeThatFits below) and clips,
             // so a narrow sidebar truncates the URL instead of pushing badges out of the row.

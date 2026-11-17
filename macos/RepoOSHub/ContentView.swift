@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ContentView: View {
     @EnvironmentObject private var appState: HubAppState
+    @Environment(\.colorScheme) private var colorScheme
     @AppStorage(HubSidebarVisibility.collapsedDefaultsKey) private var isSidebarCollapsed = false
 
     /// The split view drives its own visibility, but the persisted flag is the
@@ -114,12 +115,7 @@ struct ContentView: View {
     }
 
     private var shellBackground: Color {
-        switch appState.hubGlobalPreferences.appearance {
-        case .dark:
-            return Color(red: 0.12, green: 0.12, blue: 0.12)
-        case .light, .system:
-            return .white
-        }
+        appState.hubGlobalPreferences.appearance.shellBackgroundColor(for: colorScheme)
     }
 }
 

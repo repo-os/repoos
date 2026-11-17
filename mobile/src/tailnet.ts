@@ -3,11 +3,12 @@
  *
  * The phone cannot run the Tailscale CLI, and it must not scan the network. So
  * "Find servers on my tailnet" makes exactly one request to a server the user
- * already saved (`GET /api/servers/tailnet`). The server does the Tailscale/SSH
- * work and returns rows with ready-to-open URLs. Everything in this module is
+ * already saved (`GET /api/servers/tailnet`). The server probes peers over its
+ * tailnet discovery listener, with SSH fallback for older servers, and returns
+ * rows with ready-to-open URLs. Everything in this module is
  * pure except `fetchTailnetServers`, which is injectable for tests.
  */
-import { originOf } from "./reachability";
+import { serverUrlOf } from "./reachability";
 import type { ServerEntry } from "./types";
 
 /** One row as returned by the server endpoint. */
@@ -15,6 +16,8 @@ export interface TailnetServer {
   host: string;
   /** Readable Tailscale machine name when it differs from the MagicDNS host. */
   displayName?: string;
+  dnsName?: string;
+  allowlistGroup?: string;
   port?: number;
   projectName?: string;
   root?: string;
@@ -39,7 +42,7 @@ export interface TailnetPayload {
 
 /** A discovery row merged with what is already saved on this device. */
 export interface DiscoveredServer {
-  /** Stable key for selection: the normalized origin, or `unreachable:<host>` */
+  /** Stable key for selection: normalized URL including Serve path, or failure identity. */
   key: string;
   url: string;
   name: string;
@@ -61,6 +64,19 @@ export type TailnetFetchResult =
     }
   | { kind: "outdated" | "disabled" | "auth" | "error"; message: string };
 
+export function tailnetDiscoveryMessage(
+  results: DiscoveredServer[],
+  selectableCount: number,
+  serverMessage?: string,
+): string {
+  if (serverMessage) return serverMessage;
+  if (results.length === 0) return "No RepoOS servers were found on the tailnet from this server.";
+  const hasProjects = results.some((result) => !result.note?.startsWith("Unreachable"));
+  if (selectableCount === 0 && hasProjects)
+    return "Every server found is already saved or can't be added yet.";
+  return "";
+}
+
 /**
  * A 404 or a non-JSON reply means the trusted server predates
  * `GET /api/servers/tailnet` (or something else answered in its place). Say so
@@ -75,14 +91,13 @@ function outdatedMessage(label: string): string {
 
 /** Normalize a discovered URL for display, allowing `http://` rows so Hub can
  * explain that they need HTTPS. Only `https:` origins are ever selectable. */
-function displayOrigin(input: string): string | null {
+function displayUrl(input: string): string | null {
   const trimmed = input.trim();
   if (!trimmed) return null;
-  const withScheme = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
   try {
-    const url = new URL(withScheme);
-    if (url.protocol !== "http:" && url.protocol !== "https:") return null;
-    return url.origin;
+    const url = new URL(/^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`);
+    if (url.protocol !== "https:" && url.protocol !== "http:") return null;
+    return `${url.origin}${url.pathname.replace(/\/+$/, "")}`;
   } catch {
     return null;
   }
@@ -108,9 +123,9 @@ function noteFor(row: TailnetServer, https: boolean, saved: boolean): string | u
 
 /**
  * Merge endpoint rows with the saved list:
- *  - dedupe by normalized origin (the same server can appear for two hosts),
+ *  - dedupe by normalized base URL (including a Serve path),
  *  - prefer the HTTPS row when a duplicate pair differs only by scheme,
- *  - mark already-saved origins and keep them visible but not selectable,
+ *  - mark already-saved URLs and keep them visible but not selectable,
  *  - keep unreachable rows visible with their reason (also not selectable).
  *
  * Nothing here saves anything; the caller sends only explicitly selected rows
@@ -118,18 +133,80 @@ function noteFor(row: TailnetServer, https: boolean, saved: boolean): string | u
  */
 export function mergeTailnetResults(
   rows: TailnetServer[],
-  savedServers: Pick<ServerEntry, "url">[],
+  savedServers: Array<Pick<ServerEntry, "url"> & Partial<Pick<ServerEntry, "name">>>,
 ): DiscoveredServer[] {
   const saved = new Set(
     savedServers
-      .map((server) => displayOrigin(server.url)?.replace(/^https?:\/\//, ""))
+      .map((server) => displayUrl(server.url)?.replace(/^https?:\/\//, ""))
       .filter((url): url is string => !!url),
   );
-  const byOrigin = new Map<string, DiscoveredServer>();
+  const byBaseUrl = new Map<string, DiscoveredServer>();
   const unreachable: DiscoveredServer[] = [];
+  const savedByHost = new Map<string, { url: string; name?: string }[]>();
+  const savedByName = new Map<string, { url: string; name?: string }[]>();
+  const discoveredByName = new Map<string, number>();
+  for (const row of rows) {
+    if (!row.unreachable && row.projectName?.trim()) {
+      const name = row.projectName.trim().toLowerCase();
+      discoveredByName.set(name, (discoveredByName.get(name) ?? 0) + 1);
+    }
+  }
+  for (const server of savedServers) {
+    try {
+      const parsed = new URL(server.url);
+      const aliases = [
+        parsed.hostname.toLowerCase(),
+        parsed.hostname.toLowerCase().split(".")[0] ?? "",
+      ];
+      for (const alias of aliases.filter(Boolean)) {
+        const entries = savedByHost.get(alias) ?? [];
+        entries.push({ url: server.url, name: server.name });
+        savedByHost.set(alias, entries);
+      }
+      if (server.name?.trim()) {
+        const name = server.name.trim().toLowerCase();
+        const entries = savedByName.get(name) ?? [];
+        entries.push({ url: server.url, name: server.name });
+        savedByName.set(name, entries);
+      }
+    } catch {
+      /* invalid saved entries cannot reconcile a peer */
+    }
+  }
 
   for (const row of rows) {
     if (row.unreachable || !row.url) {
+      const aliases = [row.host, row.dnsName, row.displayName]
+        .filter((value): value is string => !!value)
+        .map((value) => value.toLowerCase().replace(/\.$/, ""));
+      const projectName = row.projectName?.trim().toLowerCase() ?? "";
+      const namedMatches = projectName ? (savedByName.get(projectName) ?? []) : [];
+      const savedEntries = aliases.flatMap((alias) => savedByHost.get(alias) ?? []);
+      if (
+        savedEntries.length === 0 &&
+        namedMatches.length === 1 &&
+        discoveredByName.get(projectName) === 1
+      ) {
+        savedEntries.push(...namedMatches);
+      }
+      if (savedEntries.length) {
+        const uniqueSaved = new Map(savedEntries.map((entry) => [entry.url, entry]));
+        for (const savedEntry of uniqueSaved.values()) {
+          const key = `saved-host:${row.host}:${savedEntry.url}`;
+          if (unreachable.some((entry) => entry.key === key)) continue;
+          unreachable.push({
+            key,
+            url: savedEntry.url,
+            name: savedEntry.name || nameFor(row),
+            host: row.host,
+            saved: true,
+            https: true,
+            selectable: false,
+            note: "Already saved",
+          });
+        }
+        continue;
+      }
       const key = `unreachable:${row.host}${row.port ? `:${row.port}` : ""}`;
       if (unreachable.some((entry) => entry.key === key)) continue;
       unreachable.push({
@@ -146,8 +223,8 @@ export function mergeTailnetResults(
       continue;
     }
 
-    const origin = displayOrigin(row.url);
-    if (!origin) {
+    const url = displayUrl(row.url);
+    if (!url) {
       const key = `invalid:${row.host}${row.port ? `:${row.port}` : ""}`;
       if (unreachable.some((entry) => entry.key === key)) continue;
       unreachable.push({
@@ -166,12 +243,19 @@ export function mergeTailnetResults(
 
     // De-dupe on host+port, not scheme: the same server may be advertised once
     // as http and once as https, and only the HTTPS view is usable by Hub.
-    const identity = origin.replace(/^https?:\/\//, "");
-    const https = origin.startsWith("https://") && row.https !== false;
-    const isSaved = saved.has(identity);
+    const identity = url.replace(/^https?:\/\//, "");
+    const https = url.startsWith("https://") && row.https !== false;
+    // Serve URLs may use a custom hostname. Match its saved project name only
+    // when that name identifies one saved server, avoiding cross-machine hits.
+    const namedMatches = row.projectName
+      ? (savedByName.get(row.projectName.trim().toLowerCase()) ?? [])
+      : [];
+    const projectName = row.projectName?.trim().toLowerCase() ?? "";
+    const isSaved =
+      saved.has(identity) || (namedMatches.length === 1 && discoveredByName.get(projectName) === 1);
     const next: DiscoveredServer = {
-      key: origin,
-      url: origin,
+      key: url,
+      url,
       name: nameFor(row),
       host: row.host,
       port: row.port,
@@ -180,17 +264,17 @@ export function mergeTailnetResults(
       selectable: https && !isSaved,
       note: noteFor(row, https, isSaved),
     };
-    const existing = byOrigin.get(identity);
+    const existing = byBaseUrl.get(identity);
     if (!existing) {
-      byOrigin.set(identity, next);
+      byBaseUrl.set(identity, next);
       continue;
     }
     // A duplicate may be the HTTPS view of a server already seen as HTTP (or
     // vice versa). Keep the HTTPS row rather than whichever came first.
-    if (next.https && !existing.https) byOrigin.set(identity, next);
+    if (next.https && !existing.https) byBaseUrl.set(identity, next);
   }
 
-  return [...byOrigin.values(), ...unreachable];
+  return [...byBaseUrl.values(), ...unreachable];
 }
 
 export interface FetchTailnetOptions {
@@ -209,16 +293,16 @@ export async function fetchTailnetServers(
   serverUrl: string,
   options: FetchTailnetOptions = {},
 ): Promise<TailnetFetchResult> {
-  const origin = originOf(serverUrl);
-  if (!origin) {
+  const serverBase = serverUrlOf(serverUrl);
+  if (!serverBase) {
     return { kind: "error", message: "That server needs an HTTPS URL." };
   }
   const fetchImpl = options.fetchImpl ?? fetch;
-  const label = options.serverName?.trim() || origin.replace(/^https:\/\//, "");
+  const label = options.serverName?.trim() || serverBase.replace(/^https:\/\//, "");
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), options.timeoutMs ?? 15_000);
+  const timer = setTimeout(() => controller.abort(), options.timeoutMs ?? 30_000);
   try {
-    const res = await fetchImpl(`${origin}/api/servers/tailnet`, {
+    const res = await fetchImpl(`${serverBase}/api/servers/tailnet`, {
       signal: controller.signal,
       // The endpoint is authenticated like every other /api route. `same-origin`
       // sends the platform cookie jar when Hub is served by the same origin

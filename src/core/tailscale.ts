@@ -19,6 +19,21 @@ export function detectTailscaleIPv4(): string | null {
   }
 }
 
+/** This machine's Tailscale IPv6 address, or null when unavailable. */
+export function detectTailscaleIPv6(): string | null {
+  try {
+    const out = execFileSync("tailscale", ["ip", "-6"], {
+      timeout: 1500,
+      stdio: ["ignore", "pipe", "ignore"],
+    })
+      .toString()
+      .trim();
+    return out || null;
+  } catch {
+    return null;
+  }
+}
+
 // ── HTTPS via `tailscale serve` ────────────────────────────────────────────
 // Over plain http on a Tailscale IP the browser is NOT a secure context, so
 // crypto.randomUUID, clipboard, service workers etc. are unavailable.
@@ -28,7 +43,7 @@ export function detectTailscaleIPv4(): string | null {
 export type TailscaleExec = (args: string[]) => Promise<string>;
 
 /** Ports `tailscale serve` is allowed to expose HTTPS on, in preference order. */
-const HTTPS_PORTS = [443, 8443, 10000];
+export const TAILSCALE_HTTPS_PORTS = [443, 8443, 10000] as const;
 
 const defaultExec: TailscaleExec = (args) =>
   new Promise((resolve, reject) => {
@@ -97,7 +112,7 @@ export async function ensureTailscaleHttps(
 
     const target = `http://127.0.0.1:${port}`;
     const urlFor = (p: number) => `https://${host}${p === 443 ? "" : `:${p}`}`;
-    for (const p of HTTPS_PORTS) {
+    for (const p of TAILSCALE_HTTPS_PORTS) {
       const web = cfg.Web?.[`${host}:${p}`];
       const taken = web !== undefined || cfg.TCP?.[String(p)] !== undefined;
       if (taken) {

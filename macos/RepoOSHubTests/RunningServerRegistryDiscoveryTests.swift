@@ -32,7 +32,11 @@ final class RunningServerRegistryDiscoveryTests: XCTestCase {
             knownLocalPorts: [],
             healthChecker: checker,
             pidChecker: FakePidChecker(alive: [42]),
-            registrySource: RunningServerRegistrySource(directoryURL: tempDirectory)
+            registrySource: RunningServerRegistrySource(directoryURL: tempDirectory),
+            listeningPortEnumerator: { _ in
+                XCTFail("A populated registry should avoid the fallback scan")
+                return []
+            }
         )
         XCTAssertEqual(found.map(\.port), [7559])
         XCTAssertEqual(found.first?.projectName, "My Repo")

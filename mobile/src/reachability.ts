@@ -10,7 +10,7 @@ export interface Reachability {
   error?: string;
 }
 
-function normalizeUrl(input: string): string | null {
+export function serverUrlOf(input: string): string | null {
   const trimmed = input.trim();
   if (!trimmed) return null;
   let withScheme = trimmed;
@@ -24,34 +24,41 @@ function normalizeUrl(input: string): string | null {
     }
     // Reject http:// explicitly entered.
     if (u.protocol === "http:") return null;
-    return u.origin;
+    if (u.search || u.hash) return null;
+    const path = u.pathname.replace(/\/+$/, "");
+    return `${u.origin}${path === "/" ? "" : path}`;
   } catch {
     return null;
   }
 }
 
 export function isHttps(input: string): boolean {
-  return normalizeUrl(input) !== null;
+  return serverUrlOf(input) !== null;
 }
 
 export function originOf(input: string): string | null {
-  return normalizeUrl(input);
+  const serverUrl = serverUrlOf(input);
+  return serverUrl ? new URL(serverUrl).origin : null;
 }
 
 /**
  * Validate an HTTPS URL is reachable and responds to the RepoOS health check.
  * Returns { ok, error }.
  */
-export async function validateServer(input: string, timeoutMs = 10_000): Promise<Reachability> {
-  const origin = normalizeUrl(input);
-  if (!origin) {
+export async function validateServer(
+  input: string,
+  timeoutMs = 10_000,
+  fetchImpl: typeof fetch = fetch,
+): Promise<Reachability> {
+  const serverUrl = serverUrlOf(input);
+  if (!serverUrl) {
     return { ok: false, error: "Enter an HTTPS URL (e.g. https://dev.repoos.org)." };
   }
 
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const res = await fetch(`${origin}/api/health`, {
+    const res = await fetchImpl(`${serverUrl}/api/health`, {
       signal: controller.signal,
       headers: { Accept: "application/json" },
     });

@@ -1,18 +1,21 @@
 ---
-updated_at: "2026-11-17T15:23:29Z"
-review_passes: 2
 id: "1155"
 title: "RepoOS Hub for macOS is broken: reproduce, diagnose and fix, then test on a real build"
 type: bug
-status: review
+status: done
 priority: p1
 area: macos
+merged_commit: 664044930ec4da085b52c824940eba60de908fb4
 assigned_to: ai
 created_by: t@t
 branch: feat/repoos-hub-for-macos-is-broken-reproduce
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T14:36:24Z"
+updated_at: "2026-11-17T16:07:30Z"
+last_close_out_gate_ms: 962089
+last_close_out_gate_at: "2026-11-17T16:07:00.821Z"
+review_passes: 2
 review_rounds: 1
 ---
 ## Problem
@@ -66,4 +69,6 @@ Read macos/README.md and the 'RepoOS Hub for macOS' section of README.md first. 
 - 2026-11-17T15:19:03Z · message_queued at 2026-11-17T15:19:03.237Z
 - 2026-11-17T15:19:03Z · note: shots: skipped — the diff (12 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-17T15:23:29Z · note: review pass 2: good to go
-
+- 2026-11-17T16:07:00Z · close-out gate completed in 962s
+- 2026-11-17T16:07:04Z · status done→done, release:success
+- 2026-11-17T16:07:30Z · message_dropped: 1 queued message(s) discarded — task is done

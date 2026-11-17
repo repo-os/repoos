@@ -663,6 +663,13 @@ build-android:
         echo "error: Android SDK not found at $sdk_root — run: brew install --cask android-commandlinetools" >&2
         exit 1
     fi
+    if [ -f .repoos/dev-update-channel.env ]; then
+        set -a
+        source .repoos/dev-update-channel.env
+        set +a
+    fi
+    export REPOOS_HUB_BUILD_COMMIT="${REPOOS_HUB_BUILD_COMMIT:-$(git rev-parse --short=12 HEAD)}"
+    export REPOOS_APP_VERSION_CODE="${REPOOS_APP_VERSION_CODE:-$(git rev-list --count HEAD)}"
     cd mobile
     bun install
     bun run build
@@ -671,7 +678,7 @@ build-android:
     export JAVA_HOME="$(brew --prefix openjdk@21)/libexec/openjdk.jdk/Contents/Home"
     export ANDROID_HOME="$sdk_root"
     export ANDROID_SDK_ROOT="$sdk_root"
-    ./gradlew assembleDebug
+    ./gradlew clean assembleDebug
     apk="app/build/outputs/apk/debug/app-debug.apk"
     cp -f "$apk" ../app-debug.apk
     echo "==> mobile/app-debug.apk ($(du -h ../app-debug.apk | cut -f1)) — copied from $apk"
@@ -756,6 +763,11 @@ build-mobile: build-android build-ios
 [group('mobile')]
 deploy-phone *FLAGS:
     bun scripts/deploy-phone.ts {{FLAGS}}
+
+# build and publish the private Android dev update channel
+[group('mobile')]
+publish-dev:
+    bash scripts/publish-dev.sh
 
 # ── release ──────────────────────────────────────────────────────────────
 

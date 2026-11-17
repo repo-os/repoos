@@ -187,6 +187,26 @@ describe("server registry files", () => {
     expect(existsSync(join(dir, "7200.json"))).toBe(false);
   });
 
+  it("refreshes a running project's tailnet discovery opt-out after config reload", () => {
+    const port = 7652;
+    const root = "/tmp/repo-tailnet-toggle";
+    serverRegistry.registerRunningServer({
+      port,
+      host: "127.0.0.1",
+      root,
+      version: "1",
+      startedAt: "2026-10-19T00:00:00.000Z",
+      tailnetDiscovery: false,
+    });
+    expect(readServerRegistryEntry(port)?.tailnetDiscovery).toBe(false);
+
+    serverRegistry.refreshRunningServerIdentity(port, root, undefined, true);
+    expect(readServerRegistryEntry(port)?.tailnetDiscovery).toBeUndefined();
+
+    serverRegistry.refreshRunningServerIdentity(port, root, undefined, false);
+    expect(readServerRegistryEntry(port)?.tailnetDiscovery).toBe(false);
+  });
+
   it("overwrites stale entry when pid is dead", () => {
     writeServerRegistryEntry(sampleEntry(7300, "/other/root", 999_999));
     expect(checkServerRegistryPortConflict(7300, "/tmp/new-root")).toBeNull();

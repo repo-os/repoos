@@ -2,17 +2,22 @@
 id: "1156"
 title: "Hub Android: dev build update channel - new dev builds reach the phone from any network with one tap (no adb)"
 type: feature
-status: review
+status: done
 priority: p1
 area: [mobile, infra]
+merged_commit: 9d03c74cab4bb16c35cbd377d4e5fb2a3e49cc88
 assigned_to: ai
 created_by: t@t
 branch: feat/hub-android-dev-build-update-channel-new
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T14:48:18Z"
-updated_at: "2026-11-17T15:49:27Z"
-handoff_signal_retry_count: 1
+updated_at: "2026-11-17T17:40:29Z"
+last_close_out_gate_ms: 1613630
+last_close_out_gate_at: "2026-11-17T17:39:32.650Z"
+review_passes: 3
+review_rounds: 2
+handoff_signal_retry_count: 2
 ---
 ## Problem
 
@@ -52,3 +57,36 @@ Follow the same shape as Tiao's implementation so all of Nick's apps behave iden
 - 2026-11-17T15:49:27Z · status active→review
 - 2026-11-17T15:49:27Z · message_queued at 2026-11-17T15:49:27.231Z
 - 2026-11-17T15:49:27Z · note: shots: skipped — the diff (14 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-11-17T15:59:27Z · note: review pass 1: needs some work
+- 2026-11-17T15:59:27Z · status review→active
+- 2026-11-17T15:59:29Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-17T16:04:45Z · message_queued at 2026-11-17T16:04:45.707Z
+- 2026-11-17T16:09:57Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-11-17T16:09:58Z · note: handoff requested (cli)
+- 2026-11-17T16:10:38Z · CTO nudge: held — handoff gate is running
+- 2026-11-17T16:11:27Z · message_delivered: 1 message(s)
+- 2026-11-17T16:11:46Z · note: Review round 1 fixes requested
+- 2026-11-17T16:24:07Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-17T16:24:07Z · message_queued at 2026-11-17T16:24:07.990Z
+- 2026-11-17T16:24:08Z · ↻ resuming engineer to read queued message
+- 2026-11-17T16:24:08Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The release guard now completes cleanly, including Capacitor sync and the Gradle release-variant check. The review fixes are in place; I’m checking for generated-file drift and then running the required changed-path RepoOS check. · stderr: 2026-11-17T16:13:18.521557Z ERROR codex_core::tools::router: error=Exit code: 1 Wall time: 0 seconds Output: Failed to write file /Users/nick/code/nick/repoos-worktrees/feat/hub-android-dev-build-update-channel-new/mobile/dev-update-worker/index.ts 2026-11-17T16:15:49.695996Z ERROR codex_core::tools::router: error=Exi…
+- 2026-11-17T16:30:35Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: tests/check-reuse.test.ts > handoff self-check reuse > CLI records clean self-check proof, partial=false on bee — fix it in the feature branch and re-run the gate
+- 2026-11-17T16:30:38Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-17T16:33:31Z · message_delivered: 2 message(s)
+- 2026-11-17T16:35:38Z · CTO nudge: held — handoff gate is running
+- 2026-11-17T16:42:57Z · status active→review
+- 2026-11-17T16:42:57Z · message_queued at 2026-11-17T16:42:57.357Z
+- 2026-11-17T16:42:57Z · note: shots: skipped — the diff (19 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-11-17T16:53:39Z · note: review pass 2: needs some work
+- 2026-11-17T16:53:39Z · status review→active
+- 2026-11-17T16:53:41Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-17T16:55:12Z · message_delivered: 1 message(s)
+- 2026-11-17T16:55:23Z · note: Review round 2 fixes requested
+- 2026-11-17T16:59:19Z · body
+- 2026-11-17T17:00:06Z · status active→review
+- 2026-11-17T17:00:07Z · message_queued at 2026-11-17T17:00:07.049Z
+- 2026-11-17T17:00:07Z · note: shots: skipped — the diff (21 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-11-17T17:10:54Z · note: review pass 3: good to go
+- 2026-11-17T17:39:32Z · close-out gate completed in 1614s
+- 2026-11-17T17:39:37Z · status done→done, release:success
+- 2026-11-17T17:40:29Z · message_dropped: 1 queued message(s) discarded — task is done

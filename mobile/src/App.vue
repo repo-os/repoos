@@ -36,14 +36,21 @@ import AddServerView from "./components/AddServerView.vue";
 import TailnetDiscoveryView from "./components/TailnetDiscoveryView.vue";
 import BottomSheet from "./components/BottomSheet.vue";
 import LockOverlay from "./components/LockOverlay.vue";
-import { resolveShellPlatform } from "./platform";
+import { loadHubDevUpdateConfig, resolveShellPlatform } from "./platform";
 import { fixtureInitialRoute, readHubFixture } from "./fixture";
 import { impactHeavy } from "./haptics";
 import { installHubBackButton, type HubRoute } from "./back-navigation";
 import { errorAfterServerUrlInput } from "./form-validation";
 import type { AppearanceMode, DesignThemeId } from "./theme";
+import {
+  checkForDevUpdate,
+  openDevUpdateApk,
+  snoozeDevUpdate,
+  type DevUpdateManifest,
+} from "./dev-updates";
 
 type Route = HubRoute;
+type LockContext = { kind: "reopen" } | { kind: "server"; server: ServerEntry };
 
 const route = ref<Route>("picker");
 const sheetServer = ref<ServerEntry | null>(null);
@@ -56,8 +63,12 @@ const formError = ref("");
 const formValidating = ref(false);
 
 const lockOpen = ref(false);
+const lockContext = ref<LockContext | null>(null);
 const platform = ref(resolveShellPlatform());
 const appVersion = "0.1.0";
+const installedCommit = ref("unknown");
+const devUpdate = ref<DevUpdateManifest | null>(null);
+const devUpdateEnabled = ref(false);
 
 const sheetOpen = computed(() => sheetServer.value !== null);
 
@@ -94,10 +105,17 @@ onMounted(async () => {
   if (initial === "discover") route.value = "discover";
 
   await init();
+  const updateConfig = await loadHubDevUpdateConfig();
+  installedCommit.value = updateConfig.installedCommit;
+  devUpdateEnabled.value = updateConfig.enabled;
+  if (devUpdateEnabled.value)
+    void checkForDevUpdate().then((update) => {
+      devUpdate.value = update;
+    });
   if (initial === "discover") await discoverTailnet();
   onBrowserEvents({ closed: () => undefined });
   if (lockSettings.value.enabled && lockSettings.value.scope === "reopen") {
-    await gateLock(null);
+    await gateLock({ kind: "reopen" });
   }
 });
 
@@ -106,24 +124,48 @@ onUnmounted(() => {
   void disposeBackButton?.();
 });
 
-async function gateLock(_serverId: string | null): Promise<boolean> {
+async function gateLock(context: LockContext): Promise<boolean> {
+  lockContext.value = context;
   lockOpen.value = true;
   const ok = await verifyWithDeviceLock("Unlock RepoOS Hub to continue");
   lockOpen.value = lockOverlayShouldRemainOpen(ok);
+  if (ok) lockContext.value = null;
   return ok;
 }
 
 async function retryLock() {
-  await gateLock(null);
+  const context = lockContext.value;
+  if (!context) return;
+  const ok = await gateLock(context);
+  if (ok && context.kind === "server") await openSelectedServer(context.server);
+}
+
+function cancelLock() {
+  if (lockContext.value?.kind !== "server") return;
+  lockContext.value = null;
+  lockOpen.value = false;
+}
+
+async function openSelectedServer(server: ServerEntry) {
+  await selectServer(server.id);
+  await openServer(server.url);
+}
+
+async function checkDevUpdatesNow() {
+  devUpdate.value = await checkForDevUpdate(true);
+}
+
+async function deferDevUpdate() {
+  await snoozeDevUpdate();
+  devUpdate.value = null;
 }
 
 async function onSelect(server: ServerEntry) {
   if (lockSettings.value.enabled && lockSettings.value.scope === "server") {
-    const ok = await gateLock(server.id);
+    const ok = await gateLock({ kind: "server", server });
     if (!ok) return;
   }
-  await selectServer(server.id);
-  await openServer(server.url);
+  await openSelectedServer(server);
 }
 
 function openSettings() {
@@ -237,7 +279,12 @@ async function onLockScope(scope: "reopen" | "server") {
       </button>
     </header>
 
-    <LockOverlay :open="lockOpen" @retry="retryLock" />
+    <LockOverlay
+      :open="lockOpen"
+      :cancelable="lockContext?.kind === 'server'"
+      @retry="retryLock"
+      @cancel="cancelLock"
+    />
 
     <main class="main-pane">
       <ServerListView
@@ -278,6 +325,9 @@ async function onLockScope(scope: "reopen" | "server") {
         :lock-supported="lockSupported"
         :platform="platform"
         :app-version="appVersion"
+        :dev-update-enabled="devUpdateEnabled"
+        :installed-commit="installedCommit"
+        @check-dev-updates="checkDevUpdatesNow"
         @back="backToPicker"
         @update:design-theme="onDesignTheme"
         @update:appearance-mode="onAppearanceMode"
@@ -305,6 +355,25 @@ async function onLockScope(scope: "reopen" | "server") {
         @submit="submitAdd"
       />
     </main>
+
+    <div v-if="devUpdate" class="update-backdrop" role="presentation">
+      <section
+        class="update-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="dev-update-title"
+      >
+        <h2 id="dev-update-title">A new dev build is available</h2>
+        <p>Commit {{ devUpdate.commit.slice(0, 7) }}</p>
+        <ul v-if="devUpdate.notes.length">
+          <li v-for="note in devUpdate.notes" :key="note">{{ note }}</li>
+        </ul>
+        <div class="update-actions">
+          <button type="button" class="btn-primary" @click="openDevUpdateApk">Download now</button>
+          <button type="button" class="btn-ghost" @click="deferDevUpdate">Later</button>
+        </div>
+      </section>
+    </div>
 
     <BottomSheet :open="sheetOpen" title="Edit server" @close="closeSheet">
       <label class="field sheet-field">

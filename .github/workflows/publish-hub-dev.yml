@@ -1,0 +1,54 @@
+name: Publish Hub Android dev build
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hub-android-dev-publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: android-actions/setup-android@v3
+      - name: Install Android build tools
+        run: sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0"
+      - name: Verify release web bundle has no dev channel endpoint
+        env:
+          REPOOS_HUB_DEV_UPDATE_TOKEN: ${{ secrets.REPOOS_HUB_DEV_UPDATE_TOKEN }}
+        run: scripts/check-mobile-release-channel.sh
+      - name: Configure update channel and publish
+        env:
+          CI: "true"
+          REPOOS_HUB_DEV_UPDATE_TOKEN: ${{ secrets.REPOOS_HUB_DEV_UPDATE_TOKEN }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          HUB_DEV_DEBUG_KEYSTORE_BASE64: ${{ secrets.HUB_DEV_DEBUG_KEYSTORE_BASE64 }}
+          REPOOS_DEV_UPDATE_BASE_SHA: ${{ github.event.before }}
+        run: |
+          set -euo pipefail
+          if [[ -z "$REPOOS_HUB_DEV_UPDATE_TOKEN" || -z "$CLOUDFLARE_API_TOKEN" || -z "$CLOUDFLARE_ACCOUNT_ID" || -z "$HUB_DEV_DEBUG_KEYSTORE_BASE64" ]]; then
+            echo "Hub dev publishing secrets are not configured; skipping publish."
+            exit 0
+          fi
+          bunx --yes wrangler deploy --config mobile/dev-update-worker/wrangler.jsonc >/dev/null 2>&1
+          printf '%s' "$REPOOS_HUB_DEV_UPDATE_TOKEN" | bunx --yes wrangler secret put REPOOS_HUB_DEV_UPDATE_TOKEN --config mobile/dev-update-worker/wrangler.jsonc >/dev/null 2>&1
+          mkdir -p "$HOME/.android"
+          printf '%s' "$HUB_DEV_DEBUG_KEYSTORE_BASE64" | base64 --decode > "$HOME/.android/debug.keystore"
+          chmod 600 "$HOME/.android/debug.keystore"
+          scripts/publish-dev.sh
