@@ -31,6 +31,16 @@ final class ServerRegistryStoreTests: XCTestCase {
         XCTAssertEqual(loaded.lastSelectedServerID, entry.id)
     }
 
+    func testApplicationSupportDirectoryCanBeIsolatedForManualQA() {
+        let isolatedDirectory = "/tmp/repoos-hub-qa"
+        XCTAssertEqual(
+            ServerRegistryStore.applicationSupportDirectory(
+                environment: ["REPOOS_HUB_SUPPORT_DIRECTORY": isolatedDirectory]
+            ).path,
+            isolatedDirectory
+        )
+    }
+
     func testDuplicateOriginRejected() throws {
         let store = ServerRegistryStore(directoryURL: directoryURL)
         var document = ServerRegistryDocument()
