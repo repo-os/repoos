@@ -98,3 +98,4 @@ Use the attached 390×844 screenshot. Inspect both themes and a long task title.
 - 2026-11-17T05:46:25Z · body
 - 2026-11-17T05:49:34Z · note: ui verification passed: 2 of 2 shots captured with clean console
 - 2026-11-17T05:49:35Z · status active→review
+- 2026-11-17T05:49:35Z · message_queued at 2026-11-17T05:49:35.632Z
