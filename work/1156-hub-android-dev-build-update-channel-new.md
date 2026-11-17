@@ -72,4 +72,4 @@ Follow the same shape as Tiao's implementation so all of Nick's apps behave iden
 - 2026-11-17T16:33:31Z · message_delivered: 2 message(s)
 - 2026-11-17T16:35:38Z · CTO nudge: held — handoff gate is running
 - 2026-11-17T16:42:57Z · status active→review
-
+- 2026-11-17T16:42:57Z · message_queued at 2026-11-17T16:42:57.357Z
