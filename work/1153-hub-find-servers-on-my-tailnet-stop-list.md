@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/check-docs-only-cli.test.ts > cmdCheck docs/bookkeeping shortcut (#1059) > classifies a work-only diff and skips the full suite on thinkpad — fix it in the feature branch and re-run the gate"
+last_handoff_failure_sha: e1b1e693693ec27e46b2e70d284ec6202a069a30
 id: "1153"
 title: "Hub 'Find servers on my tailnet': stop listing bare machines, hide phones, explain failures, and replace SSH discovery with an HTTPS-based one"
 type: bug
@@ -162,3 +164,4 @@ Do not add runtime dependencies. The discovery endpoint exposes names/ports only
 - 2026-11-17T16:18:46Z · message_delivered: 1 message(s)
 - 2026-11-17T16:38:35Z · message_queued at 2026-11-17T16:38:35.024Z
 - 2026-11-17T16:38:35Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: tests/check-docs-only-cli.test.ts > cmdCheck docs/bookkeeping shortcut (#1059) > classifies a work-only diff and skips the full suite on thinkpad — fix it in the feature branch and re-run the gate
+
