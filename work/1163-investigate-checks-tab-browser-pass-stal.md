@@ -54,3 +54,4 @@ Screenshot shows the Checks Now tab at 390px. The attempt captured the main page
 - 2026-11-17T19:39:30Z · note: handoff requested (cli)
 - 2026-11-17T19:40:40Z · CTO nudge: held — handoff gate is running
 - 2026-11-17T19:42:26Z · message_queued at 2026-11-17T19:42:26.196Z
+- 2026-11-17T19:42:26Z · handoff failed · task-file handoff failed at review · Engineering report draft is missing: .repoos/engineering-report-drafts/1163.md
