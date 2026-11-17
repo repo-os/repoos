@@ -1,10 +1,11 @@
 ---
-updated_at: "2026-11-17T07:11:54Z"
-review_timeout_retries: 0
 id: "1126"
 title: "Releases: 'Generate AI notes and publish' - let the user choose auto-publish or notify-me when the AI draft is ready"
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: "`needs some work` — a record can be re-settled while it is `publishing`, so a live automatic cut is reported as “not published”."
 priority: p2
 area: [web, server]
 assigned_to: ai
@@ -13,6 +14,8 @@ branch: feat/releases-generate-ai-notes-and-publish-l
 cli_override: opencode
 model_override: opencode-go/glm-5.3-flash
 created_at: "2026-11-15T08:14:22Z"
+updated_at: "2026-11-17T07:11:54Z"
+review_timeout_retries: 0
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-17T06:45:16.889Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 review_rounds: 2
@@ -252,4 +255,4 @@ Reuse the existing AI-draft run in ReleasesView.vue and the server release run; 
 - 2026-11-17T07:00:43Z · note: review pass 3: timed out after 15 minutes — no report (retrying once automatically)
 - 2026-11-17T07:00:55Z · message_queued at 2026-11-17T07:00:55.816Z
 - 2026-11-17T07:11:54Z · note: review pass 4: needs some work
-
+- 2026-11-17T07:11:54Z · needs_input
