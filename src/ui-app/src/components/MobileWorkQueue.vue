@@ -718,7 +718,7 @@ function openTask(task: Task): void {
   align-items: end;
   gap: 8px;
 }
-@media (max-width: 360px) {
+@media (max-width: 420px) {
   .mobile-queue-row {
     grid-template-columns: minmax(0, 1fr) auto;
   }
