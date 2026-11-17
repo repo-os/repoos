@@ -5,13 +5,14 @@ type: bug
 status: active
 priority: p1
 area: mobile
+depends_on: ["1162"]
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-use-the-android-hub-app-on-the-p
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T15:51:18Z"
-updated_at: "2026-11-17T17:28:58Z"
+updated_at: "2026-11-17T17:33:54Z"
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-11-17T16:23:57.721Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-17T17:28:58.663Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
@@ -65,3 +66,4 @@ Human device step needed: the saved ADB target `100.117.244.33:37673` refused th
 - 2026-11-17T17:23:29Z · message_delivered: 1 message(s)
 - 2026-11-17T17:23:56Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: I reread #1159 from the current RepoOS board. The updated note confirms the device requirement is still outstanding. ADB still shows no attached device, so I can’t complete the native QA pass; the task remains active. Please provide an ava… · stderr: 2026-11-17T16:33:30.700724Z ERROR codex_core::session: failed to record rollout items: thread 01a1ea59-b92c-7db2-bcad-f880d3eccb6d not found Reading additional input from stdin... Reading additional input from stdin...
 - 2026-11-17T17:28:58Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 1/3
+- 2026-11-17T17:33:54Z · depends_on
