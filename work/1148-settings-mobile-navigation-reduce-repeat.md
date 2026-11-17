@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/settings-mobile-navigation-reduce-repeat
 created_at: "2026-11-17T03:06:33Z"
-updated_at: "2026-11-17T05:08:39Z"
+updated_at: "2026-11-17T05:13:54Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -126,3 +126,4 @@ Use the attached phone screenshot. Check long labels and both theme families. Th
 - 2026-11-17T04:50:32Z · status review→active
 - 2026-11-17T04:58:52Z · body
 - 2026-11-17T05:08:39Z · body
+- 2026-11-17T05:13:54Z · message_queued at 2026-11-17T05:13:54.345Z
