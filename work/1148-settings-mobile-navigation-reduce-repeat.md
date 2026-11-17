@@ -141,3 +141,4 @@ Use the attached phone screenshot. Check long labels and both theme families. Th
 - 2026-11-17T05:59:34Z · body
 - 2026-11-17T06:04:09Z · status active→review
 - 2026-11-17T06:05:50Z · message_queued at 2026-11-17T06:05:50.119Z
+- 2026-11-17T06:05:50Z · note: shots: failed — browser capture cancelled
