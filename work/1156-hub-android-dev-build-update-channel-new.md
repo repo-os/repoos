@@ -11,7 +11,7 @@ branch: feat/hub-android-dev-build-update-channel-new
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T14:48:18Z"
-updated_at: "2026-11-17T16:53:39Z"
+updated_at: "2026-11-17T16:53:41Z"
 review_rounds: 2
 review_passes: 2
 handoff_signal_retry_count: 2
@@ -76,3 +76,4 @@ Follow the same shape as Tiao's implementation so all of Nick's apps behave iden
 - 2026-11-17T16:42:57Z · note: shots: skipped — the diff (19 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-17T16:53:39Z · note: review pass 2: needs some work
 - 2026-11-17T16:53:39Z · status review→active
+- 2026-11-17T16:53:41Z · CTO nudge: held — an undelivered message is already queued
