@@ -2,7 +2,7 @@
 id: "1167"
 title: "QA pass: use the macOS Hub app after the #1155 fix, find broken things and fix them"
 type: bug
-status: active
+status: review
 priority: p1
 area: macos
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/qa-pass-use-the-macos-hub-app-after-the-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T18:23:18Z"
-updated_at: "2026-11-17T22:42:02Z"
+updated_at: "2026-11-17T22:43:30Z"
 review_passes: 5
 review_rounds: 2
 handoff_signal_retry_count: 2
@@ -102,3 +102,4 @@ Do not edit repoos.toml. Do not create signing identities or commit app binaries
 - 2026-11-17T22:18:24Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-17T22:18:25Z · message_delivered: 1 message(s)
 - 2026-11-17T22:42:02Z · body
+- 2026-11-17T22:43:30Z · status active→review
