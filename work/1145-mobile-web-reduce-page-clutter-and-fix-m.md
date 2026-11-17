@@ -3,13 +3,18 @@ id: "1145"
 title: "Mobile web: reduce page clutter and fix More sheet readability"
 type: bug
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: the agent process exited with an error — open the task to see the full output
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
 branch: feat/mobile-web-reduce-page-clutter-and-fix-m
 created_at: "2026-11-17T02:52:23Z"
-updated_at: "2026-11-17T02:53:34Z"
+updated_at: "2026-11-17T03:01:13Z"
+dev_error_count: 1
+engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-11-17T03:01:13.692Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 Phone screens waste space on repeated explanations, navigation labels, and an idle integration bar. Some page headings are not left aligned. The More sheet is translucent, so underlying text shows through and makes it difficult to read. See all five attached phone screenshots.
@@ -43,3 +48,5 @@ On a phone, page headings and content start at a consistent left edge, essential
 - 2026-11-17T02:52:33Z · needs_input, body: Desired UX (added)
 - 2026-11-17T02:53:31Z · status inbox→ready
 - 2026-11-17T02:53:34Z · status ready→active, branch
+- 2026-11-17T03:01:13Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
+- 2026-11-17T03:01:13Z · engineer crash recovery: resuming opencode + opencode-go/deepseek-v4.1-flash (1/3 crashes in 30m) · the agent process exited with an error — open the task to see the full output. Open Raw CLI error for details. (CLI: the agent process exited with an error — open the task to see the full output)
