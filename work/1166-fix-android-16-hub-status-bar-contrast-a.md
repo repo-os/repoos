@@ -71,3 +71,4 @@ This issue was observed on Android 16 (API 36), target SDK 36, with Android Syst
 - 2026-11-17T19:07:50Z · message_delivered: 1 message(s)
 - 2026-11-17T19:09:55Z · body
 - 2026-11-17T19:10:36Z · status active→review
+- 2026-11-17T19:10:36Z · message_queued at 2026-11-17T19:10:36.680Z
