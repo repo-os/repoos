@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: t@t
 branch: ""
 created_at: "2026-11-17T17:55:45Z"
-updated_at: "2026-11-17T17:56:16Z"
+updated_at: "2026-11-17T17:56:18Z"
 ---
 ## Problem
 On Android 16 (API 36), the Hub theme changes the status-bar icon style but the status-bar background remains a light system strip. In Dark appearance, white status icons are nearly invisible against that light strip. Android 16 ignores the status-bar color request for apps targeting API 36, so the native edge-to-edge treatment needs a platform-aware fix.
