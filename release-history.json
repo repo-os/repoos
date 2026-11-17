@@ -1,6 +1,13 @@
 {
   "releases": [
     {
+      "version": "0.5.89",
+      "tag": "v0.5.89",
+      "date": "2026-11-17",
+      "notes": "## Highlights\n\n- **Generate AI notes and publish.** In the Releases cut panel, Generate AI release notes now asks what should happen when the draft is ready: publish the release automatically (through the same checks as Publish, with a Cancel until it starts) or notify you to review the notes first. There is also a one-click Generate notes and publish button, and your choice is remembered (#1126).\n- **Phone screens, all over.** A design audit made every page work better on a phone, with less clutter and a readable More sheet (#1146, #1145), reachable task-detail tabs and preview guidance (#1147), simpler Settings navigation (#1148), a tidier Checks header (#1149), and 44px Back controls on full-screen diffs (#1151).\n- **Find servers on my tailnet.** The Hub app and `repoos servers --tailscale` now find RepoOS servers across remote shells and hand-run servers, and match Tailscale machines by their MagicDNS identity (#1140, #1144). On Android, the system back gesture now returns from the discovery screen (#1142).\n- **Work queue.** You can show or hide human-assigned and held tasks (#1141).\n- **Hub app.** Tapping the logo returns to the server picker (#1152).\n- **Smaller fixes.** A test that failed on any machine running Tailscale now passes everywhere (#1143).",
+      "knownIssues": "- The tailnet screen can still list machines it could not check as \"unreachable\" rows, and phones may appear; a cleaner list that does not depend on SSH is in progress (#1153).\n- The Android Hub app is not part of a release. Install it with `just deploy-phone`."
+    },
+    {
       "version": "0.5.88",
       "tag": "v0.5.88",
       "date": "2026-11-16",

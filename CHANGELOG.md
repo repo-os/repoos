@@ -5,6 +5,19 @@ pipeline from `release-history.json`; the newest entry is also the GitHub
 release body. The full discussion of each change lives in the release notes
 and on GitHub.
 
+## [v0.5.89] - 2026-11-17
+
+## Highlights
+
+- **Generate AI notes and publish.** In the Releases cut panel, Generate AI release notes now asks what should happen when the draft is ready: publish the release automatically (through the same checks as Publish, with a Cancel until it starts) or notify you to review the notes first. There is also a one-click Generate notes and publish button, and your choice is remembered (#1126).
+- **Phone screens, all over.** A design audit made every page work better on a phone, with less clutter and a readable More sheet (#1146, #1145), reachable task-detail tabs and preview guidance (#1147), simpler Settings navigation (#1148), a tidier Checks header (#1149), and 44px Back controls on full-screen diffs (#1151).
+- **Find servers on my tailnet.** The Hub app and `repoos servers --tailscale` now find RepoOS servers across remote shells and hand-run servers, and match Tailscale machines by their MagicDNS identity (#1140, #1144). On Android, the system back gesture now returns from the discovery screen (#1142).
+- **Work queue.** You can show or hide human-assigned and held tasks (#1141).
+- **Hub app.** Tapping the logo returns to the server picker (#1152).
+- **Smaller fixes.** A test that failed on any machine running Tailscale now passes everywhere (#1143).
+
+[Release on GitHub](https://github.com/repo-os/repoos/releases/tag/v0.5.89)
+
 ## [v0.5.88] - 2026-11-16
 
 Changes in this release:
