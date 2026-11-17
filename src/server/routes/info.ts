@@ -26,6 +26,39 @@ import { repoosBinary } from "../../core/service-manager.js";
 import { compiledCliEntry } from "../../core/serve-lock-flags.js";
 import { existsSync } from "node:fs";
 
+export interface RestartHelperDeps {
+  binary?: typeof repoosBinary;
+  spawn?: typeof spawn;
+  exists?: typeof existsSync;
+}
+
+/** Start the CLI outside the server process so it can stop and relaunch it. */
+export function spawnHandRunRestartHelper(
+  root: string,
+  port: number | undefined,
+  deps: RestartHelperDeps = {},
+): { ok: true } | { ok: false; reason: string } {
+  try {
+    const { bin, needsCliEntry } = (deps.binary ?? repoosBinary)();
+    const entry = compiledCliEntry();
+    if (needsCliEntry && !(deps.exists ?? existsSync)(entry))
+      return { ok: false, reason: `CLI entry not found at ${entry}` };
+    const args = [...(needsCliEntry ? [entry] : []), "restart", "--force"];
+    if (port) args.push("--port", String(port));
+    const helper = (deps.spawn ?? spawn)(bin, args, {
+      cwd: root,
+      detached: true,
+      stdio: "ignore",
+      env: process.env,
+    });
+    helper.on("error", () => {});
+    helper.unref();
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, reason: error instanceof Error ? error.message : String(error) };
+  }
+}
+
 let idleRestartTimer: ReturnType<typeof setInterval> | null = null;
 let idleRestartPending = false;
 // Freeze this at module start: the install marker can change during `repoos upgrade`.
@@ -142,33 +175,15 @@ export const restartInstalledUpgrade: RouteHandler = async (ctx, req, res) => {
   if (!status.supervised) {
     // The server cannot stop and relaunch itself: the helper must outlive this
     // process and use the CLI's verified hand-run restart path.
-    try {
-      const { bin, needsCliEntry } = repoosBinary();
-      const entry = compiledCliEntry();
-      if (needsCliEntry && !existsSync(entry))
-        return json(res, 503, {
-          state: "manual",
-          reason: `CLI entry not found at ${entry}`,
-          command: "repoos restart",
-        });
-      const args = [...(needsCliEntry ? [entry] : []), "restart", "--force"];
-      if (ctx.servePort) args.push("--port", String(ctx.servePort));
-      const helper = spawn(bin, args, {
-        cwd: ctx.config.root,
-        detached: true,
-        stdio: "ignore",
-        env: process.env,
-      });
-      helper.on("error", () => {});
-      helper.unref();
-      return json(res, 202, { state: "restarting" });
-    } catch (error) {
+    const helper = spawnHandRunRestartHelper(ctx.config.root, ctx.servePort);
+    if (!helper.ok) {
       return json(res, 503, {
         state: "manual",
-        reason: error instanceof Error ? error.message : String(error),
+        reason: helper.reason,
         command: "repoos restart",
       });
     }
+    return json(res, 202, { state: "restarting" });
   }
   if (body.whenIdle) {
     idleRestartPending = true;

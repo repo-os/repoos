@@ -1,4 +1,3 @@
-import { Readable } from "node:stream";
 import type { ServerResponse } from "node:http";
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
@@ -14,16 +13,8 @@ vi.mock("../../commands/upgrade.js", () => ({
   readInstallVersion: mocks.readInstallVersion,
 }));
 vi.mock("../../core/supervisor-detect.js", () => ({ detectSupervisor: mocks.detectSupervisor }));
-vi.mock("node:child_process", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("node:child_process")>()),
-  spawn: mocks.spawn,
-}));
-vi.mock("../../core/service-manager.js", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("../../core/service-manager.js")>()),
-  repoosBinary: () => ({ bin: "bun", needsCliEntry: false }),
-}));
 
-import { getUpdateStatus, restartInstalledUpgrade } from "../../server/routes/info.js";
+import { getUpdateStatus, spawnHandRunRestartHelper } from "../../server/routes/info.js";
 
 function context() {
   return {
@@ -45,10 +36,6 @@ function responseCapture() {
     end: (body = "") => (payload = String(body)),
   } as unknown as ServerResponse;
   return { res, status: () => statusCode, body: () => JSON.parse(payload) };
-}
-
-function request(body: unknown = {}): Readable {
-  return Readable.from([JSON.stringify(body)]) as Readable;
 }
 
 describe("installed upgrade status and restart route", () => {
@@ -92,11 +79,12 @@ describe("installed upgrade status and restart route", () => {
     });
   });
 
-  it("starts a detached CLI helper for a hand-run server", async () => {
-    const capture = responseCapture();
-    await restartInstalledUpgrade(context(), request() as never, capture.res, {});
-    expect(capture.status()).toBe(202);
-    expect(capture.body()).toEqual({ state: "restarting" });
+  it("starts a detached CLI helper for a hand-run server", () => {
+    const result = spawnHandRunRestartHelper("/fake/project", 7123, {
+      binary: () => ({ bin: "bun", needsCliEntry: false }),
+      spawn: mocks.spawn as never,
+    });
+    expect(result).toEqual({ ok: true });
     expect(mocks.spawn).toHaveBeenCalledWith(
       "bun",
       ["restart", "--force", "--port", "7123"],
