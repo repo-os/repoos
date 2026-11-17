@@ -4,7 +4,7 @@
  */
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import type { RecordedAttentionEvent } from "../core/attention.js";
+import { RECORDED_ATTENTION_KINDS, type RecordedAttentionEvent } from "../core/attention.js";
 
 export interface AttentionEventStore {
   record(event: Omit<RecordedAttentionEvent, "id"> & { id?: string }): RecordedAttentionEvent;
@@ -20,14 +20,7 @@ function isRecordedEvent(v: unknown): v is RecordedAttentionEvent {
   const e = v as RecordedAttentionEvent;
   return (
     typeof e.id === "string" &&
-    (e.kind === "providerFailure" ||
-      e.kind === "providerUsageLimit" ||
-      e.kind === "remoteFallback" ||
-      e.kind === "ctoAction" ||
-      e.kind === "engineerRecoveryFailed" ||
-      e.kind === "releaseEmailFailed" ||
-      e.kind === "serverCrash" ||
-      e.kind === "processSignalFailure") &&
+    RECORDED_ATTENTION_KINDS.has(e.kind) &&
     typeof e.message === "string" &&
     typeof e.detail === "string" &&
     (e.codingAgent === undefined || e.codingAgent === null || typeof e.codingAgent === "string") &&

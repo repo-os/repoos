@@ -18,7 +18,11 @@ function telegramEnabled(ctx: NotificationDispatchContext): boolean {
 
 function formatTelegramBody(payload: NotificationPayload): string {
   const line = formatNotification(specFromPayload(payload), payload.taskTitle);
-  const meta = [payload.repositoryName, `#${payload.taskId}`, payload.status].join(" · ");
+  // Release notifications (#1126) belong to the repository, not a task: no
+  // task id/status in the meta line.
+  const meta = payload.kind.startsWith("release.")
+    ? payload.repositoryName
+    : [payload.repositoryName, `#${payload.taskId}`, payload.status].join(" · ");
   const summary = payload.summary.trim();
   const subtitle = payload.subtitle?.trim() ?? "";
   const parts = [line, meta];
@@ -52,6 +56,11 @@ function inlineKeyboard(
   }
   // #0543: an opportunity to act carries the admin buttons that apply. A
   // member may see them; pressing one is refused with a role explanation.
+  // Release notifications (#1126) have no task to act on — their link button
+  // above is the whole action.
+  if (payload.kind.startsWith("release.")) {
+    return rows.length > 0 ? { inline_keyboard: rows } : undefined;
+  }
   const actions = telegramTaskActionMarkup(telegramInviteSecret(config.auth?.sessionSecret), {
     taskId: payload.taskId,
     status: payload.status,

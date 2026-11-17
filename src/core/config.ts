@@ -1554,6 +1554,19 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
         if (typeof value === "string") cfg.release[key] = value as never;
       }
     }
+    // [release.notesWhenReady] (#1126): the remembered answer to "what happens
+    // when the AI draft is ready". Read even without [release] enabled so a
+    // Settings save round-trips; an unknown value keeps the safe default.
+    const notesWhenReady = parsed["release.notesWhenReady"];
+    if (notesWhenReady !== undefined) {
+      if (notesWhenReady === "publish" || notesWhenReady === "notify") {
+        cfg.release = { ...cfg.release, notesWhenReady };
+      } else if (notesWhenReady !== "") {
+        console.warn(
+          `[release.notesWhenReady] ignoring ${JSON.stringify(notesWhenReady)} — expected "publish" or "notify"`,
+        );
+      }
+    }
     // [release.email] (#1071): read on its own, so the Settings toggle shows what
     // the file says. Emails only go out from a cut, and a cut needs [release]
     // enabled, so say so at load rather than leave the email silently unsent.
@@ -2854,6 +2867,20 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       restartRequired: false,
       default: false,
       description: "Also email beta, canary and rc releases. Off by default.",
+    },
+    {
+      key: "release.notesWhenReady",
+      label: "When AI release notes are ready",
+      type: "select",
+      tier: "live",
+      restartRequired: false,
+      default: "notify",
+      options: [
+        { value: "publish", label: "Publish the release automatically" },
+        { value: "notify", label: "Notify me to review and publish" },
+      ],
+      description:
+        "The default answer in the Generate notes dialog. Publish waits for the draft, then cuts the release through the same checks as the Publish button; a blocker cancels it and tells you why. Notify leaves the notes in the panel and sends you a notification. The release panel saves your choice here.",
     },
     {
       key: "stories.enabled",
@@ -4894,6 +4921,7 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "release.remote",
   "release.repository",
   "release.workflow",
+  "release.notesWhenReady",
   "release.email.enabled",
   "release.email.to",
   "release.email.when",

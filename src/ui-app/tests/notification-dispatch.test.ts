@@ -7,10 +7,12 @@ import { tmpdir } from "node:os";
 import {
   dispatchNotification,
   notificationContextFromConfig,
+  notifyReleaseNotesReady,
   NtfyNotificationProvider,
   type NotificationPayload,
   type NotificationProvider,
 } from "../../server/notifications/index.js";
+import { releaseNotificationLink } from "../../server/notifications/dispatch.js";
 import { TelegramNotificationProvider } from "../../server/notifications/telegram-provider.js";
 import { bindTelegramChatDirect } from "../../core/telegram-chat.js";
 import { LocalTelegramProvider } from "../../server/telegram/provider.js";
@@ -129,6 +131,49 @@ describe("ntfy agent failure parity", () => {
     sent.length = 0;
     // @ts-expect-error cleanup
     delete globalThis.fetch;
+  });
+
+  it("release links follow webUiLink's origin resolution, not just the request origin (#1126)", () => {
+    const prev = process.env.REPOOS_PUBLIC_URL;
+    process.env.REPOOS_PUBLIC_URL = "https://public.example";
+    try {
+      const root = mkdtempSync(join(tmpdir(), "repoos-notif-release-link-"));
+      // A tunnel/public setup must never hand the human a localhost link.
+      expect(releaseNotificationLink(config(root), "http://127.0.0.1:7171")).toBe(
+        "https://public.example/releases?drawer=cut",
+      );
+      // Without a public URL the captured request origin is still used.
+      delete process.env.REPOOS_PUBLIC_URL;
+      expect(releaseNotificationLink(config(root), "http://127.0.0.1:7171")).toBe(
+        "http://127.0.0.1:7171/releases?drawer=cut",
+      );
+    } finally {
+      if (prev === undefined) delete process.env.REPOOS_PUBLIC_URL;
+      else process.env.REPOOS_PUBLIC_URL = prev;
+    }
+  });
+
+  it("delivers a release notes-ready notification to ntfy without task metadata (#1126)", () => {
+    // @ts-expect-error test stub
+    globalThis.fetch = (
+      _url: string,
+      init: { body?: string; headers?: Record<string, string> },
+    ) => {
+      sent.push({ body: init?.body ?? "", headers: init?.headers ?? {} });
+      return Promise.resolve({ ok: true, status: 200 });
+    };
+    const root = mkdtempSync(join(tmpdir(), "repoos-notif-release-notes-"));
+    const ctx = notificationContextFromConfig(
+      config(root, { ntfyEnabled: true, ntfyTopic: "repoos_test" }),
+      null,
+      "https://repoos.example",
+    );
+    notifyReleaseNotesReady(ctx, { tag: "v1.2.3" });
+    expect(sent).toHaveLength(1);
+    expect(sent[0]!.body).toBe(
+      "📝 Release notes ready · v1.2.3\nReview the draft and publish v1.2.3.",
+    );
+    expect(sent[0]!.body).not.toContain("#");
   });
 
   it("delivers Needs you for task.agent_failed", () => {
