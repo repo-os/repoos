@@ -11,7 +11,7 @@ branch: feat/qa-pass-use-the-macos-hub-app-after-the-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T18:23:18Z"
-updated_at: "2026-11-17T19:00:39Z"
+updated_at: "2026-11-17T19:09:45Z"
 handoff_signal_retry_count: 2
 ---
 ## Problem
@@ -44,3 +44,4 @@ Do not edit repoos.toml. Do not create signing identities or commit app binaries
 - 2026-11-17T18:52:56Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: I fixed the sidebar subtitle defect: when a server had a repository name, the row showed that name instead of the saved URL. The subtitle now always shows the origin, with a regression test in [ServerSidebarRowLayoutTests.swift](/Users/nic… · stderr: Reading additional input from stdin... 2026-11-17T18:47:04.025907Z ERROR codex_core::tools::router: error=exec_command failed: CreateProcess { message: "Rejected(\"`/bin/zsh -lc \\\"launchctl unsetenv REPOOS_HUB_SUPPORT_DIRECTORY && rm -rf /Users/nick/Library/Caches/RepoOS/task-1167-registry /Users/nick/Library/Caches…
 - 2026-11-17T18:58:25Z · message_queued at 2026-11-17T18:58:25.713Z
 - 2026-11-17T19:00:39Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-17T19:09:45Z · body
