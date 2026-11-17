@@ -2,14 +2,14 @@
 id: "1152"
 title: "Mobile Hub: return to server picker from logo and show current project"
 type: feature
-status: active
+status: review
 priority: p1
 area: [mobile, web]
 assigned_to: ai
 created_by: t@t
 branch: feat/mobile-hub-return-to-server-picker-from-
 created_at: "2026-11-17T05:37:20Z"
-updated_at: "2026-11-17T07:15:16Z"
+updated_at: "2026-11-17T07:15:17Z"
 handoff_signal_retry_count: 2
 ---
 ## Problem
@@ -88,3 +88,4 @@ Inspect the existing Hub server WebView architecture and navigation security bef
 - 2026-11-17T07:10:46Z · body
 - 2026-11-17T07:12:21Z · CTO nudge: held — handoff gate is running
 - 2026-11-17T07:15:16Z · note: ui verification passed: 2 of 2 shots captured with clean console (1 shot warning)
+- 2026-11-17T07:15:17Z · status active→review
