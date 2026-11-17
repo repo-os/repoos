@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/mobile-task-detail-make-tabs-and-preview
 created_at: "2026-11-17T03:06:27Z"
-updated_at: "2026-11-17T07:14:11Z"
+updated_at: "2026-11-17T07:14:37Z"
 last_close_out_gate_ms: 212267
 last_close_out_gate_at: "2026-11-17T07:14:11.737Z"
 review_passes: 1
@@ -106,4 +106,4 @@ Use the attached 390×844 screenshot. Inspect both themes and a long task title.
 - 2026-11-17T05:53:21Z · note: review pass 1: good to go
 - 2026-11-17T06:52:21Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-17T07:14:11Z · close-out gate completed in 212s
-
+- 2026-11-17T07:14:37Z · status done→done, release:success
