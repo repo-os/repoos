@@ -2,7 +2,7 @@
 id: "1163"
 title: Investigate Checks tab browser pass stall
 type: bug
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -118,4 +118,4 @@ The direct tab pass found no navigation hang. Review identified a separate app l
 - 2026-11-17T21:28:47Z · note: handoff requested (cli)
 - 2026-11-17T21:30:43Z · CTO nudge: held — handoff gate is running
 - 2026-11-17T21:31:53Z · note: ui verification passed: 1 shot captured with clean console
-- 2026-11-17T21:31:55Z · engineer stopped by request
+- 2026-11-17T21:31:55Z · status active→review
