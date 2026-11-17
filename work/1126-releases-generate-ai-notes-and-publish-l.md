@@ -2,17 +2,20 @@
 id: "1126"
 title: "Releases: 'Generate AI notes and publish' - let the user choose auto-publish or notify-me when the AI draft is ready"
 type: feature
-status: review
+status: done
 priority: p2
 area: [web, server]
+merged_commit: 8bd5eb821d0f927dec7008ab7ffef782872e73de
 assigned_to: ai
 created_by: t@t
 branch: feat/releases-generate-ai-notes-and-publish-l
 cli_override: opencode
 model_override: opencode-go/glm-5.3-flash
 created_at: "2026-11-15T08:14:22Z"
-updated_at: "2026-11-17T10:19:04Z"
-review_passes: 4
+updated_at: "2026-11-17T10:53:32Z"
+last_close_out_gate_ms: 466099
+last_close_out_gate_at: "2026-11-17T10:47:41.755Z"
+review_passes: 5
 review_failed_report_retries: 0
 review_timeout_retries: 0
 check_retry_count: 1
@@ -265,3 +268,8 @@ Reuse the existing AI-draft run in ReleasesView.vue and the server release run; 
 - 2026-11-17T08:39:34Z · note: review pass 6: needs some work
 - 2026-11-17T08:39:34Z · needs_input
 - 2026-11-17T10:19:04Z · needs_input (review-rounds-exhausted) cleared for review again by human
+- 2026-11-17T10:23:29Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-17T10:30:02Z · note: review pass 7: good to go
+- 2026-11-17T10:47:41Z · close-out gate completed in 466s
+- 2026-11-17T10:47:57Z · status done→done, release:success
+- 2026-11-17T10:53:32Z · message_dropped: 1 queued message(s) discarded — task is done
