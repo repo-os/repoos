@@ -3,9 +3,6 @@ id: "1143"
 title: "Test: easter-eggs #1026 E2 resolveServeHost default fails on machines running Tailscale"
 type: feature
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "Error: Authentication required. Please run 'agent login' first, or set CURSOR_API_KEY environment variable. Open Raw CLI error for details. (CLI: Error: Authentication required. Please run 'agent login' first, or set CURSOR_API_KEY environment variable.)"
 priority: p3
 area: server
 assigned_to: ai
@@ -14,7 +11,7 @@ branch: feat/test-easter-eggs-1026-e2-resolveservehos
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-17T02:10:39Z"
-updated_at: "2026-11-17T10:23:43Z"
+updated_at: "2026-11-17T10:23:45Z"
 dev_error_count: 2
 engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-17T10:23:41.275Z\",\"kind\":\"dev-error\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-17T10:23:43.885Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -52,3 +49,4 @@ Machine-dependent test, not a product bug: `resolveServeHost` behaviour is inten
 - 2026-11-17T10:23:42Z · needs_input
 - 2026-11-17T10:23:43Z · agent exited with an error (cursor) · Error: Authentication required. Please run 'agent login' first, or set CURSOR_API_KEY environment variable. Open Raw CLI error for details. (CLI: Error: Authentication required. Please run 'agent login' first, or set CURSOR_API_KEY environment variable.)
 - 2026-11-17T10:23:43Z · engineer crash recovery: resuming cursor + composer-2.5 (2/3 crashes in 30m) · Error: Authentication required. Please run 'agent login' first, or set CURSOR_API_KEY environment variable. Open Raw CLI error for details. (CLI: Error: Authentication required. Please run 'agent login' first, or set CURSOR_API_KEY envir…
+- 2026-11-17T10:23:45Z · needs_input
