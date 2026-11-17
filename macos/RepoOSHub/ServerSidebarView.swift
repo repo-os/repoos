@@ -156,6 +156,10 @@ enum ServerSidebarRowLayout {
         leadingChromeWidth() + minimumNameWidth
     }
 
+    static func subtitle(for entry: ServerEntry) -> String {
+        entry.originString.strippingURLScheme
+    }
+
     static func badgesWidth(snapshot: ServerAttentionSnapshot?) -> CGFloat {
         guard let counts = snapshot?.counts, snapshot?.freshness != .unavailable else {
             return infoAffordanceWidth
@@ -249,16 +253,14 @@ struct ServerSidebarRow: View {
 
     private var badgesTrigger: some View {
         InfoOrBadgesTrigger(
+            entry: entry,
             snapshot: attentionSnapshot,
             isShowingDetails: $isShowingDetails
         )
     }
 
     private var sidebarSubtitle: String {
-        guard let repositoryName = entry.repositoryName,
-              repositoryName.caseInsensitiveCompare(entry.name) != .orderedSame
-        else { return entry.originString.strippingURLScheme }
-        return repositoryName
+        ServerSidebarRowLayout.subtitle(for: entry)
     }
 }
 
@@ -372,11 +374,15 @@ private struct SidebarClippedSubtitleText: NSViewRepresentable {
 }
 
 private struct InfoOrBadgesTrigger: View {
+    let entry: ServerEntry
     let snapshot: ServerAttentionSnapshot?
     @Binding var isShowingDetails: Bool
 
     private var hasBadges: Bool {
-        guard let counts = snapshot?.counts, snapshot?.freshness != .unavailable else { return false }
+        guard entry.lastHealth == .healthy,
+              let counts = snapshot?.counts,
+              snapshot?.freshness != .unavailable
+        else { return false }
         return counts.reviewReadyTasks > 0 || counts.needsInputTasks > 0 || counts.activeAgents > 0
     }
 
@@ -447,7 +453,9 @@ struct ServerDetailsPopover: View {
                 }
             }
 
-            if let counts = attention?.counts, attention?.freshness != .unavailable {
+            if entry.lastHealth == .healthy,
+               let counts = attention?.counts,
+               attention?.freshness != .unavailable {
                 Divider()
                 VStack(alignment: .leading, spacing: 9) {
                     Text("Attention")

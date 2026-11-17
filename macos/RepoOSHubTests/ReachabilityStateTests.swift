@@ -12,9 +12,14 @@ final class ReachabilityStateTests: XCTestCase {
 
     func testNetworkFailureMarksUnreachableWithoutDeletingEntry() {
         var entry = ServerEntry(name: "Local", origin: URL(string: "https://local.test")!, lastHealth: .healthy)
-        ReachabilityTransition.applyHealthCheck(to: &entry, outcome: .failure(.timeout))
+        let editedAt = Date(timeIntervalSince1970: 100)
+        let checkedAt = Date(timeIntervalSince1970: 200)
+        entry.updatedAt = editedAt
+        ReachabilityTransition.applyHealthCheck(to: &entry, outcome: .failure(.timeout), checkedAt: checkedAt)
         XCTAssertEqual(entry.lastHealth, .unreachable)
         XCTAssertEqual(entry.name, "Local")
+        XCTAssertEqual(entry.lastHealthAt, checkedAt)
+        XCTAssertEqual(entry.updatedAt, editedAt)
     }
 
     func testInvalidHealthPayloadMarksInvalid() {

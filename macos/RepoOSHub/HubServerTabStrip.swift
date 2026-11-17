@@ -338,7 +338,8 @@ private struct HubServerTab: View {
   }
 
   private var badgeText: String? {
-    guard let snapshot = appState.attentionSnapshot(for: entry.id),
+    guard entry.lastHealth == .healthy,
+      let snapshot = appState.attentionSnapshot(for: entry.id),
       snapshot.freshness != .unavailable,
       let total = snapshot.counts?.attentionTotal,
       total > 0

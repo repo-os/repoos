@@ -111,6 +111,16 @@ export function formatServeBindBannerValue(host: string, tailscaleDetected: bool
   return c.cyan(host) + c.dim(" (explicit --host)");
 }
 
+export function effectiveServeBannerNetwork(
+  bindHost: string,
+  tailscaleDetected: boolean,
+): { bindHost: string; tailscaleDetected: boolean } {
+  return {
+    bindHost,
+    tailscaleDetected: tailscaleDetected && bindHost === "0.0.0.0",
+  };
+}
+
 /**
  * Whether this `repoos serve` should apply the repo's preview-only
  * `[preview.*]` config overlay (#0464).
@@ -282,13 +292,14 @@ export async function cmdServe(
   }
 
   const snap = handle.index.snapshot();
+  const bannerNetwork = effectiveServeBannerNetwork(handle.bindHost, tailscaleDetected);
   const rt = isBun()
     ? `Bun ${(process.versions as { bun?: string }).bun ?? ""}`.trim()
     : `Node ${process.versions.node}`;
   const rows: BannerRow[] = [
     {
       label: "Bind",
-      value: formatServeBindBannerValue(host, tailscaleDetected),
+      value: formatServeBindBannerValue(bannerNetwork.bindHost, bannerNetwork.tailscaleDetected),
     },
     { label: "Local", value: c.cyan(c.bold(handle.url)) },
     { label: "Events", value: c.cyan(handle.url + "/api/events") + c.dim("  (SSE)") },
@@ -300,7 +311,7 @@ export async function cmdServe(
   if (handle.previewOverrides?.length) {
     rows.push({ label: "Preview", value: c.yellow(handle.previewOverrides.join(", ")) });
   }
-  if (tailscaleDetected) {
+  if (bannerNetwork.tailscaleDetected) {
     rows.push({
       label: "Tailnet",
       value:
@@ -314,7 +325,11 @@ export async function cmdServe(
   // crypto.randomUUID etc. are missing). Skipped for managed previews, which
   // must not touch the machine's `tailscale serve` config.
   let httpsWarning: string | undefined;
-  if (tailscaleDetected && tailscaleHttps && process.env.REPOOS_PREVIEW_CHILD !== "1") {
+  if (
+    bannerNetwork.tailscaleDetected &&
+    tailscaleHttps &&
+    process.env.REPOOS_PREVIEW_CHILD !== "1"
+  ) {
     const https = await ensureTailscaleHttps(handle.port);
     if (https.url) {
       rows.push({

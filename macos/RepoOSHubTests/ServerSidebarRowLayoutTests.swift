@@ -3,6 +3,17 @@ import XCTest
 @testable import RepoOSHub
 
 final class ServerSidebarRowLayoutTests: XCTestCase {
+    func testSubtitleAlwaysShowsSavedOriginWhenRepositoryNameIsKnown() {
+        let entry = ServerEntry(
+            name: "QA Hub Edited",
+            repositoryName: "QA Sandbox",
+            origin: URL(string: "http://127.0.0.1:17867")!,
+            lastHealth: .healthy
+        )
+
+        XCTAssertEqual(ServerSidebarRowLayout.subtitle(for: entry), "127.0.0.1:17867")
+    }
+
     func testMinimumRowWidthReservesLeadingChromeAndNameOnly() {
         let minimum = ServerSidebarRowLayout.minimumRowWidth()
         XCTAssertEqual(

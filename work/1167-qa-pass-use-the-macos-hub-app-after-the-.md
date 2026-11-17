@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 783824
-last_close_out_gate_at: "2026-11-17T23:44:03.355Z"
 id: "1167"
 title: "QA pass: use the macOS Hub app after the #1155 fix, find broken things and fix them"
 type: bug
-status: review
+status: done
 priority: p1
 area: macos
+merged_commit: 599fd4818be1793f68c6e129f370046626b63085
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-use-the-macos-hub-app-after-the-
@@ -14,6 +13,8 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T18:23:18Z"
 updated_at: "2026-11-17T23:44:03Z"
+last_close_out_gate_ms: 783824
+last_close_out_gate_at: "2026-11-17T23:44:03.355Z"
 review_passes: 6
 review_rounds: 2
 handoff_signal_retry_count: 2
