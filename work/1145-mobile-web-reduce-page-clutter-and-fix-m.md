@@ -2,14 +2,14 @@
 id: "1145"
 title: "Mobile web: reduce page clutter and fix More sheet readability"
 type: bug
-status: ready
+status: active
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
-branch: ""
+branch: feat/mobile-web-reduce-page-clutter-and-fix-m
 created_at: "2026-11-17T02:52:23Z"
-updated_at: "2026-11-17T02:53:31Z"
+updated_at: "2026-11-17T02:53:34Z"
 ---
 ## Problem
 Phone screens waste space on repeated explanations, navigation labels, and an idle integration bar. Some page headings are not left aligned. The More sheet is translucent, so underlying text shows through and makes it difficult to read. See all five attached phone screenshots.
@@ -42,3 +42,4 @@ On a phone, page headings and content start at a consistent left edge, essential
 - 2026-11-17T02:52:25Z · needs_input
 - 2026-11-17T02:52:33Z · needs_input, body: Desired UX (added)
 - 2026-11-17T02:53:31Z · status inbox→ready
+- 2026-11-17T02:53:34Z · status ready→active, branch
