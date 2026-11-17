@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-17T17:03:31Z"
+review_passes: 6
 id: "1153"
 title: "Hub 'Find servers on my tailnet': stop listing bare machines, hide phones, explain failures, and replace SSH discovery with an HTTPS-based one"
 type: bug
@@ -11,10 +13,8 @@ branch: feat/hub-find-servers-on-my-tailnet-stop-list
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T10:06:23Z"
-updated_at: "2026-11-17T17:03:31Z"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/check-docs-only-cli.test.ts > cmdCheck docs/bookkeeping shortcut (#1059) > classifies a work-only diff and skips the full suite on thinkpad — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: e1b1e693693ec27e46b2e70d284ec6202a069a30
-review_passes: 5
 review_rounds: 2
 dev_error_count: 5
 ---
@@ -181,3 +181,4 @@ Do not add runtime dependencies. The discovery endpoint exposes names/ports only
 - 2026-11-17T17:01:48Z · note: shots: failed — browser capture cancelled
 - 2026-11-17T17:01:50Z · handoff failed · could not auto-retry after check failure · This worktree already has a recorded live engineer for task #review:1153 (pid 29354)
 - 2026-11-17T17:03:31Z · note: review pass 6: good to go
+
