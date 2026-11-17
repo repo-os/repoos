@@ -1,5 +1,4 @@
 ---
-handoff_signal_retry_count: 1
 id: "1152"
 title: "Mobile Hub: return to server picker from logo and show current project"
 type: feature
@@ -10,7 +9,8 @@ assigned_to: ai
 created_by: t@t
 branch: feat/mobile-hub-return-to-server-picker-from-
 created_at: "2026-11-17T05:37:20Z"
-updated_at: "2026-11-17T06:32:20Z"
+updated_at: "2026-11-17T06:42:39Z"
+handoff_signal_retry_count: 1
 ---
 ## Problem
 In RepoOS Hub on mobile, a connected server can accumulate many pages of navigation history and the user must repeatedly go back to leave the server and return to the native Hub server picker. On narrow screens the top bar also hides the current project name while giving an oversized search field significant width. The attached desktop and mobile screenshots show the current top bar.
@@ -69,4 +69,4 @@ Inspect the existing Hub server WebView architecture and navigation security bef
 - 2026-11-17T06:14:30Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 130) · last assistant: Implementation and focused tests are in place, and both the web UI and mobile web bundles build. Now I'm running the scoped gate. · stderr: (empty)
 - 2026-11-17T06:14:57Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-17T06:32:20Z · message_queued at 2026-11-17T06:32:20.604Z
-
+- 2026-11-17T06:42:39Z · message_queued at 2026-11-17T06:42:39.998Z
