@@ -1,13 +1,8 @@
 ---
-updated_at: "2026-11-17T21:19:29Z"
-review_passes: 4
 id: "1167"
 title: "QA pass: use the macOS Hub app after the #1155 fix, find broken things and fix them"
 type: bug
 status: review
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: `needs some work` — code is sound; `user-docs/macos-hub.md` still documents the pre-branch subtitle and badge behaviour this diff replaces.
 priority: p1
 area: macos
 assigned_to: ai
@@ -16,6 +11,8 @@ branch: feat/qa-pass-use-the-macos-hub-app-after-the-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T18:23:18Z"
+updated_at: "2026-11-17T21:48:44Z"
+review_passes: 4
 review_rounds: 2
 handoff_signal_retry_count: 2
 ---
@@ -96,4 +93,4 @@ Do not edit repoos.toml. Do not create signing identities or commit app binaries
 - 2026-11-17T21:09:49Z · message_queued at 2026-11-17T21:09:49.486Z
 - 2026-11-17T21:19:29Z · note: review pass 4: needs some work
 - 2026-11-17T21:19:29Z · needs_input
-
+- 2026-11-17T21:48:44Z · needs_input (review-rounds-exhausted) cleared for review again by human
