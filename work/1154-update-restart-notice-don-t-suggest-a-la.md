@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "1154"
 title: "Update/restart notice: don't suggest a launchd command for a hand-run server; offer a real restart and fix repoos restart auth (401)"
 type: bug
@@ -76,3 +77,4 @@ Read #1075 (the restart notice) and #1091 (`repoos restart`). A server that kill
 - 2026-11-17T15:53:50Z · status review→active
 - 2026-11-17T15:53:52Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-17T15:59:00Z · message_queued at 2026-11-17T15:59:00.602Z
+
