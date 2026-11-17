@@ -204,3 +204,4 @@ Reuse the existing AI-draft run in ReleasesView.vue and the server release run; 
 - 2026-11-17T02:51:24Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: No prior review reports exist for #1126 — the handoff failed before a reviewer ran, so there's no review feedback to address. The only blocker was the report draft length, which is now fixed (1,186 words, under the 1,200 limit, all require… · stderr: (empty)
 - 2026-11-17T02:52:26Z · orphaned run process stopped · pid 83951 · sleep 60 · cpu 0s · age 16s
 - 2026-11-17T02:52:26Z · orphaned run process stopped · pid 85496 · sleep 60 · cpu 0s · age 11s
+- 2026-11-17T02:52:26Z · orphaned run process stopped · pid 85753 · sleep 60 · cpu 0s · age 10s
