@@ -2,7 +2,7 @@
 id: "1153"
 title: "Hub 'Find servers on my tailnet': stop listing bare machines, hide phones, explain failures, and replace SSH discovery with an HTTPS-based one"
 type: bug
-status: active
+status: review
 priority: p2
 area: [mobile, server, core]
 assigned_to: ai
@@ -120,3 +120,4 @@ Do not add runtime dependencies. The discovery endpoint exposes names/ports only
 - 2026-11-17T13:54:40Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-17T13:54:40Z · message_queued at 2026-11-17T13:54:40.425Z
 - 2026-11-17T13:54:40Z · ↻ resuming engineer to read queued message
+- 2026-11-17T13:54:40Z · status active→review
