@@ -127,7 +127,7 @@ line) with nothing listening on the port reports `stopped`.
 `repoos status` compares that server build with the CLI's **own** build
 (`readBuildMeta()` of the running process) and, when they differ, prints a
 banner naming both and the restart command that applies — `repoos service
-restart` for a managed OS service, `repoos serve` for a hand-run process
+restart` for a managed OS service, `repoos restart` for a hand-run process
 (`managedService`, from the service registry, tells them apart; a hand-run serve
 writes a serve lock but never appears there). This is the tuk-private failure
 (#0701): a five-day-old server quietly kept serving stale code while nothing

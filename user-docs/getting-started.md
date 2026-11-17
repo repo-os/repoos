@@ -124,13 +124,18 @@ keeps the old version until you restart it. Once the new files are installed,
 the dashboard reports both the installed and running versions. Use **Restart
 now** to reload immediately or **Restart when idle** to wait for agents,
 reviews and checks to finish. If RepoOS cannot safely control the server's
-supervisor, run `repoos restart` from a terminal. The CLI also prints a reminder
+supervisor, the notice identifies a hand-run server and offers **Restart now**;
+RepoOS starts a detached CLI helper that relaunches it with the same port and
+serve flags. If starting that helper fails, run `repoos restart` from a terminal.
+The CLI authenticates to the local server with its loopback-only token and also prints a reminder
 after `repoos upgrade` when it can identify a server that is still on the old
 version.
 
 The restart notice explains which version is installed and which version the
-server is still running. When the server is not supervised, it shows the exact
-restart command with **Copy restart command**. Opening the available-update
+server is still running. For a detected supervisor it offers **Restart now**
+and **Restart when idle**; it does not expose a service-manager command. A
+hand-run server is described plainly and restarted through the detached helper.
+Opening the available-update
 dialog shows the release notes in a scrollable area, so long notes remain
 readable without making the dialog extend past the screen. These controls are
 implemented in `src/ui-app/src/components/ReleaseUpdateNotification.vue`.

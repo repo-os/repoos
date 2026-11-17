@@ -4,6 +4,7 @@ import { useRouter } from "vue-router";
 import Card from "./ui/card.vue";
 import Button from "./ui/button.vue";
 import { api } from "../api";
+import { readShotPreviewFixtureFromLocation } from "../lib/shot-preview-fixtures";
 
 export interface DecisionDigestAction {
   id: string;
@@ -76,6 +77,24 @@ function kindLabel(kind: string): string {
 }
 
 onMounted(() => {
+  // The restart-notice capture is about the global release dialog. Avoid a
+  // transient dashboard spinner competing with that fixture (and triggering
+  // the screenshot loading-state guard) while the decisions request is in
+  // flight.
+  const shotFixture = readShotPreviewFixtureFromLocation(window.location);
+  if (
+    shotFixture === "release:restartPendingLight" ||
+    shotFixture === "release:restartPendingDark"
+  ) {
+    digest.value = {
+      ok: true,
+      items: [],
+      automationPaused: false,
+      approvalEnabled: false,
+      generatedAt: new Date().toISOString(),
+    };
+    return;
+  }
   void refresh();
 });
 
