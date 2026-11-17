@@ -1,5 +1,6 @@
 ---
 updated_at: "2026-11-17T18:38:17Z"
+review_passes: 5
 review_timeout_retries: 0
 id: "1154"
 title: "Update/restart notice: don't suggest a launchd command for a hand-run server; offer a real restart and fix repoos restart auth (401)"
@@ -13,7 +14,6 @@ branch: feat/update-restart-notice-don-t-suggest-a-la
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T13:30:27Z"
-review_passes: 4
 last_check_failure: "repoos check at 2026-11-17T16:46:21.944Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Hand-run server restart notice (target \"default\"): loading state detected: loading text \"Loading…\" on / (http://127.0.0.1:41115/?shotState=release%3ArestartPendingLight)"
 handoff_signal_retry_count: 1
 review_rounds: 2
@@ -107,4 +107,5 @@ Read #1075 (the restart notice) and #1091 (`repoos restart`). A server that kill
 - 2026-11-17T18:18:57Z · needs_input (review-rounds-exhausted) cleared for review again by human
 - 2026-11-17T18:34:00Z · note: review pass 5: timed out after 15 minutes — no report (retrying once automatically)
 - 2026-11-17T18:38:16Z · note: review pass 6: good to go
+
 
