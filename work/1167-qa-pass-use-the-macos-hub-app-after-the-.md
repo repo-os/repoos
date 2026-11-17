@@ -11,7 +11,7 @@ branch: feat/qa-pass-use-the-macos-hub-app-after-the-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T18:23:18Z"
-updated_at: "2026-11-17T19:09:45Z"
+updated_at: "2026-11-17T19:09:54Z"
 handoff_signal_retry_count: 2
 ---
 ## Problem
@@ -45,3 +45,4 @@ Do not edit repoos.toml. Do not create signing identities or commit app binaries
 - 2026-11-17T18:58:25Z · message_queued at 2026-11-17T18:58:25.713Z
 - 2026-11-17T19:00:39Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-17T19:09:45Z · body
+- 2026-11-17T19:09:54Z · queued message undelivered for 11m and the engineer produced no output — ending the turn so it is delivered
