@@ -3,6 +3,14 @@ import XCTest
 @testable import RepoOSHub
 
 final class LocalServerDiscoveryTests: XCTestCase {
+    /// These tests exercise the fallback scan and must not depend on the developer's live registry.
+    private var emptyRegistrySource: RunningServerRegistrySource {
+        RunningServerRegistrySource(
+            directoryURL: FileManager.default.temporaryDirectory
+                .appendingPathComponent("RepoOSHubTests-absent-\(UUID().uuidString)", isDirectory: true)
+        )
+    }
+
     func testListeningPortEnumeratorUsesLsofWhenAvailable() {
         let ports = LocalListeningPortEnumerator.listeningPorts(in: 7000 ... 7999)
         XCTAssertNotNil(ports, "lsof should be available on macOS CI and dev machines")
@@ -59,6 +67,7 @@ final class LocalServerDiscoveryTests: XCTestCase {
                 overallDeadline: 5.0
             ),
             healthChecker: checker,
+            registrySource: emptyRegistrySource,
             listeningPortEnumerator: { _ in nil },
             portsToProbe: ports
         )
@@ -84,6 +93,7 @@ final class LocalServerDiscoveryTests: XCTestCase {
                 overallDeadline: 10.0
             ),
             healthChecker: checker,
+            registrySource: emptyRegistrySource,
             listeningPortEnumerator: { _ in nil },
             portsToProbe: ports
         )
@@ -104,6 +114,7 @@ final class LocalServerDiscoveryTests: XCTestCase {
             knownLocalPorts: [7171],
             configuration: LocalServerDiscoveryConfiguration(overallDeadline: 2.0),
             healthChecker: checker,
+            registrySource: emptyRegistrySource,
             listeningPortEnumerator: { _ in [7171, 7559] }
         )
 
@@ -120,6 +131,7 @@ final class LocalServerDiscoveryTests: XCTestCase {
             knownLocalPorts: [],
             configuration: LocalServerDiscoveryConfiguration(overallDeadline: 2.0),
             healthChecker: checker,
+            registrySource: emptyRegistrySource,
             listeningPortEnumerator: { _ in [7559] }
         )
 
@@ -137,6 +149,7 @@ final class LocalServerDiscoveryTests: XCTestCase {
             knownLocalPorts: [],
             configuration: LocalServerDiscoveryConfiguration(overallDeadline: 1.0),
             healthChecker: checker,
+            registrySource: emptyRegistrySource,
             listeningPortEnumerator: { _ in [7200] }
         )
 
@@ -161,6 +174,7 @@ final class LocalServerDiscoveryTests: XCTestCase {
                 overallDeadline: 5.0
             ),
             healthChecker: checker,
+            registrySource: emptyRegistrySource,
             listeningPortEnumerator: { _ in nil },
             portsToProbe: [7010, 7020],
             onUpdate: { partial in
@@ -191,6 +205,7 @@ final class LocalServerDiscoveryTests: XCTestCase {
                 overallDeadline: 0.35
             ),
             healthChecker: checker,
+            registrySource: emptyRegistrySource,
             listeningPortEnumerator: { _ in nil },
             portsToProbe: Array(7000 ... 7020)
         )
@@ -212,6 +227,7 @@ final class LocalServerDiscoveryTests: XCTestCase {
             knownLocalPorts: [],
             configuration: LocalServerDiscoveryConfiguration(overallDeadline: 2.0),
             healthChecker: checker,
+            registrySource: emptyRegistrySource,
             listeningPortEnumerator: { _ in [7400] }
         )
 
