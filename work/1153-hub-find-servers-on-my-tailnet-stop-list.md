@@ -5,11 +5,13 @@ type: bug
 status: inbox
 priority: p2
 area: [mobile, server, core]
-assigned_to: ""
+assigned_to: ai
 created_by: t@t
 branch: ""
+cli_override: cursor
+model_override: composer-2.5
 created_at: "2026-11-17T10:06:23Z"
-updated_at: "2026-11-17T10:06:23Z"
+updated_at: "2026-11-17T10:23:21Z"
 ---
 ## Problem
 
@@ -41,3 +43,4 @@ Do not add runtime dependencies. The discovery endpoint exposes names/ports only
 ## Activity
 
 - 2026-11-17T10:06:23Z · created · t@t
+- 2026-11-17T10:23:21Z · cli_override, model_override
