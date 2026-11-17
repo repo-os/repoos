@@ -45,6 +45,7 @@ Start with the Work page at 390px and the bottom dock/heads/pipeline bar overlap
 ![320px task drawer status row and verified Changes tab](/api/tasks/1157/attachments/att_39583280-edaa-480a-b0ad-807b44f9af66.png)
 ![320px task drawer with Tokens tab selected](/api/tasks/1157/attachments/att_112106f5-f5e4-4614-9c3b-c11d02103e4c.png)
 ![320px task drawer with Debug tab selected](/api/tasks/1157/attachments/att_c3ad8b69-a73c-49a8-bcad-29786330bc76.png)
+![320px Inputs card with full author byline](/api/tasks/1157/attachments/att_fa131d28-4ee9-4d86-98d2-bdfd381cf813.png)
 
 ## Activity
 
@@ -120,3 +121,4 @@ Start with the Work page at 390px and the bottom dock/heads/pipeline bar overlap
 - 2026-11-17T19:46:07Z · screenshots
 - 2026-11-17T19:46:09Z · screenshots
 - 2026-11-17T19:46:12Z · screenshots
+- 2026-11-17T19:46:14Z · screenshots
