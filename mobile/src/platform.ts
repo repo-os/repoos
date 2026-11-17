@@ -3,6 +3,7 @@ import { Capacitor } from "@capacitor/core";
 // Vite only receives this value when the dev APK publish script sources the
 // ignored channel configuration. Release builds therefore contain no URL.
 export const hubDevUpdateBaseUrl = import.meta.env.VITE_HUB_DEV_UPDATE_BASE_URL ?? "";
+export const hubDevUpdatePackage = import.meta.env.VITE_HUB_DEV_UPDATE_PACKAGE ?? "";
 export const hubInstalledCommit = import.meta.env.VITE_HUB_BUILD_COMMIT ?? "unknown";
 export const hubInstalledVersionCode = Number(import.meta.env.VITE_HUB_VERSION_CODE ?? 0);
 

@@ -1,7 +1,7 @@
-import { Browser } from "@capacitor/inappbrowser";
+import { InAppBrowser } from "@capacitor/inappbrowser";
 import { Preferences } from "@capacitor/preferences";
 import { Capacitor } from "@capacitor/core";
-import { hubDevUpdateBaseUrl, hubInstalledVersionCode } from "./platform";
+import { hubDevUpdateBaseUrl, hubDevUpdatePackage, hubInstalledVersionCode } from "./platform";
 
 export interface DevUpdateManifest {
   versionName: string;
@@ -16,7 +16,11 @@ const SNOOZED_UNTIL_KEY = "repoos.devUpdate.snoozedUntil";
 const HOUR_MS = 60 * 60 * 1000;
 
 export function isDevUpdateChannelEnabled(): boolean {
-  return Capacitor.getPlatform() === "android" && Boolean(hubDevUpdateBaseUrl);
+  return (
+    Capacitor.getPlatform() === "android" &&
+    hubDevUpdatePackage === "org.repoos.mobile.dev" &&
+    Boolean(hubDevUpdateBaseUrl)
+  );
 }
 
 export async function checkForDevUpdate(force = false): Promise<DevUpdateManifest | null> {
@@ -55,7 +59,7 @@ export async function snoozeDevUpdate(): Promise<void> {
 export async function openDevUpdateApk(): Promise<void> {
   if (!isDevUpdateChannelEnabled()) return;
   try {
-    await Browser.open({ url: `${hubDevUpdateBaseUrl}/latest.apk` });
+    await InAppBrowser.openInExternalBrowser({ url: `${hubDevUpdateBaseUrl}/latest.apk` });
   } catch {
     // A missing browser or offline device should not interrupt app use.
   }
