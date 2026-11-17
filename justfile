@@ -159,8 +159,8 @@ _setup-runner host os:
     repoos runners setup "$HOST" || true
     echo "==> $HOST is ready as a repoos-ci runner"
 
-# set up mini (macOS) as a NATIVE tailscale validation runner — no Docker,
-# runs bun install/build/test directly on the host. Kept alongside the
+# set up mini (or a Linux host) as a NATIVE tailscale validation runner — no Docker,
+# runs the configured project command directly on the host. Kept alongside the
 # Docker path deliberately (#0521 review): both are real, maintained options,
 # not one demoted to a manual/undocumented fallback. Set `runner = "native"`
 # on this host's [[remoteValidation.tailscaleHosts]] row so RepoOS probes it
@@ -168,6 +168,11 @@ _setup-runner host os:
 [group('runner')]
 setup-mini-native:
     just _setup-runner-native mini
+
+# Set up a Linux host for project-owned native validation commands.
+[group('runner')]
+setup-linux-native host:
+    just _setup-runner-native {{host}}
 
 # internal: provision a remote macOS host as a NATIVE (no-Docker) runner —
 # usage: just _setup-runner-native <host>
@@ -177,12 +182,6 @@ _setup-runner-native host:
     #!/usr/bin/env bash
     set -euo pipefail
     HOST="{{host}}"
-
-    echo "==> verifying bun on $HOST"
-    ssh "$HOST" "/opt/homebrew/bin/bun --version" || {
-        echo "ERROR: bun not found at /opt/homebrew/bin/bun on $HOST — install it, e.g. brew install bun"
-        exit 1
-    }
 
     echo "==> verifying git on $HOST"
     ssh "$HOST" "git --version"

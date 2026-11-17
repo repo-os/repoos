@@ -2277,14 +2277,24 @@ export function mergeHostLockIntoStatus(
 export function prereqProbeCommand(
   runner?: "docker" | "native",
   containerImage = "repoos-ci",
+  requiredTools: readonly string[] = [],
+  customCommand = false,
 ): string {
   const image = containerImage.trim().replace(/'/g, "") || "repoos-ci";
   const lines =
     runner === "native"
       ? [
           'command -v git >/dev/null 2>&1 || { echo "git not found on PATH"; exit 1; }',
-          "(command -v bun >/dev/null 2>&1 || [ -x /opt/homebrew/bin/bun ]) || " +
-            '{ echo "bun not found (install it, e.g. brew install bun)"; exit 1; }',
+          ...(requiredTools.length
+            ? [
+                `missing=; for tool in ${requiredTools.map(shellQuote).join(" ")}; do command -v "$tool" >/dev/null 2>&1 || { echo "$tool not found on PATH"; missing=1; }; done; [ -z "$missing" ] || exit 1`,
+              ]
+            : customCommand
+              ? []
+              : [
+                  "(command -v bun >/dev/null 2>&1 || [ -x /opt/homebrew/bin/bun ]) || " +
+                    '{ echo "bun not found (install it, e.g. brew install bun)"; exit 1; }',
+                ]),
         ]
       : [
           // git runs on the HOST for every runner, not just native — the
@@ -2308,10 +2318,14 @@ export function prereqProbeCommand(
           // file, a full/read-only volume) used to be reported healthy and
           // fail its first real job on `bun install` — this probe never
           // touched that path at all (#0521 review, criterion 6).
-          '_rvcache="$HOME/.cache/repoos-bun" && ' +
-            'mkdir -p "$_rvcache" 2>/dev/null && ' +
-            'touch "$_rvcache/.repoos-probe" 2>/dev/null && rm -f "$_rvcache/.repoos-probe" 2>/dev/null || ' +
-            '{ echo "bun cache dir $_rvcache is not writable"; exit 1; }',
+          ...(requiredTools.length
+            ? []
+            : [
+                '_rvcache="$HOME/.cache/repoos-bun" && ' +
+                  'mkdir -p "$_rvcache" 2>/dev/null && ' +
+                  'touch "$_rvcache/.repoos-probe" 2>/dev/null && rm -f "$_rvcache/.repoos-probe" 2>/dev/null || ' +
+                  '{ echo "bun cache dir $_rvcache is not writable"; exit 1; }',
+              ]),
         ]
       : [
           // Reap containers left behind by a killed/hung run (#0729): the
@@ -4657,6 +4671,10 @@ export class TailscaleHostPool {
   private readonly root?: string;
   /** The image every host's Docker prerequisite probe must find (#0521 review). */
   private containerImage: string;
+  /** Changes to a project's native toolchain invalidate each cached host probe. */
+  private toolchainSignature: string;
+  private requiredTools: string[];
+  private customCommand: boolean;
   /** Monotonic counter behind the least-recently-used tie-break (#0890). */
   private useSeq = 0;
   private backgroundProbeTimer?: ReturnType<typeof setInterval>;
@@ -4682,6 +4700,9 @@ export class TailscaleHostPool {
       opts.pressureOptions ??
       (() => ({ enabled: true, thresholds: pressureThresholds(undefined) }));
     this.containerImage = rv?.containerImage ?? "repoos-ci";
+    this.toolchainSignature = JSON.stringify([rv?.command ?? "", rv?.requiredTools ?? []]);
+    this.requiredTools = rv?.requiredTools ?? [];
+    this.customCommand = Boolean(rv?.command);
     const key = opts.keyPath ?? "";
     this.keyPath = key && existsSync(key) ? key : undefined;
     for (const spec of resolveRemoteHosts(rv)) {
@@ -4710,6 +4731,11 @@ export class TailscaleHostPool {
     const nextContainerImage = rv?.containerImage ?? "repoos-ci";
     const imageChanged = this.containerImage !== nextContainerImage;
     this.containerImage = nextContainerImage;
+    const nextToolchainSignature = JSON.stringify([rv?.command ?? "", rv?.requiredTools ?? []]);
+    const toolchainChanged = this.toolchainSignature !== nextToolchainSignature;
+    this.toolchainSignature = nextToolchainSignature;
+    this.requiredTools = rv?.requiredTools ?? [];
+    this.customCommand = Boolean(rv?.command);
     const wanted = resolveRemoteHosts(rv);
     const wantedByHost = new Map(wanted.map((h) => [h.host, h]));
 
@@ -4737,6 +4763,7 @@ export class TailscaleHostPool {
       const nextUser = rv ? remoteHostUser(rv, spec) : "root";
       const reprobe =
         imageChanged ||
+        toolchainChanged ||
         hostRunner(existing.spec) !== hostRunner(spec) ||
         existing.ssh.user !== nextUser;
       existing.removed = undefined;
@@ -5868,7 +5895,12 @@ export class TailscaleHostPool {
     try {
       const res = await this.exec.runRemote(
         s.ssh,
-        prereqProbeCommand(hostRunner(s.spec), this.containerImage),
+        prereqProbeCommand(
+          hostRunner(s.spec),
+          this.containerImage,
+          this.requiredTools,
+          this.customCommand,
+        ),
         () => {},
         this.probeTimeoutMs,
       );
@@ -6591,6 +6623,7 @@ export class TailscaleRunner implements RemoteValidator {
       return this.infraFail("remote validation is disabled", dispatch);
     }
     const capabilities = (opts.capabilities ?? []).map((c) => c.trim()).filter(Boolean);
+    if (rv.command && !capabilities.includes("native")) capabilities.push("native");
     const emit = (s: string): void => {
       this.appendLog(opts.taskId, s);
       opts.onChunk?.(s);
@@ -7025,7 +7058,11 @@ export class TailscaleRunner implements RemoteValidator {
           },
         );
         const offloadBrowser = offloadBrowserStepsEnabled(this.config) ? "1" : "0";
+        const customCommandEnv = rv.command
+          ? `REPOOS_VALIDATION_COMMAND=${shellQuote(rv.command)} REPOOS_ARTIFACTS_DIR=${shellQuote(paths.artifacts)} `
+          : "";
         const inner =
+          customCommandEnv +
           `REPOOS_SLOT="$_rvslot" REPOOS_CONTAINER=${shellQuote(containerName)} ` +
           `REPOOS_CACHE_VOLUME=${shellQuote(CACHE_VOLUME_NAME)} REPOOS_CI_IMAGE=${shellQuote(image)} ` +
           `${REPOOS_OFFLOAD_BROWSER_STEPS}=${offloadBrowser} ` +

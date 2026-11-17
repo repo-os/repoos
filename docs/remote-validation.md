@@ -706,11 +706,77 @@ Before your entrypoint runs, RepoOS pre-flight may execute `docker run -u 0 …`
 as root to `chown` the persistent bun-cache volume. A custom image must **tolerate
 that root invocation** (pass through to your normal entrypoint or no-op safely).
 
-Projects whose tests need Postgres, Redis, or similar must ship a **project CI
-image** that starts those services (or embeds them) and adjust `validate.sh` on
-each host accordingly — the stock `repoos-ci` gate will not satisfy them. A
-future `remoteValidation.command` override is not implemented yet; today the
-remote half is always the `validate.sh` contract above.
+#### Project commands and native toolchains
+
+Set `remoteValidation.command` to run a project-owned script from the verified
+candidate checkout. Its stdout/stderr are streamed into the remote validation
+log and saved as `test-output.log`; the script can write extra files to
+`$REPOOS_ARTIFACTS_DIR` for collection with the run. An empty command keeps the
+stock RepoOS Bun gate. Native hosts can run project toolchains directly without
+Docker. Declare every executable the command needs in
+`remoteValidation.requiredTools`; the host probe names each missing tool.
+
+For an Android + web project, install JDK, Gradle and Node for the SSH user and
+configure a native Linux host like this:
+
+```toml
+[remoteValidation]
+enabled = true
+provider = "tailscale"
+command = "./scripts/ci-remote.sh"
+requiredTools = ["java", "gradle", "node"]
+
+[[remoteValidation.tailscaleHosts]]
+host = "thinkpad"
+user = "repoos"
+os = "linux"
+runner = "native"
+labels = ["android", "web"]
+```
+
+The project script can sequence its own gates and publish artifacts:
+
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+./gradlew --no-daemon testDebugUnitTest
+npm ci
+npm run test
+npm run build
+mkdir -p "$REPOOS_ARTIFACTS_DIR"
+cp app/build/reports/tests/testDebugUnitTest/index.html "$REPOOS_ARTIFACTS_DIR/android-unit-tests.html"
+```
+
+Install the runner script into the SSH user's home (no sudo):
+
+```bash
+mkdir -p ~/.local/bin
+cp scripts/remote-runner/validate-macos.sh ~/.local/bin/repoos-validate
+chmod 755 ~/.local/bin/repoos-validate
+sudo install -Dm755 scripts/remote-runner/validate-macos.sh /opt/repoos/validate.sh
+```
+
+The current dispatcher invokes `/opt/repoos/validate.sh`, so that final
+installation still requires sudo; JDK, Gradle, Node and project caches can be
+installed user-level (for example SDKMAN for JDK, `nvm` for Node, and the
+Gradle wrapper shipped with the project). The Android SDK can live under
+`$HOME/Android/Sdk`; add its `platform-tools` and `cmdline-tools/latest/bin`
+directories to the SSH user's login `PATH`. Native execution runs the declared command from the
+checked-out project and keeps the same verified SHA, logs, artifacts, queue,
+retry and local-fallback behavior as the stock gate. Configure the host's
+`os`/`labels` according to the toolchain it actually has. Docker hosts continue
+to use the stock image gate and its per-host image prerequisite.
+
+#### Follow-up order for remote engineer sessions
+
+The runner work is tracked in #0904 (design, done), #0912 (human acceptance of
+ADR 0009), #0913 (implementation), and #0907 (human CLI login and live proof).
+Recommended order: finish the human ADR decision in #0912, implement remote
+engineer sessions in #0913 with load-aware placement, then use #0907 for CLI
+authentication and the real run. Heavy engineering should be scheduled onto a
+healthy, low-load runner such as mini or ThinkPad when bee is carrying multiple
+projects; don't treat this validation command feature as moving engineer
+processes itself.
 
 When remote validation is enabled but every host is unreachable or fails its
 probe, close-out and handoff may still run the **full local gate** if

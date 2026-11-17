@@ -23,7 +23,12 @@ import { join } from "node:path";
 import type { RepoOSConfig } from "../../core/types.js";
 import { loadConfig } from "../../core/config.js";
 import { getCheckStore } from "../../core/check-store.js";
-import { resolveRemoteHosts, remoteHostUser, hostRunner } from "../../core/remote-hosts.js";
+import {
+  resolveRemoteHosts,
+  remoteHostUser,
+  hostRunner,
+  hostSatisfies,
+} from "../../core/remote-hosts.js";
 import { planJobCapabilities, resolveCheckPlan } from "../../core/check-plan.js";
 import {
   CACHE_VOLUME_NAME,
@@ -2770,6 +2775,20 @@ describe("per-host prerequisite probe", () => {
     expect(cmd).toContain(PREREQ_OK_TOKEN);
   });
 
+  it("checks all declared native toolchain executables and skips Bun assumptions for a project command", () => {
+    const cmd = prereqProbeCommand("native", "repoos-ci", ["java", "gradle", "node"], true);
+    expect(cmd).toContain("for tool in 'java' 'gradle' 'node'");
+    expect(cmd).toContain('echo "$tool not found on PATH"');
+    expect(cmd).not.toContain("bun not found");
+    expect(cmd).not.toContain("docker info");
+  });
+
+  it("uses the Bun prerequisite only for the stock native gate", () => {
+    const cmd = prereqProbeCommand("native", "repoos-ci", [], true);
+    expect(cmd).not.toContain("bun not found");
+    expect(cmd).toContain("git not found on PATH");
+  });
+
   it("checks the bun cache dir is writable on a native host", () => {
     // Native: bun runs directly as the SSH user, no container/uid involved,
     // so a plain host-path write-then-remove is an accurate test.
@@ -2817,6 +2836,11 @@ describe("hostRunner", () => {
   it('is "native" only when the row explicitly says so', () => {
     expect(hostRunner({ host: "mini", runner: "native" })).toBe("native");
     expect(hostRunner({ host: "mini", runner: "docker" })).toBe("docker");
+  });
+
+  it("exposes native execution as a dispatch capability for project commands", () => {
+    expect(hostSatisfies({ host: "linux", os: "linux", runner: "native" }, ["native"])).toBe(true);
+    expect(hostSatisfies({ host: "linux", os: "linux" }, ["native"])).toBe(false);
   });
 });
 

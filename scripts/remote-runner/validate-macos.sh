@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 #
-# Native macOS remote validation runner (no Docker).
+# Native remote validation runner (no Docker; Linux or macOS).
 # Invoked by RepoOS over ssh as:
 #
 #   /opt/repoos/validate.sh <bundle-path> <expected-sha> [artifacts-dir]
 #
 # Restores the candidate tree from a git bundle, hard-verifies it is exactly
-# the SHA RepoOS asked for, then runs bun install + build + test natively.
+# the SHA RepoOS asked for, then runs the configured command or stock Bun gate.
 #
 # Exit codes: 0 = green. 3 = SHA mismatch. Anything else = build/test failure.
 set -euo pipefail
@@ -44,17 +44,23 @@ echo "[validate] HEAD verified at $SHA"
 
 export BUN_INSTALL_CACHE_DIR="$CACHE"
 export PATH="/opt/homebrew/bin:$PATH"
+export REPOOS_ARTIFACTS_DIR="$ART"
 
 set +e
 (
   set -o pipefail
-  bun install --frozen-lockfile \
-    && bun run build \
-    && echo "#!/bin/sh" > "$WORK/repoos" \
-    && echo "exec bun $WORK/repo/dist/cli/index.js \"\$@\"" >> "$WORK/repoos" \
-    && chmod +x "$WORK/repoos" \
-    && export PATH="$WORK:$PATH" \
-    && bun run test
+  if [ -n "${REPOOS_VALIDATION_COMMAND:-}" ]; then
+    echo "[validate] running configured command: $REPOOS_VALIDATION_COMMAND"
+    bash -lc "$REPOOS_VALIDATION_COMMAND"
+  else
+    bun install --frozen-lockfile \
+      && bun run build \
+      && echo "#!/bin/sh" > "$WORK/repoos" \
+      && echo "exec bun $WORK/repo/dist/cli/index.js \"\$@\"" >> "$WORK/repoos" \
+      && chmod +x "$WORK/repoos" \
+      && export PATH="$WORK:$PATH" \
+      && bun run test
+  fi
 ) 2>&1 | tee "$ART/test-output.log"
 CODE=${PIPESTATUS[0]}
 set -e
