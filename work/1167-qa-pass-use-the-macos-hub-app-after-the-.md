@@ -3,6 +3,9 @@ id: "1167"
 title: "QA pass: use the macOS Hub app after the #1155 fix, find broken things and fix them"
 type: bug
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: "`needs some work` — startup-learned identity is shown but never persisted, so local Start/Stop can disappear after relaunch."
 priority: p1
 area: macos
 assigned_to: ai
@@ -11,7 +14,7 @@ branch: feat/qa-pass-use-the-macos-hub-app-after-the-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T18:23:18Z"
-updated_at: "2026-11-17T22:03:46Z"
+updated_at: "2026-11-17T22:03:47Z"
 review_passes: 4
 review_rounds: 2
 handoff_signal_retry_count: 2
@@ -95,3 +98,4 @@ Do not edit repoos.toml. Do not create signing identities or commit app binaries
 - 2026-11-17T21:19:29Z · needs_input
 - 2026-11-17T21:48:44Z · needs_input (review-rounds-exhausted) cleared for review again by human
 - 2026-11-17T22:03:46Z · note: review pass 5: needs some work
+- 2026-11-17T22:03:47Z · needs_input
