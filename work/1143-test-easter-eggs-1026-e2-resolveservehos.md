@@ -2,7 +2,7 @@
 id: "1143"
 title: "Test: easter-eggs #1026 E2 resolveServeHost default fails on machines running Tailscale"
 type: feature
-status: active
+status: review
 priority: p3
 area: server
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/test-easter-eggs-1026-e2-resolveservehos
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-17T02:10:39Z"
-updated_at: "2026-11-17T10:55:10Z"
+updated_at: "2026-11-17T10:57:10Z"
 dev_error_count: 5
 ---
 ## Problem
@@ -60,3 +60,4 @@ Machine-dependent test, not a product bug: `resolveServeHost` behaviour is inten
 - 2026-11-17T10:53:30Z · cli_override, model_override
 - 2026-11-17T10:53:31Z · needs_input
 - 2026-11-17T10:55:10Z · body
+- 2026-11-17T10:57:10Z · status active→review
