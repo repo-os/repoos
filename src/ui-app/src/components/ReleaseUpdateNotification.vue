@@ -353,12 +353,16 @@ onUnmounted(() => {
             >
           </template>
           <div v-else class="release-update-manual">
-            <p class="release-update-muted">This server was started by hand. RepoOS will restart it with the same command and port.</p>
+            <p class="release-update-muted">
+              This server was started by hand. RepoOS will restart it with the same command and
+              port.
+            </p>
             <Button size="sm" :disabled="restartPendingAction" @click="void restartInstalled()">
               {{ restartPendingAction ? "Restarting…" : "Restart now" }}
             </Button>
             <p v-if="restartError" class="release-update-muted" role="alert">
-              Could not start the restart helper: {{ restartError }} Run <code>repoos restart</code> in a terminal.
+              Could not start the restart helper: {{ restartError }} Run
+              <code>repoos restart</code> in a terminal.
             </p>
           </div>
         </div>

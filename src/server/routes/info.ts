@@ -146,10 +146,19 @@ export const restartInstalledUpgrade: RouteHandler = async (ctx, req, res) => {
       const { bin, needsCliEntry } = repoosBinary();
       const entry = compiledCliEntry();
       if (needsCliEntry && !existsSync(entry))
-        return json(res, 503, { state: "manual", reason: `CLI entry not found at ${entry}`, command: "repoos restart" });
+        return json(res, 503, {
+          state: "manual",
+          reason: `CLI entry not found at ${entry}`,
+          command: "repoos restart",
+        });
       const args = [...(needsCliEntry ? [entry] : []), "restart", "--force"];
       if (ctx.servePort) args.push("--port", String(ctx.servePort));
-      const helper = spawn(bin, args, { cwd: ctx.config.root, detached: true, stdio: "ignore", env: process.env });
+      const helper = spawn(bin, args, {
+        cwd: ctx.config.root,
+        detached: true,
+        stdio: "ignore",
+        env: process.env,
+      });
       helper.on("error", () => {});
       helper.unref();
       return json(res, 202, { state: "restarting" });

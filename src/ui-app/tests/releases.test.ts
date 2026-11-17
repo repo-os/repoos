@@ -702,8 +702,7 @@ describe("feature releases", () => {
     expect(releases.map((item) => item.id)).toEqual(["3", "1"]);
   });
 
-  it("copies the manual restart command for an unsupervised server", async () => {
-    const copy = vi.spyOn(clipboard, "copyToClipboard").mockResolvedValue(true);
+  it("offers a working restart action for a hand-run server without showing a service command", async () => {
     const fetchMock = vi.fn().mockImplementation((path: string) => {
       const payload = String(path).includes("update-status")
         ? {
@@ -738,23 +737,15 @@ describe("feature releases", () => {
     try {
       await flushPromises();
       expect(document.body.querySelector("[data-test-id=installed-restart-notice]")).not.toBeNull();
-      expect(
-        [...document.body.querySelectorAll("button")].some(
-          (item) => item.textContent?.trim() === "Restart now",
-        ),
-      ).toBe(false);
-      const button = [...document.body.querySelectorAll("button")].find((item) =>
-        item.textContent?.includes("Copy restart command"),
+      expect(document.body.textContent).toContain("This server was started by hand");
+      const button = [...document.body.querySelectorAll("button")].find(
+        (item) => item.textContent?.trim() === "Restart now",
       );
       expect(button).toBeDefined();
-      button!.click();
-      await flushPromises();
-      expect(copy).toHaveBeenCalledWith("just serve");
-      expect(document.body.textContent).toContain("Copied");
+      expect(document.body.textContent).not.toMatch(/launchctl|systemctl|just serve/);
     } finally {
       wrapper.unmount();
       vi.unstubAllGlobals();
-      copy.mockRestore();
     }
   });
 

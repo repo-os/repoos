@@ -7,12 +7,21 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   readInstallVersion: vi.fn(() => "999.0.0"),
   detectSupervisor: vi.fn(),
+  spawn: vi.fn(() => ({ on: vi.fn(), unref: vi.fn() })),
 }));
 vi.mock("../../commands/upgrade.js", () => ({
   installRoot: () => "/fake/install",
   readInstallVersion: mocks.readInstallVersion,
 }));
 vi.mock("../../core/supervisor-detect.js", () => ({ detectSupervisor: mocks.detectSupervisor }));
+vi.mock("node:child_process", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("node:child_process")>()),
+  spawn: mocks.spawn,
+}));
+vi.mock("../../core/service-manager.js", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../../core/service-manager.js")>()),
+  repoosBinary: () => ({ bin: "bun", needsCliEntry: false }),
+}));
 
 import { getUpdateStatus, restartInstalledUpgrade } from "../../server/routes/info.js";
 
@@ -83,10 +92,15 @@ describe("installed upgrade status and restart route", () => {
     });
   });
 
-  it("refuses to restart without a supervisor and includes the manual command", async () => {
+  it("starts a detached CLI helper for a hand-run server", async () => {
     const capture = responseCapture();
     await restartInstalledUpgrade(context(), request() as never, capture.res, {});
-    expect(capture.status()).toBe(409);
-    expect(capture.body()).toMatchObject({ state: "manual", command: expect.any(String) });
+    expect(capture.status()).toBe(202);
+    expect(capture.body()).toEqual({ state: "restarting" });
+    expect(mocks.spawn).toHaveBeenCalledWith(
+      "bun",
+      ["restart", "--force", "--port", "7123"],
+      expect.objectContaining({ cwd: "/fake/project", detached: true, stdio: "ignore" }),
+    );
   });
 });
