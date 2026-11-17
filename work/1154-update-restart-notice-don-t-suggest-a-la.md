@@ -11,7 +11,7 @@ branch: feat/update-restart-notice-don-t-suggest-a-la
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T13:30:27Z"
-updated_at: "2026-11-17T15:11:00Z"
+updated_at: "2026-11-17T15:38:16Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -43,11 +43,11 @@ Read #1075 (the restart notice) and #1091 (`repoos restart`). A server that kill
 ```json
 [
 {
-  "label": "Hand-run server restart notice",
-  "target": "default",
-  "route": "/",
-  "highlight": "[data-test-id=\"installed-restart-notice\"]",
-  "state": "release:restartPendingLight"
+"label": "Hand-run server restart notice",
+"target": "default",
+"route": "/",
+"highlight": "[data-test-id=\"installed-restart-notice\"]",
+"state": "release:restartPendingLight"
 }
 ]
 ```
@@ -67,3 +67,4 @@ Read #1075 (the restart notice) and #1091 (`repoos restart`). A server that kill
 - 2026-11-17T15:06:52Z · message_delivered: 1 message(s)
 - 2026-11-17T15:06:52Z · status review→active
 - 2026-11-17T15:11:00Z · body
+- 2026-11-17T15:38:16Z · body
