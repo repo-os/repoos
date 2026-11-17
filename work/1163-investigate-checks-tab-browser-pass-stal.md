@@ -2,7 +2,7 @@
 id: "1163"
 title: Investigate Checks tab browser pass stall
 type: bug
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -113,3 +113,4 @@ The direct tab pass found no navigation hang. Review identified a separate app l
 - 2026-11-17T21:25:43Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-17T21:28:45Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-17T21:28:45Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code unknown) · last assistant: The full check is progressing through the repository’s full remote test suite (741 test files); the output so far shows passing cases. This is longer than the changed-path check, so I’m continuing to wait for the overall verdict before han… · stderr: 2026-11-17T21:14:26.622189Z ERROR codex_core::util: Custom tool call output is missing for call id: call_523f4daeb65c4913a4d0147d011d945e 2026-11-17T21:14:30.901514Z ERROR codex_core::util: Custom tool call output is missing for call id: call_523f4daeb65c4913a4d0147d011d945e 2026-11-17T21:15:02.898044Z ERROR codex_cor…
+- 2026-11-17T21:28:45Z · status active→review
