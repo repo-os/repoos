@@ -11,7 +11,7 @@ branch: feat/repoos-hub-for-macos-is-broken-reproduce
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T14:36:24Z"
-updated_at: "2026-11-17T14:41:54Z"
+updated_at: "2026-11-17T14:55:42Z"
 ---
 ## Problem
 
@@ -52,3 +52,4 @@ Read macos/README.md and the 'RepoOS Hub for macOS' section of README.md first. 
 - 2026-11-17T14:41:54Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-17T14:41:54Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code unknown) · last assistant: After isolating scan tests from the live registry, the full macOS unit-test suite passes. The fixture also now asserts that a populated registry does not invoke fallback scanning, which is the behavior that caused the original machine-depe… · stderr: Reading additional input from stdin...
 - 2026-11-17T14:41:54Z · message_delivered: 4 message(s)
+- 2026-11-17T14:55:42Z · body
