@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-11-17T20:53:14Z"
-review_passes: 2
 id: "1163"
 title: Investigate Checks tab browser pass stall
 type: bug
-status: review
+status: active
 priority: p2
 area: web
 assigned_to: ai
@@ -13,7 +11,9 @@ branch: feat/investigate-checks-tab-browser-pass-stal
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T17:53:05Z"
-review_rounds: 1
+updated_at: "2026-11-17T20:53:14Z"
+review_rounds: 2
+review_passes: 2
 handoff_signal_retry_count: 2
 ---
 During task #1157 responsive QA, a Playwright pass attempted to visit Checks tabs Now, Runs, Test Suite and Check Plan across 1440, 390 and 320px in both themes. It captured the Now tab at 390px, then the repeated interaction/screenshot run slowed and was stopped before the other tabs were verified. The default Checks route works and rendered without a page exception in the main screenshot matrix, so this report does not establish a product regression. Reproduce tab navigation directly and determine whether the stall is in the app or in repeated screenshot capture; if a product issue reproduces, fix it with a regression test. Evidence attached.
@@ -91,4 +91,4 @@ Direct tab-click coverage passes, but review identified a separate app lifecycle
 - 2026-11-17T20:51:37Z · status active→review
 - 2026-11-17T20:51:38Z · message_queued at 2026-11-17T20:51:38.027Z
 - 2026-11-17T20:53:14Z · note: review pass 2: needs some work
-
+- 2026-11-17T20:53:14Z · status review→active
