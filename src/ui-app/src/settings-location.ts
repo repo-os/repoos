@@ -110,7 +110,13 @@ export function generalSectionForKey(key: string): string {
   if (key === "remoteValidation.offloadBrowserSteps" || key === "remoteValidation.localFallback") {
     return "remote-validation";
   }
-  if (key === "remoteValidation.healthCheck") return "remote-validation";
+  if (
+    key === "remoteValidation.healthCheck" ||
+    key === "remoteValidation.command" ||
+    key === "remoteValidation.requiredTools"
+  ) {
+    return "remote-validation";
+  }
   if (key === "storage.provider") return "attachments";
   if (key.startsWith("release.email.")) return "release-emails";
   if (
@@ -198,6 +204,8 @@ export const REMOTE_VALIDATION_GENERAL_FIELD_KEYS = new Set([
   "remoteValidation.offloadBrowserSteps",
   "remoteValidation.localFallback",
   "remoteValidation.browserCaptureMode",
+  "remoteValidation.command",
+  "remoteValidation.requiredTools",
   // #0901: the runner memory-health switch is a first-class Settings row, not
   // a raw-TOML-only detail — turning it off must be discoverable.
   "remoteValidation.healthCheck",

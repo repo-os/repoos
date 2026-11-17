@@ -2179,6 +2179,14 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
     if (typeof rvEnabled === "boolean") {
       cfg.remoteValidation = { ...cfg.remoteValidation, enabled: rvEnabled };
     }
+    const rvCommand = parsed["remoteValidation.command"];
+    if (typeof rvCommand === "string" && rvCommand.trim()) {
+      cfg.remoteValidation = { ...cfg.remoteValidation, command: rvCommand.trim() };
+    }
+    const rvRequiredTools = normalizeStringList(parsed["remoteValidation.requiredTools"]);
+    if (rvRequiredTools.length) {
+      cfg.remoteValidation = { ...cfg.remoteValidation, requiredTools: rvRequiredTools };
+    }
     const rvProvider = parsed["remoteValidation.provider"];
     if (rvProvider === "hetzner" || rvProvider === "tailscale") {
       cfg.remoteValidation = { ...cfg.remoteValidation, provider: rvProvider };
@@ -4044,6 +4052,26 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         "hetzner: provision a disposable Hetzner Cloud VM from a prebuilt snapshot.",
     },
     {
+      key: "remoteValidation.command",
+      label: "Remote validation: command",
+      type: "string",
+      tier: "restart",
+      restartRequired: true,
+      default: "",
+      description:
+        "Optional project-relative command run from the verified checkout on a Tailscale or Hetzner runner. Native hosts run it directly; Docker hosts need an image with its toolchain. Leave empty for the stock RepoOS build and test gate.",
+    },
+    {
+      key: "remoteValidation.requiredTools",
+      label: "Remote validation: required runner tools",
+      type: "array",
+      tier: "restart",
+      restartRequired: true,
+      default: [],
+      description:
+        "Comma-separated executables the runner must provide (for example java, gradle, node). Native hosts check their login shell; Docker hosts check the configured image. Missing tools are named in the host probe result.",
+    },
+    {
       key: "remoteValidation.tailscaleHost",
       label: "Remote validation: tailscale host",
       type: "string",
@@ -5009,6 +5037,8 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   // Remote validation
   "remoteValidation.enabled",
   "remoteValidation.provider",
+  "remoteValidation.command",
+  "remoteValidation.requiredTools",
   "remoteValidation.tailscaleHost",
   "remoteValidation.tailscaleHosts",
   "remoteValidation.tailscaleHosts.engineers",

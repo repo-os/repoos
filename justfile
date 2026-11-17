@@ -159,8 +159,8 @@ _setup-runner host os:
     repoos runners setup "$HOST" || true
     echo "==> $HOST is ready as a repoos-ci runner"
 
-# set up mini (macOS) as a NATIVE tailscale validation runner — no Docker,
-# runs bun install/build/test directly on the host. Kept alongside the
+# set up mini (or a Linux host) as a NATIVE tailscale validation runner — no Docker,
+# runs the configured project command directly on the host. Kept alongside the
 # Docker path deliberately (#0521 review): both are real, maintained options,
 # not one demoted to a manual/undocumented fallback. Set `runner = "native"`
 # on this host's [[remoteValidation.tailscaleHosts]] row so RepoOS probes it
@@ -169,7 +169,12 @@ _setup-runner host os:
 setup-mini-native:
     just _setup-runner-native mini
 
-# internal: provision a remote macOS host as a NATIVE (no-Docker) runner —
+# Set up a Linux host for project-owned native validation commands.
+[group('runner')]
+setup-linux-native host:
+    just _setup-runner-native {{host}}
+
+# internal: provision a remote Linux or macOS host as a NATIVE (no-Docker) runner —
 # usage: just _setup-runner-native <host>
 [group('runner')]
 [private]
@@ -178,24 +183,13 @@ _setup-runner-native host:
     set -euo pipefail
     HOST="{{host}}"
 
-    echo "==> verifying bun on $HOST"
-    ssh "$HOST" "/opt/homebrew/bin/bun --version" || {
-        echo "ERROR: bun not found at /opt/homebrew/bin/bun on $HOST — install it, e.g. brew install bun"
-        exit 1
-    }
-
     echo "==> verifying git on $HOST"
     ssh "$HOST" "git --version"
 
-    echo "==> installing validate-macos.sh on $HOST"
+    echo "==> installing native validate script on $HOST (user-level, no sudo)"
     ssh "$HOST" 'mkdir -p ~/.repoos-build'
     scp scripts/remote-runner/validate-macos.sh "$HOST:~/.repoos-build/"
-    ssh -t "$HOST" "
-        sudo mkdir -p /opt/repoos &&
-        sudo install -m 755 ~/.repoos-build/validate-macos.sh /opt/repoos/validate.sh &&
-        rm -rf ~/.repoos-build &&
-        echo done
-    "
+    ssh "$HOST" 'mkdir -p ~/.local/bin && cp ~/.repoos-build/validate-macos.sh ~/.local/bin/repoos-validate && chmod 755 ~/.local/bin/repoos-validate && rm -rf ~/.repoos-build && echo done'
 
     echo "==> installing declared engineer CLIs (non-interactive)"
     repoos runners setup "$HOST" || true

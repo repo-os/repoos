@@ -518,3 +518,22 @@ describe("remoteValidation.healthCheck", () => {
     await cleanup();
   });
 });
+
+describe("project-owned remote validation command", () => {
+  it("loads the command and required native toolchain into runner config", async () => {
+    const root = repo(
+      '[remoteValidation]\nenabled = true\nprovider = "tailscale"\n' +
+        'command = "./scripts/ci-remote.sh"\nrequiredTools = ["java", "gradle", "node"]\n' +
+        '[[remoteValidation.tailscaleHosts]]\nhost = "linux-runner"\nos = "linux"\nrunner = "native"\n',
+    );
+    const config = loadConfig(root);
+    expect(config.remoteValidation?.command).toBe("./scripts/ci-remote.sh");
+    expect(config.remoteValidation?.requiredTools).toEqual(["java", "gradle", "node"]);
+    expect(resolveRemoteHosts(config.remoteValidation)[0]).toMatchObject({
+      host: "linux-runner",
+      os: "linux",
+      runner: "native",
+    });
+    await cleanup();
+  });
+});

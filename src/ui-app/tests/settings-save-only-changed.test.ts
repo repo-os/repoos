@@ -51,6 +51,7 @@ function settingsConfigResponse(): {
       maxActiveTasks: 3,
       activityAnimationStyle: "orbital-pixel",
       attention: { slowRunMultiplier: 1.5 },
+      remoteValidation: { command: "", requiredTools: [] },
     },
     schema: [
       schemaField("maxActiveTasks", "number", { default: 3 }),
@@ -62,6 +63,16 @@ function settingsConfigResponse(): {
         default: 1.5,
         min: 0.1,
         step: 0.1,
+      }),
+      schemaField("remoteValidation.command", "string", {
+        default: "",
+        tier: "restart",
+        restartRequired: true,
+      }),
+      schemaField("remoteValidation.requiredTools", "array", {
+        default: [],
+        tier: "restart",
+        restartRequired: true,
       }),
     ],
   };
@@ -181,6 +192,35 @@ describe("SettingsView save sends only changed fields (#0797)", () => {
     expect(body.activityAnimationStyle).toBe("cursor-scan-pulse");
     expect("attention.slowRunMultiplier" in body).toBe(false);
     expect("maxActiveTasks" in body).toBe(false);
+
+    saveSpy.mockRestore();
+    wrapper.unmount();
+  });
+
+  it("renders and saves a project command and its required runner tools", async () => {
+    await loadSettingsConfig();
+    const config = useConfigStore();
+    const saveSpy = vi.spyOn(config, "save").mockResolvedValue(undefined);
+
+    const wrapper = await mountSettings();
+    const commandRow = document.getElementById("setting-remoteValidation.command");
+    const toolsRow = document.getElementById("setting-remoteValidation.requiredTools");
+    expect(commandRow).not.toBeNull();
+    expect(toolsRow).not.toBeNull();
+    expect(commandRow?.querySelector("input")).not.toBeNull();
+    expect(toolsRow?.querySelector("input")).not.toBeNull();
+
+    await wrapper
+      .find('[data-config-key="remoteValidation.command"] input')
+      .setValue("./scripts/ci-remote.sh");
+    await wrapper
+      .find('[data-config-key="remoteValidation.requiredTools"] input')
+      .setValue("java, gradle, node");
+    await vi.waitFor(() => expect(saveSpy).toHaveBeenCalled(), { timeout: 3000 });
+
+    const body = saveSpy.mock.calls.at(-1)?.[0] as Record<string, unknown>;
+    expect(body["remoteValidation.command"]).toBe("./scripts/ci-remote.sh");
+    expect(body["remoteValidation.requiredTools"]).toEqual(["java", "gradle", "node"]);
 
     saveSpy.mockRestore();
     wrapper.unmount();

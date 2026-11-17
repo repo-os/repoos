@@ -1232,6 +1232,10 @@ export interface PressureGuardConfig {
 }
 
 export interface RemoteValidationConfig {
+  /** Project-relative shell command run from the checked-out candidate on runners. */
+  command?: string;
+  /** Executables required on native runners, such as java, gradle and node. */
+  requiredTools?: string[];
   /** Where task screenshots and UI verification should run. */
   browserCaptureMode?: "local" | "runner-available" | "runner-only";
   /** Master switch. Default false. */
@@ -1239,7 +1243,7 @@ export interface RemoteValidationConfig {
   /**
    * Which provider runs the validation. "hetzner" (default) provisions a
    * disposable cloud VM per job. "tailscale" SSHes into a persistent machine
-   * on your tailnet and runs the gate inside a fresh Docker/Podman container.
+   * on your tailnet and runs the gate in Docker/Podman or via a native runner.
    */
   provider?: "hetzner" | "tailscale";
 
@@ -1408,9 +1412,9 @@ export interface RemoteValidationHost {
   maxConcurrent?: number;
   /**
    * How `validate.sh` actually runs on this host — Docker (the maintained,
-   * default path, `just setup-<host>`) or "native" (macOS only today: bun +
-   * git directly on the host, no Docker, `validate-macos.sh` /
-   * `just setup-<host>-native`). This is a host implementation detail, not a
+   * default path, `just setup-<host>`) or "native" (git plus the configured
+   * toolchain directly on Linux or macOS, no Docker, `validate-macos.sh` /
+   * `just _setup-runner-native`). This is a host implementation detail, not a
    * job requirement: a job requests capabilities via `os`/`labels`
    * (`runsOn`), never `runner` — either runner variant satisfies the same
    * `os` capability, since the result (a green build+test) is identical.

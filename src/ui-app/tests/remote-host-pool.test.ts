@@ -19,11 +19,16 @@ import {
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import type { RepoOSConfig } from "../../core/types.js";
 import { loadConfig } from "../../core/config.js";
 import { getCheckStore } from "../../core/check-store.js";
-import { resolveRemoteHosts, remoteHostUser, hostRunner } from "../../core/remote-hosts.js";
+import {
+  resolveRemoteHosts,
+  remoteHostUser,
+  hostRunner,
+  hostSatisfies,
+} from "../../core/remote-hosts.js";
 import { planJobCapabilities, resolveCheckPlan } from "../../core/check-plan.js";
 import {
   CACHE_VOLUME_NAME,
@@ -39,6 +44,7 @@ import {
   HOST_LOCK_TIMEOUT_EXIT,
   PREREQ_OK_TOKEN,
   RUNNER_SCRIPT_MIRROR_TOKEN,
+  RUNNER_SCRIPT_COMMAND_TOKEN,
   HostsUnavailableError,
   HangWatchdog,
   RemoteValidationRunner,
@@ -447,6 +453,7 @@ function poolFixture(opts: {
   hosts: Array<{
     host: string;
     os?: string;
+    runner?: "native" | "docker";
     user?: string;
     maxConcurrent?: number;
     labels?: string[];
@@ -468,6 +475,8 @@ function poolFixture(opts: {
   /** Like infraFailOn but only the first run per host (#0745 recovery). */
   infraFailOnceOn?: string[];
   retryOtherHosts?: boolean;
+  command?: string;
+  requiredTools?: string[];
   healthRetryMs?: number;
   containerImage?: string;
   /** Simulated host-lock holders per host (#0705). */
@@ -519,6 +528,8 @@ function poolFixture(opts: {
       tailscaleHosts: opts.hosts,
       maxConcurrent: opts.maxConcurrent,
       containerImage: opts.containerImage,
+      command: opts.command,
+      requiredTools: opts.requiredTools,
       retryOtherHosts: opts.retryOtherHosts,
     },
   } as unknown as RepoOSConfig;
@@ -610,7 +621,7 @@ function poolFixture(opts: {
           }
           return {
             code: 0,
-            output: `prereq ok ${RUNNER_SCRIPT_MIRROR_TOKEN}=1 ${PREREQ_OK_TOKEN}`,
+            output: `prereq ok ${RUNNER_SCRIPT_MIRROR_TOKEN}=1 ${RUNNER_SCRIPT_COMMAND_TOKEN}=1 ${PREREQ_OK_TOKEN}`,
             timedOut: false,
           };
         }
@@ -941,7 +952,12 @@ describe("background host probing (#0683)", () => {
     writeFileSync(join(root, "f.txt"), "x");
     execFileSync("git", ["add", "."], { cwd: root });
     execFileSync("git", ["commit", "-qm", "init"], { cwd: root });
-    const f = poolFixture({ hosts: [{ host: "a" }], unreachable: ["a"] });
+    const f = poolFixture({
+      hosts: [{ host: "a" }],
+      unreachable: ["a"],
+      command: "./scripts/ci-remote.sh",
+      requiredTools: ["java", "node"],
+    });
     for (let i = 0; i < 20 && !f.runner.hostStatus()?.[0]?.probed; i++) {
       await tick();
     }
@@ -1024,7 +1040,14 @@ describe("TailscaleRunner pool dispatch (#0521)", () => {
   });
 
   it("runs two jobs on two hosts and queues a third until one frees", async () => {
-    const f = poolFixture({ hosts: [{ host: "a" }, { host: "b" }] });
+    const f = poolFixture({
+      hosts: [
+        { host: "a", runner: "native" },
+        { host: "b", runner: "native" },
+      ],
+      command: "./scripts/ci-remote.sh",
+      requiredTools: ["java", "node"],
+    });
     const chunks3: string[] = [];
     const job1 = f.runner.validate(opts("0001"));
     const job2 = f.runner.validate(opts("0002"));
@@ -1034,6 +1057,11 @@ describe("TailscaleRunner pool dispatch (#0521)", () => {
 
     const job3 = f.runner.validate(opts("0003", { onChunk: (c: string) => chunks3.push(c) }));
     await tick();
+    for (const host of ["a", "b"]) {
+      expect(f.cmds[host]![0]).toContain("REPOOS_VALIDATION_COMMAND");
+      expect(f.cmds[host]![0]).toContain("./scripts/ci-remote.sh");
+      expect(f.cmds[host]![0]).toContain("export REPOOS_VALIDATION_COMMAND=");
+    }
     expect(f.pending()).toHaveLength(2); // both hosts busy → job3 waits
     expect(chunks3.join("")).toContain("queued behind 2 other remote run(s)");
     expect(chunks3.join("")).toContain("waiting for a runner on");
@@ -1553,7 +1581,7 @@ describe("failover to another host (#0632)", () => {
         if (cmd.includes(PREREQ_OK_TOKEN)) {
           return {
             code: 0,
-            output: `prereq ok ${RUNNER_SCRIPT_MIRROR_TOKEN}=1 ${PREREQ_OK_TOKEN}`,
+            output: `prereq ok ${RUNNER_SCRIPT_MIRROR_TOKEN}=1 ${RUNNER_SCRIPT_COMMAND_TOKEN}=1 ${PREREQ_OK_TOKEN}`,
             timedOut: false,
           };
         }
@@ -1735,7 +1763,7 @@ describe("pool LRU tie-break across idle hosts (#0890)", () => {
               }
             : {
                 code: 0,
-                output: `prereq ok ${RUNNER_SCRIPT_MIRROR_TOKEN}=1 ${PREREQ_OK_TOKEN}`,
+                output: `prereq ok ${RUNNER_SCRIPT_MIRROR_TOKEN}=1 ${RUNNER_SCRIPT_COMMAND_TOKEN}=1 ${PREREQ_OK_TOKEN}`,
                 timedOut: false,
               };
         }
@@ -2720,13 +2748,14 @@ describe("per-host prerequisite probe", () => {
     expect(cmd).toContain("grep -qF '${3'");
     expect(cmd).toContain(PREREQ_OK_TOKEN);
     expect(cmd).toContain(RUNNER_SCRIPT_MIRROR_TOKEN);
-    expect(cmd).not.toContain("bun not found");
+    expect(cmd).toContain(`${RUNNER_SCRIPT_COMMAND_TOKEN}=1`);
+    expect(cmd).toContain(`${RUNNER_SCRIPT_COMMAND_TOKEN}=0`);
   });
 
   it('checks docker when runner is explicitly "docker"', () => {
     const cmd = prereqProbeCommand("docker");
     expect(cmd).toContain("docker info");
-    expect(cmd).not.toContain("bun not found");
+    expect(cmd).toContain("bun");
     // git DOES run on the host for docker too — checked separately below
     // (#0521 review: validate.sh's git clone happens before docker run).
   });
@@ -2764,10 +2793,76 @@ describe("per-host prerequisite probe", () => {
     // `just setup-<host>-native` / validate-macos.sh). `runner` says
     // explicitly which one a given host actually uses, independent of `os`.
     const cmd = prereqProbeCommand("native");
-    expect(cmd).toContain("bun not found");
-    expect(cmd).toContain("git not found");
+    expect(cmd).toContain("bash -lc");
+    expect(cmd).toContain("git");
+    expect(cmd).toContain("bun");
+    expect(cmd).toContain('echo "$tool not found on login PATH"');
+    expect(cmd).toContain("/opt/homebrew/bin:$PATH");
     expect(cmd).not.toContain("docker info");
     expect(cmd).toContain(PREREQ_OK_TOKEN);
+  });
+
+  it("checks all declared native toolchain executables and skips Bun assumptions for a project command", () => {
+    const cmd = prereqProbeCommand("native", "repoos-ci", ["java", "gradle", "node"], true);
+    for (const tool of ["git", "java", "gradle", "node"]) expect(cmd).toContain(tool);
+    expect(cmd).toContain('echo "$tool not found on login PATH"');
+    expect(cmd).not.toContain("'bun'");
+    expect(cmd).not.toContain("docker info");
+  });
+
+  it("checks declared toolchain executables inside a configured Docker image", () => {
+    const cmd = prereqProbeCommand("docker", "tiao-ci", ["java", "node"], true);
+    expect(cmd).toContain("docker image inspect 'tiao-ci'");
+    expect(cmd).toContain("docker run --rm --entrypoint bash 'tiao-ci' -lc");
+    expect(cmd).toContain("java");
+    expect(cmd).toContain("node");
+    expect(cmd).toContain("not found in runner image login PATH");
+  });
+
+  it("uses the Bun prerequisite only for the stock native gate", () => {
+    const cmd = prereqProbeCommand("native", "repoos-ci", [], true);
+    expect(cmd).toContain("git");
+    expect(cmd).not.toContain("'bun'");
+    expect(cmd).toContain('echo "$tool not found on login PATH"');
+  });
+
+  it("keeps Bun in the probe when requiredTools are set but the stock command is used", () => {
+    const native = prereqProbeCommand("native", "repoos-ci", ["java", "node"]);
+    for (const tool of ["git", "java", "node", "bun"]) expect(native).toContain(tool);
+    const docker = prereqProbeCommand("docker", "repoos-ci", ["java", "node"]);
+    for (const tool of ["java", "node", "bun"]) expect(docker).toContain(tool);
+    expect(docker).toContain("one or more required tools are unavailable");
+  });
+
+  it("checks runner scripts from the dispatcher path and asks stale scripts to be updated", () => {
+    const cmd = prereqProbeCommand("native", "repoos-ci", ["java"], true);
+    expect(cmd).toContain('REPOOS_VALIDATE_SCRIPT="$HOME/.local/bin/repoos-validate"');
+    expect(cmd).toContain("/opt/repoos/validate.sh");
+    expect(cmd).toContain("project command support is required");
+    expect(cmd).toContain("bash -lc");
+  });
+
+  it("keeps custom Docker runner lifecycle, caches, and browser handoff wired", () => {
+    let repoRoot = process.cwd();
+    while (!existsSync(join(repoRoot, "scripts/remote-runner/validate.sh"))) {
+      const parent = dirname(repoRoot);
+      if (parent === repoRoot) throw new Error("could not locate repository root");
+      repoRoot = parent;
+    }
+    const script = readFileSync(join(repoRoot, "scripts/remote-runner/validate.sh"), "utf8");
+    const custom = script.slice(
+      script.indexOf('if [ -n "${REPOOS_VALIDATION_COMMAND:-}" ]'),
+      script.indexOf("# Run Docker as the SSH user's uid:gid"),
+    );
+    expect(custom).toContain('--name "$CONTAINER"');
+    expect(custom).toContain('-v "$CACHE_VOLUME":/repoos-cache');
+    expect(custom).toContain("GRADLE_USER_HOME=/repoos-cache/gradle");
+    expect(custom).toContain("REPOOS_OFFLOAD_BROWSER_STEPS");
+    expect(custom).toContain("REPOOS_BROWSER_CAPTURE_MODE");
+    expect(custom).toContain('-e "REPOOS_VALIDATION_COMMAND=${REPOOS_VALIDATION_COMMAND:-}"');
+    expect(custom).toContain('--entrypoint bash "$IMAGE" -lc "$RUNNER_COMMAND"');
+    expect(custom).toContain("[validate] gate started");
+    expect(custom).toContain('"$CODE" -eq 125');
   });
 
   it("checks the bun cache dir is writable on a native host", () => {
@@ -2817,6 +2912,11 @@ describe("hostRunner", () => {
   it('is "native" only when the row explicitly says so', () => {
     expect(hostRunner({ host: "mini", runner: "native" })).toBe("native");
     expect(hostRunner({ host: "mini", runner: "docker" })).toBe("docker");
+  });
+
+  it("keeps runner implementation separate from dispatch capabilities", () => {
+    expect(hostSatisfies({ host: "linux", os: "linux", runner: "native" }, ["linux"])).toBe(true);
+    expect(hostSatisfies({ host: "linux", os: "linux", runner: "native" }, ["native"])).toBe(false);
   });
 });
 
@@ -3169,7 +3269,7 @@ describe("hang detector (#0729)", () => {
         if (cmd.includes(PREREQ_OK_TOKEN)) {
           return {
             code: 0,
-            output: `prereq ok ${RUNNER_SCRIPT_MIRROR_TOKEN}=1 ${PREREQ_OK_TOKEN}`,
+            output: `prereq ok ${RUNNER_SCRIPT_MIRROR_TOKEN}=1 ${RUNNER_SCRIPT_COMMAND_TOKEN}=1 ${PREREQ_OK_TOKEN}`,
             timedOut: false,
           };
         }
@@ -4104,7 +4204,7 @@ describe("runner memory health dispatch (#0901)", () => {
         if (cmd.includes(PREREQ_OK_TOKEN)) {
           return {
             code: 0,
-            output: `prereq ok ${RUNNER_SCRIPT_MIRROR_TOKEN}=1 ${PREREQ_OK_TOKEN}`,
+            output: `prereq ok ${RUNNER_SCRIPT_MIRROR_TOKEN}=1 ${RUNNER_SCRIPT_COMMAND_TOKEN}=1 ${PREREQ_OK_TOKEN}`,
             timedOut: false,
           };
         }
