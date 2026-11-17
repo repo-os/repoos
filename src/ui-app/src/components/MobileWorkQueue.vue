@@ -718,6 +718,14 @@ function openTask(task: Task): void {
   align-items: end;
   gap: 8px;
 }
+@media (max-width: 360px) {
+  .mobile-queue-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .mobile-status-filter {
+    grid-column: 1 / -1;
+  }
+}
 .mobile-status-filter {
   display: grid;
   gap: 5px;
@@ -730,6 +738,7 @@ function openTask(task: Task): void {
 }
 .mobile-status-filter :deep(button) {
   width: 100%;
+  min-width: 0;
   min-height: 44px;
   color: var(--txt);
   text-transform: none;
@@ -738,6 +747,7 @@ function openTask(task: Task): void {
 }
 .mobile-sort {
   display: grid;
+  min-width: 0;
   min-height: 44px;
   align-content: center;
   gap: 2px;

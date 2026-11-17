@@ -14090,6 +14090,7 @@
 }
 .am-list-notice-text {
   min-width: 0;
+  overflow-wrap: anywhere;
 }
 .am-list-notice-retry {
   flex: none;
@@ -17514,6 +17515,10 @@
   .drawer-quickbar,
   .drawer-critical {
     padding-inline: 16px;
+  }
+  .drawer-quickbar .task-status-select {
+    flex: 1 1 100%;
+    min-width: 0;
   }
   /* #1147: the preview helper used to share a flex row with the target select
      and Start preview, so it wrapped one or two words per line beside them.
