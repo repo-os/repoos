@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/settings-mobile-navigation-reduce-repeat
 created_at: "2026-11-17T03:06:33Z"
-updated_at: "2026-11-17T07:21:07Z"
+updated_at: "2026-11-17T07:23:36Z"
 last_close_out_gate_ms: 354793
 last_close_out_gate_at: "2026-11-17T07:20:40.395Z"
 check_retry_count: 1
@@ -150,3 +150,4 @@ Use the attached phone screenshot. Check long labels and both theme families. Th
 - 2026-11-17T07:15:18Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-17T07:20:40Z · close-out gate completed in 355s
 - 2026-11-17T07:21:07Z · status done→done, release:success
+- 2026-11-17T07:23:36Z · message_dropped: 1 queued message(s) discarded — task is done
