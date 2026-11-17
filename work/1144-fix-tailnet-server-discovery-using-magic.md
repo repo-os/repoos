@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/fix-tailnet-server-discovery-using-magic
 created_at: "2026-11-17T02:38:50Z"
-updated_at: "2026-11-17T03:58:49Z"
+updated_at: "2026-11-17T04:00:15Z"
 last_close_out_gate_ms: 747634
 last_close_out_gate_at: "2026-11-17T03:57:35.160Z"
 review_passes: 1
@@ -47,3 +47,4 @@ Start with src/core/tailnet-servers.ts: peer identity currently prefers HostName
 - 2026-11-17T03:05:05Z · note: review pass 2: good to go
 - 2026-11-17T03:57:35Z · close-out gate completed in 748s
 - 2026-11-17T03:58:49Z · status done→done, release:success
+- 2026-11-17T04:00:15Z · message_dropped: 1 queued message(s) discarded — task is done
