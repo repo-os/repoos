@@ -10,6 +10,8 @@ const props = defineProps<{
   lockSupported: boolean;
   platform: "ios" | "android" | "web";
   appVersion: string;
+  devUpdateEnabled: boolean;
+  installedCommit: string;
 }>();
 
 const emit = defineEmits<{
@@ -18,6 +20,7 @@ const emit = defineEmits<{
   "update:appearanceMode": [mode: AppearanceMode];
   "update:lockEnabled": [enabled: boolean];
   "update:lockScope": [scope: "reopen" | "server"];
+  checkDevUpdates: [];
 }>();
 
 const appearanceOptions: { id: AppearanceMode; label: string }[] = [
@@ -38,6 +41,23 @@ const appearanceOptions: { id: AppearanceMode; label: string }[] = [
     </header>
 
     <div class="settings-scroll">
+      <section
+        v-if="devUpdateEnabled"
+        class="settings-group"
+        :class="{ 'is-ios': platform === 'ios' }"
+      >
+        <div class="group-label">
+          <Info :size="16" />
+          Dev updates
+        </div>
+        <div class="kv">
+          <span class="kv-label">Installed commit</span>
+          <span class="kv-value">{{ installedCommit }}</span>
+        </div>
+        <button type="button" class="settings-action" @click="emit('checkDevUpdates')">
+          Check now
+        </button>
+      </section>
       <section class="settings-group" :class="{ 'is-ios': platform === 'ios' }">
         <div class="group-label">
           <Palette :size="16" />

@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-17T17:10:54Z"
-review_passes: 3
 id: "1156"
 title: "Hub Android: dev build update channel - new dev builds reach the phone from any network with one tap (no adb)"
 type: feature
@@ -13,8 +11,7 @@ branch: feat/hub-android-dev-build-update-channel-new
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T14:48:18Z"
-review_rounds: 2
-handoff_signal_retry_count: 2
+updated_at: "2026-11-17T15:49:26Z"
 ---
 ## Problem
 
@@ -46,42 +43,4 @@ Follow the same shape as Tiao's implementation so all of Nick's apps behave iden
 - 2026-11-17T15:21:05Z · cli_override, model_override
 - 2026-11-17T15:21:09Z · status inbox→ready
 - 2026-11-17T15:21:11Z · status ready→active, branch
-- 2026-11-17T15:28:25Z · body
-- 2026-11-17T15:31:30Z · body
-- 2026-11-17T15:32:42Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: Implemented a first pass of the Android dev update check, Settings entry, on-demand publisher, and setup documentation. The required `REPOOS_CHECK_CHANGED=main repoos check` passed after formatting. The mobile build could not be verified l… · stderr: Reading additional input from stdin... 2026-11-17T15:24:11.767607Z ERROR codex_core::tools::router: error=apply_patch verification failed: Failed to find expected lines in /Users/nick/code/nick/repoos-worktrees/feat/hub-android-dev-build-update-channel-new/mobile/src/dev-updates.ts: info.build, 2026-11-17T15:24:19.268…
-- 2026-11-17T15:44:54Z · body
-- 2026-11-17T15:47:36Z · body
-- 2026-11-17T15:49:27Z · status active→review
-- 2026-11-17T15:49:27Z · message_queued at 2026-11-17T15:49:27.231Z
-- 2026-11-17T15:49:27Z · note: shots: skipped — the diff (14 changed paths) touches no capture target's globs — no UI change to capture
-- 2026-11-17T15:59:27Z · note: review pass 1: needs some work
-- 2026-11-17T15:59:27Z · status review→active
-- 2026-11-17T15:59:29Z · CTO nudge: held — an undelivered message is already queued
-- 2026-11-17T16:04:45Z · message_queued at 2026-11-17T16:04:45.707Z
-- 2026-11-17T16:09:57Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
-- 2026-11-17T16:09:58Z · note: handoff requested (cli)
-- 2026-11-17T16:10:38Z · CTO nudge: held — handoff gate is running
-- 2026-11-17T16:11:27Z · message_delivered: 1 message(s)
-- 2026-11-17T16:11:46Z · note: Review round 1 fixes requested
-- 2026-11-17T16:24:07Z · handoff_deferred: 1 queued message(s) must be read before review
-- 2026-11-17T16:24:07Z · message_queued at 2026-11-17T16:24:07.990Z
-- 2026-11-17T16:24:08Z · ↻ resuming engineer to read queued message
-- 2026-11-17T16:24:08Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The release guard now completes cleanly, including Capacitor sync and the Gradle release-variant check. The review fixes are in place; I’m checking for generated-file drift and then running the required changed-path RepoOS check. · stderr: 2026-11-17T16:13:18.521557Z ERROR codex_core::tools::router: error=Exit code: 1 Wall time: 0 seconds Output: Failed to write file /Users/nick/code/nick/repoos-worktrees/feat/hub-android-dev-build-update-channel-new/mobile/dev-update-worker/index.ts 2026-11-17T16:15:49.695996Z ERROR codex_core::tools::router: error=Exi…
-- 2026-11-17T16:30:35Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: tests/check-reuse.test.ts > handoff self-check reuse > CLI records clean self-check proof, partial=false on bee — fix it in the feature branch and re-run the gate
-- 2026-11-17T16:30:38Z · CTO nudge: held — an undelivered message is already queued
-- 2026-11-17T16:33:31Z · message_delivered: 2 message(s)
-- 2026-11-17T16:35:38Z · CTO nudge: held — handoff gate is running
-- 2026-11-17T16:42:57Z · status active→review
-- 2026-11-17T16:42:57Z · message_queued at 2026-11-17T16:42:57.357Z
-- 2026-11-17T16:42:57Z · note: shots: skipped — the diff (19 changed paths) touches no capture target's globs — no UI change to capture
-- 2026-11-17T16:53:39Z · note: review pass 2: needs some work
-- 2026-11-17T16:53:39Z · status review→active
-- 2026-11-17T16:53:41Z · CTO nudge: held — an undelivered message is already queued
-- 2026-11-17T16:55:12Z · message_delivered: 1 message(s)
-- 2026-11-17T16:55:23Z · note: Review round 2 fixes requested
-- 2026-11-17T16:59:19Z · body
-- 2026-11-17T17:00:06Z · status active→review
-- 2026-11-17T17:00:07Z · message_queued at 2026-11-17T17:00:07.049Z
-- 2026-11-17T17:00:07Z · note: shots: skipped — the diff (21 changed paths) touches no capture target's globs — no UI change to capture
-- 2026-11-17T17:10:54Z · note: review pass 3: good to go
-
+- 2026-11-17T15:49:26Z · status active→review

@@ -865,3 +865,45 @@ select {
     transition: none;
   }
 }
+/* Dev-channel update prompt: kept in the Hub shell so Android's installer
+   remains the only component handling the APK itself. */
+.update-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgb(0 0 0 / 56%);
+}
+.update-dialog {
+  width: min(100%, 420px);
+  padding: 24px;
+  border-radius: 20px;
+  background: var(--panel-solid);
+  color: var(--txt);
+  box-shadow: 0 20px 60px rgb(0 0 0 / 24%);
+}
+.update-dialog h2 {
+  margin: 0 0 10px;
+  font-size: 1.2rem;
+}
+.update-dialog p,
+.update-dialog ul {
+  margin: 8px 0;
+}
+.update-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 22px;
+}
+.settings-action {
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid currentColor;
+  border-radius: 10px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
