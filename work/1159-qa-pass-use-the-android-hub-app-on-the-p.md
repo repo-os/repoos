@@ -60,3 +60,4 @@ Human device step needed: the saved ADB target `100.117.244.33:37673` refused th
 - 2026-11-17T17:12:49Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: **Blocked: device QA is incomplete.** The saved phone target’s port was unreachable, `adb devices -l` showed no device, and no Android emulator or SDK was available. I did not install anything or run `just deploy-phone`. I could not captur… · stderr: Reading additional input from stdin...
 - 2026-11-17T17:17:50Z · CTO action: restart-stalled-agent (fresh) · agent exited without emitting the handoff signal
 - 2026-11-17T17:20:43Z · body: Notes for AI (added 2, removed 1)
+- 2026-11-17T17:20:43Z · message_queued at 2026-11-17T17:20:43.912Z
