@@ -12,7 +12,7 @@ branch: feat/stories-mobile-cards-preserve-enough-tit
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T03:08:02Z"
-updated_at: "2026-11-17T13:15:51Z"
+updated_at: "2026-11-17T13:30:11Z"
 last_close_out_gate_ms: 658349
 last_close_out_gate_at: "2026-11-17T13:15:36.019Z"
 review_passes: 1
@@ -65,3 +65,4 @@ Use the attached phone screenshot and inspect a story with a long description an
 - 2026-11-17T13:10:17Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-17T13:15:36Z · close-out gate completed in 658s
 - 2026-11-17T13:15:51Z · status done→done, release:success
+- 2026-11-17T13:30:11Z · message_dropped: 1 queued message(s) discarded — task is done
