@@ -21,8 +21,10 @@ import { invalidatePageData, refreshPageData } from "../composables/page-data-ca
 import {
   isShotPreviewCaptureActive,
   readShotPreviewFixtureFromLocation,
+  shotFixtureReleaseAutoPublish,
   shotFixtureReleaseEmail,
   shotFixtureReleaseRun,
+  shotFixtureReleaseStatus,
 } from "../lib/shot-preview-fixtures";
 
 interface ReleaseStatus {
@@ -498,6 +500,21 @@ function relativeTime(iso: string | null): string {
 async function load(): Promise<void> {
   loading.value = true;
   loadError.value = "";
+  // A release capture (#1126) needs a clean, release-ready status even though
+  // the preview worktree runs on a task branch; without this the cut drawer's
+  // entry point is disabled and the chooser can never be shown.
+  if (isShotPreviewCaptureActive(window.location)) {
+    const pinned = shotFixtureReleaseStatus(readShotPreviewFixtureFromLocation(window.location));
+    if (pinned) {
+      status.value = pinned;
+      const promise = shotFixtureReleaseAutoPublish(
+        readShotPreviewFixtureFromLocation(window.location),
+      );
+      if (promise) applyAutoPublish(promise, "publish");
+      loading.value = false;
+      return;
+    }
+  }
   try {
     await refreshPageData(
       "release-status",
@@ -1008,6 +1025,17 @@ function applyAutoPublish(next: ReleaseAutoPublish | null, defaults?: "publish" 
 
 /** Poll the durable promise alongside the two tracked runs. */
 async function pollAutoPublish(): Promise<void> {
+  // A capture pins the pending promise so the banner and Cancel are visible
+  // without a real draft run behind them (#1126).
+  if (isShotPreviewCaptureActive(window.location)) {
+    const pinned = shotFixtureReleaseAutoPublish(
+      readShotPreviewFixtureFromLocation(window.location),
+    );
+    if (pinned) {
+      applyAutoPublish(pinned, "publish");
+      return;
+    }
+  }
   try {
     const data = await api<AutoPublishResponse>("/api/release/notes/auto-publish");
     applyAutoPublish(data.autoPublish ?? null, data.defaultWhenReady);
