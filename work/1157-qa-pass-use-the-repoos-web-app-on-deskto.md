@@ -11,7 +11,7 @@ branch: feat/qa-pass-use-the-repoos-web-app-on-deskto
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T15:21:15Z"
-updated_at: "2026-11-17T20:54:41Z"
+updated_at: "2026-11-17T20:54:42Z"
 review_rounds: 2
 review_passes: 2
 last_check_failure: "repoos check at 2026-11-17T20:09:02.078Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Work queue at desktop with mobile queue behavior evidenced in attachments (target \"default\"): highlight h1 matched nothing on /work?view=board (http://127.0.0.1:33563/work?view=board)"
@@ -187,3 +187,4 @@ Start with the Work page at 390px and the bottom dock/heads/pipeline bar overlap
 - 2026-11-17T20:49:36Z · status review→active
 - 2026-11-17T20:49:38Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-17T20:54:41Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — task-file handoff failed at commit · no implementation found since the branch diverged; use no_source_change: true to force a no-op handoff · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-11-17T20:54:42Z · note: handoff requested (cli)
