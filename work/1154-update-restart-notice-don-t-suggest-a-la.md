@@ -11,7 +11,7 @@ branch: feat/update-restart-notice-don-t-suggest-a-la
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T13:30:27Z"
-updated_at: "2026-11-17T15:02:14Z"
+updated_at: "2026-11-17T15:06:52Z"
 ---
 ## Problem
 
@@ -48,3 +48,4 @@ Read #1075 (the restart notice) and #1091 (`repoos restart`). A server that kill
 - 2026-11-17T15:02:12Z · note: ui verification passed: 1 shot captured with clean console (1 shot warning)
 - 2026-11-17T15:02:13Z · status active→review
 - 2026-11-17T15:02:14Z · message_queued at 2026-11-17T15:02:14.283Z
+- 2026-11-17T15:06:52Z · note: review pass 1: needs some work
