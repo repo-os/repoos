@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/mobile-task-detail-make-tabs-and-preview
 created_at: "2026-11-17T03:06:27Z"
-updated_at: "2026-11-17T05:31:58Z"
+updated_at: "2026-11-17T05:34:57Z"
 ---
 ## Problem
 At 390×844, the mobile task detail tab strip continues beyond the viewport and the preview-target helper wraps one or two words per line beside its selector. The cramped title/header alignment and Mission Control heading alignment are owned by #1145 and are excluded from this follow-up.
@@ -30,43 +30,43 @@ Use the attached 390×844 screenshot. Inspect both themes and a long task title.
 ```json
 [
 {
-  "label": "Phone task detail at 390px: preview guidance gets its own readable line",
-  "target": "default",
-  "route": "/work?task=9999&tab=details",
-  "highlight": ".quickbar-row > .preview-hint",
-  "steps": [
-    {
-      "waitFor": ".drawer-tabs"
-    },
-    {
-      "waitFor": ".quickbar-row > .preview-hint"
-    },
-    {
-      "waitMs": 300
-    }
-  ],
-  "state": "drawer:reviewWithBranch",
-  "theme": "dark",
-  "viewportWidth": 390,
-  "viewportHeight": 844
+"label": "Phone task detail at 390px: preview guidance gets its own readable line",
+"target": "default",
+"route": "/work?task=9999&tab=details",
+"highlight": ".quickbar-row > .preview-hint",
+"steps": [
+  {
+    "waitFor": ".drawer-tabs"
+  },
+  {
+    "waitFor": ".quickbar-row > .preview-hint"
+  },
+  {
+    "waitMs": 300
+  }
+],
+"state": "drawer:reviewWithBranch",
+"theme": "dark",
+"viewportWidth": 390,
+"viewportHeight": 844
 },
 {
-  "label": "Phone task detail at 320px: all tabs and the expand control on screen",
-  "target": "default",
-  "route": "/work?task=9999&tab=changes",
-  "highlight": ".drawer-tabs",
-  "steps": [
-    {
-      "waitFor": ".drawer-tabs"
-    },
-    {
-      "waitMs": 300
-    }
-  ],
-  "state": "drawer:reviewWithBranch",
-  "theme": "light",
-  "viewportWidth": 320,
-  "viewportHeight": 844
+"label": "Phone task detail at 320px: all tabs and the expand control on screen",
+"target": "default",
+"route": "/work?task=9999&tab=changes",
+"highlight": ".drawer-tabs",
+"steps": [
+  {
+    "waitFor": ".drawer-tabs"
+  },
+  {
+    "waitMs": 300
+  }
+],
+"state": "drawer:reviewWithBranch",
+"theme": "light",
+"viewportWidth": 320,
+"viewportHeight": 844
 }
 ]
 ```
@@ -88,3 +88,4 @@ Use the attached 390×844 screenshot. Inspect both themes and a long task title.
 - 2026-11-17T05:14:16Z · status ready→active, branch
 - 2026-11-17T05:25:17Z · body
 - 2026-11-17T05:31:58Z · body
+- 2026-11-17T05:34:57Z · CTO nudge: held — handoff gate is running
