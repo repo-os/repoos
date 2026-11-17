@@ -203,7 +203,12 @@ describe("mobile tailnet discovery", () => {
     const merged = mergeTailnetResults(
       [
         { host: "bee", projectName: "work", url: "https://bee.tail.ts.net:7001", https: true },
-        { host: "thinkpad", projectName: "work", url: "https://thinkpad.tail.ts.net:7002", https: true },
+        {
+          host: "thinkpad",
+          projectName: "work",
+          url: "https://thinkpad.tail.ts.net:7002",
+          https: true,
+        },
       ],
       [{ url: "https://work.example.test", name: "work" }],
     );

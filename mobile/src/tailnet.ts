@@ -182,7 +182,11 @@ export function mergeTailnetResults(
       const projectName = row.projectName?.trim().toLowerCase() ?? "";
       const namedMatches = projectName ? (savedByName.get(projectName) ?? []) : [];
       const savedEntries = aliases.flatMap((alias) => savedByHost.get(alias) ?? []);
-      if (savedEntries.length === 0 && namedMatches.length === 1 && discoveredByName.get(projectName) === 1) {
+      if (
+        savedEntries.length === 0 &&
+        namedMatches.length === 1 &&
+        discoveredByName.get(projectName) === 1
+      ) {
         savedEntries.push(...namedMatches);
       }
       if (savedEntries.length) {
@@ -248,8 +252,7 @@ export function mergeTailnetResults(
       : [];
     const projectName = row.projectName?.trim().toLowerCase() ?? "";
     const isSaved =
-      saved.has(identity) ||
-      (namedMatches.length === 1 && discoveredByName.get(projectName) === 1);
+      saved.has(identity) || (namedMatches.length === 1 && discoveredByName.get(projectName) === 1);
     const next: DiscoveredServer = {
       key: url,
       url,
