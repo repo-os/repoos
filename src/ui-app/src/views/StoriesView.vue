@@ -251,7 +251,7 @@ function lastActivity(story: { lastActivity: string | null }): string {
           tagged using the same story name.
         </div>
       </div>
-      <div v-if="enabled" style="display: flex; align-items: center; gap: 10px; flex-shrink: 0">
+      <div v-if="enabled" class="stories-header-controls">
         <label class="stories-filter-toggle">
           <Checkbox v-model:checked="hideCompleted" />
           <span>Hide Completed Stories</span>
@@ -695,7 +695,20 @@ function lastActivity(story: { lastActivity: string | null }): string {
   border: 1px solid var(--violet-border-tint);
 }
 
+.stories-header-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
 @media (max-width: 720px) {
+  /* #1145: the filter checkbox and the 210px sort control overflowed the
+     phone header; let them wrap under the title instead of clipping. */
+  .stories-header-controls {
+    width: 100%;
+    flex-wrap: wrap;
+  }
   .story-head {
     flex-wrap: wrap;
     gap: 10px;

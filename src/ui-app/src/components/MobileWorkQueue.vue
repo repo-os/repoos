@@ -373,7 +373,6 @@ function openTask(task: Task): void {
   <main class="mobile-work" data-testid="mobile-work-queue">
     <header class="mobile-work-heading">
       <div>
-        <p class="mobile-work-kicker">REPOOS / WORK</p>
         <h1>Work queue</h1>
         <p class="mobile-work-count" data-testid="mobile-queue-count">{{ countLabel }}</p>
       </div>
@@ -620,12 +619,6 @@ function openTask(task: Task): void {
   justify-content: space-between;
   gap: 12px;
   margin: 0 0 20px;
-}
-.mobile-work-kicker {
-  margin: 0 0 5px;
-  color: var(--cyan);
-  font: 600 10px/1.2 var(--font-mono, monospace);
-  letter-spacing: 0.11em;
 }
 .mobile-work-heading h1 {
   margin: 0;
