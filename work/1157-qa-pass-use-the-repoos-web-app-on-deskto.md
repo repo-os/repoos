@@ -191,3 +191,4 @@ Start with the Work page at 390px and the bottom dock/heads/pipeline bar overlap
 - 2026-11-17T20:55:43Z · CTO nudge: held — handoff gate is running
 - 2026-11-17T20:58:20Z · message_delivered: 1 message(s)
 - 2026-11-17T21:12:42Z · message_queued at 2026-11-17T21:12:42.242Z
+- 2026-11-17T21:12:42Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: tests/agent-review.test.ts > agent review before human sign-off (#0101) > gates follow-up creation before the freeze and rejects Land anyway without an eligible review on thinkpad — fix it in the feature branch and re-run the gate
