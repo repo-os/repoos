@@ -11,7 +11,7 @@ branch: feat/verify-agents-authentication-error-guida
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T17:53:39Z"
-updated_at: "2026-11-17T20:48:53Z"
+updated_at: "2026-11-17T20:53:24Z"
 ---
 ## Problem
 During task #1157 browser QA, Agents displayed a configured Cursor CLI authentication error in the local auth-less environment. No valid Cursor test credential was available, so this does not establish that the signed-in product flow is broken. The error presentation and remediation guidance were not validated in a configured environment.
@@ -38,3 +38,4 @@ The attached screenshot shows the unconfigured local CLI state only; do not trea
 - 2026-11-17T20:48:43Z · cli_override, model_override
 - 2026-11-17T20:48:50Z · status inbox→ready
 - 2026-11-17T20:48:53Z · status ready→active, branch
+- 2026-11-17T20:53:24Z · body
