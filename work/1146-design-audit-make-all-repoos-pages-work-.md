@@ -1,6 +1,6 @@
 ---
-last_close_out_gate_ms: 256515
-last_close_out_gate_at: "2026-11-17T05:09:32.463Z"
+last_close_out_gate_ms: 392167
+last_close_out_gate_at: "2026-11-17T05:16:57.040Z"
 id: "1146"
 title: "Design audit: make all RepoOS pages work better on phones"
 type: chore
@@ -13,7 +13,7 @@ branch: feat/design-audit-make-all-repoos-pages-work-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T02:53:04Z"
-updated_at: "2026-11-17T05:09:32Z"
+updated_at: "2026-11-17T05:16:57Z"
 review_passes: 2
 last_check_failure: "repoos check at 2026-11-17T03:44:30.654Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 1
@@ -133,4 +133,5 @@ Use strong visual and product design judgment. Inspect rendered pages and theme 
 - 2026-11-17T04:06:43Z · message_queued at 2026-11-17T04:06:43.048Z
 - 2026-11-17T05:08:14Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-17T05:09:32Z · close-out gate completed in 257s
+- 2026-11-17T05:16:57Z · close-out gate completed in 392s
 
