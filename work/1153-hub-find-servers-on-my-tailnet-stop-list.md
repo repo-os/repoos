@@ -11,7 +11,7 @@ branch: feat/hub-find-servers-on-my-tailnet-stop-list
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T10:06:23Z"
-updated_at: "2026-11-17T16:10:38Z"
+updated_at: "2026-11-17T16:15:12Z"
 review_passes: 5
 review_rounds: 2
 dev_error_count: 5
@@ -155,3 +155,4 @@ Do not add runtime dependencies. The discovery endpoint exposes names/ports only
 - 2026-11-17T15:53:49Z · message_delivered: 1 message(s)
 - 2026-11-17T16:10:38Z · message_queued at 2026-11-17T16:10:38.304Z
 - 2026-11-17T16:10:38Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-17T16:15:12Z · queued message undelivered for 5m and the engineer produced no output — ending the turn so it is delivered
