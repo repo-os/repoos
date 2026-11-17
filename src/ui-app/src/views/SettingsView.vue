@@ -593,6 +593,56 @@ function retainedSectionQuery(tab: TabId): { section?: string } {
   return typeof raw === "string" && isGeneralSectionId(raw) ? { section: raw } : {};
 }
 
+// ---- Phone section browsing (#1148) ----------------------------------
+// Below 720px the desktop section chips would stack into several chip rows on
+// top of the page-tab grid, burying the section the user actually wants. The
+// phone gets one compact "Sections" disclosure instead: the same chips, the
+// same links, but they only take viewport space while the list is open.
+const sectionMenuOpen = ref(false);
+const sectionMenuBtn = ref<HTMLButtonElement | null>(null);
+const activeSectionLabel = computed(
+  () => generalNavSections.value.find((s) => s.id === activeSection.value)?.label ?? null,
+);
+
+function toggleSectionMenu(): void {
+  sectionMenuOpen.value = !sectionMenuOpen.value;
+}
+
+/** Pick a section from the phone list: close it, then navigate/scroll. */
+function pickSection(id: string): void {
+  sectionMenuOpen.value = false;
+  sectionMenuBtn.value?.focus({ preventScroll: true });
+  goToSection(id);
+}
+
+function closeSectionMenu(): void {
+  if (!sectionMenuOpen.value) return;
+  sectionMenuOpen.value = false;
+  sectionMenuBtn.value?.focus({ preventScroll: true });
+}
+
+// The phone section list belongs to the General tab; don't leave it open over
+// another tab's first screen.
+watch(activeTab, () => {
+  sectionMenuOpen.value = false;
+});
+
+// Keep the active phone tab visible in the single-row rail on deep links and
+// when arrow-key style navigation moves through the strip.
+const mobileNavRef = ref<HTMLElement | null>(null);
+watch(
+  [activeTab, isNarrow],
+  async () => {
+    if (!isNarrow.value) return;
+    await nextTick();
+    const active = mobileNavRef.value?.querySelector<HTMLElement>(
+      ".settings-mobile-nav-btn.active",
+    );
+    active?.scrollIntoView?.({ block: "nearest", inline: "nearest" });
+  },
+  { immediate: true },
+);
+
 const activityAnimationEnabledField = computed(() =>
   config.schema.find((f) => f.key === "activityAnimationEnabled"),
 );
@@ -1214,7 +1264,12 @@ onUnmounted(() => {
     />
 
     <!-- Tab strip -->
-    <nav v-if="isNarrow" class="settings-mobile-nav" aria-label="Settings sections">
+    <nav
+      v-if="isNarrow"
+      ref="mobileNavRef"
+      class="settings-mobile-nav"
+      aria-label="Settings sections"
+    >
       <button
         v-for="tab in TABS"
         :key="tab.id"
@@ -1258,10 +1313,53 @@ onUnmounted(() => {
           :aria-labelledby="`settings-tab-general`"
           v-show="activeTab === 'general'"
         >
+          <!-- Phone: one disclosure holding the same section links. The
+               desktop chip row stays exactly as it was (#1148). -->
+          <div
+            v-if="isNarrow && generalNavSections.length > 1"
+            class="settings-section-jump"
+            @keydown.escape="closeSectionMenu"
+          >
+            <button
+              ref="sectionMenuBtn"
+              type="button"
+              class="settings-section-jump-btn"
+              :aria-expanded="sectionMenuOpen"
+              aria-controls="settings-section-jump-panel"
+              @click="toggleSectionMenu"
+            >
+              <span class="settings-section-jump-kicker">Sections</span>
+              <span class="settings-section-jump-value">{{
+                activeSectionLabel ?? "Browse all"
+              }}</span>
+              <svg
+                class="settings-section-jump-chev"
+                :class="{ open: sectionMenuOpen }"
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                aria-hidden="true"
+              >
+                <path
+                  d="M6 9l6 6 6-6"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </button>
+          </div>
+
           <nav
             v-if="generalNavSections.length > 1"
+            id="settings-section-jump-panel"
+            v-show="!isNarrow || sectionMenuOpen"
             class="settings-section-nav"
+            :class="{ 'settings-section-nav--phone': isNarrow }"
             aria-label="General sections"
+            @keydown.escape="closeSectionMenu"
           >
             <button
               v-for="s in generalNavSections"
@@ -1270,7 +1368,7 @@ onUnmounted(() => {
               class="settings-section-chip"
               :class="{ active: activeSection === s.id }"
               :aria-current="activeSection === s.id ? 'true' : undefined"
-              @click="goToSection(s.id)"
+              @click="isNarrow ? pickSection(s.id) : goToSection(s.id)"
             >
               {{ s.label }}
             </button>
