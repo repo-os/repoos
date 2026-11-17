@@ -12,7 +12,7 @@ branch: feat/releases-generate-ai-notes-and-publish-l
 cli_override: opencode
 model_override: opencode-go/glm-5.3-flash
 created_at: "2026-11-15T08:14:22Z"
-updated_at: "2026-11-17T10:47:57Z"
+updated_at: "2026-11-17T10:53:32Z"
 last_close_out_gate_ms: 466099
 last_close_out_gate_at: "2026-11-17T10:47:41.755Z"
 review_passes: 5
@@ -272,3 +272,4 @@ Reuse the existing AI-draft run in ReleasesView.vue and the server release run; 
 - 2026-11-17T10:30:02Z · note: review pass 7: good to go
 - 2026-11-17T10:47:41Z · close-out gate completed in 466s
 - 2026-11-17T10:47:57Z · status done→done, release:success
+- 2026-11-17T10:53:32Z · message_dropped: 1 queued message(s) discarded — task is done
