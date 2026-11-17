@@ -11,8 +11,9 @@ branch: feat/qa-pass-use-the-android-hub-app-on-the-p
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T15:51:18Z"
-updated_at: "2026-11-17T16:18:46Z"
+updated_at: "2026-11-17T16:23:57Z"
 handoff_signal_retry_count: 2
+engineer_stall_resume_log: "[{\"at\":\"2026-11-17T16:23:57.721Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
 ## Problem
 
@@ -50,3 +51,4 @@ Use just deploy-phone only if the saved port works; otherwise do not ask Nick fo
 - 2026-11-17T16:15:12Z · message_delivered: 1 message(s)
 - 2026-11-17T16:17:56Z · body
 - 2026-11-17T16:18:46Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: `REPOOS_CHECK_CHANGED=main repoos check` passed. The saved phone target is still unreachable, and there is no emulator available, so the required QA remains incomplete: most screens and native behaviors lack the required device evidence. I… · stderr: 2026-11-17T16:15:15.333134Z ERROR codex_core::util: Custom tool call output is missing for call id: call_243421e6f6a4479b82c1312f154b7413 2026-11-17T16:15:37.458899Z ERROR codex_core::util: Custom tool call output is missing for call id: call_243421e6f6a4479b82c1312f154b7413 2026-11-17T16:15:43.633953Z ERROR codex_cor…
+- 2026-11-17T16:23:57Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 1/3
