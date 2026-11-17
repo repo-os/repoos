@@ -3,9 +3,6 @@ id: "1160"
 title: "Remote validation: let any project run its own check command on runners"
 type: feature
 status: active
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: "`needs some work` — native capture worktree reuse/leak, setup-vs-gate misclassification, and Hetzner silently ignoring the new command."
 priority: p1
 area: core
 assigned_to: ai
@@ -14,7 +11,7 @@ branch: feat/remote-validation-let-any-project-run-it
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T17:06:33Z"
-updated_at: "2026-11-17T22:47:48Z"
+updated_at: "2026-11-17T22:47:49Z"
 review_passes: 4
 last_check_failure: "repoos check at 2026-11-17T19:55:37.402Z: repoos check failed: ui verification failed (3 issue(s)): [missing-target] Remote validation command and required tools (target \"default\"): highlight #setting-remoteValidation.command matched nothing on /settings?section=remote-validation (http://127.0.0.1:35065/settings?section=remote-validation); [missing-target] Remote runner host toolchain status (target \"default\"): click #setting-remoteValidation.enabled button: click: Timeout 5000ms exceeded. on /settings?section=remote-validation (http://… (truncated)"
 review_rounds: 2
@@ -130,3 +127,4 @@ Context: Nick's Tiao board on host bee (16 cores, encrypted btrfs, 3 projects) s
 - 2026-11-17T22:37:31Z · note: review pass 4: needs some work
 - 2026-11-17T22:37:31Z · needs_input
 - 2026-11-17T22:47:48Z · status review→active
+- 2026-11-17T22:47:49Z · needs_input
