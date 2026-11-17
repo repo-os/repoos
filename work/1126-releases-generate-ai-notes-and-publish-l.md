@@ -56,3 +56,4 @@ Reuse the existing AI-draft run in ReleasesView.vue and the server release run; 
 - 2026-11-17T00:29:34Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
 - 2026-11-17T00:29:34Z · engineer crash recovery: resuming opencode + opencode-go/deepseek-v4.1-flash (1/3 crashes in 30m) · the agent process exited with an error — open the task to see the full output. Open Raw CLI error for details. (CLI: the agent process exited with an error — open the task to see the full output)
 - 2026-11-17T00:29:36Z · needs_input
+- 2026-11-17T00:29:36Z · message_delivered: 1 message(s)
