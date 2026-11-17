@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-17T07:23:34Z"
+review_passes: 1
 id: "1152"
 title: "Mobile Hub: return to server picker from logo and show current project"
 type: feature
@@ -9,7 +11,6 @@ assigned_to: ai
 created_by: t@t
 branch: feat/mobile-hub-return-to-server-picker-from-
 created_at: "2026-11-17T05:37:20Z"
-updated_at: "2026-11-17T07:23:34Z"
 handoff_signal_retry_count: 2
 ---
 ## Problem
@@ -91,3 +92,4 @@ Inspect the existing Hub server WebView architecture and navigation security bef
 - 2026-11-17T07:15:17Z · status active→review
 - 2026-11-17T07:15:18Z · message_queued at 2026-11-17T07:15:18.215Z
 - 2026-11-17T07:23:34Z · note: review pass 1: needs some work
+
