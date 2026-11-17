@@ -115,3 +115,4 @@ Inspect the existing Hub server WebView architecture and navigation security bef
 - 2026-11-17T07:56:55Z · status active→review
 - 2026-11-17T07:56:55Z · note: shots: skipped — 6 shots already captured — an engineer-made capture pre-empts the automatic one
 - 2026-11-17T07:56:56Z · message_queued at 2026-11-17T07:56:56.032Z
+- 2026-11-17T07:56:56Z · note: shots: skipped — 6 shots already captured — an engineer-made capture pre-empts the automatic one
