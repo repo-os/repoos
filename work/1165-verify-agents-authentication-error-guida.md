@@ -42,3 +42,4 @@ The attached screenshot shows the unconfigured local CLI state only; do not trea
 - 2026-11-17T20:56:50Z · body
 - 2026-11-17T20:59:15Z · status active→review
 - 2026-11-17T20:59:16Z · message_queued at 2026-11-17T20:59:16.132Z
+- 2026-11-17T20:59:16Z · note: shots: skipped — the diff (3 changed paths) touches no capture target's globs — no UI change to capture
