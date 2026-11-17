@@ -44,7 +44,7 @@ describe("mobile page clutter (#1145)", () => {
   it("drops the REPOOS / WORK breadcrumb above the phone Work queue title", () => {
     expect(queue).not.toContain("REPOOS / WORK");
     expect(queue).not.toContain("mobile-work-kicker");
-    expect(queue).toContain('<h1>Work queue</h1>');
+    expect(queue).toContain("<h1>Work queue</h1>");
   });
 
   it("keeps the Mission Control title left aligned by relying on the shared header", () => {
