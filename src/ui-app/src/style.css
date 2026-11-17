@@ -686,6 +686,9 @@
   color: var(--txt);
 }
 @media (max-width: 900px) {
+  .search-overlay-input {
+    min-height: 44px;
+  }
   .search-overlay-close {
     width: 44px;
     height: 44px;
