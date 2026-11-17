@@ -11,8 +11,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/android-hub-system-back-gesture-should-r
 created_at: "2026-11-16T14:01:00Z"
-updated_at: "2026-11-16T23:51:47Z"
-review_passes: 1
+updated_at: "2026-11-16T14:10:42Z"
 ---
 ## Problem
 On the Android Hub Find servers on my tailnet screen, the Android system back swipe does not return to Servers. The on-screen Servers back button is visible. The attached screenshot shows the signed-out discovery state.
@@ -37,9 +36,4 @@ Inspect the existing navigation and native back behavior before implementing. Th
 - 2026-11-16T14:01:14Z · needs_input, body: Problem (added); Acceptance criteria (added); Notes for AI (added)
 - 2026-11-16T14:01:32Z · status inbox→ready
 - 2026-11-16T14:01:33Z · status ready→active, branch
-- 2026-11-16T14:07:51Z · body
 - 2026-11-16T14:10:42Z · status active→review
-- 2026-11-16T14:10:42Z · message_queued at 2026-11-16T14:10:42.620Z
-- 2026-11-16T14:10:42Z · note: shots: skipped — the diff (6 changed paths) touches no capture target's globs — no UI change to capture
-- 2026-11-16T14:13:56Z · note: review pass 1: good to go
-- 2026-11-16T23:51:47Z · message_overdue: still queued after 60m without being delivered

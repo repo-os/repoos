@@ -67,6 +67,18 @@ threat model.
   Google backup; iOS stores it in plain UserDefaults (no credentials are ever
   held, so keychain is unnecessary).
 
+### System back navigation (Android)
+
+The picker is the shell's root; settings, add-server and tailnet discovery are
+local Vue routes, not browser history entries. Capacitor's App plugin consumes
+the Android back gesture whenever a `backButton` listener exists, so the shell
+maps it explicitly (`mobile/src/back-navigation.ts`): an open edit sheet closes,
+any other Hub route returns to the picker (signed-out, loading, empty and
+errored discovery all included), and only the picker root exits the app. A
+showing device-lock gate ignores the gesture. iOS and the web dev build keep
+their platform-native behaviour. The mapping and listener wiring are covered by
+`src/ui-app/tests/mobile-hub-back-navigation.test.ts`.
+
 ### Server-assisted tailnet discovery ("Find servers on my tailnet")
 
 The user's phone cannot run the Tailscale CLI or read the Tailscale app's peer
