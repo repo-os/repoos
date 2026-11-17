@@ -68,8 +68,10 @@ import {
   writeCachedReleaseNotes,
 } from "../release-notes-cache.js";
 import {
+  defaultReleaseWhenReady,
   isReleaseAutoPublishActive,
   readReleaseAutoPublish,
+  rememberReleaseWhenReady,
   writeReleaseAutoPublish,
   type ReleaseAutoPublishRecord,
   type ReleaseWhenReady,
@@ -352,7 +354,7 @@ function writeAutoPublishState(
 export const getReleaseAutoPublish: RouteHandler = (ctx, _req, res) =>
   json(res, 200, {
     autoPublish: readReleaseAutoPublish(ctx.config),
-    defaultWhenReady: ctx.config.release?.notesWhenReady ?? "notify",
+    defaultWhenReady: defaultReleaseWhenReady(ctx.config),
   });
 
 /**
@@ -415,6 +417,23 @@ function failAutoPublish(
     tag: next.tag,
     reason,
   });
+}
+
+/**
+ * Fail any active pending promise when the draft flow cannot start or run, so
+ * a stuck `waiting` record never blocks manual Publish until Cancel (#1126
+ * review).
+ */
+function failPendingOnDraftError(ctx: NotesRunContext, err: unknown): void {
+  const pending = readReleaseAutoPublish(ctx.config);
+  if (!isReleaseAutoPublishActive(pending)) return;
+  const msg = err instanceof Error ? err.message : String(err);
+  failAutoPublish(
+    ctx,
+    pending.requestedAt,
+    `The AI draft could not run: ${msg}. Nothing was published; generate notes again from the panel.`,
+    pending.mode === "publish" ? "publish" : "notes",
+  );
 }
 
 /**
@@ -519,7 +538,9 @@ async function autoPublishChecks(ctx: NotesRunContext, requestedAt: string): Pro
       : null;
   if (current.draftKey !== currentKey) {
     fail(
-      "New commits landed since the notes were drafted, so nothing was published. Generate notes again for the current tree.",
+      currentKey === null
+        ? "The release commit context could not be read (no relevant commits found), so nothing was published. Generate notes again from the panel."
+        : "New commits landed since the notes were drafted, so nothing was published. Generate notes again for the current tree.",
     );
     return;
   }
@@ -1014,6 +1035,10 @@ export const generateReleaseNotes: RouteHandler = async (ctx, req, res) => {
     if (whenReady === "publish" && confirmTag !== tag) {
       return json(res, 400, { error: `confirmTag must be ${tag}` });
     }
+    // Remember the answer immediately in the gitignored runtime store: it
+    // must survive the tab closing or a restart without dirtying the tree
+    // (the explicit repoos.toml write is the UI's deferred job).
+    rememberReleaseWhenReady(config, whenReady);
     const at = stamp();
     const pending: ReleaseAutoPublishRecord = {
       requestedAt: at,
@@ -1066,7 +1091,17 @@ export const generateReleaseNotes: RouteHandler = async (ctx, req, res) => {
     });
   }
 
-  const { commits, sinceTag, truncated, head, relevantShas } = await collectReleaseCommits(config);
+  let commitsInfo: Awaited<ReturnType<typeof collectReleaseCommits>>;
+  try {
+    commitsInfo = await collectReleaseCommits(config);
+  } catch (err) {
+    // A promise was just created for this request: leaving it `waiting` with
+    // no draft would block manual Publish until Cancel or a restart (#1126
+    // review). Fail it closed, then surface the error as before.
+    failPendingOnDraftError(ctx, err);
+    throw err;
+  }
+  const { commits, sinceTag, truncated, head, relevantShas } = commitsInfo;
   if (!relevantShas.length) {
     // Nothing release-relevant to summarize is not an error for a plain draft:
     // the cut can still proceed. A chosen publish/notify promise cannot be

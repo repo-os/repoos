@@ -37,20 +37,26 @@ vi.mock("../../server/agents.js", async () => {
   return { ...actual, runPrompt: vi.fn() };
 });
 
-// getReleaseStatus stays real by default; individual tests swap in a rejection
-// to prove a thrown guard probe fails the promise, never the draft (#1126
-// review).
+// getReleaseStatus and collectReleaseCommits stay real by default; individual
+// tests swap in a rejection to prove a thrown guard probe fails the promise,
+// never the draft (#1126 review).
 const releaseModule = vi.hoisted(() => ({
   realGetReleaseStatus: null as null | ((...args: never[]) => unknown),
+  realCollectReleaseCommits: null as null | ((...args: never[]) => unknown),
 }));
 vi.mock("../../server/release.js", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../../server/release.js")>();
   releaseModule.realGetReleaseStatus = actual.getReleaseStatus;
+  releaseModule.realCollectReleaseCommits = actual.collectReleaseCommits;
   return {
     ...actual,
     getReleaseStatus: vi.fn((...args: never[]) =>
       // eslint-disable-next-line
       (releaseModule.realGetReleaseStatus as (...a: never[]) => unknown)(...args),
+    ),
+    collectReleaseCommits: vi.fn((...args: never[]) =>
+      // eslint-disable-next-line
+      (releaseModule.realCollectReleaseCommits as (...a: never[]) => unknown)(...args),
     ),
   };
 });
@@ -355,6 +361,34 @@ describe("AI notes: publish automatically or notify me (#1126)", () => {
     expect(capture.body).toMatchObject({ autoPublish: null, defaultWhenReady: "publish" });
   });
 
+  it("remembers the last confirmed choice in the runtime store, surviving a closed tab", async () => {
+    const cfg = config();
+    draft();
+    await postNotes(cfg, { version: "1.2.4", confirmTag: "v1.2.4", whenReady: "publish" });
+    await waitForPending(cfg);
+
+    const { capture, res } = makeRes();
+    await getReleaseAutoPublish(ctx(cfg), makeReq(), res as never, {});
+    // No repoos.toml write happened (it would dirty the tree mid-promise);
+    // the gitignored store remembers the answer instead.
+    expect(capture.body.defaultWhenReady).toBe("publish");
+  });
+
+  it("an explicit repoos.toml setting wins over the remembered store answer", async () => {
+    const cfg = config();
+    draft();
+    await postNotes(cfg, { version: "1.2.4", confirmTag: "v1.2.4", whenReady: "publish" });
+    await waitForPending(cfg);
+
+    const pinned = {
+      ...cfg,
+      release: { ...cfg.release, notesWhenReady: "notify" as const },
+    };
+    const { capture, res } = makeRes();
+    await getReleaseAutoPublish(ctx(pinned), makeReq(), res as never, {});
+    expect(capture.body.defaultWhenReady).toBe("notify");
+  });
+
   it("rejects an automatic publish without the exact confirmed tag", async () => {
     const cfg = config();
     const post = await postNotes(cfg, {
@@ -417,5 +451,19 @@ describe("AI notes: publish automatically or notify me (#1126)", () => {
     }
     expect(starter).not.toHaveBeenCalled();
     expect(readReleaseAutoPublish(cfg)?.state).toBe("ready");
+  });
+
+  it("a thrown commit probe fails the fresh promise instead of stranding it waiting", async () => {
+    const cfg = config();
+    draft();
+    vi.mocked(collectReleaseCommits).mockRejectedValueOnce(new Error("git walk exploded"));
+
+    await expect(
+      postNotes(cfg, { version: "1.2.4", confirmTag: "v1.2.4", whenReady: "publish" }),
+    ).rejects.toThrow("git walk exploded");
+
+    const record = readReleaseAutoPublish(cfg);
+    expect(record?.state).toBe("failed");
+    expect(record?.error).toContain("could not run: git walk exploded");
   });
 });

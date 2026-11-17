@@ -68,20 +68,46 @@ export interface AttentionFeed {
 }
 
 /** Durable attention events recorded on the server (provider failures, remote fallback). */
+export type RecordedAttentionKind =
+  | "providerFailure"
+  | "providerUsageLimit"
+  | "remoteFallback"
+  | "ctoAction"
+  | "gitLock"
+  | "engineerRecoveryFailed"
+  | "releaseEmailFailed"
+  | "releaseNotesFailed"
+  | "releaseAutoPublishFailed"
+  | "serverCrash"
+  | "processSignalFailure";
+
+/**
+ * The runtime allowlist for replaying recorded events after a restart, derived
+ * from a Record over the union so a new kind CANNOT be added without being
+ * persisted too (the #1126 review: half-registered kinds vanish from the bell
+ * after a restart).
+ */
+const RECORDED_ATTENTION_KIND_MAP: Record<RecordedAttentionKind, true> = {
+  providerFailure: true,
+  providerUsageLimit: true,
+  remoteFallback: true,
+  ctoAction: true,
+  gitLock: true,
+  engineerRecoveryFailed: true,
+  releaseEmailFailed: true,
+  releaseNotesFailed: true,
+  releaseAutoPublishFailed: true,
+  serverCrash: true,
+  processSignalFailure: true,
+};
+
+export const RECORDED_ATTENTION_KINDS: ReadonlySet<RecordedAttentionKind> = new Set(
+  Object.keys(RECORDED_ATTENTION_KIND_MAP) as RecordedAttentionKind[],
+);
+
 export interface RecordedAttentionEvent {
   id: string;
-  kind:
-    | "providerFailure"
-    | "providerUsageLimit"
-    | "remoteFallback"
-    | "ctoAction"
-    | "gitLock"
-    | "engineerRecoveryFailed"
-    | "releaseEmailFailed"
-    | "releaseNotesFailed"
-    | "releaseAutoPublishFailed"
-    | "serverCrash"
-    | "processSignalFailure";
+  kind: RecordedAttentionKind;
   taskId: string | null;
   message: string;
   detail: string;

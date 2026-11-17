@@ -55,6 +55,14 @@ export interface ReleaseAutoPublishRecord {
 interface StoreShape {
   version: 1;
   autoPublish: ReleaseAutoPublishRecord | null;
+  /**
+   * The last "when the draft is ready" answer the human confirmed. Server-
+   * owned and gitignored, so the modal's remembered default survives the tab
+   * closing (or a server restart) even before the config write can land —
+   * writing repoos.toml dirties the tree and must wait for a settled promise
+   * (#1126 review).
+   */
+  lastWhenReady?: ReleaseWhenReady;
 }
 
 function storePath(root: string, cacheDir: string): string {
@@ -65,14 +73,22 @@ function storePath(root: string, cacheDir: string): string {
 export function readReleaseAutoPublish(
   config: Pick<RepoOSConfig, "root" | "cacheDir">,
 ): ReleaseAutoPublishRecord | null {
+  return readStore(config).autoPublish;
+}
+
+function readStore(config: Pick<RepoOSConfig, "root" | "cacheDir">): StoreShape {
   try {
     const parsed = JSON.parse(
       readFileSync(storePath(config.root, config.cacheDir), "utf8"),
     ) as Partial<StoreShape> | null;
-    if (!parsed || parsed.version !== 1) return null;
-    return validRecord(parsed.autoPublish) ? parsed.autoPublish : null;
+    if (!parsed || parsed.version !== 1) return { version: 1, autoPublish: null };
+    return {
+      version: 1,
+      autoPublish: validRecord(parsed.autoPublish) ? parsed.autoPublish : null,
+      lastWhenReady: parsed.lastWhenReady === "publish" ? "publish" : undefined,
+    };
   } catch {
-    return null;
+    return { version: 1, autoPublish: null };
   }
 }
 
@@ -93,24 +109,44 @@ function validRecord(value: unknown): value is ReleaseAutoPublishRecord {
 
 /**
  * Persist the record, or clear the file when the record is null (a dismissed
- * terminal outcome). Write failures are swallowed: the worst case is a pending
- * choice that does not survive a restart, never a failed release route.
+ * terminal outcome). The remembered `lastWhenReady` answer is preserved either
+ * way. Write failures are swallowed: the worst case is a pending choice that
+ * does not survive a restart, never a failed release route.
  */
 export function writeReleaseAutoPublish(
   config: Pick<RepoOSConfig, "root" | "cacheDir">,
   record: ReleaseAutoPublishRecord | null,
 ): void {
+  const lastWhenReady = readStore(config).lastWhenReady;
+  writeStore(config, { version: 1, autoPublish: record, lastWhenReady });
+}
+
+/**
+ * Remember the confirmed "when the draft is ready" answer in the gitignored
+ * runtime store — immediately, without touching repoos.toml (a config write
+ * would dirty the tree and block the promised publish).
+ */
+export function rememberReleaseWhenReady(
+  config: Pick<RepoOSConfig, "root" | "cacheDir">,
+  choice: ReleaseWhenReady,
+): void {
+  const store = readStore(config);
+  writeStore(config, { ...store, lastWhenReady: choice });
+}
+
+/** The remembered answer: the explicit config setting, else the last confirmed choice. */
+export function defaultReleaseWhenReady(
+  config: Pick<RepoOSConfig, "root" | "cacheDir" | "release">,
+): ReleaseWhenReady {
+  if (config.release?.notesWhenReady) return config.release.notesWhenReady;
+  return readStore(config).lastWhenReady ?? "notify";
+}
+
+function writeStore(config: Pick<RepoOSConfig, "root" | "cacheDir">, store: StoreShape): void {
   try {
     const path = storePath(config.root, config.cacheDir);
-    if (record === null) {
-      const payload: StoreShape = { version: 1, autoPublish: null };
-      mkdirSync(dirname(path), { recursive: true });
-      writeFileSync(path, `${JSON.stringify(payload, null, 2)}\n`, "utf8");
-      return;
-    }
-    const payload: StoreShape = { version: 1, autoPublish: record };
     mkdirSync(dirname(path), { recursive: true });
-    writeFileSync(path, `${JSON.stringify(payload, null, 2)}\n`, "utf8");
+    writeFileSync(path, `${JSON.stringify(store, null, 2)}\n`, "utf8");
   } catch {
     // Non-fatal: the request still runs, it just cannot survive a restart.
   }
