@@ -55,7 +55,9 @@ describe("page-browser-gate (#0680)", () => {
     expect(isBenignFailedResourceUrl("http://127.0.0.1:1/app.js")).toBe(false);
     // Webfont CDN failures are cosmetic (system-font fallback) on offline or
     // sandboxed capture hosts.
-    expect(isBenignFailedResourceUrl("https://fonts.googleapis.com/css2?family=Sora&display=swap")).toBe(true);
+    expect(
+      isBenignFailedResourceUrl("https://fonts.googleapis.com/css2?family=Sora&display=swap"),
+    ).toBe(true);
     expect(isBenignFailedResourceUrl("https://fonts.gstatic.com/s/sora.woff2")).toBe(true);
     expect(isBenignFailedResourceUrl("https://evil.example/fonts.googleapis.com/css")).toBe(false);
     expect(
