@@ -48,12 +48,12 @@ Context: Nick's Tiao board on host bee (16 cores, encrypted btrfs, 3 projects) s
 "route": "/settings?section=remote-validation",
 "highlight": ".rvr-hosts",
 "steps": [
-  {
-    "click": "[id=\"setting-remoteValidation.enabled\"] button"
-  },
-  {
-    "waitMs": 300
-  }
+{
+  "click": "[id=\"setting-remoteValidation.enabled\"] button"
+},
+{
+  "waitMs": 300
+}
 ]
 }
 ]
@@ -93,3 +93,4 @@ Context: Nick's Tiao board on host bee (16 cores, encrypted btrfs, 3 projects) s
 - 2026-11-17T19:55:37Z · message_delivered: 1 message(s)
 - 2026-11-17T19:56:18Z · body
 - 2026-11-17T20:10:43Z · message_queued at 2026-11-17T20:10:43.053Z
+- 2026-11-17T20:10:43Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
