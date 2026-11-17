@@ -2,7 +2,7 @@
 id: "1159"
 title: "QA pass: use the Android Hub app on the phone, find broken things and fix them"
 type: bug
-status: review
+status: active
 priority: p1
 area: mobile
 depends_on: ["1162"]
