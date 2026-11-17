@@ -11,7 +11,7 @@ branch: feat/investigate-checks-tab-browser-pass-stal
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T17:53:05Z"
-updated_at: "2026-11-17T21:15:26Z"
+updated_at: "2026-11-17T21:15:43Z"
 review_rounds: 2
 review_passes: 2
 handoff_signal_retry_count: 2
@@ -101,3 +101,5 @@ The direct tab pass found no navigation hang. Review identified a separate app l
 - 2026-11-17T21:12:46Z · message_queued at 2026-11-17T21:12:46.728Z
 - 2026-11-17T21:12:46Z · handoff failed · task-file handoff failed at review · Engineering report draft is missing: .repoos/engineering-report-drafts/1163.md
 - 2026-11-17T21:15:26Z · body: Investigation outcome (added 1, removed 1)
+- 2026-11-17T21:15:26Z · message_queued at 2026-11-17T21:15:26.572Z
+- 2026-11-17T21:15:43Z · CTO nudge: held — an undelivered message is already queued
