@@ -4952,7 +4952,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         }
       }
       const stopTailnetDiscovery = registerInServerRegistry
-        ? startTailnetDiscoveryListener(config, (error) =>
+        ? startTailnetDiscoveryListener((error) =>
             logger.system("warn", "Tailnet discovery listener failed", {
               error: error instanceof Error ? error.message : String(error),
             }),

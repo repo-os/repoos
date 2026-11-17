@@ -157,7 +157,7 @@ export interface TailnetPeerDiscoveryHandlerDeps {
 export function createTailnetPeerDiscoveryHandler(
   deps: TailnetPeerDiscoveryHandlerDeps = {},
 ): RouteHandler {
-  return async (ctx, req, res) => {
+  return async (_ctx, req, res) => {
     if (!isTailnetPeerDiscoveryRequest(req))
       return json(res, 403, { ok: false, error: "Tailnet access required." });
     const rows = await (deps.listRows ?? listValidatedServerRegistry)();
@@ -168,6 +168,7 @@ export function createTailnetPeerDiscoveryHandler(
       ok: true,
       discoveryVersion: 1,
       servers: rows
+        // The listener is machine-wide; each project stores its own opt-out.
         .filter((row) => row.valid && row.entry.tailnetDiscovery !== false)
         .map((row) => ({
           host: "local",

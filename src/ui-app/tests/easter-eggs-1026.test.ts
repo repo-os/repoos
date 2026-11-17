@@ -44,8 +44,13 @@ describe("easter eggs #1026", () => {
   });
 
   it("E2: serve banner and resolveServeHost name bind interfaces", () => {
-    expect(resolveServeHost(undefined).host).toBe("127.0.0.1");
-    expect(resolveServeHost("0.0.0.0").tailscaleDetected).toBe(false);
+    expect(resolveServeHost(undefined, () => null).host).toBe("127.0.0.1");
+    expect(resolveServeHost(undefined, () => "100.64.10.2")).toMatchObject({
+      host: "0.0.0.0",
+      tailscaleDetected: true,
+      tailscaleIP: "100.64.10.2",
+    });
+    expect(resolveServeHost("0.0.0.0", () => "100.64.10.2").tailscaleDetected).toBe(false);
     const plain = renderServeBanner("0.1.0", [
       { label: "Bind", value: formatServeBindBannerValue("127.0.0.1", false) },
       { label: "Local", value: "http://127.0.0.1:1" },

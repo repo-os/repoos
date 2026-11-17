@@ -140,7 +140,8 @@ search field.
 Once you have saved one server you trust, the picker offers **Find servers on my
 tailnet**. The phone makes one request to that saved server; the server runs
 `tailscale status` on its own machine, probes each peer's small HTTP discovery
-endpoint over the encrypted Tailscale network, and falls back to SSH for older RepoOS versions. Your phone never scans the tailnet. Peers are
+endpoint on port 41641 over the encrypted Tailscale network, and falls back to SSH for older RepoOS versions. The discovery request is plain HTTP; Tailscale's WireGuard transport encrypts it. Project URLs returned by discovery use HTTPS Serve URLs. Your phone never scans the tailnet.
+Peers are
 identified by their MagicDNS names, so two machines with the same display name
 stay distinct and a Mac with spaces in its name is still reached correctly.
 Phones and tablets on the tailnet are skipped using the peer operating system,

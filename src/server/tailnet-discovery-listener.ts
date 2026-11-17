@@ -1,7 +1,6 @@
 import { createServer } from "node:http";
 import { detectTailscaleIPv4, detectTailscaleIPv6 } from "../core/tailscale.js";
 import { TAILNET_DISCOVERY_PORT } from "../core/tailnet-servers.js";
-import type { RepoOSConfig } from "../core/types.js";
 import { getTailnetPeerDiscovery } from "./routes/servers.js";
 import type { RouteContext } from "./routes/types.js";
 
@@ -11,7 +10,6 @@ import type { RouteContext } from "./routes/types.js";
  * user identity is needed, including for tagged Tailscale devices.
  */
 export function startTailnetDiscoveryListener(
-  config: RepoOSConfig,
   onError: (error: unknown) => void = () => {},
 ): () => void {
   const bindAddresses = [detectTailscaleIPv4(), detectTailscaleIPv6()].filter(
@@ -31,7 +29,9 @@ export function startTailnetDiscoveryListener(
         res.end(JSON.stringify({ error: "Not found" }));
         return;
       }
-      void Promise.resolve(getTailnetPeerDiscovery({ config } as RouteContext, req, res, {})).catch(
+      // Each registry row carries the opt-out recorded by that project. Do not
+      // bind the listener owner's repo config to this machine-level port.
+      void Promise.resolve(getTailnetPeerDiscovery({} as RouteContext, req, res, {})).catch(
         (error) => {
           onError(error);
           if (!res.headersSent) res.writeHead(500, { "Content-Type": "application/json" });

@@ -61,7 +61,7 @@ describe("GET /api/servers/discovery", () => {
     expect(result).toMatchObject({ status: 200, body: { discoveryVersion: 1, servers: [] } });
   });
 
-  it("honors each project's discovery setting when several servers share a machine", async () => {
+  it("uses each project's setting when the listener owner is disabled", async () => {
     const listRows = vi.fn(
       async () =>
         [
