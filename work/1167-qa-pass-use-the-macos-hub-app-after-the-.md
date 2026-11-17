@@ -11,7 +11,7 @@ branch: feat/qa-pass-use-the-macos-hub-app-after-the-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T18:23:18Z"
-updated_at: "2026-11-17T20:02:28Z"
+updated_at: "2026-11-17T20:02:30Z"
 review_rounds: 2
 review_passes: 2
 handoff_signal_retry_count: 2
@@ -72,3 +72,4 @@ Do not edit repoos.toml. Do not create signing identities or commit app binaries
 - 2026-11-17T19:58:42Z · note: shots: skipped — the diff (18 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-17T20:02:27Z · note: review pass 2: needs some work
 - 2026-11-17T20:02:28Z · status review→active
+- 2026-11-17T20:02:30Z · CTO nudge: held — an undelivered message is already queued
