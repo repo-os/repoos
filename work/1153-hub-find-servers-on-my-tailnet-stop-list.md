@@ -3,6 +3,9 @@ id: "1153"
 title: "Hub 'Find servers on my tailnet': stop listing bare machines, hide phones, explain failures, and replace SSH discovery with an HTTPS-based one"
 type: bug
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: "`needs some work` — the live `tailnetDiscovery` opt-out is stale in the registry, a sibling endpoint still exposes opted-out projects, and …"
 priority: p2
 area: [mobile, server, core]
 assigned_to: ai
@@ -124,3 +127,4 @@ Do not add runtime dependencies. The discovery endpoint exposes names/ports only
 - 2026-11-17T13:55:17Z · message_queued at 2026-11-17T13:55:17.423Z
 - 2026-11-17T13:55:17Z · note: shots: skipped — Docs site skipped: no docs shot declared
 - 2026-11-17T14:00:16Z · note: review pass 4: needs some work
+- 2026-11-17T14:00:16Z · needs_input
