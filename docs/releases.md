@@ -56,10 +56,12 @@ input.
 The modal also has an **optional release-notes text area**. Type notes by hand,
 or click **Generate with AI** to draft them from the commits since the last
 release tag (or the full history when there is no previous release) and fill
-the text area; the draft is editable before you confirm. Leaving the field empty
-is still valid — the cut falls back to the release-relevant commit subjects so
-the changelog, tag and GitHub release body are never blank. See "Release notes"
-below.
+the text area; the draft is editable before you confirm. Generate asks whether
+to publish automatically or notify you when the draft is ready — or use
+**Generate notes and publish** to confirm the tag and do both in one step.
+Leaving the field empty is still valid — the cut falls back to the
+release-relevant commit subjects so the changelog, tag and GitHub release body
+are never blank. See "Release notes" below.
 
 `POST /api/release` kicks off `cutNewRelease` in the background and returns
 immediately; the page polls `GET /api/release/run` for progress. The run
@@ -225,15 +227,44 @@ the release-relevant commit subjects, so the body is never empty.
 auto-generated notes). Only a tag that predates the release history falls back
 to the annotation body.
 
-**Generate with AI** calls `POST /api/release/notes`, which resolves the enabled
-PM agent (falling back to the engineer), collects the release-relevant commit
-subjects since the last reachable tag, and runs one `runPrompt` turn. The
-request never cuts anything: the draft is placed in the text area, where it
-stays editable. Clicking Generate when the field already has text asks for
-confirmation before replacing it. On failure the modal shows the error and
-whatever you already typed is preserved. The one-shot call is recorded in the
-`sessions` table (`sessionType: "release-notes"`, `taskId: null`) like every
-other LLM call site.
+**Generate with AI** opens a small **when the draft is ready** chooser (#1126)
+before calling `POST /api/release/notes`. Its two answers are **Publish
+automatically** and **Notify me**, preselected from
+`release.notesWhenReady` (`publish`/`notify`, also a Settings control); the
+dialog writes the chosen answer back so the next Generate starts there. The
+request resolves the enabled PM agent (falling back to the engineer), collects
+the release-relevant commit subjects since the last reachable tag, and runs one
+`runPrompt` turn. A plain draft never cuts anything: it lands in the text area
+and stays editable. Clicking Generate when the field already has text asks for
+confirmation before replacing it; closing either dialog chooses nothing and
+starts nothing. On failure the modal shows the error and whatever you already
+typed is preserved. The one-shot call is recorded in the `sessions` table
+(`sessionType: "release-notes"`, `taskId: null`) like every other LLM call site.
+
+The chooser's answer is a **server-owned promise** in
+`<cacheDir>/release-auto-publish.json` (gitignored, safe to delete):
+
+- `notify` records the completed draft, keeps the notes ready for review, and
+  emits the in-app `releaseNotesReady` attention item plus the configured
+  ntfy/Telegram notification. Its link opens `/releases?drawer=cut`.
+- `publish` starts the **same guarded `beginRelease` path as the Publish
+  button** once the draft lands. It pre-checks dirty main, the configured
+  branch, the target tag, the release-relevant commit context the draft was
+  made from, and an already-running release, then `cutNewRelease` re-validates
+  everything and runs the normal build/check phases. Any blocker fails the
+  promise closed with a notification reason; it never retries itself. `DELETE
+  /api/release/notes/auto-publish` cancels while the state is `waiting`/`ready`
+  and refuses once it is `publishing`. `runRelease` refuses a manual cut while
+  a promise is active, so the two cannot race into two releases.
+
+The promise survives a page reload because it is server state, and on boot
+`resumeReleaseAutoPublish` recovers a `ready`/cached promise through the same
+guards. The draft run itself is in-memory, so a promise whose draft never
+reached the notes cache fails closed with a "server restarted" notification
+instead of guessing; a `publishing` promise is never replayed silently because
+the crashed cut may already have pushed the bump or tag. Generate notes and
+publish is the shortcut for the publish answer: it confirms the exact tag, then
+starts the draft and publish without opening the chooser.
 
 The generation is a **server-tracked run** (#0605), shaped like the cut
 itself: the POST starts the agent detached and returns `202` with the run

@@ -16,6 +16,9 @@ export {
   notificationForIntegrationFailed,
   notificationForServerFailed,
   notificationForAgentFailed,
+  notificationForReleaseAutoPublishFailed,
+  notificationForReleaseNotesFailed,
+  notificationForReleaseNotesReady,
 } from "./spec.js";
 export { isAgentFailureNeedsInputReason } from "./reasons.js";
 export { taskNotificationLink } from "./link.js";
@@ -30,6 +33,9 @@ export {
   notifyIntegrationFailed,
   notifyMovedToReview,
   notifyNeedsInput,
+  notifyReleaseAutoPublishFailed,
+  notifyReleaseNotesFailed,
+  notifyReleaseNotesReady,
   notifyReviewFeedback,
   notifyServerFailed,
   notifyStatusChange,

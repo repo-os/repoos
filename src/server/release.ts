@@ -629,6 +629,25 @@ async function deployReleaseBranches(
   );
 }
 
+/** True for the semantic versions a release may cut (no leading `v`). */
+export function isReleaseVersion(version: string): boolean {
+  return SEMVER.test(version);
+}
+
+/**
+ * Whether `tag` already exists locally. The manual Publish path re-checks this
+ * inside `cutNewRelease`; the auto-publish guard asks earlier so it can fail
+ * closed with a specific reason instead of starting a run that would only fail.
+ */
+export async function releaseTagExists(
+  config: RepoOSConfig,
+  tag: string,
+  exec: Run = run,
+): Promise<boolean> {
+  const existing = await exec("git", ["tag", "--list", tag], config.root);
+  return existing.code === 0 && existing.stdout.trim() === tag;
+}
+
 export async function cutNewRelease(
   config: RepoOSConfig,
   version: string,

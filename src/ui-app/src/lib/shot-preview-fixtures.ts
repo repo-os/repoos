@@ -963,6 +963,111 @@ export function shotFixtureReleaseRun(
 }
 
 /**
+ * The release status a `release:cutReady` / `release:autoPublishWaiting`
+ * capture needs (#1126). The preview worktree runs on a task branch, so the
+ * real status reports `onReleaseBranch: false` and disables the cut drawer's
+ * entry point. Pinning a clean, release-ready status lets a capture show the
+ * chooser and the pending promise the page would otherwise never reach.
+ */
+export interface ShotReleaseStatus {
+  enabled: boolean;
+  supported: boolean;
+  name: string;
+  provider: string | null;
+  branch: string;
+  version: string | null;
+  tag: string | null;
+  latestTag: string | null;
+  latestTagAt: string | null;
+  latestTagSha: string | null;
+  commitsBehindMain: number | null;
+  latestStableTag: string | null;
+  head: string | null;
+  clean: boolean;
+  onReleaseBranch: boolean;
+  tagExists: boolean;
+  released: boolean;
+  ready: boolean;
+  blockers: string[];
+  releaseUrl: string | null;
+  workflowUrl: string | null;
+}
+
+const RELEASE_STATUS_FIXTURES: ReadonlySet<ShotPreviewFixtureId> = new Set([
+  "release:cutReady",
+  "release:autoPublishWaiting",
+]);
+
+/** The `GET /api/release` body these fixtures pin; null keeps the live status. */
+export function shotFixtureReleaseStatus(
+  fixture: ShotPreviewFixtureId | null,
+): ShotReleaseStatus | null {
+  if (!fixture || !RELEASE_STATUS_FIXTURES.has(fixture)) return null;
+  return {
+    enabled: true,
+    supported: true,
+    name: "Cut release",
+    provider: "git-tag",
+    branch: "main",
+    version: "0.6.0",
+    tag: "v0.6.0",
+    latestTag: "v0.6.0",
+    latestTagAt: "2026-11-10T00:00:00.000Z",
+    latestTagSha: "a1b2c3d4e5f60718293a4b5c6d7e8f9012345678",
+    commitsBehindMain: 4,
+    latestStableTag: "v0.6.0",
+    head: "b1c2d3e4f5a60718293a4b5c6d7e8f9012345678",
+    clean: true,
+    onReleaseBranch: true,
+    tagExists: false,
+    released: true,
+    ready: true,
+    blockers: [],
+    releaseUrl: "https://github.com/repo-os/repoos/releases/tag/v0.6.0",
+    workflowUrl: null,
+  };
+}
+
+/** The durable promise the `release:autoPublishWaiting` capture pins (#1126). */
+export interface ShotReleaseAutoPublish {
+  requestedAt: string;
+  state: "waiting";
+  mode: "publish";
+  version: string;
+  tag: string;
+  notes: string | null;
+  knownIssues: string | null;
+  head: string | null;
+  draftKey: string | null;
+  error: string | null;
+  updatedAt: string;
+}
+
+/**
+ * The `GET /api/release/notes/auto-publish` body for
+ * `release:autoPublishWaiting`. Returns null for every other fixture, so the
+ * page keeps polling the real (usually empty) promise on normal captures.
+ */
+export function shotFixtureReleaseAutoPublish(
+  fixture: ShotPreviewFixtureId | null,
+): ShotReleaseAutoPublish | null {
+  if (fixture !== "release:autoPublishWaiting") return null;
+  return {
+    requestedAt: "2026-11-11T03:00:00.000Z",
+    state: "waiting",
+    mode: "publish",
+    version: "0.6.1",
+    tag: "v0.6.1",
+    notes: null,
+    knownIssues: null,
+    head: "b1c2d3e4f5a60718293a4b5c6d7e8f9012345678",
+    draftKey: "fixture-draft-key",
+    error: null,
+    updatedAt: "2026-11-11T03:01:00.000Z",
+  };
+}
+
+/**
  * Fixture body for `drawer:shotEvidence` (#0819): the `## Activity` docs-skip
  * note the Changes tab parses into the "Docs site skipped: no docs shot
  * declared" warning + its "How to declare a docs route" link.

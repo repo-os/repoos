@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 466099
-last_close_out_gate_at: "2026-11-17T10:47:41.755Z"
 id: "1126"
 title: "Releases: 'Generate AI notes and publish' - let the user choose auto-publish or notify-me when the AI draft is ready"
 type: feature
-status: review
+status: done
 priority: p2
 area: [web, server]
+merged_commit: 8bd5eb821d0f927dec7008ab7ffef782872e73de
 assigned_to: ai
 created_by: t@t
 branch: feat/releases-generate-ai-notes-and-publish-l
@@ -14,6 +13,8 @@ cli_override: opencode
 model_override: opencode-go/glm-5.3-flash
 created_at: "2026-11-15T08:14:22Z"
 updated_at: "2026-11-17T10:47:41Z"
+last_close_out_gate_ms: 466099
+last_close_out_gate_at: "2026-11-17T10:47:41.755Z"
 review_passes: 5
 review_failed_report_retries: 0
 review_timeout_retries: 0
