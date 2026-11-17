@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/mobile-hub-return-to-server-picker-from-
 created_at: "2026-11-17T05:37:20Z"
-updated_at: "2026-11-17T06:11:37Z"
+updated_at: "2026-11-17T06:14:30Z"
 ---
 ## Problem
 In RepoOS Hub on mobile, a connected server can accumulate many pages of navigation history and the user must repeatedly go back to leave the server and return to the native Hub server picker. On narrow screens the top bar also hides the current project name while giving an oversized search field significant width. The attached desktop and mobile screenshots show the current top bar.
@@ -31,20 +31,20 @@ Inspect the existing Hub server WebView architecture and navigation security bef
 ```json
 [
 {
-  "label": "Mobile Hub top bar: project name, compact search, return logo",
-  "target": "default",
-  "route": "/work?repoos_hub=0123456789abcdef0123456789abcdef",
-  "highlight": ".topbar",
-  "viewportWidth": 390,
-  "viewportHeight": 844
+"label": "Mobile Hub top bar: project name, compact search, return logo",
+"target": "default",
+"route": "/work?repoos_hub=0123456789abcdef0123456789abcdef",
+"highlight": ".topbar",
+"viewportWidth": 390,
+"viewportHeight": 844
 },
 {
-  "label": "Desktop top bar unchanged: branch label and full search",
-  "target": "default",
-  "route": "/work",
-  "highlight": ".topbar",
-  "viewportWidth": 1440,
-  "viewportHeight": 900
+"label": "Desktop top bar unchanged: branch label and full search",
+"target": "default",
+"route": "/work",
+"highlight": ".topbar",
+"viewportWidth": 1440,
+"viewportHeight": 900
 }
 ]
 ```
@@ -64,3 +64,4 @@ Inspect the existing Hub server WebView architecture and navigation security bef
 - 2026-11-17T06:09:57Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-17T06:10:42Z · body
 - 2026-11-17T06:11:37Z · body
+- 2026-11-17T06:14:30Z · queued message undelivered for 5m and the engineer produced no output — ending the turn so it is delivered
