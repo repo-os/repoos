@@ -4,13 +4,15 @@ title: "Human: complete Android Hub device QA for #1159"
 type: chore
 status: inbox
 hold: true
+hold_reason: "Waiting for a reachable trusted RepoOS server to verify tailnet discovery for #1159"
+hold_at: "2026-11-17T18:06:47.402Z"
 priority: p1
 area: mobile
 assigned_to: human
 created_by: t@t
 branch: ""
 created_at: "2026-11-17T17:33:14Z"
-updated_at: "2026-11-17T18:06:46Z"
+updated_at: "2026-11-17T18:06:47Z"
 ---
 ## Purpose
 Complete the remaining live tailnet discovery check for #1159 using an available Android phone or emulator and a reachable trusted RepoOS server. The saved wireless ADB target refused connection on 2026-11-18; a Pixel 8 Android 16 emulator has since been used for the native UI pass, but the attempted dev.repoos.org endpoint was unreachable, so discovery results remain unverified.
@@ -32,3 +34,4 @@ _Assigned to a human, not an AI agent. No `## Notes for AI` is required here; th
 - 2026-11-17T17:33:52Z · depends_on
 - 2026-11-17T18:06:44Z · body: Purpose (added 1, removed 1)
 - 2026-11-17T18:06:46Z · body: Step-by-step guide (added 1, removed 6)
+- 2026-11-17T18:06:47Z · held-reason, held-at
