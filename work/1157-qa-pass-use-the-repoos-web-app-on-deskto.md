@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-17T20:49:36Z"
+review_passes: 2
 id: "1157"
 title: "QA pass: use the RepoOS web app on desktop and phone widths, find broken things and fix them"
 type: bug
@@ -11,10 +13,8 @@ branch: feat/qa-pass-use-the-repoos-web-app-on-deskto
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T15:21:15Z"
-updated_at: "2026-11-17T20:49:35Z"
 last_check_failure: "repoos check at 2026-11-17T20:09:02.078Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Work queue at desktop with mobile queue behavior evidenced in attachments (target \"default\"): highlight h1 matched nothing on /work?view=board (http://127.0.0.1:33563/work?view=board)"
 review_rounds: 1
-review_passes: 1
 review_timeout_retries: 0
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-11-17T16:50:57.959Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-17T17:19:58.428Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-17T17:28:43.649Z\",\"reason\":\"clean-exit-without-handoff\"}]"
@@ -184,3 +184,4 @@ Start with the Work page at 390px and the bottom dock/heads/pipeline bar overlap
 - 2026-11-17T20:42:33Z · handoff failed · check failed after 2 automatic retries · ui verification failed: timed out waiting for the task's browser capture
 - 2026-11-17T20:42:33Z · message_queued at 2026-11-17T20:42:33.830Z
 - 2026-11-17T20:49:35Z · note: review pass 5: needs some work
+
