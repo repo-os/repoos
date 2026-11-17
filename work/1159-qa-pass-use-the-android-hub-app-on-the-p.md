@@ -46,3 +46,4 @@ Use just deploy-phone only if the saved port works; otherwise do not ask Nick fo
 - 2026-11-17T16:12:26Z · message_delivered: 1 message(s)
 - 2026-11-17T16:14:19Z · body
 - 2026-11-17T16:14:27Z · queued message undelivered for 7m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-17T16:14:27Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code unknown) · last assistant: The phone is still unreachable. The scoped check has started remotely; the worktree has no changed paths against `main`, so this run can validate the current tree but cannot complete the device-dependent acceptance criteria. · stderr: Reading additional input from stdin...
