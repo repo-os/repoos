@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/mobile-web-reduce-page-clutter-and-fix-m
 created_at: "2026-11-17T02:52:23Z"
-updated_at: "2026-11-17T03:23:37Z"
+updated_at: "2026-11-17T03:25:04Z"
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-11-17T03:01:13.692Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -28,6 +28,45 @@ Treat the screenshots as concrete references. Follow existing shared UI and them
 
 ## Desired UX
 On a phone, page headings and content start at a consistent left edge, essential information appears first, and unnecessary descriptions and idle chrome stay out of the way. The More sheet remains clearly readable in every theme.
+
+## Shots
+```json
+[
+{
+  "label": "Phone Work queue: left-aligned title, no REPOOS / WORK breadcrumb, no idle pipeline bar",
+  "target": "default",
+  "route": "/work",
+  "highlight": "[data-testid=\"mobile-work-queue\"] .mobile-work-heading",
+  "viewportWidth": 390,
+  "viewportHeight": 844
+},
+{
+  "label": "Phone Mission Control: title at the left content edge, explanation hidden",
+  "target": "default",
+  "route": "/",
+  "highlight": ".page-header",
+  "viewportWidth": 390,
+  "viewportHeight": 844
+},
+{
+  "label": "Phone More sheet: opaque background, no page text bleeding through",
+  "target": "default",
+  "route": "/settings",
+  "highlight": ".mobile-more-sheet",
+  "steps": [
+    {
+      "click": ".tabbar button[aria-haspopup=\"dialog\"]"
+    },
+    {
+      "waitMs": 400
+    }
+  ],
+  "theme": "dark",
+  "viewportWidth": 390,
+  "viewportHeight": 844
+}
+]
+```
 
 ## Screenshots
 
@@ -50,3 +89,4 @@ On a phone, page headings and content start at a consistent left edge, essential
 - 2026-11-17T03:01:15Z · needs_input
 - 2026-11-17T03:18:56Z · body
 - 2026-11-17T03:23:37Z · body
+- 2026-11-17T03:25:04Z · body
