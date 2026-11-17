@@ -1,3 +1,14 @@
+---
+id: summary
+title: summary
+type: feature
+status: inbox
+priority: p2
+area: general
+assigned_to: ai
+created_by: ""
+branch: ""
+---
 ## TL;DR
 
 Task #1146 was a design audit of RepoOS on phone-sized viewports (390×844), not a feature build. The engineer surveyed the rendered app in light and dark themes, wrote a durable audit document at `docs/audits/mobile-design-audit-1146.md`, filed five focused follow-up tasks (#1147–#1151) with screenshot evidence, and made one small code fix: the Search overlay input's mobile touch height went from 36px to 44px. The first review pass was rejected (touch-target bar too lax, follow-up scope overlapping #1145, missing route/contrast coverage, dead evidence links); the second pass was `good to go` with one stale-capture note. The task went done on the second review pass after two close-out gate runs. Wall clock from creation to done: 2h 27m. The watchdog restarted the engineer twice early on over undelivered queued messages.
@@ -31,12 +42,12 @@ Final verdict: **`good to go`** (review pass 2, explicitly qualified as "STALE-E
 
 - **Watchdog restarts (×2):** at 03:14:39Z and 03:21:24Z the watchdog restarted the engineer because a queued message had waited 3 minutes with no live process. Messages were delivered on restart both times. A CTO nudge at 03:14:34Z was held because an undelivered message was already queued.
 - **Review pass 1 rejection** (`needs some work`, 03:27:39Z), with four classes of finding:
-  1. The audit treated "at least 40px" controls as passing, against the repo's 44px touch-target convention.
-  2. #1147's original scope duplicated in-flight #1145 work (task-detail header, Mission Control alignment).
-  3. Coverage gaps: `/login` and the full-screen diff routes weren't surveyed, contrast was never evaluated, and Mission Control had no dark capture.
-  4. Evidence paths pointed at `.repoos/audit-1146/*.png`, which is gitignored — dead links for any future reader.
+1. The audit treated "at least 40px" controls as passing, against the repo's 44px touch-target convention.
+2. #1147's original scope duplicated in-flight #1145 work (task-detail header, Mission Control alignment).
+3. Coverage gaps: `/login` and the full-screen diff routes weren't surveyed, contrast was never evaluated, and Mission Control had no dark capture.
+4. Evidence paths pointed at `.repoos/audit-1146/*.png`, which is gitignored — dead links for any future reader.
   
-  Resolution: round 2 re-measured against 44px (surfacing the DiffView Back control at 76×28px → #1151), rescoped #1147 to tabs/helper copy, added the login/diff routes and a contrast evaluation with stated boundaries, moved the doc to `docs/audits/`, and switched evidence to RepoOS attachments.
+Resolution: round 2 re-measured against 44px (surfacing the DiffView Back control at 76×28px → #1151), rescoped #1147 to tabs/helper copy, added the login/diff routes and a contrast evaluation with stated boundaries, moved the doc to `docs/audits/`, and switched evidence to RepoOS attachments.
 - **Stale declared shot:** the handoff Search capture was a 1024px desktop view where the mobile rule can't apply, recorded STALE. The reviewer verified the fix instead via the phone-width attachments (240×44 input) and suggested a re-capture plus a `min-height` assertion in `mobile-touch-affordances.test.ts`; whether either was done is not recorded.
 - **Overdue message:** a message queued at 04:06:43Z was flagged `message_overdue` at 05:08:14Z after 60 minutes undelivered. No explicit resolution is recorded; close-out completed and the task went done at 05:20:04Z.
 - **Preview limitations (not defects):** the auth-less preview couldn't show signed-in Secrets/Agents data, and the diff routes rendered "No diff available" — so diff-content density is unaudited. These boundaries are documented in the audit rather than presented as verified coverage.

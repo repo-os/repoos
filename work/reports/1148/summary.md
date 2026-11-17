@@ -1,3 +1,14 @@
+---
+id: summary
+title: summary
+type: feature
+status: inbox
+priority: p2
+area: general
+assigned_to: ai
+created_by: ""
+branch: ""
+---
 ## TL;DR
 
 Task #1148 reduced the repeated navigation density of the mobile Settings page (390px): the six/seven-item page grid became a single horizontally scrollable tab rail, and the long wrapping row of General topic chips collapsed behind one compact "Sections" disclosure that names the active section. Desktop composition is unchanged. One engineering round plus a post-review fix pass, two review passes, and a bumpy handoff (a failed remote validation, a watchdog restart, a pressure hold, a cancelled shot capture and an overdue message) ended in review pass 2 "good to go", close-out gate success and merge as commit `34c5a20981a431b3ee4d94389b89384447a1868a`.
@@ -16,9 +27,9 @@ Final verdict: review pass 2 "good to go" (2026-11-17T06:07:53Z); task closed as
 - **Engineering rounds:** 1 recorded round (round-1 report 2026-11-17T04:44:31Z). The fixes after review pass 1 landed without a round-2 report (review pass 2 explicitly notes this).
 - **Review passes:** 2 — pass 1 "needs some work" (04:50:30Z), pass 2 "good to go" (06:07:53Z).
 - **Agents/models (from the sessions table):**
-  - Engineer ×1: `opencode-go/deepseek-v4.1-flash`, started 03:46:44Z, elapsed 6380s (1h 46m 20s), 317,280 tokens, cost 0.16710549, finished. (The watchdog logged an engineer restart at 05:54:22Z, but only one engineer session is recorded.)
-  - Reviewer ×2: same model — pass 1: 345s, 69,989 tokens, cost 0.02497233; pass 2: 213s, 56,538 tokens, cost 0.01709145; both finished.
-  - Routing: 3 Model-router (openrouter) sessions, model "unknown", 1s/1s/2s, tokens and cost unrecorded.
+- Engineer ×1: `opencode-go/deepseek-v4.1-flash`, started 03:46:44Z, elapsed 6380s (1h 46m 20s), 317,280 tokens, cost 0.16710549, finished. (The watchdog logged an engineer restart at 05:54:22Z, but only one engineer session is recorded.)
+- Reviewer ×2: same model — pass 1: 345s, 69,989 tokens, cost 0.02497233; pass 2: 213s, 56,538 tokens, cost 0.01709145; both finished.
+- Routing: 3 Model-router (openrouter) sessions, model "unknown", 1s/1s/2s, tokens and cost unrecorded.
 - **Totals:** 443,807 tokens and 0.20916927 cost across the three recorded engineer/reviewer sessions (routing excluded). No model swaps recorded.
 - **Verification:** engineer's `bun run test --changed main` — 17 files, 212 tests, passed (the managed check's test step was skipped via `REPOOS_SKIP_TESTS=1` on the remote-validation path). `REPOOS_CHECK_CHANGED=main repoos check` passed format, lint, build, CSS layering, theme contrast, hard-coded colors, the rendered contrast audit (16 theme scopes), bare-require and branch-artifact guards, and UI smoke. Close-out gate completed in 355s.
 

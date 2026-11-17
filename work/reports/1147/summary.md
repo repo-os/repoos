@@ -1,3 +1,14 @@
+---
+id: summary
+title: summary
+type: feature
+status: inbox
+priority: p2
+area: general
+assigned_to: ai
+created_by: ""
+branch: ""
+---
 ## TL;DR
 
 Task #1147 fixed mobile task detail usability at 390×844 and 320px: the seven-tab drawer strip now wraps onto multiple rows instead of scrolling trailing tabs off-screen, and the preview-target helper copy gets its own full-width line (capped at 52ch) instead of being squeezed to one or two words beside the target selector. The fix is CSS-only inside the existing sub-720px media query, so desktop behaviour is unchanged. One engineering round, one review pass (`good to go`), and the task landed cleanly after one retry of the UI shot verification. Wall-clock from creation to done: 4h 8m 10s; total recorded LLM spend: $0.06441207 across 176,181 tokens.
@@ -20,9 +31,9 @@ Files changed: `src/ui-app/src/components/TaskDrawer.vue` (+4/−3), `src/ui-app
 - **Review rounds:** 1 pass, verdict `good to go`, no re-work requested.
 - **Wall-clock, created → done:** 2026-11-17T03:06:27Z → 2026-11-17T07:14:37Z = 4h 8m 10s. Most of that was pre-dispatch time in `inbox`/`needs_input` (dispatch happened at 05:14:16Z; active → review at 05:49:35Z, ≈35 minutes of active engineering).
 - **Agents and models per role:**
-  - Engineer: `opencode-go/deepseek-v4.1-flash` — session elapsed 1697s, 109,170 tokens, cost $0.041326974.
-  - Reviewer: `opencode-go/deepseek-v4.1-flash` — session elapsed 223s, 67,011 tokens, cost $0.023085096.
-  - Routing (Model router, openrouter): two 1s sessions; model listed as `unknown`; tokens and cost not recorded.
+- Engineer: `opencode-go/deepseek-v4.1-flash` — session elapsed 1697s, 109,170 tokens, cost $0.041326974.
+- Reviewer: `opencode-go/deepseek-v4.1-flash` — session elapsed 223s, 67,011 tokens, cost $0.023085096.
+- Routing (Model router, openrouter): two 1s sessions; model listed as `unknown`; tokens and cost not recorded.
 - **Combined recorded totals:** 176,181 tokens, $0.06441207 (routing sessions excluded — figures not recorded for them).
 - **Restarts or model swaps:** none recorded.
 - **Close-out gate:** completed in 212s.

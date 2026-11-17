@@ -1,3 +1,14 @@
+---
+id: summary
+title: summary
+type: feature
+status: inbox
+priority: p2
+area: general
+assigned_to: ai
+created_by: ""
+branch: ""
+---
 ## TL;DR
 
 Tailnet server discovery on `repoos servers --tailscale` and the mobile Hub used Tailscale's display `HostName` as both the SSH target and the de-duplication key, collapsing distinct peers that shared a display name (two `omarchy` entries hid `bee` and `thinkpad`) and producing invalid SSH destinations for names with spaces or punctuation (`Peck’s Mac mini`). Discovery now derives the peer identity from the stable MagicDNS `DNSName`, keeps `HostName` as a separate readable `displayName`, skips mobile peers that cannot run a RepoOS server, and preserves the configured-host fallback, SSH argv shape, JSON compatibility and HTTPS URL mapping. One engineering round; two review passes (the first produced no verdict after an errored reviewer session, the second was "good to go"); the task landed and the release succeeded.
@@ -17,10 +28,10 @@ Final verdict: **good to go** (review pass 2). Close-out gate completed in 748s;
 - Review rounds: 2. Pass 1 (2026-11-17T03:01:08Z) recorded `incomplete — no verdict in report`; pass 2 (2026-11-17T03:05:05Z) recorded `good to go`.
 - Agents and models: engineer and reviewer both ran as `opencode` agents on `opencode-go/deepseek-v4.1-flash`; the model-router sessions ran on an unknown model (not recorded).
 - Sessions and spend (as recorded, unrounded):
-  - Engineer: 265,799 tokens, cost 0.07913479199999998.
-  - Reviewer (errored, pass 1): 47,226 tokens, cost 0.010700508000000001.
-  - Reviewer (finished, pass 2): 69,090 tokens, cost 0.024632255999999998.
-  - Recorded session totals across the three: 382,115 tokens, cost 0.114467556 (routing sessions recorded no tokens or cost).
+- Engineer: 265,799 tokens, cost 0.07913479199999998.
+- Reviewer (errored, pass 1): 47,226 tokens, cost 0.010700508000000001.
+- Reviewer (finished, pass 2): 69,090 tokens, cost 0.024632255999999998.
+- Recorded session totals across the three: 382,115 tokens, cost 0.114467556 (routing sessions recorded no tokens or cost).
 - Shots: skipped — "Docs site skipped: no docs shot declared"; the reviewer confirmed no UI capture applied to this code/docs diff.
 
 ## What went wrong

@@ -1,3 +1,14 @@
+---
+id: summary
+title: summary
+type: feature
+status: inbox
+priority: p2
+area: general
+assigned_to: ai
+created_by: ""
+branch: ""
+---
 ## TL;DR
 
 Task 1145 fixed four phone-width UI problems in the RepoOS web UI: nonessential page subtitles are hidden below 720px, the REPOOS / WORK breadcrumb and idle integration bar no longer appear on the mobile Work queue, page titles (Mission Control and the task drawer) now align to the left content edge, and the More bottom sheet switched from the translucent `--panel` token to the opaque `--panel-solid` surface in every theme and both color modes. One engineer round (one crash, auto-recovered) and one review pass ("good to go" with an evidence gap noted) landed the work; the close-out pipeline merged it successfully.
@@ -21,10 +32,10 @@ Final verdict: **good to go** (review pass 1), with one evidence gap noted — n
 - **Timeline:** created 2026-11-17T02:52:23Z → done 2026-11-17T04:09:33Z (77 minutes wall-clock). Ready→active at 02:53:34Z; review entered at 03:30:30Z; close-out gate ran 527s; release at 04:09:33Z.
 - **Rounds:** 1 engineering round, 1 review pass. No restarts of the task itself.
 - **Agents and models** (from recorded session rows):
-  - Engineer: `opencode` · `opencode-go/deepseek-v4.1-flash` — 2000s elapsed, 328,309 tokens, $0.1201984079999999. Status: finished *with an error exit* (crash-recovered; see below).
-  - Reviewer: `opencode-go/deepseek-v4.1-flash` — 313s elapsed, 101,527 tokens, $0.03581500800000001.
-  - Debugger: `opencode-go/deepseek-v4.1-flash` — 17s, tokens/cost not recorded.
-  - Routing (model router, openrouter): 2 sessions, 0–1s each, model not recorded, no tokens/cost.
+- Engineer: `opencode` · `opencode-go/deepseek-v4.1-flash` — 2000s elapsed, 328,309 tokens, $0.1201984079999999. Status: finished *with an error exit* (crash-recovered; see below).
+- Reviewer: `opencode-go/deepseek-v4.1-flash` — 313s elapsed, 101,527 tokens, $0.03581500800000001.
+- Debugger: `opencode-go/deepseek-v4.1-flash` — 17s, tokens/cost not recorded.
+- Routing (model router, openrouter): 2 sessions, 0–1s each, model not recorded, no tokens/cost.
 - **Crash/swap count:** 1 engineer crash, auto-recovered (crash recovery counter read "1/3 crashes in 30m"); no model swaps.
 - **Totals** (sum of recorded session rows): 429,836 tokens, $0.15601341599999991. Debugger and routing sessions are not included in these sums where the facts are silent.
 
