@@ -2,16 +2,16 @@
 id: "1157"
 title: "QA pass: use the RepoOS web app on desktop and phone widths, find broken things and fix them"
 type: bug
-status: ready
+status: active
 priority: p1
 area: web
 assigned_to: ai
 created_by: t@t
-branch: ""
+branch: feat/qa-pass-use-the-repoos-web-app-on-deskto
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T15:21:15Z"
-updated_at: "2026-11-17T15:21:22Z"
+updated_at: "2026-11-17T15:21:24Z"
 ---
 ## Problem
 
@@ -38,3 +38,4 @@ Start with the Work page at 390px and the bottom dock/heads/pipeline bar overlap
 - 2026-11-17T15:21:15Z · created · t@t
 - 2026-11-17T15:21:19Z · cli_override, model_override
 - 2026-11-17T15:21:22Z · status inbox→ready
+- 2026-11-17T15:21:24Z · status ready→active, branch
