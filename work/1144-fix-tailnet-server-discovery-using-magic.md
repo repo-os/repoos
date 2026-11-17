@@ -2,16 +2,16 @@
 id: "1144"
 title: Fix tailnet server discovery using MagicDNS peer identities
 type: bug
-status: ready
+status: active
 human_step_override: Cleared needs-human-step flag (sticky until acceptance criteria change)
 human_step_override_key: 2558bc2b
 priority: p1
 area: [server, core, mobile]
 assigned_to: ai
 created_by: t@t
-branch: ""
+branch: feat/fix-tailnet-server-discovery-using-magic
 created_at: "2026-11-17T02:38:50Z"
-updated_at: "2026-11-17T02:39:11Z"
+updated_at: "2026-11-17T02:39:13Z"
 ---
 ## Problem
 On the RepoOS server running on Air, repoos servers --tailscale reports Peck’s Mac mini and Nothing Phone (3a) as invalid hostnames and tries to resolve omarchy instead of the MagicDNS names bee and thinkpad. Tailscale status shows duplicate HostName omarchy entries with distinct DNSName values bee.tailc0c173.ts.net and thinkpad.tailc0c173.ts.net; the Mac mini has a display HostName with spaces and punctuation but DNSName mini.tailc0c173.ts.net. This prevents terminal discovery and may explain missing Hub discovery results.
@@ -33,3 +33,4 @@ Start with src/core/tailnet-servers.ts: peer identity currently prefers HostName
 - 2026-11-17T02:38:51Z · needs_input
 - 2026-11-17T02:38:59Z · needs_input, body: Acceptance criteria (added 2, removed 2)
 - 2026-11-17T02:39:11Z · status inbox→ready
+- 2026-11-17T02:39:13Z · status ready→active, branch
