@@ -127,3 +127,4 @@ Do not add runtime dependencies. The discovery endpoint exposes names/ports only
 - 2026-11-17T14:00:16Z · needs_input
 - 2026-11-17T14:10:01Z · status review→active
 - 2026-11-17T14:10:02Z · needs_input
+- 2026-11-17T14:10:02Z · message_delivered: 1 message(s)
