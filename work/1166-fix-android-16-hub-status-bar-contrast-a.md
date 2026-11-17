@@ -12,7 +12,6 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T17:55:45Z"
 updated_at: "2026-11-17T19:09:55Z"
-check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-17T19:05:59.283Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 handoff_signal_retry_count: 2
 ---
@@ -71,3 +70,4 @@ This issue was observed on Android 16 (API 36), target SDK 36, with Android Syst
 - 2026-11-17T19:05:56Z · message_queued at 2026-11-17T19:05:56.544Z
 - 2026-11-17T19:07:50Z · message_delivered: 1 message(s)
 - 2026-11-17T19:09:55Z · body
+
