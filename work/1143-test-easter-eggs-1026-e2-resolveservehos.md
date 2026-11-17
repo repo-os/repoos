@@ -3,16 +3,13 @@ id: "1143"
 title: "Test: easter-eggs #1026 E2 resolveServeHost default fails on machines running Tailscale"
 type: feature
 status: inbox
-needs_input: true
-needs_input_reason: underspecified
-needs_input_detail: "empty sections: Problem, Acceptance criteria, Notes for AI; body under 400 characters (excluding original prompt)"
 priority: p3
 area: server
 assigned_to: ai
 created_by: t@t
 branch: ""
 created_at: "2026-11-17T02:10:39Z"
-updated_at: "2026-11-17T02:11:00Z"
+updated_at: "2026-11-17T08:14:31Z"
 ---
 ## Problem
 
@@ -39,3 +36,4 @@ Machine-dependent test, not a product bug: `resolveServeHost` behaviour is inten
 - 2026-11-17T02:10:39Z · created · t@t
 - 2026-11-17T02:10:40Z · needs_input
 - 2026-11-17T02:11:00Z · body: Problem (added 1, removed 1); Acceptance criteria (added 3, removed 1); Step-by-step guide (added); Notes for AI (added 1, removed 1); Desired UX (removed)
+- 2026-11-17T08:14:31Z · needs_input
