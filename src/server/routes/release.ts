@@ -461,6 +461,22 @@ function settleAutoPublishAfterDraft(
  * context, a dirty tree, an existing tag, a release already running.
  */
 async function maybeAutoPublish(ctx: NotesRunContext, requestedAt: string): Promise<void> {
+  // A throw here (git probe failing, fs hiccup) must not bubble into the
+  // draft-run bookkeeping and mark a successful draft failed: the promise
+  // fails closed with the reason instead.
+  try {
+    await autoPublishChecks(ctx, requestedAt);
+  } catch (err) {
+    failAutoPublish(
+      ctx,
+      requestedAt,
+      `The automatic publish could not run: ${err instanceof Error ? err.message : String(err)}`,
+      "publish",
+    );
+  }
+}
+
+async function autoPublishChecks(ctx: NotesRunContext, requestedAt: string): Promise<void> {
   const current = readReleaseAutoPublish(ctx.config);
   if (!current || current.requestedAt !== requestedAt || current.state !== "ready") return;
   const fail = (reason: string): void => failAutoPublish(ctx, requestedAt, reason, "publish");
@@ -527,6 +543,9 @@ async function maybeAutoPublish(ctx: NotesRunContext, requestedAt: string): Prom
  * is never retried silently — a crash mid-cut may have pushed the bump or tag.
  */
 export async function resumeReleaseAutoPublish(ctx: NotesRunContext): Promise<void> {
+  // Preview children serve a snapshot of a task worktree (#0505); they must
+  // not act on a copied promise record the way the control plane does.
+  if (process.env.REPOOS_PREVIEW_CHILD === "1") return;
   const current = readReleaseAutoPublish(ctx.config);
   if (!current) return;
   if (current.state === "waiting") {

@@ -220,7 +220,10 @@ const autoPublishHeadline = computed(() => {
   if (record.state === "waiting") return `Will publish ${record.tag} when the notes are ready`;
   if (record.state === "ready") return `Notes ready — publishing ${record.tag}`;
   if (record.state === "publishing") return `Publishing ${record.tag} automatically…`;
-  if (record.state === "failed") return `${record.tag} was not published automatically`;
+  if (record.state === "failed")
+    return record.mode === "notify"
+      ? `Notes for ${record.tag} could not be prepared`
+      : `${record.tag} was not published automatically`;
   return "";
 });
 
@@ -1010,9 +1013,14 @@ interface AutoPublishResponse {
 /** Apply a server snapshot; `defaults` updates the modal's remembered answer. */
 function applyAutoPublish(next: ReleaseAutoPublish | null, defaults?: "publish" | "notify"): void {
   autoPublish.value = next;
-  if (defaults && !whenReadyOpen.value) defaultWhenReady.value = defaults;
+  // A pending deferred write is the user's newer answer — the server snapshot
+  // must not clobber it before the write lands.
+  if (defaults && !whenReadyOpen.value && !pendingDefaultWrite) defaultWhenReady.value = defaults;
   autoPublishError.value = "";
   if (next?.state === "failed" && next.error) autoPublishError.value = next.error;
+  // A settled promise lifts the clean-tree constraint, so a default write
+  // deferred while it was pending can land now.
+  flushPendingDefaultWrite();
   // A notify promise is tied to the version the human chose. Landing from its
   // notification link should leave the panel ready to publish, not asking
   // them to retype the version (the notes fill from the draft cache).
@@ -1075,9 +1083,27 @@ async function cancelAutoPublish(): Promise<void> {
 
 /** Remember the answer in repoos.toml through the Settings config route. */
 function saveWhenReadyDefault(choice: "publish" | "notify"): void {
+  const changed = defaultWhenReady.value !== choice;
   defaultWhenReady.value = choice;
+  if (!changed) return; // already the saved default — don't churn repoos.toml
+  // Every call here immediately starts a draft. Writing repoos.toml in the
+  // same breath would dirty the working tree, and the automatic publish's
+  // clean-tree pre-check would then fail the very cut just promised — so the
+  // write is held until the promise settles (applyAutoPublish flushes it).
+  pendingDefaultWrite = choice;
+}
+
+/** A default write held back while a promise is pending (tree must stay clean). */
+let pendingDefaultWrite: "publish" | "notify" | null = null;
+
+/** Flush a default write deferred while an auto-publish promise was pending. */
+function flushPendingDefaultWrite(): void {
+  if (autoPublishActive.value || !pendingDefaultWrite) return;
+  const choice = pendingDefaultWrite;
+  pendingDefaultWrite = null;
+  if (defaultWhenReady.value !== choice) return;
   void api("/api/config", JSON_OPTS("PATCH", { "release.notesWhenReady": choice })).catch(() => {
-    // The choice still applies to this run; only the remembered default fails.
+    // The answer is already governing this session; only persistence failed.
   });
 }
 

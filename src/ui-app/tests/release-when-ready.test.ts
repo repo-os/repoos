@@ -206,13 +206,13 @@ describe("Generate with AI: when the draft is ready (#1126)", () => {
       version: "0.5.59",
       confirmTag: "v0.5.59",
     });
-    // The saved default is written through the Settings route.
-    const saved = api.mock.calls.find(
-      ([path, opts]) => path === "/api/config" && opts?.method === "PATCH",
-    );
-    expect(JSON.parse(String((saved?.[1] as RequestInit).body))).toMatchObject({
-      "release.notesWhenReady": "publish",
-    });
+    // The default write is DEFERRED while the promise is pending: writing
+    // repoos.toml now would dirty the tree and the clean-tree pre-check would
+    // fail the cut just promised (#1126 review).
+    expect(
+      api.mock.calls.some(([path]) => path === "/api/config"),
+      "no config write while the promise is pending",
+    ).toBe(false);
 
     // The server snapshot drives the page banner, not local optimism.
     mockApi({
@@ -326,5 +326,49 @@ describe("Generate with AI: when the draft is ready (#1126)", () => {
     expect(banner?.textContent).toContain("v0.5.59 was not published automatically");
     expect(banner?.textContent).toContain("working tree was dirty");
     expect(button(banner as ParentNode, "Dismiss")).toBeTruthy();
+  });
+
+  it("writes the deferred default once the promise settles, never before", async () => {
+    vi.useFakeTimers();
+    await mountView();
+    const panel = await openPanel();
+    const dialog = await openChooser(panel);
+
+    dialog.querySelector<HTMLInputElement>("input[value='publish']")!.click();
+    await flushPromises();
+    button(dialog, "Generate notes")!.click();
+    await flushPromises();
+
+    // The POST answer carries the fresh waiting promise; the write is held.
+    expect(notesPost()).toMatchObject({ whenReady: "publish" });
+    expect(
+      api.mock.calls.some(([path]) => path === "/api/config"),
+      "nothing written while the promise runs",
+    ).toBe(false);
+
+    // The promise settles: the deferred write lands now.
+    mockApi({ autoPublish: null });
+    await vi.advanceTimersByTimeAsync(1000);
+    await flushPromises();
+    const saved = api.mock.calls.find(
+      ([path, opts]) => path === "/api/config" && opts?.method === "PATCH",
+    );
+    expect(saved, "deferred write lands on settle").toBeTruthy();
+    expect(JSON.parse(String((saved?.[1] as RequestInit).body))).toMatchObject({
+      "release.notesWhenReady": "publish",
+    });
+  });
+
+  it("choosing the already-saved default does not touch repoos.toml", async () => {
+    await mountView({ defaultWhenReady: "notify" });
+    const panel = await openPanel();
+    const dialog = await openChooser(panel);
+
+    // Notify is the saved default; confirming it must not PATCH the config.
+    button(dialog, "Generate notes")!.click();
+    await flushPromises();
+
+    expect(notesPost()).toMatchObject({ whenReady: "notify" });
+    expect(api.mock.calls.some(([path]) => path === "/api/config")).toBe(false);
   });
 });

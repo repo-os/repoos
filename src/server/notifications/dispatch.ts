@@ -2,7 +2,7 @@ import { projectDisplayName } from "../../core/config.js";
 import type { RepoOSConfig, Status, Task } from "../../core/types.js";
 import type { AgentRunner } from "../agents.js";
 import type { LiveIndex, RepoEvent } from "../live-index.js";
-import { taskNotificationLink } from "./link.js";
+import { taskNotificationLink, webUiLink } from "./link.js";
 import { NtfyNotificationProvider } from "./ntfy-provider.js";
 import { isAgentFailureNeedsInputReason } from "./reasons.js";
 import { TelegramNotificationProvider } from "./telegram-provider.js";
@@ -178,12 +178,22 @@ export function notifyAgentFailed(
  * render a task id or task-action buttons. `taskId` is empty and every release
  * renderer special-cases the `release.` kinds.
  */
+/** Deep link into the Releases page for release notifications (#1126). */
+export function releaseNotificationLink(
+  config: Pick<RepoOSConfig, "root">,
+  publicOrigin?: string,
+): string {
+  // webUiLink's shared resolution order (REPOOS_PUBLIC_URL, then the request
+  // origin, then a tunnel hostname) so tunnel/public setups never get a
+  // localhost link the human cannot reach (#1126 review).
+  return webUiLink(config, "/releases?drawer=cut", publicOrigin);
+}
+
 function releaseLink(ctx: NotificationDispatchContext): {
   link: string;
   actions?: NotificationAction[];
 } {
-  const path = "/releases?drawer=cut";
-  const link = ctx.publicOrigin ? `${ctx.publicOrigin.replace(/\/+$/, "")}${path}` : path;
+  const link = releaseNotificationLink(ctx.config, ctx.publicOrigin);
   return {
     link,
     actions: link.startsWith("http") ? [{ label: "Open release", url: link }] : undefined,

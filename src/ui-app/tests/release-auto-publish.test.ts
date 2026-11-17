@@ -21,7 +21,7 @@ import {
   resumeReleaseAutoPublish,
   whenNotesRunSettles,
 } from "../../server/routes/release.js";
-import { collectReleaseCommits } from "../../server/release.js";
+import { collectReleaseCommits, getReleaseStatus } from "../../server/release.js";
 import { releaseNotesCacheKey } from "../../server/release-notes-cache.js";
 import {
   readReleaseAutoPublish,
@@ -35,6 +35,24 @@ vi.mock("../../server/agents.js", async () => {
   const actual =
     await vi.importActual<typeof import("../../server/agents.js")>("../../server/agents.js");
   return { ...actual, runPrompt: vi.fn() };
+});
+
+// getReleaseStatus stays real by default; individual tests swap in a rejection
+// to prove a thrown guard probe fails the promise, never the draft (#1126
+// review).
+const releaseModule = vi.hoisted(() => ({
+  realGetReleaseStatus: null as null | ((...args: never[]) => unknown),
+}));
+vi.mock("../../server/release.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../server/release.js")>();
+  releaseModule.realGetReleaseStatus = actual.getReleaseStatus;
+  return {
+    ...actual,
+    getReleaseStatus: vi.fn((...args: never[]) =>
+      // eslint-disable-next-line
+      (releaseModule.realGetReleaseStatus as (...a: never[]) => unknown)(...args),
+    ),
+  };
 });
 
 const roots: string[] = [];
@@ -347,5 +365,57 @@ describe("AI notes: publish automatically or notify me (#1126)", () => {
     expect(post.statusCode).toBe(400);
     expect(post.body.error).toContain("confirmTag must be v1.2.4");
     expect(readReleaseAutoPublish(cfg)).toBeNull();
+  });
+
+  it("a thrown guard probe fails the promise closed, never the draft", async () => {
+    const cfg = config();
+    const starter = vi.fn();
+    let release!: (value: unknown) => void;
+    vi.mocked(runPrompt).mockImplementation(
+      () => new Promise((resolve) => (release = resolve as (value: unknown) => void)) as never,
+    );
+
+    await postNotes(cfg, { version: "1.2.4", confirmTag: "v1.2.4", whenReady: "publish" });
+    // The status probe explodes exactly when the auto-publish checks run —
+    // the draft itself must still count as finished.
+    vi.mocked(getReleaseStatus).mockRejectedValueOnce(new Error("git probe exploded"));
+
+    release({ ok: true, output: "- Fixed a thing", elapsedMs: 5, totalTokens: 12, costUsd: 0 });
+    const record = await waitForPending(cfg);
+    expect(record.state).toBe("failed");
+    expect(record.error).toContain("could not run: git probe exploded");
+    expect(starter).not.toHaveBeenCalled();
+  });
+
+  it("a preview child never acts on a copied promise record at boot", async () => {
+    const cfg = config();
+    const starter = vi.fn();
+    const commits = await collectReleaseCommits(cfg);
+    const at = new Date().toISOString();
+    writeReleaseAutoPublish(cfg, {
+      requestedAt: at,
+      state: "ready",
+      mode: "publish",
+      version: "1.2.4",
+      tag: "v1.2.4",
+      notes: "- Copied into a preview",
+      knownIssues: null,
+      head: commits.head,
+      draftKey: releaseNotesCacheKey(commits.relevantShas, commits.sinceTag),
+      error: null,
+      origin: null,
+      updatedAt: at,
+    });
+
+    const prev = process.env.REPOOS_PREVIEW_CHILD;
+    process.env.REPOOS_PREVIEW_CHILD = "1";
+    try {
+      await resumeReleaseAutoPublish(ctx(cfg, starter) as never);
+    } finally {
+      if (prev === undefined) delete process.env.REPOOS_PREVIEW_CHILD;
+      else process.env.REPOOS_PREVIEW_CHILD = prev;
+    }
+    expect(starter).not.toHaveBeenCalled();
+    expect(readReleaseAutoPublish(cfg)?.state).toBe("ready");
   });
 });
