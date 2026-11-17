@@ -11,7 +11,7 @@ branch: feat/hub-find-servers-on-my-tailnet-stop-list
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T10:06:23Z"
-updated_at: "2026-11-17T13:40:38Z"
+updated_at: "2026-11-17T13:49:33Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: tests — ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯"
 last_handoff_failure_sha: 94e5e304643bc47fafe6924ef6a9cc8f16822ba9
 review_passes: 3
@@ -112,3 +112,4 @@ Do not add runtime dependencies. The discovery endpoint exposes names/ports only
 - 2026-11-17T13:35:54Z · message_delivered: 1 message(s)
 - 2026-11-17T13:35:54Z · note: handoff requested (cli)
 - 2026-11-17T13:40:38Z · CTO nudge: held — handoff gate is running
+- 2026-11-17T13:49:33Z · message_queued at 2026-11-17T13:49:33.289Z
