@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 2
 id: "1156"
 title: "Hub Android: dev build update channel - new dev builds reach the phone from any network with one tap (no adb)"
 type: feature
@@ -14,7 +15,6 @@ created_at: "2026-11-17T14:48:18Z"
 updated_at: "2026-11-17T16:04:45Z"
 review_rounds: 1
 review_passes: 1
-handoff_signal_retry_count: 1
 ---
 ## Problem
 
@@ -58,3 +58,4 @@ Follow the same shape as Tiao's implementation so all of Nick's apps behave iden
 - 2026-11-17T15:59:27Z · status review→active
 - 2026-11-17T15:59:29Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-17T16:04:45Z · message_queued at 2026-11-17T16:04:45.707Z
+
