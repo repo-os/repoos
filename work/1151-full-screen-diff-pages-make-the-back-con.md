@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/full-screen-diff-pages-make-the-back-con
 created_at: "2026-11-17T03:32:44Z"
-updated_at: "2026-11-17T04:18:31Z"
+updated_at: "2026-11-17T04:30:10Z"
 ---
 ## Problem
 At 390×844, the Back control on the full-screen diff view measures 76×28 CSS px, below the app's 44×44 mobile touch-target convention. The shared DiffView is routed at /tasks/:taskId/diff, /tasks/:taskId/conflict-diff, /repo/working-diff and /repo/commits/:sha, so each entry point has the same issue.
@@ -29,22 +29,22 @@ Use the screenshots attached to #1146 and #1151; inspect light and dark themes a
 ```json
 [
 {
-  "label": "Task diff at 390px: Back is a 44px touch target (dark)",
-  "target": "default",
-  "route": "/tasks/1151/diff",
-  "highlight": ".diff-back-btn",
-  "theme": "dark",
-  "viewportWidth": 390,
-  "viewportHeight": 844
+"label": "Task diff at 390px: Back is a 44px touch target (dark)",
+"target": "default",
+"route": "/tasks/1151/diff",
+"highlight": ".diff-back-btn",
+"theme": "dark",
+"viewportWidth": 390,
+"viewportHeight": 844
 },
 {
-  "label": "Task diff at 390px: Back is a 44px touch target (light)",
-  "target": "default",
-  "route": "/tasks/1151/diff",
-  "highlight": ".diff-back-btn",
-  "theme": "light",
-  "viewportWidth": 390,
-  "viewportHeight": 844
+"label": "Task diff at 390px: Back is a 44px touch target (light)",
+"target": "default",
+"route": "/tasks/1151/diff",
+"highlight": ".diff-back-btn",
+"theme": "light",
+"viewportWidth": 390,
+"viewportHeight": 844
 }
 ]
 ```
@@ -61,3 +61,4 @@ Use the screenshots attached to #1146 and #1151; inspect light and dark themes a
 - 2026-11-17T04:00:07Z · status inbox→ready
 - 2026-11-17T04:00:11Z · status ready→active, branch
 - 2026-11-17T04:18:31Z · body
+- 2026-11-17T04:30:10Z · body
