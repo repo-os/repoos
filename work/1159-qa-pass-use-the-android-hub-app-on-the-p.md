@@ -5,11 +5,13 @@ type: bug
 status: inbox
 priority: p1
 area: mobile
-assigned_to: ""
+assigned_to: ai
 created_by: t@t
 branch: ""
+cli_override: codex
+model_override: gpt-6-luna
 created_at: "2026-11-17T15:51:18Z"
-updated_at: "2026-11-17T15:51:18Z"
+updated_at: "2026-11-17T15:51:34Z"
 ---
 ## Problem
 
@@ -33,3 +35,4 @@ Use just deploy-phone only if the saved port works; otherwise do not ask Nick fo
 ## Activity
 
 - 2026-11-17T15:51:18Z · created · t@t
+- 2026-11-17T15:51:34Z · cli_override, model_override
