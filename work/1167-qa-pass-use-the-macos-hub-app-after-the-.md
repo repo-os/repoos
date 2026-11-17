@@ -2,7 +2,7 @@
 id: "1167"
 title: "QA pass: use the macOS Hub app after the #1155 fix, find broken things and fix them"
 type: bug
-status: active
+status: review
 priority: p1
 area: macos
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/qa-pass-use-the-macos-hub-app-after-the-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T18:23:18Z"
-updated_at: "2026-11-17T19:11:34Z"
+updated_at: "2026-11-17T19:12:25Z"
 handoff_signal_retry_count: 2
 ---
 ## Problem
@@ -49,3 +49,4 @@ Do not edit repoos.toml. Do not create signing identities or commit app binaries
 - 2026-11-17T19:09:54Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code unknown) · last assistant: The final scoped check is running its remote build and changed-path tests now. The screenshot is saved outside the worktree and visually inspected; the preview is stopped, the disposable server row and registry are removed, and the QA app … · stderr: 2026-11-17T19:07:34.610541Z ERROR codex_core::tools::router: error=exec_command failed: CreateProcess { message: "Rejected(\"`/bin/zsh -lc 'rm -f default.profraw /Users/nick/Library/Caches/RepoOS/task-1167-qa-support/servers.json && rmdir /Users/nick/Library/Caches/RepoOS/task-1167-qa-support && REPOOS_CHECK_CHANGED=m…
 - 2026-11-17T19:09:55Z · message_delivered: 1 message(s)
 - 2026-11-17T19:11:34Z · body
+- 2026-11-17T19:12:25Z · status active→review
