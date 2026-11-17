@@ -72,3 +72,4 @@ Use the screenshots attached to #1146 and #1151; inspect light and dark themes a
 - 2026-11-17T04:53:25Z · body
 - 2026-11-17T04:59:44Z · body
 - 2026-11-17T05:08:13Z · status active→review
+- 2026-11-17T05:08:13Z · note: shots: skipped — 3 shots already captured — an engineer-made capture pre-empts the automatic one
