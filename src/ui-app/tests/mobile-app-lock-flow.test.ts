@@ -17,9 +17,9 @@ const mocks = vi.hoisted(() => ({
   init: vi.fn(async () => undefined),
 }));
 
-vi.mock("@capacitor/app", () => ({
-  App: { addListener: vi.fn(), exitApp: vi.fn() },
-}));
+vi.mock("@capacitor/app", () => ({ App: { addListener: vi.fn(), exitApp: vi.fn() } }), {
+  virtual: true,
+});
 
 vi.mock("../../../mobile/src/app-state", async () => {
   const { ref } = await import("vue");
