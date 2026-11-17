@@ -73,6 +73,13 @@ Start with the Work page at 390px and the bottom dock/heads/pipeline bar overlap
 ![320px task drawer with Debug tab selected](/api/tasks/1157/attachments/att_c3ad8b69-a73c-49a8-bcad-29786330bc76.png)
 ![320px Inputs card with full author byline](/api/tasks/1157/attachments/att_fa131d28-4ee9-4d86-98d2-bdfd381cf813.png)
 ![320px Agents error notice with wrapped credentials text](/api/tasks/1157/attachments/att_313c9683-63c8-492e-ad64-c657684e0667.png)
+![fix-work-320-light](/api/tasks/1157/attachments/att_095538f6-640d-4a9e-8cfd-71e7be0a972a.png)
+![fix-drawer-task-320-light](/api/tasks/1157/attachments/att_9bea3877-5f88-4375-977a-ef5a86ebf8a7.png)
+![fix-drawer-changes-320-light](/api/tasks/1157/attachments/att_677fd49d-a6f3-4a45-bf43-97e510b12796.png)
+![fix-drawer-tokens-320-light](/api/tasks/1157/attachments/att_1c227546-c3a4-4b8c-85ec-27911967a8e1.png)
+![fix-drawer-debug-320-light](/api/tasks/1157/attachments/att_deaae645-54d1-4527-a99c-c333bebdf30f.png)
+![fix-inputs-320-light](/api/tasks/1157/attachments/att_768f429f-40cd-4e6d-baf3-df1e4fefce36.png)
+![fix-agents-320-light](/api/tasks/1157/attachments/att_99095969-8c5b-4946-bb3b-7af40d0cb4dd.png)
 
 ## Activity
 
@@ -171,3 +178,4 @@ Start with the Work page at 390px and the bottom dock/heads/pipeline bar overlap
 - 2026-11-17T20:34:24Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-17T20:34:47Z · watchdog: restarting engineer because a queued message waited 3m with no live process
 - 2026-11-17T20:34:51Z · message_delivered: 1 message(s)
+- 2026-11-17T20:36:10Z · screenshots
