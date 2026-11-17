@@ -294,9 +294,15 @@ if [ -n "${REPOOS_VALIDATION_COMMAND:-}" ]; then
   # Keep build caches across disposable checkouts, especially Gradle's often
   # large Android dependency cache. The volume is shared only by this runner's
   # configured validation slots and is prepared for the SSH user's uid.
-  docker volume create "$CACHE_VOLUME" >/dev/null
-  docker run --rm -v "$CACHE_VOLUME":/repoos-cache -u 0 "$IMAGE" \
-    "mkdir -p /repoos-cache/home /repoos-cache/gradle /repoos-cache/npm /repoos-cache/bun && chown -R $(id -u):$(id -g) /repoos-cache"
+  if ! docker volume create "$CACHE_VOLUME" >/dev/null; then
+    echo "[validate] FATAL: could not create project cache volume (docker)" >&2
+    exit 5
+  fi
+  if ! docker run --rm -v "$CACHE_VOLUME":/repoos-cache -u 0 "$IMAGE" \
+    "mkdir -p /repoos-cache/home /repoos-cache/gradle /repoos-cache/npm /repoos-cache/bun && chown -R $(id -u):$(id -g) /repoos-cache"; then
+    echo "[validate] FATAL: could not prepare project cache volume (docker)" >&2
+    exit 5
+  fi
   RUNNER_COMMAND=$(cat <<'RUNNER_EOF'
 set -o pipefail
 if [ -n "$REPOOS_BROWSER_CAPTURE_MODE" ]; then
@@ -355,15 +361,17 @@ RUNNER_EOF
     --entrypoint bash "$IMAGE" -lc "$RUNNER_COMMAND"
   CODE=${PIPESTATUS[0]}
   set -e
-  if [ "$CODE" -eq 125 ] || [ "$CODE" -eq 126 ] || [ "$CODE" -eq 127 ]; then
+  GATE_STARTED=0
+  grep -Fq '[validate] gate started' "$ART/test-output.log" && GATE_STARTED=1 || true
+  if [ "$GATE_STARTED" -eq 0 ] && { [ "$CODE" -eq 125 ] || [ "$CODE" -eq 126 ] || [ "$CODE" -eq 127 ]; }; then
     echo "[validate] container could not start (docker exit $CODE)" >&2
     exit 5
   fi
-  if [ "$CODE" -eq 4 ] && ! grep -Fq '[validate] gate started' "$ART/test-output.log"; then
+  if [ "$CODE" -eq 4 ] && [ "$GATE_STARTED" -eq 0 ]; then
     echo "[validate] setup failed (exit 4)" >&2
     exit 4
   fi
-  if grep -Fq '[validate] gate started' "$ART/test-output.log"; then
+  if [ "$GATE_STARTED" -eq 1 ]; then
     echo "[validate] gate exit $CODE"
   fi
   exit "$CODE"

@@ -53,16 +53,18 @@ set +e
   if [ -n "${REPOOS_BROWSER_CAPTURE_MODE:-}" ]; then
     if [ -n "${REPOOS_BROWSER_CAPTURE_BRANCH:-}" ]; then
       git checkout --detach "$SHA"
-      CAPTURE_WORKTREE="$HOME/.repoos-worktrees/$REPOOS_BROWSER_CAPTURE_BRANCH"
+      CAPTURE_WORKTREE="$WORK/worktrees/$REPOOS_BROWSER_CAPTURE_BRANCH"
       mkdir -p "$(dirname "$CAPTURE_WORKTREE")"
       git worktree add -b "$REPOOS_BROWSER_CAPTURE_BRANCH" "$CAPTURE_WORKTREE" "$SHA"
       cd "$CAPTURE_WORKTREE"
       bun install --frozen-lockfile || exit 4
     fi
+    echo "[validate] gate started"
     bun scripts/remote-runner/capture-browser.ts \
       "$REPOOS_BROWSER_CAPTURE_TASK" "$REPOOS_BROWSER_CAPTURE_MODE" "$ART/browser-capture"
   elif [ -n "${REPOOS_VALIDATION_COMMAND:-}" ]; then
     echo "[validate] running configured command: $REPOOS_VALIDATION_COMMAND"
+    echo "[validate] gate started"
     bash -lc 'export PATH="/opt/homebrew/bin:$PATH"; eval "$REPOOS_VALIDATION_COMMAND"'
     CODE=$?
     if [ "$CODE" -eq 0 ] && [ "${REPOOS_OFFLOAD_BROWSER_STEPS:-}" = "1" ]; then
@@ -89,5 +91,13 @@ set +e
 CODE=${PIPESTATUS[0]}
 set -e
 
-echo "[validate] gate exit $CODE"
+if [ -n "${REPOOS_BROWSER_CAPTURE_MODE:-}${REPOOS_VALIDATION_COMMAND:-}" ]; then
+  if grep -Fq '[validate] gate started' "$ART/test-output.log"; then
+    echo "[validate] gate exit $CODE"
+  elif [ "$CODE" -eq 4 ]; then
+    echo "[validate] setup failed (exit 4)" >&2
+  fi
+else
+  echo "[validate] gate exit $CODE"
+fi
 exit $CODE

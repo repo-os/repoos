@@ -3536,6 +3536,8 @@ export class RemoteValidationRunner implements RemoteValidator {
   private idleTimer: ReturnType<typeof setTimeout> | null = null;
   /** Per-VM cache of whether `validate.sh` supports mirror upload (#0725). */
   private readonly validateScriptMirrorByIp = new Map<string, boolean>();
+  /** Per-VM cache of whether the installed script supports project commands. */
+  private readonly validateScriptCommandByIp = new Map<string, boolean>();
   private lifetimeTimer: ReturnType<typeof setTimeout> | null = null;
   private activeJobs = 0;
   private readonly activeRunRegistry = new ActiveRemoteRunRegistry();
@@ -3719,12 +3721,18 @@ export class RemoteValidationRunner implements RemoteValidator {
     this.activeRunRegistry.set(info, taskId);
   }
 
-  private async probeValidateScriptMirror(host: RemoteHost): Promise<boolean> {
+  private async probeValidateScriptFeatures(
+    host: RemoteHost,
+  ): Promise<{ mirror: boolean; command: boolean }> {
     const cmd =
-      `${selectValidateScriptCommand()}; grep -q MIRROR "$REPOOS_VALIDATE_SCRIPT" && echo ${RUNNER_SCRIPT_MIRROR_TOKEN}=1 || ` +
-      `echo ${RUNNER_SCRIPT_MIRROR_TOKEN}=0`;
+      `${selectValidateScriptCommand()}; ` +
+      `(grep -q MIRROR "$REPOOS_VALIDATE_SCRIPT" && echo ${RUNNER_SCRIPT_MIRROR_TOKEN}=1 || echo ${RUNNER_SCRIPT_MIRROR_TOKEN}=0); ` +
+      `(grep -qF '${RUNNER_SCRIPT_COMMAND_TOKEN}' "$REPOOS_VALIDATE_SCRIPT" && echo ${RUNNER_SCRIPT_COMMAND_TOKEN}=1 || echo ${RUNNER_SCRIPT_COMMAND_TOKEN}=0)`;
     const res = await this.exec.runRemote(host, cmd, () => {}, this.timings.probeTimeoutMs);
-    return parseValidateScriptMirrorSupport(res.output);
+    return {
+      mirror: parseValidateScriptMirrorSupport(res.output),
+      command: parseValidateScriptCommandSupport(res.output),
+    };
   }
 
   async validate(opts: ValidateOptions): Promise<CheckSummary> {
@@ -3967,13 +3975,23 @@ export class RemoteValidationRunner implements RemoteValidator {
         opts.taskId,
       );
       let incrementalUpload = this.validateScriptMirrorByIp.get(host.ip);
-      if (incrementalUpload !== true) {
+      let scriptSupportsCommand = this.validateScriptCommandByIp.get(host.ip);
+      if (incrementalUpload === undefined || (rv.command && scriptSupportsCommand === undefined)) {
+        const features = await this.probeValidateScriptFeatures(host);
         if (incrementalUpload === undefined) {
-          incrementalUpload = await this.probeValidateScriptMirror(host);
+          incrementalUpload = features.mirror;
           this.validateScriptMirrorByIp.set(host.ip, incrementalUpload);
-        } else {
-          incrementalUpload = false;
         }
+        if (scriptSupportsCommand === undefined) {
+          scriptSupportsCommand = features.command;
+          this.validateScriptCommandByIp.set(host.ip, scriptSupportsCommand);
+        }
+      }
+      if (rv.command && !scriptSupportsCommand) {
+        const detail =
+          `installed runner script on ${host.ip} does not support remoteValidation.command; update it with ` +
+          validateScriptInstallCommand(this.sshUser, host.ip, "docker");
+        return withScope(this.infraFail(detail, { taskId: opts.taskId, host: host.ip }));
       }
       let upload: SuccessfulUpload | null = null;
       let run: RemoteExecResult | null = null;

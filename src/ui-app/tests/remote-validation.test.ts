@@ -107,7 +107,11 @@ function isValidateScriptMirrorProbe(cmd: string): boolean {
 function fakeExec(over: Partial<RemoteExecDeps> = {}): RemoteExecDeps {
   const baseRunRemote = vi.fn(async (_h, cmd, onChunk): Promise<RemoteExecResult> => {
     if (isValidateScriptMirrorProbe(cmd)) {
-      return { code: 0, output: `${RUNNER_SCRIPT_MIRROR_TOKEN}=1\n`, timedOut: false };
+      return {
+        code: 0,
+        output: `${RUNNER_SCRIPT_MIRROR_TOKEN}=1\n${RUNNER_SCRIPT_COMMAND_TOKEN}=1\n`,
+        timedOut: false,
+      };
     }
     onChunk("build ok\ntest ok\n");
     return { code: 0, output: "build ok\ntest ok\n", timedOut: false };
@@ -434,6 +438,39 @@ describe("RemoteValidationRunner", () => {
     expect(existsSync(r.logPath("0999"))).toBe(true);
     expect(readFileSync(r.logPath("0999"), "utf8")).toContain("PASSED");
     await r.dispose();
+  });
+
+  it("refuses a project command when an adopted Hetzner snapshot has an old runner script", async () => {
+    config.remoteValidation!.command = "./scripts/ci-remote.sh";
+    const h = fakeHetzner();
+    const exec = fakeExec({
+      runRemote: vi.fn(async (_host, cmd, onChunk): Promise<RemoteExecResult> => {
+        if (isValidateScriptMirrorProbe(cmd)) {
+          return {
+            code: 0,
+            output: `${RUNNER_SCRIPT_MIRROR_TOKEN}=1\n${RUNNER_SCRIPT_COMMAND_TOKEN}=0\n`,
+            timedOut: false,
+          };
+        }
+        onChunk("stock gate must not run\n");
+        return { code: 0, output: "stock gate must not run\n", timedOut: false };
+      }),
+    });
+    const runner = new RemoteValidationRunner(config, undefined, {
+      hetzner: h.client,
+      exec,
+      timings: FAST,
+    });
+    try {
+      const result = await runner.validate(opts());
+      expect(result.ok).toBe(false);
+      expect(result.detail).toContain("does not support remoteValidation.command");
+      expect(result.detail).toContain("update it with ssh root@203.0.113.");
+      expect(exec.uploadFile).not.toHaveBeenCalled();
+      expect(exec.runRemote).toHaveBeenCalledTimes(1);
+    } finally {
+      await runner.dispose();
+    }
   });
 
   it("warns and uses full-suite mode when changed ref does not resolve (#0695)", async () => {
