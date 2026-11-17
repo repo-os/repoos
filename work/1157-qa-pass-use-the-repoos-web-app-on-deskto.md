@@ -11,7 +11,7 @@ branch: feat/qa-pass-use-the-repoos-web-app-on-deskto
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T15:21:15Z"
-updated_at: "2026-11-17T16:57:25Z"
+updated_at: "2026-11-17T16:58:08Z"
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-11-17T16:50:57.959Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
@@ -60,3 +60,4 @@ Start with the Work page at 390px and the bottom dock/heads/pipeline bar overlap
 - 2026-11-17T16:50:57Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 1/3
 - 2026-11-17T16:56:30Z · body
 - 2026-11-17T16:57:25Z · message_queued at 2026-11-17T16:57:25.808Z
+- 2026-11-17T16:58:08Z · CTO nudge: held — an undelivered message is already queued
