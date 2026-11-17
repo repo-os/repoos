@@ -488,4 +488,16 @@ describe("StoriesView mobile layout", () => {
     expect(source).toMatch(/@media \(max-width: 720px\)/);
     expect(source).toMatch(/\.story-progress-wrap\s*\{[^}]*width:\s*100%/);
   });
+
+  it("lets story titles, summaries, and task names wrap on phone widths", () => {
+    const source = readFileSync(
+      join(resolve(__dirname, ".."), "src/views/StoriesView.vue"),
+      "utf8",
+    );
+    const mobileRules = source.split("@media (max-width: 720px)")[1];
+    expect(mobileRules).toMatch(/\.story-name\s*\{[^}]*white-space:\s*normal/);
+    expect(mobileRules).toMatch(/\.story-excerpt\s*\{[^}]*display:\s*block/);
+    expect(mobileRules).toMatch(/\.story-live-title\s*\{[^}]*white-space:\s*normal/);
+    expect(mobileRules).toMatch(/\.story-live-row\s*\{[^}]*min-height:\s*44px/);
+  });
 });
