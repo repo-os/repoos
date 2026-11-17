@@ -96,3 +96,4 @@ Read #1075 (the restart notice) and #1091 (`repoos restart`). A server that kill
 - 2026-11-17T17:03:39Z · needs_input
 - 2026-11-17T17:17:46Z · status review→active
 - 2026-11-17T17:17:48Z · needs_input
+- 2026-11-17T17:17:48Z · message_delivered: 1 message(s)
