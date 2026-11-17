@@ -1,7 +1,7 @@
-import SwiftUI
-import UserNotifications
 import AppKit
 import ObjectiveC
+import SwiftUI
+import UserNotifications
 
 /// Window geometry shared by the scene declaration and its unit test.
 ///
@@ -12,211 +12,219 @@ import ObjectiveC
 /// resized the window, because `.defaultSize` only applies to a window with no
 /// saved frame.
 enum HubWindowDefaults {
-    static let minWidth: CGFloat = 880
-    static let minHeight: CGFloat = 520
-    /// Fraction of `NSScreen.visibleFrame` a new window occupies. `visibleFrame`
-    /// already excludes the menu bar and Dock, so 90% leaves a browser-like
-    /// inset without ever covering them.
-    static let visibleFrameFill: CGFloat = 0.9
+  static let minWidth: CGFloat = 880
+  static let minHeight: CGFloat = 520
+  /// Fraction of `NSScreen.visibleFrame` a new window occupies. `visibleFrame`
+  /// already excludes the menu bar and Dock, so 90% leaves a browser-like
+  /// inset without ever covering them.
+  static let visibleFrameFill: CGFloat = 0.9
 
-    /// The default content size for a new window, clamped to the minimum size
-    /// on a screen too small to fit the fill fraction (or when no screen is
-    /// available, as in a unit test).
-    static func defaultWindowSize(for visibleFrame: CGRect?) -> CGSize {
-        guard let visibleFrame, visibleFrame.width > 0, visibleFrame.height > 0 else {
-            return CGSize(width: minWidth, height: minHeight)
-        }
-        return CGSize(
-            width: max(minWidth, visibleFrame.width * visibleFrameFill),
-            height: max(minHeight, visibleFrame.height * visibleFrameFill)
-        )
+  /// The default content size for a new window, clamped to the minimum size
+  /// on a screen too small to fit the fill fraction (or when no screen is
+  /// available, as in a unit test).
+  static func defaultWindowSize(for visibleFrame: CGRect?) -> CGSize {
+    guard let visibleFrame, visibleFrame.width > 0, visibleFrame.height > 0 else {
+      return CGSize(width: minWidth, height: minHeight)
     }
+    return CGSize(
+      width: max(minWidth, visibleFrame.width * visibleFrameFill),
+      height: max(minHeight, visibleFrame.height * visibleFrameFill)
+    )
+  }
 }
 
 @main
 struct RepoOSHubApp: App {
-    @NSApplicationDelegateAdaptor(HubAppDelegate.self) private var appDelegate
-    @StateObject private var appState = HubAppState()
-    @State private var notificationDelegate = HubNotificationDelegate()
-    @State private var memoryPressureMonitor: HubMemoryPressureMonitor?
+  @NSApplicationDelegateAdaptor(HubAppDelegate.self) private var appDelegate
+  @StateObject private var appState = HubAppState()
+  @State private var notificationDelegate = HubNotificationDelegate()
+  @State private var memoryPressureMonitor: HubMemoryPressureMonitor?
 
-    var body: some Scene {
-        WindowGroup("RepoOS") {
-            ContentView()
-                .environmentObject(appState)
-                .frame(minWidth: HubWindowDefaults.minWidth, maxWidth: .infinity, minHeight: HubWindowDefaults.minHeight, maxHeight: .infinity)
-                .preferredColorScheme(appState.hubGlobalPreferences.appearance.colorScheme)
-                .background(HubWindowAppearanceConfigurator(appearance: appState.hubGlobalPreferences.appearance))
-                .onAppear {
-                    UNUserNotificationCenter.current().delegate = notificationDelegate
-                    notificationDelegate.requestAuthorizationIfNeeded()
-                    notificationDelegate.onOpenNavigation = { serverID, path in
-                        appState.handleHubNotificationOpen(serverID: serverID, path: path)
-                    }
-                    if memoryPressureMonitor == nil {
-                        memoryPressureMonitor = HubMemoryPressureMonitor { level in
-                            appState.applyWorkspaceResidencyMemoryPressure(level)
-                        }
-                    }
-                    appDelegate.setAppearanceOverride(appState.hubGlobalPreferences.appearance)
-                }
-                .onChange(of: appState.hubGlobalPreferences.appearance) { newValue in
-                    appDelegate.setAppearanceOverride(newValue)
-                }
+  var body: some Scene {
+    WindowGroup("RepoOS") {
+      ContentView()
+        .environmentObject(appState)
+        .frame(
+          minWidth: HubWindowDefaults.minWidth, maxWidth: .infinity,
+          minHeight: HubWindowDefaults.minHeight, maxHeight: .infinity
+        )
+        .preferredColorScheme(appState.hubGlobalPreferences.appearance.colorScheme)
+        .background(
+          HubWindowAppearanceConfigurator(appearance: appState.hubGlobalPreferences.appearance)
+        )
+        .onAppear {
+          UNUserNotificationCenter.current().delegate = notificationDelegate
+          notificationDelegate.requestAuthorizationIfNeeded()
+          notificationDelegate.onOpenNavigation = { serverID, path in
+            appState.handleHubNotificationOpen(serverID: serverID, path: path)
+          }
+          if memoryPressureMonitor == nil {
+            memoryPressureMonitor = HubMemoryPressureMonitor { level in
+              appState.applyWorkspaceResidencyMemoryPressure(level)
+            }
+          }
+          appDelegate.setAppearanceOverride(appState.hubGlobalPreferences.appearance)
         }
-        // Structural hidden-title window style (#0878): SwiftUI can reset the
-        // AppKit `titleVisibility` override while it finalises the scene, which
-        // let the WindowGroup title draw over the web content again. The style
-        // hides only the title text/bar chrome; the native traffic lights, drag
-        // area, and `NSWindow.title` stay intact.
-        .windowStyle(.hiddenTitleBar)
-        .defaultSize(HubWindowDefaults.defaultWindowSize(for: NSScreen.main?.visibleFrame))
-        .commands {
-            CommandGroup(replacing: .appSettings) {
-                Button("Settings…") {
-                    HubSettingsOpener.open(appState: appState)
-                }
-                .keyboardShortcut(",", modifiers: .command)
-            }
-            CommandGroup(after: .newItem) {
-                Button("Add Server…") {
-                    appState.presentAddServer()
-                }
-                .keyboardShortcut("n", modifiers: [.command, .shift])
-            }
-            CommandMenu("Edit") {
-                Button("Find…") {
-                    appState.workspacePresentFind()
-                }
-                .keyboardShortcut("f", modifiers: .command)
-                .disabled(!appState.workspaceCanUseFind)
-
-                Button("Find Next") {
-                    appState.workspaceFindNext()
-                }
-                .keyboardShortcut("g", modifiers: .command)
-                .disabled(!appState.workspaceCanUseFind)
-
-                Button("Find Previous") {
-                    appState.workspaceFindPrevious()
-                }
-                .keyboardShortcut("g", modifiers: [.command, .shift])
-                .disabled(!appState.workspaceCanUseFind)
-            }
-            CommandMenu("Go") {
-                Button("Quick Switcher…") {
-                    appState.presentCommandPalette()
-                }
-                .keyboardShortcut("k", modifiers: .command)
-
-                Divider()
-
-                Button("Back") {
-                    appState.workspaceGoBack()
-                }
-                .keyboardShortcut("[", modifiers: .command)
-                .disabled(!appState.workspaceNavigation.canGoBack)
-
-                Button("Forward") {
-                    appState.workspaceGoForward()
-                }
-                .keyboardShortcut("]", modifiers: .command)
-                .disabled(!appState.workspaceNavigation.canGoForward)
-
-                Button("Reload") {
-                    appState.workspaceReload()
-                }
-                .keyboardShortcut("r", modifiers: .command)
-
-                Divider()
-
-                Button("Next Server Tab") {
-                    appState.selectAdjacentVisibleTab(forward: true)
-                }
-                .keyboardShortcut(.tab, modifiers: .control)
-                .disabled(appState.hubGlobalPreferences.navigationLayout != .tabs)
-
-                Button("Previous Server Tab") {
-                    appState.selectAdjacentVisibleTab(forward: false)
-                }
-                .keyboardShortcut(.tab, modifiers: [.control, .shift])
-                .disabled(appState.hubGlobalPreferences.navigationLayout != .tabs)
-            }
+        .onChange(of: appState.hubGlobalPreferences.appearance) { newValue in
+          appDelegate.setAppearanceOverride(newValue)
         }
     }
+    // Structural hidden-title window style (#0878): SwiftUI can reset the
+    // AppKit `titleVisibility` override while it finalises the scene, which
+    // let the WindowGroup title draw over the web content again. The style
+    // hides only the title text/bar chrome; the native traffic lights, drag
+    // area, and `NSWindow.title` stay intact.
+    .windowStyle(.hiddenTitleBar)
+    .defaultSize(HubWindowDefaults.defaultWindowSize(for: NSScreen.main?.visibleFrame))
+    .commands {
+      CommandGroup(replacing: .appSettings) {
+        Button("Settings…") {
+          HubSettingsOpener.open(appState: appState)
+        }
+        .keyboardShortcut(",", modifiers: .command)
+      }
+      CommandGroup(after: .newItem) {
+        Button("Add Server…") {
+          appState.presentAddServer()
+        }
+        .keyboardShortcut("n", modifiers: [.command, .shift])
+      }
+      CommandMenu("Edit") {
+        Button("Find…") {
+          appState.workspacePresentFind()
+        }
+        .keyboardShortcut("f", modifiers: .command)
+        .disabled(!appState.workspaceCanUseFind)
+
+        Button("Find Next") {
+          appState.workspaceFindNext()
+        }
+        .keyboardShortcut("g", modifiers: .command)
+        .disabled(!appState.workspaceCanUseFind)
+
+        Button("Find Previous") {
+          appState.workspaceFindPrevious()
+        }
+        .keyboardShortcut("g", modifiers: [.command, .shift])
+        .disabled(!appState.workspaceCanUseFind)
+      }
+      CommandMenu("Go") {
+        Button("Quick Switcher…") {
+          appState.presentCommandPalette()
+        }
+        .keyboardShortcut("k", modifiers: .command)
+
+        Divider()
+
+        Button("Back") {
+          appState.workspaceGoBack()
+        }
+        .keyboardShortcut("[", modifiers: .command)
+        .disabled(!appState.workspaceNavigation.canGoBack)
+
+        Button("Forward") {
+          appState.workspaceGoForward()
+        }
+        .keyboardShortcut("]", modifiers: .command)
+        .disabled(!appState.workspaceNavigation.canGoForward)
+
+        Button("Reload") {
+          appState.workspaceReload()
+        }
+        .keyboardShortcut("r", modifiers: .command)
+
+        Divider()
+
+        Button("Next Server Tab") {
+          appState.selectAdjacentVisibleTab(forward: true)
+        }
+        .keyboardShortcut(.tab, modifiers: .control)
+        .disabled(appState.hubGlobalPreferences.navigationLayout != .tabs)
+
+        Button("Previous Server Tab") {
+          appState.selectAdjacentVisibleTab(forward: false)
+        }
+        .keyboardShortcut(.tab, modifiers: [.control, .shift])
+        .disabled(appState.hubGlobalPreferences.navigationLayout != .tabs)
+      }
+    }
+  }
 }
 
 final class HubAppDelegate: NSObject, NSApplicationDelegate {
-    private let dockIconAppearance = DockIconAppearanceController()
-    private var appKitAppearance: NSAppearance?
-    private var hubAppearance: HubAppAppearance = .system
-    private var systemAppearanceObserver: NSObjectProtocol?
+  private let dockIconAppearance = DockIconAppearanceController()
+  private var appKitAppearance: NSAppearance?
+  private var hubAppearance: HubAppAppearance = .system
+  private var systemAppearanceObserver: NSObjectProtocol?
 
-    func applicationDidFinishLaunching(_ notification: Notification) {
-        dockIconAppearance.start()
-        systemAppearanceObserver = DistributedNotificationCenter.default().addObserver(
-            forName: HubSystemAppearance.themeChangedNotification,
-            object: nil,
-            queue: .main
-        ) { [weak self] _ in
-            guard let self, self.hubAppearance == .system else { return }
-            self.applyAppKitAppearance()
-        }
+  func applicationDidFinishLaunching(_ notification: Notification) {
+    dockIconAppearance.start()
+    systemAppearanceObserver = DistributedNotificationCenter.default().addObserver(
+      forName: HubSystemAppearance.themeChangedNotification,
+      object: nil,
+      queue: .main
+    ) { [weak self] _ in
+      guard let self, self.hubAppearance == .system else { return }
+      self.applyAppKitAppearance()
     }
+  }
 
-    deinit {
-        if let systemAppearanceObserver {
-            DistributedNotificationCenter.default().removeObserver(systemAppearanceObserver)
-        }
+  deinit {
+    if let systemAppearanceObserver {
+      DistributedNotificationCenter.default().removeObserver(systemAppearanceObserver)
     }
+  }
 
-    func setAppearanceOverride(_ appearance: HubAppAppearance) {
-        // preferredColorScheme updates SwiftUI content but does not update
-        // AppKit-managed title bars or toolbars. Apply the same preference to
-        // the application so the complete native shell follows Light/Dark.
-        hubAppearance = appearance
-        appKitAppearance = appearance.appKitAppearance
-        applyAppKitAppearance()
-        // A WindowGroup creates its AppKit window asynchronously. Reapply on
-        // the next run loop so its title bar and toolbar do not keep the
-        // system's previous appearance on first launch.
-        DispatchQueue.main.async { [weak self] in
-            self?.applyAppKitAppearance()
-        }
-        dockIconAppearance.appearanceOverride = appearance
+  func setAppearanceOverride(_ appearance: HubAppAppearance) {
+    // preferredColorScheme updates SwiftUI content but does not update
+    // AppKit-managed title bars or toolbars. Apply the same preference to
+    // the application so the complete native shell follows Light/Dark.
+    hubAppearance = appearance
+    appKitAppearance = appearance.appKitAppearance
+    applyAppKitAppearance()
+    // A WindowGroup creates its AppKit window asynchronously. Reapply on
+    // the next run loop so its title bar and toolbar do not keep the
+    // system's previous appearance on first launch.
+    DispatchQueue.main.async { [weak self] in
+      self?.applyAppKitAppearance()
     }
+    dockIconAppearance.appearanceOverride = appearance
+  }
 
-    private func applyAppKitAppearance() {
-        // Existing SwiftUI-owned windows can retain the appearance they had
-        // when they were created. Set it directly as well so title bars and
-        // toolbars change immediately alongside the SwiftUI content.
-        NSApp.appearance = appKitAppearance
-        NSApp.windows.forEach { window in
-            window.appearance = appKitAppearance
-            window.isOpaque = true
-            window.backgroundColor = hubAppearance.appKitWindowBackgroundColor
-            window.contentView?.wantsLayer = true
-            window.contentView?.layer?.backgroundColor = hubAppearance.appKitWindowBackgroundColor.cgColor
+  private func applyAppKitAppearance() {
+    // Existing SwiftUI-owned windows can retain the appearance they had
+    // when they were created. Set it directly as well so title bars and
+    // toolbars change immediately alongside the SwiftUI content.
+    NSApp.appearance = appKitAppearance
+    NSApp.windows.forEach { window in
+      window.appearance = appKitAppearance
+      window.isOpaque = true
+      let backgroundColor = hubAppearance.appKitWindowBackgroundColor(
+        systemAppearance: window.effectiveAppearance
+      )
+      window.backgroundColor = backgroundColor
+      window.contentView?.wantsLayer = true
+      window.contentView?.layer?.backgroundColor = backgroundColor.cgColor
 
-            // A SwiftUI WindowGroup's toolbar and rounded outer frame are
-            // siblings/ancestors of contentView. They do not consistently
-            // inherit a changed NSWindow appearance, so set every native
-            // frame surface directly. Do not walk into contentView: its
-            // WKWebView intentionally follows the system appearance.
-            var frameView = window.contentView?.superview
-            while let view = frameView {
-                view.appearance = appKitAppearance
-                view.wantsLayer = true
-                view.layer?.backgroundColor = hubAppearance.appKitWindowBackgroundColor.cgColor
-                frameView = view.superview
-            }
-            applyNativeSurfaceBackgrounds(
-                in: window.contentView,
-                color: hubAppearance.appKitWindowBackgroundColor,
-                appearance: appKitAppearance
-            )
-        }
+      // A SwiftUI WindowGroup's toolbar and rounded outer frame are
+      // siblings/ancestors of contentView. They do not consistently
+      // inherit a changed NSWindow appearance, so set every native
+      // frame surface directly. Do not walk into contentView: its
+      // WKWebView intentionally follows the system appearance.
+      var frameView = window.contentView?.superview
+      while let view = frameView {
+        view.appearance = appKitAppearance
+        view.wantsLayer = true
+        view.layer?.backgroundColor = backgroundColor.cgColor
+        frameView = view.superview
+      }
+      applyNativeSurfaceBackgrounds(
+        in: window.contentView,
+        color: backgroundColor,
+        appearance: appKitAppearance
+      )
     }
+  }
 }
 
 /// SwiftUI's WindowGroup may assign its system appearance after the app
@@ -224,15 +232,15 @@ final class HubAppDelegate: NSObject, NSApplicationDelegate {
 /// once AppKit attaches it, making the Hub preference authoritative for its
 /// native title bar, toolbar, and sidebar.
 private struct HubWindowAppearanceConfigurator: NSViewRepresentable {
-    let appearance: HubAppAppearance
+  let appearance: HubAppAppearance
 
-    func makeNSView(context: Context) -> HubWindowChromeView {
-        HubWindowChromeView(appearance: appearance)
-    }
+  func makeNSView(context: Context) -> HubWindowChromeView {
+    HubWindowChromeView(appearance: appearance)
+  }
 
-    func updateNSView(_ view: HubWindowChromeView, context: Context) {
-        view.hubAppearance = appearance
-    }
+  func updateNSView(_ view: HubWindowChromeView, context: Context) {
+    view.hubAppearance = appearance
+  }
 }
 
 /// Applies the workspace chrome once AppKit actually attaches this view to its
@@ -245,76 +253,79 @@ private struct HubWindowAppearanceConfigurator: NSViewRepresentable {
 /// exist, so the hidden-title chrome is applied there and re-applied whenever
 /// SwiftUI updates the appearance.
 final class HubWindowChromeView: NSView {
-    private var trafficLightCorrectionQueued = false
+  private var trafficLightCorrectionQueued = false
 
-    var hubAppearance: HubAppAppearance {
-        didSet { configureWindow() }
+  var hubAppearance: HubAppAppearance {
+    didSet { configureWindow() }
+  }
+
+  init(appearance: HubAppAppearance) {
+    hubAppearance = appearance
+    super.init(frame: .zero)
+  }
+
+  @available(*, unavailable)
+  required init?(coder: NSCoder) {
+    fatalError("init(coder:) has not been implemented")
+  }
+
+  override func viewDidMoveToWindow() {
+    super.viewDidMoveToWindow()
+    configureWindow()
+    scheduleTrafficLightCorrection()
+  }
+
+  override func layout() {
+    super.layout()
+    // SwiftUI's NavigationSplitView installs its own toolbar (including an
+    // automatic sidebar toggle) after the window first attaches, so hiding
+    // it once in `configureWindow` misses it. Re-hide on every layout pass:
+    // the 52pt native toolbar row otherwise sits over the tab strip and the
+    // page, and its toggle duplicates the sidebar control (#0895).
+    if let window {
+      hideHubNativeToolbarRow(window)
+      HubTrafficLightPositioning.apply(to: window)
+      scheduleTrafficLightCorrection()
     }
+  }
 
-    init(appearance: HubAppAppearance) {
-        hubAppearance = appearance
-        super.init(frame: .zero)
+  private func scheduleTrafficLightCorrection() {
+    guard !trafficLightCorrectionQueued else { return }
+    trafficLightCorrectionQueued = true
+    DispatchQueue.main.async { [weak self] in
+      guard let self else { return }
+      self.trafficLightCorrectionQueued = false
+      guard let window = self.window else { return }
+      HubTrafficLightPositioning.apply(to: window)
     }
+  }
 
-    @available(*, unavailable)
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
+  private func configureWindow() {
+    guard let window else { return }
+    let appKitAppearance = hubAppearance.appKitAppearance
+    window.appearance = appKitAppearance
+    configureHubWorkspaceWindowChrome(window)
+    window.isOpaque = true
+    let backgroundColor = hubAppearance.appKitWindowBackgroundColor(
+      systemAppearance: window.effectiveAppearance
+    )
+    window.backgroundColor = backgroundColor
+    window.contentView?.wantsLayer = true
+    window.contentView?.layer?.backgroundColor = backgroundColor.cgColor
+
+    var frameView = window.contentView?.superview
+    while let view = frameView {
+      view.appearance = appKitAppearance
+      view.wantsLayer = true
+      view.layer?.backgroundColor = backgroundColor.cgColor
+      frameView = view.superview
     }
-
-    override func viewDidMoveToWindow() {
-        super.viewDidMoveToWindow()
-        configureWindow()
-        scheduleTrafficLightCorrection()
-    }
-
-    override func layout() {
-        super.layout()
-        // SwiftUI's NavigationSplitView installs its own toolbar (including an
-        // automatic sidebar toggle) after the window first attaches, so hiding
-        // it once in `configureWindow` misses it. Re-hide on every layout pass:
-        // the 52pt native toolbar row otherwise sits over the tab strip and the
-        // page, and its toggle duplicates the sidebar control (#0895).
-        if let window {
-            hideHubNativeToolbarRow(window)
-            HubTrafficLightPositioning.apply(to: window)
-            scheduleTrafficLightCorrection()
-        }
-    }
-
-    private func scheduleTrafficLightCorrection() {
-        guard !trafficLightCorrectionQueued else { return }
-        trafficLightCorrectionQueued = true
-        DispatchQueue.main.async { [weak self] in
-            guard let self else { return }
-            self.trafficLightCorrectionQueued = false
-            guard let window = self.window else { return }
-            HubTrafficLightPositioning.apply(to: window)
-        }
-    }
-
-    private func configureWindow() {
-        guard let window else { return }
-        let appKitAppearance = hubAppearance.appKitAppearance
-        window.appearance = appKitAppearance
-        configureHubWorkspaceWindowChrome(window)
-        window.isOpaque = true
-        window.backgroundColor = hubAppearance.appKitWindowBackgroundColor
-        window.contentView?.wantsLayer = true
-        window.contentView?.layer?.backgroundColor = hubAppearance.appKitWindowBackgroundColor.cgColor
-
-        var frameView = window.contentView?.superview
-        while let view = frameView {
-            view.appearance = appKitAppearance
-            view.wantsLayer = true
-            view.layer?.backgroundColor = hubAppearance.appKitWindowBackgroundColor.cgColor
-            frameView = view.superview
-        }
-        applyNativeSurfaceBackgrounds(
-            in: window.contentView,
-            color: hubAppearance.appKitWindowBackgroundColor,
-            appearance: appKitAppearance
-        )
-    }
+    applyNativeSurfaceBackgrounds(
+      in: window.contentView,
+      color: backgroundColor,
+      appearance: appKitAppearance
+    )
+  }
 }
 
 /// Gives the workspace window a full-height sidebar with no visible titlebar or
@@ -333,55 +344,55 @@ final class HubWindowChromeView: NSView {
 /// Mission Control, and the app switcher) all stay intact — only the drawing
 /// of the title is suppressed.
 func configureHubWorkspaceWindowChrome(_ window: NSWindow) {
-    window.styleMask.insert(.fullSizeContentView)
-    // Background dragging would treat the transparent titlebar's hosted tabs
-    // as empty window chrome. The tab strip supplies an explicit drag region
-    // only in its unoccupied space instead.
-    window.isMovableByWindowBackground = false
-    window.titleVisibility = .hidden
-    window.titlebarAppearsTransparent = true
-    window.titlebarSeparatorStyle = .none
-    hideHubNativeToolbarRow(window)
+  window.styleMask.insert(.fullSizeContentView)
+  // Background dragging would treat the transparent titlebar's hosted tabs
+  // as empty window chrome. The tab strip supplies an explicit drag region
+  // only in its unoccupied space instead.
+  window.isMovableByWindowBackground = false
+  window.titleVisibility = .hidden
+  window.titlebarAppearsTransparent = true
+  window.titlebarSeparatorStyle = .none
+  hideHubNativeToolbarRow(window)
 
-    // SwiftUI may hide the standard buttons when a scene's toolbar visibility
-    // changes. Keep the window's own close/minimize/fullscreen controls
-    // explicitly visible so the transparent titlebar never loses them.
-    let standardButtons: [NSWindow.ButtonType] = [.closeButton, .miniaturizeButton, .zoomButton]
-    for buttonType in standardButtons {
-        window.standardWindowButton(buttonType)?.isHidden = false
-    }
-    HubTrafficLightPositioning.apply(to: window)
+  // SwiftUI may hide the standard buttons when a scene's toolbar visibility
+  // changes. Keep the window's own close/minimize/fullscreen controls
+  // explicitly visible so the transparent titlebar never loses them.
+  let standardButtons: [NSWindow.ButtonType] = [.closeButton, .miniaturizeButton, .zoomButton]
+  for buttonType in standardButtons {
+    window.standardWindowButton(buttonType)?.isHidden = false
+  }
+  HubTrafficLightPositioning.apply(to: window)
 }
 
 /// Keep the three native controls aligned to the center of the 40pt tab row.
 /// Their initial positions are retained because the appearance configurator
 /// runs repeatedly as SwiftUI attaches and lays out the window.
 enum HubTrafficLightPositioning {
-    static let horizontalAdjustment: CGFloat = 15
-    static let verticalAdjustment: CGFloat = -4
+  static let horizontalAdjustment: CGFloat = 15
+  static let verticalAdjustment: CGFloat = -4
 
-    static var correctionTransform: CGAffineTransform {
-        CGAffineTransform(translationX: horizontalAdjustment, y: verticalAdjustment)
-    }
+  static var correctionTransform: CGAffineTransform {
+    CGAffineTransform(translationX: horizontalAdjustment, y: verticalAdjustment)
+  }
 
-    /// Reserve space through the translated controls' visual and hit-test edge.
-    /// `NSView.frame` remains in AppKit's untransformed titlebar coordinates.
-    static func reservedInset(frameMaxX: CGFloat) -> CGFloat {
-        max(frameMaxX + horizontalAdjustment + 8, 12)
-    }
+  /// Reserve space through the translated controls' visual and hit-test edge.
+  /// `NSView.frame` remains in AppKit's untransformed titlebar coordinates.
+  static func reservedInset(frameMaxX: CGFloat) -> CGFloat {
+    max(frameMaxX + horizontalAdjustment + 8, 12)
+  }
 
-    static func apply(to window: NSWindow) {
-        let types: [NSWindow.ButtonType] = [.closeButton, .miniaturizeButton, .zoomButton]
-        for type in types {
-            guard let button = window.standardWindowButton(type) else { continue }
-            // AppKit's titlebar layout manager resets these views' frames, so
-            // move the native controls at the layer level after each layout.
-            // This keeps drawing and hit testing aligned without accumulating
-            // offsets when the window resizes or enters fullscreen.
-            button.wantsLayer = true
-            button.layer?.setAffineTransform(correctionTransform)
-        }
+  static func apply(to window: NSWindow) {
+    let types: [NSWindow.ButtonType] = [.closeButton, .miniaturizeButton, .zoomButton]
+    for type in types {
+      guard let button = window.standardWindowButton(type) else { continue }
+      // AppKit's titlebar layout manager resets these views' frames, so
+      // move the native controls at the layer level after each layout.
+      // This keeps drawing and hit testing aligned without accumulating
+      // offsets when the window resizes or enters fullscreen.
+      button.wantsLayer = true
+      button.layer?.setAffineTransform(correctionTransform)
     }
+  }
 }
 
 /// SwiftUI's identifier for the sidebar toggle it adds to a
@@ -391,8 +402,8 @@ enum HubTrafficLightPositioning {
 /// a toolbar SwiftUI re-shows later still cannot duplicate the control. If a
 /// future macOS renames the identifier the row stays hidden regardless.
 enum HubNativeToolbar {
-    static let swiftUISidebarToggleItemIdentifier =
-        "com.apple.SwiftUI.navigationSplitView.toggleSidebar"
+  static let swiftUISidebarToggleItemIdentifier =
+    "com.apple.SwiftUI.navigationSplitView.toggleSidebar"
 }
 
 /// Hides the native toolbar row, which the Hub never shows, and removes the
@@ -403,86 +414,88 @@ enum HubNativeToolbar {
 /// (the chrome view does so on every layout pass). Both operations are
 /// idempotent and cheap when already applied.
 func hideHubNativeToolbarRow(_ window: NSWindow) {
-    guard let toolbar = window.toolbar else { return }
-    if toolbar.isVisible {
-        toolbar.isVisible = false
-    }
-    for index in toolbar.items.indices.reversed()
-    where toolbar.items[index].itemIdentifier.rawValue
-        == HubNativeToolbar.swiftUISidebarToggleItemIdentifier
-    {
-        toolbar.removeItem(at: index)
-    }
+  guard let toolbar = window.toolbar else { return }
+  if toolbar.isVisible {
+    toolbar.isVisible = false
+  }
+  for index in toolbar.items.indices.reversed()
+  where toolbar.items[index].itemIdentifier.rawValue
+    == HubNativeToolbar.swiftUISidebarToggleItemIdentifier
+  {
+    toolbar.removeItem(at: index)
+  }
 }
 
 private func applyNativeSurfaceBackgrounds(
-    in view: NSView?,
-    color: NSColor,
-    appearance: NSAppearance?
+  in view: NSView?,
+  color: NSColor,
+  appearance: NSAppearance?
 ) {
-    guard let view else { return }
-    let typeName = String(describing: type(of: view))
-    // The workspace web container (page + find bar) manages its own surfaces:
-    // the page is pinned to the system appearance and the find bar draws with
-    // vibrancy. Painting flat Hub colors over it turns the bar into an
-    // unreadable solid strip (#0789, #0795).
-    if view is HubServerWebContainerView {
-        return
-    }
-    guard !typeName.contains("WKWebView") else { return }
+  guard let view else { return }
+  let typeName = String(describing: type(of: view))
+  // The workspace web container (page + find bar) manages its own surfaces:
+  // the page is pinned to the system appearance and the find bar draws with
+  // vibrancy. Painting flat Hub colors over it turns the bar into an
+  // unreadable solid strip (#0789, #0795).
+  if view is HubServerWebContainerView {
+    return
+  }
+  guard !typeName.contains("WKWebView") else { return }
 
-    // Keep the split-view/frame backing in sync with the selected Hub theme.
-    if view is NSVisualEffectView || view is NSSplitView || typeName.contains("NSBlurryAlleywayView")
-    {
-        view.appearance = appearance
-        view.wantsLayer = true
-        view.layer?.backgroundColor = color.cgColor
-    }
+  // Keep the split-view/frame backing in sync with the selected Hub theme.
+  if view is NSVisualEffectView || view is NSSplitView || typeName.contains("NSBlurryAlleywayView")
+  {
+    view.appearance = appearance
+    view.wantsLayer = true
+    view.layer?.backgroundColor = color.cgColor
+  }
 
-    // NavigationSplitView's leading frame is painted by its clip view rather
-    // than by the SwiftUI List. Match that native surface without putting a
-    // layer above the list rows themselves.
-    if let clipView = view as? NSClipView {
-        clipView.drawsBackground = true
-        clipView.backgroundColor = color
-    }
+  // NavigationSplitView's leading frame is painted by its clip view rather
+  // than by the SwiftUI List. Match that native surface without putting a
+  // layer above the list rows themselves.
+  if let clipView = view as? NSClipView {
+    clipView.drawsBackground = true
+    clipView.backgroundColor = color
+  }
 
-    view.subviews.forEach { subview in
-        applyNativeSurfaceBackgrounds(in: subview, color: color, appearance: appearance)
-    }
+  view.subviews.forEach { subview in
+    applyNativeSurfaceBackgrounds(in: subview, color: color, appearance: appearance)
+  }
 }
 
 /// App icon variants are regular named assets rather than AppIcon appearances:
 /// macOS app-icon catalogs do not assign appearance variants to the Dock icon.
 final class DockIconAppearanceController {
-    private var appearanceObserver: NSKeyValueObservation?
-    var appearanceOverride: HubAppAppearance = .system {
-        didSet { updateDockIcon() }
-    }
+  private var appearanceObserver: NSKeyValueObservation?
+  var appearanceOverride: HubAppAppearance = .system {
+    didSet { updateDockIcon() }
+  }
 
-    func start() {
-        updateDockIcon()
-        appearanceObserver = NSApp.observe(\.effectiveAppearance, options: .new) { [weak self] _, _ in
-            self?.updateDockIcon()
-        }
+  func start() {
+    updateDockIcon()
+    appearanceObserver = NSApp.observe(\.effectiveAppearance, options: .new) { [weak self] _, _ in
+      self?.updateDockIcon()
     }
+  }
 
-    private func updateDockIcon() {
-        NSApp.applicationIconImage = NSImage(named: Self.assetName(for: NSApp.effectiveAppearance, override: appearanceOverride))
-    }
+  private func updateDockIcon() {
+    NSApp.applicationIconImage = NSImage(
+      named: Self.assetName(for: NSApp.effectiveAppearance, override: appearanceOverride))
+  }
 
-    static func assetName(for appearance: NSAppearance) -> NSImage.Name {
-        assetName(for: appearance, override: .system)
-    }
+  static func assetName(for appearance: NSAppearance) -> NSImage.Name {
+    assetName(for: appearance, override: .system)
+  }
 
-    static func assetName(for appearance: NSAppearance, override: HubAppAppearance) -> NSImage.Name {
-        switch override {
-        case .light:
-            return "DockIconLight"
-        case .dark:
-            return "DockIconDark"
-        case .system:
-            return appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua ? "DockIconDark" : "DockIconLight"
-        }
+  static func assetName(for appearance: NSAppearance, override: HubAppAppearance) -> NSImage.Name {
+    switch override {
+    case .light:
+      return "DockIconLight"
+    case .dark:
+      return "DockIconDark"
+    case .system:
+      return appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
+        ? "DockIconDark" : "DockIconLight"
     }
+  }
 }
