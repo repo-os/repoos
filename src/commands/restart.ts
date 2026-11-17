@@ -7,6 +7,8 @@ import { boardRoot } from "../core/config.js";
 import { restartRepoServer, type RestartPath } from "../core/server-restart.js";
 import { c } from "../cli/colors.js";
 import { locateRepoServer } from "../core/server-locate.js";
+import { loadConfig } from "../core/config.js";
+import { readLocalCliToken } from "../server/local-token.js";
 
 const PATH_LABEL: Record<RestartPath, string> = {
   "managed-service": "managed service (`repoos service`)",
@@ -32,6 +34,8 @@ export async function cmdRestart(argv: string[]): Promise<void> {
   }
 
   const { root } = boardRoot();
+  const config = loadConfig(root);
+  const localToken = readLocalCliToken(root, config.cacheDir);
   if (whenIdle || !force) {
     const server = await locateRepoServer(root, { portFilter });
     if (!server) {
@@ -43,7 +47,9 @@ export async function cmdRestart(argv: string[]): Promise<void> {
     const host = server.host === "0.0.0.0" ? "127.0.0.1" : server.host;
     for (;;) {
       try {
-        const response = await fetch(`http://${host}:${server.port}/api/update-status`);
+        const response = await fetch(`http://${host}:${server.port}/api/update-status`, {
+          headers: localToken ? { "x-repoos-local-token": localToken } : {},
+        });
         if (!response.ok) throw new Error(`server returned HTTP ${response.status}`);
         const status = (await response.json()) as {
           activeWork?: { agents?: number; checks?: number };

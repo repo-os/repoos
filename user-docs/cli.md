@@ -606,6 +606,10 @@ manual command instead of claiming success. It never touches another repo's
 server and refuses when the pid belongs to another user (it never escalates to
 sudo).
 
+When auth is enabled, the CLI uses the server's mode-0600 local token for its
+loopback-only idle check. A logged-in user's terminal or local agent can run the
+command without copying a browser session cookie.
+
 ### `repoos servers [--json] [--prune] [--tailscale]`
 
 Lists every control-plane `repoos serve` that registered itself under

@@ -21,6 +21,10 @@ import { restartCommand } from "../../core/service-manager.js";
 import { installRoot, readInstallVersion } from "../../commands/upgrade.js";
 import { detectSupervisor } from "../../core/supervisor-detect.js";
 import { isNewerVersion } from "../../core/release-version.js";
+import { spawn } from "node:child_process";
+import { repoosBinary } from "../../core/service-manager.js";
+import { compiledCliEntry } from "../../core/serve-lock-flags.js";
+import { existsSync } from "node:fs";
 
 let idleRestartTimer: ReturnType<typeof setInterval> | null = null;
 let idleRestartPending = false;
@@ -125,7 +129,7 @@ export const getUpdateStatus: RouteHandler = (ctx, _req, res) => {
   });
 };
 
-/** Restart an installed upgrade through its known supervisor (#1075). */
+/** Restart an installed upgrade through its supervisor or a detached CLI helper. */
 export const restartInstalledUpgrade: RouteHandler = async (ctx, req, res) => {
   const body = (await readBody(req).catch(() => ({}))) as { whenIdle?: boolean; cancel?: boolean };
   if (body.cancel) {
@@ -135,7 +139,28 @@ export const restartInstalledUpgrade: RouteHandler = async (ctx, req, res) => {
     return json(res, 200, { state: "cancelled" });
   }
   const status = getInstalledUpgradeStatus(ctx);
-  if (!status.supervised) return json(res, 409, { state: "manual", command: status.manualCommand });
+  if (!status.supervised) {
+    // The server cannot stop and relaunch itself: the helper must outlive this
+    // process and use the CLI's verified hand-run restart path.
+    try {
+      const { bin, needsCliEntry } = repoosBinary();
+      const entry = compiledCliEntry();
+      if (needsCliEntry && !existsSync(entry))
+        return json(res, 503, { state: "manual", reason: `CLI entry not found at ${entry}`, command: "repoos restart" });
+      const args = [...(needsCliEntry ? [entry] : []), "restart", "--force"];
+      if (ctx.servePort) args.push("--port", String(ctx.servePort));
+      const helper = spawn(bin, args, { cwd: ctx.config.root, detached: true, stdio: "ignore", env: process.env });
+      helper.on("error", () => {});
+      helper.unref();
+      return json(res, 202, { state: "restarting" });
+    } catch (error) {
+      return json(res, 503, {
+        state: "manual",
+        reason: error instanceof Error ? error.message : String(error),
+        command: "repoos restart",
+      });
+    }
+  }
   if (body.whenIdle) {
     idleRestartPending = true;
     if (!idleRestartTimer) {

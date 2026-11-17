@@ -37,6 +37,7 @@ const restartStatus = ref<{
   manualCommand: string;
 } | null>(null);
 const restartPendingAction = ref(false);
+const restartError = ref<string | null>(null);
 const restartOpen = ref(false);
 const releaseRun = ref<{ state: string; phase: string | null } | null>(null);
 const restartFixtureActive = ref(false);
@@ -129,7 +130,7 @@ onMounted(async () => {
       runningVersion: "0.5.78",
       installedVersion: "0.5.79",
       activeWork: { agents: 2, checks: 1 },
-      supervised: true,
+      supervised: false,
       manualCommand: "repoos restart",
     };
     releaseRun.value = { state: "idle", phase: null };
@@ -192,12 +193,15 @@ onMounted(async () => {
 
 async function restartInstalled(whenIdle = false, cancel = false): Promise<void> {
   restartPendingAction.value = true;
+  restartError.value = null;
   try {
     await api("/api/update-status/restart", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ whenIdle, cancel }),
     });
+  } catch (error) {
+    restartError.value = error instanceof Error ? error.message : String(error);
   } finally {
     restartPendingAction.value = false;
     // The replacement server reconnects through the app's existing health loop.
@@ -318,9 +322,9 @@ onUnmounted(() => {
         <DialogDescription class="release-update-description">
           This server is still running v{{ restartStatus.runningVersion }}.
           {{ restartStatus.activeWork.agents }} agents and
-          {{ restartStatus.activeWork.checks }} checks running. Restart now briefly interrupts work;
-          see <a href="https://github.com/repo-os/repoos/issues/214">#0214</a> for how agents
-          resume.
+          {{ restartStatus.activeWork.checks }} checks running. Restart now briefly interrupts
+          agents and checks; the agents resume after the new server starts. See
+          <a href="https://github.com/repo-os/repoos/issues/214">#0214</a> for details.
         </DialogDescription>
         <div class="release-update-actions">
           <template v-if="restartStatus.supervised">
@@ -349,22 +353,12 @@ onUnmounted(() => {
             >
           </template>
           <div v-else class="release-update-manual">
-            <p class="release-update-muted">
-              This server is not supervised. Copy the command and run it in a terminal to restart
-              safely.
-            </p>
-            <code class="release-update-code">{{ restartStatus.manualCommand }}</code>
-            <Button
-              size="sm"
-              variant="ghost"
-              :aria-label="copied ? 'Copied restart command' : 'Copy restart command'"
-              @click="void copyRestartCommand()"
-              ><Check v-if="copied" class="size-[14px]" /><Copy v-else class="size-[14px]" />{{
-                copied ? "Copied" : "Copy restart command"
-              }}</Button
-            >
-            <p v-if="copyFailed" class="release-update-muted" role="status">
-              Couldn’t copy automatically — select the command above and copy it.
+            <p class="release-update-muted">This server was started by hand. RepoOS will restart it with the same command and port.</p>
+            <Button size="sm" :disabled="restartPendingAction" @click="void restartInstalled()">
+              {{ restartPendingAction ? "Restarting…" : "Restart now" }}
+            </Button>
+            <p v-if="restartError" class="release-update-muted" role="alert">
+              Could not start the restart helper: {{ restartError }} Run <code>repoos restart</code> in a terminal.
             </p>
           </div>
         </div>
