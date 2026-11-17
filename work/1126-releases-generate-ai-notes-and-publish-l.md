@@ -236,3 +236,4 @@ Reuse the existing AI-draft run in ReleasesView.vue and the server release run; 
 - 2026-11-17T05:16:44Z · message_delivered: 1 message(s)
 - 2026-11-17T05:16:45Z · status review→active
 - 2026-11-17T05:44:57Z · message_queued at 2026-11-17T05:44:57.499Z
+- 2026-11-17T05:44:57Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
