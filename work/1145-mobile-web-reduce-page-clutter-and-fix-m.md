@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/mobile-web-reduce-page-clutter-and-fix-m
 created_at: "2026-11-17T02:52:23Z"
-updated_at: "2026-11-17T03:27:42Z"
+updated_at: "2026-11-17T03:30:29Z"
 dev_error_count: 1
 ---
 ## Problem
@@ -54,10 +54,10 @@ On a phone, page headings and content start at a consistent left edge, essential
 "highlight": ".mobile-more-sheet",
 "steps": [
 {
-  "click": ".tabbar button[aria-haspopup=\"dialog\"]"
+"click": ".tabbar button[aria-haspopup=\"dialog\"]"
 },
 {
-  "waitMs": 400
+"waitMs": 400
 }
 ],
 "theme": "dark",
@@ -90,3 +90,4 @@ On a phone, page headings and content start at a consistent left edge, essential
 - 2026-11-17T03:23:37Z · body
 - 2026-11-17T03:25:04Z · body
 - 2026-11-17T03:27:42Z · CTO nudge: held — handoff gate is running
+- 2026-11-17T03:30:29Z · note: ui verification passed: 3 of 3 shots captured with clean console
