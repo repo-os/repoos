@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/mobile-task-detail-make-tabs-and-preview
 created_at: "2026-11-17T03:06:27Z"
-updated_at: "2026-11-17T05:41:39Z"
+updated_at: "2026-11-17T05:46:25Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-17T05:37:46.311Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Phone task detail at 320px: all tabs and the expand control on screen (target \"default\"): loading state detected: loading text \"Loading full diff… this may take a momen\" on /work?task=9999&tab=changes (http://127.0.0.1:43923/work?task=9999&tab=changes&shotState=drawer%3AreviewWithBranch)"
 ---
@@ -37,15 +37,15 @@ Use the attached 390×844 screenshot. Inspect both themes and a long task title.
 "route": "/work?task=9999&tab=details",
 "highlight": ".quickbar-row > .preview-hint",
 "steps": [
-  {
-    "waitFor": ".drawer-tabs"
-  },
-  {
-    "waitFor": ".quickbar-row > .preview-hint"
-  },
-  {
-    "waitMs": 300
-  }
+{
+  "waitFor": ".drawer-tabs"
+},
+{
+  "waitFor": ".quickbar-row > .preview-hint"
+},
+{
+  "waitMs": 300
+}
 ],
 "state": "drawer:reviewWithBranch",
 "theme": "dark",
@@ -58,12 +58,12 @@ Use the attached 390×844 screenshot. Inspect both themes and a long task title.
 "route": "/work?task=9999&tab=details",
 "highlight": ".drawer-tabs",
 "steps": [
-  {
-    "waitFor": ".drawer-tabs"
-  },
-  {
-    "waitMs": 300
-  }
+{
+  "waitFor": ".drawer-tabs"
+},
+{
+  "waitMs": 300
+}
 ],
 "state": "drawer:reviewWithBranch",
 "theme": "light",
@@ -96,3 +96,4 @@ Use the attached 390×844 screenshot. Inspect both themes and a long task title.
 - 2026-11-17T05:37:46Z · message_delivered: 1 message(s)
 - 2026-11-17T05:37:54Z · body
 - 2026-11-17T05:41:39Z · body
+- 2026-11-17T05:46:25Z · body
