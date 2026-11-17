@@ -15,6 +15,7 @@ updated_at: "2026-11-17T16:24:07Z"
 handoff_signal_retry_count: 2
 review_rounds: 1
 review_passes: 1
+deferred_handoff_resume_count: 1
 ---
 ## Problem
 
