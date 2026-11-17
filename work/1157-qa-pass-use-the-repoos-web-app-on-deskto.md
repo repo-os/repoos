@@ -6,6 +6,9 @@ status: review
 needs_input: true
 needs_input_reason: review-failed
 needs_input_detail: the opencode agent timed out after 15 minutes
+debug_tldr: Review agent timed out twice at 15 minutes with no report — re-run it with a faster reviewer model or split the QA task.
+debug_tldr_at: "2026-11-17T19:03:26Z"
+debug_tldr_key: review-failed|the opencode agent timed out after 15 minutes
 priority: p1
 area: web
 assigned_to: ai
@@ -14,7 +17,7 @@ branch: feat/qa-pass-use-the-repoos-web-app-on-deskto
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T15:21:15Z"
-updated_at: "2026-11-17T19:03:22Z"
+updated_at: "2026-11-17T19:03:26Z"
 review_timeout_retries: 1
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-11-17T16:50:57.959Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-17T17:19:58.428Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-17T17:28:43.649Z\",\"reason\":\"clean-exit-without-handoff\"}]"
