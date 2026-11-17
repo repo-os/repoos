@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "1159"
 title: "QA pass: use the Android Hub app on the phone, find broken things and fix them"
 type: bug
@@ -39,3 +40,4 @@ Use just deploy-phone only if the saved port works; otherwise do not ask Nick fo
 - 2026-11-17T15:51:38Z · status inbox→ready
 - 2026-11-17T15:51:41Z · status ready→active, branch
 - 2026-11-17T15:56:45Z · message_queued at 2026-11-17T15:56:45.622Z
+
