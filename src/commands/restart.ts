@@ -17,6 +17,7 @@ const PATH_LABEL: Record<RestartPath, string> = {
 
 export async function cmdRestart(argv: string[]): Promise<void> {
   let portFilter: number | undefined;
+  let rootOverride: string | undefined;
   const whenIdle = argv.includes("--when-idle");
   const force = argv.includes("--force");
   for (let i = 0; i < argv.length; i++) {
@@ -30,9 +31,19 @@ export async function cmdRestart(argv: string[]): Promise<void> {
       }
       portFilter = n;
     }
+    if (argv[i] === "--root") {
+      const value = argv[++i];
+      if (!value) {
+        console.error(c.red("  ✗ Invalid --root value: missing path"));
+        process.exitCode = 1;
+        return;
+      }
+      rootOverride = value;
+    }
   }
 
-  const { root } = boardRoot();
+  const { root: boardRootPath } = boardRoot();
+  const root = rootOverride ?? boardRootPath;
   const config = loadConfig(root);
   const localToken = readLocalCliToken(root, config.cacheDir);
   if (whenIdle || !force) {

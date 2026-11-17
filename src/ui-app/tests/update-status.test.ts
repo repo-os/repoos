@@ -124,10 +124,40 @@ describe("installed upgrade status and restart route", () => {
       expect(result).toEqual({ ok: true });
       expect(mocks.spawn).toHaveBeenCalledWith(
         "bun",
-        ["restart", "--force", "--port", "7123"],
-        expect.objectContaining({ cwd: "/fake/project", detached: true, stdio: "ignore" }),
+        ["restart", "--force", "--root", "/fake/project", "--port", "7123"],
+        expect.objectContaining({
+          cwd: "/fake/project",
+          detached: true,
+          stdio: ["ignore", "pipe", "pipe"],
+        }),
       );
     });
+  });
+
+  it("surfaces a non-zero helper exit and its captured refusal output", async () => {
+    const child = new EventEmitter() as EventEmitter & {
+      unref: () => void;
+      stdout: EventEmitter;
+      stderr: EventEmitter;
+    };
+    child.unref = vi.fn();
+    child.stdout = new EventEmitter();
+    child.stderr = new EventEmitter();
+    const started = spawnHandRunRestartHelper("/fake/project", 7123, {
+      binary: () => ({ bin: "bun", needsCliEntry: false }),
+      spawn: (() => {
+        queueMicrotask(() => child.emit("spawn"));
+        return child;
+      }) as never,
+    });
+    await expect(started).resolves.toEqual({ ok: true });
+    child.stderr.emit("data", "Could not determine how this server is supervised");
+    child.emit("exit", 1, null);
+    const capture = responseCapture();
+    getUpdateStatus(context(), {} as never, capture.res, {});
+    expect(capture.body().restartFailure).toContain(
+      "Could not determine how this server is supervised",
+    );
   });
 
   it("returns 503 with a manual command when helper spawning fails", async () => {
@@ -158,6 +188,37 @@ describe("installed upgrade status and restart route", () => {
     );
     expect(capture.status()).toBe(202);
     expect(capture.body()).toEqual({ state: "restarting" });
+  });
+
+  it("waits for hand-run servers when requested to restart when idle", async () => {
+    setRestartHelperForTests(async () => ({ ok: true }));
+    const capture = responseCapture();
+    await restartInstalledUpgrade(
+      context(),
+      { url: "/", method: "POST", body: JSON.stringify({ whenIdle: true }) } as never,
+      capture.res,
+      {},
+    );
+    expect(capture.status()).toBe(202);
+    expect(capture.body()).toEqual({ state: "waiting-for-idle" });
+    expect(mocks.spawn).not.toHaveBeenCalled();
+  });
+
+  it("does not promise an automatic restart when supervisor detection is uncertain", async () => {
+    mocks.detectSupervisor.mockReturnValue({ kind: "uncertain", reason: "permission denied" });
+    const status = responseCapture();
+    getUpdateStatus(context(), {} as never, status.res, {});
+    expect(status.body()).toMatchObject({ supervised: false, supervisorKind: "uncertain" });
+    const capture = responseCapture();
+    await restartInstalledUpgrade(
+      context(),
+      { url: "/", method: "POST" } as never,
+      capture.res,
+      {},
+    );
+    expect(capture.status()).toBe(503);
+    expect(capture.body().command).toContain("repoos restart --root /fake/project --port 7123");
+    expect(mocks.spawn).not.toHaveBeenCalled();
   });
 
   it("keeps the supervised restart route on the helper path", async () => {

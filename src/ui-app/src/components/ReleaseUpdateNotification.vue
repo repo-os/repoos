@@ -34,6 +34,10 @@ const restartStatus = ref<{
   installedVersion: string | null;
   activeWork: { agents: number; checks: number };
   supervised: boolean;
+  supervisorKind?: string;
+  supervisorReason?: string | null;
+  restartFailure?: string | null;
+  restartCommand?: string;
 } | null>(null);
 const restartPendingAction = ref(false);
 const restartAccepted = ref(false);
@@ -42,6 +46,7 @@ const restartOpen = ref(false);
 const releaseRun = ref<{ state: string; phase: string | null } | null>(null);
 const restartFixtureActive = ref(false);
 let restartStatusTimer: ReturnType<typeof setInterval> | null = null;
+let restartRequestedAt = 0;
 let releaseRunTimer: ReturnType<typeof setInterval> | null = null;
 const dismissed = ref(false);
 const open = ref(false);
@@ -167,12 +172,21 @@ onMounted(async () => {
     restartStatusTimer = setInterval(async () => {
       try {
         restartStatus.value = await api("/api/update-status");
+        if (restartStatus.value?.restartFailure) {
+          restartError.value = restartStatus.value.restartFailure;
+          restartAccepted.value = false;
+          restartPendingAction.value = false;
+        }
         if (!restartStatus.value?.restartPending) {
           restartAccepted.value = false;
           restartPendingAction.value = false;
         }
       } catch {
-        /* reconnecting */
+        if (restartAccepted.value && Date.now() - restartRequestedAt > 30_000) {
+          restartAccepted.value = false;
+          restartPendingAction.value = false;
+          restartError.value = "The server did not come back after the restart.";
+        }
       }
     }, 3000);
   if (applyShotFixture()) return;
@@ -205,6 +219,7 @@ async function restartInstalled(whenIdle = false, cancel = false): Promise<void>
     });
     restartAccepted.value = result.state === "restarting";
     restartPendingAction.value = restartAccepted.value;
+    if (restartAccepted.value) restartRequestedAt = Date.now();
   } catch (error) {
     restartError.value = error instanceof Error ? error.message : String(error);
   } finally {
@@ -320,7 +335,15 @@ onUnmounted(() => {
           <a href="https://github.com/repo-os/repoos/issues/214">#0214</a> for details.
         </DialogDescription>
         <div class="release-update-actions">
-          <template v-if="restartStatus.supervised">
+          <template v-if="restartStatus.supervisorKind === 'uncertain'">
+            <p class="release-update-muted" role="alert">
+              RepoOS cannot safely identify this server’s supervisor:
+              {{ restartStatus.supervisorReason }}. Automatic restart is unavailable. Run
+              <code>{{ restartStatus.restartCommand }}</code>
+              in a terminal after confirming the correct service.
+            </p>
+          </template>
+          <template v-else>
             <template v-if="!restartStatus.restartWhenIdlePending">
               <Button size="sm" :disabled="restartPendingAction" @click="void restartInstalled()"
                 >Restart now</Button
@@ -345,19 +368,31 @@ onUnmounted(() => {
               ></template
             >
           </template>
-          <div v-else class="release-update-manual">
+          <div
+            v-if="!restartStatus.supervised && restartStatus.supervisorKind !== 'uncertain'"
+            class="release-update-manual"
+          >
             <p class="release-update-muted">
-              This server was started by hand. RepoOS will restart it with the same command and
-              port.
+              This server was started by hand. RepoOS will relaunch it with the recorded serve flags
+              and port.
             </p>
             <Button size="sm" :disabled="restartPendingAction" @click="void restartInstalled()">
               {{ restartPendingAction ? "Restarting…" : "Restart now" }}
             </Button>
-            <p v-if="restartError" class="release-update-muted" role="alert">
-              Could not start the restart helper: {{ restartError }} Run
-              <code>repoos restart</code> in a terminal.
-            </p>
+            <Button
+              size="sm"
+              variant="ghost"
+              :disabled="restartPendingAction"
+              @click="void restartInstalled(true)"
+            >
+              Restart when idle
+            </Button>
           </div>
+          <p v-if="restartError" class="release-update-muted" role="alert">
+            Restart failed: {{ restartError }} Run
+            <code>{{ restartStatus.restartCommand }}</code>
+            in a terminal.
+          </p>
         </div>
       </DialogContent>
     </Dialog>
