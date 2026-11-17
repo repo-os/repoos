@@ -11,7 +11,7 @@ branch: feat/hub-find-servers-on-my-tailnet-stop-list
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T10:06:23Z"
-updated_at: "2026-11-17T11:09:35Z"
+updated_at: "2026-11-17T11:15:03Z"
 dev_error_count: 5
 engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-17T10:23:30.473Z\",\"kind\":\"dev-error\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-17T10:23:33.736Z\",\"kind\":\"dev-error\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-17T10:23:36.541Z\",\"kind\":\"dev-error\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-17T10:33:52.872Z\",\"kind\":\"dev-error\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-17T10:44:07.967Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -66,3 +66,4 @@ Do not add runtime dependencies. The discovery endpoint exposes names/ports only
 - 2026-11-17T10:53:32Z · needs_input
 - 2026-11-17T11:05:38Z · body
 - 2026-11-17T11:09:35Z · body
+- 2026-11-17T11:15:03Z · body
