@@ -99,3 +99,4 @@ Direct tab-click coverage passes, but review identified a separate app lifecycle
 - 2026-11-17T21:07:48Z · message_delivered: 1 message(s)
 - 2026-11-17T21:12:45Z · note: ui verification passed: 1 shot captured with clean console
 - 2026-11-17T21:12:46Z · message_queued at 2026-11-17T21:12:46.728Z
+- 2026-11-17T21:12:46Z · handoff failed · task-file handoff failed at review · Engineering report draft is missing: .repoos/engineering-report-drafts/1163.md
