@@ -90,3 +90,4 @@ Start with the Work page at 390px and the bottom dock/heads/pipeline bar overlap
 - 2026-11-17T17:51:27Z · message_delivered: 3 message(s)
 - 2026-11-17T17:58:15Z · status active→review
 - 2026-11-17T17:58:16Z · message_queued at 2026-11-17T17:58:16.021Z
+- 2026-11-17T17:58:16Z · note: shots: skipped — the diff (3 changed paths) touches no capture target's globs — no UI change to capture
