@@ -1,5 +1,4 @@
 ---
-handoff_signal_retry_count: 1
 id: "1154"
 title: "Update/restart notice: don't suggest a launchd command for a hand-run server; offer a real restart and fix repoos restart auth (401)"
 type: bug
@@ -12,7 +11,8 @@ branch: feat/update-restart-notice-don-t-suggest-a-la
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T13:30:27Z"
-updated_at: "2026-11-17T15:59:00Z"
+updated_at: "2026-11-17T16:02:25Z"
+handoff_signal_retry_count: 1
 review_rounds: 2
 review_passes: 2
 ---
@@ -77,4 +77,4 @@ Read #1075 (the restart notice) and #1091 (`repoos restart`). A server that kill
 - 2026-11-17T15:53:50Z · status review→active
 - 2026-11-17T15:53:52Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-17T15:59:00Z · message_queued at 2026-11-17T15:59:00.602Z
-
+- 2026-11-17T16:02:25Z · message_delivered: 1 message(s)
