@@ -11,7 +11,7 @@ branch: feat/hub-find-servers-on-my-tailnet-stop-list
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T10:06:23Z"
-updated_at: "2026-11-17T14:55:38Z"
+updated_at: "2026-11-17T15:11:59Z"
 review_passes: 4
 review_rounds: 2
 dev_error_count: 5
@@ -144,3 +144,4 @@ Do not add runtime dependencies. The discovery endpoint exposes names/ports only
 - 2026-11-17T14:50:43Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: Verification passed and the handoff was already requested with `repoos mv 1153 review`. No long-running step remains. · stderr: (empty)
 - 2026-11-17T14:51:00Z · note: handoff requested (cli)
 - 2026-11-17T14:55:38Z · CTO nudge: held — handoff gate is running
+- 2026-11-17T15:11:59Z · note: ui verification passed: 1 shot captured with clean console (1 shot warning)
