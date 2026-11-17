@@ -12,7 +12,7 @@ branch: feat/qa-pass-use-the-android-hub-app-on-the-p
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T15:51:18Z"
-updated_at: "2026-11-17T18:49:48Z"
+updated_at: "2026-11-17T18:50:39Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: check-fmt:check — Formatting failed — run `bun run fmt` to fix:"
 last_handoff_failure_sha: 6408707035a76319101d84f6762c66fd175dd784
 review_rounds: 1
@@ -161,3 +161,4 @@ The Pixel 8 Android 16 (API 36) emulator was available and used after the saved 
 - 2026-11-17T18:46:04Z · handoff failed · task-file handoff failed at check · repoos check failed: check-fmt:check — Formatting failed — run `bun run fmt` to fix:
 - 2026-11-17T18:48:10Z · message_queued at 2026-11-17T18:48:10.610Z
 - 2026-11-17T18:49:48Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The lock gate now retains the tapped server through retries, offers Cancel after a rejected server-scope authentication, and opens that server after a successful retry. App-level tests cover both paths. The focused tests passed (6 tests), … · stderr: 2026-11-17T18:41:37.087188Z ERROR codex_core::tools::router: error=Exit code: 1 Wall time: 0 seconds Output: Failed to write file /Users/nick/code/nick/repoos-worktrees/feat/qa-pass-use-the-android-hub-app-on-the-p/mobile/src/components/LockOverlay.vue
+- 2026-11-17T18:50:39Z · CTO nudge: held — an undelivered message is already queued
