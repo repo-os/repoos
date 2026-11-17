@@ -11,7 +11,7 @@ branch: feat/fix-android-16-hub-status-bar-contrast-a
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T17:55:45Z"
-updated_at: "2026-11-17T18:37:37Z"
+updated_at: "2026-11-17T18:38:06Z"
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -52,3 +52,4 @@ This issue was observed on Android 16 (API 36), target SDK 36, with Android Syst
 - 2026-11-17T18:29:03Z · message_queued at 2026-11-17T18:29:03.587Z
 - 2026-11-17T18:30:39Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-17T18:37:37Z · body
+- 2026-11-17T18:38:06Z · queued message undelivered for 9m and the engineer produced no output — ending the turn so it is delivered
