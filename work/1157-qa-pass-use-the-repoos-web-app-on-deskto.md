@@ -167,3 +167,4 @@ Start with the Work page at 390px and the bottom dock/heads/pipeline bar overlap
 - 2026-11-17T20:12:47Z · body
 - 2026-11-17T20:15:42Z · CTO nudge: held — handoff gate is running
 - 2026-11-17T20:31:35Z · handoff failed · remote validation failed: test failure: gate exit 1 on thinkpad — fix it in the feature branch and re-run the gate
+- 2026-11-17T20:31:35Z · message_queued at 2026-11-17T20:31:35.559Z
