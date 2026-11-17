@@ -40,6 +40,7 @@ Human device step needed: the saved ADB target `100.117.244.33:37673` refused th
 
 ![add-server.png](/api/tasks/1159/attachments/att_9927f217-4dc6-4a4c-ba20-6b06cc134c70.png)
 ![add-server-empty-error.png](/api/tasks/1159/attachments/att_191c73fc-61ec-4341-b0dc-d5327efe70f3.png)
+![add-server-error-cleared.png](/api/tasks/1159/attachments/att_1c89da5f-5141-41cc-b511-55e551466b2e.png)
 
 ## Activity
 
@@ -76,3 +77,4 @@ Human device step needed: the saved ADB target `100.117.244.33:37673` refused th
 - 2026-11-17T17:40:28Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 2/3
 - 2026-11-17T17:59:33Z · screenshots
 - 2026-11-17T17:59:35Z · screenshots
+- 2026-11-17T17:59:37Z · screenshots
