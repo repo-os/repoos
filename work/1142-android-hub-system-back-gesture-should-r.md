@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/android-hub-system-back-gesture-should-r
 created_at: "2026-11-16T14:01:00Z"
-updated_at: "2026-11-17T00:29:36Z"
+updated_at: "2026-11-17T00:30:07Z"
 last_close_out_gate_ms: 785912
 last_close_out_gate_at: "2026-11-17T00:29:18.357Z"
 review_passes: 1
@@ -49,3 +49,4 @@ Inspect the existing navigation and native back behavior before implementing. Th
 - 2026-11-17T00:29:18Z · close-out gate completed in 786s
 - 2026-11-17T00:29:33Z · status done→done, release:success
 - 2026-11-17T00:29:36Z · message_dropped: 1 queued message(s) discarded — task is done
+- 2026-11-17T00:30:07Z · message_dropped: 1 queued message(s) discarded — task is done
