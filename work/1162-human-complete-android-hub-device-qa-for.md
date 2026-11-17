@@ -6,12 +6,11 @@ status: inbox
 hold: true
 priority: p1
 area: mobile
-depends_on: ["1159"]
 assigned_to: human
 created_by: t@t
 branch: ""
 created_at: "2026-11-17T17:33:14Z"
-updated_at: "2026-11-17T17:33:14Z"
+updated_at: "2026-11-17T17:33:52Z"
 ---
 ## Purpose
 
@@ -37,3 +36,4 @@ _Assigned to a human, not an AI agent. No `## Notes for AI` is required here; th
 ## Activity
 
 - 2026-11-17T17:33:14Z · created · t@t
+- 2026-11-17T17:33:52Z · depends_on
