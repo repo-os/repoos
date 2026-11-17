@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/mobile-hub-return-to-server-picker-from-
 created_at: "2026-11-17T05:37:20Z"
-updated_at: "2026-11-17T08:14:29Z"
+updated_at: "2026-11-17T10:23:29Z"
 last_close_out_gate_ms: 257063
 last_close_out_gate_at: "2026-11-17T08:14:06.158Z"
 review_passes: 2
@@ -122,3 +122,4 @@ Inspect the existing Hub server WebView architecture and navigation security bef
 - 2026-11-17T08:04:57Z · note: review pass 2: good to go
 - 2026-11-17T08:14:06Z · close-out gate completed in 257s
 - 2026-11-17T08:14:29Z · status done→done, release:success
+- 2026-11-17T10:23:29Z · message_dropped: 1 queued message(s) discarded — task is done
