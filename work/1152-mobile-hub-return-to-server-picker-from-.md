@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/mobile-hub-return-to-server-picker-from-
 created_at: "2026-11-17T05:37:20Z"
-updated_at: "2026-11-17T07:32:21Z"
+updated_at: "2026-11-17T07:42:07Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -109,3 +109,4 @@ Inspect the existing Hub server WebView architecture and navigation security bef
 - 2026-11-17T07:23:36Z · status review→active
 - 2026-11-17T07:29:35Z · body
 - 2026-11-17T07:32:21Z · CTO nudge: held — remote validation is running
+- 2026-11-17T07:42:07Z · body
