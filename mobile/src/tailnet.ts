@@ -15,6 +15,8 @@ export interface TailnetServer {
   host: string;
   /** Readable Tailscale machine name when it differs from the MagicDNS host. */
   displayName?: string;
+  dnsName?: string;
+  allowlistGroup?: string;
   port?: number;
   projectName?: string;
   root?: string;
@@ -127,9 +129,26 @@ export function mergeTailnetResults(
   );
   const byOrigin = new Map<string, DiscoveredServer>();
   const unreachable: DiscoveredServer[] = [];
+  const savedByHost = new Map<string, string>();
+  for (const server of savedServers) {
+    try {
+      const hostname = new URL(server.url).hostname.toLowerCase();
+      savedByHost.set(hostname, server.url);
+      savedByHost.set(hostname.split(".")[0] ?? hostname, server.url);
+    } catch { /* invalid saved entries cannot reconcile a peer */ }
+  }
 
   for (const row of rows) {
     if (row.unreachable || !row.url) {
+      const aliases = [row.host, row.dnsName, row.displayName].filter((value): value is string => !!value)
+        .map((value) => value.toLowerCase().replace(/\.$/, ""));
+      const savedUrl = aliases.map((alias) => savedByHost.get(alias)).find(Boolean);
+      if (savedUrl) {
+        const key = `saved-host:${row.host}`;
+        if (unreachable.some((entry) => entry.key === key)) continue;
+        unreachable.push({ key, url: savedUrl, name: nameFor(row), host: row.host, saved: true, https: true, selectable: false, note: "Already saved" });
+        continue;
+      }
       const key = `unreachable:${row.host}${row.port ? `:${row.port}` : ""}`;
       if (unreachable.some((entry) => entry.key === key)) continue;
       unreachable.push({
@@ -216,7 +235,7 @@ export async function fetchTailnetServers(
   const fetchImpl = options.fetchImpl ?? fetch;
   const label = options.serverName?.trim() || origin.replace(/^https:\/\//, "");
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), options.timeoutMs ?? 15_000);
+  const timer = setTimeout(() => controller.abort(), options.timeoutMs ?? 30_000);
   try {
     const res = await fetchImpl(`${origin}/api/servers/tailnet`, {
       signal: controller.signal,

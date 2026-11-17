@@ -104,6 +104,15 @@ describe("mobile tailnet discovery", () => {
     ]);
   });
 
+  it("marks an unreachable peer as saved when its host matches a saved server URL", () => {
+    const merged = mergeTailnetResults(
+      [{ host: "bee", dnsName: "bee.tail.ts.net", unreachable: true, reason: "timed out" }],
+      [{ url: "https://bee.tail.ts.net" }],
+    );
+    expect(merged).toHaveLength(1);
+    expect(merged[0]).toMatchObject({ saved: true, selectable: false, note: "Already saved" });
+  });
+
   it("uses a peer's readable Tailscale display name when no project is advertised", () => {
     const merged = mergeTailnetResults(
       [

@@ -10,6 +10,7 @@
  */
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
+import { TAILSCALE_HTTPS_PORTS } from "./tailscale.js";
 import { remoteHostUser } from "./remote-hosts.js";
 import type { RemoteValidationConfig, RemoteValidationHost } from "./types.js";
 
@@ -90,11 +91,11 @@ const UNSUPPORTED_MOBILE_OS = new Set(["android", "ios", "ipados", "tvos", "watc
 
 function isUnsupportedMobilePeer(peer: TailnetStatusPeer): boolean {
   const os = (peer.OS ?? "").trim().toLowerCase();
-  const name = (peer.HostName ?? "").trim().toLowerCase();
+  const name = `${peer.HostName ?? ""} ${peer.DNSName ?? ""}`.trim().toLowerCase();
   const tags = peer.Tags ?? [];
   return (
     UNSUPPORTED_MOBILE_OS.has(os) ||
-    /\b(?:phone|iphone|ipad|tablet|pixel|nothing phone|galaxy tab)\b/.test(name) ||
+    /\b(?:nothing[- ]phone(?:\b|\s*\()|iphone\b|ipad\b|pixel[- ](?:phone|tablet)\b|galaxy[- ](?:phone|tab)\b|android[- ]phone\b)/.test(name) ||
     tags.some((tag) => /(?:mobile|phone|tablet)/i.test(tag))
   );
 }
@@ -473,6 +474,21 @@ async function defaultTailscaleServeStatus(): Promise<string> {
   return stdout.toString();
 }
 
+/** Local HTTPS mappings used by this machine-level discovery listener. */
+export async function localTailnetServeUrls(): Promise<Record<number, string>> {
+  const [statusJson, serveJson] = await Promise.all([
+    defaultTailscaleStatus().catch(() => "{}"),
+    defaultTailscaleServeStatus().catch(() => "{}"),
+  ]);
+  const status = JSON.parse(statusJson) as { Self?: TailnetStatusPeer };
+  const self = peerFromStatus(status.Self);
+  const serveUrls = parseTailscaleServeUrls(serveJson);
+  // The Serve status keys already contain the machine's canonical TLS name.
+  // Reading status here also ensures the endpoint is only advertised by a
+  // machine that has a live Tailscale identity.
+  return self ? serveUrls : {};
+}
+
 /** Resolve `promise`, or `fallback()` once `ms` elapses. Never rejects. */
 async function within<T>(promise: Promise<T>, ms: number, fallback: () => T): Promise<T> {
   let timer: ReturnType<typeof setTimeout> | undefined;
@@ -508,22 +524,24 @@ export interface CollectTailnetOptions {
 }
 
 async function defaultHttpDiscovery(peer: TailnetPeer, timeoutMs: number): Promise<string | null> {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    // Tailscale Serve terminates HTTPS on the MagicDNS host and forwards this
-    // path to the local RepoOS server. Keep the response deliberately small.
-    const response = await fetch(`https://${peer.dnsName ?? peer.host}/api/servers/discovery`, {
-      signal: controller.signal,
-      headers: { Accept: "application/json" },
-    });
-    if (!response.ok) return null;
-    return await response.text();
-  } catch {
-    return null;
-  } finally {
-    clearTimeout(timer);
-  }
+  const ports = TAILSCALE_HTTPS_PORTS;
+  const eachTimeout = Math.max(1, timeoutMs);
+  const probes = ports.flatMap((port) => [
+    `https://${peer.dnsName ?? peer.host}${port === 443 ? "" : `:${port}`}/api/servers/discovery`,
+    `http://${peer.dnsName ?? peer.host}:${port}/api/servers/discovery`,
+  ]);
+  const results = await Promise.all(probes.map(async (url) => {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), eachTimeout);
+    try {
+      const response = await fetch(url, { signal: controller.signal, headers: { Accept: "application/json" } });
+      if (!response.ok) return null;
+      const text = await response.text();
+      const payload = JSON.parse(text) as { discoveryVersion?: number; disabled?: boolean; servers?: unknown[] };
+      return payload.discoveryVersion === 1 && (payload.disabled === true || Array.isArray(payload.servers)) ? text : null;
+    } catch { return null; } finally { clearTimeout(timer); }
+  }));
+  return results.find((result) => result !== null) ?? null;
 }
 
 export interface TailnetCollection {
@@ -626,19 +644,30 @@ export async function collectTailnetServers(
         try {
           const discovered = await (options.httpDiscovery ?? defaultHttpDiscovery)(
             peer,
-            Math.min(timeoutMs, 750),
+            Math.min(timeoutMs, 3_000),
           );
           if (discovered) {
-            const payload = JSON.parse(discovered) as { servers?: Record<string, unknown>[] };
+            let payload: { discoveryVersion?: number; disabled?: boolean; servers?: Record<string, unknown>[] } | null = null;
+            try {
+              payload = JSON.parse(discovered) as {
+                discoveryVersion?: number;
+                disabled?: boolean;
+                servers?: Record<string, unknown>[];
+              };
+            } catch { /* non-RepoOS service: try SSH */ }
+            if (payload?.discoveryVersion === 1) {
+            if (payload.disabled) return [];
             if (Array.isArray(payload.servers)) {
               return payload.servers.map((server) => ({
                 ...server,
                 host: peer.host,
+                ...(peer.dnsName ? { dnsName: peer.dnsName } : {}),
                 ...displayFields,
                 ...(typeof server.url === "string"
                   ? { https: server.url.startsWith("https://") }
                   : {}),
               })) as ListedServer[];
+            }
             }
           }
           // The two reads are independent; running them together keeps a host

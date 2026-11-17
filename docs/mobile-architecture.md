@@ -132,15 +132,16 @@ servers on my tailnet**, next to **Add server**. That action makes exactly one r
   the native shell's cross-origin request stays CORS-compatible (the server's
   JSON routes advertise `Access-Control-Allow-Origin: *`, which browsers reject
   for credentialed requests).
-- The *server* does the discovery: it runs `tailscale status --json`, asks each
-  online peer over SSH for `repoos servers --json`, and reads the peer's
-  `tailscale serve status --json` to attach the HTTPS MagicDNS URL for each
-  discovered port. Peer identity is the peer's MagicDNS name (`bee`,
+- The *server* does the discovery: it runs `tailscale status --json` and probes
+  online peers in parallel over their Tailscale HTTPS Serve listener on ports
+  443, 8443 and 10000. The peer listener returns each project's own Serve URL
+  and the shared server row fields; older RepoOS peers fall back to SSH and
+  `tailscale serve status --json`. Peer identity is the peer's MagicDNS name (`bee`,
   `thinkpad`), not Tailscale's display `HostName`: duplicate display names stay
   distinct, and a machine whose display name contains spaces or punctuation is
   reached at its MagicDNS name. The display name is kept as `displayName` for a
   readable label. Android/iOS peers cannot run a RepoOS server, so they are
-  skipped rather than reported as SSH failures. No part of this touches the
+  skipped rather than reported as failures. No part of this touches the
   phone's network. When the server's Tailscale CLI is absent or unreadable, it
   falls back to the configured `remoteValidation.tailscaleHosts` pool and
   reports `discoverySource: "configured-hosts"`, or `"local-only"` when there is

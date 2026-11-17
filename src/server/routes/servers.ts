@@ -22,6 +22,7 @@ import { listValidatedServerRegistry } from "../../core/server-registry.js";
 import {
   collectTailnetServers,
   DISCOVERY_DEADLINE_MS,
+  localTailnetServeUrls,
   type CollectTailnetOptions,
   type ListedServer,
 } from "../../core/tailnet-servers.js";
@@ -122,13 +123,13 @@ export const getTailnetServers: RouteHandler = async (ctx, _req, res) => {
 };
 
 /** Small, credential-free payload used only by a Tailscale Serve peer probe. */
-export const getTailnetPeerDiscovery: RouteHandler = async (_ctx, req, res) => {
+export const getTailnetPeerDiscovery: RouteHandler = async (ctx, req, res) => {
   const socketAddress = req.socket.remoteAddress?.replace(/^::ffff:/, "") ?? "";
-  const forwarded = req.headers["x-forwarded-for"]?.toString().split(",")[0]?.trim();
-  const source =
-    (socketAddress === "127.0.0.1" || socketAddress === "::1") && forwarded
-      ? forwarded.replace(/^::ffff:/, "")
-      : socketAddress;
+  const proxiedByTailscaleServe =
+    (socketAddress === "127.0.0.1" || socketAddress === "::1") &&
+    typeof req.headers["tailscale-user-login"] === "string" &&
+    req.headers["tailscale-user-login"].length > 0;
+  const source = socketAddress;
   const isTailnetSource =
     source.startsWith("fd7a:115c:a1e0:") ||
     (() => {
@@ -141,17 +142,25 @@ export const getTailnetPeerDiscovery: RouteHandler = async (_ctx, req, res) => {
         octets[1] <= 127
       );
     })();
-  if (!isTailnetSource) return json(res, 403, { ok: false, error: "Tailnet access required." });
+  if (!isTailnetSource && !proxiedByTailscaleServe)
+    return json(res, 403, { ok: false, error: "Tailnet access required." });
+  if (ctx.config.tailnetDiscovery === false)
+    return json(res, 200, { ok: true, discoveryVersion: 1, disabled: true, servers: [] });
   const rows = await listValidatedServerRegistry();
-  const authority = req.headers.host;
+  const httpsByPort: Record<number, string> = await localTailnetServeUrls().catch(() => ({}));
   return json(res, 200, {
     ok: true,
+    discoveryVersion: 1,
     servers: rows
       .filter((row) => row.valid)
       .map((row) => ({
+        host: "local",
         projectName: row.entry.projectName,
         port: row.entry.port,
-        ...(authority ? { url: `https://${authority}` } : {}),
+        root: row.entry.root,
+        allowlistGroup: row.entry.allowlistGroup,
+        valid: row.valid,
+        ...(httpsByPort[row.entry.port] ? { url: httpsByPort[row.entry.port], https: true } : {}),
       })),
   });
 };

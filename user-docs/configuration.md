@@ -595,8 +595,8 @@ and host that will be updated, then reports **applied**, **unreachable** or
 **refused** for each. Members on this machine share the group file directly.
 Members on other machines are found with `GET /api/servers/tailnet` (the same
 trusted discovery as Hub): only servers whose project declares the **same group
-name** are included, and the update is applied over the SSH credentials that
-discovery already uses (`repoos allowlist group apply`), never an
+name** are included, and the update is applied over the SSH credentials used by
+`repoos allowlist group apply`, never an
 unauthenticated HTTP write. A member that is not logged in to an allowed CLI is
 reported as such on that host; credentials are never synced.
 

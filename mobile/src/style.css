@@ -485,6 +485,26 @@ select {
   gap: 10px;
 }
 
+.discovery-failures {
+  margin-top: 14px;
+  border-top: 1px solid var(--border);
+  color: var(--txt-dim);
+}
+
+.discovery-failures summary {
+  padding: 12px 2px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.discovery-failure-row {
+  padding: 10px 12px;
+  border-left: 2px solid var(--border-bright);
+  background: var(--shell-elev);
+  border-radius: 0 8px 8px 0;
+}
+
 .discovery-card {
   width: 100%;
   display: flex;

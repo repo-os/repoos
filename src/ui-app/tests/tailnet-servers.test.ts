@@ -4,6 +4,7 @@ import {
   buildTailnetDiscoveryPayload,
   DISCOVERY_DISABLED_REASON,
 } from "../../server/routes/servers.js";
+import { parseTailnetInfo } from "../../core/tailnet-servers.js";
 
 const config = (
   over: Partial<RepoOSConfig> = {},
@@ -24,6 +25,16 @@ const status = () =>
   });
 
 describe("GET /api/servers/tailnet", () => {
+  it("filters mobile devices by OS or device model without dropping generic phone-named servers", () => {
+    const info = parseTailnetInfo(JSON.stringify({ Peer: {
+      nothing: { HostName: "Nothing Phone (3a)", DNSName: "nothing.tail.ts.net", Online: true },
+      dnsPhone: { HostName: "nothing", DNSName: "nothing-phone.tail.ts.net", Online: true },
+      ios: { HostName: "ipad", OS: "iOS", Online: true },
+      server: { HostName: "phone-01", OS: "linux", Online: true },
+    } }));
+    expect(info.peers.map((peer) => peer.host)).toEqual(["phone-01"]);
+  });
+
   it("lists local and remote servers with HTTPS MagicDNS URLs and partial failures", async () => {
     const remoteExec = vi.fn(
       async (host: string, _user: string, _timeout: number, command?: string) => {
@@ -262,7 +273,8 @@ describe("GET /api/servers/tailnet", () => {
       httpDiscovery: async (peer) =>
         peer.host === "bee"
           ? JSON.stringify({
-              servers: [{ projectName: "api", port: 7171, url: "https://bee.tail.ts.net" }],
+              discoveryVersion: 1,
+              servers: [{ projectName: "api", port: 7171, root: "/srv/api", valid: true, allowlistGroup: "agents", url: "https://bee.tail.ts.net" }],
             })
           : null,
       remoteExec,
@@ -270,7 +282,11 @@ describe("GET /api/servers/tailnet", () => {
     expect(payload.servers).toEqual([
       {
         host: "bee",
+        dnsName: "bee.tail.ts.net",
         projectName: "api",
+        root: "/srv/api",
+        valid: true,
+        allowlistGroup: "agents",
         port: 7171,
         url: "https://bee.tail.ts.net",
         https: true,

@@ -4499,7 +4499,6 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       if (authEnabled) {
         const PUBLIC_PREFIXES = [
           "/api/health",
-          "/api/servers/discovery",
           "/api/auth/",
           "/api/hub/v1/summary",
           "/api/hub/v1/tasks/search",
@@ -4515,6 +4514,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           "/api/release/email/unsubscribe",
         ];
         const PUBLIC_PATHS = [
+          "/api/servers/discovery",
           "/login",
           "/manifest.webmanifest",
           "/apple-touch-icon.png",
