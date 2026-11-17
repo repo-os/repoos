@@ -8,6 +8,7 @@
  * cancel/failure, so success is "it returned".
  */
 import type { LockSettings, DeviceLockResult, ServerEntry } from "./types";
+export { lockOverlayShouldRemainOpen } from "./lock-state";
 
 export async function probeDeviceLock(): Promise<DeviceLockResult> {
   // Dynamic import keeps the browser/dev path free of hard native deps.

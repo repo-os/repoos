@@ -1,13 +1,12 @@
 ---
-last_close_out_gate_ms: 992947
-last_close_out_gate_at: "2026-11-17T20:34:20.634Z"
 id: "1159"
 title: "QA pass: use the Android Hub app on the phone, find broken things and fix them"
 type: bug
-status: review
+status: done
 priority: p1
 area: mobile
 depends_on: ["1162"]
+merged_commit: 643b4a581375aa3bc443f785d938841247ea4f79
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-use-the-android-hub-app-on-the-p
@@ -15,6 +14,8 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T15:51:18Z"
 updated_at: "2026-11-17T20:34:20Z"
+last_close_out_gate_ms: 992947
+last_close_out_gate_at: "2026-11-17T20:34:20.634Z"
 review_passes: 2
 review_rounds: 1
 handoff_signal_retry_count: 2

@@ -27,7 +27,8 @@ import {
   addSelectedDiscovered,
 } from "./app-state";
 import { openServer, onBrowserEvents } from "./browser";
-import { verifyWithDeviceLock } from "./lock";
+import { lockOverlayShouldRemainOpen, verifyWithDeviceLock } from "./lock";
+import { serverToOpenAfterLockRetry, type LockContext } from "./lock-context";
 import type { ServerEntry } from "./types";
 import HubLogo from "./components/HubLogo.vue";
 import ServerListView from "./components/ServerListView.vue";
@@ -40,6 +41,7 @@ import { loadHubDevUpdateConfig, resolveShellPlatform } from "./platform";
 import { fixtureInitialRoute, readHubFixture } from "./fixture";
 import { impactHeavy } from "./haptics";
 import { installHubBackButton, type HubRoute } from "./back-navigation";
+import { errorAfterServerUrlInput } from "./form-validation";
 import type { AppearanceMode, DesignThemeId } from "./theme";
 import {
   checkForDevUpdate,
@@ -49,7 +51,6 @@ import {
 } from "./dev-updates";
 
 type Route = HubRoute;
-
 const route = ref<Route>("picker");
 const sheetServer = ref<ServerEntry | null>(null);
 const sheetName = ref("");
@@ -61,6 +62,7 @@ const formError = ref("");
 const formValidating = ref(false);
 
 const lockOpen = ref(false);
+const lockContext = ref<LockContext | null>(null);
 const platform = ref(resolveShellPlatform());
 const appVersion = "0.1.0";
 const installedCommit = ref("unknown");
@@ -74,7 +76,6 @@ let unmounted = false;
 
 onMounted(async () => {
   document.documentElement.classList.add(`platform-${platform.value}`);
-
   // Android consumes the system back gesture once a listener exists, so map
   // every local Hub route explicitly instead of relying on WebView history.
   disposeBackButton = await installHubBackButton({
@@ -112,7 +113,7 @@ onMounted(async () => {
   if (initial === "discover") await discoverTailnet();
   onBrowserEvents({ closed: () => undefined });
   if (lockSettings.value.enabled && lockSettings.value.scope === "reopen") {
-    await gateLock(null);
+    await gateLock({ kind: "reopen" });
   }
 });
 
@@ -121,11 +122,32 @@ onUnmounted(() => {
   void disposeBackButton?.();
 });
 
-async function gateLock(_serverId: string | null): Promise<boolean> {
+async function gateLock(context: LockContext): Promise<boolean> {
+  lockContext.value = context;
   lockOpen.value = true;
   const ok = await verifyWithDeviceLock("Unlock RepoOS Hub to continue");
-  lockOpen.value = false;
+  lockOpen.value = lockOverlayShouldRemainOpen(ok);
+  if (ok) lockContext.value = null;
   return ok;
+}
+
+async function retryLock() {
+  const context = lockContext.value;
+  if (!context) return;
+  const ok = await gateLock(context);
+  const server = serverToOpenAfterLockRetry(context, ok);
+  if (server) await openSelectedServer(server);
+}
+
+function cancelLock() {
+  if (lockContext.value?.kind !== "server") return;
+  lockContext.value = null;
+  lockOpen.value = false;
+}
+
+async function openSelectedServer(server: ServerEntry) {
+  await selectServer(server.id);
+  await openServer(server.url);
 }
 
 async function checkDevUpdatesNow() {
@@ -139,11 +161,10 @@ async function deferDevUpdate() {
 
 async function onSelect(server: ServerEntry) {
   if (lockSettings.value.enabled && lockSettings.value.scope === "server") {
-    const ok = await gateLock(server.id);
+    const ok = await gateLock({ kind: "server", server });
     if (!ok) return;
   }
-  await selectServer(server.id);
-  await openServer(server.url);
+  await openSelectedServer(server);
 }
 
 function openSettings() {
@@ -257,7 +278,12 @@ async function onLockScope(scope: "reopen" | "server") {
       </button>
     </header>
 
-    <LockOverlay :open="lockOpen" />
+    <LockOverlay
+      :open="lockOpen"
+      :cancelable="lockContext?.kind === 'server'"
+      @retry="retryLock"
+      @cancel="cancelLock"
+    />
 
     <main class="main-pane">
       <ServerListView
@@ -319,7 +345,12 @@ async function onLockScope(scope: "reopen" | "server") {
         :platform="platform"
         @back="backToPicker"
         @update:name="(v) => (formName = v)"
-        @update:url="(v) => (formUrl = v)"
+        @update:url="
+          (v) => {
+            formUrl = v;
+            formError = errorAfterServerUrlInput(formError, v);
+          }
+        "
         @submit="submitAdd"
       />
     </main>
