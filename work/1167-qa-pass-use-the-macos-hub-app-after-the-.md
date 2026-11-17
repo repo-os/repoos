@@ -86,3 +86,4 @@ Do not edit repoos.toml. Do not create signing identities or commit app binaries
 - 2026-11-17T20:48:41Z · needs_input
 - 2026-11-17T20:48:41Z · message_delivered: 1 message(s)
 - 2026-11-17T21:07:51Z · message_queued at 2026-11-17T21:07:51.067Z
+- 2026-11-17T21:07:51Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
