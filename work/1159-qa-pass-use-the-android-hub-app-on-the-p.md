@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-17T20:04:24Z"
-review_passes: 2
 id: "1159"
 title: "QA pass: use the Android Hub app on the phone, find broken things and fix them"
 type: bug
@@ -14,7 +12,9 @@ branch: feat/qa-pass-use-the-android-hub-app-on-the-p
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T15:51:18Z"
+updated_at: "2026-11-17T19:56:09Z"
 review_rounds: 1
+review_passes: 1
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-11-17T16:23:57.721Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-17T17:28:58.663Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-17T17:40:28.839Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
@@ -155,28 +155,4 @@ The Pixel 8 Android 16 (API 36) emulator was available and used after the saved 
 - 2026-11-17T18:29:46Z · note: handoff requested (cli)
 - 2026-11-17T18:30:38Z · CTO nudge: held — handoff gate is running
 - 2026-11-17T18:38:13Z · message_delivered: 1 message(s)
-- 2026-11-17T18:46:04Z · message_queued at 2026-11-17T18:46:04.482Z
-- 2026-11-17T18:46:04Z · handoff failed · task-file handoff failed at check · repoos check failed: check-fmt:check — Formatting failed — run `bun run fmt` to fix:
-- 2026-11-17T18:48:10Z · message_queued at 2026-11-17T18:48:10.610Z
-- 2026-11-17T18:49:48Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The lock gate now retains the tapped server through retries, offers Cancel after a rejected server-scope authentication, and opens that server after a successful retry. App-level tests cover both paths. The focused tests passed (6 tests), … · stderr: 2026-11-17T18:41:37.087188Z ERROR codex_core::tools::router: error=Exit code: 1 Wall time: 0 seconds Output: Failed to write file /Users/nick/code/nick/repoos-worktrees/feat/qa-pass-use-the-android-hub-app-on-the-p/mobile/src/components/LockOverlay.vue
-- 2026-11-17T18:50:39Z · CTO nudge: held — an undelivered message is already queued
-- 2026-11-17T18:54:52Z · message_delivered: 2 message(s)
-- 2026-11-17T19:06:42Z · body
-- 2026-11-17T19:10:38Z · CTO nudge: held — handoff gate is running
-- 2026-11-17T19:24:15Z · message_queued at 2026-11-17T19:24:15.051Z
-- 2026-11-17T19:24:46Z · CTO nudge: held — an undelivered message is already queued
-- 2026-11-17T19:27:26Z · watchdog: restarting engineer because a queued message waited 3m with no live process
-- 2026-11-17T19:47:50Z · message_queued at 2026-11-17T19:47:50.097Z
-- 2026-11-17T19:50:52Z · message_delivered: 1 message(s)
-- 2026-11-17T19:54:09Z · body
-- 2026-11-17T19:54:46Z · handoff_deferred: 1 queued message(s) must be read before review
-- 2026-11-17T19:54:46Z · message_queued at 2026-11-17T19:54:46.472Z
-- 2026-11-17T19:54:46Z · ↻ resuming engineer to read queued message
-- 2026-11-17T19:54:46Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The build passed. The runner has moved on to tests scoped against the current main base; that test phase is still running, so I’m waiting for its result before handing this back. · stderr: Reading additional input from stdin...
-- 2026-11-17T19:54:46Z · message_delivered: 2 message(s)
-- 2026-11-17T19:55:39Z · CTO nudge: held — handoff gate is running
 - 2026-11-17T19:56:09Z · status active→review
-- 2026-11-17T19:56:09Z · message_queued at 2026-11-17T19:56:09.689Z
-- 2026-11-17T19:56:09Z · note: shots: skipped — the diff (12 changed paths) touches no capture target's globs — no UI change to capture
-- 2026-11-17T20:04:24Z · note: review pass 2: good to go
-
