@@ -11,7 +11,7 @@ branch: feat/stories-mobile-cards-preserve-enough-tit
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T03:08:02Z"
-updated_at: "2026-11-17T11:42:25Z"
+updated_at: "2026-11-17T11:46:21Z"
 ---
 ## Problem
 At 390×844 on /stories, story titles and summaries are truncated with ellipses and the nested task list truncates most long task names. The compact cards show counts and progress but make it difficult to tell which tasks need attention without opening the story.
@@ -53,3 +53,4 @@ Use the attached phone screenshot and inspect a story with a long description an
 - 2026-11-17T11:40:56Z · body
 - 2026-11-17T11:41:22Z · note: adopted orphaned engineer pid 55011
 - 2026-11-17T11:42:25Z · body
+- 2026-11-17T11:46:21Z · CTO nudge: held — handoff gate is running
