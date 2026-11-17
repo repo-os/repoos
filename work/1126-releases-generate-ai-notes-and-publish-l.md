@@ -239,3 +239,4 @@ Reuse the existing AI-draft run in ReleasesView.vue and the server release run; 
 - 2026-11-17T05:44:57Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-17T05:47:34Z · body
 - 2026-11-17T05:48:07Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-17T05:48:07Z · message_delivered: 1 message(s)
