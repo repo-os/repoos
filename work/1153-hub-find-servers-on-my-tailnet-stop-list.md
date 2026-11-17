@@ -3,6 +3,9 @@ id: "1153"
 title: "Hub 'Find servers on my tailnet': stop listing bare machines, hide phones, explain failures, and replace SSH discovery with an HTTPS-based one"
 type: bug
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "engineer keeps crashing (5 in 30m): a human-set task override (cursor + composer-2.5) is pinned, so RepoOS did not replace it. Review the crash detail and either fix the environment, change the override, or resume manually. If the conversation itself is poisoned (it repeats the same failure), reset it with `repoos start 1153 --fresh`."
 priority: p2
 area: [mobile, server, core]
 assigned_to: ai
@@ -11,9 +14,9 @@ branch: feat/hub-find-servers-on-my-tailnet-stop-list
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-17T10:06:23Z"
-updated_at: "2026-11-17T10:44:06Z"
-dev_error_count: 4
-engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-17T10:23:30.473Z\",\"kind\":\"dev-error\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-17T10:23:33.736Z\",\"kind\":\"dev-error\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-17T10:23:36.541Z\",\"kind\":\"dev-error\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-17T10:33:52.872Z\",\"kind\":\"dev-error\"}]"
+updated_at: "2026-11-17T10:44:07Z"
+dev_error_count: 5
+engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-17T10:23:30.473Z\",\"kind\":\"dev-error\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-17T10:23:33.736Z\",\"kind\":\"dev-error\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-17T10:23:36.541Z\",\"kind\":\"dev-error\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-17T10:33:52.872Z\",\"kind\":\"dev-error\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-17T10:44:07.967Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 
@@ -60,3 +63,5 @@ Do not add runtime dependencies. The discovery endpoint exposes names/ports only
 - 2026-11-17T10:33:52Z · agent exited with an error (cursor) · Error: Authentication required. Please run 'agent login' first, or set CURSOR_API_KEY environment variable. Open Raw CLI error for details. (CLI: Error: Authentication required. Please run 'agent login' first, or set CURSOR_API_KEY environment variable.)
 - 2026-11-17T10:33:52Z · engineer crash recovery: surfaced instead of switching — a human-set task override (cursor + composer-2.5) is pinned, so RepoOS did not replace it (4/3 crashes in 30m)
 - 2026-11-17T10:44:06Z · watchdog: restarting engineer after 10m with no live process
+- 2026-11-17T10:44:07Z · agent exited with an error (cursor) · Error: Authentication required. Please run 'agent login' first, or set CURSOR_API_KEY environment variable. Open Raw CLI error for details. (CLI: Error: Authentication required. Please run 'agent login' first, or set CURSOR_API_KEY environment variable.)
+- 2026-11-17T10:44:07Z · engineer crash recovery: surfaced instead of switching — a human-set task override (cursor + composer-2.5) is pinned, so RepoOS did not replace it (5/3 crashes in 30m)
