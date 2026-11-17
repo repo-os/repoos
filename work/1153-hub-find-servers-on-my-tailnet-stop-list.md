@@ -121,3 +121,4 @@ Do not add runtime dependencies. The discovery endpoint exposes names/ports only
 - 2026-11-17T13:54:40Z · ↻ resuming engineer to read queued message
 - 2026-11-17T13:54:40Z · status active→review
 - 2026-11-17T13:54:40Z · message_delivered: 2 message(s)
+- 2026-11-17T13:54:41Z · note: handoff requested (cli)
