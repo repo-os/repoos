@@ -2,7 +2,7 @@
 id: "1155"
 title: "RepoOS Hub for macOS is broken: reproduce, diagnose and fix, then test on a real build"
 type: bug
-status: active
+status: review
 priority: p1
 area: macos
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/repoos-hub-for-macos-is-broken-reproduce
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T14:36:24Z"
-updated_at: "2026-11-17T14:36:30Z"
+updated_at: "2026-11-17T14:58:41Z"
 ---
 ## Problem
 
@@ -39,3 +39,4 @@ Read macos/README.md and the 'RepoOS Hub for macOS' section of README.md first. 
 - 2026-11-17T14:36:27Z · cli_override, model_override
 - 2026-11-17T14:36:29Z · status inbox→ready
 - 2026-11-17T14:36:30Z · status ready→active, branch
+- 2026-11-17T14:58:41Z · status active→review
