@@ -2,14 +2,14 @@
 id: "1152"
 title: "Mobile Hub: return to server picker from logo and show current project"
 type: feature
-status: active
+status: review
 priority: p1
 area: [mobile, web]
 assigned_to: ai
 created_by: t@t
 branch: feat/mobile-hub-return-to-server-picker-from-
 created_at: "2026-11-17T05:37:20Z"
-updated_at: "2026-11-17T07:54:41Z"
+updated_at: "2026-11-17T07:56:55Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -112,3 +112,4 @@ Inspect the existing Hub server WebView architecture and navigation security bef
 - 2026-11-17T07:42:07Z · body
 - 2026-11-17T07:47:21Z · CTO nudge: held — remote validation is running
 - 2026-11-17T07:54:41Z · body
+- 2026-11-17T07:56:55Z · status active→review
