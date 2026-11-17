@@ -2,7 +2,7 @@
 id: "1156"
 title: "Hub Android: dev build update channel - new dev builds reach the phone from any network with one tap (no adb)"
 type: feature
-status: active
+status: review
 priority: p1
 area: [mobile, infra]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/hub-android-dev-build-update-channel-new
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T14:48:18Z"
-updated_at: "2026-11-17T16:59:19Z"
+updated_at: "2026-11-17T17:00:06Z"
 review_rounds: 2
 review_passes: 2
 handoff_signal_retry_count: 2
@@ -80,3 +80,4 @@ Follow the same shape as Tiao's implementation so all of Nick's apps behave iden
 - 2026-11-17T16:55:12Z · message_delivered: 1 message(s)
 - 2026-11-17T16:55:23Z · note: Review round 2 fixes requested
 - 2026-11-17T16:59:19Z · body
+- 2026-11-17T17:00:06Z · status active→review
