@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-11-17T03:05:05Z"
-review_passes: 1
+last_close_out_gate_ms: 747634
+last_close_out_gate_at: "2026-11-17T03:57:35.160Z"
 id: "1144"
 title: Fix tailnet server discovery using MagicDNS peer identities
 type: bug
@@ -13,6 +13,8 @@ assigned_to: ai
 created_by: t@t
 branch: feat/fix-tailnet-server-discovery-using-magic
 created_at: "2026-11-17T02:38:50Z"
+updated_at: "2026-11-17T03:57:35Z"
+review_passes: 1
 incomplete_review_retries: 1
 ---
 ## Problem
@@ -42,4 +44,5 @@ Start with src/core/tailnet-servers.ts: peer identity currently prefers HostName
 - 2026-11-17T02:57:20Z · note: shots: skipped — Docs site skipped: no docs shot declared
 - 2026-11-17T03:01:08Z · note: review pass 1: incomplete — no verdict in report
 - 2026-11-17T03:05:05Z · note: review pass 2: good to go
+- 2026-11-17T03:57:35Z · close-out gate completed in 748s
 
