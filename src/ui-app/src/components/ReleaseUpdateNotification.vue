@@ -35,6 +35,7 @@ const restartStatus = ref<{
   activeWork: { agents: number; checks: number };
   supervised: boolean;
   supervisorKind?: string;
+  supervisorPlatform?: "launchd" | "systemd";
   supervisorReason?: string | null;
   restartFailure?: string | null;
   restartCommand?: string;
@@ -343,7 +344,7 @@ onUnmounted(() => {
               in a terminal after confirming the correct service.
             </p>
           </template>
-          <template v-else>
+          <template v-else-if="restartStatus.supervised">
             <template v-if="!restartStatus.restartWhenIdlePending">
               <Button size="sm" :disabled="restartPendingAction" @click="void restartInstalled()"
                 >Restart now</Button
@@ -376,16 +377,32 @@ onUnmounted(() => {
               This server was started by hand. RepoOS will relaunch it with the recorded serve flags
               and port.
             </p>
-            <Button size="sm" :disabled="restartPendingAction" @click="void restartInstalled()">
+            <span v-if="restartStatus.restartWhenIdlePending" role="status">
+              Restart is waiting for agents, reviews and checks to finish.
+            </span>
+            <Button
+              size="sm"
+              :disabled="restartPendingAction || restartStatus.restartWhenIdlePending"
+              @click="void restartInstalled()"
+            >
               {{ restartPendingAction ? "Restarting…" : "Restart now" }}
             </Button>
             <Button
               size="sm"
               variant="ghost"
-              :disabled="restartPendingAction"
+              :disabled="restartPendingAction || restartStatus.restartWhenIdlePending"
               @click="void restartInstalled(true)"
             >
               Restart when idle
+            </Button>
+            <Button
+              v-if="restartStatus.restartWhenIdlePending"
+              size="sm"
+              variant="ghost"
+              :disabled="restartPendingAction"
+              @click="void restartInstalled(false, true)"
+            >
+              Cancel
             </Button>
           </div>
           <p v-if="restartError" class="release-update-muted" role="alert">

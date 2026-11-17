@@ -48,6 +48,37 @@ function task(root: string, id: string, body = "## Activity\n"): Task {
   });
 }
 
+function restartNoticeFetch(supervisor: Record<string, unknown>) {
+  return vi.fn().mockImplementation((path: string) => {
+    const payload = String(path).includes("update-status")
+      ? {
+          restartPending: true,
+          restartWhenIdlePending: false,
+          runningVersion: "0.5.78",
+          installedVersion: "0.5.79",
+          activeWork: { agents: 2, checks: 1 },
+          ...supervisor,
+        }
+      : String(path).includes("release/run")
+        ? { state: "idle", phase: null }
+        : {
+            currentVersion: "0.5.79",
+            latestVersion: "0.5.79",
+            available: false,
+            releaseNotes: null,
+            releaseUrl: null,
+            installKind: "source",
+            upgradeCommand: "just upgrade",
+          };
+    return Promise.resolve(
+      new Response(JSON.stringify(payload), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+  });
+}
+
 describe("feature releases", () => {
   beforeEach(() => {
     setActivePinia(createPinia());
@@ -712,6 +743,7 @@ describe("feature releases", () => {
             installedVersion: "0.5.79",
             activeWork: { agents: 0, checks: 0 },
             supervised: false,
+            supervisorKind: "none",
             manualCommand: "just serve",
           }
         : String(path).includes("release/run")
@@ -738,11 +770,67 @@ describe("feature releases", () => {
       await flushPromises();
       expect(document.body.querySelector("[data-test-id=installed-restart-notice]")).not.toBeNull();
       expect(document.body.textContent).toContain("This server was started by hand");
-      const button = [...document.body.querySelectorAll("button")].find(
-        (item) => item.textContent?.trim() === "Restart now",
+      const restartButtons = [...document.body.querySelectorAll("button")].filter((item) =>
+        ["Restart now", "Restart when idle"].includes(item.textContent?.trim() ?? ""),
       );
-      expect(button).toBeDefined();
+      expect(restartButtons.map((button) => button.textContent?.trim())).toEqual([
+        "Restart now",
+        "Restart when idle",
+      ]);
       expect(document.body.textContent).not.toMatch(/launchctl|systemctl|just serve/);
+    } finally {
+      wrapper.unmount();
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it.each([
+    {
+      platform: "launchd",
+      supervisor: { supervised: true, supervisorKind: "external", supervisorPlatform: "launchd" },
+    },
+    {
+      platform: "systemd",
+      supervisor: { supervised: true, supervisorKind: "external", supervisorPlatform: "systemd" },
+    },
+  ])("shows one restart pair for a $platform-supervised server", async ({ supervisor }) => {
+    vi.stubGlobal("fetch", restartNoticeFetch(supervisor));
+    const wrapper = mount(ReleaseUpdateNotification, { attachTo: document.body });
+    try {
+      await flushPromises();
+      expect(document.body.querySelector(".release-update-manual")).toBeNull();
+      const actions = [...document.body.querySelectorAll("button")]
+        .map((button) => button.textContent?.trim())
+        .filter((label) => label === "Restart now" || label === "Restart when idle");
+      expect(actions).toEqual(["Restart now", "Restart when idle"]);
+      expect(document.body.textContent).not.toMatch(/launchctl|systemctl/);
+    } finally {
+      wrapper.unmount();
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("keeps the hand-run restart pair disabled while waiting for idle and offers Cancel", async () => {
+    vi.stubGlobal(
+      "fetch",
+      restartNoticeFetch({
+        supervised: false,
+        supervisorKind: "none",
+        restartWhenIdlePending: true,
+      }),
+    );
+    const wrapper = mount(ReleaseUpdateNotification, { attachTo: document.body });
+    try {
+      await flushPromises();
+      const buttons = [...document.body.querySelectorAll("button")];
+      const byLabel = (label: string) =>
+        buttons.find((button) => button.textContent?.trim() === label);
+      expect(byLabel("Restart now")?.disabled).toBe(true);
+      expect(byLabel("Restart when idle")?.disabled).toBe(true);
+      expect(byLabel("Cancel")?.disabled).toBe(false);
+      expect(document.body.textContent).toContain(
+        "Restart is waiting for agents, reviews and checks to finish.",
+      );
     } finally {
       wrapper.unmount();
       vi.unstubAllGlobals();

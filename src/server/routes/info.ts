@@ -116,7 +116,11 @@ let restartFailure: string | null = null;
 // Freeze this at module start: the install marker can change during `repoos upgrade`.
 const SERVER_RUNNING_VERSION = loadBuildInfo().version;
 let installedVersionCache: { value: string | null; expiresAt: number } | null = null;
-let supervisedCache: { value: boolean; expiresAt: number } | null = null;
+let supervisedCache: {
+  value: boolean;
+  supervisor: SupervisorDetectResult;
+  expiresAt: number;
+} | null = null;
 
 // These will be passed via context in server.ts during integration
 let loadedHash: string;
@@ -211,6 +215,7 @@ export const getUpdateStatus: RouteHandler = (ctx, _req, res) => {
     activeWork: status.activeWork,
     supervised: status.supervised,
     supervisorKind: status.supervisorKind,
+    supervisorPlatform: status.supervisorPlatform,
     supervisorReason: status.supervisorReason,
     restartFailure,
     restartCommand: restartCliCommand(ctx.config.root, ctx.servePort),
@@ -276,14 +281,16 @@ function getInstalledUpgradeStatus(ctx: RouteContext) {
     const supervisor = detectSupervisor(process.pid);
     supervisedCache = {
       value: isRestartSupervised(supervisor),
+      supervisor,
       expiresAt: now + 10_000,
     };
   }
   const snapshot = ctx.index.snapshot();
-  const supervisor = detectSupervisor(process.pid);
+  const supervisor = supervisedCache.supervisor;
   return {
     supervised: supervisedCache.value,
     supervisorKind: supervisor.kind,
+    supervisorPlatform: supervisor.kind === "external" ? supervisor.info.platform : undefined,
     supervisorReason: supervisor.kind === "uncertain" ? supervisor.reason : null,
     activeWork: {
       agents: ctx.runner.running().length + ctx.reviews.runningCount(),

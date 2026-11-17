@@ -123,6 +123,26 @@ describe("installed upgrade status and restart route", () => {
     });
   });
 
+  it("reuses the supervisor result and reason from its ten-second cache", () => {
+    mocks.detectSupervisor.mockReturnValue({
+      kind: "uncertain",
+      reason: "launchctl lookup timed out",
+    });
+    const first = responseCapture();
+    const second = responseCapture();
+    getUpdateStatus(context(), {} as never, first.res, {});
+    getUpdateStatus(context(), {} as never, second.res, {});
+    expect(mocks.detectSupervisor).toHaveBeenCalledTimes(1);
+    expect(first.body()).toMatchObject({
+      supervisorKind: "uncertain",
+      supervisorReason: "launchctl lookup timed out",
+    });
+    expect(second.body()).toMatchObject({
+      supervisorKind: "uncertain",
+      supervisorReason: "launchctl lookup timed out",
+    });
+  });
+
   it("starts a detached CLI helper for a hand-run server", () => {
     return spawnHandRunRestartHelper("/fake/project", 7123, {
       binary: () => ({ bin: "bun", needsCliEntry: false }),
