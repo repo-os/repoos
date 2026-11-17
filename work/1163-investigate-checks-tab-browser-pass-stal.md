@@ -119,3 +119,4 @@ The direct tab pass found no navigation hang. Review identified a separate app l
 - 2026-11-17T21:30:43Z · CTO nudge: held — handoff gate is running
 - 2026-11-17T21:31:53Z · note: ui verification passed: 1 shot captured with clean console
 - 2026-11-17T21:31:55Z · status active→review
+- 2026-11-17T21:31:55Z · message_queued at 2026-11-17T21:31:55.711Z
