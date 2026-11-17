@@ -31,10 +31,10 @@ Use the attached phone screenshot and inspect a story with a long description an
 ```json
 [
 {
-  "label": "Stories cards with readable mobile task names",
-  "target": "default",
-  "route": "/stories",
-  "highlight": ".story-live-title"
+"label": "Stories cards with readable mobile task names",
+"target": "default",
+"route": "/stories",
+"highlight": ".story-live-title"
 }
 ]
 ```
