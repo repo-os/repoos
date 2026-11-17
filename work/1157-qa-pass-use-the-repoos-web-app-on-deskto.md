@@ -214,3 +214,4 @@ Start with the Work page at 390px and the bottom dock/heads/pipeline bar overlap
 - 2026-11-17T21:20:53Z · screenshots
 - 2026-11-17T21:22:04Z · body
 - 2026-11-17T21:25:00Z · queued message undelivered for 12m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-17T21:25:00Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code unknown) · last assistant: The required check has started against checkpoint `e325abd`, including the new browser geometry test. The remote build is underway; no new failure has appeared so far. · stderr: (empty)
