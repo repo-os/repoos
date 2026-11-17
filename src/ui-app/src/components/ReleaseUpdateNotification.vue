@@ -34,13 +34,20 @@ const restartStatus = ref<{
   installedVersion: string | null;
   activeWork: { agents: number; checks: number };
   supervised: boolean;
-  manualCommand: string;
+  supervisorKind?: string;
+  supervisorPlatform?: "launchd" | "systemd";
+  supervisorReason?: string | null;
+  restartFailure?: string | null;
+  restartCommand?: string;
 } | null>(null);
 const restartPendingAction = ref(false);
+const restartAccepted = ref(false);
+const restartError = ref<string | null>(null);
 const restartOpen = ref(false);
 const releaseRun = ref<{ state: string; phase: string | null } | null>(null);
 const restartFixtureActive = ref(false);
 let restartStatusTimer: ReturnType<typeof setInterval> | null = null;
+let restartRequestedAt = 0;
 let releaseRunTimer: ReturnType<typeof setInterval> | null = null;
 const dismissed = ref(false);
 const open = ref(false);
@@ -129,8 +136,7 @@ onMounted(async () => {
       runningVersion: "0.5.78",
       installedVersion: "0.5.79",
       activeWork: { agents: 2, checks: 1 },
-      supervised: true,
-      manualCommand: "repoos restart",
+      supervised: false,
     };
     releaseRun.value = { state: "idle", phase: null };
     document.documentElement.dataset.theme = fixtureState.endsWith("Dark") ? "dark" : "light";
@@ -167,8 +173,21 @@ onMounted(async () => {
     restartStatusTimer = setInterval(async () => {
       try {
         restartStatus.value = await api("/api/update-status");
+        if (restartStatus.value?.restartFailure) {
+          restartError.value = restartStatus.value.restartFailure;
+          restartAccepted.value = false;
+          restartPendingAction.value = false;
+        }
+        if (!restartStatus.value?.restartPending) {
+          restartAccepted.value = false;
+          restartPendingAction.value = false;
+        }
       } catch {
-        /* reconnecting */
+        if (restartAccepted.value && Date.now() - restartRequestedAt > 30_000) {
+          restartAccepted.value = false;
+          restartPendingAction.value = false;
+          restartError.value = "The server did not come back after the restart.";
+        }
       }
     }, 3000);
   if (applyShotFixture()) return;
@@ -192,14 +211,20 @@ onMounted(async () => {
 
 async function restartInstalled(whenIdle = false, cancel = false): Promise<void> {
   restartPendingAction.value = true;
+  restartError.value = null;
   try {
-    await api("/api/update-status/restart", {
+    const result = await api<{ state?: string }>("/api/update-status/restart", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ whenIdle, cancel }),
     });
+    restartAccepted.value = result.state === "restarting";
+    restartPendingAction.value = restartAccepted.value;
+    if (restartAccepted.value) restartRequestedAt = Date.now();
+  } catch (error) {
+    restartError.value = error instanceof Error ? error.message : String(error);
   } finally {
-    restartPendingAction.value = false;
+    if (!restartAccepted.value || whenIdle || cancel) restartPendingAction.value = false;
     // The replacement server reconnects through the app's existing health loop.
     setTimeout(async () => {
       try {
@@ -281,18 +306,6 @@ async function copyCommand(): Promise<void> {
   }, 2000);
 }
 
-async function copyRestartCommand(): Promise<void> {
-  const command = restartStatus.value?.manualCommand ?? "";
-  const ok = command !== "" && (await copyToClipboard(command));
-  if (copiedTimer) clearTimeout(copiedTimer);
-  copied.value = ok;
-  copyFailed.value = !ok;
-  copiedTimer = setTimeout(() => {
-    copied.value = false;
-    copyFailed.value = false;
-  }, 2000);
-}
-
 onUnmounted(() => {
   if (copiedTimer) clearTimeout(copiedTimer);
   if (restartStatusTimer) clearInterval(restartStatusTimer);
@@ -318,12 +331,20 @@ onUnmounted(() => {
         <DialogDescription class="release-update-description">
           This server is still running v{{ restartStatus.runningVersion }}.
           {{ restartStatus.activeWork.agents }} agents and
-          {{ restartStatus.activeWork.checks }} checks running. Restart now briefly interrupts work;
-          see <a href="https://github.com/repo-os/repoos/issues/214">#0214</a> for how agents
-          resume.
+          {{ restartStatus.activeWork.checks }} checks running. Restart now briefly interrupts
+          agents and checks; the agents resume after the new server starts. See
+          <a href="https://github.com/repo-os/repoos/issues/214">#0214</a> for details.
         </DialogDescription>
         <div class="release-update-actions">
-          <template v-if="restartStatus.supervised">
+          <template v-if="restartStatus.supervisorKind === 'uncertain'">
+            <p class="release-update-muted" role="alert">
+              RepoOS cannot safely identify this server’s supervisor:
+              {{ restartStatus.supervisorReason }}. Automatic restart is unavailable. Run
+              <code>{{ restartStatus.restartCommand }}</code>
+              in a terminal after confirming the correct service.
+            </p>
+          </template>
+          <template v-else-if="restartStatus.supervised">
             <template v-if="!restartStatus.restartWhenIdlePending">
               <Button size="sm" :disabled="restartPendingAction" @click="void restartInstalled()"
                 >Restart now</Button
@@ -348,25 +369,47 @@ onUnmounted(() => {
               ></template
             >
           </template>
-          <div v-else class="release-update-manual">
+          <div
+            v-if="!restartStatus.supervised && restartStatus.supervisorKind !== 'uncertain'"
+            class="release-update-manual"
+          >
             <p class="release-update-muted">
-              This server is not supervised. Copy the command and run it in a terminal to restart
-              safely.
+              This server was started by hand. RepoOS will relaunch it with the recorded serve flags
+              and port.
             </p>
-            <code class="release-update-code">{{ restartStatus.manualCommand }}</code>
+            <span v-if="restartStatus.restartWhenIdlePending" role="status">
+              Restart is waiting for agents, reviews and checks to finish.
+            </span>
+            <Button
+              size="sm"
+              :disabled="restartPendingAction || restartStatus.restartWhenIdlePending"
+              @click="void restartInstalled()"
+            >
+              {{ restartPendingAction ? "Restarting…" : "Restart now" }}
+            </Button>
             <Button
               size="sm"
               variant="ghost"
-              :aria-label="copied ? 'Copied restart command' : 'Copy restart command'"
-              @click="void copyRestartCommand()"
-              ><Check v-if="copied" class="size-[14px]" /><Copy v-else class="size-[14px]" />{{
-                copied ? "Copied" : "Copy restart command"
-              }}</Button
+              :disabled="restartPendingAction || restartStatus.restartWhenIdlePending"
+              @click="void restartInstalled(true)"
             >
-            <p v-if="copyFailed" class="release-update-muted" role="status">
-              Couldn’t copy automatically — select the command above and copy it.
-            </p>
+              Restart when idle
+            </Button>
+            <Button
+              v-if="restartStatus.restartWhenIdlePending"
+              size="sm"
+              variant="ghost"
+              :disabled="restartPendingAction"
+              @click="void restartInstalled(false, true)"
+            >
+              Cancel
+            </Button>
           </div>
+          <p v-if="restartError" class="release-update-muted" role="alert">
+            Restart failed: {{ restartError }} Run
+            <code>{{ restartStatus.restartCommand }}</code>
+            in a terminal.
+          </p>
         </div>
       </DialogContent>
     </Dialog>

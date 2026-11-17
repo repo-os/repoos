@@ -571,7 +571,7 @@ Prints the installed RepoOS version and build metadata.
 Stops this repo's server, identified by its own lockfile. It will not touch a
 server belonging to a different repo.
 
-### `repoos restart [--when-idle] [--force] [--port N]`
+### `repoos restart [--when-idle] [--force] [--root <path>] [--port N]`
 
 Restarts this repo's control-plane server the way it was started:
 
@@ -598,6 +598,10 @@ By default, restart refuses while engineers or checks are running. `--force`
 allows the restart to proceed anyway. `--when-idle` waits for engineers and
 checks to finish before restarting.
 
+Use `--root <path>` to select a specific checkout when the CLI is running from
+somewhere else, such as a linked worktree. Combine it with `--port N` when that
+checkout has more than one RepoOS server running.
+
 The command prints which path it took, warns when engineer agents were running
 before it stops the server, and reports success only after `/api/health` answers
 and the pid has changed — printing the old and new pid and version. If a
@@ -605,6 +609,10 @@ supervisor does not respawn within the timeout it says so and prints the exact
 manual command instead of claiming success. It never touches another repo's
 server and refuses when the pid belongs to another user (it never escalates to
 sudo).
+
+When auth is enabled, the CLI uses the server's mode-0600 local token for its
+loopback-only idle check. A logged-in user's terminal or local agent can run the
+command without copying a browser session cookie.
 
 ### `repoos servers [--json] [--prune] [--tailscale]`
 

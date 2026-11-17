@@ -3,10 +3,11 @@
  * whether it runs as a managed service, a hand-run `repoos serve`, or an
  * externally supervised process (launchd KeepAlive, systemd, …).
  */
-import { boardRoot } from "../core/config.js";
+import { boardRoot, loadConfig } from "../core/config.js";
 import { restartRepoServer, type RestartPath } from "../core/server-restart.js";
 import { c } from "../cli/colors.js";
 import { locateRepoServer } from "../core/server-locate.js";
+import { readLocalCliToken } from "../server/local-token.js";
 
 const PATH_LABEL: Record<RestartPath, string> = {
   "managed-service": "managed service (`repoos service`)",
@@ -16,6 +17,7 @@ const PATH_LABEL: Record<RestartPath, string> = {
 
 export async function cmdRestart(argv: string[]): Promise<void> {
   let portFilter: number | undefined;
+  let rootOverride: string | undefined;
   const whenIdle = argv.includes("--when-idle");
   const force = argv.includes("--force");
   for (let i = 0; i < argv.length; i++) {
@@ -29,9 +31,21 @@ export async function cmdRestart(argv: string[]): Promise<void> {
       }
       portFilter = n;
     }
+    if (argv[i] === "--root") {
+      const value = argv[++i];
+      if (!value) {
+        console.error(c.red("  ✗ Invalid --root value: missing path"));
+        process.exitCode = 1;
+        return;
+      }
+      rootOverride = value;
+    }
   }
 
-  const { root } = boardRoot();
+  const { root: boardRootPath } = boardRoot();
+  const root = rootOverride ?? boardRootPath;
+  const config = loadConfig(root);
+  const localToken = readLocalCliToken(root, config.cacheDir);
   if (whenIdle || !force) {
     const server = await locateRepoServer(root, { portFilter });
     if (!server) {
@@ -40,10 +54,13 @@ export async function cmdRestart(argv: string[]): Promise<void> {
       return;
     }
     if (whenIdle) console.log(c.dim("  Waiting for agents, reviews and checks to finish…"));
-    const host = server.host === "0.0.0.0" ? "127.0.0.1" : server.host;
+    // The local CLI token is deliberately accepted only over loopback.
+    const host = "127.0.0.1";
     for (;;) {
       try {
-        const response = await fetch(`http://${host}:${server.port}/api/update-status`);
+        const response = await fetch(`http://${host}:${server.port}/api/update-status`, {
+          headers: localToken ? { "x-repoos-local-token": localToken } : {},
+        });
         if (!response.ok) throw new Error(`server returned HTTP ${response.status}`);
         const status = (await response.json()) as {
           activeWork?: { agents?: number; checks?: number };

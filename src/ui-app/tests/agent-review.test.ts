@@ -333,6 +333,9 @@ describe("agent review before human sign-off (#0101)", () => {
       "- **Class: fixture-blocker** — src/example.ts has a blocking defect.",
       "No further findings of this class were found after grepping: src/example.ts",
       "",
+      "## Relevance",
+      "needs rescoping — hold the task for a human while this test checks the review action guards.",
+      "",
       "## Suggestions",
       "- Consider a follow-up improvement.",
     ].join("\n");

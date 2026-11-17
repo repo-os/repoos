@@ -17,17 +17,110 @@ import {
   listStoryDefinitionsFromCommits,
 } from "../../core/story-definition-files.js";
 import { getGitWorker } from "../git-worker.js";
-import { restartCommand } from "../../core/service-manager.js";
+import { restartCommand, repoosBinary } from "../../core/service-manager.js";
 import { installRoot, readInstallVersion } from "../../commands/upgrade.js";
-import { detectSupervisor } from "../../core/supervisor-detect.js";
+import { detectSupervisor, type SupervisorDetectResult } from "../../core/supervisor-detect.js";
 import { isNewerVersion } from "../../core/release-version.js";
+import { spawn } from "node:child_process";
+import { compiledCliEntry } from "../../core/serve-lock-flags.js";
+import { existsSync } from "node:fs";
+
+export interface RestartHelperDeps {
+  binary?: typeof repoosBinary;
+  spawn?: typeof spawn;
+  exists?: typeof existsSync;
+}
+
+export function isRestartSupervised(result: SupervisorDetectResult): boolean {
+  return result.kind === "external" || result.kind === "managed";
+}
+
+function restartCliCommand(root: string, port: number | undefined): string {
+  const quoted = /^[\w./-]+$/.test(root) ? root : `'${root.replaceAll("'", "'\\''")}'`;
+  return `repoos restart --root ${quoted}${port && port > 0 ? ` --port ${port}` : ""}`;
+}
+
+export function resetUpdateStatusCacheForTests(): void {
+  installedVersionCache = null;
+  supervisedCache = null;
+  if (idleRestartTimer) clearInterval(idleRestartTimer);
+  idleRestartTimer = null;
+  idleRestartPending = false;
+  restartFailure = null;
+}
+
+type RestartHelper = (
+  root: string,
+  port: number | undefined,
+) => Promise<{ ok: true } | { ok: false; reason: string }>;
+let restartHelper: RestartHelper = spawnHandRunRestartHelper;
+export function setRestartHelperForTests(helper: RestartHelper | null): void {
+  restartHelper = helper ?? spawnHandRunRestartHelper;
+}
+
+/** Start the CLI outside the server process so it can stop and relaunch it. */
+export function spawnHandRunRestartHelper(
+  root: string,
+  port: number | undefined,
+  deps: RestartHelperDeps = {},
+): Promise<{ ok: true } | { ok: false; reason: string }> {
+  return new Promise((resolve) => {
+    try {
+      const { bin, needsCliEntry } = (deps.binary ?? repoosBinary)();
+      const entry = compiledCliEntry();
+      if (needsCliEntry && !(deps.exists ?? existsSync)(entry))
+        return resolve({ ok: false, reason: `CLI entry not found at ${entry}` });
+      const args = [...(needsCliEntry ? [entry] : []), "restart", "--force", "--root", root];
+      if (!port || port <= 0)
+        return resolve({ ok: false, reason: "The server's bound port is unavailable." });
+      args.push("--port", String(port));
+      const helper = (deps.spawn ?? spawn)(bin, args, {
+        cwd: root,
+        detached: true,
+        stdio: ["ignore", "pipe", "pipe"],
+        env: process.env,
+      });
+      helper.once("error", (error) => {
+        restartFailure = error.message;
+        console.error(`Installed upgrade restart helper failed: ${error.message}`);
+        resolve({ ok: false, reason: error.message });
+      });
+      let output = "";
+      helper.stdout?.on("data", (chunk: Buffer | string) => {
+        output = (output + String(chunk)).slice(-4000);
+      });
+      helper.stderr?.on("data", (chunk: Buffer | string) => {
+        output = (output + String(chunk)).slice(-4000);
+      });
+      helper.once("exit", (code, signal) => {
+        if (code !== 0 || signal) {
+          restartFailure =
+            output.trim() ||
+            `Restart command exited with code ${code}${signal ? ` (${signal})` : ""}.`;
+          console.error(`Installed upgrade restart helper failed: ${restartFailure}`);
+        }
+      });
+      helper.once("spawn", () => {
+        helper.unref();
+        resolve({ ok: true });
+      });
+    } catch (error) {
+      resolve({ ok: false, reason: error instanceof Error ? error.message : String(error) });
+    }
+  });
+}
 
 let idleRestartTimer: ReturnType<typeof setInterval> | null = null;
 let idleRestartPending = false;
+let restartFailure: string | null = null;
 // Freeze this at module start: the install marker can change during `repoos upgrade`.
 const SERVER_RUNNING_VERSION = loadBuildInfo().version;
 let installedVersionCache: { value: string | null; expiresAt: number } | null = null;
-let supervisedCache: { value: boolean; expiresAt: number } | null = null;
+let supervisedCache: {
+  value: boolean;
+  supervisor: SupervisorDetectResult;
+  expiresAt: number;
+} | null = null;
 
 // These will be passed via context in server.ts during integration
 let loadedHash: string;
@@ -121,11 +214,15 @@ export const getUpdateStatus: RouteHandler = (ctx, _req, res) => {
     installedVersion,
     activeWork: status.activeWork,
     supervised: status.supervised,
-    manualCommand: status.manualCommand,
+    supervisorKind: status.supervisorKind,
+    supervisorPlatform: status.supervisorPlatform,
+    supervisorReason: status.supervisorReason,
+    restartFailure,
+    restartCommand: restartCliCommand(ctx.config.root, ctx.boundPort ?? ctx.servePort),
   });
 };
 
-/** Restart an installed upgrade through its known supervisor (#1075). */
+/** Restart an installed upgrade through its supervisor or a detached CLI helper. */
 export const restartInstalledUpgrade: RouteHandler = async (ctx, req, res) => {
   const body = (await readBody(req).catch(() => ({}))) as { whenIdle?: boolean; cancel?: boolean };
   if (body.cancel) {
@@ -135,7 +232,15 @@ export const restartInstalledUpgrade: RouteHandler = async (ctx, req, res) => {
     return json(res, 200, { state: "cancelled" });
   }
   const status = getInstalledUpgradeStatus(ctx);
-  if (!status.supervised) return json(res, 409, { state: "manual", command: status.manualCommand });
+  if (status.supervisorKind === "uncertain") {
+    return json(res, 503, {
+      state: "manual",
+      reason:
+        "Could not determine how this server is supervised, so RepoOS cannot restart it safely.",
+      command: restartCliCommand(ctx.config.root, ctx.boundPort ?? ctx.servePort),
+    });
+  }
+  restartFailure = null;
   if (body.whenIdle) {
     idleRestartPending = true;
     if (!idleRestartTimer) {
@@ -145,14 +250,27 @@ export const restartInstalledUpgrade: RouteHandler = async (ctx, req, res) => {
         idleRestartPending = false;
         if (idleRestartTimer) clearInterval(idleRestartTimer);
         idleRestartTimer = null;
-        void performSupervisedRestart(ctx);
+        void restartHelper(ctx.config.root, ctx.boundPort ?? ctx.servePort).then((result) => {
+          if (!result.ok) {
+            restartFailure = result.reason;
+            ctx.logger.system("error", `installed-upgrade restart failed: ${result.reason}`);
+          }
+        });
       }, 1000);
     }
     return json(res, 202, { state: "waiting-for-idle" });
   }
+  // The helper must outlive this process and uses the CLI's verified restart path.
+  const helper = await restartHelper(ctx.config.root, ctx.boundPort ?? ctx.servePort);
+  if (!helper.ok)
+    return json(res, 503, {
+      state: "manual",
+      reason: helper.reason,
+      command: restartCliCommand(ctx.config.root, ctx.boundPort ?? ctx.servePort),
+    });
   res.writeHead(202, { "Content-Type": "application/json" });
   res.end(JSON.stringify({ state: "restarting" }));
-  setTimeout(() => void performSupervisedRestart(ctx), 100);
+  // The helper is detached and has confirmed its spawn before the response.
 };
 
 function getInstalledUpgradeStatus(ctx: RouteContext) {
@@ -162,14 +280,18 @@ function getInstalledUpgradeStatus(ctx: RouteContext) {
   if (!supervisedCache || supervisedCache.expiresAt < now) {
     const supervisor = detectSupervisor(process.pid);
     supervisedCache = {
-      value: supervisor.kind === "external" || supervisor.kind === "managed",
+      value: isRestartSupervised(supervisor),
+      supervisor,
       expiresAt: now + 10_000,
     };
   }
   const snapshot = ctx.index.snapshot();
+  const supervisor = supervisedCache.supervisor;
   return {
-    manualCommand: restartCommand(ctx.config.root, ctx.servePort ?? null),
     supervised: supervisedCache.value,
+    supervisorKind: supervisor.kind,
+    supervisorPlatform: supervisor.kind === "external" ? supervisor.info.platform : undefined,
+    supervisorReason: supervisor.kind === "uncertain" ? supervisor.reason : null,
     activeWork: {
       agents: ctx.runner.running().length + ctx.reviews.runningCount(),
       checks: ctx.taskChecks
@@ -180,20 +302,6 @@ function getInstalledUpgradeStatus(ctx: RouteContext) {
         : 0,
     },
   };
-}
-
-async function performSupervisedRestart(ctx: RouteContext): Promise<void> {
-  try {
-    const { restartRepoServer } = await import("../../core/server-restart.js");
-    const result = await restartRepoServer(ctx.config.root, { portFilter: ctx.servePort });
-    if (!result.ok)
-      ctx.logger.system(
-        "error",
-        `installed-upgrade restart failed: ${result.message ?? "unknown error"}`,
-      );
-  } catch (error) {
-    ctx.logger.system("error", `installed-upgrade restart failed: ${(error as Error).message}`);
-  }
 }
 
 export const getCounts: RouteHandler = (ctx, _req, res) => {

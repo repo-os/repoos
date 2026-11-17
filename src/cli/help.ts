@@ -420,9 +420,9 @@ const GROUPS: readonly CommandGroup[] = [
       },
       {
         name: "restart",
-        usage: "restart [--when-idle] [--port N]",
+        usage: "restart [--when-idle] [--force] [--root <path>] [--port N]",
         desc: "Restart this repo's server (managed service, supervised, or hand-run)",
-        flags: "--port N",
+        flags: "--when-idle · --force · --root <path> · --port N",
       },
       {
         name: "servers",

@@ -30,8 +30,13 @@ export interface SyncResult {
 
 export interface RouteContext {
   config: RepoOSConfig;
-  /** Bound HTTP port for this server (undefined in partial route tests). */
+  /**
+   * Port requested at startup (undefined in partial route tests). `0` means an
+   * ephemeral harness; schedule guards rely on that, so never overwrite it.
+   */
   servePort?: number;
+  /** Port actually bound once listening; use for restart commands. */
+  boundPort?: number;
   index: LiveIndex;
   /**
    * Resolves once the full background index build finishes on server boot
