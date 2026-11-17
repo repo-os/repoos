@@ -2,7 +2,7 @@
 id: "1163"
 title: Investigate Checks tab browser pass stall
 type: bug
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/investigate-checks-tab-browser-pass-stal
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T17:53:05Z"
-updated_at: "2026-11-17T20:53:17Z"
+updated_at: "2026-11-17T20:58:26Z"
 review_rounds: 2
 review_passes: 2
 handoff_signal_retry_count: 2
@@ -93,3 +93,4 @@ Direct tab-click coverage passes, but review identified a separate app lifecycle
 - 2026-11-17T20:53:14Z · note: review pass 2: needs some work
 - 2026-11-17T20:53:14Z · status review→active
 - 2026-11-17T20:53:17Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-17T20:58:26Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — task-file handoff failed at review · Engineering report draft is missing: .repoos/engineering-report-drafts/1163.md · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
