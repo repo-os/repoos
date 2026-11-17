@@ -61,16 +61,22 @@ describe("GET /api/servers/discovery", () => {
     expect(result).toMatchObject({ status: 200, body: { discoveryVersion: 1, servers: [] } });
   });
 
-  it("returns the explicit disabled payload to a direct Tailnet peer", async () => {
-    const listRows = vi.fn(async () => []);
+  it("honors each project's discovery setting when several servers share a machine", async () => {
+    const listRows = vi.fn(
+      async () =>
+        [
+          { entry: { projectName: "hidden", port: 7171, tailnetDiscovery: false }, valid: true },
+          { entry: { projectName: "visible", port: 7172 }, valid: true },
+        ] as never,
+    );
     const handler = createTailnetPeerDiscoveryHandler({ listRows });
     const { res, result } = response();
     await handler(context(false), request("100.100.10.2"), res, {});
-    expect(result).toEqual({
+    expect(result).toMatchObject({
       status: 200,
-      body: { ok: true, discoveryVersion: 1, disabled: true, servers: [] },
+      body: { discoveryVersion: 1, servers: [{ projectName: "visible", port: 7172 }] },
     });
-    expect(listRows).not.toHaveBeenCalled();
+    expect((result.body as { servers: unknown[] }).servers).toHaveLength(1);
   });
 
   it("maps each registry project to its own Serve path and preserves shared row fields", async () => {

@@ -142,18 +142,24 @@ export function mergeTailnetResults(
   const byBaseUrl = new Map<string, DiscoveredServer>();
   const unreachable: DiscoveredServer[] = [];
   const savedByHost = new Map<string, { url: string; name?: string }[]>();
+  const savedByName = new Map<string, { url: string; name?: string }[]>();
   for (const server of savedServers) {
     try {
       const parsed = new URL(server.url);
       const aliases = [
         parsed.hostname.toLowerCase(),
         parsed.hostname.toLowerCase().split(".")[0] ?? "",
-        (server.name ?? "").toLowerCase(),
       ];
       for (const alias of aliases.filter(Boolean)) {
         const entries = savedByHost.get(alias) ?? [];
         entries.push({ url: server.url, name: server.name });
         savedByHost.set(alias, entries);
+      }
+      if (server.name?.trim()) {
+        const name = server.name.trim().toLowerCase();
+        const entries = savedByName.get(name) ?? [];
+        entries.push({ url: server.url, name: server.name });
+        savedByName.set(name, entries);
       }
     } catch {
       /* invalid saved entries cannot reconcile a peer */
@@ -162,7 +168,7 @@ export function mergeTailnetResults(
 
   for (const row of rows) {
     if (row.unreachable || !row.url) {
-      const aliases = [row.host, row.dnsName, row.displayName, row.projectName]
+      const aliases = [row.host, row.dnsName, row.displayName]
         .filter((value): value is string => !!value)
         .map((value) => value.toLowerCase().replace(/\.$/, ""));
       const savedEntries = aliases.flatMap((alias) => savedByHost.get(alias) ?? []);
@@ -222,7 +228,12 @@ export function mergeTailnetResults(
     // as http and once as https, and only the HTTPS view is usable by Hub.
     const identity = url.replace(/^https?:\/\//, "");
     const https = url.startsWith("https://") && row.https !== false;
-    const isSaved = saved.has(identity);
+    // Serve URLs may use a custom hostname. Match its saved project name only
+    // when that name identifies one saved server, avoiding cross-machine hits.
+    const namedMatches = row.projectName
+      ? (savedByName.get(row.projectName.trim().toLowerCase()) ?? [])
+      : [];
+    const isSaved = saved.has(identity) || namedMatches.length === 1;
     const next: DiscoveredServer = {
       key: url,
       url,

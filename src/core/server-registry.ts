@@ -52,6 +52,8 @@ export interface ServerRegistryEntry {
    * repoos.toml, and so the tailnet is never treated as one shared group.
    */
   allowlistGroup?: string;
+  /** This project's opt-out for the machine-level tailnet discovery listener. */
+  tailnetDiscovery?: boolean;
 }
 
 /** Override for tests (`REPOOS_SERVERS_REGISTRY_DIR`). */
@@ -463,6 +465,7 @@ export interface RegisterRunningServerInput {
   registryDir?: string;
   /** Allowlist group this project joined (#1132). */
   allowlistGroup?: string;
+  tailnetDiscovery?: boolean;
 }
 
 /** Register (or refresh) after the HTTP listener is bound. Best-effort. */
@@ -480,6 +483,7 @@ export function registerRunningServer(input: RegisterRunningServerInput): void {
     activeEngineers: 0,
     engineersUpdatedAt: new Date().toISOString(),
     ...(input.allowlistGroup ? { allowlistGroup: input.allowlistGroup } : {}),
+    ...(input.tailnetDiscovery === false ? { tailnetDiscovery: false } : {}),
   };
   writeServerRegistryEntry(entry, input.registryDir);
 }

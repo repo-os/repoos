@@ -160,8 +160,6 @@ export function createTailnetPeerDiscoveryHandler(
   return async (ctx, req, res) => {
     if (!isTailnetPeerDiscoveryRequest(req))
       return json(res, 403, { ok: false, error: "Tailnet access required." });
-    if (ctx.config.tailnetDiscovery === false)
-      return json(res, 200, { ok: true, discoveryVersion: 1, disabled: true, servers: [] });
     const rows = await (deps.listRows ?? listValidatedServerRegistry)();
     const httpsByPort: Record<number, string> = await (
       deps.serveUrls ?? localTailnetServeUrls
@@ -170,7 +168,7 @@ export function createTailnetPeerDiscoveryHandler(
       ok: true,
       discoveryVersion: 1,
       servers: rows
-        .filter((row) => row.valid)
+        .filter((row) => row.valid && row.entry.tailnetDiscovery !== false)
         .map((row) => ({
           host: "local",
           projectName: row.entry.projectName,

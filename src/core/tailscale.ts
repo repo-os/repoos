@@ -19,6 +19,21 @@ export function detectTailscaleIPv4(): string | null {
   }
 }
 
+/** This machine's Tailscale IPv6 address, or null when unavailable. */
+export function detectTailscaleIPv6(): string | null {
+  try {
+    const out = execFileSync("tailscale", ["ip", "-6"], {
+      timeout: 1500,
+      stdio: ["ignore", "pipe", "ignore"],
+    })
+      .toString()
+      .trim();
+    return out || null;
+  } catch {
+    return null;
+  }
+}
+
 // ── HTTPS via `tailscale serve` ────────────────────────────────────────────
 // Over plain http on a Tailscale IP the browser is NOT a secure context, so
 // crypto.randomUUID, clipboard, service workers etc. are unavailable.

@@ -4929,6 +4929,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
             root: config.root,
             version: readBuildMeta().version ?? "unknown",
             allowlistGroup: config.budget?.allowlistGroup,
+            tailnetDiscovery: config.tailnetDiscovery,
             startedAt: serverStartedAt,
           });
           runningServerRegistry = {
@@ -4950,14 +4951,13 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           logServerRegistryError(logger, "register", e);
         }
       }
-      const stopTailnetDiscovery =
-        registerInServerRegistry && host === "0.0.0.0"
-          ? startTailnetDiscoveryListener(config, (error) =>
-              logger.system("warn", "Tailnet discovery listener failed", {
-                error: error instanceof Error ? error.message : String(error),
-              }),
-            )
-          : () => {};
+      const stopTailnetDiscovery = registerInServerRegistry
+        ? startTailnetDiscoveryListener(config, (error) =>
+            logger.system("warn", "Tailnet discovery listener failed", {
+              error: error instanceof Error ? error.message : String(error),
+            }),
+          )
+        : () => {};
       const handle: ServerHandle = {
         url,
         port: actualPort,

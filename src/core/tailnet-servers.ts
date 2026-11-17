@@ -535,7 +535,10 @@ export interface CollectTailnetOptions {
   now?: () => number;
 }
 
-async function defaultHttpDiscovery(peer: TailnetPeer, timeoutMs: number): Promise<string | null> {
+export async function defaultHttpDiscovery(
+  peer: TailnetPeer,
+  timeoutMs: number,
+): Promise<string | null> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {

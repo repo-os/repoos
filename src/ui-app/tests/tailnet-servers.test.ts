@@ -4,7 +4,12 @@ import {
   buildTailnetDiscoveryPayload,
   DISCOVERY_DISABLED_REASON,
 } from "../../server/routes/servers.js";
-import { parseTailnetInfo, tailnetPeerFailureReason } from "../../core/tailnet-servers.js";
+import {
+  defaultHttpDiscovery,
+  parseTailnetInfo,
+  tailnetPeerFailureReason,
+  TAILNET_DISCOVERY_PORT,
+} from "../../core/tailnet-servers.js";
 
 const config = (
   over: Partial<RepoOSConfig> = {},
@@ -25,6 +30,22 @@ const status = () =>
   });
 
 describe("GET /api/servers/tailnet", () => {
+  it("probes the machine discovery endpoint on the shared port and accepts only version 1", async () => {
+    const fetchSpy = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(
+        new Response(JSON.stringify({ discoveryVersion: 1, servers: [{ port: 7171 }] })),
+      );
+    await expect(
+      defaultHttpDiscovery({ host: "bee", dnsName: "bee.tail.ts.net" }, 500),
+    ).resolves.toContain('"discoveryVersion":1');
+    expect(fetchSpy).toHaveBeenCalledWith(
+      `http://bee.tail.ts.net:${TAILNET_DISCOVERY_PORT}/api/servers/discovery`,
+      expect.objectContaining({ headers: { Accept: "application/json" } }),
+    );
+    fetchSpy.mockRestore();
+  });
+
   it.each([
     [
       Object.assign(new Error("Permission denied (publickey)."), {

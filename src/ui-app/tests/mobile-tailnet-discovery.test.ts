@@ -99,6 +99,28 @@ describe("mobile tailnet discovery", () => {
     expect(merged.some((entry) => entry.name === "nightly-again")).toBe(false);
   });
 
+  it("marks custom-domain projects saved by a unique project name without matching failures by project alias", () => {
+    const rows: TailnetServer[] = [
+      {
+        host: "bee",
+        port: 7171,
+        projectName: "work",
+        url: "https://bee.tail.ts.net/work",
+        https: true,
+      },
+      { host: "thinkpad", unreachable: true, projectName: "work", reason: "timed out" },
+    ];
+    const merged = mergeTailnetResults(rows, [
+      { url: "https://projects.example.test/work", name: "work" },
+    ]);
+    expect(merged[0]).toMatchObject({ saved: true, selectable: false, note: "Already saved" });
+    expect(merged[1]).toMatchObject({
+      host: "thinkpad",
+      saved: false,
+      note: "Unreachable — timed out",
+    });
+  });
+
   it("prefers the HTTPS view when the same origin is reported as plain HTTP first", () => {
     const merged = mergeTailnetResults(
       [
@@ -157,16 +179,24 @@ describe("mobile tailnet discovery", () => {
     expect(merged.map(({ saved }) => saved)).toEqual([true, false]);
   });
 
-  it("reconciles multiple custom-domain saved projects by project name", () => {
+  it("reconciles multiple reachable custom-domain saved projects by project name", () => {
     const merged = mergeTailnetResults(
-      [{ host: "bee", projectName: "api", unreachable: true, reason: "timed out" }],
+      [
+        { host: "bee", projectName: "api", url: "https://bee.tail.ts.net/api", https: true },
+        {
+          host: "thinkpad",
+          projectName: "jobs",
+          url: "https://thinkpad.tail.ts.net/jobs",
+          https: true,
+        },
+      ],
       [
         { url: "https://custom.example/api", name: "api" },
         { url: "https://custom.example/jobs", name: "jobs" },
       ],
     );
-    expect(merged).toHaveLength(1);
-    expect(merged[0]).toMatchObject({ saved: true, note: "Already saved" });
+    expect(merged).toHaveLength(2);
+    expect(merged.map((row) => row.saved)).toEqual([true, true]);
   });
 
   it("keeps two saved Serve paths on the same machine as separate saved rows", () => {

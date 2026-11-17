@@ -638,8 +638,8 @@ the configured hosts, and `--json` sets `tailscaleUnavailable: true` plus
 and the text says only locally registered servers are listed. The remote
 command runs through a non-interactive `sh -c` with
 the common `repoos` install directories added to `PATH`, so it does not depend
-on an interactive shell or a TTY. Newer peers answer through a small HTTPS
-discovery endpoint first; SSH is retained for older versions. Each host has a short timeout; failed hosts
+on an interactive shell or a TTY. Newer peers answer through a small HTTP
+discovery endpoint first over the encrypted Tailscale network; SSH is retained for older versions. Each host has a short timeout; failed hosts
 appear as `unreachable` with their real cause — `command not found`,
 `SSH authentication failed`, `connection refused`, or `timed out` only when a
 timeout actually occurred — while the rest of the list is still shown. The JSON
