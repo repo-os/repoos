@@ -91,3 +91,4 @@ Read #1075 (the restart notice) and #1091 (`repoos restart`). A server that kill
 - 2026-11-17T16:55:38Z · CTO nudge: held — handoff gate is running
 - 2026-11-17T16:58:05Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
 - 2026-11-17T16:58:06Z · status active→review
+- 2026-11-17T16:58:06Z · message_queued at 2026-11-17T16:58:06.192Z
