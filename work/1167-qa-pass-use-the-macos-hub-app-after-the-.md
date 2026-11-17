@@ -3,9 +3,6 @@ id: "1167"
 title: "QA pass: use the macOS Hub app after the #1155 fix, find broken things and fix them"
 type: bug
 status: active
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: "`needs some work` — the startup-health overlay undoes edits, and Cmd-K keeps stale remote results after dismissal; both are regressions in …"
 priority: p1
 area: macos
 assigned_to: ai
@@ -14,7 +11,7 @@ branch: feat/qa-pass-use-the-macos-hub-app-after-the-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T18:23:18Z"
-updated_at: "2026-11-17T20:48:40Z"
+updated_at: "2026-11-17T20:48:41Z"
 review_passes: 3
 review_rounds: 2
 handoff_signal_retry_count: 2
@@ -86,3 +83,4 @@ Do not edit repoos.toml. Do not create signing identities or commit app binaries
 - 2026-11-17T20:21:48Z · needs_input
 - 2026-11-17T20:48:38Z · status review→active
 - 2026-11-17T20:48:40Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-17T20:48:41Z · needs_input
