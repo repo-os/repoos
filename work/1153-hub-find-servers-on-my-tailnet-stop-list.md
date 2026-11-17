@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-17T15:20:38Z"
+review_passes: 5
 id: "1153"
 title: "Hub 'Find servers on my tailnet': stop listing bare machines, hide phones, explain failures, and replace SSH discovery with an HTTPS-based one"
 type: bug
@@ -14,8 +16,6 @@ branch: feat/hub-find-servers-on-my-tailnet-stop-list
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T10:06:23Z"
-updated_at: "2026-11-17T15:20:38Z"
-review_passes: 4
 review_rounds: 2
 dev_error_count: 5
 ---
@@ -152,3 +152,4 @@ Do not add runtime dependencies. The discovery endpoint exposes names/ports only
 - 2026-11-17T15:12:00Z · message_queued at 2026-11-17T15:12:00.826Z
 - 2026-11-17T15:20:38Z · note: review pass 5: needs some work
 - 2026-11-17T15:20:38Z · needs_input
+
