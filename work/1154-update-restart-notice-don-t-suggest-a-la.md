@@ -2,7 +2,7 @@
 id: "1154"
 title: "Update/restart notice: don't suggest a launchd command for a hand-run server; offer a real restart and fix repoos restart auth (401)"
 type: bug
-status: active
+status: review
 priority: p2
 area: [web, server, cli]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/update-restart-notice-don-t-suggest-a-la
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T13:30:27Z"
-updated_at: "2026-11-17T15:02:12Z"
+updated_at: "2026-11-17T15:02:13Z"
 ---
 ## Problem
 
@@ -46,3 +46,4 @@ Read #1075 (the restart notice) and #1091 (`repoos restart`). A server that kill
 - 2026-11-17T14:57:45Z · body
 - 2026-11-17T15:00:38Z · CTO nudge: held — handoff gate is running
 - 2026-11-17T15:02:12Z · note: ui verification passed: 1 shot captured with clean console (1 shot warning)
+- 2026-11-17T15:02:13Z · status active→review
