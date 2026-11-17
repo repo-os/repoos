@@ -11,7 +11,7 @@ branch: feat/qa-pass-use-the-android-hub-app-on-the-p
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T15:51:18Z"
-updated_at: "2026-11-17T17:12:28Z"
+updated_at: "2026-11-17T17:12:49Z"
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-11-17T16:23:57.721Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
@@ -55,3 +55,4 @@ Use just deploy-phone only if the saved port works; otherwise do not ask Nick fo
 - 2026-11-17T16:28:58Z · watchdog: auto-surfaced stuck task · status active→ready · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
 - 2026-11-17T17:10:03Z · status ready→active
 - 2026-11-17T17:12:28Z · body
+- 2026-11-17T17:12:49Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: **Blocked: device QA is incomplete.** The saved phone target’s port was unreachable, `adb devices -l` showed no device, and no Android emulator or SDK was available. I did not install anything or run `just deploy-phone`. I could not captur… · stderr: Reading additional input from stdin...
