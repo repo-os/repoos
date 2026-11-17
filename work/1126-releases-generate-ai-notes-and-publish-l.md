@@ -3,9 +3,6 @@ id: "1126"
 title: "Releases: 'Generate AI notes and publish' - let the user choose auto-publish or notify-me when the AI draft is ready"
 type: feature
 status: review
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: "`needs some work` — a record can be re-settled while it is `publishing`, so a live automatic cut is reported as “not published”."
 priority: p2
 area: [web, server]
 assigned_to: ai
@@ -14,7 +11,7 @@ branch: feat/releases-generate-ai-notes-and-publish-l
 cli_override: opencode
 model_override: opencode-go/glm-5.3-flash
 created_at: "2026-11-15T08:14:22Z"
-updated_at: "2026-11-17T07:54:55Z"
+updated_at: "2026-11-17T08:08:58Z"
 review_passes: 3
 review_timeout_retries: 0
 check_retry_count: 1
@@ -262,3 +259,4 @@ Reuse the existing AI-draft run in ReleasesView.vue and the server release run; 
 - 2026-11-17T07:54:25Z · orphaned run process stopped · pid 18966 · sleep 60 · cpu 0s · age 7s
 - 2026-11-17T07:54:54Z · orphaned run process stopped · pid 19577 · sleep 60 · cpu 0s · age 32s
 - 2026-11-17T07:54:55Z · orphaned run process stopped · pid 21842 · sleep 60 · cpu 0s · age 7s
+- 2026-11-17T08:08:58Z · needs_input (review-rounds-exhausted) cleared for review again by human
