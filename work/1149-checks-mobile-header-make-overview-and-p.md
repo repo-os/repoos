@@ -64,3 +64,4 @@ Use the attached phone screenshot. Inspect both the empty state and a populated 
 - 2026-11-17T11:12:56Z · body
 - 2026-11-17T11:15:26Z · note: ui verification passed: 2 of 2 shots captured with clean console
 - 2026-11-17T11:15:27Z · status active→review
+- 2026-11-17T11:15:27Z · message_queued at 2026-11-17T11:15:27.821Z
