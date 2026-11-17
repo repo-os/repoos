@@ -1,9 +1,8 @@
 ---
-handoff_signal_retry_count: 2
 id: "1156"
 title: "Hub Android: dev build update channel - new dev builds reach the phone from any network with one tap (no adb)"
 type: feature
-status: active
+status: review
 priority: p1
 area: [mobile, infra]
 assigned_to: ai
@@ -12,7 +11,8 @@ branch: feat/hub-android-dev-build-update-channel-new
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T14:48:18Z"
-updated_at: "2026-11-17T16:04:45Z"
+updated_at: "2026-11-17T16:09:57Z"
+handoff_signal_retry_count: 2
 review_rounds: 1
 review_passes: 1
 ---
@@ -58,4 +58,4 @@ Follow the same shape as Tiao's implementation so all of Nick's apps behave iden
 - 2026-11-17T15:59:27Z · status review→active
 - 2026-11-17T15:59:29Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-17T16:04:45Z · message_queued at 2026-11-17T16:04:45.707Z
-
+- 2026-11-17T16:09:57Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
