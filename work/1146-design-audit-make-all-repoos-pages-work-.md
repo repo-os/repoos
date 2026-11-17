@@ -46,6 +46,7 @@ Use strong visual and product design judgment. Inspect rendered pages and theme 
 ![Commit diff route at 390×844](/api/tasks/1146/attachments/att_ad8c5752-83b7-4790-a754-6c41baa7caa2.png)
 ![Task detail at 390×844](/api/tasks/1146/attachments/att_3288185f-f19a-4c49-a9e4-cc1bfaa02ae5.png)
 ![Settings at 390×844](/api/tasks/1146/attachments/att_f71233b1-a5a3-42ee-93b8-6c567d554094.png)
+![Checks at 390×844](/api/tasks/1146/attachments/att_e7d4d69a-496d-4efc-b2ae-4b78510123d2.png)
 
 ## Activity
 
@@ -77,3 +78,4 @@ Use strong visual and product design judgment. Inspect rendered pages and theme 
 - 2026-11-17T03:33:34Z · screenshots
 - 2026-11-17T03:35:49Z · screenshots
 - 2026-11-17T03:35:52Z · screenshots
+- 2026-11-17T03:35:54Z · screenshots
