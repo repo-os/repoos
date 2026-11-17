@@ -36,6 +36,10 @@ Use `just deploy-phone` only if the saved port works; otherwise do not ask Nick 
 
 Human device step needed: the saved ADB target `100.117.244.33:37673` refused the connection on 2026-11-18; `adb devices -l` was empty and no emulator executable was available. Desktop browser fixtures were inspected but do not satisfy the phone/emulator screenshot or native Android interaction criteria. Please split the remaining device pass into a held human task (or provide an available Android device/emulator) before this QA task is resumed. No device results are claimed.
 
+## Screenshots
+
+![add-server.png](/api/tasks/1159/attachments/att_9927f217-4dc6-4a4c-ba20-6b06cc134c70.png)
+
 ## Activity
 
 - 2026-11-17T15:51:18Z · created · t@t
@@ -69,3 +73,4 @@ Human device step needed: the saved ADB target `100.117.244.33:37673` refused th
 - 2026-11-17T17:35:05Z · body
 - 2026-11-17T17:35:25Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The Android QA pass is still blocked: the saved ADB target refused connection, and `adb devices -l` showed no device. I captured no Android screenshots and made no claims about screens or defects. Created held human task **#1162** for the … · stderr: Reading additional input from stdin...
 - 2026-11-17T17:40:28Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 2/3
+- 2026-11-17T17:59:33Z · screenshots
