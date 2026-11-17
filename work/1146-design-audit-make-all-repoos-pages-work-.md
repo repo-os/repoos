@@ -40,6 +40,7 @@ Use strong visual and product design judgment. Inspect rendered pages and theme 
 ![Mission Control light at 390×844](/api/tasks/1146/attachments/att_c86d65fc-dbee-4e0f-b33d-11ef27b6c373.png)
 ![Mission Control dark at 390×844](/api/tasks/1146/attachments/att_4886c697-7e10-4a40-b77a-87214da01776.png)
 ![Search overlay dark at 390×844; input verified 44px high](/api/tasks/1146/attachments/att_91b39c22-9ce0-4507-8b6f-abb238f8bf62.png)
+![Login route at 390×844](/api/tasks/1146/attachments/att_47b0da96-5bb2-49fc-a122-0527f9c01b53.png)
 
 ## Activity
 
@@ -65,3 +66,4 @@ Use strong visual and product design judgment. Inspect rendered pages and theme 
 - 2026-11-17T03:33:22Z · screenshots
 - 2026-11-17T03:33:24Z · screenshots
 - 2026-11-17T03:33:26Z · screenshots
+- 2026-11-17T03:33:27Z · screenshots
