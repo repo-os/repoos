@@ -2,7 +2,7 @@
 id: "1163"
 title: Investigate Checks tab browser pass stall
 type: bug
-status: review
+status: active
 priority: p2
 area: web
 assigned_to: ai
