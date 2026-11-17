@@ -1,3 +1,14 @@
+---
+id: summary
+title: summary
+type: feature
+status: inbox
+priority: p2
+area: general
+assigned_to: ai
+created_by: ""
+branch: ""
+---
 ## TL;DR
 
 Task 1150 made `/stories` story cards readable on phones: story titles, excerpts, and nested live-task names now wrap at the existing 720px breakpoint instead of truncating with ellipses, with a 44px minimum task-row height for touch comfort and progress/status chips unchanged. Shipped as one engineering round (+33/−0 in `StoriesView.vue`, +12/−0 in its test), one review pass with verdict `good to go`, and close-out in 658s. The notable wrinkle: the review shot was captured at a desktop viewport (1024×800), so the mobile behaviour was approved on code inspection with a recorded evidence gap, not a visual capture.
@@ -14,9 +25,9 @@ Final verdict: **good to go** (review pass 1, marked EVIDENCE-GAP-ONLY — see b
 - **Review rounds:** 1 (pass 1, 2026-11-17T12:01:21Z, verdict good to go).
 - **Wall-clock:** created 2026-11-17T03:08:02Z → done 2026-11-17T13:15:51Z = 10h 7m 49s. Actual active work ran 11:40:01Z (ready→active) → 13:15:51Z = 1h 35m 50s; the task sat in `inbox`/`ready` for the first ~8.5 hours.
 - **Agents and models:**
-  - Engineer: `codex` on `gpt-6-luna`, session 135s, 1,544,056 tokens, cost not recorded.
-  - Reviewer: `reviewer` on `opencode-go/deepseek-v4.1-flash`, session 133s, 43,670 tokens, cost 0.0125 USD (recorded value: 0.0125095…).
-  - Routing: Model router (openrouter), 1s, tokens/cost not recorded.
+- Engineer: `codex` on `gpt-6-luna`, session 135s, 1,544,056 tokens, cost not recorded.
+- Reviewer: `reviewer` on `opencode-go/deepseek-v4.1-flash`, session 133s, 43,670 tokens, cost 0.0125 USD (recorded value: 0.0125095…).
+- Routing: Model router (openrouter), 1s, tokens/cost not recorded.
 - **Restarts/swaps:** one — an orphaned engineer process (pid 55011) was adopted at 11:41:22Z; no model swaps recorded.
 - **Close-out gate:** completed in 658s (2026-11-17T13:15:36Z).
 - **Total cost:** not recorded beyond the reviewer figure above.
