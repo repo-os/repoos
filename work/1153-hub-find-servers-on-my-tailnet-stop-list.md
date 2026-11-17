@@ -12,7 +12,7 @@ branch: feat/hub-find-servers-on-my-tailnet-stop-list
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T10:06:23Z"
-updated_at: "2026-11-17T17:12:22Z"
+updated_at: "2026-11-17T17:17:48Z"
 last_close_out_gate_ms: 118772
 last_close_out_gate_at: "2026-11-17T17:11:58.958Z"
 review_passes: 6
@@ -186,3 +186,4 @@ Do not add runtime dependencies. The discovery endpoint exposes names/ports only
 - 2026-11-17T17:03:31Z · note: review pass 6: good to go
 - 2026-11-17T17:11:58Z · close-out gate completed in 119s
 - 2026-11-17T17:12:22Z · status done→done, release:success
+- 2026-11-17T17:17:48Z · message_dropped: 1 queued message(s) discarded — task is done
