@@ -11,7 +11,7 @@ branch: feat/qa-pass-use-the-repoos-web-app-on-deskto
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T15:21:15Z"
-updated_at: "2026-11-17T21:20:53Z"
+updated_at: "2026-11-17T21:22:04Z"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/agent-review.test.ts > agent review before human sign-off (#0101) > gates follow-up creation before the freeze and rejects Land anyway without an eligible review on thinkpad — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: 121f350123544f935cc91124afd200aede44bb8e
 review_rounds: 2
@@ -43,7 +43,26 @@ Start with the Work page at 390px and the bottom dock/heads/pipeline bar overlap
 
 ## Shots
 ```json
-[]
+[
+{
+  "label": "Work queue page after narrow filter reflow",
+  "target": "default",
+  "route": "/work?view=board",
+  "highlight": ".page-title"
+},
+{
+  "label": "Secrets environment picker stays within the phone viewport",
+  "target": "default",
+  "route": "/secrets",
+  "highlight": ".secrets-picker"
+},
+{
+  "label": "Inputs author byline wraps at phone width",
+  "target": "default",
+  "route": "/inputs",
+  "highlight": ".input-byline"
+}
+]
 ```
 
 ## Screenshots
@@ -193,3 +212,4 @@ Start with the Work page at 390px and the bottom dock/heads/pipeline bar overlap
 - 2026-11-17T21:20:47Z · screenshots
 - 2026-11-17T21:20:50Z · screenshots
 - 2026-11-17T21:20:53Z · screenshots
+- 2026-11-17T21:22:04Z · body
