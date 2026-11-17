@@ -321,8 +321,7 @@ describe("ChecksView default tab (#0738)", () => {
     const { wrapper } = await mountChecks("/checks?tab=now");
     const fetchMock = vi.mocked(fetch);
     const localSlotRequestCount = () =>
-      fetchMock.mock.calls.filter(([url]) => String(url).includes("/api/local-check-slots"))
-        .length;
+      fetchMock.mock.calls.filter(([url]) => String(url).includes("/api/local-check-slots")).length;
     const requestsBeforeUnmount = localSlotRequestCount();
     expect(requestsBeforeUnmount).toBeGreaterThan(0);
 
