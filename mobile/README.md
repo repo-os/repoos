@@ -137,7 +137,8 @@ Isolation" docs for the API < 28 caveat.
   (UserDefaults / SharedPreferences), never sent anywhere, never backed up to
   cloud (`android:allowBackup="false"`).
 - **Find servers on my tailnet** sends one authenticated request to a server
-  you already saved. That server does the Tailscale/SSH discovery; the phone
+  you already saved. That server does the Tailscale discovery, probes peers over
+  HTTPS, and uses SSH only for older RepoOS servers; the phone
   never scans or broadcasts. Discovery results are not reported anywhere, and
   only the rows you pick are saved.
 - Server auth cookies live in the isolated InAppBrowser WebView container,

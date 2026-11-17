@@ -53,6 +53,7 @@ export interface TailnetDiscoveryDeps {
   tailscaleStatus?: () => Promise<string>;
   localServeStatus?: () => Promise<string>;
   remoteExec?: CollectTailnetOptions["remoteExec"];
+  httpDiscovery?: CollectTailnetOptions["httpDiscovery"];
   deadlineMs?: number;
   now?: () => number;
 }
@@ -104,6 +105,7 @@ export async function buildTailnetDiscoveryPayload(
     ...(deps.tailscaleStatus ? { tailscaleStatus: deps.tailscaleStatus } : {}),
     ...(deps.localServeStatus ? { localServeStatus: deps.localServeStatus } : {}),
     ...(deps.remoteExec ? { remoteExec: deps.remoteExec } : {}),
+    ...(deps.httpDiscovery ? { httpDiscovery: deps.httpDiscovery } : {}),
     ...(deps.now ? { now: deps.now } : {}),
   });
 
@@ -117,4 +119,18 @@ export async function buildTailnetDiscoveryPayload(
 
 export const getTailnetServers: RouteHandler = async (ctx, _req, res) => {
   return json(res, 200, await buildTailnetDiscoveryPayload(ctx.config));
+};
+
+/** Small, credential-free payload used only by a Tailscale Serve peer probe. */
+export const getTailnetPeerDiscovery: RouteHandler = async (_ctx, req, res) => {
+  const rows = await listValidatedServerRegistry();
+  const authority = req.headers.host;
+  return json(res, 200, {
+    ok: true,
+    servers: rows.filter((row) => row.valid).map((row) => ({
+      projectName: row.entry.projectName,
+      port: row.entry.port,
+      ...(authority ? { url: `https://${authority}` } : {}),
+    })),
+  });
 };

@@ -57,6 +57,7 @@ describe("GET /api/servers/tailnet", () => {
           },
         }),
       remoteExec,
+      httpDiscovery: async () => null,
       deadlineMs: 50,
     });
 
@@ -140,6 +141,7 @@ describe("GET /api/servers/tailnet", () => {
           },
         }),
       remoteExec,
+      httpDiscovery: async () => null,
     });
 
     expect(payload.servers).toEqual([
@@ -184,6 +186,7 @@ describe("GET /api/servers/tailnet", () => {
         if (command === "tailscale serve status --json") return "{}";
         return JSON.stringify({ servers: [{ port: 7499, projectName: "plain" }] });
       },
+      httpDiscovery: async () => null,
     });
 
     expect(payload.servers).toEqual([
@@ -213,6 +216,7 @@ describe("GET /api/servers/tailnet", () => {
           throw new Error("tailscale: not found");
         },
         remoteExec,
+        httpDiscovery: async () => null,
       },
     );
 
@@ -229,6 +233,7 @@ describe("GET /api/servers/tailnet", () => {
       localRows: [],
       tailscaleStatus: statusSpy,
       remoteExec,
+      httpDiscovery: async () => null,
     });
 
     expect(payload).toEqual({
@@ -239,6 +244,24 @@ describe("GET /api/servers/tailnet", () => {
       reason: DISCOVERY_DISABLED_REASON,
     });
     expect(statusSpy).not.toHaveBeenCalled();
+    expect(remoteExec).not.toHaveBeenCalled();
+  });
+
+  it("discovers peer projects over HTTPS without invoking SSH", async () => {
+    const remoteExec = vi.fn(async () => { throw new Error("SSH must not run"); });
+    const payload = await buildTailnetDiscoveryPayload(config(), {
+      localRows: [],
+      tailscaleStatus: async () => JSON.stringify({ Peer: {
+        bee: { HostName: "bee", DNSName: "bee.tail.ts.net.", OS: "linux", Online: true },
+      } }),
+      httpDiscovery: async (peer) => peer.host === "bee"
+        ? JSON.stringify({ servers: [{ projectName: "api", port: 7171, url: "https://bee.tail.ts.net" }] })
+        : null,
+      remoteExec,
+    });
+    expect(payload.servers).toEqual([{
+      host: "bee", projectName: "api", port: 7171, url: "https://bee.tail.ts.net", https: true,
+    }]);
     expect(remoteExec).not.toHaveBeenCalled();
   });
 });

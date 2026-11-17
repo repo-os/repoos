@@ -139,12 +139,13 @@ search field.
 
 Once you have saved one server you trust, the picker offers **Find servers on my
 tailnet**. The phone makes one request to that saved server; the server runs
-`tailscale status` and SSH on its own machine and returns the RepoOS servers it
-can see, with HTTPS MagicDNS URLs. Your phone never scans the tailnet. Peers are
+`tailscale status` on its own machine, probes each peer's small HTTPS discovery
+endpoint, and falls back to SSH for older RepoOS versions. Your phone never scans the tailnet. Peers are
 identified by their MagicDNS names, so two machines with the same display name
 stay distinct and a Mac with spaces in its name is still reached correctly.
-Phones and tablets on the tailnet are skipped because they cannot run a RepoOS
-server.
+Phones and tablets on the tailnet are skipped using the peer operating system,
+tags, and device name because they cannot run a RepoOS server. Failed machine
+checks are grouped separately under **Couldn't check these machines**.
 
 The request is a normal authenticated API call, so the saved server must have a
 signed-in session for it to succeed. The native app's isolated WebView session

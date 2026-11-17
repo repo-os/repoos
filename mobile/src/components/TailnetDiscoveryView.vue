@@ -22,6 +22,8 @@ const emit = defineEmits<{
 }>();
 
 const selectableCount = computed(() => props.servers.filter((server) => server.selectable).length);
+const failedServers = computed(() => props.servers.filter((server) => server.note?.startsWith("Unreachable")));
+const projectServers = computed(() => props.servers.filter((server) => !server.note?.startsWith("Unreachable")));
 
 function isSelected(key: string): boolean {
   return props.selected.includes(key);
@@ -63,8 +65,8 @@ function isSelected(key: string): boolean {
         </p>
         <p v-if="error" class="warn" data-testid="hub-discovery-error">{{ error }}</p>
 
-        <ul v-if="servers.length" class="discovery-list">
-          <li v-for="server in servers" :key="server.key">
+        <ul v-if="projectServers.length" class="discovery-list">
+          <li v-for="server in projectServers" :key="server.key">
             <button
               type="button"
               class="discovery-card"
@@ -107,6 +109,18 @@ function isSelected(key: string): boolean {
           </li>
         </ul>
 
+        <details v-if="failedServers.length" class="discovery-failures" data-testid="hub-tailnet-failures">
+          <summary>Couldn't check these machines ({{ failedServers.length }})</summary>
+          <ul class="discovery-list">
+            <li v-for="server in failedServers" :key="server.key" class="discovery-failure-row">
+              <span class="server-meta">
+                <span class="server-name">{{ server.name }}</span>
+                <span class="reachability unreachable">{{ server.note?.replace(/^Unreachable\s*—?\s*/, "") }}</span>
+              </span>
+            </li>
+          </ul>
+        </details>
+
         <p v-else-if="!message && !error" class="hint">
           No RepoOS servers answered from this server's tailnet.
         </p>
@@ -115,7 +129,7 @@ function isSelected(key: string): boolean {
 
     <div v-if="!busy" class="discovery-actions">
       <button
-        v-if="servers.length"
+        v-if="projectServers.length"
         type="button"
         class="btn-primary block"
         :disabled="selected.length === 0"
@@ -133,7 +147,7 @@ function isSelected(key: string): boolean {
       >
         Add server by URL
       </button>
-      <p v-if="servers.length && !selectableCount" class="hint discovery-footnote">
+      <p v-if="projectServers.length && !selectableCount" class="hint discovery-footnote">
         Nothing left to add. Saved and non-HTTPS servers stay listed so you can see why.
       </p>
     </div>

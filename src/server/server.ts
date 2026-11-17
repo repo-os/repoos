@@ -564,6 +564,7 @@ import {
   hubTaskSearch,
   // Tailnet discovery for the native Hub (#1127)
   getTailnetServers,
+  getTailnetPeerDiscovery,
   // Machine-local allowlist groups and their tailnet propagation (#1132)
   getAllowlistGroup,
   mutateAllowlistGroup,
@@ -4434,9 +4435,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("POST", /^\/api\/auth\/hub-capabilities\/([^/]+)\/rotate$/, rotateHubCapability);
   router.register("GET", "/api/hub/v1/summary", hubSummary);
   router.register("GET", "/api/hub/v1/tasks/search", hubTaskSearch);
-  // Server-assisted tailnet discovery (#1127) — authenticated like every other
-  // /api route; the mobile Hub asks a trusted server instead of scanning.
+  // Server-assisted tailnet discovery (#1127).
   router.register("GET", "/api/servers/tailnet", getTailnetServers);
+  router.register("GET", "/api/servers/discovery", getTailnetPeerDiscovery);
 
   // Background service management routes (0185)
   router.register("GET", "/api/service/status", getServiceStatusRoute);
@@ -4498,6 +4499,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       if (authEnabled) {
         const PUBLIC_PREFIXES = [
           "/api/health",
+          "/api/servers/discovery",
           "/api/auth/",
           "/api/hub/v1/summary",
           "/api/hub/v1/tasks/search",

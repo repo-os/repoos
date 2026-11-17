@@ -3,8 +3,8 @@
  * `GET /api/servers/tailnet` endpoint the mobile Hub calls.
  *
  * Discovery runs entirely on the machine that owns the trust relationship: the
- * Tailscale CLI lists online peers, and each peer is asked over SSH for its
- * `repoos servers --json`. The phone never scans or broadcasts — it asks one
+ * Tailscale CLI lists online peers, and each peer is queried over HTTPS before
+ * falling back to SSH for older installations. The phone never scans — it asks one
  * server it already trusts. Keeping this in `src/core` means the CLI and the
  * server cannot drift into two slightly different discovery implementations.
  */
@@ -18,7 +18,7 @@ const execFileAsync = promisify(execFile);
 /** Per-command budget for one remote host. */
 export const HOST_TIMEOUT_MS = 4_000;
 /** Whole-request budget for one discovery pass; slow hosts become `unreachable`. */
-export const DISCOVERY_DEADLINE_MS = 8_000;
+export const DISCOVERY_DEADLINE_MS = 20_000;
 /** `tailscale status --json` is local and cheap; never let it hold a request. */
 const TAILSCALE_STATUS_TIMEOUT_MS = 2_000;
 /** URL enrichment is a nicety; a slow `serve status` must not hide servers. */
@@ -50,6 +50,7 @@ interface TailnetStatusPeer {
   DNSName?: string;
   Online?: boolean;
   OS?: string;
+  Tags?: string[];
 }
 
 interface TailnetStatus {
@@ -88,7 +89,12 @@ const DNS_LABEL_RE = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/i;
 const UNSUPPORTED_MOBILE_OS = new Set(["android", "ios", "ipados", "tvos", "watchos"]);
 
 function isUnsupportedMobilePeer(peer: TailnetStatusPeer): boolean {
-  return UNSUPPORTED_MOBILE_OS.has((peer.OS ?? "").trim().toLowerCase());
+  const os = (peer.OS ?? "").trim().toLowerCase();
+  const name = (peer.HostName ?? "").trim().toLowerCase();
+  const tags = peer.Tags ?? [];
+  return UNSUPPORTED_MOBILE_OS.has(os) ||
+    /\b(?:phone|iphone|ipad|tablet|pixel|nothing phone|galaxy tab)\b/.test(name) ||
+    tags.some((tag) => /(?:mobile|phone|tablet)/i.test(tag));
 }
 
 /** Normalize a MagicDNS name and reject anything that is not DNS-safe. */
@@ -487,6 +493,8 @@ export interface CollectTailnetOptions {
   remoteHosts?: RemoteValidationHost[];
   remoteValidation?: RemoteValidationConfig;
   remoteExec?: RemoteExec;
+  /** Test seam for peer HTTP discovery; default uses fetch with an abort timeout. */
+  httpDiscovery?: (peer: TailnetPeer, timeoutMs: number) => Promise<string | null>;
   /** Per-remote-command budget. Defaults to {@link HOST_TIMEOUT_MS}. */
   timeoutMs?: number;
   /** Whole-pass budget. Defaults to {@link DISCOVERY_DEADLINE_MS}. */
@@ -495,6 +503,25 @@ export interface CollectTailnetOptions {
   annotateUrls?: boolean;
   /** Test seam for the deadline clock. */
   now?: () => number;
+}
+
+async function defaultHttpDiscovery(peer: TailnetPeer, timeoutMs: number): Promise<string | null> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    // Tailscale Serve terminates HTTPS on the MagicDNS host and forwards this
+    // path to the local RepoOS server. Keep the response deliberately small.
+    const response = await fetch(`https://${peer.dnsName ?? peer.host}/api/servers/discovery`, {
+      signal: controller.signal,
+      headers: { Accept: "application/json" },
+    });
+    if (!response.ok) return null;
+    return await response.text();
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 export interface TailnetCollection {
@@ -595,6 +622,18 @@ export async function collectTailnetServers(
         : hostConfig.user?.trim() || "root";
       const work = async (): Promise<ListedServer[]> => {
         try {
+          const discovered = await (options.httpDiscovery ?? defaultHttpDiscovery)(peer, Math.min(timeoutMs, 750));
+          if (discovered) {
+            const payload = JSON.parse(discovered) as { servers?: Record<string, unknown>[] };
+            if (Array.isArray(payload.servers)) {
+              return payload.servers.map((server) => ({
+                ...server,
+                host: peer.host,
+                ...displayFields,
+                ...(typeof server.url === "string" ? { https: server.url.startsWith("https://") } : {}),
+              })) as ListedServer[];
+            }
+          }
           // The two reads are independent; running them together keeps a host
           // inside the per-host budget instead of spending it twice.
           const [serversJson, serveJson] = await Promise.all([
