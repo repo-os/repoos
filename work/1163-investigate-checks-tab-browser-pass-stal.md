@@ -107,3 +107,4 @@ The direct tab pass found no navigation hang. Review identified a separate app l
 - 2026-11-17T21:17:25Z · body
 - 2026-11-17T21:18:50Z · handoff_deferred: 2 queued message(s) must be read before review
 - 2026-11-17T21:18:50Z · message_queued at 2026-11-17T21:18:50.388Z
+- 2026-11-17T21:18:50Z · ↻ resuming engineer to read queued message
