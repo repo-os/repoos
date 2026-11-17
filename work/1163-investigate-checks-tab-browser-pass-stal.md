@@ -1,9 +1,8 @@
 ---
-handoff_signal_retry_count: 2
 id: "1163"
 title: Investigate Checks tab browser pass stall
 type: bug
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -12,7 +11,8 @@ branch: feat/investigate-checks-tab-browser-pass-stal
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T17:53:05Z"
-updated_at: "2026-11-17T19:34:14Z"
+updated_at: "2026-11-17T19:39:28Z"
+handoff_signal_retry_count: 2
 ---
 During task #1157 responsive QA, a Playwright pass attempted to visit Checks tabs Now, Runs, Test Suite and Check Plan across 1440, 390 and 320px in both themes. It captured the Now tab at 390px, then the repeated interaction/screenshot run slowed and was stopped before the other tabs were verified. The default Checks route works and rendered without a page exception in the main screenshot matrix, so this report does not establish a product regression. Reproduce tab navigation directly and determine whether the stall is in the app or in repeated screenshot capture; if a product issue reproduces, fix it with a regression test. Evidence attached.
 
@@ -50,4 +50,4 @@ Screenshot shows the Checks Now tab at 390px. The attempt captured the main page
 - 2026-11-17T19:28:55Z · queued message undelivered for 6m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-17T19:28:57Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code unknown) · last assistant: Remote validation hit a stale incremental bundle base, then retried with a full bundle and is now cloning it for build and tests. The retry is proceeding normally so far; I’m continuing to wait for the actual check verdict. · stderr: Reading additional input from stdin...
 - 2026-11-17T19:34:14Z · message_queued at 2026-11-17T19:34:14.033Z
-
+- 2026-11-17T19:39:28Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
