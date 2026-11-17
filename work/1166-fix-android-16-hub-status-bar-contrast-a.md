@@ -2,19 +2,16 @@
 id: "1166"
 title: Fix Android 16 Hub status-bar contrast across themes
 type: bug
-status: ready
-needs_input: true
-needs_input_reason: underspecified
-needs_input_detail: "missing sections: Problem, Acceptance criteria, Notes for AI"
+status: active
 priority: p2
 area: mobile
 assigned_to: ai
 created_by: t@t
-branch: ""
+branch: feat/fix-android-16-hub-status-bar-contrast-a
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T17:55:45Z"
-updated_at: "2026-11-17T18:23:46Z"
+updated_at: "2026-11-17T18:23:49Z"
 ---
 ## Problem
 On Android 16 (API 36), the Hub theme changes the status-bar icon style but the status-bar background remains a light system strip. In Dark appearance, white status icons are nearly invisible against that light strip. Android 16 ignores the status-bar color request for apps targeting API 36, so the native edge-to-edge treatment needs a platform-aware fix.
@@ -50,3 +47,4 @@ This issue was observed on Android 16 (API 36), target SDK 36, with Android Syst
 - 2026-11-17T17:56:18Z · screenshots
 - 2026-11-17T18:23:40Z · cli_override, model_override
 - 2026-11-17T18:23:46Z · status inbox→ready
+- 2026-11-17T18:23:49Z · status ready→active, needs_input, branch
