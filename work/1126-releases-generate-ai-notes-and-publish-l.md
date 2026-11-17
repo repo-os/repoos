@@ -258,3 +258,4 @@ Reuse the existing AI-draft run in ReleasesView.vue and the server release run; 
 - 2026-11-17T07:11:54Z · needs_input
 - 2026-11-17T07:54:24Z · orphaned run process stopped · pid 18400 · sleep 60 · cpu 0s · age 13s
 - 2026-11-17T07:54:24Z · orphaned run process stopped · pid 18816 · sleep 60 · cpu 0s · age 8s
+- 2026-11-17T07:54:24Z · orphaned run process stopped · pid 18928 · sleep 60 · cpu 0s · age 7s
