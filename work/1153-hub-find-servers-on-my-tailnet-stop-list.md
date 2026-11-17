@@ -93,3 +93,4 @@ Do not add runtime dependencies. The discovery endpoint exposes names/ports only
 - 2026-11-17T13:10:15Z · watchdog: restarting engineer because a queued message waited 12m with no live process
 - 2026-11-17T13:10:15Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-17T13:10:17Z · message_delivered: 1 message(s)
+- 2026-11-17T13:10:17Z · message_queued at 2026-11-17T13:10:17.732Z
