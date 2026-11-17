@@ -78,3 +78,4 @@ Direct tab-click coverage passes, but review identified a separate app lifecycle
 - 2026-11-17T20:23:49Z · message_delivered: 1 message(s)
 - 2026-11-17T20:23:49Z · status review→active
 - 2026-11-17T20:25:47Z · body: Investigation outcome (added)
+- 2026-11-17T20:25:47Z · message_queued at 2026-11-17T20:25:47.838Z
