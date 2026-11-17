@@ -11,7 +11,7 @@ branch: feat/qa-pass-use-the-repoos-web-app-on-deskto
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T15:21:15Z"
-updated_at: "2026-11-17T19:26:52Z"
+updated_at: "2026-11-17T19:27:22Z"
 review_rounds: 1
 review_passes: 1
 review_timeout_retries: 0
@@ -106,3 +106,4 @@ Start with the Work page at 390px and the bottom dock/heads/pipeline bar overlap
 - 2026-11-17T19:23:49Z · status review→active
 - 2026-11-17T19:23:51Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-17T19:26:52Z · message_delivered: 1 message(s)
+- 2026-11-17T19:27:22Z · note: Returning task to active to address round 1 review findings.
