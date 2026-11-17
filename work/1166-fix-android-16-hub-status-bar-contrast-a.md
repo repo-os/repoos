@@ -2,7 +2,7 @@
 id: "1166"
 title: Fix Android 16 Hub status-bar contrast across themes
 type: bug
-status: active
+status: review
 priority: p2
 area: mobile
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/fix-android-16-hub-status-bar-contrast-a
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T17:55:45Z"
-updated_at: "2026-11-17T19:21:10Z"
+updated_at: "2026-11-17T19:22:20Z"
 review_rounds: 1
 review_passes: 1
 last_check_failure: "repoos check at 2026-11-17T19:05:59.283Z: repoos check failed: reused check inputs changed during handoff — run the check again"
@@ -80,3 +80,4 @@ This issue was observed on Android 16 (API 36), target SDK 36, with Android Syst
 - 2026-11-17T19:15:50Z · status review→active
 - 2026-11-17T19:16:16Z · note: Review round 1 returned findings; resuming implementation for round 2.
 - 2026-11-17T19:21:10Z · body
+- 2026-11-17T19:22:20Z · status active→review
