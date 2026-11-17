@@ -11,7 +11,7 @@ branch: feat/checks-mobile-header-make-overview-and-p
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T03:06:39Z"
-updated_at: "2026-11-17T11:10:04Z"
+updated_at: "2026-11-17T11:11:08Z"
 ---
 ## Problem
 At 390×844 on /checks, explanatory copy occupies about five lines while two help/config links sit in a narrow right column and wrap awkwardly. The header then competes with a tab row and the empty-state panel.
@@ -27,6 +27,25 @@ The Checks heading, concise purpose and key actions scan in a predictable order 
 ## Notes for AI
 Use the attached phone screenshot. Inspect both the empty state and a populated check-history state, in light and dark themes.
 
+## Shots
+```json
+[
+{
+  "label": "Checks overview on mobile",
+  "target": "default",
+  "route": "/checks?tab=runs",
+  "highlight": ".ck-head"
+},
+{
+  "label": "Checks history on mobile",
+  "target": "default",
+  "route": "/checks?tab=runs",
+  "highlight": ".ck-head",
+  "state": "checks:timings"
+}
+]
+```
+
 ## Screenshots
 
 ![Checks at 390×844: intro copy and links compete in narrow header](/api/tasks/1149/attachments/att_6e8da9e6-d6b1-430f-b2bc-9d1dd9b2386e.png)
@@ -41,3 +60,4 @@ Use the attached phone screenshot. Inspect both the empty state and a populated 
 - 2026-11-17T11:09:59Z · cli_override, model_override
 - 2026-11-17T11:10:01Z · status inbox→ready
 - 2026-11-17T11:10:04Z · status ready→active, branch
+- 2026-11-17T11:11:08Z · body
