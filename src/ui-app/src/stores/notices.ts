@@ -27,6 +27,8 @@ import { useRemindersStore } from "./reminders";
 /** The notice kinds the UI knows today. A string, extended per source. */
 export type NoticeKind =
   | "releaseNotesReady"
+  | "releaseNotesFailed"
+  | "releaseAutoPublishFailed"
   | "releaseSucceeded"
   | "releaseFailed"
   | "closeOutSucceeded"
@@ -64,6 +66,8 @@ export interface NoticeItem {
 /** Human-friendly labels for each kind, shared with the bell and panels. */
 export const NOTICE_KIND_LABELS: Record<NoticeKind, string> = {
   releaseNotesReady: "Release notes ready",
+  releaseNotesFailed: "Release notes failed",
+  releaseAutoPublishFailed: "Auto-publish blocked",
   releaseSucceeded: "Release succeeded",
   releaseFailed: "Release failed",
   closeOutSucceeded: "Merged into main",
@@ -86,6 +90,10 @@ export const NOTICE_KIND_LABELS: Record<NoticeKind, string> = {
 /** Dot / accent color per kind — CSS tokens only (hardcoded-colors guard). */
 export const NOTICE_KIND_COLOR: Record<NoticeKind, string> = {
   releaseNotesReady: "var(--violet)",
+  // Amber: the draft failed but nothing shipped and a retry is safe.
+  releaseNotesFailed: "var(--amber)",
+  // Red: the promised automatic publish did not happen.
+  releaseAutoPublishFailed: "var(--red)",
   releaseSucceeded: "var(--green)",
   releaseFailed: "var(--red)",
   closeOutSucceeded: "var(--green)",
@@ -108,8 +116,10 @@ export const NOTICE_KIND_COLOR: Record<NoticeKind, string> = {
 };
 
 /** Kinds surfaced as bell notices from `GET /api/attention` (#0687). */
-const ATTENTION_NOTICE_KINDS = new Set<NoticeKind>([
+export const ATTENTION_NOTICE_KINDS = new Set<NoticeKind>([
   "releaseNotesReady",
+  "releaseNotesFailed",
+  "releaseAutoPublishFailed",
   "releaseSucceeded",
   "releaseFailed",
   "closeOutSucceeded",

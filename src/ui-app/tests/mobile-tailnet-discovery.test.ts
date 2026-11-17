@@ -199,6 +199,17 @@ describe("mobile tailnet discovery", () => {
     expect(merged.map((row) => row.saved)).toEqual([true, true]);
   });
 
+  it("does not mark every same-named project as saved when one custom-domain project is saved", () => {
+    const merged = mergeTailnetResults(
+      [
+        { host: "bee", projectName: "work", url: "https://bee.tail.ts.net:7001", https: true },
+        { host: "thinkpad", projectName: "work", url: "https://thinkpad.tail.ts.net:7002", https: true },
+      ],
+      [{ url: "https://work.example.test", name: "work" }],
+    );
+    expect(merged.map(({ saved }) => saved)).toEqual([false, false]);
+  });
+
   it("keeps two saved Serve paths on the same machine as separate saved rows", () => {
     const merged = mergeTailnetResults(
       [{ host: "bee", dnsName: "bee.tail.ts.net", unreachable: true, reason: "timed out" }],

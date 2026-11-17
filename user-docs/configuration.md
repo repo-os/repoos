@@ -1565,6 +1565,7 @@ sees a boolean `enabled`.
 | `release.remote` | string | `origin` | yes | Git remote that receives the annotated tag. |
 | `release.repository` | string | unset | yes | Optional `owner/repo`, used only to link to the resulting release. |
 | `release.workflow` | string | unset | yes | Optional workflow path shown as release context. RepoOS does not execute it. |
+| `release.notesWhenReady` | select | `notify` | yes | The remembered answer in the Generate notes dialog: `publish` cuts the release automatically when the AI draft is ready (through every Publish check, cancellable until it starts), `notify` leaves the notes in the panel and sends a notification. The dialog writes your choice back here. |
 
 ### Deployment rows
 

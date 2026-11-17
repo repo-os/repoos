@@ -12,6 +12,8 @@ import {
   notifyAttentionAgentFailure,
   notifyAttentionProcessSignalFailure,
   notifyAttentionProviderUsageLimit,
+  notifyAttentionReleaseAutoPublishFailed,
+  notifyAttentionReleaseNotesFailed,
   wireAttentionNotifications,
 } from "../../server/attention-notify.js";
 import { DEFAULT_CONFIG } from "../../core/config.js";
@@ -155,5 +157,37 @@ describe("notifyAttentionProcessSignalFailure", () => {
       detail: expect.stringContaining("EPERM while sending SIGTERM"),
     });
     expect(bumps).toBe(1);
+  });
+});
+
+describe("release failure attention round-trip (#1126)", () => {
+  afterEach(() => {
+    wireAttentionNotifications(
+      createAttentionEventStore(join(tmpdir(), "repoos-attn-reset")),
+      () => {},
+    );
+  });
+
+  it("records both release failure kinds and replays them after a restart", () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-release-attn-"));
+    let bumps = 0;
+    wireAttentionNotifications(createAttentionEventStore(root), () => {
+      bumps += 1;
+    });
+    notifyAttentionReleaseNotesFailed("v1.2.4", "the draft did not finish");
+    notifyAttentionReleaseAutoPublishFailed("v1.2.5", "the working tree was dirty");
+    expect(bumps).toBe(2);
+
+    // A fresh store (the next server process) must still list both kinds —
+    // the runtime allowlist is table-driven over the recorded union, so a
+    // half-registered kind cannot disappear on reload.
+    const replayed = createAttentionEventStore(root).list();
+    expect(replayed.map((e) => e.kind).sort()).toEqual([
+      "releaseAutoPublishFailed",
+      "releaseNotesFailed",
+    ]);
+    expect(replayed.find((e) => e.kind === "releaseNotesFailed")?.detail).toContain(
+      "the draft did not finish",
+    );
   });
 });

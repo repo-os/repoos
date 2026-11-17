@@ -58,7 +58,10 @@ describe("GET /api/servers/discovery", () => {
     });
     const { res, result } = response();
     await handler(context(), request("100.100.10.2"), res, {});
-    expect(result).toMatchObject({ status: 200, body: { discoveryVersion: 1, servers: [] } });
+    expect(result).toMatchObject({
+      status: 200,
+      body: { discoveryVersion: 1, disabled: true, reason: expect.any(String) },
+    });
   });
 
   it("uses each project's setting when the listener owner is disabled", async () => {
@@ -79,7 +82,7 @@ describe("GET /api/servers/discovery", () => {
     expect((result.body as { servers: unknown[] }).servers).toHaveLength(1);
   });
 
-  it("maps each registry project to its own Serve path and preserves shared row fields", async () => {
+  it("returns project names, ports, and tailnet URLs without exposing project paths", async () => {
     const rows = [
       {
         entry: { projectName: "api", port: 7171, root: "/srv/api", allowlistGroup: "agents" },
@@ -107,21 +110,18 @@ describe("GET /api/servers/discovery", () => {
           {
             projectName: "api",
             port: 7171,
-            root: "/srv/api",
-            allowlistGroup: "agents",
             valid: true,
             url: "https://bee.tail.ts.net/api",
           },
           {
             projectName: "web",
             port: 7172,
-            root: "/srv/web",
-            allowlistGroup: "agents",
             valid: true,
             url: "https://bee.tail.ts.net/web",
           },
         ],
       },
     });
+    expect(JSON.stringify(result.body)).not.toMatch(/\/srv\//);
   });
 });

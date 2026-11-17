@@ -634,8 +634,9 @@ export interface RepoOSConfig {
    * Allow a signed-in RepoOS Hub client (mobile) to ask this server for the
    * RepoOS servers it can see on the owner's Tailscale tailnet, via
    * `GET /api/servers/tailnet`. On by default; `false` makes the endpoint
-   * refuse without running discovery. Discovery itself happens on this server
-   * (Tailscale CLI + SSH), never on the phone.
+   * refuse without running discovery. This server probes online peers over
+   * its tailnet discovery listener, with SSH fallback for older RepoOS servers;
+   * the phone never scans the network. `false` hides this project's registry row.
    */
   tailnetDiscovery?: boolean;
   /**
@@ -1066,6 +1067,14 @@ export interface ReleaseConfig {
   repository?: string;
   /** Optional workflow path, shown as release context (not executed by RepoOS). */
   workflow?: string;
+  /**
+   * Remembered answer to "what should happen when the AI draft is ready?"
+   * (#1126): publish the release automatically, or notify the human to review
+   * and press Publish. The release panel preselects this and writes it back on
+   * the next choice; a repo with no value behaves as `notify` (nothing is ever
+   * published unless the human opted in for that exact version).
+   */
+  notesWhenReady?: "publish" | "notify";
   /** Mail the team when a release goes out (#1071). Off unless enabled. */
   email?: ReleaseEmailConfig;
 }

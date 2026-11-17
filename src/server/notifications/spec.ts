@@ -89,3 +89,39 @@ export function notificationForMergeConflict(): NotificationSpec {
     subtitle: "Task branch conflicts with main — resolve the sync",
   };
 }
+
+/** The AI release-notes draft is ready for a human to review and publish (#1126). */
+export function notificationForReleaseNotesReady(tag: string): NotificationSpec {
+  return {
+    headline: "📝 Release notes ready",
+    severity: "normal",
+    subtitle: tag
+      ? `Review the draft and publish ${tag}.`
+      : "Review the draft and publish the release.",
+  };
+}
+
+/** The draft the human was waiting on failed or came back empty (#1126). */
+export function notificationForReleaseNotesFailed(tag: string, reason?: string): NotificationSpec {
+  return {
+    headline: "⚠️ Release notes failed",
+    severity: "high",
+    subtitle:
+      reason?.trim() ||
+      (tag
+        ? `The AI draft for ${tag} did not finish. Nothing was published.`
+        : "The AI draft did not finish. Nothing was published."),
+  };
+}
+
+/** An automatic publish was cancelled by a blocker before anything shipped (#1126). */
+export function notificationForReleaseAutoPublishFailed(
+  tag: string,
+  reason?: string,
+): NotificationSpec {
+  return {
+    headline: "⚠️ Release not published",
+    severity: "high",
+    subtitle: reason?.trim() || `${tag} was not published automatically.`,
+  };
+}

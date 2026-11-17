@@ -215,6 +215,13 @@ export const SHOT_PREVIEW_FIXTURE_IDS = [
   // #1089 — Releases page and cut drawer while a release run is in progress, so
   // captures show the shared ActivityIndicator on the pill and progress heading.
   "release:cutRunning",
+  // #1126 — Releases page with a clean, release-ready status, so a capture can
+  // open the cut drawer and the "When the AI notes are ready" chooser from a
+  // preview worktree that is not itself on the release branch.
+  "release:cutReady",
+  // #1126 — Releases page showing the server-owned "publish when the notes are
+  // ready" promise and its Cancel, which the preview board cannot have pending.
+  "release:autoPublishWaiting",
 ] as const;
 
 export type ShotPreviewFixtureId = (typeof SHOT_PREVIEW_FIXTURE_IDS)[number];

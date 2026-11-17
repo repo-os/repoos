@@ -21,6 +21,14 @@ import { runDoctor } from "../../core/doctor.js";
 import { currentBranch, gitIdentityConfigured, isGitRepo } from "../../core/git.js";
 import { findMissingAgentsMdPaths } from "../../core/project-docs.js";
 import { scheduleTemplateWarning } from "../../core/schedule.js";
+import { detectTailscaleIPv4 } from "../../core/tailscale.js";
+
+// Stub Tailscale detection so the E2 default does not depend on whether this
+// machine runs `tailscale ip -4` successfully (it does on a dev laptop).
+vi.mock("../../core/tailscale.js", async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  detectTailscaleIPv4: vi.fn(() => null),
+}));
 
 const REPO_ROOT = resolve(__dirname, "../../..");
 const cliDoc = readFileSync(join(REPO_ROOT, "user-docs/cli.md"), "utf8");
@@ -44,13 +52,18 @@ describe("easter eggs #1026", () => {
   });
 
   it("E2: serve banner and resolveServeHost name bind interfaces", () => {
-    expect(resolveServeHost(undefined, () => null).host).toBe("127.0.0.1");
-    expect(resolveServeHost(undefined, () => "100.64.10.2")).toMatchObject({
+    const detect = vi.mocked(detectTailscaleIPv4);
+    detect.mockReturnValue(null);
+    expect(resolveServeHost(undefined)).toEqual({ host: "127.0.0.1", tailscaleDetected: false });
+    expect(resolveServeHost("0.0.0.0").tailscaleDetected).toBe(false);
+    detect.mockReturnValue("100.64.0.7");
+    expect(resolveServeHost(undefined)).toEqual({
       host: "0.0.0.0",
       tailscaleDetected: true,
-      tailscaleIP: "100.64.10.2",
+      tailscaleIP: "100.64.0.7",
     });
-    expect(resolveServeHost("0.0.0.0", () => "100.64.10.2").tailscaleDetected).toBe(false);
+    expect(resolveServeHost("127.0.0.1")).toEqual({ host: "127.0.0.1", tailscaleDetected: false });
+    expect(resolveServeHost("0.0.0.0").tailscaleDetected).toBe(false);
     const plain = renderServeBanner("0.1.0", [
       { label: "Bind", value: formatServeBindBannerValue("127.0.0.1", false) },
       { label: "Local", value: "http://127.0.0.1:1" },

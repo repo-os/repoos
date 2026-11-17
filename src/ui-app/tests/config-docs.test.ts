@@ -51,6 +51,19 @@ describe("repoos.toml and environment docs", () => {
     expect(SUPPORTED_TOML_KEYS).toContain("tailnetDiscovery");
   });
 
+  it("exposes release.notesWhenReady as a documented Settings select (#1126)", () => {
+    const field = getConfigSchema().find((f) => f.key === "release.notesWhenReady");
+    expect(field).toMatchObject({
+      type: "select",
+      tier: "live",
+      restartRequired: false,
+      default: "notify",
+    });
+    expect(field?.options?.map((o) => o.value)).toEqual(["publish", "notify"]);
+    expect(field?.description).toMatch(/release panel|Publish/i);
+    expect(SUPPORTED_TOML_KEYS).toContain("release.notesWhenReady");
+  });
+
   it("exposes git.tuneForScale as a documented Settings toggle", () => {
     const field = getConfigSchema().find((f) => f.key === "git.tuneForScale");
     expect(field).toMatchObject({

@@ -283,15 +283,18 @@ import { isLoopbackAddress, localTokenMatches, writeLocalCliToken } from "./loca
 import { recordApiRouteCatalog } from "./api-route-catalog.js";
 import { testModelCombination } from "./model-test.js";
 import {
+  cancelReleaseAutoPublish,
   generateReleaseNotes,
   getAvailableRelease,
   getRelease,
+  getReleaseAutoPublish,
   getReleaseDistribution,
   getReleaseEmail,
   getReleaseEmailPreview,
   getReleaseNotesRun,
   getReleaseRun,
   getUnpushedReleaseNotes,
+  resumeReleaseAutoPublish,
   runRelease,
   sendReleaseEmailNow,
   unsubscribeReleaseEmailRoute,
@@ -1599,6 +1602,15 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     }
   });
   wireAttentionNotifications(attentionEvents, bumpAttention);
+  // Resume a pending "publish automatically when the notes are ready" promise
+  // (#1126) after a restart. The draft run itself is in-memory, so this either
+  // recovers the cached draft or fails the promise closed with a notification.
+  void resumeReleaseAutoPublish({ config, remoteValidator, emitEvent }).catch((err) => {
+    logger.system(
+      "warn",
+      `release auto-publish resume failed: ${err instanceof Error ? err.message : String(err)}`,
+    );
+  });
   setProcessGroupSignalFailureHandler(notifyAttentionProcessSignalFailure);
   const recordRemoteFallbackAttention = (taskId: string, detail: string): void => {
     const at = new Date().toISOString();
@@ -1655,6 +1667,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
                 runningServerRegistry.port,
                 fresh.root,
                 fresh.budget?.allowlistGroup,
+                fresh.tailnetDiscovery,
               );
             } catch (e) {
               logServerRegistryError(logger, "refresh", e);
@@ -3726,6 +3739,11 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("POST", "/api/release/notes", generateReleaseNotes);
   router.register("GET", "/api/release/notes/run", getReleaseNotesRun);
   router.register("GET", "/api/release/notes/unpushed", getUnpushedReleaseNotes);
+  // #1126: the server-owned "when the AI draft is ready" promise. Reading it is
+  // safe from any tab; DELETE cancels a waiting draft or dismisses a terminal
+  // outcome.
+  router.register("GET", "/api/release/notes/auto-publish", getReleaseAutoPublish);
+  router.register("DELETE", "/api/release/notes/auto-publish", cancelReleaseAutoPublish);
   router.register("GET", "/api/release/email", getReleaseEmail);
   router.register("GET", "/api/release/email/preview", getReleaseEmailPreview);
   router.register("POST", "/api/release/email/send", sendReleaseEmailNow);

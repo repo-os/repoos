@@ -81,16 +81,13 @@ export function setServeProcessTitle(
  * though the actual bind is 0.0.0.0) so callers can show the address other
  * tailnet devices should actually use.
  */
-export function resolveServeHost(
-  explicitHost?: string,
-  detectTailscale: () => string | null = detectTailscaleIPv4,
-): {
+export function resolveServeHost(explicitHost?: string): {
   host: string;
   tailscaleDetected: boolean;
   tailscaleIP?: string;
 } {
   if (explicitHost) return { host: explicitHost, tailscaleDetected: false };
-  const tailscaleIP = detectTailscale();
+  const tailscaleIP = detectTailscaleIPv4();
   if (tailscaleIP) return { host: "0.0.0.0", tailscaleDetected: true, tailscaleIP };
   return { host: "127.0.0.1", tailscaleDetected: false };
 }

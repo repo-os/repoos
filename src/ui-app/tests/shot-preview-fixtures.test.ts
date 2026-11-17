@@ -18,6 +18,8 @@ import {
   shotFixturePinnedWorkingDiff,
   shotFixtureReleaseEmail,
   shotFixtureReleaseRun,
+  shotFixtureReleaseStatus,
+  shotFixtureReleaseAutoPublish,
   shotFixtureSchedules,
   shotFixtureAgentLastRuns,
   isShotPreviewSeededTaskId,
@@ -225,6 +227,31 @@ describe("shot preview board fixtures (#0743)", () => {
     expect(run?.state).toBe("running");
     expect(run?.phase).toBe("checking");
     expect(run?.message.length).toBeGreaterThan(10);
+  });
+
+  it("seeds a release-ready page and a pending promise for the #1126 fixtures", () => {
+    // Only the two #1126 fixtures pin a status; everything else keeps the real
+    // preview status (which is not on the release branch).
+    expect(shotFixtureReleaseStatus(null)).toBeNull();
+    expect(shotFixtureReleaseStatus("release:cutRunning")).toBeNull();
+    for (const fixture of ["release:cutReady", "release:autoPublishWaiting"] as const) {
+      const status = shotFixtureReleaseStatus(fixture);
+      expect(status?.enabled).toBe(true);
+      expect(status?.supported).toBe(true);
+      expect(status?.clean).toBe(true);
+      expect(status?.onReleaseBranch).toBe(true);
+      expect(status?.tagExists).toBe(false);
+    }
+
+    // Only the waiting fixture pins a promise; the chooser shot must not be
+    // blocked by an active auto-publish.
+    expect(shotFixtureReleaseAutoPublish(null)).toBeNull();
+    expect(shotFixtureReleaseAutoPublish("release:cutReady")).toBeNull();
+    const promise = shotFixtureReleaseAutoPublish("release:autoPublishWaiting");
+    expect(promise?.state).toBe("waiting");
+    expect(promise?.mode).toBe("publish");
+    expect(promise?.tag).toBe("v0.6.1");
+    expect(promise?.notes).toBeNull();
   });
 
   it("clears the configured editor so the Set-editor hint renders (#0805)", () => {

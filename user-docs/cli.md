@@ -627,11 +627,12 @@ running server is deliberately excluded, `repoos status` says
 `--json` prints the same data for scripts. The Hub uses the same registry to
 discover local servers.
 
-`--tailscale` adds servers from online Tailscale peers by running
-`repoos servers --json` over SSH. It uses `tailscale status --json` to discover
-peers, or the hosts configured under `remoteValidation.tailscaleHosts` if the
-Tailscale CLI is unavailable or its status cannot be read. When that fallback is
-used the text output names
+`--tailscale` adds servers from online Tailscale peers. It uses
+`tailscale status --json` to discover peers and probes the RepoOS machine
+discovery endpoint over the tailnet, falling back to `repoos servers --json`
+over SSH for older peers. If the Tailscale CLI is unavailable or its status
+cannot be read, it uses hosts configured under `remoteValidation.tailscaleHosts`.
+When that fallback is used the text output names
 the configured hosts, and `--json` sets `tailscaleUnavailable: true` plus
 `discoverySource: "configured-hosts"` (the normal Tailscale path reports
 `"tailscale"`). With no configured hosts, `discoverySource` is `"local-only"`
@@ -641,9 +642,9 @@ the common `repoos` install directories added to `PATH`, so it does not depend
 on an interactive shell or a TTY. Newer peers answer through a small HTTP
 discovery endpoint on port 41641 over the encrypted Tailscale network; SSH is retained for older versions. The discovery request is plain HTTP protected by Tailscale's WireGuard transport; returned project URLs use HTTPS Serve URLs.
 Each host has a short timeout; failed hosts
-appear as `unreachable` with their real cause — `command not found`,
-`SSH authentication failed`, `connection refused`, or `timed out` only when a
-timeout actually occurred — while the rest of the list is still shown. The JSON
+appear as `unreachable` with their real cause and a plain fix, such as
+`no SSH key from <host>`, `SSH is off on <host>`, or `timed out` only when a
+real timeout occurred — while the rest of the list is still shown. The JSON
 output includes a `host` field for every entry. `--prune` is local-only and
 cannot be combined with `--tailscale`.
 

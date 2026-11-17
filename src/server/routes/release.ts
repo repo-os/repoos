@@ -3,12 +3,18 @@ import type { RouteContext, RouteHandler } from "./types.js";
 import { json, readBody } from "./utils.js";
 import { notifyAttentionReleaseNotesTerminal } from "../attention-notify.js";
 import {
+  notifyAttentionReleaseAutoPublishFailed,
+  notifyAttentionReleaseNotesFailed,
+} from "../attention-notify.js";
+import {
   collectReleaseCommits,
   cutNewRelease,
   expectsOwnCliRepo,
   findUnpushedReleaseNotes,
   getReleaseStatus,
+  isReleaseVersion,
   releaseNotesPrompt,
+  releaseTagExists,
   type ReleasePhase,
   type ReleaseStatus,
 } from "../release.js";
@@ -61,6 +67,22 @@ import {
   releaseNotesCacheKey,
   writeCachedReleaseNotes,
 } from "../release-notes-cache.js";
+import {
+  defaultReleaseWhenReady,
+  isReleaseAutoPublishActive,
+  readReleaseAutoPublish,
+  rememberReleaseWhenReady,
+  writeReleaseAutoPublish,
+  type ReleaseAutoPublishRecord,
+  type ReleaseWhenReady,
+} from "../release-auto-publish.js";
+import {
+  notificationContextFromConfig,
+  notifyReleaseAutoPublishFailed,
+  notifyReleaseNotesFailed,
+  notifyReleaseNotesReady,
+} from "../notifications/index.js";
+import { getAuthStore } from "../../core/auth-store.js";
 
 const RELEASE_CACHE_MS = 10 * 60 * 1000;
 const RELEASE_FAILURE_CACHE_MS = 60 * 1000;
@@ -282,6 +304,348 @@ export const getReleaseNotesRun: RouteHandler = async (ctx, _req, res) => {
 export const getUnpushedReleaseNotes: RouteHandler = async (ctx, _req, res) =>
   json(res, 200, await findUnpushedReleaseNotes(ctx.config));
 
+// ---------------------------------------------------------------------------
+// "When the AI draft is ready": notify me or publish automatically (#1126)
+// ---------------------------------------------------------------------------
+
+/** The context bits the detached auto-publish flow needs from a request. */
+type NotesRunContext = Pick<RouteContext, "config" | "remoteValidator" | "emitEvent">;
+
+type AutoPublishStarter = (ctx: NotesRunContext, record: ReleaseAutoPublishRecord) => void;
+
+/**
+ * Starts the guarded release cut. The default is the same `beginRelease` the
+ * manual Publish button uses, so an automatic cut can never bypass a blocker,
+ * a version/tag confirmation, the clean-main check or `repoos check`. Overridden
+ * only by tests.
+ */
+let autoPublishStarter: AutoPublishStarter | null = null;
+
+/** Test seam: substitute the release cut so tests never push/tag a fixture. */
+export function __setReleaseAutoPublishStarterForTests(starter: AutoPublishStarter | null): void {
+  autoPublishStarter = starter;
+}
+
+function releaseNotificationCtx(config: RepoOSConfig, origin: string | null) {
+  return notificationContextFromConfig(config, getAuthStore(config.root), origin ?? undefined);
+}
+
+function stamp(): string {
+  return new Date().toISOString();
+}
+
+function writeAutoPublishState(
+  config: RepoOSConfig,
+  requestedAt: string,
+  patch: Partial<ReleaseAutoPublishRecord>,
+): ReleaseAutoPublishRecord | null {
+  const current = readReleaseAutoPublish(config);
+  if (!current || current.requestedAt !== requestedAt) return null;
+  // A live cut is outward-facing: once `publishing`, only its own outcome
+  // (succeeded/failed) may rewrite the record. A cached-draft settle, a second
+  // tab or a stray failure must never flip it back to `ready`/`waiting`.
+  if (
+    current.state === "publishing" &&
+    patch.state !== undefined &&
+    patch.state !== "succeeded" &&
+    patch.state !== "failed"
+  ) {
+    return null;
+  }
+  const next: ReleaseAutoPublishRecord = { ...current, ...patch, updatedAt: stamp() };
+  writeReleaseAutoPublish(config, next);
+  return next;
+}
+
+/**
+ * The durable pending choice: the release panel polls this alongside the draft
+ * run, so a reload (or a second tab) sees the same promise the server owns.
+ * `defaultWhenReady` is the remembered Settings answer for the modal.
+ */
+export const getReleaseAutoPublish: RouteHandler = (ctx, _req, res) =>
+  json(res, 200, {
+    autoPublish: readReleaseAutoPublish(ctx.config),
+    defaultWhenReady: defaultReleaseWhenReady(ctx.config),
+  });
+
+/**
+ * Cancel an automatic publish before it starts. A record already `publishing`
+ * is too late (the cut is outward-facing and must not be torn down halfway);
+ * a terminal record is dismissed by clearing it, which is how the page drops a
+ * failure banner.
+ */
+export const cancelReleaseAutoPublish: RouteHandler = (ctx, _req, res) => {
+  const current = readReleaseAutoPublish(ctx.config);
+  if (!current) return json(res, 200, { autoPublish: null });
+  if (current.state === "publishing") {
+    return json(res, 409, {
+      error: `${current.tag} is already being published and can no longer be cancelled.`,
+      autoPublish: current,
+    });
+  }
+  if (!isReleaseAutoPublishActive(current)) {
+    writeReleaseAutoPublish(ctx.config, null);
+    return json(res, 200, { autoPublish: null });
+  }
+  const next: ReleaseAutoPublishRecord = {
+    ...current,
+    state: "cancelled",
+    updatedAt: stamp(),
+  };
+  writeReleaseAutoPublish(ctx.config, next);
+  return json(res, 200, { autoPublish: next });
+};
+
+/**
+ * Fail a still-active record and tell the human why, in-app and through the
+ * configured channels. Never throws: a notification problem must not turn a
+ * failed publish into a failed request.
+ */
+function failAutoPublish(
+  ctx: NotesRunContext,
+  requestedAt: string,
+  reason: string,
+  kind: "publish" | "notes" = "publish",
+  fromPublishing = false,
+): void {
+  const current = readReleaseAutoPublish(ctx.config);
+  if (!current || current.requestedAt !== requestedAt) return;
+  if (!isReleaseAutoPublishActive(current)) return;
+  // Only the restart-recovery path may fail a record that is mid-cut; every
+  // other failure (draft errors, cached-hit settles) must leave a live cut alone.
+  if (current.state === "publishing" && !fromPublishing) return;
+  const next = writeAutoPublishState(ctx.config, requestedAt, {
+    state: "failed",
+    error: reason,
+  });
+  if (!next) return;
+  if (kind === "notes") {
+    notifyAttentionReleaseNotesFailed(next.tag, reason);
+    notifyReleaseNotesFailed(releaseNotificationCtx(ctx.config, next.origin), {
+      tag: next.tag,
+      reason,
+    });
+    return;
+  }
+  notifyAttentionReleaseAutoPublishFailed(next.tag, reason);
+  notifyReleaseAutoPublishFailed(releaseNotificationCtx(ctx.config, next.origin), {
+    tag: next.tag,
+    reason,
+  });
+}
+
+/**
+ * Fail any active pending promise when the draft flow cannot start or run, so
+ * a stuck `waiting` record never blocks manual Publish until Cancel (#1126
+ * review).
+ */
+function failPendingOnDraftError(ctx: NotesRunContext, err: unknown): void {
+  const pending = readReleaseAutoPublish(ctx.config);
+  if (!isReleaseAutoPublishActive(pending) || pending.state === "publishing") return;
+  const msg = err instanceof Error ? err.message : String(err);
+  failAutoPublish(
+    ctx,
+    pending.requestedAt,
+    `The AI draft could not run: ${msg}. Nothing was published; generate notes again from the panel.`,
+    pending.mode === "publish" ? "publish" : "notes",
+  );
+}
+
+/**
+ * The draft landed. Record it on the pending choice, then either notify (the
+ * human presses Publish) or run the guarded auto-publish. An empty draft is a
+ * failure, never a silent no-op: the human asked for something to happen.
+ */
+function settleAutoPublishAfterDraft(
+  ctx: NotesRunContext,
+  notes: string,
+  draftKey: string | null,
+  head: string | null,
+): Promise<void> {
+  const current = readReleaseAutoPublish(ctx.config);
+  if (!current) return Promise.resolve();
+  // Settle only from `waiting`: a cached-draft hit (reload, second tab) while the
+  // cut is `ready`/`publishing` must not rewrite the record.
+  if (current.state !== "waiting") return Promise.resolve();
+  if (!notes.trim()) {
+    failAutoPublish(
+      ctx,
+      current.requestedAt,
+      "The AI draft came back empty, so nothing was published.",
+      current.mode === "publish" ? "publish" : "notes",
+    );
+    return Promise.resolve();
+  }
+  const next = writeAutoPublishState(ctx.config, current.requestedAt, {
+    state: current.mode === "publish" ? "ready" : "notified",
+    notes,
+    draftKey: draftKey ?? current.draftKey,
+    head: head ?? current.head,
+    error: null,
+  });
+  if (!next) return Promise.resolve();
+  if (next.mode === "notify") {
+    notifyReleaseNotesReady(releaseNotificationCtx(ctx.config, next.origin), { tag: next.tag });
+    return Promise.resolve();
+  }
+  return maybeAutoPublish(ctx, next.requestedAt);
+}
+
+/**
+ * Run every guard the manual Publish path runs *before* starting a cut, with a
+ * reason the human can act on. Anything ambiguous fails closed: a stale draft
+ * context, a dirty tree, an existing tag, a release already running.
+ */
+async function maybeAutoPublish(ctx: NotesRunContext, requestedAt: string): Promise<void> {
+  // A throw here (git probe failing, fs hiccup) must not bubble into the
+  // draft-run bookkeeping and mark a successful draft failed: the promise
+  // fails closed with the reason instead.
+  try {
+    await autoPublishChecks(ctx, requestedAt);
+  } catch (err) {
+    failAutoPublish(
+      ctx,
+      requestedAt,
+      `The automatic publish could not run: ${err instanceof Error ? err.message : String(err)}`,
+      "publish",
+    );
+  }
+}
+
+async function autoPublishChecks(ctx: NotesRunContext, requestedAt: string): Promise<void> {
+  const current = readReleaseAutoPublish(ctx.config);
+  if (!current || current.requestedAt !== requestedAt || current.state !== "ready") return;
+  const fail = (reason: string): void => failAutoPublish(ctx, requestedAt, reason, "publish");
+
+  const notes = current.notes?.trim() ?? "";
+  if (!notes) {
+    fail("The AI draft came back empty, so nothing was published.");
+    return;
+  }
+  if (!isReleaseVersion(current.version)) {
+    fail(`"${current.version}" is not a semantic version, so nothing was published.`);
+    return;
+  }
+  const status = await getReleaseStatus(ctx.config);
+  if (!status.enabled || !status.supported) {
+    fail("Releases are not configured for this repository, so nothing was published.");
+    return;
+  }
+  if (!status.clean) {
+    fail(
+      "The working tree was dirty when the notes became ready, so nothing was published. Commit or stash the changes, then publish from the panel.",
+    );
+    return;
+  }
+  if (!status.onReleaseBranch) {
+    fail(`This checkout was not on ${status.branch}, so nothing was published.`);
+    return;
+  }
+  if (await releaseTagExists(ctx.config, current.tag)) {
+    fail(`${current.tag} already exists, so nothing was published.`);
+    return;
+  }
+  // The draft's identity is its release-relevant commit context. A bookkeeping
+  // commit (task moves) leaves this key alone, so it cannot block a publish;
+  // any source commit or a newly landed tag changes it and fails closed.
+  const currentCommits = await collectReleaseCommits(ctx.config);
+  const currentKey =
+    currentCommits.head && currentCommits.relevantShas.length
+      ? releaseNotesCacheKey(currentCommits.relevantShas, currentCommits.sinceTag)
+      : null;
+  if (current.draftKey !== currentKey) {
+    fail(
+      currentKey === null
+        ? "The release commit context could not be read (no relevant commits found), so nothing was published. Generate notes again from the panel."
+        : "New commits landed since the notes were drafted, so nothing was published. Generate notes again for the current tree.",
+    );
+    return;
+  }
+  if (run.state === "running") {
+    fail("A release was already running, so nothing was published automatically.");
+    return;
+  }
+  // Re-read after the awaits: Cancel may have landed while the checks ran.
+  const fresh = readReleaseAutoPublish(ctx.config);
+  if (!fresh || fresh.requestedAt !== requestedAt || fresh.state !== "ready") return;
+  const publishing = writeAutoPublishState(ctx.config, requestedAt, { state: "publishing" });
+  if (!publishing) return;
+  (autoPublishStarter ?? startAutoReleaseCut)(ctx, publishing);
+}
+
+/**
+ * Resume the promise after a process restart (#1126). The draft run itself is
+ * in-memory, so a `waiting` record can only recover when its draft already
+ * reached the on-disk cache; otherwise the choice fails closed and says so.
+ * A `ready` record is safe to continue through the same guards. `publishing`
+ * is never retried silently — a crash mid-cut may have pushed the bump or tag.
+ */
+export async function resumeReleaseAutoPublish(ctx: NotesRunContext): Promise<void> {
+  // Preview children serve a snapshot of a task worktree (#0505); they must
+  // not act on a copied promise record the way the control plane does.
+  if (process.env.REPOOS_PREVIEW_CHILD === "1") return;
+  const current = readReleaseAutoPublish(ctx.config);
+  if (!current) return;
+  if (current.state === "waiting") {
+    const cached = current.draftKey
+      ? readCachedReleaseNotes(ctx.config.root, ctx.config.cacheDir, current.draftKey)
+      : null;
+    if (cached?.notes.trim()) {
+      await settleAutoPublishAfterDraft(ctx, cached.notes, current.draftKey, current.head);
+      return;
+    }
+    failAutoPublish(
+      ctx,
+      current.requestedAt,
+      "RepoOS restarted before the AI draft finished, so nothing was published. Generate notes again to retry.",
+      current.mode === "publish" ? "publish" : "notes",
+    );
+    return;
+  }
+  if (current.state === "ready") {
+    await maybeAutoPublish(ctx, current.requestedAt);
+    return;
+  }
+  if (current.state === "publishing") {
+    failAutoPublish(
+      ctx,
+      current.requestedAt,
+      `RepoOS restarted while ${current.tag} was publishing and did not retry automatically. Check whether the tag exists, then publish manually if needed.`,
+      "publish",
+      true,
+    );
+  }
+}
+
+/** The auto-publish half of `beginRelease`: settle the pending record on the cut's outcome. */
+function settleAutoPublishAfterCut(
+  ctx: NotesRunContext,
+  requestedAt: string | undefined,
+  ok: boolean,
+  output: string,
+): void {
+  if (!requestedAt) return;
+  const current = readReleaseAutoPublish(ctx.config);
+  if (!current || current.requestedAt !== requestedAt || current.state !== "publishing") return;
+  if (ok) {
+    writeAutoPublishState(ctx.config, requestedAt, { state: "succeeded", error: null });
+    return;
+  }
+  const reason =
+    output
+      .split("\n")
+      .map((line) => line.trim())
+      .find(Boolean) ?? "The release cut failed.";
+  writeAutoPublishState(ctx.config, requestedAt, { state: "failed", error: reason });
+  // The failed release run already has its own in-app item; the external
+  // channels still need to hear that the promised automatic publish did not
+  // happen.
+  notifyReleaseAutoPublishFailed(releaseNotificationCtx(ctx.config, current.origin), {
+    tag: current.tag,
+    reason,
+  });
+}
+
 /**
  * Which agent drafts release notes. The PM owns authoring, so prefer it; fall
  * back to the engineer when a repo has the PM disabled. Null means neither is
@@ -431,9 +795,37 @@ export const runRelease: RouteHandler = async (ctx, req, res) => {
     return json(res, 400, { error: "version and confirmTag are required" });
   if (run.state === "running")
     return json(res, 409, { error: "A release is already running", run });
+  // A pending automatic publish owns the next cut for its exact version. The
+  // manual button must not race it into two releases; Cancel clears it first.
+  const pending = readReleaseAutoPublish(ctx.config);
+  if (isReleaseAutoPublishActive(pending)) {
+    return json(res, 409, {
+      error: `An automatic publish for ${pending.tag} is pending. Cancel it first, or wait for it to finish.`,
+      autoPublish: pending,
+    });
+  }
   const notes = typeof body.notes === "string" && body.notes.trim() ? body.notes : undefined;
   const knownIssues =
     typeof body.knownIssues === "string" && body.knownIssues.trim() ? body.knownIssues : undefined;
+  const started = beginRelease(ctx, body.version, body.confirmTag, notes, knownIssues);
+  return json(res, 202, { ok: true, run: started });
+};
+
+/**
+ * The one guarded release path, shared by the Publish button and an automatic
+ * publish (#1126). `cutNewRelease` re-validates clean main, the configured
+ * branch, the exact tag confirmation and the version before it commits or
+ * pushes anything, so a caller cannot bypass a blocker by reaching this
+ * function directly.
+ */
+function beginRelease(
+  ctx: NotesRunContext,
+  version: string,
+  confirmTag: string,
+  notes: string | undefined,
+  knownIssues: string | undefined,
+  opts: { autoPublishRequestedAt?: string } = {},
+): ReleaseRun {
   run = {
     state: "running",
     phase: "preparing",
@@ -443,8 +835,8 @@ export const runRelease: RouteHandler = async (ctx, req, res) => {
   };
   void cutNewRelease(
     ctx.config,
-    body.version,
-    body.confirmTag,
+    version,
+    confirmTag,
     undefined,
     (phase, message) => updateRun(phase, message),
     ctx.remoteValidator,
@@ -454,6 +846,7 @@ export const runRelease: RouteHandler = async (ctx, req, res) => {
     // Keep the phase that was in flight when it failed, so the UI can say
     // "failed during checking" rather than a bare "failed".
     .then((result) => {
+      settleAutoPublishAfterCut(ctx, opts.autoPublishRequestedAt, result.ok, result.output);
       if (result.ok) return updateRun(null, result.output, "succeeded");
       const startedAt = run.startedAt;
       const phase = run.phase;
@@ -461,15 +854,33 @@ export const runRelease: RouteHandler = async (ctx, req, res) => {
       updateRun(phase, result.output, "failed", { failedTests, tldrPending: true });
       void writeReleaseTldr(ctx.config, startedAt, phase, result.output, failedTests);
     })
-    .catch(() =>
+    .catch(() => {
+      settleAutoPublishAfterCut(
+        ctx,
+        opts.autoPublishRequestedAt,
+        false,
+        "Release runner stopped unexpectedly.",
+      );
       updateRun(
         null,
         "Release runner stopped unexpectedly. Check the repository state before retrying.",
         "failed",
-      ),
-    );
-  return json(res, 202, { ok: true, run });
-};
+      );
+    });
+  return run;
+}
+
+/** The default auto-publish starter: the same run the Publish button creates. */
+function startAutoReleaseCut(ctx: NotesRunContext, record: ReleaseAutoPublishRecord): void {
+  beginRelease(
+    ctx,
+    record.version,
+    record.tag,
+    record.notes?.trim() || undefined,
+    record.knownIssues ?? undefined,
+    { autoPublishRequestedAt: record.requestedAt },
+  );
+}
 
 // ---------------------------------------------------------------------------
 // Release emails (#1071)
@@ -583,7 +994,91 @@ export const unsubscribeReleaseEmailRoute: RouteHandler = (ctx, req, res) => {
  * A failure of the *agent run* is not instant — it lands in the run state.
  */
 export const generateReleaseNotes: RouteHandler = async (ctx, req, res) => {
-  const { config, emitEvent } = ctx;
+  const { config } = ctx;
+  const body = (await readBody(req)) as {
+    version?: unknown;
+    cachedOnly?: unknown;
+    whenReady?: unknown;
+    confirmTag?: unknown;
+    knownIssues?: unknown;
+  };
+  const version = typeof body.version === "string" && body.version.trim() ? body.version : null;
+  // Lookup only: the panel asks on open whether a saved draft already exists
+  // for the current commits. A miss answers 200 with empty notes and never
+  // starts an agent run (and needs no enabled agent to do so).
+  const cachedOnly = body.cachedOnly === true;
+
+  // #1126: "when the draft is ready" is a server-owned promise, because the
+  // draft itself is a detached run. Validate it before touching run state so a
+  // bad request can never leave a pending auto-publish behind.
+  const whenReady: ReleaseWhenReady | null =
+    body.whenReady === "publish" || body.whenReady === "notify" ? body.whenReady : null;
+  if (body.whenReady !== undefined && whenReady === null) {
+    return json(res, 400, { error: 'whenReady must be "publish" or "notify"' });
+  }
+  if (whenReady && cachedOnly) {
+    return json(res, 400, { error: "whenReady cannot be combined with cachedOnly" });
+  }
+  const confirmTag =
+    typeof body.confirmTag === "string" && body.confirmTag.trim() ? body.confirmTag.trim() : null;
+  const knownIssues =
+    typeof body.knownIssues === "string" && body.knownIssues.trim() ? body.knownIssues : null;
+
+  if (whenReady) {
+    const existing = readReleaseAutoPublish(config);
+    if (isReleaseAutoPublishActive(existing)) {
+      // A second click while the draft runs is the same promise, not a new
+      // one — return it with the run so the panel can keep showing both.
+      if (notesRun.state === "running") {
+        return json(res, 202, { ok: true, run: notesRun, autoPublish: existing });
+      }
+      return json(res, 409, {
+        error: `An automatic publish for ${existing.tag} is already pending. Cancel it before starting another.`,
+        autoPublish: existing,
+      });
+    }
+    if (!version && whenReady === "publish") {
+      return json(res, 400, {
+        error: "A version is required when choosing to publish automatically.",
+      });
+    }
+    if (version && !isReleaseVersion(version)) {
+      return json(res, 400, { error: `"${version}" is not a semantic version` });
+    }
+    const prefix = config.release?.tagPrefix ?? "v";
+    const tag = version ? `${prefix}${version}` : "";
+    // Auto-publish is tied to the exact version/tag the human confirmed. The
+    // notification choice has no outward action, so it only records the tag
+    // for its message (empty when the repo has no suggested version).
+    if (whenReady === "publish" && confirmTag !== tag) {
+      return json(res, 400, { error: `confirmTag must be ${tag}` });
+    }
+    // Remember the answer immediately in the gitignored runtime store: it
+    // must survive the tab closing or a restart without dirtying the tree
+    // (the explicit repoos.toml write is the UI's deferred job).
+    rememberReleaseWhenReady(config, whenReady);
+    const at = stamp();
+    const pending: ReleaseAutoPublishRecord = {
+      requestedAt: at,
+      state: "waiting",
+      mode: whenReady,
+      version: version ?? "",
+      tag,
+      notes: null,
+      knownIssues,
+      // Attach to a draft already in flight so its result can settle this
+      // promise; otherwise the run started below fills these in.
+      head: notesRun.state === "running" ? notesRun.head : null,
+      draftKey: notesRun.state === "running" ? notesRun.key : null,
+      error: null,
+      origin: requestOrigin(req),
+      updatedAt: at,
+    };
+    writeReleaseAutoPublish(config, pending);
+    if (notesRun.state === "running") {
+      return json(res, 202, { ok: true, run: notesRun, autoPublish: pending });
+    }
+  }
 
   // A second click while a draft is being generated must return the run
   // already in flight, not spawn a second agent (#0605). Any POST that
@@ -591,29 +1086,55 @@ export const generateReleaseNotes: RouteHandler = async (ctx, req, res) => {
   // drafting flag guards the double-click window before the run state
   // exists (the release run dedup has the same shape).
   if (notesRun.state === "running") {
-    return json(res, 202, { ok: true, run: notesRun });
+    return json(res, 202, {
+      ok: true,
+      run: notesRun,
+      autoPublish: readReleaseAutoPublish(config),
+    });
   }
-
-  const body = (await readBody(req)) as { version?: unknown; cachedOnly?: unknown };
-  const version = typeof body.version === "string" && body.version.trim() ? body.version : null;
-  // Lookup only: the panel asks on open whether a saved draft already exists
-  // for the current commits. A miss answers 200 with empty notes and never
-  // starts an agent run (and needs no enabled agent to do so).
-  const cachedOnly = body.cachedOnly === true;
 
   const agent = releaseNotesAgent(config);
   if (!agent && !cachedOnly) {
+    const pending = readReleaseAutoPublish(config);
+    if (isReleaseAutoPublishActive(pending)) {
+      failAutoPublish(
+        ctx,
+        pending.requestedAt,
+        "No agent is enabled to draft release notes, so nothing was published.",
+        pending.mode === "publish" ? "publish" : "notes",
+      );
+    }
     return json(res, 400, {
       error: "No agent is enabled to draft release notes — enable the PM or Engineer agent.",
     });
   }
 
-  const { commits, sinceTag, truncated, head, relevantShas } = await collectReleaseCommits(config);
+  let commitsInfo: Awaited<ReturnType<typeof collectReleaseCommits>>;
+  try {
+    commitsInfo = await collectReleaseCommits(config);
+  } catch (err) {
+    // A promise was just created for this request: leaving it `waiting` with
+    // no draft would block manual Publish until Cancel or a restart (#1126
+    // review). Fail it closed, then surface the error as before.
+    failPendingOnDraftError(ctx, err);
+    throw err;
+  }
+  const { commits, sinceTag, truncated, head, relevantShas } = commitsInfo;
   if (!relevantShas.length) {
-    // Nothing release-relevant to summarize is not an error: the cut can
-    // still proceed. (No commits at all, or only work-dir bookkeeping — the
-    // latter is exactly the case every task move used to re-run the agent
-    // for, see #0605.)
+    // Nothing release-relevant to summarize is not an error for a plain draft:
+    // the cut can still proceed. A chosen publish/notify promise cannot be
+    // kept, though, so it fails closed with a reason.
+    const pending = readReleaseAutoPublish(config);
+    if (isReleaseAutoPublishActive(pending)) {
+      failAutoPublish(
+        ctx,
+        pending.requestedAt,
+        sinceTag
+          ? `There are no release-relevant commits since ${sinceTag}, so nothing was published.`
+          : "There are no release-relevant commits to draft from, so nothing was published.",
+        pending.mode === "publish" ? "publish" : "notes",
+      );
+    }
     return json(res, 200, { notes: "", sinceTag, commitCount: 0, truncated });
   }
 
@@ -626,6 +1147,12 @@ export const generateReleaseNotes: RouteHandler = async (ctx, req, res) => {
   if (cacheKey) {
     const cached = readCachedReleaseNotes(config.root, config.cacheDir, cacheKey);
     if (cached) {
+      // A cached draft is still a finished draft: keep the promise the human
+      // made in the panel without spending another agent run.
+      const pending = readReleaseAutoPublish(config);
+      if (isReleaseAutoPublishActive(pending)) {
+        await settleAutoPublishAfterDraft(ctx, cached.notes, cacheKey, head);
+      }
       return json(res, 200, {
         notes: cached.notes,
         sinceTag,
@@ -633,12 +1160,24 @@ export const generateReleaseNotes: RouteHandler = async (ctx, req, res) => {
         truncated,
         cached: true,
         cachedAt: cached.createdAt || null,
+        autoPublish: readReleaseAutoPublish(config),
       });
     }
   }
 
   if (cachedOnly || !agent) {
     return json(res, 200, { notes: "", sinceTag, commitCount: relevantShas.length, truncated });
+  }
+
+  // The run is about to start, so a waiting promise can now bind to its exact
+  // context (and survive a restart through the draft cache).
+  const waiting = readReleaseAutoPublish(config);
+  if (isReleaseAutoPublishActive(waiting)) {
+    writeAutoPublishState(config, waiting.requestedAt, {
+      head,
+      draftKey: cacheKey,
+      updatedAt: stamp(),
+    });
   }
 
   const prompt = releaseNotesPrompt(commits, { sinceTag, version, truncated });
@@ -656,8 +1195,8 @@ export const generateReleaseNotes: RouteHandler = async (ctx, req, res) => {
     truncated,
     stale: false,
   };
-  emitEvent({ type: "release.notesRun", state: "running", at: startedAt });
-  notesRunInFlight = draftNotes(config, agent, prompt, { cacheKey, head, sinceTag }, emitEvent)
+  ctx.emitEvent({ type: "release.notesRun", state: "running", at: startedAt });
+  notesRunInFlight = draftNotes(ctx, agent, prompt, { cacheKey, head, sinceTag })
     .catch(() => {
       // draftNotes never rejects — this guards the seam only, so an unexpected
       // throw cannot surface as an unhandled rejection alongside the failed
@@ -666,7 +1205,11 @@ export const generateReleaseNotes: RouteHandler = async (ctx, req, res) => {
     .finally(() => {
       notesRunInFlight = null;
     });
-  return json(res, 202, { ok: true, run: notesRun });
+  return json(res, 202, {
+    ok: true,
+    run: notesRun,
+    autoPublish: readReleaseAutoPublish(config),
+  });
 };
 
 /**
@@ -676,16 +1219,24 @@ export const generateReleaseNotes: RouteHandler = async (ctx, req, res) => {
  * tracked run state to `succeeded`/`failed`.
  */
 async function draftNotes(
-  config: RepoOSConfig,
+  ctx: NotesRunContext,
   agent: Agent,
   prompt: string,
   meta: { cacheKey: string | null; head: string | null; sinceTag: string | null },
-  emitEvent: RouteContext["emitEvent"],
 ): Promise<void> {
-  const stamp = () => new Date().toISOString();
+  const { config } = ctx;
   const fail = (error: string): void => {
     notesRun = { ...notesRun, state: "failed", error, notes: null, updatedAt: stamp() };
-    emitEvent({ type: "release.notesRun", state: "failed", error, at: notesRun.updatedAt! });
+    ctx.emitEvent({ type: "release.notesRun", state: "failed", error, at: notesRun.updatedAt! });
+    const pending = readReleaseAutoPublish(config);
+    if (isReleaseAutoPublishActive(pending)) {
+      failAutoPublish(
+        ctx,
+        pending.requestedAt,
+        error,
+        pending.mode === "publish" ? "publish" : "notes",
+      );
+    }
     notifyAttentionReleaseNotesTerminal();
   };
   try {
@@ -719,7 +1270,11 @@ async function draftNotes(
       });
     }
     notesRun = { ...notesRun, state: "succeeded", notes, error: null, updatedAt: stamp() };
-    emitEvent({ type: "release.notesRun", state: "succeeded", at: notesRun.updatedAt! });
+    ctx.emitEvent({ type: "release.notesRun", state: "succeeded", at: notesRun.updatedAt! });
+    // Settle the panel's "when ready" promise after the run state and cache are
+    // durable: a notify lands on a filled-in panel, an auto-publish starts the
+    // guarded cut, and a cancelled record is simply ignored.
+    await settleAutoPublishAfterDraft(ctx, notes, meta.cacheKey, meta.head);
     notifyAttentionReleaseNotesTerminal();
   } catch (err) {
     fail(err instanceof Error ? err.message : String(err));

@@ -72,6 +72,7 @@ describe("GET /api/servers/tailnet", () => {
           nothing: { HostName: "Nothing Phone (3a)", DNSName: "nothing.tail.ts.net", Online: true },
           dnsPhone: { HostName: "nothing", DNSName: "nothing-phone.tail.ts.net", Online: true },
           ios: { HostName: "ipad", OS: "iOS", Online: true },
+          tagged: { HostName: "companion", OS: "linux", Tags: ["tag:mobile"], Online: true },
           server: { HostName: "phone-01", OS: "linux", Online: true },
         },
       }),
@@ -279,6 +280,32 @@ describe("GET /api/servers/tailnet", () => {
     expect(payload.discoverySource).toBe("configured-hosts");
     expect(payload.servers).toEqual([]);
     expect(remoteExec).toHaveBeenCalledWith("bee", "root", 4_000, "repoos servers --json");
+  });
+
+  it("omits opted-out sibling projects from local tailnet results", async () => {
+    const payload = await buildTailnetDiscoveryPayload(config(), {
+      registryRows: async () =>
+        [
+          {
+            entry: { port: 7171, projectName: "hidden", tailnetDiscovery: false },
+            valid: true,
+            uptimeSeconds: 10,
+          },
+          {
+            entry: { port: 7172, projectName: "visible" },
+            valid: true,
+            uptimeSeconds: 20,
+          },
+        ] as never,
+      tailscaleStatus: async () => {
+        throw new Error("tailscale: not found");
+      },
+      remoteExec: async () => JSON.stringify({ servers: [] }),
+      deadlineMs: 100,
+    });
+    expect(
+      payload.servers.filter((row) => row.host === "local").map((row) => row.projectName),
+    ).toEqual(["visible"]);
   });
 
   it("refuses to run discovery when the server owner turned it off", async () => {

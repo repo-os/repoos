@@ -100,6 +100,37 @@ the draft in progress, and the draft is dropped into the editable text area
 the moment the run finishes. Clicking Generate while a draft is already being
 generated can't start a duplicate run.
 
+#### What happens when the draft is ready
+
+Generate asks once, in a small dialog, what should happen when the notes land.
+The dialog shows the version/tag it is talking about and remembers your answer
+as the default (`release.notesWhenReady` in `[release]`, also editable in
+Settings):
+
+- **Publish automatically** — the server waits for the draft, then cuts the
+  release with those notes and the known issues through the **same guarded
+  Publish path**: clean working tree, the configured branch, an exact
+  version/tag confirmation, `repoos check`, and the tag-exists check. The
+  Releases page shows **Will publish vX when the notes are ready** with a
+  **Cancel** that stops it until the cut actually starts. Cancel is no longer
+  available once publishing begins.
+- **Notify me** — when the draft is ready you get the in-app bell item plus the
+  configured notification channels (ntfy/Telegram), linking back to the release
+  panel with the notes filled in and Publish enabled.
+
+**Generate notes and publish** is the one-click shortcut for the first option:
+it asks you to confirm the exact tag, then drafts and publishes without a
+second stop at the panel.
+
+Auto-publish fails closed. If the draft fails or comes back empty, the working
+tree is dirty, the tag already exists, new commits land after the draft
+started, checks fail, or another release is running, **nothing is published**
+and you're notified with the reason. A failed automatic publish never retries
+silently. The pending choice is server-owned and survives a page reload; after a
+server restart RepoOS resumes it when the draft already reached the on-disk
+cache, and otherwise fails it with a notification rather than guessing. Only one
+automatic publish can be pending at a time.
+
 Successful drafts are saved to `<cacheDir>/release-notes.json`
 (`.repoos/release-notes.json` by default — derived state, gitignored, safe to
 delete), keyed by the **release-relevant commits** in the range. Task-file

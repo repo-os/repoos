@@ -3,8 +3,9 @@
  *
  * The phone cannot run the Tailscale CLI, and it must not scan the network. So
  * "Find servers on my tailnet" makes exactly one request to a server the user
- * already saved (`GET /api/servers/tailnet`). The server does the Tailscale/SSH
- * work and returns rows with ready-to-open URLs. Everything in this module is
+ * already saved (`GET /api/servers/tailnet`). The server probes peers over its
+ * tailnet discovery listener, with SSH fallback for older servers, and returns
+ * rows with ready-to-open URLs. Everything in this module is
  * pure except `fetchTailnetServers`, which is injectable for tests.
  */
 import { serverUrlOf } from "./reachability";
@@ -143,6 +144,13 @@ export function mergeTailnetResults(
   const unreachable: DiscoveredServer[] = [];
   const savedByHost = new Map<string, { url: string; name?: string }[]>();
   const savedByName = new Map<string, { url: string; name?: string }[]>();
+  const discoveredByName = new Map<string, number>();
+  for (const row of rows) {
+    if (!row.unreachable && row.projectName?.trim()) {
+      const name = row.projectName.trim().toLowerCase();
+      discoveredByName.set(name, (discoveredByName.get(name) ?? 0) + 1);
+    }
+  }
   for (const server of savedServers) {
     try {
       const parsed = new URL(server.url);
@@ -171,7 +179,12 @@ export function mergeTailnetResults(
       const aliases = [row.host, row.dnsName, row.displayName]
         .filter((value): value is string => !!value)
         .map((value) => value.toLowerCase().replace(/\.$/, ""));
+      const projectName = row.projectName?.trim().toLowerCase() ?? "";
+      const namedMatches = projectName ? (savedByName.get(projectName) ?? []) : [];
       const savedEntries = aliases.flatMap((alias) => savedByHost.get(alias) ?? []);
+      if (savedEntries.length === 0 && namedMatches.length === 1 && discoveredByName.get(projectName) === 1) {
+        savedEntries.push(...namedMatches);
+      }
       if (savedEntries.length) {
         const uniqueSaved = new Map(savedEntries.map((entry) => [entry.url, entry]));
         for (const savedEntry of uniqueSaved.values()) {
@@ -233,7 +246,10 @@ export function mergeTailnetResults(
     const namedMatches = row.projectName
       ? (savedByName.get(row.projectName.trim().toLowerCase()) ?? [])
       : [];
-    const isSaved = saved.has(identity) || namedMatches.length === 1;
+    const projectName = row.projectName?.trim().toLowerCase() ?? "";
+    const isSaved =
+      saved.has(identity) ||
+      (namedMatches.length === 1 && discoveredByName.get(projectName) === 1);
     const next: DiscoveredServer = {
       key: url,
       url,

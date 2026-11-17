@@ -134,7 +134,7 @@ servers on my tailnet**, next to **Add server**. That action makes exactly one r
   for credentialed requests).
 - The *server* does the discovery: it runs `tailscale status --json` and probes
   each online peer's machine-level listener on TCP port 41641, bound directly
-  to the peer's Tailscale IPv4 address. The HTTP request travels inside
+  to the peer's Tailscale IPv4 and IPv6 addresses. The HTTP request travels inside
   Tailscale's encrypted WireGuard connection, so the listener sees the real
   peer socket address and does not trust proxy headers. Its response includes
   each project's own HTTPS Serve URL and shared server row fields. Older
@@ -152,14 +152,16 @@ servers on my tailnet**, next to **Add server**. That action makes exactly one r
   claiming the tailnet is invisible.
 - The response is the same server rows `repoos servers --tailscale --json`
   reports, plus a ready-to-open `url` and an `https` flag per row. Rows that
-  could not be reached carry `unreachable: true` and a `reason` (for example
-  `command not found`, an authentication failure, `connection refused`, or
+  could not be reached carry `unreachable: true` and a `reason` with a plain
+  fix (for example `no SSH key from <host>`, `SSH is off on <host>`, or
   `timed out` only when a real timeout occurred). A per-host timeout and a
   whole-request deadline mean one slow machine cannot hang the list; Hub renders
   the partial result and says which host failed.
-- Discovery can be turned off on the server (`tailnetDiscovery = false` in
-  `repoos.toml`, or Settings → General → Tailnet server discovery). The
-  endpoint then returns a plain `disabled` message, and manual URL entry keeps
+- Discovery can be turned off per project (`tailnetDiscovery = false` in
+  `repoos.toml`, or Settings → General → Tailnet server discovery). The shared
+  machine listener omits only that project's registry row; enabled siblings
+  remain discoverable. Asking through a disabled project's own server returns
+  a plain `disabled` message, and manual URL entry keeps
   working exactly as before.
 - A server older than the endpoint answers `404` (or not JSON at all). Hub says
   that server is running an older RepoOS that can't list tailnet servers yet,

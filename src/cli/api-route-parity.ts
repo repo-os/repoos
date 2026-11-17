@@ -141,6 +141,11 @@ const UI_ONLY_MATCHERS: Matcher[] = [
   exact("GET", "/api/system/logs"),
   under("/api/support/"),
   under("/api/tunnel/"),
+  // The Releases page owns the cut and its AI draft (#0605, #1126). The CLI's
+  // `repoos release` only previews the release email: an auto-publish promise
+  // is bound to a live server-side draft run and is cancellable from the page,
+  // so exposing it as an HTTP-only UI action is deliberate rather than a
+  // missing command.
   under("/api/release"),
   under("/api/deployments"),
   under("/api/chat"),

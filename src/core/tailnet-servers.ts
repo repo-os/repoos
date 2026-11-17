@@ -17,11 +17,13 @@ import type { RemoteValidationConfig, RemoteValidationHost } from "./types.js";
 const execFileAsync = promisify(execFile);
 
 /** Per-command budget for one remote host. */
-export const HOST_TIMEOUT_MS = 4_000;
+export const HOST_TIMEOUT_MS = 8_000;
 /** Whole-request budget for one discovery pass; slow hosts become `unreachable`. */
-export const DISCOVERY_DEADLINE_MS = 20_000;
+export const DISCOVERY_DEADLINE_MS = 25_000;
 /** Machine-level HTTP endpoint bound directly to the Tailscale interface. */
 export const TAILNET_DISCOVERY_PORT = 41641;
+/** Leave time for the peer listener's local Tailscale URL enrichment. */
+const HTTP_DISCOVERY_TIMEOUT_MS = 7_000;
 /** `tailscale status --json` is local and cheap; never let it hold a request. */
 const TAILSCALE_STATUS_TIMEOUT_MS = 2_000;
 /** URL enrichment is a nicety; a slow `serve status` must not hide servers. */
@@ -664,7 +666,7 @@ export async function collectTailnetServers(
         try {
           const discovered = await (options.httpDiscovery ?? defaultHttpDiscovery)(
             peer,
-            Math.min(timeoutMs, 3_000),
+            Math.min(timeoutMs, HTTP_DISCOVERY_TIMEOUT_MS),
           );
           if (discovered) {
             let payload: {

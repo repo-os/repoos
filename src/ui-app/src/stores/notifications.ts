@@ -22,6 +22,8 @@ export type NotificationType =
   | "needsInput"
   | "autoApproved"
   | "releaseNotesReady"
+  | "releaseNotesFailed"
+  | "releaseAutoPublishFailed"
   | "releaseSucceeded"
   | "releaseFailed"
   | "closeOutSucceeded"
@@ -47,6 +49,8 @@ export const NOTIFICATION_TYPES: NotificationType[] = [
   "needsInput",
   "autoApproved",
   "releaseNotesReady",
+  "releaseNotesFailed",
+  "releaseAutoPublishFailed",
   "releaseSucceeded",
   "releaseFailed",
   "closeOutSucceeded",
@@ -241,6 +245,8 @@ export const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {
   needsInput: "Needs attention",
   autoApproved: "Auto-approved by policy",
   releaseNotesReady: "Release notes ready",
+  releaseNotesFailed: "Release notes failed",
+  releaseAutoPublishFailed: "Auto-publish blocked",
   releaseSucceeded: "Release succeeded",
   releaseFailed: "Release failed",
   closeOutSucceeded: "Merged into main",
@@ -268,6 +274,9 @@ export const NOTIFICATION_TYPE_DESCRIPTIONS: Record<NotificationType, string> = 
   autoApproved:
     "A clean review matched your approval policy and Move to done started automatically. Turn on this type under Notifications to hear it in the bell.",
   releaseNotesReady: "A release-notes draft finished generating.",
+  releaseNotesFailed: "A release-notes draft failed or came back empty; nothing was published.",
+  releaseAutoPublishFailed:
+    "An automatic publish was blocked before it could start, or its cut failed; the tag did not ship.",
   releaseSucceeded: "A release cut finished successfully.",
   releaseFailed: "A release cut failed.",
   closeOutSucceeded: "A task's Move to done finished and its work was merged into main.",

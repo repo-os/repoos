@@ -51,6 +51,8 @@ export interface TailnetDiscoveryPayload {
 export interface TailnetDiscoveryDeps {
   /** Test seam: replace the registry-backed local server list. */
   localRows?: ListedServer[];
+  /** Test seam for per-project registry settings used to build local rows. */
+  registryRows?: () => Promise<Awaited<ReturnType<typeof listValidatedServerRegistry>>>;
   /** Test seams passed straight to `collectTailnetServers`. */
   tailscaleStatus?: () => Promise<string>;
   localServeStatus?: () => Promise<string>;
@@ -80,22 +82,24 @@ export async function buildTailnetDiscoveryPayload(
 
   const localRows =
     deps.localRows ??
-    (await listValidatedServerRegistry()).map((row): ListedServer => ({
-      host: "local",
-      port: row.entry.port,
-      pid: row.entry.pid,
-      root: row.entry.root,
-      projectName: row.entry.projectName,
-      version: row.entry.version,
-      startedAt: row.entry.startedAt,
-      activeEngineers: row.entry.activeEngineers ?? 0,
-      engineersUpdatedAt: row.entry.engineersUpdatedAt ?? null,
-      allowlistGroup: row.entry.allowlistGroup,
-      uptimeSeconds: row.uptimeSeconds,
-      valid: row.valid,
-      staleReason: row.staleReason,
-      healthRoot: row.healthRoot,
-    }));
+    (await (deps.registryRows ?? listValidatedServerRegistry)())
+      .filter((row) => row.entry.tailnetDiscovery !== false)
+      .map((row): ListedServer => ({
+        host: "local",
+        port: row.entry.port,
+        pid: row.entry.pid,
+        root: row.entry.root,
+        projectName: row.entry.projectName,
+        version: row.entry.version,
+        startedAt: row.entry.startedAt,
+        activeEngineers: row.entry.activeEngineers ?? 0,
+        engineersUpdatedAt: row.entry.engineersUpdatedAt ?? null,
+        allowlistGroup: row.entry.allowlistGroup,
+        uptimeSeconds: row.uptimeSeconds,
+        valid: row.valid,
+        staleReason: row.staleReason,
+        healthRoot: row.healthRoot,
+      }));
 
   const remoteHosts = resolveRemoteHosts(config.remoteValidation);
   const result = await collectTailnetServers(localRows, {
@@ -164,21 +168,20 @@ export function createTailnetPeerDiscoveryHandler(
     const httpsByPort: Record<number, string> = await (
       deps.serveUrls ?? localTailnetServeUrls
     )().catch(() => ({}));
+    const servers = rows
+      // The listener is machine-wide; each project stores its own opt-out.
+      .filter((row) => row.valid && row.entry.tailnetDiscovery !== false)
+      .map((row) => ({
+        host: "local",
+        projectName: row.entry.projectName,
+        port: row.entry.port,
+        valid: row.valid,
+        ...(httpsByPort[row.entry.port] ? { url: httpsByPort[row.entry.port], https: true } : {}),
+      }));
     return json(res, 200, {
       ok: true,
       discoveryVersion: 1,
-      servers: rows
-        // The listener is machine-wide; each project stores its own opt-out.
-        .filter((row) => row.valid && row.entry.tailnetDiscovery !== false)
-        .map((row) => ({
-          host: "local",
-          projectName: row.entry.projectName,
-          port: row.entry.port,
-          root: row.entry.root,
-          allowlistGroup: row.entry.allowlistGroup,
-          valid: row.valid,
-          ...(httpsByPort[row.entry.port] ? { url: httpsByPort[row.entry.port], https: true } : {}),
-        })),
+      ...(servers.length ? { servers } : { disabled: true, reason: DISCOVERY_DISABLED_REASON }),
     });
   };
 }

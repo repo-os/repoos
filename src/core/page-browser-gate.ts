@@ -52,6 +52,10 @@ export function isBenignFailedResourceUrl(url: string): boolean {
     if (/\/robots\.txt$/i.test(path)) return true;
     if (/\.(map|woff2?|ttf|ico)(\?|$)/i.test(path)) return true;
     if (/\/api\/tasks\/[^/]+\/stats$/i.test(path)) return true;
+    // Webfont CDNs fail on capture hosts that are offline or sandboxed; the
+    // app falls back to system fonts, so a failed stylesheet or preconnect is
+    // cosmetic and must not fail handoff.
+    if (/^https?:\/\/fonts\.(googleapis|gstatic)\.com\//i.test(u)) return true;
     return false;
   } catch {
     return /favicon|manifest|apple-touch-icon/i.test(u);
