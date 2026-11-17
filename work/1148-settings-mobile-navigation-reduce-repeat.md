@@ -2,14 +2,14 @@
 id: "1148"
 title: "Settings mobile navigation: reduce repeated topic-chip density"
 type: chore
-status: ready
+status: active
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
-branch: ""
+branch: feat/settings-mobile-navigation-reduce-repeat
 created_at: "2026-11-17T03:06:33Z"
-updated_at: "2026-11-17T03:46:38Z"
+updated_at: "2026-11-17T03:46:41Z"
 ---
 ## Problem
 At 390×844, /settings shows a six-item page navigation grid, followed by a long wrapping row of topic chips (Themes, Activity animation, General, Performance, Model routing, Close-out, Automation & approval, Screenshots, Attachments, Background service, Publishing, Release emails, Remote validation, Board, and more). Both layers consume most of the initial viewport before selected setting controls.
@@ -38,3 +38,4 @@ Use the attached phone screenshot. Check long labels and both theme families. Th
 - 2026-11-17T03:07:49Z · body: Problem (added); Desired UX (added); Acceptance criteria (added); Notes for AI (added)
 - 2026-11-17T03:46:34Z · needs_input
 - 2026-11-17T03:46:38Z · status inbox→ready
+- 2026-11-17T03:46:41Z · status ready→active, branch
