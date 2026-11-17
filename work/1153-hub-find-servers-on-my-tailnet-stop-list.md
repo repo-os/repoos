@@ -12,7 +12,7 @@ branch: feat/hub-find-servers-on-my-tailnet-stop-list
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T10:06:23Z"
-updated_at: "2026-11-17T17:11:58Z"
+updated_at: "2026-11-17T17:12:22Z"
 last_close_out_gate_ms: 118772
 last_close_out_gate_at: "2026-11-17T17:11:58.958Z"
 review_passes: 6
@@ -185,4 +185,4 @@ Do not add runtime dependencies. The discovery endpoint exposes names/ports only
 - 2026-11-17T17:01:50Z · handoff failed · could not auto-retry after check failure · This worktree already has a recorded live engineer for task #review:1153 (pid 29354)
 - 2026-11-17T17:03:31Z · note: review pass 6: good to go
 - 2026-11-17T17:11:58Z · close-out gate completed in 119s
-
+- 2026-11-17T17:12:22Z · status done→done, release:success
