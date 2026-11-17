@@ -157,6 +157,18 @@ describe("Settings phone navigation density (#1148)", () => {
     wrapper.unmount();
   });
 
+  it("brings the active tab into view on a deep link", async () => {
+    stubViewport(true);
+    routeState.query = { tab: "security" };
+    const wrapper = await mountSettings();
+
+    const active = wrapper.find(".settings-mobile-nav-btn.active").element;
+    const scrollSpy = Element.prototype.scrollIntoView as unknown as ReturnType<typeof vi.fn>;
+    expect(scrollSpy.mock.contexts).toContain(active);
+
+    wrapper.unmount();
+  });
+
   it("keeps the desktop chip row and drops the phone-only controls", async () => {
     stubViewport(false);
     const wrapper = await mountSettings();

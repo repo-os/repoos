@@ -630,18 +630,28 @@ watch(activeTab, () => {
 // Keep the active phone tab visible in the single-row rail on deep links and
 // when arrow-key style navigation moves through the strip.
 const mobileNavRef = ref<HTMLElement | null>(null);
+
+function revealActiveMobileTab(): void {
+  if (!isNarrow.value) return;
+  const active = mobileNavRef.value?.querySelector<HTMLElement>(".settings-mobile-nav-btn.active");
+  active?.scrollIntoView?.({ block: "nearest", inline: "nearest" });
+}
+
 watch(
   [activeTab, isNarrow],
   async () => {
-    if (!isNarrow.value) return;
     await nextTick();
-    const active = mobileNavRef.value?.querySelector<HTMLElement>(
-      ".settings-mobile-nav-btn.active",
-    );
-    active?.scrollIntoView?.({ block: "nearest", inline: "nearest" });
+    revealActiveMobileTab();
   },
   { immediate: true },
 );
+
+// The watcher's immediate run happens before the rail exists, so a deep link
+// such as ?tab=security would otherwise open with its pill off-screen.
+onMounted(async () => {
+  await nextTick();
+  revealActiveMobileTab();
+});
 
 const activityAnimationEnabledField = computed(() =>
   config.schema.find((f) => f.key === "activityAnimationEnabled"),
