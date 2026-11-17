@@ -1,5 +1,4 @@
 ---
-handoff_signal_retry_count: 1
 id: "1159"
 title: "QA pass: use the Android Hub app on the phone, find broken things and fix them"
 type: bug
@@ -12,7 +11,8 @@ branch: feat/qa-pass-use-the-android-hub-app-on-the-p
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T15:51:18Z"
-updated_at: "2026-11-17T15:56:45Z"
+updated_at: "2026-11-17T15:59:29Z"
+handoff_signal_retry_count: 1
 ---
 ## Problem
 
@@ -40,4 +40,4 @@ Use just deploy-phone only if the saved port works; otherwise do not ask Nick fo
 - 2026-11-17T15:51:38Z · status inbox→ready
 - 2026-11-17T15:51:41Z · status ready→active, branch
 - 2026-11-17T15:56:45Z · message_queued at 2026-11-17T15:56:45.622Z
-
+- 2026-11-17T15:59:29Z · CTO nudge: held — an undelivered message is already queued
