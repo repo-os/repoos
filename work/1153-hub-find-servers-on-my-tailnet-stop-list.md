@@ -11,7 +11,7 @@ branch: feat/hub-find-servers-on-my-tailnet-stop-list
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T10:06:23Z"
-updated_at: "2026-11-17T17:01:47Z"
+updated_at: "2026-11-17T17:01:48Z"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/check-docs-only-cli.test.ts > cmdCheck docs/bookkeeping shortcut (#1059) > classifies a work-only diff and skips the full suite on thinkpad — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: e1b1e693693ec27e46b2e70d284ec6202a069a30
 review_passes: 5
@@ -178,3 +178,4 @@ Do not add runtime dependencies. The discovery endpoint exposes names/ports only
 - 2026-11-17T16:57:57Z · body
 - 2026-11-17T16:58:58Z · status active→review
 - 2026-11-17T17:01:47Z · message_queued at 2026-11-17T17:01:47.523Z
+- 2026-11-17T17:01:48Z · note: shots: failed — browser capture cancelled
