@@ -5,11 +5,13 @@ type: bug
 status: inbox
 priority: p2
 area: [web, server, cli]
-assigned_to: ""
+assigned_to: ai
 created_by: t@t
 branch: ""
+cli_override: codex
+model_override: gpt-6-luna
 created_at: "2026-11-17T13:30:27Z"
-updated_at: "2026-11-17T13:30:27Z"
+updated_at: "2026-11-17T14:36:07Z"
 ---
 ## Problem
 
@@ -38,3 +40,4 @@ Read #1075 (the restart notice) and #1091 (`repoos restart`). A server that kill
 ## Activity
 
 - 2026-11-17T13:30:27Z · created · t@t
+- 2026-11-17T14:36:07Z · cli_override, model_override
