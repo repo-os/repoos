@@ -2769,15 +2769,15 @@ describe("per-host prerequisite probe", () => {
     // `just setup-<host>-native` / validate-macos.sh). `runner` says
     // explicitly which one a given host actually uses, independent of `os`.
     const cmd = prereqProbeCommand("native");
-    expect(cmd).toContain("bun not found");
-    expect(cmd).toContain("git not found");
+    expect(cmd).toContain("for tool in 'git' 'bun'");
+    expect(cmd).toContain('echo "$tool not found on PATH"');
     expect(cmd).not.toContain("docker info");
     expect(cmd).toContain(PREREQ_OK_TOKEN);
   });
 
   it("checks all declared native toolchain executables and skips Bun assumptions for a project command", () => {
     const cmd = prereqProbeCommand("native", "repoos-ci", ["java", "gradle", "node"], true);
-    expect(cmd).toContain("for tool in 'java' 'gradle' 'node'");
+    expect(cmd).toContain("for tool in 'git' 'java' 'gradle' 'node'");
     expect(cmd).toContain('echo "$tool not found on PATH"');
     expect(cmd).not.toContain("bun not found");
     expect(cmd).not.toContain("docker info");
@@ -2794,8 +2794,9 @@ describe("per-host prerequisite probe", () => {
 
   it("uses the Bun prerequisite only for the stock native gate", () => {
     const cmd = prereqProbeCommand("native", "repoos-ci", [], true);
-    expect(cmd).not.toContain("bun not found");
-    expect(cmd).toContain("git not found on PATH");
+    expect(cmd).toContain("for tool in 'git'");
+    expect(cmd).not.toContain("'bun'");
+    expect(cmd).toContain('echo "$tool not found on PATH"');
   });
 
   it("checks the bun cache dir is writable on a native host", () => {
