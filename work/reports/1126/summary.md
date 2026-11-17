@@ -1,3 +1,14 @@
+---
+id: summary
+title: summary
+type: feature
+status: inbox
+priority: p2
+area: general
+assigned_to: ai
+created_by: ""
+branch: ""
+---
 ## TL;DR
 
 Releases gained a "what should happen when the AI draft is ready" chooser: **Publish automatically** or **Notify me**, plus a one-click **Generate notes and publish** button. The choice is a durable, server-owned promise that survives reload and restart, allows only one pending promise, is cancellable until the cut starts, and publishes through the exact same guarded path as the manual Publish button. Failures fail closed with a human-readable reason delivered in-app and via notification channels. After one engineering round and seven review passes (four fix-required verdicts, one timeout, one empty run, one `good to go`), the task was approved, merged (commit `8bd5eb8`) and marked done with `release:success`. The run was dominated by an infrastructure storm: a model-provider network outage that crashed the engineer repeatedly and forced one automatic model swap, plus a watchdog restart loop against a stale recorded engineer pid.
@@ -19,15 +30,15 @@ The feature shipped as designed:
 - **Engineering rounds:** 1 recorded round (2026-11-17T03:37:32Z).
 - **Review passes:** 7 — passes 1, 2, 4, 6 "needs some work"; pass 3 timed out; pass 5 produced no usable report; pass 7 "good to go". "Review-rounds-exhausted" was hit twice (08:08:58Z, 10:19:04Z) and cleared for review again by the human both times.
 - **Agents and models:**
-  - Engineer: started `opencode-go/deepseek-v4.1-flash`, automatically swapped to `opencode-go/glm-5.3-flash` after 3 crashes in 30 m (crash recovery, 01:18:50Z). No further swaps — recovery "surfaced instead of switching" when glm also crashed.
-  - Reviewer: `opencode-go/deepseek-v4.1-flash` on all passes.
-  - Debugger: 5 short `deepseek-v4.1-flash` sessions, all errored; routing sessions under `openrouter` (model not recorded).
+- Engineer: started `opencode-go/deepseek-v4.1-flash`, automatically swapped to `opencode-go/glm-5.3-flash` after 3 crashes in 30 m (crash recovery, 01:18:50Z). No further swaps — recovery "surfaced instead of switching" when glm also crashed.
+- Reviewer: `opencode-go/deepseek-v4.1-flash` on all passes.
+- Debugger: 5 short `deepseek-v4.1-flash` sessions, all errored; routing sessions under `openrouter` (model not recorded).
 - **Tokens and cost (recorded session rows only; sums are of those rows, nothing estimated):**
-  - Engineer, deepseek: 136,583 tokens, $0.053982528 (session errored).
-  - Engineer, glm: 3,286,554 tokens, $1.686933398 (finished).
-  - Reviewer (6 rows with figures): 774,184 tokens, $0.305732994; two reviewer sessions errored with no token figures recorded.
-  - Debugger sessions: no tokens/cost recorded (all errored).
-  - Recorded total: 4,197,321 tokens, $2.04664892.
+- Engineer, deepseek: 136,583 tokens, $0.053982528 (session errored).
+- Engineer, glm: 3,286,554 tokens, $1.686933398 (finished).
+- Reviewer (6 rows with figures): 774,184 tokens, $0.305732994; two reviewer sessions errored with no token figures recorded.
+- Debugger sessions: no tokens/cost recorded (all errored).
+- Recorded total: 4,197,321 tokens, $2.04664892.
 
 ## What went wrong
 

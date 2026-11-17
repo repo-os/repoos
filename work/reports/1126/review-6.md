@@ -1,11 +1,19 @@
 ---
+id: review-6
+title: review-6
+type: feature
+status: inbox
+priority: p2
+area: general
+assigned_to: ai
+created_by: ""
+branch: feat/releases-generate-ai-notes-and-publish-l
 task: "1126"
 pass: 6
 at: "2026-11-17T08:39:34.222Z"
 agent: reviewer
 cli: opencode
 model: opencode-go/deepseek-v4.1-flash
-branch: feat/releases-generate-ai-notes-and-publish-l
 state: ok
 tree_identity: "36c1b700f:e5a9a1b70"
 ---
@@ -20,11 +28,11 @@ None
 
 ## Bugs
 - **Class: mode-blind pending UI** — `src/ui-app/src/views/ReleasesView.vue` renders every `waiting`/`ready` record as an automatic publish regardless of `record.mode`. A **notify** choice is created as `waiting` and only settles to `notified` when the draft lands (1–3 minutes), so all of this is false on the page:
-  - `autoPublishHeadline` (line 220): "Will publish {tag} when the notes are ready" — the acceptance wording for publish mode, shown to a user who chose Notify.
-  - Page banner (lines 1544–1547): "the release is published only after the draft lands and every Publish check passes".
-  - Drawer banner (lines 1935–1938): "Cancel stops the automatic publish, not the draft" — there is no automatic publish to stop.
+- `autoPublishHeadline` (line 220): "Will publish {tag} when the notes are ready" — the acceptance wording for publish mode, shown to a user who chose Notify.
+- Page banner (lines 1544–1547): "the release is published only after the draft lands and every Publish check passes".
+- Drawer banner (lines 1935–1938): "Cancel stops the automatic publish, not the draft" — there is no automatic publish to stop.
 
-  This tells the human an outward action is pending that they never opted into (and that the server will never perform). It is untested: `release-when-ready.test.ts` "Notify me…" stubs a notes response with no `autoPublish`, whereas the real `POST /api/release/notes` returns the `waiting` notify record, so the banner does render. Fix by branching copy on `mode` (e.g. "Drafting — you'll be notified when {tag} notes are ready") and add a test mounting a `{state:"waiting",mode:"notify"}` record.
+This tells the human an outward action is pending that they never opted into (and that the server will never perform). It is untested: `release-when-ready.test.ts` "Notify me…" stubs a notes response with no `autoPublish`, whereas the real `POST /api/release/notes` returns the `waiting` notify record, so the banner does render. Fix by branching copy on `mode` (e.g. "Drafting — you'll be notified when {tag} notes are ready") and add a test mounting a `{state:"waiting",mode:"notify"}` record.
 
 No further findings of this class were found after grepping: `autoPublishHeadline`, both banner templates, `autoPublishActive`, `settleAutoPublishAfterDraft`/`failAutoPublish` kind selection, `cancelReleaseAutoPublish`, `resumeReleaseAutoPublish`, `beginRelease`/`startAutoReleaseCut`, `releaseNotification*`/spec/telegram/ntfy messages, and the release-when-ready and release-auto-publish tests.
 
