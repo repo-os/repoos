@@ -11,7 +11,7 @@ branch: feat/qa-pass-use-the-macos-hub-app-after-the-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T18:23:18Z"
-updated_at: "2026-11-17T21:09:12Z"
+updated_at: "2026-11-17T21:09:15Z"
 review_passes: 3
 review_rounds: 2
 handoff_signal_retry_count: 2
@@ -89,3 +89,4 @@ Do not edit repoos.toml. Do not create signing identities or commit app binaries
 - 2026-11-17T21:07:51Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-17T21:07:53Z · body
 - 2026-11-17T21:09:12Z · status active→review
+- 2026-11-17T21:09:15Z · note: shots: skipped — the diff (28 changed paths) touches no capture target's globs — no UI change to capture
