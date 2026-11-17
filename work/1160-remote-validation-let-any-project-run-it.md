@@ -11,7 +11,7 @@ branch: feat/remote-validation-let-any-project-run-it
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T17:06:33Z"
-updated_at: "2026-11-17T20:47:06Z"
+updated_at: "2026-11-17T20:48:56Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-17T19:55:37.402Z: repoos check failed: ui verification failed (3 issue(s)): [missing-target] Remote validation command and required tools (target \"default\"): highlight #setting-remoteValidation.command matched nothing on /settings?section=remote-validation (http://127.0.0.1:35065/settings?section=remote-validation); [missing-target] Remote runner host toolchain status (target \"default\"): click #setting-remoteValidation.enabled button: click: Timeout 5000ms exceeded. on /settings?section=remote-validation (http://… (truncated)"
 review_rounds: 2
@@ -100,3 +100,4 @@ Context: Nick's Tiao board on host bee (16 cores, encrypted btrfs, 3 projects) s
 - 2026-11-17T20:16:16Z · message_delivered: 1 message(s)
 - 2026-11-17T20:17:50Z · message_queued at 2026-11-17T20:17:50.836Z
 - 2026-11-17T20:47:06Z · body
+- 2026-11-17T20:48:56Z · handoff_deferred: 1 queued message(s) must be read before review
