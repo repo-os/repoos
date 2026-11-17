@@ -2,7 +2,7 @@
 id: "1146"
 title: "Design audit: make all RepoOS pages work better on phones"
 type: chore
-status: review
+status: active
 priority: p2
 area: web
 assigned_to: ai
@@ -11,7 +11,8 @@ branch: feat/design-audit-make-all-repoos-pages-work-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T02:53:04Z"
-updated_at: "2026-11-17T03:27:39Z"
+updated_at: "2026-11-17T03:27:40Z"
+review_rounds: 1
 review_passes: 1
 ---
 ## Problem
@@ -57,3 +58,4 @@ Use strong visual and product design judgment. Inspect rendered pages and theme 
 - 2026-11-17T03:23:08Z · note: shots: skipped — the diff (3 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-17T03:27:39Z · note: review pass 1: needs some work
 - 2026-11-17T03:27:39Z · message_delivered: 1 message(s)
+- 2026-11-17T03:27:40Z · status review→active
