@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "1152"
 title: "Mobile Hub: return to server picker from logo and show current project"
 type: feature
@@ -68,3 +69,4 @@ Inspect the existing Hub server WebView architecture and navigation security bef
 - 2026-11-17T06:14:30Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 130) · last assistant: Implementation and focused tests are in place, and both the web UI and mobile web bundles build. Now I'm running the scoped gate. · stderr: (empty)
 - 2026-11-17T06:14:57Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-17T06:32:20Z · message_queued at 2026-11-17T06:32:20.604Z
+
