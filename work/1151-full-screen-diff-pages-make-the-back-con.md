@@ -2,14 +2,14 @@
 id: "1151"
 title: "Full-screen diff pages: make the Back control meet the 44px touch target"
 type: bug
-status: ready
+status: active
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
-branch: ""
+branch: feat/full-screen-diff-pages-make-the-back-con
 created_at: "2026-11-17T03:32:44Z"
-updated_at: "2026-11-17T04:00:07Z"
+updated_at: "2026-11-17T04:00:11Z"
 ---
 ## Problem
 At 390×844, the Back control on the full-screen diff view measures 76×28 CSS px, below the app's 44×44 mobile touch-target convention. The shared DiffView is routed at /tasks/:taskId/diff, /tasks/:taskId/conflict-diff, /repo/working-diff and /repo/commits/:sha, so each entry point has the same issue.
@@ -35,3 +35,4 @@ Use the screenshots attached to #1146 and #1151; inspect light and dark themes a
 - 2026-11-17T03:32:45Z · screenshots
 - 2026-11-17T03:38:04Z · body: Problem (added 1, removed 1); Acceptance criteria (added 1, removed 1); Notes for AI (added 1, removed 1)
 - 2026-11-17T04:00:07Z · status inbox→ready
+- 2026-11-17T04:00:11Z · status ready→active, branch
