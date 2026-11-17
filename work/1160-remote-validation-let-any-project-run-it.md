@@ -103,3 +103,4 @@ Context: Nick's Tiao board on host bee (16 cores, encrypted btrfs, 3 projects) s
 - 2026-11-17T20:47:06Z · body
 - 2026-11-17T20:48:56Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-17T20:48:56Z · message_queued at 2026-11-17T20:48:56.412Z
+- 2026-11-17T20:48:56Z · ↻ resuming engineer to read queued message
