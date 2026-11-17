@@ -11,7 +11,7 @@ branch: feat/checks-mobile-header-make-overview-and-p
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T03:06:39Z"
-updated_at: "2026-11-17T11:27:01Z"
+updated_at: "2026-11-17T11:30:01Z"
 review_passes: 1
 ---
 ## Problem
@@ -87,3 +87,4 @@ Use the attached phone screenshot. Inspect both the empty state and a populated 
 - 2026-11-17T11:25:02Z · status review→active
 - 2026-11-17T11:25:48Z · body
 - 2026-11-17T11:27:01Z · body
+- 2026-11-17T11:30:01Z · CTO nudge: held — handoff gate is running
