@@ -2,7 +2,7 @@
 id: "1157"
 title: "QA pass: use the RepoOS web app on desktop and phone widths, find broken things and fix them"
 type: bug
-status: active
+status: review
 priority: p1
 area: web
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/qa-pass-use-the-repoos-web-app-on-deskto
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T15:21:15Z"
-updated_at: "2026-11-17T21:43:45Z"
+updated_at: "2026-11-17T21:43:46Z"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/agent-review.test.ts > agent review before human sign-off (#0101) > gates follow-up creation before the freeze and rejects Land anyway without an eligible review on thinkpad — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: 121f350123544f935cc91124afd200aede44bb8e
 review_rounds: 2
@@ -221,3 +221,4 @@ Start with the Work page at 390px and the bottom dock/heads/pipeline bar overlap
 - 2026-11-17T21:42:42Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-17T21:43:45Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-17T21:43:45Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code unknown) · last assistant: The remote suite has moved past the reported test and is still green so far. It is a large full run (739 test files); the WebKit page-height tests have also passed. · stderr: 2026-11-17T21:25:07.854648Z ERROR codex_core::tools::router: error=write_stdin failed: Unknown process id 34113
+- 2026-11-17T21:43:46Z · status active→review
