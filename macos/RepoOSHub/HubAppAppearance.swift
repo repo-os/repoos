@@ -40,14 +40,35 @@ enum HubAppAppearance: String, Codable, Equatable, Sendable, CaseIterable {
     /// windowBackgroundColor here can resolve through the system appearance
     /// instead of the Hub override, leaving a dark strip around a Light shell.
     var appKitWindowBackgroundColor: NSColor {
-        switch self {
-        case .system: return .windowBackgroundColor
-        case .light: return .white
-        case .dark:
-            // Match the charcoal backing used by macOS's dark window chrome;
-            // a pure black frame makes the split-view edge look detached.
-            return NSColor(calibratedWhite: 0.12, alpha: 1)
+        Self.windowBackgroundColor(for: self, systemAppearance: HubSystemAppearance.appearance)
+    }
+
+    /// Resolve AppKit's semantic window surface against the appearance the Hub
+    /// actually requests. A dynamic NSColor's bare `cgColor` can otherwise be
+    /// resolved as Aqua while SwiftUI is drawing Dark text and controls.
+    static func windowBackgroundColor(
+        for preference: HubAppAppearance,
+        systemAppearance: NSAppearance
+    ) -> NSColor {
+        let effectiveAppearance = preference.appKitAppearance ?? systemAppearance
+        var resolvedColor: NSColor?
+        effectiveAppearance.performAsCurrentDrawingAppearance {
+            guard let rgb = NSColor.windowBackgroundColor.usingColorSpace(.deviceRGB) else { return }
+            resolvedColor = NSColor(
+                calibratedRed: rgb.redComponent,
+                green: rgb.greenComponent,
+                blue: rgb.blueComponent,
+                alpha: rgb.alphaComponent
+            )
         }
+        return resolvedColor ?? NSColor.windowBackgroundColor
+    }
+
+    func shellBackgroundColor(for systemColorScheme: ColorScheme) -> Color {
+        let systemAppearance = NSAppearance(
+            named: systemColorScheme == .dark ? .darkAqua : .aqua
+        )!
+        return Color(nsColor: Self.windowBackgroundColor(for: self, systemAppearance: systemAppearance))
     }
 }
 

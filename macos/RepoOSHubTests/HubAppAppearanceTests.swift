@@ -61,6 +61,36 @@ final class HubAppAppearanceTests: XCTestCase {
         XCTAssertEqual(HubAppAppearance.dark.appKitAppearance?.name, .darkAqua)
     }
 
+    func testSystemWindowSurfaceResolvesForBothMacAppearances() {
+        let aqua = NSAppearance(named: .aqua)!
+        let darkAqua = NSAppearance(named: .darkAqua)!
+        let lightSurface = HubAppAppearance.windowBackgroundColor(
+            for: .system,
+            systemAppearance: aqua
+        )
+        let darkSurface = HubAppAppearance.windowBackgroundColor(
+            for: .system,
+            systemAppearance: darkAqua
+        )
+
+        XCTAssertGreaterThan(relativeLuminance(lightSurface), relativeLuminance(darkSurface))
+        XCTAssertEqual(
+            relativeLuminance(HubAppAppearance.windowBackgroundColor(for: .light, systemAppearance: darkAqua)),
+            relativeLuminance(lightSurface),
+            accuracy: 0.01
+        )
+        XCTAssertEqual(
+            relativeLuminance(HubAppAppearance.windowBackgroundColor(for: .dark, systemAppearance: aqua)),
+            relativeLuminance(darkSurface),
+            accuracy: 0.01
+        )
+    }
+
+    private func relativeLuminance(_ color: NSColor) -> CGFloat {
+        let rgb = color.usingColorSpace(.deviceRGB)!
+        return 0.2126 * rgb.redComponent + 0.7152 * rgb.greenComponent + 0.0722 * rgb.blueComponent
+    }
+
     func testLegacyRegistryFileDefaultsAppearanceToSystem() throws {
         let json = """
         {"notificationsEnabled":false,"dockBadgeEnabled":false}

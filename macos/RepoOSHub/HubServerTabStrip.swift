@@ -18,6 +18,7 @@ enum HubServerTabStripMetrics {
 /// window's own controls.
 struct HubServerTabStrip: View {
     @EnvironmentObject private var appState: HubAppState
+    @Environment(\.colorScheme) private var colorScheme
     @State private var trafficLightInset = HubServerTabStripMetrics.fallbackTrafficLightInset
     var snapshotHoverEntryID: UUID? = nil
     var snapshotChevronHover = false
@@ -187,21 +188,11 @@ struct HubServerTabStrip: View {
     }
 
     private var stripColor: Color {
-        switch appState.hubGlobalPreferences.appearance {
-        case .dark:
-            return Color(red: 0.08, green: 0.08, blue: 0.08)
-        case .light, .system:
-            return Color(red: 0.90, green: 0.90, blue: 0.91)
-        }
+        appState.hubGlobalPreferences.appearance.shellBackgroundColor(for: colorScheme)
     }
 
     private var contentColor: Color {
-        switch appState.hubGlobalPreferences.appearance {
-        case .dark:
-            return Color(red: 0.12, green: 0.12, blue: 0.12)
-        case .light, .system:
-            return .white
-        }
+        appState.hubGlobalPreferences.appearance.shellBackgroundColor(for: colorScheme)
     }
 }
 

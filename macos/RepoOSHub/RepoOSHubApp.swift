@@ -150,9 +150,24 @@ final class HubAppDelegate: NSObject, NSApplicationDelegate {
     private let dockIconAppearance = DockIconAppearanceController()
     private var appKitAppearance: NSAppearance?
     private var hubAppearance: HubAppAppearance = .system
+    private var systemAppearanceObserver: NSObjectProtocol?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         dockIconAppearance.start()
+        systemAppearanceObserver = DistributedNotificationCenter.default().addObserver(
+            forName: HubSystemAppearance.themeChangedNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            guard let self, self.hubAppearance == .system else { return }
+            self.applyAppKitAppearance()
+        }
+    }
+
+    deinit {
+        if let systemAppearanceObserver {
+            DistributedNotificationCenter.default().removeObserver(systemAppearanceObserver)
+        }
     }
 
     func setAppearanceOverride(_ appearance: HubAppAppearance) {
