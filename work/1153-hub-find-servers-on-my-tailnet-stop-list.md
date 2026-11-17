@@ -11,7 +11,7 @@ branch: feat/hub-find-servers-on-my-tailnet-stop-list
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T10:06:23Z"
-updated_at: "2026-11-17T14:50:43Z"
+updated_at: "2026-11-17T14:51:00Z"
 review_passes: 4
 review_rounds: 2
 dev_error_count: 5
