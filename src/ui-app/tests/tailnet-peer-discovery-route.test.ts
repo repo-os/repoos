@@ -3,6 +3,11 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import type { RepoOSConfig } from "../../core/types.js";
 import { createTailnetPeerDiscoveryHandler } from "../../server/routes/servers.js";
 import type { RouteContext } from "../../server/routes/types.js";
+import {
+  groupMembersFromServers,
+  propagateAllowlistGroup,
+} from "../../core/allowlist-group-sync.js";
+import type { AllowlistGroup } from "../../core/allowlist-groups.js";
 
 function request(remoteAddress: string, headers: Record<string, string> = {}) {
   return {
@@ -82,7 +87,7 @@ describe("GET /api/servers/discovery", () => {
     expect((result.body as { servers: unknown[] }).servers).toHaveLength(1);
   });
 
-  it("returns project names, ports, and tailnet URLs without exposing project paths", async () => {
+  it("returns project identity, group membership, and tailnet URLs for each project", async () => {
     const rows = [
       {
         entry: { projectName: "api", port: 7171, root: "/srv/api", allowlistGroup: "agents" },
@@ -110,18 +115,73 @@ describe("GET /api/servers/discovery", () => {
           {
             projectName: "api",
             port: 7171,
+            root: "/srv/api",
+            allowlistGroup: "agents",
             valid: true,
             url: "https://bee.tail.ts.net/api",
           },
           {
             projectName: "web",
             port: 7172,
+            root: "/srv/web",
+            allowlistGroup: "agents",
             valid: true,
             url: "https://bee.tail.ts.net/web",
           },
         ],
       },
     });
-    expect(JSON.stringify(result.body)).not.toMatch(/\/srv\//);
+    expect(JSON.stringify(result.body)).toContain('"allowlistGroup":"agents"');
+  });
+
+  it("keeps HTTP-discovered peers in allowlist groups and applies from their project root", async () => {
+    const handler = createTailnetPeerDiscoveryHandler({
+      listRows: async () =>
+        [
+          {
+            entry: {
+              projectName: "api",
+              port: 7171,
+              root: "/srv/repoos/api",
+              allowlistGroup: "personal",
+            },
+            valid: true,
+          },
+        ] as never,
+      serveUrls: async () => ({ 7171: "https://bee.tail.ts.net/api" }),
+    });
+    const { res, result } = response();
+    await handler(context(), request("100.100.10.2"), res, {});
+
+    const discovered = (result.body as { servers: Array<Record<string, unknown>> }).servers.map(
+      (server) => ({ ...server, host: "bee.tail.ts.net" }),
+    );
+    const members = groupMembersFromServers(discovered as never, "personal");
+    expect(members).toEqual([
+      {
+        host: "bee.tail.ts.net",
+        local: false,
+        reachable: true,
+        projectName: "api",
+        root: "/srv/repoos/api",
+        port: 7171,
+      },
+    ]);
+
+    const commands: string[] = [];
+    const group = {
+      name: "personal",
+      version: 1,
+      updatedAt: "2026-11-17T00:00:00Z",
+      allowlist: [],
+    } as AllowlistGroup;
+    await propagateAllowlistGroup(group, members, "air", {
+      remoteExec: async (_host, _user, _timeout, command) => {
+        commands.push(command);
+        return JSON.stringify({ applied: true });
+      },
+    });
+    expect(commands).toHaveLength(1);
+    expect(commands[0]).toMatch(/^cd '\/srv\/repoos\/api' && repoos allowlist group apply/);
   });
 });

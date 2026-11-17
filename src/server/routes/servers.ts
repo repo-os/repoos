@@ -175,6 +175,8 @@ export function createTailnetPeerDiscoveryHandler(
         host: "local",
         projectName: row.entry.projectName,
         port: row.entry.port,
+        root: row.entry.root,
+        allowlistGroup: row.entry.allowlistGroup,
         valid: row.valid,
         ...(httpsByPort[row.entry.port] ? { url: httpsByPort[row.entry.port], https: true } : {}),
       }));
