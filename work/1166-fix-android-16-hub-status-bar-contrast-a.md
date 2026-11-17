@@ -1,9 +1,8 @@
 ---
-handoff_signal_retry_count: 2
 id: "1166"
 title: Fix Android 16 Hub status-bar contrast across themes
 type: bug
-status: active
+status: review
 priority: p2
 area: mobile
 assigned_to: ai
@@ -12,7 +11,8 @@ branch: feat/fix-android-16-hub-status-bar-contrast-a
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T17:55:45Z"
-updated_at: "2026-11-17T18:43:25Z"
+updated_at: "2026-11-17T18:48:39Z"
+handoff_signal_retry_count: 2
 ---
 ## Problem
 On Android 16 (API 36), the Hub theme changes the status-bar icon style but the status-bar background remains a light system strip. In Dark appearance, white status icons are nearly invisible against that light strip. Android 16 ignores the status-bar color request for apps targeting API 36, so the native edge-to-edge treatment needs a platform-aware fix.
@@ -55,4 +55,4 @@ This issue was observed on Android 16 (API 36), target SDK 36, with Android Syst
 - 2026-11-17T18:38:06Z · queued message undelivered for 9m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-17T18:38:07Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code unknown) · last assistant: The check has verified the scoped branch snapshot and is building on the RepoOS validation runner; it has not reported a failure so far. The diff is limited to the Android theme resource. Since the task explicitly requires API 36 Light/Dar… · stderr: Reading additional input from stdin...
 - 2026-11-17T18:43:25Z · message_queued at 2026-11-17T18:43:25.523Z
-
+- 2026-11-17T18:48:39Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
