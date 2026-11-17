@@ -12,7 +12,7 @@ branch: feat/test-easter-eggs-1026-e2-resolveservehos
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-17T02:10:39Z"
-updated_at: "2026-11-17T11:25:00Z"
+updated_at: "2026-11-17T11:25:01Z"
 last_close_out_gate_ms: 885993
 last_close_out_gate_at: "2026-11-17T11:24:46.404Z"
 review_passes: 1
@@ -70,3 +70,4 @@ Machine-dependent test, not a product bug: `resolveServeHost` behaviour is inten
 - 2026-11-17T10:59:04Z · note: review pass 1: good to go
 - 2026-11-17T11:24:46Z · close-out gate completed in 886s
 - 2026-11-17T11:25:00Z · status done→done, release:success
+- 2026-11-17T11:25:01Z · message_dropped: 1 queued message(s) discarded — task is done
