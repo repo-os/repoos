@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/mobile-hub-return-to-server-picker-from-
 created_at: "2026-11-17T05:37:20Z"
-updated_at: "2026-11-17T07:10:46Z"
+updated_at: "2026-11-17T07:12:21Z"
 handoff_signal_retry_count: 2
 ---
 ## Problem
@@ -86,3 +86,4 @@ Inspect the existing Hub server WebView architecture and navigation security bef
 - 2026-11-17T06:59:49Z · message_delivered: 1 message(s)
 - 2026-11-17T07:05:54Z · body
 - 2026-11-17T07:10:46Z · body
+- 2026-11-17T07:12:21Z · CTO nudge: held — handoff gate is running
