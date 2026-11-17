@@ -2,7 +2,7 @@
 id: "1157"
 title: "QA pass: use the RepoOS web app on desktop and phone widths, find broken things and fix them"
 type: bug
-status: review
+status: active
 priority: p1
 area: web
 assigned_to: ai
