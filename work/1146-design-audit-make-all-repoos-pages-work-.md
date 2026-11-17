@@ -11,7 +11,7 @@ branch: feat/design-audit-make-all-repoos-pages-work-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T02:53:04Z"
-updated_at: "2026-11-17T03:35:58Z"
+updated_at: "2026-11-17T03:36:51Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -29,6 +29,26 @@ A design-skilled agent systematically reviews the mobile web UI with a critical 
 
 ## Notes for AI
 Use strong visual and product design judgment. Inspect rendered pages and theme variants; do not infer a clean layout only from source. Coordinate with #1145 which owns the specific screenshot fixes, including More sheet contrast and idle pipeline. Do not request a managed preview unless the human requests one.
+
+## Shots
+```json
+[
+{
+  "label": "Search field meets the 44px phone touch target",
+  "target": "default",
+  "route": "/",
+  "highlight": ".search-overlay-input",
+  "steps": [
+    {
+      "click": "button.search-input"
+    },
+    {
+      "waitFor": ".search-overlay-input"
+    }
+  ]
+}
+]
+```
 
 ## Screenshots
 
@@ -83,3 +103,4 @@ Use strong visual and product design judgment. Inspect rendered pages and theme 
 - 2026-11-17T03:35:54Z · screenshots
 - 2026-11-17T03:35:56Z · screenshots
 - 2026-11-17T03:35:58Z · screenshots
+- 2026-11-17T03:36:51Z · body
