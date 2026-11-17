@@ -11,7 +11,7 @@ branch: feat/investigate-checks-tab-browser-pass-stal
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T17:53:05Z"
-updated_at: "2026-11-17T20:33:41Z"
+updated_at: "2026-11-17T20:39:45Z"
 review_rounds: 1
 review_passes: 1
 handoff_signal_retry_count: 2
@@ -86,3 +86,4 @@ Direct tab-click coverage passes, but review identified a separate app lifecycle
 - 2026-11-17T20:33:41Z · message_queued at 2026-11-17T20:33:41.191Z
 - 2026-11-17T20:33:41Z · ↻ resuming engineer to read queued message
 - 2026-11-17T20:33:41Z · message_delivered: 2 message(s)
+- 2026-11-17T20:39:45Z · CTO nudge: held — handoff gate is running
