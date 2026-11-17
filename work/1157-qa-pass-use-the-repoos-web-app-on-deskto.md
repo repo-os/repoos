@@ -11,7 +11,7 @@ branch: feat/qa-pass-use-the-repoos-web-app-on-deskto
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T15:21:15Z"
-updated_at: "2026-11-17T17:48:18Z"
+updated_at: "2026-11-17T17:48:22Z"
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-11-17T16:50:57.959Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-17T17:19:58.428Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-17T17:28:43.649Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
@@ -81,3 +81,4 @@ Start with the Work page at 390px and the bottom dock/heads/pipeline bar overlap
 - 2026-11-17T17:47:59Z · message_queued at 2026-11-17T17:47:59.680Z
 - 2026-11-17T17:47:59Z · handoff failed · task-file handoff failed at commit · no implementation found since the branch diverged; use no_source_change: true to force a no-op handoff
 - 2026-11-17T17:48:18Z · note: handoff requested (cli)
+- 2026-11-17T17:48:22Z · message_queued at 2026-11-17T17:48:22.413Z
