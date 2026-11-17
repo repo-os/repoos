@@ -26,6 +26,8 @@ const SERVE_STATUS_TIMEOUT_MS = 1_500;
 
 export interface ListedServer {
   host: string;
+  /** Readable Tailscale HostName when it differs from the SSH/MagicDNS host. */
+  displayName?: string;
   port?: number;
   pid?: number;
   root?: string;
@@ -47,6 +49,7 @@ interface TailnetStatusPeer {
   HostName?: string;
   DNSName?: string;
   Online?: boolean;
+  OS?: string;
 }
 
 interface TailnetStatus {
@@ -55,10 +58,17 @@ interface TailnetStatus {
 }
 
 export interface TailnetPeer {
-  /** Short host name (`bee`, `thinkpad`) used for display and SSH. */
+  /**
+   * Stable MagicDNS label (`bee`, `thinkpad`, `mini`) used for SSH and
+   * de-duplication. This is deliberately not Tailscale's `HostName`: a peer
+   * can report a human display name with spaces/punctuation, and two peers can
+   * share the same `HostName` while having distinct MagicDNS names.
+   */
   host: string;
   /** MagicDNS name without the trailing dot, when Tailscale reports one. */
   dnsName?: string;
+  /** Tailscale's readable `HostName`, when it differs from the MagicDNS label. */
+  displayName?: string;
 }
 
 export interface TailnetInfo {
@@ -67,29 +77,63 @@ export interface TailnetInfo {
   peers: TailnetPeer[];
 }
 
+/** A single DNS label that is safe to hand to SSH as a host. */
+const DNS_LABEL_RE = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/i;
+
+/**
+ * Mobile peers cannot run a RepoOS server. Probing them over SSH only produces
+ * a misleading "unreachable" row (phones do not accept SSH from the tailnet),
+ * so discovery leaves them out entirely.
+ */
+const UNSUPPORTED_MOBILE_OS = new Set(["android", "ios", "ipados", "tvos", "watchos"]);
+
+function isUnsupportedMobilePeer(peer: TailnetStatusPeer): boolean {
+  return UNSUPPORTED_MOBILE_OS.has((peer.OS ?? "").trim().toLowerCase());
+}
+
+/** Normalize a MagicDNS name and reject anything that is not DNS-safe. */
+function normalizeDnsName(value: string | undefined): string | undefined {
+  const name = (value ?? "").trim().replace(/\.$/, "");
+  if (!name) return undefined;
+  const labels = name.split(".");
+  if (!labels.every((label) => DNS_LABEL_RE.test(label))) return undefined;
+  return name.toLowerCase();
+}
+
+/** Stable identity used for de-duplication: MagicDNS name when present. */
+function peerIdentity(peer: TailnetPeer): string {
+  return (peer.dnsName ?? peer.host).toLowerCase();
+}
+
 function peerFromStatus(peer: TailnetStatusPeer | undefined): TailnetPeer | null {
   if (!peer) return null;
-  const dnsName = (peer.DNSName ?? "").replace(/\.$/, "") || undefined;
-  const host = (peer.HostName ?? peer.DNSName ?? "").replace(/\.$/, "").split(".")[0];
+  const dnsName = normalizeDnsName(peer.DNSName);
+  const host = dnsName?.split(".")[0] ?? normalizeDnsName(peer.HostName)?.split(".")[0];
   if (!host) return null;
-  return { host, ...(dnsName ? { dnsName } : {}) };
+  const rawDisplay = (peer.HostName ?? "").trim();
+  const displayName = rawDisplay && rawDisplay.toLowerCase() !== host ? rawDisplay : undefined;
+  return { host, ...(dnsName ? { dnsName } : {}), ...(displayName ? { displayName } : {}) };
 }
 
 /**
  * Parse `tailscale status --json` into this machine plus its online peers.
- * Offline peers and this machine are excluded from `peers`; duplicate hosts
- * (Tailscale occasionally reports both a HostName and a DNSName) are collapsed.
+ * Offline peers, unsupported mobile peers and this machine are excluded from
+ * `peers`; peers are de-duplicated by MagicDNS identity, never by the readable
+ * `HostName` (two machines can legitimately report the same display name).
  */
 export function parseTailnetInfo(json: string): TailnetInfo {
   const status = JSON.parse(json) as TailnetStatus;
   const self = peerFromStatus(status.Self) ?? undefined;
+  const selfIdentity = self ? peerIdentity(self) : undefined;
   const seen = new Set<string>();
   const peers: TailnetPeer[] = [];
   for (const raw of Object.values(status.Peer ?? {})) {
-    if (raw.Online === false) continue;
+    if (raw.Online === false || isUnsupportedMobilePeer(raw)) continue;
     const peer = peerFromStatus(raw);
-    if (!peer || peer.host === self?.host || seen.has(peer.host)) continue;
-    seen.add(peer.host);
+    if (!peer) continue;
+    const identity = peerIdentity(peer);
+    if (identity === selfIdentity || seen.has(identity)) continue;
+    seen.add(identity);
     peers.push(peer);
   }
   return { ...(self ? { self } : {}), peers };
@@ -541,7 +585,11 @@ export async function collectTailnetServers(
   const configuredByHost = new Map((options.remoteHosts ?? []).map((host) => [host.host, host]));
   const remotes = await Promise.all(
     peers.map(async (peer): Promise<ListedServer[]> => {
-      const hostConfig = configuredByHost.get(peer.host) ?? { host: peer.host };
+      // A configured row may name either the MagicDNS label (`bee`) or the
+      // full name (`bee.tailc0c173.ts.net`); honour both.
+      const hostConfig = configuredByHost.get(peer.host) ??
+        (peer.dnsName ? configuredByHost.get(peer.dnsName) : undefined) ?? { host: peer.host };
+      const displayFields = peer.displayName ? { displayName: peer.displayName } : {};
       const user = options.remoteValidation
         ? remoteHostUser(options.remoteValidation, hostConfig)
         : hostConfig.user?.trim() || "root";
@@ -573,6 +621,7 @@ export async function collectTailnetServers(
               ({
                 ...server,
                 host: peer.host,
+                ...displayFields,
                 ...(options.annotateUrls
                   ? tailnetServerUrl({
                       host: peer.host,
@@ -587,6 +636,7 @@ export async function collectTailnetServers(
           return [
             {
               host: peer.host,
+              ...displayFields,
               unreachable: true,
               reason: remoteFailureReason(error),
             },
@@ -594,7 +644,7 @@ export async function collectTailnetServers(
         }
       };
       return within(work(), deadlineAt - now(), () => [
-        { host: peer.host, unreachable: true, reason: "timed out" },
+        { host: peer.host, ...displayFields, unreachable: true, reason: "timed out" },
       ]);
     }),
   );
