@@ -74,6 +74,7 @@ Use strong visual and product design judgment. Inspect rendered pages and theme 
 ![Task detail dark at 390×844](/api/tasks/1146/attachments/att_6efc7e54-a9fb-4e32-97f0-b723de9fad9b.png)
 ![Settings dark at 390×844](/api/tasks/1146/attachments/att_17240e43-207b-4a19-9e85-6bf5c75131ad.png)
 ![Checks dark at 390×844](/api/tasks/1146/attachments/att_558a7105-b050-4b2f-889a-db6879b7231f.png)
+![Stories dark at 390×844](/api/tasks/1146/attachments/att_6df36a4a-1683-4c03-822c-650e4cb21f64.png)
 
 ## Activity
 
@@ -114,3 +115,4 @@ Use strong visual and product design judgment. Inspect rendered pages and theme 
 - 2026-11-17T03:39:58Z · screenshots
 - 2026-11-17T03:40:00Z · screenshots
 - 2026-11-17T03:40:02Z · screenshots
+- 2026-11-17T03:40:03Z · screenshots
