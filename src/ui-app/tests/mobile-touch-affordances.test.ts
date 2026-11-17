@@ -51,7 +51,7 @@ describe("mobile touch affordances", () => {
 });
 
 describe("mobile web polish (#1139)", () => {
-  it("gives top-bar controls a 44px touch target and an icon-only phone chip", () => {
+  it("gives top-bar controls a 44px touch target and keeps the project name visible", () => {
     // Global controls (theme toggle, search pill, repo pill) size up together.
     expect(css).toMatch(
       /@media \(max-width: 900px\)\s*\{[\s\S]*?\.theme-toggle\s*\{[^}]*width:\s*44px;[^}]*height:\s*44px/s,
@@ -66,13 +66,39 @@ describe("mobile web polish (#1139)", () => {
     expect(topBar).toMatch(
       /@media \(max-width: 900px\)\s*\{[\s\S]*?\.help-menu-trigger,[\s\S]*?\.user-menu-trigger\s*\{[^}]*width:\s*44px;[^}]*height:\s*44px/s,
     );
+    // #1152: the phone bar shows the current project name instead of an
+    // icon-only colour swatch; long names ellipsize instead of overflowing.
     expect(topBar).toMatch(
-      /@media \(max-width: 719\.98px\)\s*\{[\s\S]*?\.repo-pill-text\s*\{[^}]*display:\s*none/s,
+      /@media \(max-width: 719\.98px\)\s*\{[\s\S]*?\.repo-pill-text\s*\{[^}]*display:\s*block;[\s\S]*?overflow:\s*hidden;[\s\S]*?text-overflow:\s*ellipsis;[\s\S]*?white-space:\s*nowrap/s,
+    );
+    expect(topBar).toMatch(
+      /@media \(max-width: 719\.98px\)\s*\{[\s\S]*?\.repo-pill-wrapper\s*\{[^}]*flex:\s*1 1 auto;[^}]*min-width:\s*0/s,
+    );
+    expect(topBar).toMatch(
+      /@media \(max-width: 900px\)\s*\{[\s\S]*?\.logo-trigger\s*\{[^}]*width:\s*44px;[^}]*height:\s*44px;[^}]*margin-inline:\s*-6px/s,
     );
     expect(topBar).toContain(':aria-label="`Repo colour');
     expect(noticeBell).toMatch(
       /@media \(max-width: 900px\)\s*\{[\s\S]*?\.notice-bell-trigger\s*\{[^}]*width:\s*44px;[^}]*height:\s*44px/s,
     );
+  });
+
+  it("keeps the preview marker from crowding the phone project name", () => {
+    // The base `.preview-build-banner` rule is much later in the stylesheet,
+    // so the hide rule must win by specificity rather than source order.
+    expect(css).toMatch(
+      /@media \(max-width: 719\.98px\)\s*\{[\s\S]*?\.topbar \.preview-build-banner\s*\{[^}]*display:\s*none/s,
+    );
+  });
+
+  it("turns search into a compact accessible icon button on phones", () => {
+    expect(css).toMatch(
+      /@media \(max-width: 719\.98px\)\s*\{[\s\S]*?\.search-wrap\s*\{[^}]*flex:\s*0 0 44px;[\s\S]*?width:\s*44px/s,
+    );
+    expect(css).toMatch(
+      /@media \(max-width: 719\.98px\)\s*\{[\s\S]*?\.search-placeholder,[\s\S]*?\.search-input kbd\s*\{[^}]*display:\s*none/s,
+    );
+    expect(searchBar).toContain('aria-label="Search"');
   });
 
   it("hides keyboard-only hints on touch input", () => {

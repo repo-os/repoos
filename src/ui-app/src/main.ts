@@ -4,6 +4,12 @@ import App from "./App.vue";
 import { router } from "./router";
 import "./style.css";
 import { installTooltips } from "./lib/tooltip";
+import { claimHubContext } from "./lib/hub-shell";
+
+// Read and hide the native Hub's one-time `?repoos_hub=` token before the
+// router mounts, so it survives a login round-trip without lingering in the
+// URL. A normal browser has no token and is unaffected (#1152).
+claimHubContext();
 
 createApp(App).use(createPinia()).use(router).mount("#app");
 installTooltips();

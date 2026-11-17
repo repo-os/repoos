@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 257063
-last_close_out_gate_at: "2026-11-17T08:14:06.158Z"
 id: "1152"
 title: "Mobile Hub: return to server picker from logo and show current project"
 type: feature
-status: review
+status: done
 priority: p1
 area: [mobile, web]
+merged_commit: b76593ed8e6dab466da4a19c4784fc964e791ffa
 assigned_to: ai
 created_by: t@t
 branch: feat/mobile-hub-return-to-server-picker-from-
 created_at: "2026-11-17T05:37:20Z"
 updated_at: "2026-11-17T08:14:06Z"
+last_close_out_gate_ms: 257063
+last_close_out_gate_at: "2026-11-17T08:14:06.158Z"
 review_passes: 2
 review_rounds: 1
 routing_switches: 1
