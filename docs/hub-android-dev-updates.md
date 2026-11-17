@@ -15,6 +15,14 @@ not disable the channel. The release variant gets empty channel fields.
 and sends `X-Robots-Tag: noindex, nofollow, noarchive`. It has no listing
 endpoint and rejects other paths.
 
+The published APK must use the same Android debug signing key as local debug
+builds so Android can upgrade the installed app without removing its data.
+GitHub Actions restores that key from the repository secret
+`HUB_DEV_DEBUG_KEYSTORE_BASE64` to `~/.android/debug.keystore` before building.
+The laptop uses its normal `~/.android/debug.keystore` for `just build-android`
+and `just deploy-phone`; held human task #1158 provisions that existing key to
+Actions without printing or committing its contents.
+
 ## Initial account setup
 
 Complete held human task #1158 before publishing. Create a private R2 bucket,
@@ -24,8 +32,14 @@ permissions. Do not attach the bucket directly to a public domain: the Worker
 is the only public entry point. Generate one path token locally and store
 `REPOOS_HUB_DEV_UPDATE_TOKEN`, `CLOUDFLARE_API_TOKEN`, and
 `CLOUDFLARE_ACCOUNT_ID` in `.repoos/dev-update-channel.env`. Add those same
-three values as GitHub Actions repository secrets with the same names. The
-local file is ignored by Git. Never commit or paste secret values into chat.
+three values as GitHub Actions repository secrets with the same names. Also
+add `HUB_DEV_DEBUG_KEYSTORE_BASE64` containing a base64 encoding of the laptop's
+existing `~/.android/debug.keystore`; this is the signing key for already
+installed dev builds and must remain stable. On macOS, copy it to the clipboard
+without printing it with `base64 < "$HOME/.android/debug.keystore" | pbcopy`,
+then paste it directly into the GitHub secret field. Do not put its value in a
+task or chat, and clear the clipboard afterward. The local channel file is
+ignored by Git. Never commit or paste secret values into chat.
 
 The workflow `.github/workflows/publish-hub-dev.yml` deploys the Worker and
 publishes a dev APK after each main push. Run `just publish-dev` on demand after
