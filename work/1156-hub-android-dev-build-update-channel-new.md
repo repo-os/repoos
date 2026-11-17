@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-11-17T16:53:39Z"
-review_passes: 2
 id: "1156"
 title: "Hub Android: dev build update channel - new dev builds reach the phone from any network with one tap (no adb)"
 type: feature
-status: review
+status: active
 priority: p1
 area: [mobile, infra]
 assigned_to: ai
@@ -13,8 +11,10 @@ branch: feat/hub-android-dev-build-update-channel-new
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T14:48:18Z"
+updated_at: "2026-11-17T16:53:39Z"
+review_rounds: 2
+review_passes: 2
 handoff_signal_retry_count: 2
-review_rounds: 1
 ---
 ## Problem
 
@@ -75,4 +75,4 @@ Follow the same shape as Tiao's implementation so all of Nick's apps behave iden
 - 2026-11-17T16:42:57Z · message_queued at 2026-11-17T16:42:57.357Z
 - 2026-11-17T16:42:57Z · note: shots: skipped — the diff (19 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-17T16:53:39Z · note: review pass 2: needs some work
-
+- 2026-11-17T16:53:39Z · status review→active
