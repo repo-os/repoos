@@ -2,7 +2,7 @@
 id: "1148"
 title: "Settings mobile navigation: reduce repeated topic-chip density"
 type: chore
-status: review
+status: active
 priority: p2
 area: web
 assigned_to: ai
@@ -10,6 +10,8 @@ created_by: t@t
 branch: feat/settings-mobile-navigation-reduce-repeat
 created_at: "2026-11-17T03:06:33Z"
 updated_at: "2026-11-17T04:50:32Z"
+review_rounds: 1
+routing_switches: 1
 review_passes: 1
 ---
 ## Problem
@@ -121,3 +123,4 @@ Use the attached phone screenshot. Check long labels and both theme families. Th
 - 2026-11-17T04:44:32Z · message_queued at 2026-11-17T04:44:32.962Z
 - 2026-11-17T04:50:30Z · note: review pass 1: needs some work
 - 2026-11-17T04:50:32Z · message_delivered: 1 message(s)
+- 2026-11-17T04:50:32Z · status review→active
