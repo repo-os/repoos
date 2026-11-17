@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/agent-review.test.ts > agent review before human sign-off (#0101) > gates follow-up creation before the freeze and rejects Land anyway without an eligible review on thinkpad — fix it in the feature branch and re-run the gate"
+last_handoff_failure_sha: 121f350123544f935cc91124afd200aede44bb8e
 id: "1157"
 title: "QA pass: use the RepoOS web app on desktop and phone widths, find broken things and fix them"
 type: bug
@@ -192,3 +194,4 @@ Start with the Work page at 390px and the bottom dock/heads/pipeline bar overlap
 - 2026-11-17T20:58:20Z · message_delivered: 1 message(s)
 - 2026-11-17T21:12:42Z · message_queued at 2026-11-17T21:12:42.242Z
 - 2026-11-17T21:12:42Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: tests/agent-review.test.ts > agent review before human sign-off (#0101) > gates follow-up creation before the freeze and rejects Land anyway without an eligible review on thinkpad — fix it in the feature branch and re-run the gate
+
