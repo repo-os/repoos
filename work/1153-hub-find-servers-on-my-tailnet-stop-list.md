@@ -1,8 +1,13 @@
 ---
+updated_at: "2026-11-17T13:02:48Z"
+review_passes: 3
 id: "1153"
 title: "Hub 'Find servers on my tailnet': stop listing bare machines, hide phones, explain failures, and replace SSH discovery with an HTTPS-based one"
 type: bug
-status: active
+status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: "`needs some work` — one process decides `tailnetDiscovery` for every project on the machine, and user docs describe the plain-HTTP probe as…"
 priority: p2
 area: [mobile, server, core]
 assigned_to: ai
@@ -11,9 +16,7 @@ branch: feat/hub-find-servers-on-my-tailnet-stop-list
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T10:06:23Z"
-updated_at: "2026-11-17T11:54:24Z"
 review_rounds: 2
-review_passes: 2
 dev_error_count: 5
 ---
 ## Problem
@@ -83,3 +86,10 @@ Do not add runtime dependencies. The discovery endpoint exposes names/ports only
 - 2026-11-17T11:54:24Z · note: review pass 2: needs some work
 - 2026-11-17T11:54:24Z · message_delivered: 1 message(s)
 - 2026-11-17T11:54:24Z · status review→active
+- 2026-11-17T12:56:33Z · body
+- 2026-11-17T12:58:35Z · status active→review
+- 2026-11-17T12:58:35Z · message_queued at 2026-11-17T12:58:35.477Z
+- 2026-11-17T12:58:35Z · note: shots: skipped — Docs site skipped: no docs shot declared
+- 2026-11-17T13:02:47Z · note: review pass 3: needs some work
+- 2026-11-17T13:02:48Z · needs_input
+
