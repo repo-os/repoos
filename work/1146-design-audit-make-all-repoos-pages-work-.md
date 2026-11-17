@@ -1,6 +1,4 @@
 ---
-check_retry_count: 1
-last_check_failure: "repoos check at 2026-11-17T03:44:30.654Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 id: "1146"
 title: "Design audit: make all RepoOS pages work better on phones"
 type: chore
@@ -13,7 +11,9 @@ branch: feat/design-audit-make-all-repoos-pages-work-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T02:53:04Z"
-updated_at: "2026-11-17T03:44:30Z"
+updated_at: "2026-11-17T03:46:51Z"
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-17T03:44:30.654Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 1
 review_passes: 1
 ---
@@ -121,4 +121,4 @@ Use strong visual and product design judgment. Inspect rendered pages and theme 
 - 2026-11-17T03:42:14Z · body
 - 2026-11-17T03:44:27Z · message_queued at 2026-11-17T03:44:27.469Z
 - 2026-11-17T03:44:30Z · message_delivered: 1 message(s)
-
+- 2026-11-17T03:46:51Z · body
