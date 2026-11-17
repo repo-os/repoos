@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/full-screen-diff-pages-make-the-back-con
 created_at: "2026-11-17T03:32:44Z"
-updated_at: "2026-11-17T04:53:25Z"
+updated_at: "2026-11-17T04:59:44Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-17T04:45:29.271Z: repoos check failed: ui verification failed (3 issue(s)): [request] HTTP 404 for http://127.0.0.1:35645/api/tasks/1151/diff (http://127.0.0.1:35645/api/tasks/1151/diff); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:35645/api/tasks/1151/diff); [missing-target] Task diff at 390px: Back is a 44px touch target (dark) (target \"default\"): loading state detected: loading text \"Loading diff…\" on /tasks/1151/diff (http://127.0.0.1:35645/tasks/… (truncated)"
 ---
@@ -31,22 +31,22 @@ Use the screenshots attached to #1146 and #1151; inspect light and dark themes a
 ```json
 [
 {
-  "label": "Commit diff at 390px: Back is a 44px touch target (dark)",
-  "target": "default",
-  "route": "/repo/commits/3018ba2214019200453bf4751b00f7d1425ce775",
-  "highlight": ".diff-back-btn",
-  "theme": "dark",
-  "viewportWidth": 390,
-  "viewportHeight": 844
+"label": "Commit diff at 390px: Back is a 44px touch target (dark)",
+"target": "default",
+"route": "/repo/commits/3018ba2214019200453bf4751b00f7d1425ce775",
+"highlight": ".diff-back-btn",
+"theme": "dark",
+"viewportWidth": 390,
+"viewportHeight": 844
 },
 {
-  "label": "Commit diff at 390px: Back is a 44px touch target (light)",
-  "target": "default",
-  "route": "/repo/commits/3018ba2214019200453bf4751b00f7d1425ce775",
-  "highlight": ".diff-back-btn",
-  "theme": "light",
-  "viewportWidth": 390,
-  "viewportHeight": 844
+"label": "Commit diff at 390px: Back is a 44px touch target (light)",
+"target": "default",
+"route": "/repo/commits/3018ba2214019200453bf4751b00f7d1425ce775",
+"highlight": ".diff-back-btn",
+"theme": "light",
+"viewportWidth": 390,
+"viewportHeight": 844
 }
 ]
 ```
@@ -71,3 +71,4 @@ Use the screenshots attached to #1146 and #1151; inspect light and dark themes a
 - 2026-11-17T04:45:24Z · message_queued at 2026-11-17T04:45:24.948Z
 - 2026-11-17T04:45:28Z · message_delivered: 1 message(s)
 - 2026-11-17T04:53:25Z · body
+- 2026-11-17T04:59:44Z · body
