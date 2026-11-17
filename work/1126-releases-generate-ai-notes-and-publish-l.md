@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/releases-generate-ai-notes-and-publish-l
 created_at: "2026-11-15T08:14:22Z"
-updated_at: "2026-11-17T00:29:36Z"
+updated_at: "2026-11-17T00:30:06Z"
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-11-17T00:29:34.833Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -57,3 +57,4 @@ Reuse the existing AI-draft run in ReleasesView.vue and the server release run; 
 - 2026-11-17T00:29:34Z · engineer crash recovery: resuming opencode + opencode-go/deepseek-v4.1-flash (1/3 crashes in 30m) · the agent process exited with an error — open the task to see the full output. Open Raw CLI error for details. (CLI: the agent process exited with an error — open the task to see the full output)
 - 2026-11-17T00:29:36Z · needs_input
 - 2026-11-17T00:29:36Z · message_delivered: 1 message(s)
+- 2026-11-17T00:30:06Z · watchdog: restarting engineer because a queued message waited 3m with no live process
