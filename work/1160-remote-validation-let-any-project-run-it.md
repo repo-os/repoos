@@ -3,6 +3,9 @@ id: "1160"
 title: "Remote validation: let any project run its own check command on runners"
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: "`needs some work` — native capture worktree reuse/leak, setup-vs-gate misclassification, and Hetzner silently ignoring the new command."
 priority: p1
 area: core
 assigned_to: ai
@@ -125,3 +128,4 @@ Context: Nick's Tiao board on host bee (16 cores, encrypted btrfs, 3 projects) s
 - 2026-11-17T22:31:14Z · note: ui verification passed: 2 of 2 shots captured with clean console (1 shot warning)
 - 2026-11-17T22:31:15Z · message_queued at 2026-11-17T22:31:15.725Z
 - 2026-11-17T22:37:31Z · note: review pass 4: needs some work
+- 2026-11-17T22:37:31Z · needs_input
