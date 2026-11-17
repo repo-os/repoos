@@ -82,3 +82,4 @@ This issue was observed on Android 16 (API 36), target SDK 36, with Android Syst
 - 2026-11-17T19:21:10Z · body
 - 2026-11-17T19:22:20Z · status active→review
 - 2026-11-17T19:22:21Z · message_queued at 2026-11-17T19:22:21.122Z
+- 2026-11-17T19:22:21Z · note: shots: skipped — the diff (9 changed paths) touches no capture target's globs — no UI change to capture
