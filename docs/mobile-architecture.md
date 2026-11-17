@@ -79,6 +79,36 @@ showing device-lock gate ignores the gesture. iOS and the web dev build keep
 their platform-native behaviour. The mapping and listener wiring are covered by
 `src/ui-app/tests/mobile-hub-back-navigation.test.ts`.
 
+### Returning to the server picker from a connected server (#1152)
+
+Android's system back walks the isolated WebView's history; a server with many
+pages therefore takes many gestures to leave. The top-left RepoOS mark is the
+one-action return, and it does **not** add a native bridge:
+
+1. `openServer` (`mobile/src/browser.ts`) generates a fresh 128-bit token for
+   each open and appends it to the server URL as `?repoos_hub=<token>`.
+2. The server-served SPA (`src/ui-app/src/lib/hub-shell.ts`) reads the token,
+   remembers it in `sessionStorage` so a login round-trip can return to it, and
+   removes the parameter from the visible URL. When the user activates the
+   logo, it performs a full-page navigation to
+   `/__repoos_hub/return-to-picker#hub-return=<token>`. The fragment keeps the
+   token out of the HTTP request.
+3. The server answers that path with a tiny public, script-free landing page
+   (`serveHubReturn`) so the navigation completes immediately.
+4. The shell's existing `browserPageNavigationCompleted` listener accepts it
+   only when the URL's origin is exactly the origin it opened, the path is
+   exactly the return path, and the fragment carries **this open's** token;
+   then it closes the InAppBrowser. Every other navigation continues normally.
+
+This is the existing supported navigation contract, not a privileged API. An
+untrusted same-origin page could at most dismiss its own browser view; it
+cannot invoke native plugins, read the server list, or change another server's
+state. A foreign origin never loads in the isolated WebView (it opens in the
+system browser) and a stale token from an earlier app open never matches the
+shell's current in-memory token. In an ordinary browser there is no token, so
+the logo stays decorative and desktop behavior is unchanged. The contract and
+its rejection cases are covered by `src/ui-app/tests/mobile-hub-return.test.ts`.
+
 ### Server-assisted tailnet discovery ("Find servers on my tailnet")
 
 The user's phone cannot run the Tailscale CLI or read the Tailscale app's peer

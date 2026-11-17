@@ -34,7 +34,13 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="search-wrap">
-    <button class="search-input" type="button" data-tip="Search" @click="openOverlay">
+    <button
+      class="search-input"
+      type="button"
+      data-tip="Search"
+      aria-label="Search"
+      @click="openOverlay"
+    >
       <svg class="search-ico" width="13" height="13" viewBox="0 0 24 24" fill="none">
         <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2" />
         <path d="M20 20l-3.5-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" />

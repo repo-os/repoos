@@ -590,16 +590,28 @@
   .topbar {
     gap: 6px;
     padding: 0 8px;
+    min-width: 0;
   }
-  /* The search pill grows into the space the desktop spacer used; a 44px floor
-     keeps it a valid touch target at 360px. */
+  /* The project chip grows into the space the desktop spacer used; the search
+     becomes a compact 44x44 icon button so the name stays visible (#1152). */
   .topbar .spacer {
     display: none;
   }
   .search-wrap {
-    flex: 1 1 44px;
-    max-width: none;
+    flex: 0 0 44px;
+    width: 44px;
+    max-width: 44px;
     min-width: 44px;
+  }
+  .search-input {
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    justify-content: center;
+  }
+  .search-placeholder,
+  .search-input kbd {
+    display: none;
   }
 }
 /* A touch device has no keyboard-shortcut affordance: hide the ⌘K chip in the

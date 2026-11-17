@@ -122,6 +122,18 @@ can also carry an APK; they are listed on the releases page but do not take the
 The full threat model, origin-isolation guarantees, and WebView compatibility
 notes live in [`docs/mobile-architecture.md`](https://github.com/repo-os/repoos/blob/main/docs/mobile-architecture.md).
 
+## Open a server and return to the picker
+
+Tap a server to open its RepoOS web UI. On a phone the top bar keeps the current
+project name visible and turns search into a compact icon button. To leave the
+server and go back to the Hub's server picker, tap the RepoOS mark at the top
+left: it returns to the picker in one action, however many pages you visited in
+the server. Android's system back still moves through the server's own history.
+
+The logo is a Hub-only control. In a normal phone or desktop browser the same
+mark is decorative, and the desktop top bar keeps its branch label and full
+search field.
+
 ## Find servers on my tailnet
 
 Once you have saved one server you trust, the picker offers **Find servers on my

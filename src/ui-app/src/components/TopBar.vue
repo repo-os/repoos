@@ -8,13 +8,30 @@ import { useAuthStore } from "../stores/auth";
 import SearchBar from "./SearchBar.vue";
 import NoticeBell from "./NoticeBell.vue";
 import ReminderCards from "./ReminderCards.vue";
+import RepoLogoMark from "./RepoLogoMark.vue";
 import { readRepoColor, writeRepoColor } from "../repo-color";
+import { readHubShellSession, returnToHubServerPicker } from "../lib/hub-shell";
+import { useResponsiveLayout } from "../composables/useResponsiveLayout";
 
 const repo = useRepoStore();
 const config = useConfigStore();
 const auth = useAuthStore();
+const { isNarrow } = useResponsiveLayout();
 const { health, streamDown, loading, newVersion, restarting } = storeToRefs(repo);
 const { repoName, branch } = storeToRefs(repo);
+
+/**
+ * The native Hub adds a one-time token to the server URL (#1152). When it is
+ * present (or remembered across a login redirect), the logo becomes the
+ * one-action route back to the native server picker. A normal browser never
+ * has it, so the logo stays decorative there.
+ */
+const hubSession = readHubShellSession();
+
+function onLogoActivate(): void {
+  if (!hubSession) return;
+  returnToHubServerPicker(hubSession);
+}
 
 const isDark = computed(() => config.effectiveTheme === "dark");
 const isPreviewBuild = computed(() => health.value?.isPreviewBuild ?? false);
@@ -29,6 +46,10 @@ function truncateBranch(name: string, maxLen: number): string {
 /** The text shown in the repo pill: "repo" or "repo × branch" when in a worktree. */
 const pillText = computed(() => {
   if (!repoName.value) return "";
+  // A phone's top bar has room for the project name, not the worktree branch.
+  // The narrow layout keeps the name visible and ellipsizes long values in CSS;
+  // desktop keeps the branch affordance.
+  if (isNarrow.value) return repoName.value;
   if (!branch.value) return repoName.value;
   return `${repoName.value} \u00d7 ${truncateBranch(branch.value, 20)}`;
 });
@@ -303,22 +324,17 @@ watch(repoName, () => {
 <template>
   <div class="topbar">
     <span v-if="isPreviewBuild" class="preview-build-banner">Preview Build</span>
-    <div class="logo-mark">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-        <path
-          d="M12 2L4 7v10l8 5 8-5V7l-8-5z"
-          stroke="var(--cyan)"
-          stroke-width="2"
-          stroke-linejoin="round"
-        />
-        <path
-          d="M12 7v10M8 9.5v5M16 9.5v5"
-          stroke="var(--violet)"
-          stroke-width="1.5"
-          stroke-linecap="round"
-        />
-      </svg>
-    </div>
+    <button
+      v-if="hubSession"
+      type="button"
+      class="logo-trigger"
+      aria-label="Return to RepoOS Hub server picker"
+      data-testid="hub-return-to-picker"
+      @click="onLogoActivate"
+    >
+      <span class="logo-mark" aria-hidden="true"><RepoLogoMark /></span>
+    </button>
+    <div v-else class="logo-mark" aria-hidden="true"><RepoLogoMark /></div>
     <div class="brand hidden sm:inline">
       RepoOS
       <!-- <small>repo is the os</small> -->
@@ -478,6 +494,27 @@ watch(repoName, () => {
 <style scoped>
 .repo-pill-wrapper {
   position: relative;
+}
+.logo-trigger {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+}
+.logo-trigger .logo-mark {
+  width: 30px;
+  height: 30px;
+}
+.logo-trigger:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
 }
 .repo-color-popover {
   position: absolute;
@@ -657,6 +694,14 @@ watch(repoName, () => {
    layouts, including landscape phones and small tablets where the compact
    shell runs but the top bar is still a pointer-sized row. */
 @media (max-width: 900px) {
+  /* The mark stays 30px visually, but the button's hit area is 44x44. The
+     negative inline margins keep the original 30px layout width so the bar
+     does not spend space on the padding. */
+  .logo-trigger {
+    width: 44px;
+    height: 44px;
+    margin-inline: -7px;
+  }
   .help-menu-trigger,
   .user-menu-trigger {
     width: 44px;
@@ -673,16 +718,34 @@ watch(repoName, () => {
   }
 }
 @media (max-width: 719.98px) {
-  /* The project chip opens a colour picker, not a repo switcher, so on a
-     phone it becomes an icon-only 44x44 swatch trigger (#1139). */
-  .repo-pill-text {
-    display: none;
+  /* The project chip keeps the current project name readable (#1152): it
+     grows into the space the compact search button frees, and every title
+     is ellipsized rather than pushing the bar wider than the viewport. The
+     colour picker behind the chip is unchanged. */
+  .repo-pill-wrapper {
+    flex: 1 1 auto;
+    min-width: 0;
   }
   .repo-pill {
-    width: 44px;
+    width: 100%;
+    min-width: 0;
     min-height: 44px;
-    padding: 0;
-    justify-content: center;
+    padding: 0 8px;
+    justify-content: flex-start;
+    overflow: hidden;
+  }
+  /* The branch icon is decorative; dropping it on a phone gives the name the
+     few pixels that make a long project title legible. */
+  .repo-pill > svg {
+    display: none;
+  }
+  .repo-pill-text {
+    display: block;
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   .repo-color-grid {
     grid-template-columns: repeat(3, 44px);
