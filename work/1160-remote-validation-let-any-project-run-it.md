@@ -123,3 +123,4 @@ Context: Nick's Tiao board on host bee (16 cores, encrypted btrfs, 3 projects) s
 - 2026-11-17T22:26:38Z · body
 - 2026-11-17T22:28:11Z · status active→review
 - 2026-11-17T22:31:14Z · note: ui verification passed: 2 of 2 shots captured with clean console (1 shot warning)
+- 2026-11-17T22:31:15Z · message_queued at 2026-11-17T22:31:15.725Z
