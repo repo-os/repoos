@@ -103,7 +103,10 @@ onMounted(async () => {
   if (initial === "discover") route.value = "discover";
 
   await init();
-  if (devUpdateEnabled) void checkForDevUpdate().then((update) => { devUpdate.value = update; });
+  if (devUpdateEnabled)
+    void checkForDevUpdate().then((update) => {
+      devUpdate.value = update;
+    });
   if (initial === "discover") await discoverTailnet();
   onBrowserEvents({ closed: () => undefined });
   if (lockSettings.value.enabled && lockSettings.value.scope === "reopen") {
@@ -320,12 +323,21 @@ async function onLockScope(scope: "reopen" | "server") {
     </main>
 
     <div v-if="devUpdate" class="update-backdrop" role="presentation">
-      <section class="update-dialog" role="dialog" aria-modal="true" aria-labelledby="dev-update-title">
+      <section
+        class="update-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="dev-update-title"
+      >
         <h2 id="dev-update-title">A new dev build is available</h2>
         <p>Commit {{ devUpdate.commit.slice(0, 7) }}</p>
-        <ul v-if="devUpdate.notes.length"><li v-for="note in devUpdate.notes" :key="note">{{ note }}</li></ul>
+        <ul v-if="devUpdate.notes.length">
+          <li v-for="note in devUpdate.notes" :key="note">{{ note }}</li>
+        </ul>
         <div class="update-actions">
-          <button type="button" class="primary-button" @click="openDevUpdateApk">Download now</button>
+          <button type="button" class="primary-button" @click="openDevUpdateApk">
+            Download now
+          </button>
           <button type="button" class="secondary-button" @click="deferDevUpdate">Later</button>
         </div>
       </section>

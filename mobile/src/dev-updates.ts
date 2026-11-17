@@ -39,7 +39,8 @@ export async function checkForDevUpdate(force = false): Promise<DevUpdateManifes
       !Number.isInteger(manifest.versionCode) ||
       manifest.versionCode <= hubInstalledVersionCode ||
       !Array.isArray(manifest.notes)
-    ) return null;
+    )
+      return null;
     if (!force && now < Number(snoozedUntil.value || 0)) return null;
     return manifest;
   } catch {

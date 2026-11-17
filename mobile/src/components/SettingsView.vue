@@ -20,7 +20,7 @@ const emit = defineEmits<{
   "update:appearanceMode": [mode: AppearanceMode];
   "update:lockEnabled": [enabled: boolean];
   "update:lockScope": [scope: "reopen" | "server"];
-  "checkDevUpdates": [];
+  checkDevUpdates: [];
 }>();
 
 const appearanceOptions: { id: AppearanceMode; label: string }[] = [
@@ -50,7 +50,12 @@ const appearanceOptions: { id: AppearanceMode; label: string }[] = [
           <span class="kv-label">Installed commit</span>
           <span class="kv-value">{{ installedCommit }}</span>
         </div>
-        <button v-if="devUpdateEnabled" type="button" class="settings-action" @click="emit('checkDevUpdates')">
+        <button
+          v-if="devUpdateEnabled"
+          type="button"
+          class="settings-action"
+          @click="emit('checkDevUpdates')"
+        >
           Check now
         </button>
       </section>
