@@ -101,3 +101,4 @@ Do not add runtime dependencies. The discovery endpoint exposes names/ports only
 - 2026-11-17T13:17:16Z · note: handoff requested (cli)
 - 2026-11-17T13:21:55Z · CTO nudge: held — handoff gate is running
 - 2026-11-17T13:30:11Z · message_queued at 2026-11-17T13:30:11.359Z
+- 2026-11-17T13:30:11Z · handoff failed · task-file handoff failed at check · repoos check failed: tests — ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
