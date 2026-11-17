@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-17T15:23:29Z"
-review_passes: 2
 id: "1155"
 title: "RepoOS Hub for macOS is broken: reproduce, diagnose and fix, then test on a real build"
 type: bug
@@ -13,7 +11,7 @@ branch: feat/repoos-hub-for-macos-is-broken-reproduce
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T14:36:24Z"
-review_rounds: 1
+updated_at: "2026-11-17T14:58:41Z"
 ---
 ## Problem
 
@@ -35,35 +33,10 @@ Launching the Mac app shows the server list; saved servers show Reachable/Unreac
 
 Read macos/README.md and the 'RepoOS Hub for macOS' section of README.md first. Do not edit repoos.toml. If the app cannot be launched headlessly in this environment, build it, run the unit tests, and write precise manual steps for Nick instead of claiming it works.
 
-## Screenshots
-
-![Nick's screenshot of the broken macOS Hub: light sidebar on a dark window, server names invisible except the selected row](/api/tasks/1155/attachments/att_7383208d-4f73-4967-9355-0e0d11482757.webp)
-
 ## Activity
 
 - 2026-11-17T14:36:24Z · created · t@t
 - 2026-11-17T14:36:27Z · cli_override, model_override
 - 2026-11-17T14:36:29Z · status inbox→ready
 - 2026-11-17T14:36:30Z · status ready→active, branch
-- 2026-11-17T14:38:47Z · screenshots
-- 2026-11-17T14:38:48Z · message_queued at 2026-11-17T14:38:48.217Z
-- 2026-11-17T14:39:19Z · message_queued at 2026-11-17T14:39:19.423Z
-- 2026-11-17T14:39:36Z · message_queued at 2026-11-17T14:39:36.761Z
-- 2026-11-17T14:40:38Z · CTO nudge: held — an undelivered message is already queued
-- 2026-11-17T14:40:47Z · message_queued at 2026-11-17T14:40:47.693Z
-- 2026-11-17T14:41:54Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
-- 2026-11-17T14:41:54Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code unknown) · last assistant: After isolating scan tests from the live registry, the full macOS unit-test suite passes. The fixture also now asserts that a populated registry does not invoke fallback scanning, which is the behavior that caused the original machine-depe… · stderr: Reading additional input from stdin...
-- 2026-11-17T14:41:54Z · message_delivered: 4 message(s)
-- 2026-11-17T14:55:42Z · body
 - 2026-11-17T14:58:41Z · status active→review
-- 2026-11-17T14:58:41Z · message_queued at 2026-11-17T14:58:41.855Z
-- 2026-11-17T14:58:41Z · note: shots: skipped — the diff (10 changed paths) touches no capture target's globs — no UI change to capture
-- 2026-11-17T15:07:52Z · note: review pass 1: needs some work
-- 2026-11-17T15:07:52Z · message_delivered: 1 message(s)
-- 2026-11-17T15:07:52Z · status review→active
-- 2026-11-17T15:16:52Z · body
-- 2026-11-17T15:19:03Z · status active→review
-- 2026-11-17T15:19:03Z · message_queued at 2026-11-17T15:19:03.237Z
-- 2026-11-17T15:19:03Z · note: shots: skipped — the diff (12 changed paths) touches no capture target's globs — no UI change to capture
-- 2026-11-17T15:23:29Z · note: review pass 2: good to go
-
