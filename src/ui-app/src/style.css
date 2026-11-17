@@ -17261,9 +17261,26 @@
   .drawer-tabs .tab-btn {
     min-height: 44px;
   }
+  /* #1147: horizontal scrolling still left the last tabs and the expand
+     control off-screen with no affordance that they existed. A phone has room
+     for the strip on two or three rows, so wrap it and show every tab at once.
+     Desktop keeps the single scrolling row. */
+  .drawer-tabs-scroll {
+    flex-wrap: wrap;
+    overflow-x: visible;
+  }
   .drawer-quickbar,
   .drawer-critical {
     padding-inline: 16px;
+  }
+  /* #1147: the preview helper used to share a flex row with the target select
+     and Start preview, so it wrapped one or two words per line beside them.
+     Give the copy a full row of its own and cap its measure; the controls wrap
+     below it when they no longer fit. */
+  .quickbar-row > .preview-hint {
+    flex: 1 1 100%;
+    min-width: 0;
+    max-width: 52ch;
   }
   /* The status card / done-error keep their own 22px gutter (scoped rules in
      TaskDrawer beat a global override, and 22px already fits a 360px phone). */
