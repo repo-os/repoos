@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-17T16:46:21.944Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Hand-run server restart notice (target \"default\"): loading state detected: loading text \"Loading…\" on / (http://127.0.0.1:41115/?shotState=release%3ArestartPendingLight)"
 id: "1154"
 title: "Update/restart notice: don't suggest a launchd command for a hand-run server; offer a real restart and fix repoos restart auth (401)"
 type: bug
@@ -86,3 +88,4 @@ Read #1075 (the restart notice) and #1091 (`repoos restart`). A server that kill
 - 2026-11-17T16:46:18Z · note: ui verification failed: ui verification failed (1 issue(s)): [missing-target] Hand-run server restart notice (target "default"): loading state detected: loading text "Loading…" on / (http://127.0.0.1:41115/?shotState=release%3ArestartPendingLight)
 - 2026-11-17T16:46:18Z · message_queued at 2026-11-17T16:46:18.836Z
 - 2026-11-17T16:46:21Z · message_delivered: 1 message(s)
+
