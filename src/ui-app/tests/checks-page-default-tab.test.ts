@@ -67,6 +67,7 @@ function pipelineActive(taskId = "0737"): IntegrationPipelineSnapshot {
 }
 
 afterEach(() => {
+  vi.useRealTimers();
   vi.unstubAllGlobals();
   invalidatePageDataPrefix("check-plan:");
 });
@@ -305,7 +306,7 @@ describe("ChecksView default tab (#0738)", () => {
 
     for (const [label, tab] of tabs) {
       const control = wrapper.findAll('[role="tab"]').find((node) => node.text() === label);
-      expect(control).toBeDefined();
+      expect(control, `${label} tab`).toBeTruthy();
       await control!.trigger("click");
       await flushPromises();
       expect(router.currentRoute.value.query.tab).toBe(tab);
@@ -313,6 +314,23 @@ describe("ChecksView default tab (#0738)", () => {
     }
 
     wrapper.unmount();
+  });
+
+  it("clears the local slot poll when the Checks view unmounts", async () => {
+    vi.useFakeTimers();
+    const { wrapper } = await mountChecks("/checks?tab=now");
+    const fetchMock = vi.mocked(fetch);
+    const localSlotRequestCount = () =>
+      fetchMock.mock.calls.filter(([url]) => String(url).includes("/api/local-check-slots"))
+        .length;
+    const requestsBeforeUnmount = localSlotRequestCount();
+    expect(requestsBeforeUnmount).toBeGreaterThan(0);
+
+    wrapper.unmount();
+    await vi.advanceTimersByTimeAsync(5000);
+    await flushPromises();
+
+    expect(localSlotRequestCount()).toBe(requestsBeforeUnmount);
   });
 
   it("describes a live stale check by its last heartbeat, while a fresh heartbeat stays clear", async () => {
