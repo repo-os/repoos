@@ -13,6 +13,7 @@
  * (see docs/remote-validation.md).
  */
 import { KNOWN_AGENTS, parseAuthState } from "./detect.js";
+import { CURSOR_LOGIN_COMMAND } from "./cursor-auth.js";
 import { redactText } from "./redact.js";
 import type { RemoteValidationConfig, RemoteValidationHost } from "./types.js";
 import { remoteHostUser } from "./remote-hosts.js";
@@ -47,7 +48,7 @@ const SPECS: Record<RunnerEngineerCliId, RunnerEngineerCliSpec> = {
     id: "cursor",
     binary: "cursor-agent",
     installCommand: "curl https://cursor.com/install -fsS | bash",
-    loginCommand: "cursor-agent login",
+    loginCommand: CURSOR_LOGIN_COMMAND,
   },
 };
 

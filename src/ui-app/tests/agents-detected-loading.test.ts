@@ -14,6 +14,8 @@ import ModelProvidersPanel from "../src/components/ModelProvidersPanel.vue";
 import { useConfigStore } from "../src/stores/config";
 import { invalidatePageData, invalidatePageDataPrefix } from "../src/composables/page-data-cache";
 import { SKELETON_SHOW_DELAY_MS } from "../src/lib/loading-skeleton";
+import { KNOWN_AGENTS } from "../../core/detect";
+import { CURSOR_LOGIN_COMMAND } from "../../core/cursor-auth";
 
 const json = (body: unknown): Response =>
   ({
@@ -47,12 +49,12 @@ function baseAgents() {
   ];
 }
 
-function loadedConfig() {
+function loadedConfig(clis = ["opencode"]) {
   const config = useConfigStore();
   const agents = baseAgents();
   config.agents = agents;
   config.agentsMeta = {
-    clis: ["opencode"],
+    clis,
     models: ["default"],
     defaults: agents,
     skills: [{ name: "frontend-design", path: "skills/frontend-design/SKILL.md", description: "" }],
@@ -75,11 +77,12 @@ type FetchImpl = (url: string) => Promise<Response>;
 async function mountAgents(
   query = "/?tab=detected",
   fetchImpl: FetchImpl = () => new Promise<Response>(() => {}),
+  clis = ["opencode"],
 ) {
   vi.stubGlobal("fetch", vi.fn(fetchImpl));
   const pinia = createPinia();
   setActivePinia(pinia);
-  loadedConfig();
+  loadedConfig(clis);
   const router = createRouter({
     history: createMemoryHistory(),
     routes: [{ path: "/", component: { template: "<div />" } }],
@@ -115,32 +118,15 @@ afterEach(() => {
 });
 
 describe("AgentsView detected-tab loading (#0950)", () => {
-  it.each([
-    {
-      auth: true,
-      label: "ready",
-      hint: "",
-    },
-    {
-      auth: false,
-      label: "sign-in required",
-      hint: "cursor-agent login   (or export CURSOR_API_KEY=<key>)",
-    },
-  ])(
-    "distinguishes Cursor CLI auth=$auth from RepoOS account state",
-    async ({ auth, label, hint }) => {
+  it.each([{ auth: true }, { auth: false }])(
+    "shows the correct Cursor CLI state when auth=$auth",
+    async ({ auth }) => {
       const cursor = {
-        id: "cursor",
-        name: "cursor agent",
-        cli: "cursor",
-        binary: "cursor-agent",
+        ...KNOWN_AGENTS.find((agent) => agent.id === "cursor")!,
         installed: true,
         path: "/usr/local/bin/cursor-agent",
         version: "2026.09.15",
         headless: true,
-        drivable: true,
-        installHint: "",
-        authHint: "cursor-agent login   (or export CURSOR_API_KEY=<key>)",
         auth,
       };
       const wrapper = await mountAgents("/?tab=detected", async (url) => {
@@ -149,13 +135,45 @@ describe("AgentsView detected-tab loading (#0950)", () => {
         return new Promise<Response>(() => {});
       });
       const row = detectedPanel(wrapper).find(".detect-row");
-      expect(row.text()).toContain(label);
-      expect(row.text()).toContain(hint);
-      expect(wrapper.text()).not.toContain("RepoOS account");
-      expect(wrapper.text()).not.toContain("<secret>");
+      if (auth) {
+        expect(row.find(".detect-pill").text()).toBe("ready");
+        expect(row.find(".detect-hint-code").exists()).toBe(false);
+      } else {
+        expect(row.find(".detect-pill").text()).toBe("sign-in required");
+        expect(row.find(".detect-hint-code").text()).toContain(CURSOR_LOGIN_COMMAND);
+        expect(row.find(".detect-copy").exists()).toBe(true);
+      }
       wrapper.unmount();
     },
   );
+
+  it("renders the default-agents model notice with safe Cursor login guidance", async () => {
+    const modelError = `Cursor Agent authentication required — run \`${CURSOR_LOGIN_COMMAND}\` and retry.`;
+    const wrapper = await mountAgents(
+      "/",
+      async (url) => {
+        if (String(url).includes("/api/models?cli=cursor"))
+          return json({
+            byCli: {
+              cursor: {
+                supported: true,
+                models: ["default"],
+                refreshable: true,
+                error: modelError,
+              },
+            },
+            at: null,
+          });
+        return new Promise<Response>(() => {});
+      },
+      ["cursor"],
+    );
+    const notice = wrapper.find('[data-testid="agents-model-failure"]');
+    expect(notice.exists()).toBe(true);
+    expect(notice.text()).toContain("Couldn't load models");
+    expect(notice.text()).toContain(CURSOR_LOGIN_COMMAND);
+    wrapper.unmount();
+  });
 
   it("shows the shared skeleton instead of a Probing PATH line", async () => {
     vi.useFakeTimers();

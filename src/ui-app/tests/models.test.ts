@@ -18,6 +18,7 @@ import {
   MODEL_CACHE_TTL_MS,
 } from "../../core/models";
 import { AGENT_MODELS } from "../../core/config";
+import { CURSOR_LOGIN_COMMAND } from "../../core/cursor-auth";
 import { startServer } from "../../server/server";
 
 /** Fake `opencode`: records its argv to a log, prints env-provided models. */
@@ -409,6 +410,30 @@ describe("last-good fallback", () => {
       expect(res.opencode.error).toContain("timed out");
     } finally {
       process.env.PATH = old2;
+    }
+  });
+});
+
+describe("cursor adapter", () => {
+  it("replaces raw CLI auth stderr with safe cursor-agent login guidance", async () => {
+    const root = tmpDir();
+    const bin = join(root, "bin");
+    mkdirSync(bin, { recursive: true });
+    writeFileSync(
+      join(bin, "cursor-agent"),
+      `#!/usr/bin/env node\nprocess.stderr.write("ERROR: Not authenticated. Run 'agent login'. CURSOR_API_KEY=sk_test_123456\\n");\nprocess.exit(1);\n`,
+      { mode: 0o755 },
+    );
+    const old = prependPath(bin);
+    try {
+      const res = await listModelSources({ clis: ["cursor"], cwd: tmpDir(), refresh: true });
+      expect(res.cursor.models).toEqual(["default"]);
+      expect(res.cursor.error).toBe(
+        `Cursor Agent authentication required — run \`${CURSOR_LOGIN_COMMAND}\` and retry.`,
+      );
+      expect(res.cursor.error).not.toContain("sk_test_123456");
+    } finally {
+      process.env.PATH = old;
     }
   });
 });
