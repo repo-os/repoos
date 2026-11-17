@@ -14,14 +14,6 @@ import {
 } from "../src/stores/notifications";
 import type { AttentionKind } from "../../core/attention.js";
 
-/**
- * `reminderDue` is a UI-local kind (the reminders store), never served by
- * `GET /api/attention`; every other bell kind must be a server AttentionKind.
- */
-function isAttentionServed(kind: string): boolean {
-  return kind !== "reminderDue";
-}
-
 describe("attention kind UI registries", () => {
   it("registers every bell-surfaced attention kind in all four registries", () => {
     expect(ATTENTION_NOTICE_KINDS.size).toBeGreaterThan(0);
@@ -50,7 +42,9 @@ describe("attention kind UI registries", () => {
 
   it("keeps every attention-served bell kind a valid server AttentionKind", () => {
     for (const kind of ATTENTION_NOTICE_KINDS) {
-      if (!isAttentionServed(kind)) continue;
+      // `reminderDue` is a UI-local kind (the reminders store), never served
+      // by GET /api/attention. The === guard also narrows the union below.
+      if (kind === "reminderDue") continue;
       // Compile-time: every UI bell kind that comes from the attention feed
       // must be assignable to the server's attention union, so a UI-only
       // spelling cannot drift from the feed.
