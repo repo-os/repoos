@@ -674,6 +674,7 @@ final class HubAppState: ObservableObject {
                 entry.groupName = normalizedGroup
                 entry.isPinned = draft.isPinned
                 try store.upsertEntry(entry, in: &document)
+                volatileHealthByServerID.removeValue(forKey: entry.id)
                 publishEntries()
                 selectedServerID = entry.id
                 document.lastSelectedServerID = entry.id
@@ -732,6 +733,7 @@ final class HubAppState: ObservableObject {
             )
         }
         publishEntries()
+        attentionCoordinator.updateHealth(entries: entries)
 
         if selectedServerID == id, case .failure(let failure) = outcome {
             lastConnectionMessage = failure.userMessage

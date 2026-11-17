@@ -16,6 +16,29 @@ final class HubCrossServerTaskSearchTests: XCTestCase {
 
         try? await Task.sleep(nanoseconds: 100_000_000)
         XCTAssertFalse(engine.isSearching)
+        XCTAssertTrue(engine.remoteResults.isEmpty)
+        XCTAssertTrue(engine.serverLines.isEmpty)
+    }
+
+    @MainActor
+    func testCancelClearsCompletedSearchRowsBeforePaletteReopens() async {
+        let client = StubHubTaskSearchClient(result: .failure(.unauthorized))
+        let keychain = InMemoryHubCapabilityStore()
+        let entry = makeEntry(searchEnabled: true)
+        try? keychain.saveToken(serverID: entry.id, origin: entry.originString, token: "roh_test")
+        let engine = HubCrossServerTaskSearchEngine(client: client, keychain: keychain)
+        engine.configure(entries: [entry])
+
+        engine.scheduleSearch(query: "privacy")
+        try? await Task.sleep(nanoseconds: 500_000_000)
+        XCTAssertFalse(engine.serverLines.isEmpty)
+
+        engine.cancel()
+        engine.configure(entries: [entry])
+
+        XCTAssertTrue(engine.remoteResults.isEmpty)
+        XCTAssertTrue(engine.serverLines.isEmpty)
+        XCTAssertFalse(engine.isSearching)
     }
 
     @MainActor

@@ -63,6 +63,8 @@ final class HubCrossServerTaskSearchEngine: ObservableObject {
     func cancel() {
         currentQuery = nil
         cancelWork()
+        remoteResults = []
+        serverLines = []
     }
 
     private func cancelWork() {

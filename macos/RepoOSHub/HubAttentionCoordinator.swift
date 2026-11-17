@@ -61,6 +61,11 @@ final class HubAttentionCoordinator: HubAttentionCoordinating, ObservableObject 
         }
     }
 
+    func updateHealth(entries: [ServerEntry]) {
+        self.entries = entries
+        updateDockBadge()
+    }
+
     func setSelectedServerID(_ id: UUID?) {
         selectedServerID = id
         if let id {

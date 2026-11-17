@@ -183,6 +183,53 @@ final class HubRecentsRetentionTests: XCTestCase {
     }
 
     @MainActor
+    func testEditingServerAfterStartupHealthSweepClearsVolatileHealthOverlay() async throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("hub-edit-after-health-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        let store = ServerRegistryStore(directoryURL: directory)
+        let entry = ServerEntry(
+            name: "Old name",
+            origin: URL(string: "http://127.0.0.1:7171")!,
+            lastHealth: .healthy
+        )
+        var document = ServerRegistryDocument()
+        try store.upsertEntry(entry, in: &document)
+        try store.save(document)
+
+        let state = HubAppState(
+            store: store,
+            healthChecker: SequencedHealthChecker([
+                .failure(.network("Offline")),
+                .success(projectName: "New name"),
+            ]),
+            attentionCoordinator: HubAttentionCoordinator()
+        )
+        await state.refreshAllHealth()
+        XCTAssertEqual(state.entries.first?.lastHealth, .unreachable)
+
+        let error = await state.saveFromEditor(
+            ServerEditorDraft(
+                mode: .edit(entry),
+                name: "New name",
+                originText: "http://127.0.0.1:7171",
+                groupName: "",
+                accentColorHex: "",
+                iconSymbolName: "",
+                isPinned: false
+            )
+        )
+
+        XCTAssertNil(error)
+        XCTAssertEqual(state.entries.first?.name, "New name")
+        XCTAssertEqual(state.entries.first?.lastHealth, .healthy)
+        XCTAssertEqual(try store.load().entries.first?.name, "New name")
+        XCTAssertEqual(try store.load().entries.first?.lastHealth, .healthy)
+    }
+
+    @MainActor
     func testHealthRefreshNamesLegacyAddressEntriesFromTheirRepository() async throws {
         let directory = FileManager.default.temporaryDirectory
             .appendingPathComponent("hub-legacy-name-\(UUID().uuidString)", isDirectory: true)
@@ -268,5 +315,20 @@ private struct StubHealthChecker: HealthChecking {
 private struct OfflineHealthChecker: HealthChecking {
     func checkHealth(origin: URL) async -> HealthCheckOutcome {
         .failure(.network("Offline"))
+    }
+}
+
+private final class SequencedHealthChecker: HealthChecking, @unchecked Sendable {
+    private let lock = NSLock()
+    private var outcomes: [HealthCheckOutcome]
+
+    init(_ outcomes: [HealthCheckOutcome]) {
+        self.outcomes = outcomes
+    }
+
+    func checkHealth(origin: URL) async -> HealthCheckOutcome {
+        lock.lock()
+        defer { lock.unlock() }
+        return outcomes.isEmpty ? .failure(.network("No test outcome")) : outcomes.removeFirst()
     }
 }
