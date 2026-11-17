@@ -2,7 +2,7 @@
 id: "1156"
 title: "Hub Android: dev build update channel - new dev builds reach the phone from any network with one tap (no adb)"
 type: feature
-status: active
+status: review
 priority: p1
 area: [mobile, infra]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/hub-android-dev-build-update-channel-new
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T14:48:18Z"
-updated_at: "2026-11-17T16:35:38Z"
+updated_at: "2026-11-17T16:42:57Z"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/check-reuse.test.ts > handoff self-check reuse > CLI records clean self-check proof, partial=false on bee — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: 193603658d88ea0dffd3c94adece5320a207a1c8
 handoff_signal_retry_count: 2
@@ -73,3 +73,4 @@ Follow the same shape as Tiao's implementation so all of Nick's apps behave iden
 - 2026-11-17T16:30:38Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-17T16:33:31Z · message_delivered: 2 message(s)
 - 2026-11-17T16:35:38Z · CTO nudge: held — handoff gate is running
+- 2026-11-17T16:42:57Z · status active→review
