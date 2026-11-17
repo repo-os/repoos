@@ -95,7 +95,7 @@ describe("repoos servers --tailscale", () => {
 
     expect(result.servers).toEqual([]);
     expect(remoteExec).toHaveBeenCalledTimes(1);
-    expect(remoteExec).toHaveBeenCalledWith("bee", "root", 4_000, "repoos servers --json");
+    expect(remoteExec).toHaveBeenCalledWith("bee", "root", 8_000, "repoos servers --json");
   });
 
   it("probes duplicate-HostName peers individually by MagicDNS name", async () => {
@@ -175,7 +175,7 @@ describe("repoos servers --tailscale", () => {
       { host: "slow", unreachable: true, reason: "timed out" },
     ]);
     expect(remoteExec).toHaveBeenCalledTimes(2);
-    expect(remoteExec).toHaveBeenCalledWith("fast", "root", 4_000, "repoos servers --json");
+    expect(remoteExec).toHaveBeenCalledWith("fast", "root", 8_000, "repoos servers --json");
   });
 
   it("falls back to configured hosts when the Tailscale CLI is unavailable", async () => {
@@ -190,7 +190,7 @@ describe("repoos servers --tailscale", () => {
     expect(result.tailscaleUnavailable).toBe(true);
     expect(result.source).toBe("configured-hosts");
     expect(result.servers).toEqual([{ port: 7499, host: "bee" }]);
-    expect(remoteExec).toHaveBeenCalledWith("bee", "root", 4_000, "repoos servers --json");
+    expect(remoteExec).toHaveBeenCalledWith("bee", "root", 8_000, "repoos servers --json");
   });
 
   it("reports local-only when the Tailscale CLI and the configured pool are both absent", async () => {
@@ -227,8 +227,8 @@ describe("repoos servers --tailscale", () => {
       remoteExec,
     });
     expect(result.servers).toEqual([]);
-    expect(remoteExec).toHaveBeenCalledWith("bee", "operator", 4_000, "repoos servers --json");
-    expect(remoteExec).toHaveBeenCalledWith("mini", "nick", 4_000, "repoos servers --json");
+    expect(remoteExec).toHaveBeenCalledWith("bee", "operator", 8_000, "repoos servers --json");
+    expect(remoteExec).toHaveBeenCalledWith("mini", "nick", 8_000, "repoos servers --json");
     expect(serversSshArgs("bee", "operator", 4_000)).toEqual([
       "-o",
       "BatchMode=yes",

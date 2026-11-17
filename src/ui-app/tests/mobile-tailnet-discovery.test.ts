@@ -99,7 +99,7 @@ describe("mobile tailnet discovery", () => {
     expect(merged.some((entry) => entry.name === "nightly-again")).toBe(false);
   });
 
-  it("marks custom-domain projects saved by a unique project name without matching failures by project alias", () => {
+  it("marks reachable and unreachable custom-domain projects saved by a unique project name", () => {
     const rows: TailnetServer[] = [
       {
         host: "bee",
@@ -116,8 +116,8 @@ describe("mobile tailnet discovery", () => {
     expect(merged[0]).toMatchObject({ saved: true, selectable: false, note: "Already saved" });
     expect(merged[1]).toMatchObject({
       host: "thinkpad",
-      saved: false,
-      note: "Unreachable — timed out",
+      saved: true,
+      note: "Already saved",
     });
   });
 

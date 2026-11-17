@@ -279,7 +279,7 @@ describe("GET /api/servers/tailnet", () => {
     expect(payload.tailscaleUnavailable).toBe(true);
     expect(payload.discoverySource).toBe("configured-hosts");
     expect(payload.servers).toEqual([]);
-    expect(remoteExec).toHaveBeenCalledWith("bee", "root", 4_000, "repoos servers --json");
+    expect(remoteExec).toHaveBeenCalledWith("bee", "root", 8_000, "repoos servers --json");
   });
 
   it("omits opted-out sibling projects from local tailnet results", async () => {
