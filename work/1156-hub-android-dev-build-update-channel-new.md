@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 1613630
-last_close_out_gate_at: "2026-11-17T17:39:32.650Z"
 id: "1156"
 title: "Hub Android: dev build update channel - new dev builds reach the phone from any network with one tap (no adb)"
 type: feature
-status: review
+status: done
 priority: p1
 area: [mobile, infra]
+merged_commit: 9d03c74cab4bb16c35cbd377d4e5fb2a3e49cc88
 assigned_to: ai
 created_by: t@t
 branch: feat/hub-android-dev-build-update-channel-new
@@ -14,6 +13,8 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T14:48:18Z"
 updated_at: "2026-11-17T17:39:32Z"
+last_close_out_gate_ms: 1613630
+last_close_out_gate_at: "2026-11-17T17:39:32.650Z"
 review_passes: 3
 review_rounds: 2
 handoff_signal_retry_count: 2

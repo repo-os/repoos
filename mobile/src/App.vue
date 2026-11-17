@@ -36,11 +36,17 @@ import AddServerView from "./components/AddServerView.vue";
 import TailnetDiscoveryView from "./components/TailnetDiscoveryView.vue";
 import BottomSheet from "./components/BottomSheet.vue";
 import LockOverlay from "./components/LockOverlay.vue";
-import { resolveShellPlatform } from "./platform";
+import { loadHubDevUpdateConfig, resolveShellPlatform } from "./platform";
 import { fixtureInitialRoute, readHubFixture } from "./fixture";
 import { impactHeavy } from "./haptics";
 import { installHubBackButton, type HubRoute } from "./back-navigation";
 import type { AppearanceMode, DesignThemeId } from "./theme";
+import {
+  checkForDevUpdate,
+  openDevUpdateApk,
+  snoozeDevUpdate,
+  type DevUpdateManifest,
+} from "./dev-updates";
 
 type Route = HubRoute;
 
@@ -57,6 +63,9 @@ const formValidating = ref(false);
 const lockOpen = ref(false);
 const platform = ref(resolveShellPlatform());
 const appVersion = "0.1.0";
+const installedCommit = ref("unknown");
+const devUpdate = ref<DevUpdateManifest | null>(null);
+const devUpdateEnabled = ref(false);
 
 const sheetOpen = computed(() => sheetServer.value !== null);
 
@@ -93,6 +102,13 @@ onMounted(async () => {
   if (initial === "discover") route.value = "discover";
 
   await init();
+  const updateConfig = await loadHubDevUpdateConfig();
+  installedCommit.value = updateConfig.installedCommit;
+  devUpdateEnabled.value = updateConfig.enabled;
+  if (devUpdateEnabled.value)
+    void checkForDevUpdate().then((update) => {
+      devUpdate.value = update;
+    });
   if (initial === "discover") await discoverTailnet();
   onBrowserEvents({ closed: () => undefined });
   if (lockSettings.value.enabled && lockSettings.value.scope === "reopen") {
@@ -110,6 +126,15 @@ async function gateLock(_serverId: string | null): Promise<boolean> {
   const ok = await verifyWithDeviceLock("Unlock RepoOS Hub to continue");
   lockOpen.value = false;
   return ok;
+}
+
+async function checkDevUpdatesNow() {
+  devUpdate.value = await checkForDevUpdate(true);
+}
+
+async function deferDevUpdate() {
+  await snoozeDevUpdate();
+  devUpdate.value = null;
 }
 
 async function onSelect(server: ServerEntry) {
@@ -273,6 +298,9 @@ async function onLockScope(scope: "reopen" | "server") {
         :lock-supported="lockSupported"
         :platform="platform"
         :app-version="appVersion"
+        :dev-update-enabled="devUpdateEnabled"
+        :installed-commit="installedCommit"
+        @check-dev-updates="checkDevUpdatesNow"
         @back="backToPicker"
         @update:design-theme="onDesignTheme"
         @update:appearance-mode="onAppearanceMode"
@@ -295,6 +323,25 @@ async function onLockScope(scope: "reopen" | "server") {
         @submit="submitAdd"
       />
     </main>
+
+    <div v-if="devUpdate" class="update-backdrop" role="presentation">
+      <section
+        class="update-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="dev-update-title"
+      >
+        <h2 id="dev-update-title">A new dev build is available</h2>
+        <p>Commit {{ devUpdate.commit.slice(0, 7) }}</p>
+        <ul v-if="devUpdate.notes.length">
+          <li v-for="note in devUpdate.notes" :key="note">{{ note }}</li>
+        </ul>
+        <div class="update-actions">
+          <button type="button" class="btn-primary" @click="openDevUpdateApk">Download now</button>
+          <button type="button" class="btn-ghost" @click="deferDevUpdate">Later</button>
+        </div>
+      </section>
+    </div>
 
     <BottomSheet :open="sheetOpen" title="Edit server" @close="closeSheet">
       <label class="field sheet-field">

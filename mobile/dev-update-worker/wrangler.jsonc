@@ -1,0 +1,9 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "repoos-hub-dev-updates",
+  "main": "index.ts",
+  "compatibility_date": "2026-11-17",
+  "workers_dev": false,
+  "routes": [{ "pattern": "hub-dev-updates.repoos.org/*", "zone_name": "repoos.org" }],
+  "r2_buckets": [{ "binding": "UPDATES", "bucket_name": "repoos-hub-dev-updates" }]
+}
