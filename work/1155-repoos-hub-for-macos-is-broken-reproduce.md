@@ -33,9 +33,14 @@ Launching the Mac app shows the server list; saved servers show Reachable/Unreac
 
 Read macos/README.md and the 'RepoOS Hub for macOS' section of README.md first. Do not edit repoos.toml. If the app cannot be launched headlessly in this environment, build it, run the unit tests, and write precise manual steps for Nick instead of claiming it works.
 
+## Screenshots
+
+![Nick's screenshot of the broken macOS Hub: light sidebar on a dark window, server names invisible except the selected row](/api/tasks/1155/attachments/att_7383208d-4f73-4967-9355-0e0d11482757.webp)
+
 ## Activity
 
 - 2026-11-17T14:36:24Z · created · t@t
 - 2026-11-17T14:36:27Z · cli_override, model_override
 - 2026-11-17T14:36:29Z · status inbox→ready
 - 2026-11-17T14:36:30Z · status ready→active, branch
+- 2026-11-17T14:38:47Z · screenshots
