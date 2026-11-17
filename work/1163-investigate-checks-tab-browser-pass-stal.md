@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: t@t
 branch: ""
 created_at: "2026-11-17T17:53:05Z"
-updated_at: "2026-11-17T17:54:02Z"
+updated_at: "2026-11-17T17:54:07Z"
 ---
 During task #1157 responsive QA, a Playwright pass attempted to visit Checks tabs Now, Runs, Test Suite and Check Plan across 1440, 390 and 320px in both themes. It captured the Now tab at 390px, then the repeated interaction/screenshot run slowed and was stopped before the other tabs were verified. The default Checks route works and rendered without a page exception in the main screenshot matrix, so this report does not establish a product regression. Reproduce tab navigation directly and determine whether the stall is in the app or in repeated screenshot capture; if a product issue reproduces, fix it with a regression test. Evidence attached.
 
@@ -24,6 +24,9 @@ All Checks tabs can be navigated and inspected at desktop and phone widths witho
 
 ## Acceptance criteria
 Reproduce direct tab clicks and page navigation without repeated screenshots. Verify Now, Runs, Test Suite and Check Plan at representative desktop and narrow widths. Determine whether the stall is in the app or the browser capture harness. Fix and add a regression test if an app defect reproduces; otherwise document that conclusion.
+
+## Notes for AI
+Screenshot shows the Checks Now tab at 390px. The attempt captured the main page successfully, then slowed while iterating other tabs and screenshots. Treat this as a report of an incomplete pass until direct interaction reproduces an app fault.
 
 ## Screenshots
 
@@ -37,3 +40,4 @@ Reproduce direct tab clicks and page navigation without repeated screenshots. Ve
 - 2026-11-17T17:53:52Z · body: Problem (added)
 - 2026-11-17T17:53:57Z · body: Desired UX (added)
 - 2026-11-17T17:54:02Z · body: Acceptance criteria (added)
+- 2026-11-17T17:54:07Z · body: Notes for AI (added)
