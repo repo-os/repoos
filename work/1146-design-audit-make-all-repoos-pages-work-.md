@@ -12,7 +12,7 @@ branch: feat/design-audit-make-all-repoos-pages-work-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T02:53:04Z"
-updated_at: "2026-11-17T05:16:57Z"
+updated_at: "2026-11-17T05:20:04Z"
 last_close_out_gate_ms: 392167
 last_close_out_gate_at: "2026-11-17T05:16:57.040Z"
 review_passes: 2
@@ -135,4 +135,4 @@ Use strong visual and product design judgment. Inspect rendered pages and theme 
 - 2026-11-17T05:08:14Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-17T05:09:32Z · close-out gate completed in 257s
 - 2026-11-17T05:16:57Z · close-out gate completed in 392s
-
+- 2026-11-17T05:20:04Z · status done→done, release:success
