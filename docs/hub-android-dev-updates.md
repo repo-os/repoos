@@ -1,33 +1,39 @@
 # RepoOS Hub Android dev updates
 
-The dev APK reads its update base URL from `VITE_HUB_DEV_UPDATE_BASE_URL` at
-Vite build time. `scripts/publish-dev.sh` reads the channel token and Cloudflare
-credentials from the ignored `.repoos/dev-update-channel.env` file, builds the
-`.dev` Android variant with that URL, and uploads `latest.apk` and
-`latest.json` to the R2 bucket `repoos-hub-dev-updates`. The Worker in
+The Android debug Gradle variant reads the channel token from the ignored
+`.repoos/dev-update-channel.env` file (or the matching process environment in
+CI) and places the URL and build commit in its generated `BuildConfig`. The
+native `HubDevUpdateConfig` plugin exposes these values to the Hub shell only
+for package `org.repoos.mobile.dev`. `just build-android`, `just deploy-phone`,
+and `just publish-dev` all use the same source, so a regular debug rebuild does
+not disable the channel. The release variant gets empty channel fields.
+
+`scripts/publish-dev.sh` builds the `.dev` variant and uploads `latest.apk` and
+`latest.json` to the private R2 bucket `repoos-hub-dev-updates`. The Worker in
 `mobile/dev-update-worker/` serves only those two objects under
-`/dev/<token>/...` and adds `X-Robots-Tag: noindex, nofollow, noarchive` to
-every response. The Worker has no listing endpoint and rejects other paths.
+`/dev/<token>/...`, adds `Access-Control-Allow-Origin: *` for the app WebView,
+and sends `X-Robots-Tag: noindex, nofollow, noarchive`. It has no listing
+endpoint and rejects other paths.
 
 ## Initial account setup
 
-Complete held human task #1158 before publishing. Configure the Cloudflare
-account ID, zone, and R2 bucket in `mobile/dev-update-worker/wrangler.jsonc` if
-they differ from the defaults, then create a Cloudflare API token scoped to
-deploy the Worker and write the R2 bucket. Generate one path token locally and
-store `REPOOS_HUB_DEV_UPDATE_TOKEN` plus `CLOUDFLARE_API_TOKEN` in
-`.repoos/dev-update-channel.env`. Put the same values, and
-`CLOUDFLARE_ACCOUNT_ID`, in the GitHub Actions repository secrets with those
-names so the automatic main-branch publisher has access. The ignored local
-file is excluded by the existing `.repoos/*` rule. Never commit or paste the
-path token or API token into chat.
+Complete held human task #1158 before publishing. Create a private R2 bucket,
+configure the Worker route/DNS in `mobile/dev-update-worker/wrangler.jsonc`,
+and create a Cloudflare API token with Worker deployment and bucket write
+permissions. Do not attach the bucket directly to a public domain: the Worker
+is the only public entry point. Generate one path token locally and store
+`REPOOS_HUB_DEV_UPDATE_TOKEN`, `CLOUDFLARE_API_TOKEN`, and
+`CLOUDFLARE_ACCOUNT_ID` in `.repoos/dev-update-channel.env`. Add those same
+three values as GitHub Actions repository secrets with the same names. The
+local file is ignored by Git. Never commit or paste secret values into chat.
 
 The workflow `.github/workflows/publish-hub-dev.yml` deploys the Worker and
 publishes a dev APK after each main push. Run `just publish-dev` on demand after
 local setup. Rotation requires updating the Worker secret, local secret file,
 and GitHub Actions secret, publishing a build containing the new path, and
-installing it before retiring the old path. The APK contains its channel URL so
-it can fetch updates; release builds do not receive this Vite variable.
+installing it before retiring the old path. The debug APK contains its channel
+URL in BuildConfig; the release variant is checked for an empty URL and the
+mobile bundle is scanned for the endpoint and configured token.
 
 ## Phone check
 

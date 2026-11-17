@@ -36,14 +36,13 @@ import AddServerView from "./components/AddServerView.vue";
 import TailnetDiscoveryView from "./components/TailnetDiscoveryView.vue";
 import BottomSheet from "./components/BottomSheet.vue";
 import LockOverlay from "./components/LockOverlay.vue";
-import { hubInstalledCommit, resolveShellPlatform } from "./platform";
+import { loadHubDevUpdateConfig, resolveShellPlatform } from "./platform";
 import { fixtureInitialRoute, readHubFixture } from "./fixture";
 import { impactHeavy } from "./haptics";
 import { installHubBackButton, type HubRoute } from "./back-navigation";
 import type { AppearanceMode, DesignThemeId } from "./theme";
 import {
   checkForDevUpdate,
-  isDevUpdateChannelEnabled,
   openDevUpdateApk,
   snoozeDevUpdate,
   type DevUpdateManifest,
@@ -64,9 +63,9 @@ const formValidating = ref(false);
 const lockOpen = ref(false);
 const platform = ref(resolveShellPlatform());
 const appVersion = "0.1.0";
-const installedCommit = hubInstalledCommit;
+const installedCommit = ref("unknown");
 const devUpdate = ref<DevUpdateManifest | null>(null);
-const devUpdateEnabled = isDevUpdateChannelEnabled();
+const devUpdateEnabled = ref(false);
 
 const sheetOpen = computed(() => sheetServer.value !== null);
 
@@ -103,7 +102,10 @@ onMounted(async () => {
   if (initial === "discover") route.value = "discover";
 
   await init();
-  if (devUpdateEnabled)
+  const updateConfig = await loadHubDevUpdateConfig();
+  installedCommit.value = updateConfig.installedCommit;
+  devUpdateEnabled.value = updateConfig.enabled;
+  if (devUpdateEnabled.value)
     void checkForDevUpdate().then((update) => {
       devUpdate.value = update;
     });
@@ -335,10 +337,8 @@ async function onLockScope(scope: "reopen" | "server") {
           <li v-for="note in devUpdate.notes" :key="note">{{ note }}</li>
         </ul>
         <div class="update-actions">
-          <button type="button" class="primary-button" @click="openDevUpdateApk">
-            Download now
-          </button>
-          <button type="button" class="secondary-button" @click="deferDevUpdate">Later</button>
+          <button type="button" class="btn-primary" @click="openDevUpdateApk">Download now</button>
+          <button type="button" class="btn-ghost" @click="deferDevUpdate">Later</button>
         </div>
       </section>
     </div>

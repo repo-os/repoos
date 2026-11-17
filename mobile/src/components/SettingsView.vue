@@ -41,21 +41,20 @@ const appearanceOptions: { id: AppearanceMode; label: string }[] = [
     </header>
 
     <div class="settings-scroll">
-      <section class="settings-group" :class="{ 'is-ios': platform === 'ios' }">
-        <div v-if="devUpdateEnabled" class="group-label">
+      <section
+        v-if="devUpdateEnabled"
+        class="settings-group"
+        :class="{ 'is-ios': platform === 'ios' }"
+      >
+        <div class="group-label">
           <Info :size="16" />
           Dev updates
         </div>
-        <div v-if="devUpdateEnabled" class="kv">
+        <div class="kv">
           <span class="kv-label">Installed commit</span>
           <span class="kv-value">{{ installedCommit }}</span>
         </div>
-        <button
-          v-if="devUpdateEnabled"
-          type="button"
-          class="settings-action"
-          @click="emit('checkDevUpdates')"
-        >
+        <button type="button" class="settings-action" @click="emit('checkDevUpdates')">
           Check now
         </button>
       </section>

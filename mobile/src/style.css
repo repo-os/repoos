@@ -860,8 +860,8 @@ select {
   width: min(100%, 420px);
   padding: 24px;
   border-radius: 20px;
-  background: var(--surface, #fff);
-  color: var(--text, #171717);
+  background: var(--panel-solid);
+  color: var(--txt);
   box-shadow: 0 20px 60px rgb(0 0 0 / 24%);
 }
 .update-dialog h2 {

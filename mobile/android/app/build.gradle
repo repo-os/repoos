@@ -39,15 +39,40 @@ def versionCodeFromName = { String name ->
 }
 def appVersionCode = (envOrProp("REPOOS_APP_VERSION_CODE", "repoosAppVersionCode") ?: versionCodeFromName(appVersionName).toString()).toInteger()
 
+// Keep the private dev channel in the debug variant's generated BuildConfig.
+// Prefer the process environment (CI) and otherwise read the ignored local
+// channel file. Nothing from that file is copied into the release variant.
+def channelValues = [:]
+def channelFile = file("$rootDir/../../.repoos/dev-update-channel.env")
+if (channelFile.isFile()) {
+    channelFile.eachLine { line ->
+        def match = line =~ /^\s*(REPOOS_HUB_DEV_UPDATE_TOKEN|REPOOS_HUB_BUILD_COMMIT)\s*=\s*(.*?)\s*$/
+        if (match.matches()) {
+            channelValues[match.group(1)] = match.group(2).replaceAll(/^['"]|['"]$/, "")
+        }
+    }
+}
+def channelToken = (System.getenv("REPOOS_HUB_DEV_UPDATE_TOKEN") ?: channelValues["REPOOS_HUB_DEV_UPDATE_TOKEN"] ?: "").trim()
+def channelCommit = (System.getenv("REPOOS_HUB_BUILD_COMMIT") ?: channelValues["REPOOS_HUB_BUILD_COMMIT"] ?: "unknown").trim()
+def channelBaseUrl = channelToken ? "https://hub-dev-updates.repoos.org/dev/${channelToken}" : ""
+def quoteBuildConfig = { String value ->
+    '"' + value.replace('\\', '\\\\').replace('"', '\\"') + '"'
+}
+
 android {
     namespace = "org.repoos.mobile"
     compileSdk = rootProject.ext.compileSdkVersion
+    buildFeatures {
+        buildConfig true
+    }
     defaultConfig {
         applicationId "org.repoos.mobile"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode appVersionCode
         versionName appVersionName
+        buildConfigField "String", "HUB_DEV_UPDATE_BASE_URL", '""'
+        buildConfigField "String", "HUB_BUILD_COMMIT", '"unknown"'
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -72,6 +97,8 @@ android {
     buildTypes {
         debug {
             applicationIdSuffix ".dev"
+            buildConfigField "String", "HUB_DEV_UPDATE_BASE_URL", quoteBuildConfig(channelBaseUrl)
+            buildConfigField "String", "HUB_BUILD_COMMIT", quoteBuildConfig(channelCommit)
         }
         release {
             if (releaseSigningConfigured) {
@@ -79,6 +106,18 @@ android {
             }
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+}
+
+// A release variant must never inherit a channel URL, even if the dev token is
+// available to the same build process.
+tasks.register("verifyNoReleaseDevChannel") {
+    doLast {
+        def configured = android.defaultConfig.buildConfigFields["HUB_DEV_UPDATE_BASE_URL"]?.value ?: '""'
+        def releaseOverride = android.buildTypes.release.buildConfigFields["HUB_DEV_UPDATE_BASE_URL"]?.value
+        if (configured != '""' || (releaseOverride != null && releaseOverride != '""')) {
+            throw new GradleException("Dev update URL is configured in the public release variant")
         }
     }
 }

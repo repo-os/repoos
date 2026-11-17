@@ -4,6 +4,7 @@ interface Env {
 }
 
 const SECURITY_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
   "X-Robots-Tag": "noindex, nofollow, noarchive",
   "Cache-Control": "no-store",
   "X-Content-Type-Options": "nosniff",

@@ -1,7 +1,6 @@
 import { InAppBrowser } from "@capacitor/inappbrowser";
 import { Preferences } from "@capacitor/preferences";
-import { Capacitor } from "@capacitor/core";
-import { hubDevUpdateBaseUrl, hubDevUpdatePackage, hubInstalledVersionCode } from "./platform";
+import { getHubDevUpdateConfig } from "./platform";
 
 export interface DevUpdateManifest {
   versionName: string;
@@ -16,16 +15,13 @@ const SNOOZED_UNTIL_KEY = "repoos.devUpdate.snoozedUntil";
 const HOUR_MS = 60 * 60 * 1000;
 
 export function isDevUpdateChannelEnabled(): boolean {
-  return (
-    Capacitor.getPlatform() === "android" &&
-    hubDevUpdatePackage === "org.repoos.mobile.dev" &&
-    Boolean(hubDevUpdateBaseUrl)
-  );
+  return getHubDevUpdateConfig().enabled;
 }
 
 export async function checkForDevUpdate(force = false): Promise<DevUpdateManifest | null> {
   if (!isDevUpdateChannelEnabled()) return null;
   try {
+    const channel = getHubDevUpdateConfig();
     const now = Date.now();
     const [checkedAt, snoozedUntil] = await Promise.all([
       Preferences.get({ key: CHECKED_AT_KEY }),
@@ -33,7 +29,7 @@ export async function checkForDevUpdate(force = false): Promise<DevUpdateManifes
     ]);
     if (!force && now - Number(checkedAt.value || 0) < HOUR_MS) return null;
     await Preferences.set({ key: CHECKED_AT_KEY, value: String(now) });
-    const response = await fetch(`${hubDevUpdateBaseUrl}/latest.json`, {
+    const response = await fetch(`${channel.baseUrl}/latest.json`, {
       cache: "no-store",
       signal: AbortSignal.timeout(8000),
     });
@@ -41,7 +37,7 @@ export async function checkForDevUpdate(force = false): Promise<DevUpdateManifes
     const manifest = (await response.json()) as DevUpdateManifest;
     if (
       !Number.isInteger(manifest.versionCode) ||
-      manifest.versionCode <= hubInstalledVersionCode ||
+      manifest.versionCode <= channel.versionCode ||
       !Array.isArray(manifest.notes)
     )
       return null;
@@ -59,7 +55,9 @@ export async function snoozeDevUpdate(): Promise<void> {
 export async function openDevUpdateApk(): Promise<void> {
   if (!isDevUpdateChannelEnabled()) return;
   try {
-    await InAppBrowser.openInExternalBrowser({ url: `${hubDevUpdateBaseUrl}/latest.apk` });
+    await InAppBrowser.openInExternalBrowser({
+      url: `${getHubDevUpdateConfig().baseUrl}/latest.apk`,
+    });
   } catch {
     // A missing browser or offline device should not interrupt app use.
   }

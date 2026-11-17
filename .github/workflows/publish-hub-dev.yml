@@ -38,6 +38,7 @@ jobs:
           REPOOS_HUB_DEV_UPDATE_TOKEN: ${{ secrets.REPOOS_HUB_DEV_UPDATE_TOKEN }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          REPOOS_DEV_UPDATE_BASE_SHA: ${{ github.event.before }}
         run: |
           set -euo pipefail
           if [[ -z "$REPOOS_HUB_DEV_UPDATE_TOKEN" || -z "$CLOUDFLARE_API_TOKEN" || -z "$CLOUDFLARE_ACCOUNT_ID" ]]; then

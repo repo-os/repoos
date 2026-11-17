@@ -13,6 +13,7 @@ env -u VITE_HUB_DEV_UPDATE_BASE_URL \
   -u VITE_HUB_BUILD_COMMIT \
   -u VITE_HUB_VERSION_CODE \
   bun run build
+bun run sync
 if rg -Fq "hub-dev-updates.repoos.org" www; then
   echo "Dev update endpoint leaked into the release web bundle." >&2
   exit 1
@@ -32,4 +33,6 @@ if [ -n "${REPOOS_HUB_DEV_UPDATE_TOKEN:-}" ]; then
     exit 1
   fi
 fi
+cd android
+./gradlew verifyNoReleaseDevChannel
 echo "Release web bundle has no dev update endpoint."

@@ -1,11 +1,39 @@
-import { Capacitor } from "@capacitor/core";
+import { Capacitor, registerPlugin } from "@capacitor/core";
 
-// Vite only receives this value when the dev APK publish script sources the
-// ignored channel configuration. Release builds therefore contain no URL.
-export const hubDevUpdateBaseUrl = import.meta.env.VITE_HUB_DEV_UPDATE_BASE_URL ?? "";
-export const hubDevUpdatePackage = import.meta.env.VITE_HUB_DEV_UPDATE_PACKAGE ?? "";
-export const hubInstalledCommit = import.meta.env.VITE_HUB_BUILD_COMMIT ?? "unknown";
-export const hubInstalledVersionCode = Number(import.meta.env.VITE_HUB_VERSION_CODE ?? 0);
+interface HubDevUpdateConfig {
+  enabled: boolean;
+  baseUrl: string;
+  installedCommit: string;
+  versionCode: number;
+}
+
+interface HubDevUpdateConfigPlugin {
+  getConfig(): Promise<HubDevUpdateConfig>;
+}
+
+const DevUpdateConfig = registerPlugin<HubDevUpdateConfigPlugin>("HubDevUpdateConfig");
+const emptyDevUpdateConfig: HubDevUpdateConfig = {
+  enabled: false,
+  baseUrl: "",
+  installedCommit: "unknown",
+  versionCode: 0,
+};
+let devUpdateConfig = emptyDevUpdateConfig;
+
+export async function loadHubDevUpdateConfig(): Promise<HubDevUpdateConfig> {
+  if (Capacitor.getPlatform() !== "android") return emptyDevUpdateConfig;
+  try {
+    const config = await DevUpdateConfig.getConfig();
+    devUpdateConfig = config.enabled ? config : emptyDevUpdateConfig;
+  } catch {
+    devUpdateConfig = emptyDevUpdateConfig;
+  }
+  return devUpdateConfig;
+}
+
+export function getHubDevUpdateConfig(): HubDevUpdateConfig {
+  return devUpdateConfig;
+}
 
 export type ShellPlatform = "ios" | "android" | "web";
 
