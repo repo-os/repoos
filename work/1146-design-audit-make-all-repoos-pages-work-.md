@@ -11,7 +11,7 @@ branch: feat/design-audit-make-all-repoos-pages-work-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T02:53:04Z"
-updated_at: "2026-11-17T03:11:34Z"
+updated_at: "2026-11-17T03:14:34Z"
 ---
 ## Problem
 The phone experience across RepoOS pages needs a coherent design review: headings shift, unnecessary explanatory text consumes space, cards and controls feel dense, and some layers are difficult to read. The five attached screenshots show examples, including Mission Control, More, Stories, Work queue and task detail.
@@ -45,3 +45,4 @@ Use strong visual and product design judgment. Inspect rendered pages and theme 
 - 2026-11-17T02:53:57Z · status ready→active, branch
 - 2026-11-17T03:10:30Z · body
 - 2026-11-17T03:11:34Z · message_queued at 2026-11-17T03:11:34.656Z
+- 2026-11-17T03:14:34Z · CTO nudge: held — an undelivered message is already queued
