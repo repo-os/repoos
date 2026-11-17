@@ -3,6 +3,9 @@ id: "1160"
 title: "Remote validation: let any project run its own check command on runners"
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: "`needs some work` — Docker hosts silently pass: repoos-ci's `bash -lc` entrypoint swallows the extra `bash -lc` argv, so the project gate n…"
 priority: p1
 area: core
 assigned_to: ai
@@ -113,3 +116,4 @@ Context: Nick's Tiao board on host bee (16 cores, encrypted btrfs, 3 projects) s
 - 2026-11-17T21:07:48Z · status active→review
 - 2026-11-17T21:07:49Z · message_queued at 2026-11-17T21:07:49.109Z
 - 2026-11-17T21:19:36Z · note: review pass 3: needs some work
+- 2026-11-17T21:19:36Z · needs_input
