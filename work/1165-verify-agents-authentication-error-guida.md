@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-11-17T21:47:43Z"
-review_passes: 2
+last_close_out_gate_ms: 1211892
+last_close_out_gate_at: "2026-11-17T22:38:08.018Z"
 id: "1165"
 title: Verify Agents authentication error guidance
 type: bug
@@ -13,6 +13,8 @@ branch: feat/verify-agents-authentication-error-guida
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T17:53:39Z"
+updated_at: "2026-11-17T22:38:08Z"
+review_passes: 2
 handoff_signal_retry_count: 2
 review_rounds: 1
 ---
@@ -63,4 +65,5 @@ The attached screenshot shows the unconfigured local CLI state only; do not trea
 - 2026-11-17T21:42:39Z · message_queued at 2026-11-17T21:42:39.968Z
 - 2026-11-17T21:42:40Z · note: shots: skipped — the diff (11 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-17T21:47:43Z · note: review pass 2: good to go
+- 2026-11-17T22:38:08Z · close-out gate completed in 1212s
 
