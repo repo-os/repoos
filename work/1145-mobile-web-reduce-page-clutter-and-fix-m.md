@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/mobile-web-reduce-page-clutter-and-fix-m
 created_at: "2026-11-17T02:52:23Z"
-updated_at: "2026-11-17T04:09:33Z"
+updated_at: "2026-11-17T04:44:32Z"
 last_close_out_gate_ms: 526758
 last_close_out_gate_at: "2026-11-17T04:08:01.079Z"
 review_passes: 1
@@ -100,3 +100,4 @@ On a phone, page headings and content start at a consistent left edge, essential
 - 2026-11-17T03:35:46Z · note: review pass 1: good to go
 - 2026-11-17T04:08:01Z · close-out gate completed in 527s
 - 2026-11-17T04:09:33Z · status done→done, release:success
+- 2026-11-17T04:44:32Z · message_dropped: 1 queued message(s) discarded — task is done
