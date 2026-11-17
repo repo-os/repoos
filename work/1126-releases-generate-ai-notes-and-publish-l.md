@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/releases-generate-ai-notes-and-publish-l
 created_at: "2026-11-15T08:14:22Z"
-updated_at: "2026-11-17T00:34:34Z"
+updated_at: "2026-11-17T00:35:31Z"
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-11-17T00:29:34.833Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -44,6 +44,33 @@ In the Releases page 'cut a release' panel:
 
 Reuse the existing AI-draft run in ReleasesView.vue and the server release run; do not add a second release path. Auto-publish is an outward-facing action, so it must go through every check the manual Publish does and must be cancellable. Follow AGENTS.md UI conventions (shared dialogs, Teleport, no native confirm).
 
+## Shots
+```json
+[
+{
+  "label": "Generate with AI opens the when-ready chooser",
+  "target": "default",
+  "route": "/releases?drawer=cut",
+  "selector": "[data-test-id=\"release-generate-notes\"]",
+  "highlight": ".rel-whenready",
+  "steps": [
+    {
+      "click": "[data-test-id=\"release-generate-notes\"]"
+    },
+    {
+      "waitMs": 400
+    }
+  ]
+},
+{
+  "label": "Generate notes and publish shortcut in the release panel",
+  "target": "default",
+  "route": "/releases?drawer=cut",
+  "highlight": "[data-test-id=\"release-generate-and-publish\"]"
+}
+]
+```
+
 ## Activity
 
 - 2026-11-15T08:14:22Z · created · t@t
@@ -68,3 +95,4 @@ Reuse the existing AI-draft run in ReleasesView.vue and the server release run; 
 - 2026-11-17T00:30:37Z · watchdog: active-without-engineer recovery failed — This worktree already has a recorded live engineer for task #1126 (pid 57100)
 - 2026-11-17T00:33:47Z · body
 - 2026-11-17T00:34:34Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-17T00:35:31Z · body
