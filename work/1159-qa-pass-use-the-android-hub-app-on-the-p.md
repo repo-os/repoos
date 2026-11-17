@@ -2,7 +2,7 @@
 id: "1159"
 title: "QA pass: use the Android Hub app on the phone, find broken things and fix them"
 type: bug
-status: inbox
+status: ready
 priority: p1
 area: mobile
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: ""
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T15:51:18Z"
-updated_at: "2026-11-17T15:51:34Z"
+updated_at: "2026-11-17T15:51:38Z"
 ---
 ## Problem
 
@@ -36,3 +36,4 @@ Use just deploy-phone only if the saved port works; otherwise do not ask Nick fo
 
 - 2026-11-17T15:51:18Z · created · t@t
 - 2026-11-17T15:51:34Z · cli_override, model_override
+- 2026-11-17T15:51:38Z · status inbox→ready
