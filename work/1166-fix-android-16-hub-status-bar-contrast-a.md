@@ -12,7 +12,7 @@ branch: feat/fix-android-16-hub-status-bar-contrast-a
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T17:55:45Z"
-updated_at: "2026-11-17T20:08:37Z"
+updated_at: "2026-11-17T20:08:58Z"
 last_close_out_gate_ms: 1236372
 last_close_out_gate_at: "2026-11-17T20:08:23.149Z"
 review_passes: 2
@@ -89,3 +89,4 @@ This issue was observed on Android 16 (API 36), target SDK 36, with Android Syst
 - 2026-11-17T19:26:55Z · note: review pass 2: good to go
 - 2026-11-17T20:08:23Z · close-out gate completed in 1236s
 - 2026-11-17T20:08:37Z · status done→done, release:success
+- 2026-11-17T20:08:58Z · message_dropped: 1 queued message(s) discarded — task is done
