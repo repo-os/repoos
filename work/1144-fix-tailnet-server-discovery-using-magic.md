@@ -12,6 +12,7 @@ created_by: t@t
 branch: feat/fix-tailnet-server-discovery-using-magic
 created_at: "2026-11-17T02:38:50Z"
 updated_at: "2026-11-17T03:01:08Z"
+incomplete_review_retries: 1
 ---
 ## Problem
 On the RepoOS server running on Air, repoos servers --tailscale reports Peck’s Mac mini and Nothing Phone (3a) as invalid hostnames and tries to resolve omarchy instead of the MagicDNS names bee and thinkpad. Tailscale status shows duplicate HostName omarchy entries with distinct DNSName values bee.tailc0c173.ts.net and thinkpad.tailc0c173.ts.net; the Mac mini has a display HostName with spaces and punctuation but DNSName mini.tailc0c173.ts.net. This prevents terminal discovery and may explain missing Hub discovery results.
@@ -39,3 +40,4 @@ Start with src/core/tailnet-servers.ts: peer identity currently prefers HostName
 - 2026-11-17T02:57:20Z · message_queued at 2026-11-17T02:57:20.730Z
 - 2026-11-17T02:57:20Z · note: shots: skipped — Docs site skipped: no docs shot declared
 - 2026-11-17T03:01:08Z · note: review pass 1: incomplete — no verdict in report
+
