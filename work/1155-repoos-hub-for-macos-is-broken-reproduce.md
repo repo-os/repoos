@@ -55,3 +55,4 @@ Read macos/README.md and the 'RepoOS Hub for macOS' section of README.md first. 
 - 2026-11-17T14:55:42Z · body
 - 2026-11-17T14:58:41Z · status active→review
 - 2026-11-17T14:58:41Z · message_queued at 2026-11-17T14:58:41.855Z
+- 2026-11-17T14:58:41Z · note: shots: skipped — the diff (10 changed paths) touches no capture target's globs — no UI change to capture
