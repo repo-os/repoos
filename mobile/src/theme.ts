@@ -4,7 +4,7 @@
  */
 import { Preferences } from "@capacitor/preferences";
 import { StatusBar, Style as StatusBarStyle } from "@capacitor/status-bar";
-import { Capacitor } from "@capacitor/core";
+import { Capacitor, registerPlugin } from "@capacitor/core";
 import {
   APPEARANCE_KEY,
   DESIGN_KEY,
@@ -21,14 +21,26 @@ import {
 
 export * from "./theme-core";
 
+interface HubSystemChromePlugin {
+  setWindowBackgroundColor(options: { color: string }): Promise<void>;
+}
+
+const HubSystemChrome = registerPlugin<HubSystemChromePlugin>("HubSystemChrome");
+
 export async function syncNativeChrome(design: DesignThemeId, mode: AppearanceMode): Promise<void> {
   if (!Capacitor.isNativePlatform()) return;
   const appearance = resolveAppearance(mode);
+  const backgroundColor = themeColorFor(design, appearance);
   try {
+    if (Capacitor.getPlatform() === "android") {
+      // Android 16 ignores statusBarColor for target SDK 36. The transparent
+      // status-bar region reveals the Activity window background instead.
+      await HubSystemChrome.setWindowBackgroundColor({ color: backgroundColor });
+    }
     await StatusBar.setStyle({
       style: appearance === "light" ? StatusBarStyle.Light : StatusBarStyle.Dark,
     });
-    await StatusBar.setBackgroundColor({ color: themeColorFor(design, appearance) });
+    await StatusBar.setBackgroundColor({ color: backgroundColor });
   } catch {
     /* status bar plugin unavailable in browser dev */
   }

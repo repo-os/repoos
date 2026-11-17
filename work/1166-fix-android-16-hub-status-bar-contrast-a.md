@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-17T19:26:55Z"
-review_passes: 2
 id: "1166"
 title: Fix Android 16 Hub status-bar contrast across themes
 type: bug
@@ -13,9 +11,7 @@ branch: feat/fix-android-16-hub-status-bar-contrast-a
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T17:55:45Z"
-review_rounds: 1
-last_check_failure: "repoos check at 2026-11-17T19:05:59.283Z: repoos check failed: reused check inputs changed during handoff — run the check again"
-handoff_signal_retry_count: 2
+updated_at: "2026-11-17T19:10:36Z"
 ---
 ## Problem
 On Android 16 (API 36), the Hub theme changes the status-bar icon style but the status-bar background remains a light system strip. In Dark appearance, white status icons are nearly invisible against that light strip. Android 16 ignores the status-bar color request for apps targeting API 36, so the native edge-to-edge treatment needs a platform-aware fix.
@@ -52,36 +48,4 @@ This issue was observed on Android 16 (API 36), target SDK 36, with Android Syst
 - 2026-11-17T18:23:40Z · cli_override, model_override
 - 2026-11-17T18:23:46Z · status inbox→ready
 - 2026-11-17T18:23:49Z · status ready→active, needs_input, branch
-- 2026-11-17T18:29:03Z · message_queued at 2026-11-17T18:29:03.587Z
-- 2026-11-17T18:30:39Z · CTO nudge: held — an undelivered message is already queued
-- 2026-11-17T18:37:37Z · body
-- 2026-11-17T18:38:06Z · queued message undelivered for 9m and the engineer produced no output — ending the turn so it is delivered
-- 2026-11-17T18:38:07Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code unknown) · last assistant: The check has verified the scoped branch snapshot and is building on the RepoOS validation runner; it has not reported a failure so far. The diff is limited to the Android theme resource. Since the task explicitly requires API 36 Light/Dar… · stderr: Reading additional input from stdin...
-- 2026-11-17T18:43:25Z · message_queued at 2026-11-17T18:43:25.523Z
-- 2026-11-17T18:48:39Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
-- 2026-11-17T18:48:40Z · note: handoff requested (cli)
-- 2026-11-17T18:50:11Z · message_queued at 2026-11-17T18:50:11.711Z
-- 2026-11-17T18:50:11Z · handoff failed · task-file handoff failed at review · Engineering report draft is missing: .repoos/engineering-report-drafts/1166.md
-- 2026-11-17T18:52:56Z · message_delivered: 1 message(s)
-- 2026-11-17T18:54:52Z · queued message undelivered for 11m and the engineer produced no output — ending the turn so it is delivered
-- 2026-11-17T18:54:52Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code unknown) · last assistant: The remote validation passed, including the browser gate and 98 scoped tests. The local guard phase is rebuilding now; after it finishes I’ll record the implementation and the unavailable emulator proof in the required report draft. The AP… · stderr: 2026-11-17T18:53:04.704426Z ERROR codex_core::tools::router: error=write_stdin failed: Unknown process id 35864
-- 2026-11-17T18:54:55Z · orphaned run process stopped · pid 40054 · ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new -o ConnectTimeout=15 -o ServerAliveInterval · cpu 0s · age 1m
-- 2026-11-17T19:02:49Z · message_delivered: 2 message(s)
-- 2026-11-17T19:04:51Z · body
-- 2026-11-17T19:05:36Z · CTO nudge: held — handoff gate is running
-- 2026-11-17T19:05:56Z · message_queued at 2026-11-17T19:05:56.544Z
-- 2026-11-17T19:07:50Z · message_delivered: 1 message(s)
-- 2026-11-17T19:09:55Z · body
 - 2026-11-17T19:10:36Z · status active→review
-- 2026-11-17T19:10:36Z · message_queued at 2026-11-17T19:10:36.680Z
-- 2026-11-17T19:10:36Z · note: shots: skipped — the diff (3 changed paths) touches no capture target's globs — no UI change to capture
-- 2026-11-17T19:15:49Z · note: review pass 1: back to the drawing board
-- 2026-11-17T19:15:50Z · message_delivered: 1 message(s)
-- 2026-11-17T19:15:50Z · status review→active
-- 2026-11-17T19:16:16Z · note: Review round 1 returned findings; resuming implementation for round 2.
-- 2026-11-17T19:21:10Z · body
-- 2026-11-17T19:22:20Z · status active→review
-- 2026-11-17T19:22:21Z · message_queued at 2026-11-17T19:22:21.122Z
-- 2026-11-17T19:22:21Z · note: shots: skipped — the diff (9 changed paths) touches no capture target's globs — no UI change to capture
-- 2026-11-17T19:26:55Z · note: review pass 2: good to go
-
