@@ -2,7 +2,7 @@
 id: "1153"
 title: "Hub 'Find servers on my tailnet': stop listing bare machines, hide phones, explain failures, and replace SSH discovery with an HTTPS-based one"
 type: bug
-status: active
+status: review
 priority: p2
 area: [mobile, server, core]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/hub-find-servers-on-my-tailnet-stop-list
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T10:06:23Z"
-updated_at: "2026-11-17T16:15:12Z"
+updated_at: "2026-11-17T16:15:13Z"
 review_passes: 5
 review_rounds: 2
 dev_error_count: 5
@@ -157,3 +157,4 @@ Do not add runtime dependencies. The discovery endpoint exposes names/ports only
 - 2026-11-17T16:10:38Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-17T16:15:12Z · queued message undelivered for 5m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-17T16:15:12Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code unknown) · last assistant: The failing test passed when isolated (1 passed, 16 skipped), which points to a suite-load timeout rather than a deterministic regression. I’m rerunning the requested changed-path check so the handoff has a green full result. · stderr: 2026-11-17T15:56:54.615843Z ERROR codex_core::tools::router: error=Exit code: 1 Wall time: 0 seconds Output: Failed to write file /Users/nick/code/nick/repoos-worktrees/feat/hub-find-servers-on-my-tailnet-stop-list/src/ui-app/tests/tailnet-peer-discovery-route.test.ts
+- 2026-11-17T16:15:13Z · status active→review
