@@ -36,6 +36,13 @@ The Mac app launches, the sidebar shows every saved server with name and URL in 
 
 Do not edit repoos.toml. Do not create signing identities or commit app binaries.
 
+## Screenshots
+
+![Round 2: fresh isolated empty Hub in Dark appearance](/api/tasks/1167/attachments/att_4e48f2e4-8639-4bd8-a0e4-afb49025773f.png)
+![Round 2: actual RepoOS Control UI loaded in the Hub web view](/api/tasks/1167/attachments/att_22912733-5e04-494d-8fac-bee3330b1c37.png)
+![Round 2: after stopping preview, sidebar is Offline and red with the offline overlay](/api/tasks/1167/attachments/att_c5a20df2-52c7-4166-976d-f339443e941d.png)
+![Round 2: fresh launch preserves an Offline red row and offline actions](/api/tasks/1167/attachments/att_a083bd53-52d1-4f59-be9c-719eb37e62a7.png)
+
 ## Activity
 
 - 2026-11-17T18:23:18Z · created · t@t
@@ -58,3 +65,4 @@ Do not edit repoos.toml. Do not create signing identities or commit app binaries
 - 2026-11-17T19:24:43Z · status review→active
 - 2026-11-17T19:24:46Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-17T19:28:56Z · message_delivered: 1 message(s)
+- 2026-11-17T19:48:46Z · screenshots
