@@ -11,7 +11,7 @@ branch: feat/qa-pass-use-the-repoos-web-app-on-deskto
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T15:21:15Z"
-updated_at: "2026-11-17T19:48:13Z"
+updated_at: "2026-11-17T19:51:30Z"
 review_rounds: 1
 review_passes: 1
 review_timeout_retries: 0
@@ -42,22 +42,22 @@ Start with the Work page at 390px and the bottom dock/heads/pipeline bar overlap
 ```json
 [
 {
-  "label": "Work queue narrow filter controls after reflow",
-  "target": "default",
-  "route": "/work?view=board",
-  "highlight": ".mobile-queue-row"
+"label": "Work queue narrow filter controls after reflow",
+"target": "default",
+"route": "/work?view=board",
+"highlight": ".mobile-queue-row"
 },
 {
-  "label": "Task drawer status select on its own row",
-  "target": "default",
-  "route": "/work?task=1157&tab=changes",
-  "highlight": ".task-status-select"
+"label": "Task drawer status select on its own row",
+"target": "default",
+"route": "/work?task=1157&tab=changes",
+"highlight": ".task-status-select"
 },
 {
-  "label": "Input author byline wrapping",
-  "target": "default",
-  "route": "/inputs",
-  "highlight": ".input-byline"
+"label": "Input author byline wrapping",
+"target": "default",
+"route": "/inputs",
+"highlight": ".input-byline"
 }
 ]
 ```
@@ -149,3 +149,4 @@ Start with the Work page at 390px and the bottom dock/heads/pipeline bar overlap
 - 2026-11-17T19:46:14Z · screenshots
 - 2026-11-17T19:46:17Z · screenshots
 - 2026-11-17T19:48:13Z · body
+- 2026-11-17T19:51:30Z · body
