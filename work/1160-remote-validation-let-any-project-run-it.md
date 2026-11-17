@@ -11,7 +11,7 @@ branch: feat/remote-validation-let-any-project-run-it
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T17:06:33Z"
-updated_at: "2026-11-17T19:48:05Z"
+updated_at: "2026-11-17T19:55:33Z"
 review_rounds: 2
 review_passes: 2
 ---
@@ -46,12 +46,12 @@ Context: Nick's Tiao board on host bee (16 cores, encrypted btrfs, 3 projects) s
 "route": "/settings?section=remote-validation",
 "highlight": ".rvr-hosts",
 "steps": [
-  {
-    "click": "#setting-remoteValidation.enabled button"
-  },
-  {
-    "waitMs": 300
-  }
+{
+  "click": "#setting-remoteValidation.enabled button"
+},
+{
+  "waitMs": 300
+}
 ]
 }
 ]
@@ -86,3 +86,4 @@ Context: Nick's Tiao board on host bee (16 cores, encrypted btrfs, 3 projects) s
 - 2026-11-17T19:12:55Z · status review→active
 - 2026-11-17T19:24:16Z · body
 - 2026-11-17T19:48:05Z · body
+- 2026-11-17T19:55:33Z · note: ui verification failed: ui verification failed (3 issue(s)): [missing-target] Remote validation command and required tools (target "default"): highlight #setting-remoteValidation.command matched nothing on /settings?section=remote-validation (http://127.0.0.1:35065/settings?section=remote-validation); [missing-target] Remote runner host toolchain status (target "default"): click #setting-remoteValidation.enabled button: click: Timeout 5000ms exceeded. on /settings?section=remote-validation (http
