@@ -12,7 +12,7 @@ branch: feat/qa-pass-use-the-macos-hub-app-after-the-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T18:23:18Z"
-updated_at: "2026-11-17T23:44:03Z"
+updated_at: "2026-11-17T23:44:30Z"
 last_close_out_gate_ms: 783824
 last_close_out_gate_at: "2026-11-17T23:44:03.355Z"
 review_passes: 6
@@ -110,4 +110,4 @@ Do not edit repoos.toml. Do not create signing identities or commit app binaries
 - 2026-11-17T22:57:31Z · message_queued at 2026-11-17T22:57:31.521Z
 - 2026-11-17T22:57:31Z · note: review pass 6: good to go
 - 2026-11-17T23:44:03Z · close-out gate completed in 784s
-
+- 2026-11-17T23:44:30Z · status done→done, release:success
