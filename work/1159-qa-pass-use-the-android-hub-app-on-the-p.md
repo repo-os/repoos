@@ -11,7 +11,7 @@ branch: feat/qa-pass-use-the-android-hub-app-on-the-p
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T15:51:18Z"
-updated_at: "2026-11-17T17:10:05Z"
+updated_at: "2026-11-17T17:12:28Z"
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-11-17T16:23:57.721Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
@@ -54,3 +54,4 @@ Use just deploy-phone only if the saved port works; otherwise do not ask Nick fo
 - 2026-11-17T16:23:57Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 1/3
 - 2026-11-17T16:28:58Z · watchdog: auto-surfaced stuck task · status active→ready · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
 - 2026-11-17T17:10:03Z · status ready→active
+- 2026-11-17T17:12:28Z · body
