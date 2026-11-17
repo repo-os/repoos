@@ -176,3 +176,4 @@ Reuse the existing AI-draft run in ReleasesView.vue and the server release run; 
 - 2026-11-17T01:54:34Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-17T01:56:22Z · body
 - 2026-11-17T01:58:38Z · queued message undelivered for 4m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-17T01:58:38Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 130) · last assistant: Failures may be from running vitest directly instead of the repo's wrapper. Let me check the test script. · stderr: (empty)
