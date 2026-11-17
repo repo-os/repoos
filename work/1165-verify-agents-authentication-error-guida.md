@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 2
 id: "1165"
 title: Verify Agents authentication error guidance
 type: bug
@@ -12,7 +13,6 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T17:53:39Z"
 updated_at: "2026-11-17T21:14:16Z"
-handoff_signal_retry_count: 1
 review_rounds: 1
 review_passes: 1
 ---
@@ -51,3 +51,4 @@ The attached screenshot shows the unconfigured local CLI state only; do not trea
 - 2026-11-17T21:03:46Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-17T21:08:59Z · message_queued at 2026-11-17T21:08:59.266Z
 - 2026-11-17T21:14:16Z · message_queued at 2026-11-17T21:14:16.987Z
+
