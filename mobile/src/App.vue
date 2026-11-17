@@ -296,7 +296,12 @@ async function onLockScope(scope: "reopen" | "server") {
         :platform="platform"
         @back="backToPicker"
         @update:name="(v) => (formName = v)"
-        @update:url="(v) => { formUrl = v; formError = errorAfterServerUrlInput(formError, v); }"
+        @update:url="
+          (v) => {
+            formUrl = v;
+            formError = errorAfterServerUrlInput(formError, v);
+          }
+        "
         @submit="submitAdd"
       />
     </main>
