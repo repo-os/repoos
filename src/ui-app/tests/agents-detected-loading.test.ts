@@ -115,6 +115,45 @@ afterEach(() => {
 });
 
 describe("AgentsView detected-tab loading (#0950)", () => {
+  it.each([
+    {
+      auth: true,
+      label: "ready",
+      hint: "",
+    },
+    {
+      auth: false,
+      label: "sign-in required",
+      hint: "cursor-agent login   (or export CURSOR_API_KEY=<key>)",
+    },
+  ])("distinguishes Cursor CLI auth=$auth from RepoOS account state", async ({ auth, label, hint }) => {
+    const cursor = {
+      id: "cursor",
+      name: "cursor agent",
+      cli: "cursor",
+      binary: "cursor-agent",
+      installed: true,
+      path: "/usr/local/bin/cursor-agent",
+      version: "2026.09.15",
+      headless: true,
+      drivable: true,
+      installHint: "",
+      authHint: "cursor-agent login   (or export CURSOR_API_KEY=<key>)",
+      auth,
+    };
+    const wrapper = await mountAgents("/?tab=detected", async (url) => {
+      if (String(url).includes("/api/agents/detect"))
+        return json({ agents: [cursor], cachedAt: null });
+      return new Promise<Response>(() => {});
+    });
+    const row = detectedPanel(wrapper).find(".detect-row");
+    expect(row.text()).toContain(label);
+    expect(row.text()).toContain(hint);
+    expect(wrapper.text()).not.toContain("RepoOS account");
+    expect(wrapper.text()).not.toContain("<secret>");
+    wrapper.unmount();
+  });
+
   it("shows the shared skeleton instead of a Probing PATH line", async () => {
     vi.useFakeTimers();
     vi.stubGlobal("EventSource", QuietEventSource);
