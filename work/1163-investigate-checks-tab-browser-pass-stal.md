@@ -2,7 +2,7 @@
 id: "1163"
 title: Investigate Checks tab browser pass stall
 type: bug
-status: review
+status: active
 priority: p2
 area: web
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/investigate-checks-tab-browser-pass-stal
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T17:53:05Z"
-updated_at: "2026-11-17T21:28:45Z"
+updated_at: "2026-11-17T21:28:46Z"
 review_rounds: 2
 review_passes: 2
 handoff_signal_retry_count: 2
