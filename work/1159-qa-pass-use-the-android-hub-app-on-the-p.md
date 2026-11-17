@@ -11,7 +11,7 @@ branch: feat/qa-pass-use-the-android-hub-app-on-the-p
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T15:51:18Z"
-updated_at: "2026-11-17T16:14:27Z"
+updated_at: "2026-11-17T16:15:12Z"
 handoff_signal_retry_count: 2
 ---
 ## Problem
@@ -47,3 +47,4 @@ Use just deploy-phone only if the saved port works; otherwise do not ask Nick fo
 - 2026-11-17T16:14:19Z · body
 - 2026-11-17T16:14:27Z · queued message undelivered for 7m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-17T16:14:27Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code unknown) · last assistant: The phone is still unreachable. The scoped check has started remotely; the worktree has no changed paths against `main`, so this run can validate the current tree but cannot complete the device-dependent acceptance criteria. · stderr: Reading additional input from stdin...
+- 2026-11-17T16:15:12Z · message_delivered: 1 message(s)
