@@ -38,6 +38,10 @@ Every main page works at desktop width (1280+) and at phone width (390 and 320) 
 
 Start with the Work page at 390px and the bottom dock/heads/pipeline bar overlap on every page, since those regressed recently. Do not edit repoos.toml.
 
+## Screenshots
+
+![320px Work queue after filter reflow fix, light theme](/api/tasks/1157/attachments/att_8b163472-2a9a-46b8-9f62-3d90cf1c0c71.png)
+
 ## Activity
 
 - 2026-11-17T15:21:15Z · created · t@t
@@ -107,3 +111,4 @@ Start with the Work page at 390px and the bottom dock/heads/pipeline bar overlap
 - 2026-11-17T19:23:51Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-17T19:26:52Z · message_delivered: 1 message(s)
 - 2026-11-17T19:27:22Z · note: Returning task to active to address round 1 review findings.
+- 2026-11-17T19:46:02Z · screenshots
