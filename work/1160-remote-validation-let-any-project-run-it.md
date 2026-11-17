@@ -2,7 +2,7 @@
 id: "1160"
 title: "Remote validation: let any project run its own check command on runners"
 type: feature
-status: active
+status: review
 priority: p1
 area: core
 assigned_to: ai
@@ -105,3 +105,4 @@ Context: Nick's Tiao board on host bee (16 cores, encrypted btrfs, 3 projects) s
 - 2026-11-17T20:48:56Z · message_queued at 2026-11-17T20:48:56.412Z
 - 2026-11-17T20:48:56Z · ↻ resuming engineer to read queued message
 - 2026-11-17T20:48:57Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The changed-path check is green now, including the remote gate and local guards. I’m recording the final environment-isolation correction in the report draft, then I’ll request handoff again with the repaired shot selectors. · stderr: 2026-11-17T20:16:18.855046Z ERROR codex_core::util: Custom tool call output is missing for call id: call_2a452156ae5449a9870fe6a7d4dc70a0 2026-11-17T20:16:24.188966Z ERROR codex_core::tools::router: error=write_stdin failed: Unknown process id 44192 2026-11-17T20:16:24.198948Z ERROR codex_core::util: Custom tool call …
+- 2026-11-17T20:48:57Z · status active→review
