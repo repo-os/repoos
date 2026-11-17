@@ -39,6 +39,7 @@ Human device step needed: the saved ADB target `100.117.244.33:37673` refused th
 ## Screenshots
 
 ![add-server.png](/api/tasks/1159/attachments/att_9927f217-4dc6-4a4c-ba20-6b06cc134c70.png)
+![add-server-empty-error.png](/api/tasks/1159/attachments/att_191c73fc-61ec-4341-b0dc-d5327efe70f3.png)
 
 ## Activity
 
@@ -74,3 +75,4 @@ Human device step needed: the saved ADB target `100.117.244.33:37673` refused th
 - 2026-11-17T17:35:25Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The Android QA pass is still blocked: the saved ADB target refused connection, and `adb devices -l` showed no device. I captured no Android screenshots and made no claims about screens or defects. Created held human task **#1162** for the … · stderr: Reading additional input from stdin...
 - 2026-11-17T17:40:28Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 2/3
 - 2026-11-17T17:59:33Z · screenshots
+- 2026-11-17T17:59:35Z · screenshots
