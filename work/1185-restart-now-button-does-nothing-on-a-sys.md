@@ -71,3 +71,4 @@ Reported by Nick 2026-11-18 20:22 from the phone UI. Related #1154. Do not touch
 - 2026-11-18T14:30:22Z · note: review pass 2: needs some work
 - 2026-11-18T14:30:22Z · message_queued at 2026-11-18T14:30:22.688Z
 - 2026-11-18T14:30:22Z · note: shots: failed — browser capture cancelled
+- 2026-11-18T14:30:22Z · message_delivered: 1 message(s)
