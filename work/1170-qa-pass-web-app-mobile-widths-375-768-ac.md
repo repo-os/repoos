@@ -11,7 +11,7 @@ branch: feat/qa-pass-web-app-mobile-widths-375-768-ac
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-18T02:19:49Z"
-updated_at: "2026-11-18T05:23:37Z"
+updated_at: "2026-11-18T05:26:36Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-18T05:14:48.037Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_passes: 5
@@ -36,6 +36,11 @@ Do not touch repoos.toml. Pages use full .main width.
   "target": "default",
   "route": "/work",
   "highlight": ".mobile-work",
+  "steps": [
+    {
+      "waitFor": ".mobile-task-card"
+    }
+  ],
   "viewportWidth": 375,
   "viewportHeight": 844
 },
@@ -44,6 +49,11 @@ Do not touch repoos.toml. Pages use full .main width.
   "target": "default",
   "route": "/work",
   "highlight": ".parked-lists",
+  "steps": [
+    {
+      "waitFor": ".task-card"
+    }
+  ],
   "viewportWidth": 768,
   "viewportHeight": 844
 },
@@ -52,6 +62,11 @@ Do not touch repoos.toml. Pages use full .main width.
   "target": "default",
   "route": "/settings",
   "highlight": ".settings-mobile-nav",
+  "steps": [
+    {
+      "waitFor": ".settings-mobile-nav"
+    }
+  ],
   "viewportWidth": 375,
   "viewportHeight": 844
 },
@@ -60,6 +75,11 @@ Do not touch repoos.toml. Pages use full .main width.
   "target": "default",
   "route": "/settings",
   "highlight": ".settings-tabs",
+  "steps": [
+    {
+      "waitFor": ".settings-tabs"
+    }
+  ],
   "viewportWidth": 768,
   "viewportHeight": 844
 }
@@ -132,3 +152,4 @@ Do not touch repoos.toml. Pages use full .main width.
 - 2026-11-18T05:21:05Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-18T05:22:01Z · note: highlight .work-page matched nothing on /work
 - 2026-11-18T05:23:37Z · body
+- 2026-11-18T05:26:36Z · body
