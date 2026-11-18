@@ -1,3 +1,14 @@
+---
+id: summary
+title: summary
+type: feature
+status: inbox
+priority: p2
+area: general
+assigned_to: ai
+created_by: ""
+branch: ""
+---
 ## TL;DR
 
 Remote validation now runs a project-declared check command (`remoteValidation.command` plus `remoteValidation.requiredTools`) on both Docker and native Linux/macOS runner hosts, so non-bun projects (e.g. Android/Gradle) can offload their pre-review gate to the runner pool instead of being limited to the fixed Bun sequence. Host probes verify the declared toolchain and the runner-script capability before dispatch. It took 5 engineering rounds and 5 review passes — review kept finding ways the custom command could silently not run (env-prefix split, Docker `ENTRYPOINT` swallowing argv, Hetzner ignoring the command) — before pass 5 returned `good to go` and the task landed (merged commit `a1a33fe0bd1c66956f80706e190f238242cb315b`, release:success). No live Android/Gradle or Tiao run was performed; that evidence gap remains.
@@ -23,7 +34,7 @@ Not done / not claimed: no live Tiao checkout, Android SDK/Gradle host, device, 
 - **Wall clock:** created 2026-11-17T17:06:33Z → done 2026-11-17T23:30:50Z = 6h 24m 17s (derived from those two recorded timestamps).
 - **Engineering rounds:** 5, all by the `codex` agent on model `gpt-6-luna`. The sessions table records one engineer session row (started 17:09:40.793Z, elapsed 1361s, 111,052,456 tokens, cost not recorded, status "finished" with the agent process exiting with an error); session rows for the other turns are not recorded.
 - **Review passes:** 5, all by the `reviewer` agent on `opencode-go/deepseek-v4.1-flash`. Verdicts: passes 1–4 `needs some work`, pass 5 `good to go`.
-  - Reviewer sessions recorded: 5, elapsed 269s / 557s / 701s / 478s / 332s (2,337s total), tokens 115,084 / 109,337 / 138,231 / 122,554 / 144,723 (629,929 total), cost 0.03955935 / 0.037046724 / 0.05466846 / 0.04486536 / 0.049338834 USD ($0.225478728 total).
+- Reviewer sessions recorded: 5, elapsed 269s / 557s / 701s / 478s / 332s (2,337s total), tokens 115,084 / 109,337 / 138,231 / 122,554 / 144,723 (629,929 total), cost 0.03955935 / 0.037046724 / 0.05466846 / 0.04486536 / 0.049338834 USD ($0.225478728 total).
 - **Routing sessions:** 5 ("Model router (openrouter)", model unknown), 1s each; no tokens or cost recorded.
 - **Restarts/swaps:** no agent or model swaps recorded; the engineer turn was ended/restarted three times without a handoff (see below), and one orphaned engineer process (pid 34750) was adopted at 21:53:02.
 - **Handoffs:** `active→review` requested at 17:54:27, 19:04:51, 20:48:57, 21:07:48, 22:28:11 and 23:10:30; one handoff was deferred at 20:48:56 (queued message unread) and immediately re-requested.

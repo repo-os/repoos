@@ -33,16 +33,16 @@ The initial evidence is an auth-less 401, not proof of a signed-in regression. Q
 ```json
 [
 {
-  "label": "Secrets sign-in required state",
-  "target": "default",
-  "route": "/secrets?shotState=secrets%3Aunauthorized",
-  "highlight": "[role=\"alert\"]"
+"label": "Secrets sign-in required state",
+"target": "default",
+"route": "/secrets?shotState=secrets%3Aunauthorized",
+"highlight": "[role=\"alert\"]"
 },
 {
-  "label": "Secrets environment with masked keys",
-  "target": "default",
-  "route": "/secrets?shotState=secrets%3Apopulated",
-  "highlight": ".secrets-ledger"
+"label": "Secrets environment with masked keys",
+"target": "default",
+"route": "/secrets?shotState=secrets%3Apopulated",
+"highlight": ".secrets-ledger"
 }
 ]
 ```
