@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-web-app-keyboard-and-accessibili
 created_at: "2026-11-18T12:17:32Z"
-updated_at: "2026-11-18T14:22:40Z"
+updated_at: "2026-11-18T14:26:14Z"
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-11-18T12:45:29.556Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-18T12:54:45.117Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-18T13:03:30.252Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
@@ -64,3 +64,4 @@ Do not touch repoos.toml.
 - 2026-11-18T14:12:01Z · message_delivered: 1 message(s)
 - 2026-11-18T14:19:59Z · body
 - 2026-11-18T14:22:40Z · body
+- 2026-11-18T14:26:14Z · CTO nudge: held — handoff gate is running
