@@ -21,4 +21,4 @@ The headless browser confirmed the no-auth server served the app and that the da
 - `bun run build:ui` — passed.
 - Headless Playwright against `http://127.0.0.1:7382` — app title and dashboard content rendered; zero page exceptions.
 - `bun run test -- src/ui-app/tests/toast-panel-a11y.test.ts src/ui-app/tests/repo-store.test.ts` — 74 tests passed (the repository test wrapper also ran its isolated boot-timing file).
-- Changed-path RepoOS check: pending at the time this note was written.
+- `REPOOS_CHECK_CHANGED=main repoos check` — passed. Remote changed-path validation, format, lint, build, CSS and contrast guards, branch-artifact guard, and UI smoke passed; unrelated steps were skipped by path filters.
