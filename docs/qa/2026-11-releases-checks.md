@@ -19,15 +19,15 @@ interactive Chrome screenshots.
 - `release:cutRunning`: after page load settled, showed “RELEASING…” and progress
   links. On this task branch, the real release status also correctly explained
   that releases must come from main and that working-tree changes block a cut.
+- With mocked `/api/release/run` terminal responses layered over the ready
+  status fixture, the failed run showed its classified TypeScript failure,
+  failed test list, and output; the succeeded run showed the success outcome.
 - The fixture-driven mobile cut drawer had no horizontal overflow. The release
-  ready, pending, and running pages also had no horizontal overflow at either
-  viewport width.
+  ready, pending, running, failed, and succeeded pages also had no horizontal
+  overflow at either viewport width.
 
-The UI console had no errors during these routes. This pass did not exercise a
-completed or failed release cut; doing so would require a terminal run fixture
-or a safe server test seam beyond the existing ready, pending, and running
-fixtures. Release failure and completion logic remain covered by the existing
-release tests.
+The UI console had no errors during these routes. The terminal run states used
+mocked API responses, so they verified rendering without initiating a real cut.
 
 ## Checks
 
@@ -35,8 +35,12 @@ release tests.
   and the close-out pipeline.
 - `checks:timings` on Runs rendered the timing summary and completed run row;
   `checks:reuse` rendered the reused-check result and skipped-step counts.
+- Mocked `/api/check-runs?limit=300` rows showed both failed and passed
+  completed outcomes. Expanding the failed row exposed its failed test detail.
 - Navigated by clicking Now, Runs, Test suite, and Check plan; each selected tab
   matched its route query. The mobile Now view had no horizontal overflow.
+- The Runs table and expanded failure detail had no horizontal overflow at
+  1280 px or 375 px.
 - Console errors were absent on the exercised routes.
 
 During inspection, releasing a wedged local check slot still used
@@ -52,7 +56,6 @@ one slot-release request.
 
 ## Coverage boundary
 
-No live `release:failed` or `release:done` fixture exists in the current
-preview-fixture set. This pass did not create synthetic backend release records
-or claim visual coverage for those terminal states. Existing automated tests
-continue to cover failure and completion handling.
+Failed/succeeded release runs and failed/passed Checks history were supplied as
+Playwright mocked API responses over the running task-worktree app. No real
+release action or backend release record was created.
