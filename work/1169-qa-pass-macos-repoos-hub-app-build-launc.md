@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-18T12:57:13Z"
+review_passes: 6
 id: "1169"
 title: "QA pass: macOS RepoOS Hub app – build, launch, connect, and fix what is broken"
 type: bug
@@ -14,9 +16,7 @@ branch: feat/qa-pass-macos-repoos-hub-app-build-launc
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-18T02:19:44Z"
-updated_at: "2026-11-18T12:57:13Z"
 review_rounds: 1
-review_passes: 5
 engineer_stall_resume_log: "[{\"at\":\"2026-11-18T04:39:18.645Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-18T04:49:19.309Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-18T08:53:34.221Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
 ## Problem
@@ -330,3 +330,4 @@ Signed-in projects and tasks remain unverified because automated email-code entr
 - 2026-11-18T12:57:06Z · message_queued at 2026-11-18T12:57:06.397Z
 - 2026-11-18T12:57:13Z · note: review pass 6: needs some work
 - 2026-11-18T12:57:13Z · needs_input
+
