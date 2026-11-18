@@ -2,7 +2,7 @@
 id: "1179"
 title: "QA pass: Settings and Agents pages – every control saves, validates and survives reload"
 type: bug
-status: review
+status: active
 priority: p2
 area: [web, server]
 assigned_to: ai
