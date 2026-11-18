@@ -37,3 +37,4 @@ Found on 2026-11-18 while capping engineers on the Tiao project. Small independe
 - 2026-11-18T00:30:44Z · body
 - 2026-11-18T00:33:08Z · status active→review
 - 2026-11-18T00:33:08Z · message_queued at 2026-11-18T00:33:08.698Z
+- 2026-11-18T00:33:08Z · note: shots: skipped — the diff (4 changed paths) touches no capture target's globs — no UI change to capture
