@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 65824
-last_close_out_gate_at: "2026-11-18T22:41:05.462Z"
 id: "1206"
 title: "QA pass: Releases page cut flow with fixtures – notes chooser, blockers, in-progress and failed states at 375px"
 type: bug
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: 79bb441e5d2bf57a88f0a5110eb1e7f84d9f2f12
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-releases-page-cut-flow-with-fixt
 created_at: "2026-11-18T22:17:29Z"
 updated_at: "2026-11-18T22:41:05Z"
+last_close_out_gate_ms: 65824
+last_close_out_gate_at: "2026-11-18T22:41:05.462Z"
 review_passes: 2
 review_rounds: 1
 routing_switches: 1
