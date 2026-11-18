@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-task-creation-and-editing-flows-
 created_at: "2026-11-18T16:17:39Z"
-updated_at: "2026-11-18T18:46:54Z"
+updated_at: "2026-11-18T18:47:10Z"
 last_close_out_gate_ms: 622709
 last_close_out_gate_at: "2026-11-18T18:46:54.427Z"
 review_passes: 5
@@ -135,4 +135,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T18:35:08Z · message_queued at 2026-11-18T18:35:08.804Z
 - 2026-11-18T18:35:46Z · note: review pass 5: good to go
 - 2026-11-18T18:46:54Z · close-out gate completed in 623s
-
+- 2026-11-18T18:47:10Z · status done→done, release:success
