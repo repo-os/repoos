@@ -836,10 +836,23 @@ const spendAlertUsd = computed<number>({
     return Number.isFinite(usd) && usd >= 0 ? usd : 0;
   },
   set: (usd: number) => {
-    if (!Number.isFinite(usd) || usd < 0) return;
+    if (!Number.isFinite(usd)) {
+      spendAlertFieldError.value = "Enter a valid whole dollar amount.";
+      return;
+    }
+    if (usd < 0) {
+      spendAlertFieldError.value = "Spend alert threshold must be zero or more.";
+      return;
+    }
+    if (!Number.isInteger(usd)) {
+      spendAlertFieldError.value = "Enter a whole dollar amount.";
+      return;
+    }
+    spendAlertFieldError.value = null;
     form["attention.spendAlertUsd"] = String(usd);
   },
 });
+const spendAlertFieldError = ref<string | null>(null);
 
 const spendAlertFieldDesc = computed(
   () =>
@@ -1750,6 +1763,11 @@ onUnmounted(() => {
                               fieldDurationUnit(f)!,
                             )
                           "
+                          :max="
+                            typeof f.max === 'number'
+                              ? durationBound(f.max, fieldDurationUnit(f)!)
+                              : undefined
+                          "
                           :step="
                             durationBound(
                               typeof f.step === 'number' ? f.step : 1000,
@@ -1770,6 +1788,7 @@ onUnmounted(() => {
                         :model-value="form[f.key] == null ? '' : String(form[f.key])"
                         type="number"
                         :min="typeof f.min === 'number' ? f.min : 0"
+                        :max="typeof f.max === 'number' ? f.max : undefined"
                         :step="typeof f.step === 'number' ? f.step : 1"
                         style="width: 100px"
                         :disabled="config.saving"
@@ -2175,11 +2194,21 @@ onUnmounted(() => {
                     :model-value="spendAlertUsd"
                     type="number"
                     min="0"
-                    step="0.01"
+                    step="1"
                     style="width: 100px"
                     :disabled="config.saving"
+                    :aria-invalid="Boolean(spendAlertFieldError)"
+                    :aria-describedby="spendAlertFieldError ? 'spend-alert-error' : undefined"
                     @update:model-value="(v) => (spendAlertUsd = Number(v))"
                   />
+                </div>
+                <div
+                  v-if="spendAlertFieldError"
+                  id="spend-alert-error"
+                  class="ff-error"
+                  role="alert"
+                >
+                  {{ spendAlertFieldError }}
                 </div>
               </div>
             </div>

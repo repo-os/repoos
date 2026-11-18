@@ -139,9 +139,20 @@ function worktreeAddLockPath(root: string, branch: string): string {
 }
 
 function worktreeAddLockIsStale(lockDir: string): boolean {
+  const oldEnoughToBeAbandoned = (): boolean => {
+    try {
+      return Date.now() - statSync(lockDir).mtimeMs > WORKTREE_ADD_LOCK_STALE_MS;
+    } catch {
+      // The lock may have been released between existsSync and statSync.
+      return false;
+    }
+  };
   try {
     const pid = Number(readFileSync(join(lockDir, "pid"), "utf8"));
-    if (!Number.isInteger(pid) || pid <= 0) return true;
+    // mkdir(lockDir) and writing its pid are separate filesystem operations.
+    // Treat that brief initialization window as held; otherwise a contender
+    // can remove a live process's lock before its owner has recorded the pid.
+    if (!Number.isInteger(pid) || pid <= 0) return oldEnoughToBeAbandoned();
     if (process.platform !== "win32") {
       const result = spawnSync("ps", ["-o", "stat=", "-p", String(pid)], {
         encoding: "utf8",
@@ -159,7 +170,7 @@ function worktreeAddLockIsStale(lockDir: string): boolean {
       return (error as NodeJS.ErrnoException).code === "ESRCH";
     }
   } catch {
-    return true;
+    return oldEnoughToBeAbandoned();
   }
 }
 

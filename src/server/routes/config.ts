@@ -21,6 +21,7 @@ import {
 } from "../../core/config.js";
 import { effectiveAreaVocabulary } from "../../core/areas.js";
 import { effectiveAreaNames, unresolvedAreaReport } from "../../core/areas.js";
+import { resolvedUiVerification } from "../../core/ui-verification-config.js";
 import { normalizeStringList } from "../../core/config.js";
 import { isValidEmail } from "../../core/auth.js";
 import {
@@ -109,6 +110,7 @@ export function safeConfigForBrowser(config: Record<string, unknown>): Record<st
   // Env values (dev targets and services) may be credentials: they never reach
   // the browser. Settings saves restore them from disk (#0843 review round 25).
   const safeDev = rest.dev ? redactDevEnv(rest.dev as never) : rest.dev;
+  const safeUiVerification = resolvedUiVerification(config as never);
   return {
     ...rest,
     ...(safeDev !== undefined ? { dev: safeDev } : {}),
@@ -136,6 +138,11 @@ export function safeConfigForBrowser(config: Record<string, unknown>): Record<st
     "model_routing.timeoutMs": (_rawModelRouting as { timeoutMs?: number } | undefined)?.timeoutMs,
     "model_routing.humanStepCheck": (_rawModelRouting as { humanStepCheck?: boolean } | undefined)
       ?.humanStepCheck,
+    "model_routing.humanStepSticky": (_rawModelRouting as { humanStepSticky?: boolean } | undefined)
+      ?.humanStepSticky,
+    "uiVerification.enabled": safeUiVerification.enabled,
+    "uiVerification.autoRefreshStaleOnce": safeUiVerification.autoRefreshStaleOnce,
+    "uiVerification.viewportWidths": safeUiVerification.viewportWidths,
     /**
      * Declared dev targets (#0749): the Settings control edits this
      * `[[dev.targets]]` list. Exposed as the parsed objects (never the raw
@@ -688,15 +695,20 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
     } else if (field.type === "number") {
       const num = Number(val);
       const min = field.min ?? 0;
+      const max = field.max;
       // If step is defined and not an integer (e.g., 0.1), decimals are allowed.
       // Otherwise, only whole numbers are allowed.
       const allowDecimals = field.step !== undefined && !Number.isInteger(field.step);
       const isValidNumber = allowDecimals ? Number.isFinite(num) : Number.isInteger(num);
 
-      if (!isValidNumber || num < min) {
-        const msg = allowDecimals
-          ? `${field.label} must be a number ${min > 0 ? `greater than ${min}` : `at least ${min}`}`
-          : `${field.label} must be a whole number`;
+      if (!isValidNumber || num < min || (max !== undefined && num > max)) {
+        const msg = !isValidNumber
+          ? allowDecimals
+            ? `${field.label} must be a number ${min > 0 ? `greater than ${min}` : `at least ${min}`}`
+            : `${field.label} must be a whole number`
+          : max !== undefined
+            ? `${field.label} must be between ${min} and ${max}`
+            : `${field.label} must be a number ${min > 0 ? `greater than ${min}` : `at least ${min}`}`;
         return json(res, 400, { error: msg });
       }
       if (field.key === "model_routing.timeoutMs") {
@@ -888,6 +900,21 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
           return json(res, 400, { error: "Select at least one role for the router." });
         }
         patch[field.key] = normalized;
+        continue;
+      }
+      if (field.key === "uiVerification.viewportWidths") {
+        if (!Array.isArray(val) || val.length === 0) {
+          return json(res, 400, {
+            error: `${field.label} must contain positive whole pixel widths`,
+          });
+        }
+        const widths = val.map((item) => Number(item));
+        if (widths.some((width) => !Number.isSafeInteger(width) || width <= 0)) {
+          return json(res, 400, {
+            error: `${field.label} must contain positive whole pixel widths`,
+          });
+        }
+        patch[field.key] = widths;
         continue;
       }
       if (field.key === "cto.actions") {

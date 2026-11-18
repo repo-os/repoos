@@ -196,4 +196,14 @@ describe("resolveSettingLocation", () => {
     ).toEqual({ tab: "advanced", hasUiRow: true });
     expect(isGeneralSchemaFieldKey("dev.failureSummary.ai")).toBe(false);
   });
+
+  it.each(["dev.services", "preview.targets", "shot.targets"])(
+    "routes %s array-of-table config to raw TOML instead of a lossy General text row",
+    (key) => {
+      expect(resolveSettingLocation(key, field({ key, type: "array", tier: "live" }), ctx)).toEqual(
+        { tab: "toml", hasUiRow: false },
+      );
+      expect(isGeneralSchemaFieldKey(key)).toBe(false);
+    },
+  );
 });

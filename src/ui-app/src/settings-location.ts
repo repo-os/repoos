@@ -184,6 +184,13 @@ const GENERAL_EXCLUDED_KEYS = new Set([
   // Dev targets have a dedicated hand-rendered card on Advanced (#0749); a
   // plain comma-separated General row cannot express the four fields.
   "dev.targets",
+  // Companion [[dev.services]] rows are raw-TOML-only; a comma-separated
+  // value cannot express their command, port, health check, dependencies or env.
+  "dev.services",
+  // Native preview targets are array-of-table definitions and use raw TOML.
+  "preview.targets",
+  // Non-web capture targets are command-bearing array-of-table entries too.
+  "shot.targets",
   // The Dev-failure AI summary toggle (#0775) is rendered with the Dev targets
   // card on Advanced, not as a plain General row.
   "dev.failureSummary.ai",
@@ -247,10 +254,9 @@ export function resolveSettingLocation(
     if (!field) return null;
     return { tab: "toml", hasUiRow: false };
   }
-  // Command-based capture targets (#0761): a `[[shot.targets]]` array-of-tables
-  // is raw-TOML-only, like `[[preview.targets]]` — the schema entry exists only
-  // so the search overlay can point at the toml tab.
-  if (key.startsWith("shot.targets")) {
+  // These array-of-table definitions are raw-TOML-only; a flat Settings row
+  // cannot express their commands, ports, health checks or environment.
+  if (key === "dev.services" || key === "preview.targets" || key.startsWith("shot.targets")) {
     if (!field) return null;
     return { tab: "toml", hasUiRow: false };
   }

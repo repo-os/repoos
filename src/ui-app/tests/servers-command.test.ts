@@ -17,6 +17,10 @@ import {
 import * as registry from "../../core/server-registry.js";
 
 describe("repoos servers --tailscale", () => {
+  // Keep these SSH/fallback unit tests independent of whether this machine can
+  // reach a real peer's HTTP discovery endpoint on the Tailscale network.
+  const noHttpDiscovery = async () => null;
+
   it("parses online peers and excludes self and offline peers", () => {
     expect(
       parseTailnetPeers(
@@ -67,6 +71,7 @@ describe("repoos servers --tailscale", () => {
   it("skips unsupported mobile peers instead of reporting misleading SSH failures", async () => {
     const remoteExec = vi.fn(async () => JSON.stringify({ servers: [] }));
     const result = await collectTailnetServers([], {
+      httpDiscovery: noHttpDiscovery,
       tailscaleStatus: async () =>
         JSON.stringify({
           Peer: {
@@ -158,6 +163,7 @@ describe("repoos servers --tailscale", () => {
       return JSON.stringify({ servers: [{ port: 7171, projectName: "remote", valid: true }] });
     });
     const result = await collectTailnetServers([{ host: "local", port: 7000 }], {
+      httpDiscovery: noHttpDiscovery,
       tailscaleStatus: async () =>
         JSON.stringify({
           Peer: {
@@ -181,6 +187,7 @@ describe("repoos servers --tailscale", () => {
   it("falls back to configured hosts when the Tailscale CLI is unavailable", async () => {
     const remoteExec = vi.fn(async () => JSON.stringify({ servers: [{ port: 7499 }] }));
     const result = await collectTailnetServers([], {
+      httpDiscovery: noHttpDiscovery,
       tailscaleStatus: async () => {
         throw new Error("tailscale: not found");
       },
@@ -196,6 +203,7 @@ describe("repoos servers --tailscale", () => {
   it("reports local-only when the Tailscale CLI and the configured pool are both absent", async () => {
     const remoteExec = vi.fn(async () => JSON.stringify({ servers: [] }));
     const result = await collectTailnetServers([{ host: "local", port: 7171 }], {
+      httpDiscovery: noHttpDiscovery,
       tailscaleStatus: async () => {
         throw new Error("tailscale: not found");
       },
@@ -215,6 +223,7 @@ describe("repoos servers --tailscale", () => {
   it("uses configured per-host users and the global Tailscale user in SSH targets", async () => {
     const remoteExec = vi.fn(async () => JSON.stringify({ servers: [] }));
     const result = await collectTailnetServers([], {
+      httpDiscovery: noHttpDiscovery,
       tailscaleStatus: async () =>
         JSON.stringify({
           Peer: {
@@ -387,6 +396,7 @@ describe("repoos servers --tailscale", () => {
       { code: 127, stderr: "zsh:1: command not found: repoos\n" },
     );
     const result = await collectTailnetServers([], {
+      httpDiscovery: noHttpDiscovery,
       tailscaleStatus: async () => {
         throw new Error("tailscale: not found");
       },
