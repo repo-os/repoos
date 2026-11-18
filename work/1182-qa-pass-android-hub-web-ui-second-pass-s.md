@@ -2,14 +2,14 @@
 id: "1182"
 title: "QA pass: Android Hub web UI second pass – settings, add-server and error flows at 360px"
 type: bug
-status: active
+status: review
 priority: p2
 area: mobile
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-android-hub-web-ui-second-pass-s
 created_at: "2026-11-18T09:17:43Z"
-updated_at: "2026-11-18T09:39:51Z"
+updated_at: "2026-11-18T09:54:21Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -41,3 +41,4 @@ Do not touch repoos.toml.
 - 2026-11-18T09:33:53Z · status review→active
 - 2026-11-18T09:38:47Z · body
 - 2026-11-18T09:39:51Z · CTO nudge: held — handoff gate is running
+- 2026-11-18T09:54:21Z · status active→review
