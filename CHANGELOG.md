@@ -5,6 +5,21 @@ pipeline from `release-history.json`; the newest entry is also the GitHub
 release body. The full discussion of each change lives in the release notes
 and on GitHub.
 
+## [v0.5.91] - 2026-11-18
+
+## Highlights
+
+- **Restart now works on service-managed servers.** The update notice now recognises servers run by systemd or launchd, restarts them through the service manager, and shows an error instead of silently staying open (#1185).
+- **A big hands-on quality pass.** Engineers used the web app at desktop and phone widths and fixed the layout, state and accessibility problems they found across Work, the task drawer, Releases, Checks, Settings, Agents, Stories, Inbox, Search and navigation, Deployments, Dev, Context, remote runners, first-run and empty states, and keyboard use, Work board filters, notifications and banners (#1194, #1195, #1170, #1173, #1178, #1179, #1180, #1181, #1183, #1184, #1186, #1188, #1190). Each fix has a test and a written QA record under docs/qa.
+- **Secrets page.** The Secrets page behaviour was verified with real authenticated access, and a stray "not authorised" error that blocked automatic UI checks on it is fixed (#1164, #1175).
+- **macOS Hub.** The macOS app was built and driven end to end twice (menu bar, Cmd-K search and server add/edit included); the issues found were fixed and recorded (#1169, #1193).
+- **Android Hub.** Two more fixture-driven passes over the phone UI, covering the server picker, add-server and error states (#1171, #1182, #1192).
+- **Docs and CLI.** The user docs were checked against current behaviour and the docs site pages and links were verified (#1176, #1191). CLI help text, error messages and exit codes were reviewed and tidied (#1177).
+- **RepoOS.org project updates.** The sign-up and confirmation experience for project updates is in (#0478).
+- **Agents no longer open visible browsers.** QA and preview runs are now told to use headless browsers only, so they stop stealing focus on your machine (#1187).
+
+[Release on GitHub](https://github.com/repo-os/repoos/releases/tag/v0.5.91)
+
 ## [v0.5.90] - 2026-11-18
 
 ## Highlights
