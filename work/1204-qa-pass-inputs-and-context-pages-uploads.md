@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-18T21:27:43Z"
+review_passes: 2
 id: "1204"
 title: "QA pass: Inputs and Context pages – uploads, docs ingestion and empty states"
 type: bug
@@ -9,8 +11,6 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-inputs-and-context-pages-uploads
 created_at: "2026-11-18T20:47:45Z"
-updated_at: "2026-11-18T21:27:43Z"
-review_passes: 1
 ---
 ## Problem
 Inputs and Context pages have not had a hands-on pass.
@@ -80,3 +80,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T21:26:23Z · body
 - 2026-11-18T21:27:04Z · status active→review
 - 2026-11-18T21:27:43Z · note: review pass 2: needs some work
+
