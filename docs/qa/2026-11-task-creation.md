@@ -2,29 +2,37 @@
 
 ## Environment
 
-- Auth-less preview launched with `just serve-noauth 7272` from a detached scratch worktree at this task branch's HEAD.
+- Server: `just serve-noauth 7272` from a detached scratch worktree at the task branch, binding only to `127.0.0.1`.
 - Browser: Playwright Chromium, headless only. No visible browser or user Chrome was opened.
 - Viewports: 1280 × 900 and 375 × 900.
-- Target: `/work`; app reported connected and loaded the work queue.
+- The preview server is read-only by design. Playwright let its GET requests reach the server and intercepted only the successful create, screenshot-upload, and task-update requests. This exercised the UI request bodies and success states without changing the board.
 
 ## Results
 
 | Flow / check | Result | Evidence |
 | --- | --- | --- |
-| Work queue load | Pass | Page title `RepoOS`; 87 task cards rendered; no page errors observed. |
-| New task panel, desktop | Pass (panel opened) | New task dialog rendered with Freeform and Manual modes, screenshot dropzone, story picker, and Create task/Create draft actions. |
-| New task panel, mobile | Pass (layout check) | At 375 px, document scroll width equaled viewport width (375 px); panel controls remained visible in the dialog. |
-| Empty freeform submission | Not submitted | Create task and Create draft are disabled with an empty description, giving immediate validation. |
-| Manual task form | Pass (form inspection) | Title, optional body, type, priority, area, and assignee controls rendered. |
-| Existing task drawer | Pass (opened) | Opened task #1189; task summary and Task, PM, Dev, Review, Changes, Tokens, and Debug tabs rendered. No page errors observed. |
-| Screenshot attachment | Partial | Added a 1 × 1 PNG through the screenshot input; the panel showed `Add more — 1 screenshot added` and `qa.png`. Upload plus task persistence was not confirmed. |
-| Manual task creation save | Blocked by preview read-only policy | Filled a disposable title and clicked Create. The POST `/api/tasks` returned HTTP 405 with `preview servers are read-only`, which the UI displayed. No task was created. |
-| Dependency selection / update save | Not exercised | The task drawer opened, but this pass did not modify or save task metadata. |
+| Work queue load | Pass | `/work` loaded with the task queue; no page errors were observed. |
+| New task panel | Pass | Freeform and Manual modes rendered at both viewports; document width matched the viewport (0 px horizontal overflow). |
+| Empty freeform validation | Pass | Both Create task and Create draft were disabled with an empty description. |
+| Manual create with dependency | Pass (UI request mocked) | Selected a task in the new searchable Depends on picker. The intercepted `POST /api/tasks` body included `dependsOn: ["1169"]`; the successful response closed the panel. |
+| Screenshot attachment during create | Pass (UI request mocked) | Selected `qa.png`; the intercepted `POST /api/tasks/9001/attachments` request followed create and the panel closed after the mocked success response. |
+| Edit task dependency | Pass (UI request mocked) | In task #1189 Details, selected prerequisite #1169 and saved. The intercepted `PATCH /api/tasks/1189` body included `dependsOn: ["1169"]`; the unsaved-changes panel cleared after success. |
+| Dependency picker at 375 px | Pass | Picker stayed visible and the document had 0 px horizontal overflow in both New task and task Details screens. |
+| Backend create and attachment behavior | Pass (tests) | `bun run test -- attachments task-created-by` passed; attachment tests write and resolve stored screenshot files, and route tests exercise task creation. |
+| Backend dependency persistence and validation | Pass (tests) | `bun run test -- task-dependencies` passed; tests persist `depends_on` and reject unknown IDs, self-dependencies, and cycles. |
 
-## Findings
+## Changes made
 
-The load, panel-open, viewport-fit, empty-form validation, and drawer-open checks behaved as expected. The Create attempt reached the API and was rejected by the intentional read-only preview guard (HTTP 405); the UI displayed the explanation. This is an environment restriction, not evidence of a task-creation defect. Screenshot selection updated the panel preview, but upload persistence cannot be established because all non-GET requests are blocked by the same guard. Dependency editing and save likewise cannot be verified on this server. No product code change or regression test was warranted by the observed response.
+The UI previously showed existing prerequisites but did not let users set them. Added a searchable prerequisite picker to Manual task creation and the task Details editor. The picker excludes the task being edited, shows up to eight matches, supports selecting and removing multiple prerequisites, and sends IDs through the existing `dependsOn` create and PATCH fields. Selection is reset when a new task panel opens and after successful creation.
 
-## Artifacts
+Added component and TaskDrawer tests for filtering, excluding the current task, selection/removal, and the dependency IDs sent by both create and edit requests.
 
-Headless screenshots were captured locally during the pass at both viewport widths; they were temporary QA artifacts and are not committed. The scratch server ran against a detached copy so the task board used for this branch was not changed. `just serve-noauth` starts a preview child; its router rejects all non-GET/HEAD requests. Full CRUD and upload persistence require a writable test server, which conflicts with the task’s specified server command.
+## Verification
+
+- Headless browser run on the actual auth-less preview server at 1280 and 375 px. Only mutating endpoints were intercepted because the preview router correctly rejects writes; this checked UI request payloads and successful response handling, not server persistence.
+- `bun run test -- task-dependency-picker task-dependencies-ui new-task-area-default freeform-submit-ack attachment-upload-ux`: passed.
+- `bun run test -- attachments task-created-by task-dependencies`: passed.
+- `bun run build:ui`: passed.
+- Final changed-path check: `REPOOS_CHECK_CHANGED=main repoos check`.
+
+Temporary screenshots and the detached scratch worktree were used only for this pass and are not part of the deliverable.

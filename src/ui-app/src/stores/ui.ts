@@ -14,6 +14,7 @@ export interface NewTaskForm {
   priority: string;
   area: string;
   assignedTo: string;
+  dependsOn: string[];
   /**
    * Story the new task belongs to (#0555). Per-open context, not a draft: it
    * is reset on every open like the rest of the form, and preset only by the
@@ -208,6 +209,7 @@ export const useUiStore = defineStore("ui", () => {
     // area (#0587); never a hard-coded "web" a repo may not offer.
     area: "",
     assignedTo: "",
+    dependsOn: [],
     story: "",
   });
 
@@ -273,6 +275,7 @@ export const useUiStore = defineStore("ui", () => {
     nt.priority = "p2";
     nt.type = "feature";
     nt.assignedTo = assignedTo;
+    nt.dependsOn = [];
     nt.story = normalizeStoryName(story);
     // Deliberately keep pendingScreenshots: the draft survives closing and
     // reopening the panel within a session (0510), same as freeformText.
