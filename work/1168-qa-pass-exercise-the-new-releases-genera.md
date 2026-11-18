@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-18T01:58:28Z"
+review_passes: 2
 id: "1168"
 title: "QA pass: exercise the new Releases 'Generate AI notes and publish' flow and the update/restart modal end to end"
 type: bug
@@ -11,10 +13,8 @@ branch: feat/qa-pass-exercise-the-new-releases-genera
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-18T00:17:51Z"
-updated_at: "2026-11-18T01:58:28Z"
 handoff_signal_retry_count: 2
 review_rounds: 1
-review_passes: 1
 last_check_failure: "repoos check at 2026-11-18T00:54:42.638Z: repoos check failed: ui-smoke — [queue] waiting for a Playwright slot — position 2 (1 ahead)"
 ---
 ## Problem
@@ -99,3 +99,4 @@ Do not edit repoos.toml.
 - 2026-11-18T01:53:36Z · status active→review
 - 2026-11-18T01:53:36Z · message_queued at 2026-11-18T01:53:36.336Z
 - 2026-11-18T01:58:28Z · note: review pass 2: good to go
+
