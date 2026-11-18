@@ -11038,8 +11038,38 @@
   flex-direction: column;
 }
 .agents-page > .page-header,
+.agents-page > .agents-first-run,
 .agents-page > .agent-tabs {
   flex-shrink: 0;
+}
+.agents-first-run {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 14px;
+  padding: 13px 15px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--panel);
+}
+.agents-first-run-copy {
+  min-width: 0;
+}
+.agents-first-run h2 {
+  margin: 0;
+  color: var(--txt);
+  font-size: 14px;
+}
+.agents-first-run p {
+  margin: 4px 0 0;
+  color: var(--txt-muted);
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+.agents-first-run :deep(button) {
+  min-height: 42px;
+  flex: none;
 }
 .agents-tab-content {
   flex: 1;
@@ -11464,6 +11494,10 @@
     display: block;
     /* Outer scroller at this width — match .work-page end clearance. */
     padding-bottom: var(--page-bottom-inset);
+  }
+  .agents-first-run {
+    align-items: flex-start;
+    flex-wrap: wrap;
   }
   .agents-tab-content {
     overflow: visible;

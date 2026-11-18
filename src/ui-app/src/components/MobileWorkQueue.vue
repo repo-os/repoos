@@ -536,8 +536,15 @@ function openTask(task: Task): void {
 
     <section class="mobile-task-list" aria-label="Tasks">
       <div v-if="repo.loading" class="mobile-queue-state" role="status">Loading tasks…</div>
-      <div v-else-if="refreshError" class="mobile-queue-state mobile-queue-error" role="alert">
-        <p>{{ refreshError }}</p>
+      <div
+        v-else-if="repo.boardLoadError || refreshError"
+        class="mobile-queue-state mobile-queue-error"
+        role="alert"
+        data-testid="mobile-work-load-error"
+      >
+        <h2>Couldn't load tasks</h2>
+        <p>{{ repo.boardLoadError || refreshError }}</p>
+        <p>Check that the RepoOS server is running, then retry.</p>
         <Button variant="outline" :disabled="refreshing" @click="retryLoad">
           <RotateCw aria-hidden="true" /> {{ refreshing ? "Retrying…" : "Retry" }}
         </Button>

@@ -382,6 +382,24 @@ describe("mobile Work queue", () => {
     expect(api).toHaveBeenCalledWith("/api/board");
   });
 
+  it("shows initial board-load failures and clears them after a successful retry", async () => {
+    const repo = useRepoStore();
+    repo.loading = false;
+    repo.boardLoadError = "Can't reach the RepoOS server — it may be down.";
+    const wrapper = mountQueue();
+    expect(wrapper.get("[data-testid='mobile-work-load-error']").text()).toContain(
+      "Check that the RepoOS server is running, then retry.",
+    );
+    expect(wrapper.text()).toContain("Can't reach the RepoOS server");
+    expect(wrapper.find(".mobile-queue-empty").exists()).toBe(false);
+
+    api.mockResolvedValueOnce({ tasks: [task("0002", "inbox")], counts: { inbox: 1 } });
+    await wrapper.get("[data-testid='mobile-work-load-error'] button").trigger("click");
+    await flushPromises();
+    expect(wrapper.find("[data-testid='mobile-work-load-error']").exists()).toBe(false);
+    expect(wrapper.text()).toContain("#0002");
+  });
+
   it("keeps the desktop board composition when the responsive layout is wide", async () => {
     stubViewport(1280, false);
     const wrapper = mount(WorkView, { global: { stubs: workViewStubs() } });
