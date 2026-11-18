@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-task-creation-and-editing-flows-
 created_at: "2026-11-18T16:17:39Z"
-updated_at: "2026-11-18T18:00:07Z"
+updated_at: "2026-11-18T18:01:07Z"
 review_passes: 2
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: gate exit 1 on bee — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: 68ba09e1c0b8603f3e4bcef797bde8383f2576bf
@@ -110,3 +110,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T17:59:45Z · watchdog: check wait escalated · waiting: waiting for a Playwright slot — position 2 (1 ahead); slot holder 75126 is dead for 10s · next step: investigate the abnormal wait; the flag clears when the check starts
 - 2026-11-18T18:00:00Z · watchdog: check wait ended or recovered — cleared needs_input
 - 2026-11-18T18:00:07Z · status active→review
+- 2026-11-18T18:01:07Z · message_queued at 2026-11-18T18:01:07.342Z
