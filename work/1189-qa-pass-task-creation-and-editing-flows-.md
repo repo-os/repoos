@@ -2,14 +2,14 @@
 id: "1189"
 title: "QA pass: task creation and editing flows (new task, update, attach screenshot, dependencies)"
 type: bug
-status: ready
+status: active
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
-branch: ""
+branch: feat/qa-pass-task-creation-and-editing-flows-
 created_at: "2026-11-18T16:17:39Z"
-updated_at: "2026-11-18T16:17:48Z"
+updated_at: "2026-11-18T16:17:53Z"
 ---
 ## Problem
 Creating and editing tasks in the UI has changed a lot and has no recent hands-on pass.
@@ -25,3 +25,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 
 - 2026-11-18T16:17:39Z · created · t@t
 - 2026-11-18T16:17:48Z · status inbox→ready
+- 2026-11-18T16:17:53Z · status ready→active, branch
