@@ -2,7 +2,7 @@
 id: "1205"
 title: "QA pass: Control (Mission Control) dashboard – every card, chart and empty state at desktop and 375px"
 type: bug
-status: review
+status: active
 priority: p2
 area: web
 assigned_to: ai
@@ -10,6 +10,8 @@ created_by: t@t
 branch: feat/qa-pass-control-mission-control-dashboar
 created_at: "2026-11-18T21:47:29Z"
 updated_at: "2026-11-18T22:20:50Z"
+review_rounds: 1
+routing_switches: 1
 review_passes: 1
 ---
 ## Problem
@@ -48,3 +50,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T22:20:08Z · message_queued at 2026-11-18T22:20:08.743Z
 - 2026-11-18T22:20:49Z · note: review pass 1: needs some work
 - 2026-11-18T22:20:50Z · message_delivered: 1 message(s)
+- 2026-11-18T22:20:50Z · status review→active
