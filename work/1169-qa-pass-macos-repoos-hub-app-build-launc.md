@@ -2,7 +2,7 @@
 id: "1169"
 title: "QA pass: macOS RepoOS Hub app – build, launch, connect, and fix what is broken"
 type: bug
-status: active
+status: review
 priority: p2
 area: macos
 assigned_to: ai
@@ -103,3 +103,4 @@ Signed-in projects and tasks remain unverified because automated email-code entr
 - 2026-11-18T05:17:41Z · message_delivered: 1 message(s)
 - 2026-11-18T05:22:42Z · body
 - 2026-11-18T05:23:22Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: `repoos check --changed main` passed on the current tree. I didn’t request another review: the newest report says #1174’s signed-in results are required before sign-off, and that human task still has no results. My attempt to inspect the c… · stderr: (empty)
+- 2026-11-18T05:23:22Z · status active→review
