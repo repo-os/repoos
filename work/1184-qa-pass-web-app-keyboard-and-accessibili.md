@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-18T14:27:57Z"
-review_passes: 1
 id: "1184"
 title: "QA pass: web app keyboard and accessibility – focus order, labels, dialogs, contrast"
 type: bug
@@ -11,6 +9,8 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-web-app-keyboard-and-accessibili
 created_at: "2026-11-18T12:17:32Z"
+updated_at: "2026-11-18T14:27:58Z"
+review_passes: 1
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-11-18T12:45:29.556Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-18T12:54:45.117Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-18T13:03:30.252Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
@@ -70,4 +70,4 @@ Do not touch repoos.toml.
 - 2026-11-18T14:27:19Z · status active→review
 - 2026-11-18T14:27:20Z · message_queued at 2026-11-18T14:27:20.014Z
 - 2026-11-18T14:27:57Z · note: review pass 1: needs some work
-
+- 2026-11-18T14:27:58Z · message_delivered: 1 message(s)
