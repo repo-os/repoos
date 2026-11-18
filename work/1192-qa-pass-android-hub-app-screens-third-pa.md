@@ -31,3 +31,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T17:59:30Z · watchdog: check wait escalated · waiting: waiting for a Playwright slot — position 2 (1 ahead); slot holder 74680 is dead for 14s · next step: investigate the abnormal wait; the flag clears when the check starts
 - 2026-11-18T17:59:45Z · watchdog: check wait ended or recovered — cleared needs_input
 - 2026-11-18T18:00:56Z · status active→review
+- 2026-11-18T18:00:56Z · message_queued at 2026-11-18T18:00:56.928Z
