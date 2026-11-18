@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-task-creation-and-editing-flows-
 created_at: "2026-11-18T16:17:39Z"
-updated_at: "2026-11-18T16:17:53Z"
+updated_at: "2026-11-18T16:27:13Z"
 ---
 ## Problem
 Creating and editing tasks in the UI has changed a lot and has no recent hands-on pass.
@@ -26,3 +26,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T16:17:39Z · created · t@t
 - 2026-11-18T16:17:48Z · status inbox→ready
 - 2026-11-18T16:17:53Z · status ready→active, branch
+- 2026-11-18T16:27:13Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: I did not complete the QA pass or request handoff. In the disposable scratch preview, clicking **Create** left the manual task form open, and I couldn’t confirm whether the task was saved. Dependency editing also remains untested, so I can… · stderr: Reading additional input from stdin... 2026-11-18T16:23:48.895845Z ERROR codex_core::tools::router: error=exec_command failed: CreateProcess { message: "Rejected(\"`/bin/zsh -lc 'git worktree remove --force /Users/nick/code/nick/repoos-worktrees/feat/qa-pass-task-creation-and-editing-flows-/.qa-scratch && rm -f /Users…
