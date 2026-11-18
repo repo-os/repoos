@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-18T08:56:59Z"
+review_passes: 1
 id: "1181"
 title: "QA pass: Stories, Inbox and Agents-activity views – desktop and 375px"
 type: bug
@@ -9,7 +11,6 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-stories-inbox-and-agents-activit
 created_at: "2026-11-18T08:49:05Z"
-updated_at: "2026-11-18T08:56:59Z"
 ---
 ## Problem
 Stories, Inbox and activity-style views have not had a recent hands-on QA pass.
@@ -31,3 +32,4 @@ Do not touch repoos.toml; skip what #1157/#1170/#1173/#1178 covered.
 - 2026-11-18T08:56:19Z · message_queued at 2026-11-18T08:56:19.941Z
 - 2026-11-18T08:56:20Z · note: shots: skipped — the diff (3 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-18T08:56:59Z · note: review pass 1: good to go
+
