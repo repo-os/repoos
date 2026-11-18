@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-18T19:49:41Z"
+review_passes: 1
 id: "1198"
 title: "QA pass: Debug panel, logs and activity views – large outputs, long lines, empty and error states"
 type: bug
@@ -9,7 +11,6 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-debug-panel-logs-and-activity-vi
 created_at: "2026-11-18T19:24:11Z"
-updated_at: "2026-11-18T19:49:41Z"
 ---
 ## Problem
 Log and debug views with large or odd output may overflow or freeze.
@@ -55,3 +56,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T19:49:07Z · status active→review
 - 2026-11-18T19:49:07Z · message_queued at 2026-11-18T19:49:07.577Z
 - 2026-11-18T19:49:41Z · note: review pass 1: good to go
+
