@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-control-mission-control-dashboar
 created_at: "2026-11-18T21:47:29Z"
-updated_at: "2026-11-18T23:50:47Z"
+updated_at: "2026-11-18T23:55:14Z"
 close_out_repair_count: 1
 review_passes: 2
 last_handoff_failure_fingerprint: "check|repoos check failed: check-fmt:check — Formatting failed — run `bun run fmt` to fix:"
@@ -97,3 +97,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T23:50:46Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-18T23:50:47Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code unknown) · last assistant: The full check has passed format, lint, build, style guards, contrast, and branch/task-asset guards. It is now running the unscoped test suite; the check could not create a checkpoint mid-merge, so it is validating the live worktree direct… · stderr: 2026-11-18T23:06:27.181253Z ERROR codex_core::tools::router: error=exec_command failed: CreateProcess { message: "Rejected(\"`/bin/zsh -lc \\\"kill 31246 && rm -rf /Users/nick/code/nick/repoos-worktrees/feat/qa-pass-control-mission-control-dashboar/.repoos/qa-scratch && bunx vitest run src/ui-app/tests/worktree-gc-sho…
 - 2026-11-18T23:50:47Z · message_delivered: 1 message(s)
+- 2026-11-18T23:55:14Z · message_queued at 2026-11-18T23:55:14.798Z
