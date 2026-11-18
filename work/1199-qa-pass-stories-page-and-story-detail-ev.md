@@ -2,14 +2,14 @@
 id: "1199"
 title: "QA pass: Stories page and story detail – every state at desktop and 375px"
 type: bug
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
 branch: ""
 created_at: "2026-11-18T19:47:44Z"
-updated_at: "2026-11-18T19:47:44Z"
+updated_at: "2026-11-18T19:47:47Z"
 ---
 ## Problem
 Stories cards and detail views changed recently (#1150) and need a full pass.
@@ -24,3 +24,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 ## Activity
 
 - 2026-11-18T19:47:44Z · created · t@t
+- 2026-11-18T19:47:47Z · status inbox→ready
