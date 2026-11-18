@@ -84,3 +84,4 @@ Reported by Nick 2026-11-18 20:22 from the phone UI. Related #1154. Do not touch
 - 2026-11-18T14:36:27Z · ↻ resuming engineer to read queued message
 - 2026-11-18T14:36:27Z · message_delivered: 2 message(s)
 - 2026-11-18T14:41:14Z · message_queued at 2026-11-18T14:41:14.223Z
+- 2026-11-18T14:41:14Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
