@@ -1219,8 +1219,9 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
       break;
     case "secrets:populated":
     case "secrets:removeDialog":
-      // SecretsView reads this registered fixture and seeds fake metadata
-      // locally, without fetching a project's actual environment data.
+    case "secrets:unauthorized":
+      // SecretsView reads registered fixtures locally, without fetching a
+      // project's actual environment data.
       break;
     case "release:updateAvailable":
       // #1073 — pin a newer-release payload so the update dialog opens with its

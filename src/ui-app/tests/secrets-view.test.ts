@@ -140,6 +140,20 @@ describe("SecretsView (#0929)", () => {
     wrapper.unmount();
   });
 
+  it("renders the registered unauthorized shot without loading environment data", async () => {
+    window.history.replaceState({}, "", "/secrets?shotState=secrets%3Aunauthorized");
+    const wrapper = mountPage();
+    await flushPromises();
+
+    expect(wrapper.get('[role="alert"]').text()).toContain(
+      "Sign in to view project environments and keys.",
+    );
+    expect(wrapper.find(".secrets-empty").exists()).toBe(false);
+    expect(wrapper.find('[data-testid="new-environment"]').exists()).toBe(false);
+    expect(api).not.toHaveBeenCalled();
+    wrapper.unmount();
+  });
+
   it("renders a cached empty environment list while revalidating", async () => {
     api.mockResolvedValue({ environments: [] } as never);
     const first = mountPage();
@@ -350,6 +364,109 @@ describe("SecretsView (#0929)", () => {
     expect(document.body.textContent).not.toContain("Authentication required");
     expect(wrapper.find('[data-testid="new-environment"]').exists()).toBe(false);
     expect(wrapper.find(".secrets-empty").exists()).toBe(false);
+    wrapper.unmount();
+  });
+  it("clears a typed key name and value when adding a key returns 401", async () => {
+    const sentinel = "FAKE_TYPED_SECRET_1164";
+    api.mockImplementation(async (path, opts) => {
+      if (opts?.method === "PUT")
+        throw new ApiError("Authentication required", 401, { error: "Authentication required" });
+      return answer(path) as never;
+    });
+    const wrapper = mountPage();
+    await flushPromises();
+    await wrapper.get(".secrets-ledger-top button").trigger("click");
+    const fields = wrapper.findAll(".secrets-add-row input");
+    await fields[0]!.setValue("SERVICE_TOKEN");
+    await fields[1]!.setValue(sentinel);
+    await wrapper.get(".secrets-add-row button").trigger("click");
+    await flushPromises();
+
+    expect(wrapper.get('[role="alert"]').text()).toContain(
+      "Sign in to view project environments and keys.",
+    );
+    expect(wrapper.find(".secrets-add-row").exists()).toBe(false);
+    expect(wrapper.find(".secrets-ledger").exists()).toBe(false);
+    expect(wrapper.text()).not.toContain("SERVICE_TOKEN");
+    expect(document.body.textContent).not.toContain(sentinel);
+    expect(wrapper.text()).not.toContain("Authentication required");
+    wrapper.unmount();
+  });
+  it("clears edit drafts and stale status when replacing a key returns 401", async () => {
+    let writes = 0;
+    const sentinel = "FAKE_TYPED_REPLACEMENT_1164";
+    api.mockImplementation(async (path, opts) => {
+      if (opts?.method === "PUT") {
+        writes++;
+        if (writes > 1)
+          throw new ApiError("Authentication required", 401, { error: "Authentication required" });
+        return { ok: true } as never;
+      }
+      return answer(path) as never;
+    });
+    const wrapper = mountPage();
+    await flushPromises();
+    const openEdit = async () => {
+      const row = wrapper
+        .findAll(".secrets-row")
+        .find((item) => item.text().includes("DATABASE_URL"))!;
+      await row.get(".secrets-menu-trigger").trigger("click");
+      await flushPromises();
+      await document.querySelector<HTMLElement>(".secrets-menu button")!.click();
+      await flushPromises();
+    };
+    await openEdit();
+    await wrapper.get(".secrets-inline-form input").setValue("first fake replacement");
+    await wrapper.get(".secrets-inline-form button").trigger("click");
+    await flushPromises();
+    expect(wrapper.get(".secrets-message").text()).toContain("DATABASE_URL saved");
+
+    await openEdit();
+    await wrapper.get(".secrets-inline-form input").setValue(sentinel);
+    await wrapper.get(".secrets-inline-form button").trigger("click");
+    await flushPromises();
+
+    expect(wrapper.get('[role="alert"]').text()).toContain(
+      "Sign in to view project environments and keys.",
+    );
+    expect(wrapper.find(".secrets-inline-form").exists()).toBe(false);
+    expect(wrapper.find(".secrets-message").exists()).toBe(false);
+    expect(wrapper.find(".secrets-ledger").exists()).toBe(false);
+    expect(document.body.textContent).not.toContain(sentinel);
+    wrapper.unmount();
+  });
+  it("closes the remove confirmation when removing a key returns 401", async () => {
+    api.mockImplementation(async (path, opts) => {
+      if (opts?.method === "PUT")
+        throw new ApiError("Authentication required", 401, { error: "Authentication required" });
+      return answer(path) as never;
+    });
+    const wrapper = mountPage();
+    await flushPromises();
+    const row = wrapper
+      .findAll(".secrets-row")
+      .find((item) => item.text().includes("DATABASE_URL"))!;
+    await row.get(".secrets-menu-trigger").trigger("click");
+    await flushPromises();
+    const remove = [...document.querySelectorAll<HTMLElement>(".secrets-menu button")].find(
+      (button) => button.textContent?.includes("Remove key"),
+    )!;
+    await remove.click();
+    await flushPromises();
+    expect(document.body.textContent).toContain("Affected consumers: Dev · web");
+    const confirm = document.querySelectorAll<HTMLButtonElement>(
+      ".delete-confirm-modal .cc-modal-actions button",
+    )[1]!;
+    await confirm.click();
+    await flushPromises();
+
+    expect(wrapper.get('[role="alert"]').text()).toContain(
+      "Sign in to view project environments and keys.",
+    );
+    expect(document.querySelector(".delete-confirm-modal")).toBeNull();
+    expect(document.body.textContent).not.toContain("Affected consumers: Dev · web");
+    expect(document.body.textContent).not.toContain("Remove key");
+    expect(wrapper.find(".secrets-ledger").exists()).toBe(false);
     wrapper.unmount();
   });
   it("changes the viewed environment without rebinding anything", async () => {

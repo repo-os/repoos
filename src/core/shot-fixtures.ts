@@ -166,6 +166,8 @@ export const SHOT_PREVIEW_FIXTURE_IDS = [
   // Secrets page and its add/remove dialogs.
   "secrets:populated",
   "secrets:removeDialog",
+  // #1164 — unsigned Secrets state, without loading any project metadata.
+  "secrets:unauthorized",
   // #0931 — fake deployment target and environment metadata for a fresh
   // Deployments-page capture; never fetches project secrets or provider data.
   "deployments:environmentBinding",

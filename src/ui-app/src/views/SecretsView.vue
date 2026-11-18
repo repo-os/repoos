@@ -76,6 +76,7 @@ const addOpen = ref(false);
 const restartKeys = ref(new Set<string>());
 const shotFixture = readShotPreviewFixtureFromLocation(window.location);
 const fixture = shotFixture === "secrets:populated" || shotFixture === "secrets:removeDialog";
+const unauthorizedFixture = shotFixture === "secrets:unauthorized";
 const auth = useAuthStore();
 const repo = useRepoStore();
 const config = useConfigStore();
@@ -372,6 +373,16 @@ function safeError(e: unknown): string {
     selected.value = "";
     snapshot.value = null;
     snapshotRefreshError.value = "";
+    confirmKey.value = null;
+    openMenuKey.value = null;
+    editingKey.value = null;
+    addOpen.value = false;
+    keyDraft.value = "";
+    valueDraft.value = "";
+    message.value = "";
+    createOpen.value = false;
+    createError.value = "";
+    newName.value = "";
     invalidatePageData("project-environments");
     invalidatePageDataPrefix("secrets:");
     error.value = "Sign in to view project environments and keys.";
@@ -470,6 +481,12 @@ async function removeKey(): Promise<void> {
 }
 onMounted(() => {
   document.addEventListener("pointerdown", onDocumentPointerDown);
+  if (unauthorizedFixture) {
+    authRequired.value = true;
+    error.value = "Sign in to view project environments and keys.";
+    loading.value = false;
+    return;
+  }
   if (fixture) {
     const theme = new URLSearchParams(location.search).get("theme");
     if (theme === "light" || theme === "dark") document.documentElement.dataset.theme = theme;
