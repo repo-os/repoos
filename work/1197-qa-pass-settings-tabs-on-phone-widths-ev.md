@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-settings-tabs-on-phone-widths-ev
 created_at: "2026-11-18T19:24:03Z"
-updated_at: "2026-11-18T19:24:08Z"
+updated_at: "2026-11-18T19:32:21Z"
 ---
 ## Problem
 Settings has many tabs and dialogs that are hard to use on a phone.
@@ -21,8 +21,23 @@ Every Settings tab and dialog is usable at 375px without clipping or horizontal 
 ## Notes for AI
 Do not touch repoos.toml. Never open a visible browser window.
 
+## Shots
+```json
+[
+{
+  "label": "Support actions wrap at phone width",
+  "target": "default",
+  "route": "/settings?tab=support",
+  "highlight": ".bug-report-actions",
+  "viewportWidth": 375,
+  "viewportHeight": 844
+}
+]
+```
+
 ## Activity
 
 - 2026-11-18T19:24:03Z · created · t@t
 - 2026-11-18T19:24:06Z · status inbox→ready
 - 2026-11-18T19:24:08Z · status ready→active, branch
+- 2026-11-18T19:32:21Z · body
