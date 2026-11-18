@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-11-18T22:32:45Z"
-review_passes: 2
+last_close_out_gate_ms: 65824
+last_close_out_gate_at: "2026-11-18T22:41:05.462Z"
 id: "1206"
 title: "QA pass: Releases page cut flow with fixtures – notes chooser, blockers, in-progress and failed states at 375px"
 type: bug
@@ -11,6 +11,8 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-releases-page-cut-flow-with-fixt
 created_at: "2026-11-18T22:17:29Z"
+updated_at: "2026-11-18T22:41:05Z"
+review_passes: 2
 review_rounds: 1
 routing_switches: 1
 ---
@@ -39,4 +41,5 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T22:32:21Z · message_queued at 2026-11-18T22:32:21.684Z
 - 2026-11-18T22:32:21Z · note: shots: skipped — the diff (6 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-18T22:32:45Z · note: review pass 2: good to go
+- 2026-11-18T22:41:05Z · close-out gate completed in 66s
 
