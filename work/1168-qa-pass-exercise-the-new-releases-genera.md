@@ -1,5 +1,4 @@
 ---
-handoff_signal_retry_count: 1
 id: "1168"
 title: "QA pass: exercise the new Releases 'Generate AI notes and publish' flow and the update/restart modal end to end"
 type: bug
@@ -12,7 +11,8 @@ branch: feat/qa-pass-exercise-the-new-releases-genera
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-18T00:17:51Z"
-updated_at: "2026-11-18T01:08:14Z"
+updated_at: "2026-11-18T01:28:22Z"
+handoff_signal_retry_count: 1
 review_rounds: 1
 review_passes: 1
 last_check_failure: "repoos check at 2026-11-18T00:54:42.638Z: repoos check failed: ui-smoke — [queue] waiting for a Playwright slot — position 2 (1 ahead)"
@@ -62,4 +62,4 @@ Do not edit repoos.toml.
 - 2026-11-18T01:07:30Z · note: review pass 1: needs some work
 - 2026-11-18T01:07:31Z · message_delivered: 1 message(s)
 - 2026-11-18T01:07:32Z · status review→active
-
+- 2026-11-18T01:28:22Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: I fixed the count pluralization and corrected the new test; `releases.test.ts` now passes all 44 tests. The full `REPOOS_CHECK_CHANGED=main repoos check` did **not** pass: its scoped test run exposed an incorrect assertion in my new uncert… · stderr: 2026-11-18T01:21:02.772789Z ERROR codex_core::tools::router: error=write_stdin failed: Unknown process id 97737 2026-11-18T01:22:46.085568Z ERROR codex_core::tools::router: error=write_stdin failed: Unknown process id 74094 2026-11-18T01:27:41.475550Z ERROR codex_core::tools::router: error=Exit code: 1 Wall time: 0 se…
