@@ -15,7 +15,6 @@ updated_at: "2026-11-18T15:36:05Z"
 review_passes: 9
 review_rounds: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-11-18T04:39:18.645Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-18T04:49:19.309Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-18T08:53:34.221Z\",\"reason\":\"clean-exit-without-handoff\"}]"
-deferred_handoff_resume_count: 1
 ---
 ## Problem
 Nick reports the macOS Hub app has been unusable for weeks. Nobody has recently built and driven it.
