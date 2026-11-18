@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "1184"
 title: "QA pass: web app keyboard and accessibility – focus order, labels, dialogs, contrast"
 type: bug
@@ -29,3 +30,4 @@ Do not touch repoos.toml.
 - 2026-11-18T12:19:14Z · note: adopted orphaned engineer pid 52979
 - 2026-11-18T12:23:04Z · body
 - 2026-11-18T12:24:59Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code unknown · last assistant: Implemented the Agents Skills dialog fix: its close button now has the accessible name “Close dialog,” with a regression test in [keyboard-a11y.test.ts](/Users/nick/code/nick/repoos-worktrees/feat/qa-pass-web-app-keyboard-and-accessibili/s… · stderr: Reading additional input from stdin...
+
