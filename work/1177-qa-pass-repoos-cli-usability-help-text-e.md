@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-18T06:10:05Z"
+review_passes: 1
 id: "1177"
 title: "QA pass: RepoOS CLI usability – help text, error messages and exit codes"
 type: bug
@@ -9,7 +11,6 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-repoos-cli-usability-help-text-e
 created_at: "2026-11-18T05:56:48Z"
-updated_at: "2026-11-18T06:10:04Z"
 ---
 ## Problem
 CLI commands (list, show, new, update, start, mv, done, review, handoff-status, upgrade, restart) may have unclear help or errors.
@@ -31,3 +32,4 @@ Do not touch repoos.toml; do not run commands that mutate the real board.
 - 2026-11-18T06:09:29Z · message_queued at 2026-11-18T06:09:29.575Z
 - 2026-11-18T06:09:29Z · note: shots: skipped — the diff (7 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-18T06:10:04Z · note: review pass 1: needs some work
+
