@@ -1,0 +1,26 @@
+---
+id: "1180"
+title: "QA pass: Releases page and Checks page – every state and action"
+type: bug
+status: inbox
+priority: p2
+area: web
+assigned_to: ai
+created_by: t@t
+branch: ""
+created_at: "2026-11-18T08:17:32Z"
+updated_at: "2026-11-18T08:17:32Z"
+---
+## Problem
+Releases and Checks pages changed a lot in v0.5.90 and may have state bugs.
+## Desired UX
+Every state (ready, blocked, running, failed, done) of the Releases and Checks pages renders correctly and actions behave, at 1280 and 375 widths.
+## Acceptance criteria
+- Drive the auth-less dev server (just serve-noauth from a worktree) using fixtures; never publish a real release.
+- Fix bugs with tests; commit docs/qa/2026-11-releases-checks.md.
+## Notes for AI
+Do not touch repoos.toml; skip what #1168 and #1173 covered.
+
+## Activity
+
+- 2026-11-18T08:17:32Z · created · t@t
