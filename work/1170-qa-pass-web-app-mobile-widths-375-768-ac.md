@@ -115,3 +115,4 @@ Do not touch repoos.toml. Pages use full .main width.
 - 2026-11-18T05:13:50Z · status active→review
 - 2026-11-18T05:14:44Z · message_queued at 2026-11-18T05:14:44.788Z
 - 2026-11-18T05:14:45Z · note: shots: failed — browser capture cancelled
+- 2026-11-18T05:14:45Z · note: review pass 5: needs some work
