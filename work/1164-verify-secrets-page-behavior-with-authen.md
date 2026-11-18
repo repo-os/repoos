@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-18T01:24:17Z"
-review_passes: 3
 id: "1164"
 title: Verify Secrets page behavior with authenticated access
 type: bug
@@ -16,6 +14,8 @@ branch: feat/verify-secrets-page-behavior-with-authen
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T17:53:29Z"
+updated_at: "2026-11-18T01:24:18Z"
+review_passes: 3
 review_rounds: 2
 ---
 ## Problem
