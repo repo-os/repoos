@@ -85,10 +85,10 @@ const filterCol = computed<Column | null>(() => {
 });
 
 // ── #0345 Deep-linking: /work?task=<id> opens that task's drawer and
-// ?task=new opens the new-task panel. On desktop the task param is cleared
-// once the drawer opens; on narrow screens it stays in history as the detail
-// page route so Back returns to the queue. Other query keys (e.g. ?status=)
-// are preserved. A link that arrives through the login round-trip
+// ?task=new opens the new-task panel. Keep the task and optional tab params
+// while the drawer is open so a reload preserves a deep link on every screen
+// size. TaskDrawer clears them when the user closes the panel. Other query keys
+// (e.g. ?status=) are preserved. A link that arrives through the login round-trip
 // survives end-to-end: the router guard redirects with redirect=to.fullPath
 // and LoginView restores the full path after sign-in.
 //
@@ -166,7 +166,6 @@ async function openFromTaskParam(raw: string): Promise<void> {
   const request = ++taskOpenRequest;
   if (raw === "new") {
     ui.openNewTask();
-    await clearTaskParam();
     return;
   }
   const id = raw.replace(/^#/, "");
@@ -223,9 +222,6 @@ async function openFromTaskParam(raw: string): Promise<void> {
       ui.debugView = "status";
     }
   }
-  // On narrow screens the task query is the detail-page route. Keeping it in
-  // history lets browser Back return to the still-mounted queue and its state.
-  if (!isNarrow.value) await clearTaskParam();
 }
 
 // ── #1141 Show/hide human and held tasks ───────────────────────────────
