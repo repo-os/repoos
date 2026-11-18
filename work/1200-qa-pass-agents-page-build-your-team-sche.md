@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-18T21:03:27.069Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 id: "1200"
 title: "QA pass: Agents page Build Your Team, Scheduled Tasks, Reminders and Detected Coding Agents tabs"
 type: bug
@@ -73,3 +75,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T21:03:23Z · message_queued at 2026-11-18T21:03:23.897Z
 - 2026-11-18T21:03:24Z · note: shots: failed — browser capture cancelled
 - 2026-11-18T21:03:26Z · message_delivered: 1 message(s)
+
