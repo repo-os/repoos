@@ -2,14 +2,14 @@
 id: "1179"
 title: "QA pass: Settings and Agents pages – every control saves, validates and survives reload"
 type: bug
-status: review
+status: active
 priority: p2
 area: [web, server]
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-settings-and-agents-pages-every-
 created_at: "2026-11-18T06:47:46Z"
-updated_at: "2026-11-18T10:17:32Z"
+updated_at: "2026-11-18T10:17:33Z"
 review_passes: 4
 review_rounds: 2
 routing_switches: 1
@@ -108,4 +108,3 @@ Do not touch repoos.toml.
 - 2026-11-18T09:17:40Z · needs_input
 - 2026-11-18T09:17:41Z · message_delivered: 1 message(s)
 - 2026-11-18T10:17:32Z · engineer stopped by request
-- 2026-11-18T10:17:32Z · status active→review
