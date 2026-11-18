@@ -2,7 +2,7 @@
 id: "1170"
 title: "QA pass: web app mobile widths (375/768) across Work, Releases, Settings, Agents, Checks"
 type: bug
-status: review
+status: active
 priority: p2
 area: web
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/qa-pass-web-app-mobile-widths-375-768-ac
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-18T02:19:49Z"
-updated_at: "2026-11-18T03:40:32Z"
+updated_at: "2026-11-18T03:40:52Z"
 review_rounds: 2
 review_passes: 2
 ---
@@ -58,3 +58,4 @@ Do not touch repoos.toml. Pages use full .main width.
 - 2026-11-18T03:27:43Z · body
 - 2026-11-18T03:29:17Z · status active→review
 - 2026-11-18T03:40:32Z · cli_override, model_override
+- 2026-11-18T03:40:52Z · status review→active
