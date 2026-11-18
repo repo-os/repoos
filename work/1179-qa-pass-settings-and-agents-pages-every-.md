@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-settings-and-agents-pages-every-
 created_at: "2026-11-18T06:47:46Z"
-updated_at: "2026-11-18T13:05:00Z"
+updated_at: "2026-11-18T13:08:10Z"
 review_passes: 5
 last_handoff_failure_fingerprint: "check|repoos check failed: check-fmt:check — Formatting failed — run `bun run fmt` to fix:"
 last_handoff_failure_sha: a33d6a689dbd8428e920b3807946463fd8171337
@@ -138,3 +138,4 @@ Do not touch repoos.toml.
 - 2026-11-18T12:34:33Z · body
 - 2026-11-18T13:03:40Z · body
 - 2026-11-18T13:05:00Z · status active→review
+- 2026-11-18T13:08:10Z · note: ui verification passed: 1 of 1 shot captured with clean console
