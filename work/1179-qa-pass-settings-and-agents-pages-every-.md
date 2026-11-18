@@ -2,7 +2,7 @@
 id: "1179"
 title: "QA pass: Settings and Agents pages – every control saves, validates and survives reload"
 type: bug
-status: review
+status: active
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 needs_input_detail: `needs some work` — The audit still omits control-by-control coverage for several Settings tabs.
@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-settings-and-agents-pages-every-
 created_at: "2026-11-18T06:47:46Z"
-updated_at: "2026-11-18T11:32:37Z"
+updated_at: "2026-11-18T11:47:37Z"
 review_passes: 5
 last_handoff_failure_fingerprint: "check|repoos check failed: check-fmt:check — Formatting failed — run `bun run fmt` to fix:"
 last_handoff_failure_sha: a33d6a689dbd8428e920b3807946463fd8171337
@@ -133,3 +133,4 @@ Do not touch repoos.toml.
 - 2026-11-18T11:22:21Z · needs_input
 - 2026-11-18T11:32:37Z · handoff failed · remote validation failed: test failure: tests/ensure-worktree-resilience.test.ts > ensureWorktree resilience (#0994) > serializes concurrent starts from separate processes on one branch on bee — fix it in the feature branch and re-run the gate
 - 2026-11-18T11:32:37Z · message_queued at 2026-11-18T11:32:37.315Z
+- 2026-11-18T11:47:37Z · status review→active
