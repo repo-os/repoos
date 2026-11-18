@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-18T15:54:33Z"
+review_passes: 1
 id: "1188"
 title: "QA pass: Deployments, Dev and Context pages – every state and action"
 type: bug
@@ -9,7 +11,6 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-deployments-dev-and-context-page
 created_at: "2026-11-18T15:47:34Z"
-updated_at: "2026-11-18T15:54:33Z"
 ---
 ## Problem
 Deployments, Dev and Context pages have not had a recent hands-on QA pass.
@@ -30,3 +31,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T15:54:05Z · message_queued at 2026-11-18T15:54:05.389Z
 - 2026-11-18T15:54:05Z · note: shots: skipped — the diff (3 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-18T15:54:33Z · note: review pass 1: needs some work
+
