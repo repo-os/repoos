@@ -62,6 +62,8 @@ Agents, Build Your Team, Scheduled Tasks, Reminders, Detected Coding Agents, Mod
 ## Check
 
 The source change fixes a cross-process lock initialization race in `ensureWorktree`: contenders no longer treat a newly created lock directory with no pid file as stale. A deterministic regression covers the directory-creation/pid-write gap. The task-specific Vitest file passed locally, including the separate-process serialization test and the new regression. The scoped RepoOS check is the handoff gate; RepoOS reports its final result in the handoff status.
+
+The scoped gate also exposed environmental coupling in `servers-command.test.ts`: tests that stubbed Tailscale status and SSH still used the default HTTP discovery, so a runner on the real tailnet could return live peer data and break exact assertions. The tests now stub HTTP discovery to `null` when they are specifically checking SSH/fallback behavior. All 15 tests in that file pass locally with the network seam isolated. This does not change production discovery behavior.
 ## Control inventory audited
 
 ### Advanced (24 controls)
