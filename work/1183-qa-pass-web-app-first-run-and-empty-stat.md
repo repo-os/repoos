@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-18T11:37:31Z"
+review_passes: 1
 id: "1183"
 title: "QA pass: web app first-run and empty states – new project, no tasks, no agents, offline server"
 type: bug
@@ -9,7 +11,6 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-web-app-first-run-and-empty-stat
 created_at: "2026-11-18T10:17:38Z"
-updated_at: "2026-11-18T11:37:31Z"
 ---
 ## Problem
 First-run, empty and error states are rarely exercised and likely have rough edges.
@@ -73,3 +74,4 @@ Do not touch repoos.toml.
 - 2026-11-18T11:36:29Z · status active→review
 - 2026-11-18T11:36:29Z · message_queued at 2026-11-18T11:36:29.417Z
 - 2026-11-18T11:37:31Z · note: review pass 1: needs some work
+
