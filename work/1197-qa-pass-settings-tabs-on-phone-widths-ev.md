@@ -2,14 +2,14 @@
 id: "1197"
 title: "QA pass: Settings tabs on phone widths – every tab, control and dialog at 375px"
 type: bug
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-settings-tabs-on-phone-widths-ev
 created_at: "2026-11-18T19:24:03Z"
-updated_at: "2026-11-18T19:43:16Z"
+updated_at: "2026-11-18T19:43:17Z"
 ---
 ## Problem
 Settings has many tabs and dialogs that are hard to use on a phone.
@@ -44,3 +44,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T19:35:02Z · body
 - 2026-11-18T19:39:26Z · body
 - 2026-11-18T19:43:16Z · note: ui verification passed: 1 of 1 shot captured with clean console
+- 2026-11-18T19:43:17Z · status active→review
