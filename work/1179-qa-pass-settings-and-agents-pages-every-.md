@@ -32,19 +32,19 @@ Do not touch repoos.toml.
 ```json
 [
 {
-  "label": "Spend threshold validation error",
-  "target": "default",
-  "route": "/settings?tab=notifications",
-  "highlight": "#spend-alert-error",
-  "steps": [
-    {
-      "fill": "#setting-attention\\.spendAlertUsd input",
-      "text": "-1"
-    },
-    {
-      "waitFor": "#spend-alert-error"
-    }
-  ]
+"label": "Spend threshold validation error",
+"target": "default",
+"route": "/settings?tab=notifications",
+"highlight": "#spend-alert-error",
+"steps": [
+  {
+    "fill": "#setting-attention\\.spendAlertUsd input",
+    "text": "-1"
+  },
+  {
+    "waitFor": "#spend-alert-error"
+  }
+]
 }
 ]
 ```

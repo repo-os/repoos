@@ -1,3 +1,14 @@
+---
+id: summary
+title: summary
+type: feature
+status: inbox
+priority: p2
+area: general
+assigned_to: ai
+created_by: ""
+branch: ""
+---
 ## TL;DR
 
 A hands-on QA pass over Stories, the Inbox-filtered Work queue, and the Agents last-run activity view at 1280px and 375px found no reproducible defect, no page-level horizontal overflow and no console errors, so no application code changed. The only shipped change is the QA record `docs/qa/2026-11-stories-inbox.md`. The pass went from creation to done in one dev round and one review pass in about half an hour of wall-clock time; the browser-tooling fallback (headless Chromium via Playwright instead of the computer-use browser host) was the only notable obstacle and did not block completion.
@@ -24,8 +35,8 @@ Final verdict: review pass 1 returned **good to go**, close-out completed, statu
 - Dev rounds: 1 (round 1, 2026-11-18T08:56:19Z). Review passes: 1 (pass 1, 2026-11-18T08:56:59Z, good to go). No restarts of the task itself; one orphaned engineer process (pid 10765) was adopted at 08:54:52.
 - Wall-clock, created → done: 2026-11-18T08:49:05Z → 2026-11-18T09:19:24Z (≈ 30 minutes). The bulk of that was the close-out gate, which completed in 107s at 09:19:19; the active work itself ran 08:49:12 → 08:56:59.
 - Agents and models (from the session table):
-  - Engineer: agent `engineer`, model `gpt-6-luna`, 45s elapsed, 2,830,074 tokens, cost not recorded, finished. Two `routing` sessions (Model router via openrouter, model unknown, 0–1s) bracketed it.
-  - Reviewer: agent `reviewer`, model `gpt-6-luna`, 38s elapsed, 135,357 tokens, cost not recorded, finished, plus a second routing session (1s).
+- Engineer: agent `engineer`, model `gpt-6-luna`, 45s elapsed, 2,830,074 tokens, cost not recorded, finished. Two `routing` sessions (Model router via openrouter, model unknown, 0–1s) bracketed it.
+- Reviewer: agent `reviewer`, model `gpt-6-luna`, 38s elapsed, 135,357 tokens, cost not recorded, finished, plus a second routing session (1s).
 - Cost totals: not recorded anywhere in the facts.
 - Shots: skipped at handoff — the diff's 3 changed paths touched no capture target's globs (no UI change to capture).
 
