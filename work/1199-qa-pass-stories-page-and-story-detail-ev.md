@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-stories-page-and-story-detail-ev
 created_at: "2026-11-18T19:47:44Z"
-updated_at: "2026-11-18T19:59:35Z"
+updated_at: "2026-11-18T20:03:35Z"
 last_close_out_gate_ms: 73249
 last_close_out_gate_at: "2026-11-18T19:59:32.607Z"
 review_passes: 1
@@ -38,3 +38,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T19:54:43Z · note: review pass 1: good to go
 - 2026-11-18T19:59:32Z · close-out gate completed in 73s
 - 2026-11-18T19:59:35Z · status done→done, release:success
+- 2026-11-18T20:03:35Z · message_dropped: 1 queued message(s) discarded — task is done
