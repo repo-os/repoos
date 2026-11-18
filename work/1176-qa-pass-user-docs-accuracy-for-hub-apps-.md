@@ -29,3 +29,4 @@ Docs only unless a doc reveals a real bug (then file a note in the QA record). D
 - 2026-11-18T05:52:12Z · CTO nudge: held — handoff gate is running
 - 2026-11-18T05:53:04Z · status active→review
 - 2026-11-18T05:53:05Z · message_queued at 2026-11-18T05:53:05.010Z
+- 2026-11-18T05:53:05Z · note: shots: skipped — Docs site skipped: no docs shot declared
