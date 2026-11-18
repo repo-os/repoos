@@ -3,6 +3,9 @@ id: "1177"
 title: "QA pass: RepoOS CLI usability – help text, error messages and exit codes"
 type: bug
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: `needs some work` — `upgrade` still silently ignores `--channel=value` inputs.
 priority: p2
 area: core
 assigned_to: ai
@@ -60,3 +63,4 @@ Do not touch repoos.toml; do not run commands that mutate the real board.
 - 2026-11-18T07:34:28Z · note: shots: skipped — the diff (11 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-18T07:35:04Z · message_queued at 2026-11-18T07:35:04.352Z
 - 2026-11-18T07:35:12Z · note: review pass 3: needs some work
+- 2026-11-18T07:35:12Z · needs_input
