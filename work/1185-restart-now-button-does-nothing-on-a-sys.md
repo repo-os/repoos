@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/restart-now-button-does-nothing-on-a-sys
 created_at: "2026-11-18T12:27:18Z"
-updated_at: "2026-11-18T14:09:00Z"
+updated_at: "2026-11-18T14:09:03Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -58,3 +58,4 @@ Reported by Nick 2026-11-18 20:22 from the phone UI. Related #1154. Do not touch
 - 2026-11-18T14:08:59Z · note: review pass 1: needs some work
 - 2026-11-18T14:09:00Z · message_delivered: 2 message(s)
 - 2026-11-18T14:09:00Z · status review→active
+- 2026-11-18T14:09:03Z · CTO nudge: held — remote validation is running
