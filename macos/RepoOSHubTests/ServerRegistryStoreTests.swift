@@ -41,6 +41,53 @@ final class ServerRegistryStoreTests: XCTestCase {
         )
     }
 
+    func testApplicationSupportDirectoryResolutionTable() {
+        let realDirectory = ServerRegistryStore.applicationSupportDirectory(environment: [:]).path
+        let cases: [(name: String, environment: [String: String], expectation: (String) -> Bool)] = [
+          (
+            "explicit override wins under XCTest",
+            ["REPOOS_HUB_SUPPORT_DIRECTORY": "/tmp/override", "XCTestConfigurationFilePath": "/x"],
+            { $0 == "/tmp/override" }
+          ),
+          (
+            "XCTest host without override never uses the real registry",
+            ["XCTestConfigurationFilePath": "/x"],
+            { $0 != realDirectory && !$0.contains("Application Support") && $0.contains("RepoOS Hub-xctest-") }
+          ),
+          (
+            "normal launch keeps the user's Application Support registry",
+            [:],
+            { $0.hasSuffix("/RepoOS Hub") && $0.contains("Application Support") }
+          ),
+        ]
+        for testCase in cases {
+          let resolved = ServerRegistryStore.applicationSupportDirectory(environment: testCase.environment).path
+          XCTAssertTrue(testCase.expectation(resolved), "\(testCase.name): got \(resolved)")
+        }
+    }
+
+    func testRemovesXCTestSupportDirectory() throws {
+        let supportPath = ServerRegistryStore.applicationSupportDirectory(
+            environment: ["XCTestConfigurationFilePath": "/x"]
+        ).path
+        let directory = URL(fileURLWithPath: supportPath, isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+
+        try ServerRegistryStore.removeXCTestSupportDirectory(environment: ["XCTestConfigurationFilePath": "/x"])
+
+        XCTAssertFalse(FileManager.default.fileExists(atPath: directory.path))
+    }
+
+    func testXCTestSupportCleanupPropagatesRemovalFailure() throws {
+        let fileManager = FailingRemovalFileManager()
+
+        XCTAssertThrowsError(try ServerRegistryStore.removeXCTestSupportDirectory(
+            environment: ["XCTestConfigurationFilePath": "/x"],
+            fileManager: fileManager
+        ))
+        XCTAssertEqual(fileManager.removalAttempts, 1)
+    }
+
     func testDuplicateOriginRejected() throws {
         let store = ServerRegistryStore(directoryURL: directoryURL)
         var document = ServerRegistryDocument()
@@ -63,5 +110,16 @@ final class ServerRegistryStoreTests: XCTestCase {
         try store.removeEntry(id: first.id, document: &document)
         XCTAssertEqual(document.entries.map(\.name), ["B"])
         XCTAssertEqual(document.lastSelectedServerID, second.id)
+    }
+}
+
+private final class FailingRemovalFileManager: FileManager {
+    private(set) var removalAttempts = 0
+
+    override func fileExists(atPath path: String) -> Bool { true }
+
+    override func removeItem(at URL: URL) throws {
+        removalAttempts += 1
+        throw CocoaError(.fileWriteNoPermission)
     }
 }

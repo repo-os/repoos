@@ -1,0 +1,12 @@
+{
+  "taskId": "1169",
+  "round": 14,
+  "at": "2026-11-18T10:59:04.646Z",
+  "agent": "codex",
+  "model": "gpt-6-luna",
+  "branch": "feat/qa-pass-macos-repoos-hub-app-build-launc",
+  "baseSha": "457aa1f7553da8c86c9e43e747026319340d324d",
+  "sourceSha": "7010c0c50d41cce3e3458cb2db29d434adcd1017",
+  "wordCount": 264,
+  "markdown": "## TL;DR\n\nThe full `repoos check` passed on source commit `7010c0c50d41cce3e3458cb2db29d434adcd1017`. The macOS Hub QA record and XCTest registry-isolation fix are present. Signed-in Projects and Tasks remain unverified because human-assigned task #1174 has no results.\n\n## Work and rationale\n\nThe QA record covers the Hub build and launch, first-run rendering, local server discovery and connection, and the sign-in page. The test run exposed that the XCTest host could write to the developer's real Hub registry. The fix isolates XCTest in a unique temporary support directory, removes it on exit, surfaces cleanup errors, and tests those behaviors.\n\nThe QA record explicitly leaves logged-in Projects and Tasks unverified. The current board copy of #1174 remains human-assigned in inbox with no results. No claim is made that this criterion passed.\n\n## Approaches tried\n\nRan the full `repoos check` once on the current tree. Remote build and test validation passed. Local formatting, lint, build, branch-artifact and task-asset guards passed; rendered contrast and UI smoke also passed. The plan's unrelated or remote-completed steps were skipped as configured.\n\n## Challenges and blockers\n\nThe signed-in acceptance check requires the human-assigned #1174 flow: sign in through the authorized email-code process, inspect Projects and Tasks, and record the tested build and results. That task has no results yet. Review also reported an older engineering report for source `2ac8b76`; this draft describes `7010c0c50d41cce3e3458cb2db29d434adcd1017`.\n\n## Key learnings\n\nShowing the sign-in page confirms connection and web-view rendering, not authenticated Projects or Tasks behavior. The report must describe the exact checked tree, and a new draft is needed for each new handoff attempt because RepoOS consumes it when finalizing a report.\n\n## Generated change summary\n\nBase tree: `457aa1f7553da8c86c9e43e747026319340d324d`\nSource tree: `13d57a164a575e89d8e12963da911577097d99f0`\n\n- No changed files."
+}

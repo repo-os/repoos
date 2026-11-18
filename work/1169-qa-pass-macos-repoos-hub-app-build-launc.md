@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 112753
-last_close_out_gate_at: "2026-11-18T17:20:34.528Z"
 id: "1169"
 title: "QA pass: macOS RepoOS Hub app – build, launch, connect, and fix what is broken"
 type: bug
-status: review
+status: done
 priority: p2
 area: macos
+merged_commit: aa6d60da646ae4dee2bd240365911d702e9aae6f
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-macos-repoos-hub-app-build-launc
@@ -14,6 +13,8 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-18T02:19:44Z"
 updated_at: "2026-11-18T17:20:34Z"
+last_close_out_gate_ms: 112753
+last_close_out_gate_at: "2026-11-18T17:20:34.528Z"
 review_passes: 12
 close_out_repair_count: 1
 review_rounds: 2
