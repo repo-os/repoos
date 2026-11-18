@@ -9,6 +9,10 @@ export const SHOT_PREVIEW_FIXTURE_IDS = [
   "system:worktreeGc",
   // #1134 — orphaned run processes stopped after a finished turn.
   "system:orphanedRuns",
+  // #1210 — pressure states use stable synthetic readings for responsive QA.
+  "system:pressureNormal",
+  "system:pressureWarning",
+  "system:pressureCritical",
   "closeOut:active",
   "closeOut:checkProgress",
   "closeOut:checkProgressUnknown",

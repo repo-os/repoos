@@ -1329,6 +1329,61 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
       };
       pinnedSystemStats = repo.systemStats;
       break;
+    case "system:pressureNormal":
+    case "system:pressureWarning":
+    case "system:pressureCritical": {
+      const level = fixture.slice("system:pressure".length).toLowerCase() as
+        | "normal"
+        | "warning"
+        | "critical";
+      const reason =
+        level === "critical"
+          ? "Sustained paging activity is above the configured threshold."
+          : null;
+      const warning =
+        level === "warning"
+          ? "Swap and compressor use are elevated; occupancy alone does not hold new work."
+          : null;
+      repo.systemStats = {
+        machine: {
+          cpuCount: 8,
+          totalMem: 16 * 1024 ** 3,
+          freeMem: 2 * 1024 ** 3,
+          availableMem: level === "critical" ? 512 * 1024 ** 2 : 6 * 1024 ** 3,
+          loadavg: level === "critical" ? [28, 24, 20] : [1.1, 1.3, 1.2],
+          platform: "darwin",
+        },
+        totals: { cpuPercent: 22, memBytes: 7 * 1024 ** 3, memPercent: 43.75 },
+        processes: [],
+        serve: null,
+        pressure: {
+          level,
+          availableMemRatio: level === "critical" ? 0.03 : 0.375,
+          loadPerCpu: level === "critical" ? 3.5 : 0.2,
+          swapUsedBytes: (level === "normal" ? 1 : level === "warning" ? 3 : 2) * 1024 ** 3,
+          swapTotalBytes: 4 * 1024 ** 3,
+          swapUsedRatio: level === "normal" ? 0.25 : level === "warning" ? 0.75 : 0.5,
+          compressorBytes: (level === "normal" ? 2 : level === "warning" ? 7 : 4) * 1024 ** 3,
+          compressorRatio: level === "normal" ? 0.125 : level === "warning" ? 0.4375 : 0.25,
+          memoryFreePercent: level === "critical" ? 4 : 35,
+          totalMemBytes: 16 * 1024 ** 3,
+          swapIoBytesPerSec: level === "critical" ? 4 * 1024 ** 2 : 0,
+          pageoutBytesPerSec: level === "critical" ? 512 * 1024 : 0,
+          activityWindowSec: 30,
+          psiMemoryAvg10: null,
+          cpuIdlePercent: level === "critical" ? 2 : 70,
+          source: "memory",
+          reasons: reason ? [reason] : [],
+          warnings: warning ? [warning] : [],
+          reason,
+        },
+        heavyJobs: { running: level === "critical" ? 2 : 1, queued: level === "critical" ? 3 : 0 },
+        serverPid: 1000,
+        at: nowIso(),
+      };
+      pinnedSystemStats = repo.systemStats;
+      break;
+    }
     case "reminders:due": {
       const reminders = useRemindersStore();
       reminders.fixturePinned = true;

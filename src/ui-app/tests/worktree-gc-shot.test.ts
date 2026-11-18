@@ -74,3 +74,44 @@ describe("orphaned run process dashboard shot fixture (#1134)", () => {
     expect(alert.text()).toContain("vitest");
   });
 });
+
+describe("Control dashboard pressure state fixtures (#1210)", () => {
+  const originalUrl = window.location.href;
+  let wrapper: ReturnType<typeof mount> | undefined;
+
+  afterEach(() => {
+    wrapper?.unmount();
+    wrapper = undefined;
+    window.history.replaceState({}, "", originalUrl);
+  });
+
+  it.each([
+    ["system:pressureNormal", "normal", "no pressure hold", "25%", "13%"],
+    ["system:pressureWarning", "warning", "new work can continue", "75%", "44%"],
+    ["system:pressureCritical", "critical", "holding new work", "50%", "25%"],
+  ] as const)(
+    "shows %s with clear status and machine ratios",
+    (fixture, level, status, swap, compressor) => {
+      const pinia = createPinia();
+      setActivePinia(pinia);
+      window.history.replaceState({}, "", `/?shotState=${encodeURIComponent(fixture)}`);
+      const repo = useRepoStore();
+      repo.health = { isPreviewBuild: true } as Health;
+      applyShotPreviewFixture(repo, fixture);
+
+      wrapper = mount(SystemResourcePanel, { global: { plugins: [pinia] } });
+      const alert = wrapper.get("[data-pressure-state]");
+      expect(alert.classes()).toContain(level);
+      expect(alert.text()).toContain(status);
+      expect(alert.text()).toContain(`swap ${swap}`);
+      expect(alert.text()).toContain(`compressor ${compressor}`);
+      if (level === "warning") {
+        expect(alert.text()).toContain("occupancy alone do not hold starts");
+      }
+      if (level === "critical") {
+        expect(alert.text()).toContain("running agents are not stopped");
+        expect(alert.text()).toContain("3 queued");
+      }
+    },
+  );
+});

@@ -64,6 +64,26 @@ afterEach(() => {
 });
 
 describe("heavy-job and pressure reporting (#0961)", () => {
+  it.each([
+    ["normal", "no pressure signal is holding new work"],
+    ["warning", "advisory only — warning signals do not hold new work"],
+    ["critical", "holding new work until blocking pressure signals ease"],
+  ] as const)("explains %s pressure in repoos stats", (level, explanation) => {
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    printSystemSummary({
+      pressure: {
+        level,
+        reason: null,
+        availableMemRatio: 0.25,
+        loadPerCpu: 4,
+        source: "memory",
+      },
+    });
+    const output = log.mock.calls.map((call) => call.join(" ")).join("\n");
+    expect(output).toContain(`pressure: ${level}`);
+    expect(output).toContain(explanation);
+  });
+
   it("prints the hold reason and heavy-job counts in repoos stats", () => {
     const log = vi.spyOn(console, "log").mockImplementation(() => {});
     printSystemSummary({

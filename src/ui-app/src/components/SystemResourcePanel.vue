@@ -435,22 +435,29 @@ const serveMessage = computed(() => {
         </div>
       </div>
 
-      <div
-        v-if="pressure && pressure.level !== 'normal'"
-        class="pressure-alert"
-        :class="pressure.level"
-      >
+      <div v-if="pressure" class="pressure-alert" :class="pressure.level" data-pressure-state>
         <div class="pressure-head">
           <span class="pressure-level">{{
             pressure.level === "critical"
               ? "Pressure critical — holding new work"
-              : "Pressure warning"
+              : pressure.level === "warning"
+                ? "Pressure warning — new work can continue"
+                : "Pressure normal — no pressure hold"
           }}</span>
           <span class="pressure-metric"
             >swap {{ fmtRatio(pressure.swapUsedRatio) }} · compressor
             {{ fmtRatio(pressure.compressorRatio) }} · available
             {{ fmtRatio(pressure.availableMemRatio) }}</span
           >
+        </div>
+        <div v-if="pressure.level === 'warning'" class="pressure-detail">
+          This warning is advisory; no pressure hold is active.
+        </div>
+        <div v-else-if="pressure.level === 'normal'" class="pressure-detail">
+          No blocking pressure signal is active. Swap and compressor readings are shown for context.
+        </div>
+        <div v-else class="pressure-detail">
+          New work waits until blocking pressure signals ease; running agents are not stopped.
         </div>
         <div class="pressure-detail heavy-jobs" data-heavy-jobs>
           {{ heavyRunning }} heavy jobs running, {{ heavyQueued }} queued
@@ -688,6 +695,10 @@ const serveMessage = computed(() => {
 .pressure-alert.warning {
   border-color: color-mix(in srgb, var(--amber) 40%, transparent);
   background: color-mix(in srgb, var(--amber) 8%, transparent);
+}
+
+.pressure-alert.normal {
+  background: color-mix(in srgb, var(--green, #36c98f) 5%, transparent);
 }
 
 .pressure-alert.critical {
