@@ -29,3 +29,4 @@ Reported by Nick 2026-11-18 20:22 from the phone UI. Related #1154. Do not touch
 - 2026-11-18T13:17:33Z · status inbox→ready
 - 2026-11-18T13:17:35Z · status ready→active, branch
 - 2026-11-18T13:24:13Z · message_queued at 2026-11-18T13:24:13.169Z
+- 2026-11-18T13:24:13Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
