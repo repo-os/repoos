@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-user-docs-accuracy-for-hub-apps-
 created_at: "2026-11-18T05:49:21Z"
-updated_at: "2026-11-18T05:59:30Z"
+updated_at: "2026-11-18T05:59:36Z"
 last_close_out_gate_ms: 170408
 last_close_out_gate_at: "2026-11-18T05:59:30.473Z"
 review_passes: 1
@@ -36,4 +36,4 @@ Docs only unless a doc reveals a real bug (then file a note in the QA record). D
 - 2026-11-18T05:53:05Z · note: shots: skipped — Docs site skipped: no docs shot declared
 - 2026-11-18T05:53:33Z · note: review pass 1: good to go
 - 2026-11-18T05:59:30Z · close-out gate completed in 170s
-
+- 2026-11-18T05:59:36Z · status done→done, release:success
