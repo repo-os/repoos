@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-18T00:50:54Z"
-review_passes: 2
 id: "1164"
 title: Verify Secrets page behavior with authenticated access
 type: bug
@@ -13,6 +11,8 @@ branch: feat/verify-secrets-page-behavior-with-authen
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T17:53:29Z"
+updated_at: "2026-11-18T00:50:54Z"
+review_passes: 2
 review_rounds: 1
 ---
 ## Problem
@@ -68,4 +68,4 @@ The initial evidence is an auth-less 401, not proof of a signed-in regression. Q
 - 2026-11-18T00:44:44Z · status active→review
 - 2026-11-18T00:44:45Z · message_queued at 2026-11-18T00:44:45.020Z
 - 2026-11-18T00:50:54Z · note: review pass 2: needs some work
-
+- 2026-11-18T00:50:54Z · message_delivered: 1 message(s)
