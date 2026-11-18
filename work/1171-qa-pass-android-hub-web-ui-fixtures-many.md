@@ -2,14 +2,14 @@
 id: "1171"
 title: "QA pass: Android Hub web UI fixtures (many servers, errors, offline) and fix issues"
 type: bug
-status: inbox
+status: ready
 priority: p2
 area: mobile
 assigned_to: ai
 created_by: t@t
 branch: ""
 created_at: "2026-11-18T02:19:54Z"
-updated_at: "2026-11-18T02:19:54Z"
+updated_at: "2026-11-18T02:20:59Z"
 ---
 ## Problem
 The Android Hub Vite UI needs a fixture-driven QA sweep before device QA (#1162).
@@ -25,3 +25,4 @@ Do not touch repoos.toml.
 ## Activity
 
 - 2026-11-18T02:19:54Z · created · t@t
+- 2026-11-18T02:20:59Z · status inbox→ready
