@@ -11,7 +11,6 @@ branch: feat/qa-pass-web-app-search-command-palette-a
 created_at: "2026-11-18T13:47:31Z"
 updated_at: "2026-11-18T14:16:46Z"
 handoff_signal_retry_count: 1
-deferred_handoff_resume_count: 1
 ---
 ## Problem
 Navigation, search/command palette and deep links have not had a recent pass.
