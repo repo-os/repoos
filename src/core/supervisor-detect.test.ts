@@ -245,6 +245,11 @@ describe("detectLinuxSupervisor", () => {
     expect(detectLinuxSupervisor(48210, execFile as never)).toEqual({
       kind: "managed",
       job: "com.repoos.serve.tuk-driver-aaa442e5",
+      info: {
+        platform: "systemd",
+        job: "com.repoos.serve.tuk-driver-aaa442e5",
+        manualCommand: "systemctl --user restart com.repoos.serve.tuk-driver-aaa442e5.service",
+      },
     });
   });
 
@@ -279,6 +284,11 @@ describe("detectLinuxSupervisor", () => {
     expect(detectLinuxSupervisor(48210, execFile as never)).toEqual({
       kind: "managed",
       job: "com.repoos.serve.tuk-driver-aaa442e5",
+      info: {
+        platform: "systemd",
+        job: "com.repoos.serve.tuk-driver-aaa442e5",
+        manualCommand: "systemctl --user restart com.repoos.serve.tuk-driver-aaa442e5.service",
+      },
     });
   });
 

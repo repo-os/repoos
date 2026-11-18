@@ -7,6 +7,7 @@ enum ServerRegistryStoreError: Error, Equatable {
 }
 
 final class ServerRegistryStore: @unchecked Sendable {
+    private static let xctestSupportDirectoryName = "RepoOS Hub-xctest-\(UUID().uuidString)"
     private let fileURL: URL
     private let encoder: JSONEncoder
     private let decoder: JSONDecoder
@@ -107,12 +108,30 @@ final class ServerRegistryStore: @unchecked Sendable {
 }
 
 extension ServerRegistryStore {
+    static func removeXCTestSupportDirectory(
+        environment: [String: String] = ProcessInfo.processInfo.environment,
+        fileManager: FileManager = .default
+    ) throws {
+        guard environment["XCTestConfigurationFilePath"] != nil else { return }
+        let directory = fileManager.temporaryDirectory
+            .appendingPathComponent(xctestSupportDirectoryName, isDirectory: true)
+        guard fileManager.fileExists(atPath: directory.path) else { return }
+        try fileManager.removeItem(at: directory)
+    }
+
     static func applicationSupportDirectory(
         appName: String = "RepoOS Hub",
         environment: [String: String] = ProcessInfo.processInfo.environment
     ) -> URL {
         if let override = environment["REPOOS_HUB_SUPPORT_DIRECTORY"], !override.isEmpty {
             return URL(fileURLWithPath: override, isDirectory: true)
+        }
+        // `xcodebuild test` launches this app as the test host with no override, so
+        // without this branch every test run rewrote the user's real registry.
+        // Each test-host process gets its own scratch directory instead.
+        if environment["XCTestConfigurationFilePath"] != nil {
+            return FileManager.default.temporaryDirectory
+                .appendingPathComponent(xctestSupportDirectoryName, isDirectory: true)
         }
         let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
         return base.appendingPathComponent(appName, isDirectory: true)

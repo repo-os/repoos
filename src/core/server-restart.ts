@@ -23,7 +23,7 @@ import {
 } from "./supervisor-detect.js";
 import { existsSync } from "node:fs";
 
-export type RestartPath = "managed-service" | "external-supervisor" | "hand-run";
+export type RestartPath = "managed-service" | "supervisor" | "hand-run";
 
 export interface HealthSnapshot {
   ok: boolean;
@@ -161,13 +161,45 @@ export async function classifyRestartPath(
   // restart always targets the same listener the located server owns.
   if (managed?.status === "running" && managed.port === server.port) return "managed-service";
   const detected = detectSupervisor(server.pid);
-  if (detected.kind === "external") return "external-supervisor";
-  // A RepoOS service unit whose registry entry is missing or not `running`:
-  // signalling it would race the service's KeepAlive respawn into a second server.
-  if (detected.kind === "uncertain" || detected.kind === "managed") {
+  if (detected.kind === "external" || detected.kind === "managed") return "supervisor";
+  if (detected.kind === "uncertain") {
     return "refuse-supervised-unknown";
   }
   return "hand-run";
+}
+
+export function restartSupervisorUnit(
+  info: SupervisorInfo,
+  execFile: typeof execFileSync = execFileSync,
+): { ok: boolean; error?: string } {
+  let command: string;
+  let args: string[];
+  if (info.platform === "systemd") {
+    command = "systemctl";
+    args = [
+      ...(info.manualCommand.startsWith("systemctl --user ") ? ["--user"] : []),
+      "restart",
+      `${info.job}.service`,
+    ];
+  } else {
+    const target = info.manualCommand.match(/launchctl kickstart -k (.+)$/)?.[1];
+    if (!target || !/^(?:system|gui\/\d+)\/[\w.-]+$/.test(target)) {
+      return { ok: false, error: "Could not form a safe launchctl restart target" };
+    }
+    command = "launchctl";
+    args = ["kickstart", "-k", target];
+  }
+  try {
+    execFile(command, args, {
+      encoding: "utf8",
+      timeout: 15_000,
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+    return { ok: true };
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    return { ok: false, error: detail };
+  }
 }
 
 export function fetchHealth(host: string, port: number, timeoutMs = 1500): Promise<HealthSnapshot> {
@@ -360,7 +392,8 @@ export interface RestartRepoServerOptions {
     server: LocatedServer,
   ) => Promise<RestartPath | "refuse-supervised-unknown">;
   ownership?: typeof pidOwnership;
-  supervisor?: typeof detectExternalSupervisor;
+  supervisorInfo?: (pid: number) => SupervisorInfo | null;
+  restartSupervisor?: typeof restartSupervisorUnit;
   stop?: typeof stopPidExact;
   spawn?: typeof spawnHandRunServe;
   resolveServeFlags?: (server: LocatedServer) => string[];
@@ -449,18 +482,14 @@ export async function restartRepoServer(
       message:
         detected.kind === "uncertain"
           ? detected.reason
-          : detected.kind === "managed"
-            ? `pid ${server.pid} is the RepoOS service ${detected.job}, but the service manager does not report it running — use \`repoos service restart\` instead of signalling it.`
-            : "Could not determine how this server is supervised — refusing to restart automatically.",
+          : "Could not determine how this server is supervised — refusing to restart automatically.",
       // A bare `kill` only stops the server, so it is the FIRST step, not a
       // restart: say plainly that the server stays down unless its supervisor
       // respawns it, and name the start command to run either way.
       manualCommand:
-        detected.kind === "managed"
-          ? "repoos service restart"
-          : // One step, never `kill && serve`: if a supervisor owns the pid it respawns the
-            // server itself, and a second serve would race it onto the same port.
-            `kill ${server.pid}   # this only stops it. If a supervisor owns it, it respawns the server; after ~30s, if nothing answers, start it yourself: ${startCommand}`,
+        // One step, never `kill && serve`: if a supervisor owns the pid it respawns the
+        // server itself, and a second serve would race it onto the same port.
+        `kill ${server.pid}   # this only stops it. If a supervisor owns it, it respawns the server; after ~30s, if nothing answers, start it yourself: ${startCommand}`,
     };
   }
 
@@ -519,15 +548,30 @@ export async function restartRepoServer(
     };
   }
 
-  if (path === "external-supervisor") {
-    const supervisor = (opts.supervisor ?? detectExternalSupervisor)(oldPid);
-    try {
-      (opts.stop ?? stopPidExact)(oldPid);
-    } catch (e) {
+  if (path === "supervisor") {
+    const detected = (
+      opts.supervisorInfo ??
+      ((pid) => {
+        const result = detectSupervisor(pid);
+        return result.kind === "external" || result.kind === "managed" ? result.info : null;
+      })
+    )(oldPid);
+    if (!detected) {
       return {
         ok: false,
         path,
-        message: e instanceof Error ? e.message : String(e),
+        oldPid,
+        message: `The supervisor for pid ${oldPid} could not be identified safely, so it was not restarted.`,
+      };
+    }
+    const restarted = (opts.restartSupervisor ?? restartSupervisorUnit)(detected);
+    if (!restarted.ok) {
+      return {
+        ok: false,
+        path,
+        oldPid,
+        message: `Failed to restart ${detected.platform} unit ${detected.job}: ${restarted.error ?? "unknown error"}`,
+        manualCommand: detected.manualCommand,
       };
     }
     const waited = await (opts.wait ?? waitForServerRestart)(root, server.port, server.host, {
@@ -537,19 +581,15 @@ export async function restartRepoServer(
       fetch: opts.health,
     });
     if (!waited.ok) {
-      const quotedRoot = /^[\w./-]+$/.test(root) ? root : `'${root.replaceAll("'", "'\\''")}'`;
       return {
         ok: false,
         path,
         oldPid,
         oldVersion,
         message:
-          (waited.reason ?? "Supervisor did not respawn the server in time") +
-          ` The old server (pid ${oldPid}) has been stopped, so the server may be DOWN now.`,
-        // Prefer the supervisor's own restart; fall back to a start command so
-        // the human is never left with only "it may be down" (#1091 review pass 4).
-        manualCommand:
-          supervisor?.manualCommand ?? `cd ${quotedRoot} && repoos serve --port ${server.port}`,
+          (waited.reason ?? "Supervisor did not bring the server back in time") +
+          ` The ${detected.platform} restart command was accepted, but no healthy replacement server was found.`,
+        manualCommand: detected.manualCommand,
       };
     }
     return {
