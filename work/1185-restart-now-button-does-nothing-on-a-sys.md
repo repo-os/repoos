@@ -3,13 +3,16 @@ id: "1185"
 title: Restart now button does nothing on a systemd-managed server (misdetected as hand-run)
 type: bug
 status: review
+needs_input: true
+needs_input_reason: review-human-attention
+needs_input_detail: Review pass 7 still found issues (human flag after 5 passes). The reviewer was asked to summarise the repeated bug classes — read the newest report and decide whether to keep iterating or rescope.
 priority: p1
 area: [web, server]
 assigned_to: ai
 created_by: t@t
 branch: feat/restart-now-button-does-nothing-on-a-sys
 created_at: "2026-11-18T12:27:18Z"
-updated_at: "2026-11-18T19:17:04Z"
+updated_at: "2026-11-18T19:17:05Z"
 review_passes: 6
 close_out_repair_count: 1
 last_check_failure: "repoos check at 2026-11-18T14:30:25.814Z: repoos check failed: reused check inputs changed during handoff — run the check again"
@@ -184,3 +187,4 @@ Reported by Nick 2026-11-18 20:22 from the phone UI. Related #1154. Do not touch
 - 2026-11-18T19:17:03Z · note: ui verification passed: 2 of 2 shots captured with clean console
 - 2026-11-18T19:17:04Z · message_queued at 2026-11-18T19:17:04.749Z
 - 2026-11-18T19:17:04Z · note: review pass 7: needs some work
+- 2026-11-18T19:17:05Z · needs_input
