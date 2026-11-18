@@ -2,7 +2,7 @@
 id: "1164"
 title: Verify Secrets page behavior with authenticated access
 type: bug
-status: review
+status: active
 priority: p2
 area: web
 assigned_to: ai
@@ -96,3 +96,4 @@ The initial evidence is an auth-less 401, not proof of a signed-in regression. Q
 - 2026-11-18T04:03:15Z · body
 - 2026-11-18T04:16:03Z · engineer stopped by request
 - 2026-11-18T04:16:06Z · status active→review
+- 2026-11-18T04:16:06Z · status review→active
