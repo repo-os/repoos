@@ -342,7 +342,7 @@ onMounted(() => {
       Create recurring or one-time tasks from templates. Definitions are stored in
       <code>schedules/</code> and run inside this server.
     </p>
-    <p v-if="error" class="ff-error">{{ error }}</p>
+    <p v-if="error" class="ff-error" role="alert">{{ error }}</p>
     <PageSkeleton :loading="loading && !schedules.length" kind="rows" />
     <p v-if="!loading && !schedules.length" class="agent-desc">
       No schedules yet. Add one to automate documentation audits, health checks, or other
@@ -563,7 +563,7 @@ onMounted(() => {
               <label>Start engineer automatically</label>
               <Switch v-model:checked="form.autoStartAgent" />
             </div>
-            <p v-if="formError" class="ff-error">{{ formError }}</p>
+            <p v-if="formError" class="ff-error" role="alert">{{ formError }}</p>
             <div class="btn-row" style="margin-top: 20px">
               <Button variant="outline" @click="editorOpen = false">Cancel</Button>
               <Button :disabled="!formIsValid" data-testid="schedule-save" @click="saveSchedule">

@@ -180,6 +180,29 @@ describe("schedule editor drawer (#0841)", () => {
 });
 
 describe("schedule CRUD from the panel", () => {
+  it("announces schedule save failures as alerts and keeps the editor open", async () => {
+    const repo = useRepoStore();
+    repo.refreshSchedules = vi.fn().mockResolvedValue(undefined);
+    repo.createSchedule = vi.fn().mockRejectedValue(new Error("schedule service unavailable"));
+
+    const wrapper = mountPanel();
+    await flushPromises();
+    await wrapper.get('[data-testid="new-schedule"]').trigger("click");
+    await flushPromises();
+
+    const titleInput = drawer()!.querySelector("#sched-title") as HTMLInputElement;
+    titleInput.value = "Weekly audit";
+    titleInput.dispatchEvent(new Event("input"));
+    await flushPromises();
+    editorButton("schedule-save").click();
+    await flushPromises();
+
+    expect(document.body.querySelector('[role="alert"]')?.textContent).toContain(
+      "schedule service unavailable",
+    );
+    expect(drawer()).toBeTruthy();
+  });
+
   it("create → edit → disable → run now → delete", async () => {
     const repo = useRepoStore();
     repo.refreshSchedules = vi.fn().mockResolvedValue(undefined);
