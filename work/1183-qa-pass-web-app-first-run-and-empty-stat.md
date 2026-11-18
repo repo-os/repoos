@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-web-app-first-run-and-empty-stat
 created_at: "2026-11-18T10:17:38Z"
-updated_at: "2026-11-18T10:58:50Z"
+updated_at: "2026-11-18T10:59:08Z"
 ---
 ## Problem
 First-run, empty and error states are rarely exercised and likely have rough edges.
@@ -56,3 +56,4 @@ Do not touch repoos.toml.
 - 2026-11-18T10:54:56Z · message_delivered: 1 message(s)
 - 2026-11-18T10:58:50Z · message_queued at 2026-11-18T10:58:50.074Z
 - 2026-11-18T10:58:50Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-18T10:59:08Z · CTO nudge: held — an undelivered message is already queued
