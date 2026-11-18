@@ -14,15 +14,17 @@ branch: feat/qa-pass-macos-repoos-hub-app-build-launc
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-18T02:19:44Z"
-updated_at: "2026-11-18T13:51:19Z"
+updated_at: "2026-11-18T14:17:46Z"
 review_passes: 7
 review_rounds: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-11-18T04:39:18.645Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-18T04:49:19.309Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-18T08:53:34.221Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
 ## Problem
 Nick reports the macOS Hub app has been unusable for weeks. Nobody has recently built and driven it.
+
 ## Desired UX
-App builds, launches, discovers servers, connects, and shows projects/tasks without errors.
+App builds, launches, discovers servers and connects. Showing signed-in projects and tasks needs a real sign-in and is tracked in held human task #1174, so it is out of scope for this AI task; the QA record must say so.
+
 ## Acceptance criteria
 - Build with xcodebuild (CODE_SIGNING_ALLOWED=NO, own derivedDataPath); launch it; capture window-only screenshots (screencapture -l<windowid>, never the full screen).
 - Fix every crash/blank/broken screen found, with tests where possible.
@@ -358,3 +360,4 @@ Signed-in projects and tasks remain unverified because automated email-code entr
 - 2026-11-18T13:51:18Z · note: review pass 7: needs some work
 - 2026-11-18T13:51:18Z · needs_input
 - 2026-11-18T13:51:19Z · message_queued at 2026-11-18T13:51:19.307Z
+- 2026-11-18T14:17:46Z · body: Desired UX (added 1, removed 1)
