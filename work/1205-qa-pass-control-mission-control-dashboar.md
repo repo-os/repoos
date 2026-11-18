@@ -1,4 +1,5 @@
 ---
+close_out_repair_count: 1
 id: "1205"
 title: "QA pass: Control (Mission Control) dashboard – every card, chart and empty state at desktop and 375px"
 type: bug
@@ -91,3 +92,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T23:42:18Z · status review→active
 - 2026-11-18T23:42:18Z · note: close-out repair: gate-failure
 - 2026-11-18T23:42:18Z · message_delivered: 1 message(s)
+
