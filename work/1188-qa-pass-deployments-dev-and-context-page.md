@@ -2,14 +2,14 @@
 id: "1188"
 title: "QA pass: Deployments, Dev and Context pages – every state and action"
 type: bug
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
 branch: ""
 created_at: "2026-11-18T15:47:34Z"
-updated_at: "2026-11-18T15:47:34Z"
+updated_at: "2026-11-18T15:47:42Z"
 ---
 ## Problem
 Deployments, Dev and Context pages have not had a recent hands-on QA pass.
@@ -24,3 +24,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 ## Activity
 
 - 2026-11-18T15:47:34Z · created · t@t
+- 2026-11-18T15:47:42Z · status inbox→ready
