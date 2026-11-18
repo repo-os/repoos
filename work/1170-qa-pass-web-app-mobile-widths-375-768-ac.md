@@ -8,10 +8,10 @@ area: web
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-web-app-mobile-widths-375-768-ac
-cli_override: claude code
-model_override: haiku
+cli_override: codex
+model_override: gpt-6-luna
 created_at: "2026-11-18T02:19:49Z"
-updated_at: "2026-11-18T03:29:17Z"
+updated_at: "2026-11-18T03:40:32Z"
 review_rounds: 2
 review_passes: 2
 ---
@@ -57,3 +57,4 @@ Do not touch repoos.toml. Pages use full .main width.
 - 2026-11-18T03:24:16Z · message_delivered: 1 message(s)
 - 2026-11-18T03:27:43Z · body
 - 2026-11-18T03:29:17Z · status active→review
+- 2026-11-18T03:40:32Z · cli_override, model_override
