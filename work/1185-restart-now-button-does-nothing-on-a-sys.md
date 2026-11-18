@@ -42,3 +42,4 @@ Reported by Nick 2026-11-18 20:22 from the phone UI. Related #1154. Do not touch
 - 2026-11-18T13:38:01Z · body
 - 2026-11-18T13:39:48Z · CTO nudge: held — handoff gate is running
 - 2026-11-18T13:53:49Z · handoff failed · remote validation failed: test failure: tests/servers-command.test.ts > repoos servers --tailscale > skips unsupported mobile peers instead of reporting misleading SSH failures, tests/servers-command.test.ts > repoos servers --tailscale > falls back to configured hosts when the Tailscale CLI is unavailable, tests/servers-command.test.ts > repoos servers --tailscale > uses configured per-host users and the global Tailscale user in SSH targets on thinkpad — fix it in the feature branch and re-run the gate
+- 2026-11-18T13:53:49Z · message_queued at 2026-11-18T13:53:49.495Z
