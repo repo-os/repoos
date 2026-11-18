@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/restart-now-button-does-nothing-on-a-sys
 created_at: "2026-11-18T12:27:18Z"
-updated_at: "2026-11-18T14:19:43Z"
+updated_at: "2026-11-18T14:19:44Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -62,3 +62,4 @@ Reported by Nick 2026-11-18 20:22 from the phone UI. Related #1154. Do not touch
 - 2026-11-18T14:16:04Z · body
 - 2026-11-18T14:19:24Z · CTO nudge: held — handoff gate is running
 - 2026-11-18T14:19:43Z · note: ui verification passed: 1 shot captured with clean console
+- 2026-11-18T14:19:44Z · message_queued at 2026-11-18T14:19:44.094Z
