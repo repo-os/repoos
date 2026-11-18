@@ -37,9 +37,9 @@ Do not touch repoos.toml. Pages use full .main width.
 "route": "/work",
 "highlight": ".mobile-work",
 "steps": [
-  {
-    "waitFor": ".mobile-task-card"
-  }
+{
+  "waitFor": ".mobile-task-card"
+}
 ],
 "viewportWidth": 375,
 "viewportHeight": 844
@@ -50,9 +50,9 @@ Do not touch repoos.toml. Pages use full .main width.
 "route": "/work",
 "highlight": ".parked-lists",
 "steps": [
-  {
-    "waitFor": ".task-card"
-  }
+{
+  "waitFor": ".task-card"
+}
 ],
 "viewportWidth": 768,
 "viewportHeight": 844
@@ -63,9 +63,9 @@ Do not touch repoos.toml. Pages use full .main width.
 "route": "/settings",
 "highlight": ".settings-mobile-nav",
 "steps": [
-  {
-    "waitFor": ".settings-mobile-nav"
-  }
+{
+  "waitFor": ".settings-mobile-nav"
+}
 ],
 "viewportWidth": 375,
 "viewportHeight": 844
@@ -76,9 +76,9 @@ Do not touch repoos.toml. Pages use full .main width.
 "route": "/settings",
 "highlight": ".settings-tabs",
 "steps": [
-  {
-    "waitFor": ".settings-tabs"
-  }
+{
+  "waitFor": ".settings-tabs"
+}
 ],
 "viewportWidth": 768,
 "viewportHeight": 844
@@ -154,3 +154,4 @@ Do not touch repoos.toml. Pages use full .main width.
 - 2026-11-18T05:23:37Z · body
 - 2026-11-18T05:26:36Z · body
 - 2026-11-18T05:28:15Z · queued message undelivered for 8m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-18T05:28:15Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code unknown) · last assistant: I verified the four routes with the managed preview; Work at 768px loads its board after a wait. I’ve updated the shot declarations to wait for the real controls and use matching highlights. I’ll run the requested scoped check once now, th… · stderr: 2026-11-18T05:24:12.353333Z ERROR codex_core::tools::router: error=write_stdin failed: Unknown process id 69416
