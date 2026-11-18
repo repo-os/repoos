@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-android-hub-web-ui-second-pass-s
 created_at: "2026-11-18T09:17:43Z"
-updated_at: "2026-11-18T09:38:47Z"
+updated_at: "2026-11-18T09:39:51Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -40,3 +40,4 @@ Do not touch repoos.toml.
 - 2026-11-18T09:33:53Z · message_delivered: 1 message(s)
 - 2026-11-18T09:33:53Z · status review→active
 - 2026-11-18T09:38:47Z · body
+- 2026-11-18T09:39:51Z · CTO nudge: held — handoff gate is running
