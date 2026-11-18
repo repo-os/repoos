@@ -220,6 +220,9 @@ export const SHOT_PREVIEW_FIXTURE_IDS = [
   // #1075 — installed build newer than this live server, for light/dark restart-notice shots.
   "release:restartPendingLight",
   "release:restartPendingDark",
+  // #1185 — deterministic restart progress and failure dialog captures.
+  "release:restartProgress",
+  "release:restartError",
   // #1089 — Releases page and cut drawer while a release run is in progress, so
   // captures show the shared ActivityIndicator on the pill and progress heading.
   "release:cutRunning",
