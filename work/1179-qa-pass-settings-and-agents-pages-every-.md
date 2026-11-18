@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-settings-and-agents-pages-every-
 created_at: "2026-11-18T06:47:46Z"
-updated_at: "2026-11-18T12:16:34Z"
+updated_at: "2026-11-18T12:19:13Z"
 review_passes: 5
 last_handoff_failure_fingerprint: "check|repoos check failed: check-fmt:check — Formatting failed — run `bun run fmt` to fix:"
 last_handoff_failure_sha: a33d6a689dbd8428e920b3807946463fd8171337
@@ -37,13 +37,13 @@ Do not touch repoos.toml.
 "route": "/settings?tab=notifications",
 "highlight": "#spend-alert-error",
 "steps": [
-  {
-    "fill": "#setting-attention\\.spendAlertUsd input",
-    "text": "-1"
-  },
-  {
-    "waitFor": "#spend-alert-error"
-  }
+{
+  "fill": "#setting-attention\\.spendAlertUsd input",
+  "text": "-1"
+},
+{
+  "waitFor": "#spend-alert-error"
+}
 ]
 }
 ]
@@ -134,3 +134,4 @@ Do not touch repoos.toml.
 - 2026-11-18T11:47:38Z · needs_input
 - 2026-11-18T11:47:39Z · message_delivered: 1 message(s)
 - 2026-11-18T12:16:34Z · body
+- 2026-11-18T12:19:13Z · note: adopted orphaned engineer pid 4920
