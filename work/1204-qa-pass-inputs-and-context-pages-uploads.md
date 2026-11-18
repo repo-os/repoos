@@ -2,14 +2,14 @@
 id: "1204"
 title: "QA pass: Inputs and Context pages – uploads, docs ingestion and empty states"
 type: bug
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-inputs-and-context-pages-uploads
 created_at: "2026-11-18T20:47:45Z"
-updated_at: "2026-11-18T22:15:52Z"
+updated_at: "2026-11-18T22:15:53Z"
 review_rounds: 1
 routing_switches: 1
 routing_escalations: 1
@@ -104,3 +104,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T22:11:43Z · body
 - 2026-11-18T22:15:14Z · CTO nudge: held — handoff gate is running
 - 2026-11-18T22:15:52Z · note: ui verification passed: 4 of 4 shots captured with clean console
+- 2026-11-18T22:15:53Z · status active→review
