@@ -12,7 +12,7 @@ branch: feat/qa-pass-exercise-the-new-releases-genera
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-18T00:17:51Z"
-updated_at: "2026-11-18T03:29:19Z"
+updated_at: "2026-11-18T03:29:54Z"
 last_close_out_gate_ms: 771419
 last_close_out_gate_at: "2026-11-18T03:29:19.795Z"
 review_passes: 2
@@ -104,4 +104,4 @@ Do not edit repoos.toml.
 - 2026-11-18T01:58:28Z · note: review pass 2: good to go
 - 2026-11-18T02:55:13Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-18T03:29:19Z · close-out gate completed in 771s
-
+- 2026-11-18T03:29:54Z · status done→done, release:success
