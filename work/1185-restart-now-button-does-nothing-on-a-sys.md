@@ -1,4 +1,5 @@
 ---
+close_out_repair_count: 1
 id: "1185"
 title: Restart now button does nothing on a systemd-managed server (misdetected as hand-run)
 type: bug
@@ -146,3 +147,4 @@ Reported by Nick 2026-11-18 20:22 from the phone UI. Related #1154. Do not touch
 - 2026-11-18T16:37:15Z · status review→active
 - 2026-11-18T16:37:15Z · note: close-out repair: gate-failure
 - 2026-11-18T16:37:15Z · message_delivered: 1 message(s)
+
