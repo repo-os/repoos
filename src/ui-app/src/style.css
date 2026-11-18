@@ -11026,6 +11026,11 @@
   .bug-report-type-picker {
     grid-template-columns: 1fr;
   }
+  .bug-report-actions > button {
+    min-width: 0;
+    max-width: 100%;
+    white-space: normal;
+  }
 }
 
 /* ---------- agents page ---------- */
