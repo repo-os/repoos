@@ -58,4 +58,4 @@ Do not touch repoos.toml; do not run commands that mutate the real board.
 - 2026-11-18T07:33:51Z · body
 - 2026-11-18T07:34:26Z · status active→review
 - 2026-11-18T07:34:28Z · note: shots: skipped — the diff (11 changed paths) touches no capture target's globs — no UI change to capture
-
+- 2026-11-18T07:35:04Z · message_queued at 2026-11-18T07:35:04.352Z
