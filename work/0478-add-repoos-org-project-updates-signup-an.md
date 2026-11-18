@@ -12,7 +12,7 @@ branch: feat/add-repoos-org-project-updates-signup-an
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-09-21T12:08:58Z"
-updated_at: "2026-11-18T01:33:23Z"
+updated_at: "2026-11-18T01:35:06Z"
 ---
 ## Problem
 
@@ -40,6 +40,18 @@ Do not implement the service or recreate subscription state in the browser. Keep
 
 Run after #0477 (Build Neon Functions double-opt-in updates service).
 
+## Shots
+```json
+[
+{
+  "label": "Project updates signup beside the closing CTA",
+  "target": "Landing page",
+  "route": "/",
+  "highlight": "#project-updates"
+}
+]
+```
+
 ## Activity
 
 - 2026-09-21T12:08:58Z · created · unknown
@@ -50,3 +62,4 @@ Run after #0477 (Build Neon Functions double-opt-in updates service).
 - 2026-11-18T01:24:00Z · body
 - 2026-11-18T01:27:54Z · body
 - 2026-11-18T01:33:23Z · body
+- 2026-11-18T01:35:06Z · body
