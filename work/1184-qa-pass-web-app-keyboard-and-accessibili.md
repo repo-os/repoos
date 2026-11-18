@@ -3,13 +3,16 @@ id: "1184"
 title: "QA pass: web app keyboard and accessibility – focus order, labels, dialogs, contrast"
 type: bug
 status: active
+needs_input: true
+needs_input_reason: watchdog-stuck
+needs_input_detail: "3 automatic resume(s) in this active episode did not produce a handoff — the engineer keeps ending its turn without one. Review the transcript and resume it manually; if the conversation is poisoned, reset it with `repoos start 1184 --fresh`."
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-web-app-keyboard-and-accessibili
 created_at: "2026-11-18T12:17:32Z"
-updated_at: "2026-11-18T13:07:33Z"
+updated_at: "2026-11-18T13:12:45Z"
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-11-18T12:45:29.556Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-18T12:54:45.117Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-18T13:03:30.252Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
@@ -43,3 +46,4 @@ Do not touch repoos.toml.
 - 2026-11-18T13:03:30Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 3/3
 - 2026-11-18T13:05:35Z · body
 - 2026-11-18T13:07:33Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The Agents Skills dialog now gives its close button the accessible name “Close dialog,” with a regression test. The QA note is at [2026-11-keyboard-a11y.md](/Users/nick/code/nick/repoos-worktrees/feat/qa-pass-web-app-keyboard-and-accessibi… · stderr: Reading additional input from stdin... 2026-11-18T13:06:29.785167Z ERROR codex_core::tools::router: error=apply_patch verification failed: Failed to find expected lines in /Users/nick/code/nick/repoos-worktrees/feat/qa-pass-web-app-keyboard-and-accessibili/.repoos/engineering-report-drafts/1184.md: The required change…
+- 2026-11-18T13:12:45Z · watchdog: escalated to needs_input · 3 automatic resume(s) in this active episode produced no handoff
