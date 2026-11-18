@@ -2,7 +2,7 @@
 id: "1185"
 title: Restart now button does nothing on a systemd-managed server (misdetected as hand-run)
 type: bug
-status: active
+status: review
 priority: p1
 area: [web, server]
 assigned_to: ai
@@ -138,3 +138,4 @@ Reported by Nick 2026-11-18 20:22 from the phone UI. Related #1154. Do not touch
 - 2026-11-18T15:48:38Z · message_queued at 2026-11-18T15:48:38.259Z
 - 2026-11-18T15:48:39Z · ↻ resuming engineer to read queued message
 - 2026-11-18T15:48:40Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code unknown · last assistant: no assistant message · stderr: 2026-11-18T14:52:50.543076Z ERROR codex_core::util: Custom tool call output is missing for call id: call_a7339017f48a46e38004a2d1a382c49e 2026-11-18T14:52:57.693131Z ERROR codex_core::util: Custom tool call output is missing for call id: call_a7339017f48a46e38004a2d1a382c49e 2026-11-18T14:53:04.215878Z ERROR codex_cor…
+- 2026-11-18T15:48:40Z · status active→review
