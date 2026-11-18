@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-repoos-cli-usability-help-text-e
 created_at: "2026-11-18T05:56:48Z"
-updated_at: "2026-11-18T06:10:06Z"
+updated_at: "2026-11-18T06:22:56Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -36,3 +36,4 @@ Do not touch repoos.toml; do not run commands that mutate the real board.
 - 2026-11-18T06:10:04Z · note: review pass 1: needs some work
 - 2026-11-18T06:10:06Z · message_delivered: 1 message(s)
 - 2026-11-18T06:10:06Z · status review→active
+- 2026-11-18T06:22:56Z · body
