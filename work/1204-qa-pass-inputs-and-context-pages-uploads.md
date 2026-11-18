@@ -2,7 +2,7 @@
 id: "1204"
 title: "QA pass: Inputs and Context pages – uploads, docs ingestion and empty states"
 type: bug
-status: review
+status: active
 priority: p2
 area: web
 assigned_to: ai
@@ -10,10 +10,10 @@ created_by: t@t
 branch: feat/qa-pass-inputs-and-context-pages-uploads
 created_at: "2026-11-18T20:47:45Z"
 updated_at: "2026-11-18T22:16:49Z"
-review_passes: 3
-review_rounds: 1
+review_rounds: 2
 routing_switches: 1
 routing_escalations: 1
+review_passes: 3
 last_check_failure: "repoos check at 2026-11-18T21:27:46.766Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 ---
 ## Problem
@@ -108,3 +108,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T22:15:53Z · message_queued at 2026-11-18T22:15:53.831Z
 - 2026-11-18T22:16:49Z · note: review pass 4: needs some work
 - 2026-11-18T22:16:49Z · message_delivered: 1 message(s)
+- 2026-11-18T22:16:49Z · status review→active
