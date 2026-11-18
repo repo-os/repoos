@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: "check|repoos check failed: check-fmt:check — Formatting failed — run `bun run fmt` to fix:"
+last_handoff_failure_sha: c23e5318dc07620af19c3b6c3d71f3368ce6a9f8
 id: "1205"
 title: "QA pass: Control (Mission Control) dashboard – every card, chart and empty state at desktop and 375px"
 type: bug
@@ -84,3 +86,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T23:08:47Z · note: handoff requested (cli)
 - 2026-11-18T23:08:55Z · status active→review
 - 2026-11-18T23:26:26Z · handoff failed · task-file handoff failed at check · repoos check failed: check-fmt:check — Formatting failed — run `bun run fmt` to fix:
+
