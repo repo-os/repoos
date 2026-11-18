@@ -995,7 +995,7 @@ onUnmounted(() => {
           <p v-if="detectRefreshError" class="detect-update-error" role="status">
             Refresh failed: {{ detectRefreshError }}
           </p>
-          <div v-if="updateError" class="detect-update-error">
+          <div v-if="updateError" class="detect-update-error" role="status">
             Update checks are temporarily unavailable.
           </div>
           <div v-if="detectCachedAt && detectLoading" class="detect-cache-label">

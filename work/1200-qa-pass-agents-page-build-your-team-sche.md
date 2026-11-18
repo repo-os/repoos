@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 297794
-last_close_out_gate_at: "2026-11-18T21:29:19.198Z"
 id: "1200"
 title: "QA pass: Agents page Build Your Team, Scheduled Tasks, Reminders and Detected Coding Agents tabs"
 type: bug
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: f98fa6e6bde28e8bf0e29a979166179c96052d69
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-agents-page-build-your-team-sche
 created_at: "2026-11-18T19:47:54Z"
 updated_at: "2026-11-18T21:29:19Z"
+last_close_out_gate_ms: 297794
+last_close_out_gate_at: "2026-11-18T21:29:19.198Z"
 review_passes: 3
 last_check_failure: "repoos check at 2026-11-18T21:03:27.069Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 handoff_signal_retry_count: 2
