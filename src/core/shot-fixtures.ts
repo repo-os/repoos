@@ -47,6 +47,8 @@ export const SHOT_PREVIEW_FIXTURE_IDS = [
   "work:empty",
   // #1183 — initial task-index request failed; show the recoverable error state.
   "work:failedLoad",
+  // #1183 — Agents page with no configured built-in or custom roles.
+  "agents:empty",
   "card:reviewChecksRunning",
   "card:reviewLandableReady",
   // #1085 — active task with a stale but live handoff record on the checks line.

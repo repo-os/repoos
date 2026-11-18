@@ -39,6 +39,16 @@ import { activeEngineerCardHint } from "../src/lib/active-task-card";
 import { makeTask } from "./component-test-helpers";
 
 describe("shot preview board fixtures (#0743)", () => {
+  it("registers an Agents first-run fixture without mutating configured agents", () => {
+    setActivePinia(createPinia());
+    const repo = useRepoStore();
+    const config = useConfigStore();
+    config.agents = [{ name: "engineer", cli: "codex", model: "default", enabled: true }];
+    applyShotPreviewFixture(repo, "agents:empty");
+    expect(config.agents).toHaveLength(1);
+    expect(document.documentElement.getAttribute(SHOT_PREVIEW_APPLIED_ATTR)).toBe("agents:empty");
+  });
+
   it.each([
     ["work:empty", null],
     ["work:failedLoad", "Can't reach the RepoOS server — it may be down."],

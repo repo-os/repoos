@@ -3,10 +3,9 @@
 ## Scope
 
 This pass covers a new project's Work queue, its failed initial task load, and
-the Agents page when no custom agents have been added. The target widths are
-1280px and 375px. The Work states have preview fixtures (`work:empty` and
-`work:failedLoad`) so the same screens can be reviewed repeatably. The Agents
-page already shows “No custom agents yet — add one above.”
+the Agents page when no agents are configured. The target widths are 1280px and
+375px. Preview fixtures (`work:empty`, `work:failedLoad`, and `agents:empty`)
+make these screens repeatable.
 
 ## Findings and changes
 
@@ -17,24 +16,28 @@ page already shows “No custom agents yet — add one above.”
   and offers **Retry**. Successful board refresh clears the error.
 - API transport failures use the existing user-facing server connection
   message; the UI does not expose browser `Failed to fetch` text.
+- The Agents page now detects a project with no configured roles and offers a
+  direct route to built-in agent choices. Its fixture simulates the state
+  without modifying project configuration.
 
 ## Manual QA
 
-The auth-less server was started with `just serve-noauth 7272` from the task
-worktree and opened in Chrome at `http://127.0.0.1:7272`. The initial desktop
-page loaded with the live server and current project data. The Work fixtures
-are available for managed preview capture at `/work?shotState=work:empty` and
-`/work?shotState=work:failedLoad`.
+The auth-less server was started with `just serve-noauth 7272` from this task
+worktree. Headless Playwright WebKit exercised the UI at 1280×900 and 375×812.
+For `work:empty`, `work:failedLoad`, and `agents:empty`, the document width
+matched the viewport at both sizes (no horizontal overflow), the expected
+guidance was visible, and no page or console errors were observed.
 
-The available browser session did not expose responsive viewport controls or
-the DevTools console through its automation bridge. Therefore, no 1280px or
-375px measurements and no clean-console claim are recorded here. The layout
-includes a narrow-screen wrapping rule, but a human/browser QA pass should
-confirm it at both target widths and inspect console output.
+I also simulated an actual `/api/board` network failure, confirmed the Work
+error message and recovery instructions at both widths, then selected **Retry**
+and allowed the request through. The board recovered and tasks appeared at
+both sizes, with no page or console errors. Managed preview routes are
+`/work?shotState=work:empty`, `/work?shotState=work:failedLoad`, and
+`/agents?shotState=agents:empty`.
 
 ## Verification
 
-The fixture tests assert that the empty and failed-load fixtures clear existing
-tasks and produce distinct states. The API wrapper's existing tests cover
-friendly network and non-JSON errors. Record the scoped RepoOS check result in
-the handoff after it completes.
+The fixture tests assert distinct Work states and that the Agents fixture does
+not mutate project configuration. Mobile queue tests cover initial load failure
+and successful retry. The API wrapper's existing tests cover friendly network
+and non-JSON errors. The scoped RepoOS check result is recorded in the handoff.

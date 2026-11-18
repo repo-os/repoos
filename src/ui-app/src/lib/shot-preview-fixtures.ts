@@ -1219,6 +1219,10 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
       repo.boardLoadError = "Can't reach the RepoOS server — it may be down.";
       repo.loading = false;
       break;
+    case "agents:empty":
+      // AgentsView reads this capture-only fixture and suppresses configured
+      // roles locally; no project configuration is changed or saved.
+      break;
     case "release:emailSent":
     case "release:emailFailed":
       // ReleasesView reads this registered fixture and renders the email card

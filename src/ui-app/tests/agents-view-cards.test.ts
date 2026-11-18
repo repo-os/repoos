@@ -11,6 +11,42 @@ async function flush(): Promise<void> {
 }
 
 describe("AgentsView agent cards", () => {
+  it("guides an unconfigured project to its built-in agent choices without saving the fixture", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({ ok: false, status: 503, json: async () => ({ error: "offline" }) })),
+    );
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const config = useConfigStore();
+    config.agents = [{ name: "analyst", cli: "codex", model: "default", enabled: true }];
+    config.loaded = true;
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [{ path: "/agents", component: { template: "<div />" } }],
+    });
+    await router.push("/agents?shotState=agents:empty");
+    const wrapper = mount(AgentsView, {
+      global: {
+        plugins: [pinia, router],
+        stubs: { teleport: true, Transition: true, VoiceDictate: true },
+      },
+    });
+    await flush();
+
+    expect(wrapper.get("[data-testid='agents-empty-state']").text()).toContain(
+      "No agents are set up for this project",
+    );
+    expect(config.agents).toHaveLength(1);
+    await wrapper.get("[data-testid='agents-empty-state'] button").trigger("click");
+    await flush();
+    expect(wrapper.findAll(".agent-tabs .tab-btn")[1]!.classes()).toContain("active");
+    expect(config.agents).toHaveLength(1);
+
+    wrapper.unmount();
+    vi.unstubAllGlobals();
+  });
+
   it("renders the page tabs while config is still loading", async () => {
     vi.stubGlobal(
       "fetch",

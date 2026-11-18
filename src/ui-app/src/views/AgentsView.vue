@@ -175,7 +175,9 @@ let savePending = false;
 
 function sync(): void {
   syncing = true;
-  localAgents.value = config.agents.map((a) => ({ ...a }));
+  const fixture = route.query.shotState;
+  localAgents.value =
+    fixture === "agents:empty" ? [] : config.agents.map((a) => ({ ...a }));
   syncing = false;
 }
 
@@ -216,6 +218,7 @@ const teamAgents = computed(() =>
   localAgents.value.filter((a) => isDefaultName(a.name) && isTeamAgent(a.name)),
 );
 const customAgents = computed(() => localAgents.value.filter((a) => !isDefaultName(a.name)));
+const noConfiguredAgents = computed(() => config.loaded && localAgents.value.length === 0);
 
 const CLI_LABELS: Record<string, string> = {
   "claude code": "Claude Code",
@@ -756,6 +759,14 @@ onUnmounted(() => {
         <a class="page-help-link" href="/settings?tab=toml">Advanced config</a>
       </div>
     </header>
+
+    <section v-if="noConfiguredAgents" class="agents-first-run" data-testid="agents-empty-state">
+      <div class="agents-first-run-copy">
+        <h2>No agents are set up for this project</h2>
+        <p>Choose a built-in agent or add a custom role to get started.</p>
+      </div>
+      <Button variant="outline" @click="activeTab = 'team'">Choose a built-in agent</Button>
+    </section>
 
     <div class="agent-tabs">
       <button
