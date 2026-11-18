@@ -2,14 +2,14 @@
 id: "1189"
 title: "QA pass: task creation and editing flows (new task, update, attach screenshot, dependencies)"
 type: bug
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-task-creation-and-editing-flows-
 created_at: "2026-11-18T16:17:39Z"
-updated_at: "2026-11-18T16:42:04Z"
+updated_at: "2026-11-18T16:44:15Z"
 handoff_signal_retry_count: 2
 ---
 ## Problem
@@ -32,3 +32,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T16:41:27Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
 - 2026-11-18T16:41:28Z · note: handoff requested (cli)
 - 2026-11-18T16:42:04Z · CTO nudge: held — handoff gate is running
+- 2026-11-18T16:44:15Z · status active→review
