@@ -363,7 +363,13 @@ function fmtAgo(iso: string): string {
           cap
         }}</span>
         <span class="rr-health" :class="health(h).cls"
-          >{{ health(h).cls === "ok" || health(h).cls === "busy" ? "●" : health(h).cls === "bad" || health(h).cls === "failing" ? "✕" : "○" }}
+          >{{
+            health(h).cls === "ok" || health(h).cls === "busy"
+              ? "●"
+              : health(h).cls === "bad" || health(h).cls === "failing"
+                ? "✕"
+                : "○"
+          }}
           {{ health(h).label }}</span
         >
         <span
