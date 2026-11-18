@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-settings-and-agents-pages-every-
 created_at: "2026-11-18T06:47:46Z"
-updated_at: "2026-11-18T11:09:51Z"
+updated_at: "2026-11-18T11:12:55Z"
 review_passes: 4
 review_rounds: 2
 routing_switches: 1
@@ -36,11 +36,11 @@ Do not touch repoos.toml.
 "highlight": "#spend-alert-error",
 "steps": [
 {
-  "fill": "#setting-attention\\.spendAlertUsd input",
-  "text": "-1"
+"fill": "#setting-attention\\.spendAlertUsd input",
+"text": "-1"
 },
 {
-  "waitFor": "#spend-alert-error"
+"waitFor": "#spend-alert-error"
 }
 ]
 }
@@ -116,3 +116,4 @@ Do not touch repoos.toml.
 - 2026-11-18T10:59:50Z · body
 - 2026-11-18T11:09:51Z · message_queued at 2026-11-18T11:09:51.193Z
 - 2026-11-18T11:09:51Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-18T11:12:55Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
