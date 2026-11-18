@@ -2,7 +2,7 @@
 id: "1173"
 title: "QA pass: web app desktop – Agents, Checks, Settings, Releases pages end to end"
 type: bug
-status: review
+status: active
 priority: p2
 area: web
 assigned_to: ai
@@ -10,6 +10,8 @@ created_by: t@t
 branch: feat/qa-pass-web-app-desktop-agents-checks-se
 created_at: "2026-11-18T03:57:22Z"
 updated_at: "2026-11-18T05:05:04Z"
+review_rounds: 1
+routing_switches: 1
 review_passes: 1
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-11-18T04:29:14.766Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-18T04:41:03.570Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-18T04:49:49.328Z\",\"reason\":\"clean-exit-without-handoff\"}]"
@@ -49,3 +51,4 @@ Do not touch repoos.toml.
 - 2026-11-18T05:04:24Z · note: shots: skipped — the diff (3 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-18T05:05:03Z · note: review pass 1: needs some work
 - 2026-11-18T05:05:04Z · message_delivered: 1 message(s)
+- 2026-11-18T05:05:04Z · status review→active
