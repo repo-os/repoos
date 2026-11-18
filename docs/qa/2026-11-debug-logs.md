@@ -32,7 +32,9 @@ logs endpoint so the pass did not write to the repository's task log.
   regression case preserving the complete very long unbroken message and its
   expanded context.
 - `bun run build:ui` — passed.
-- `REPOOS_CHECK_CHANGED=main repoos check` — run recorded by the task handoff.
+- `REPOOS_CHECK_CHANGED=main repoos check` — passed. The remote changed-path
+  tests and browser gate passed; local format, lint, build, CSS, contrast and UI
+  smoke checks passed.
 
 The large event list was a local mocked response, not an observed 1,000-row
 production task. The check covers wrapping, rendering and page width; it does
