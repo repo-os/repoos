@@ -25,6 +25,8 @@
 
 The UI previously showed existing prerequisites but did not let users set them. Added a searchable prerequisite picker to Manual task creation and the task Details editor. The picker excludes the task being edited, shows up to eight matches, supports selecting and removing multiple prerequisites, and sends IDs through the existing `dependsOn` create and PATCH fields. Selection is reset when a new task panel opens and after successful creation.
 
+The review capture exposed long task titles widening the candidate list. The list, rows, and buttons now have width constraints, the title flexes into the available space and truncates, and horizontal overflow is clipped. A headless WebKit regression test checks long titles at 375 and 1280 px.
+
 Added component and TaskDrawer tests for filtering, excluding the current task, selection/removal, and the dependency IDs sent by both create and edit requests.
 
 ## Verification

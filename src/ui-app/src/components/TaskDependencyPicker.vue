@@ -92,11 +92,21 @@ function toggle(id: string): void {
 }
 
 .dependency-options {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
   max-height: 190px;
-  overflow: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 4px;
+}
+
+.dependency-options li {
+  width: 100%;
+  min-width: 0;
 }
 
 .dependency-option {
@@ -105,6 +115,9 @@ function toggle(id: string): void {
   gap: 8px;
   width: 100%;
   min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
   padding: 7px 8px;
   border: 0;
   border-radius: 5px;
@@ -137,6 +150,7 @@ function toggle(id: string): void {
 }
 
 .dependency-copy {
+  flex: 1 1 0%;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
