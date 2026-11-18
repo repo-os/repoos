@@ -11,7 +11,7 @@ branch: feat/qa-pass-exercise-the-new-releases-genera
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-18T00:17:51Z"
-updated_at: "2026-11-18T00:58:00Z"
+updated_at: "2026-11-18T01:07:30Z"
 last_check_failure: "repoos check at 2026-11-18T00:54:42.638Z: repoos check failed: ui-smoke — [queue] waiting for a Playwright slot — position 2 (1 ahead)"
 ---
 ## Problem
@@ -56,3 +56,4 @@ Do not edit repoos.toml.
 - 2026-11-18T00:57:59Z · status active→review
 - 2026-11-18T00:57:59Z · message_queued at 2026-11-18T00:57:59.952Z
 - 2026-11-18T00:58:00Z · note: shots: skipped — the diff (3 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-11-18T01:07:30Z · note: review pass 1: needs some work
