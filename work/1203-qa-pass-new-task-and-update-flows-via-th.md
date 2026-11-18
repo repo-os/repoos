@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-new-task-and-update-flows-via-th
 created_at: "2026-11-18T20:47:36Z"
-updated_at: "2026-11-18T21:08:30Z"
+updated_at: "2026-11-18T21:10:32Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -23,6 +23,19 @@ The same invalid task gets the same clear message in UI and CLI, and needs-input
 - Commit docs/qa/2026-11-task-validation.md.
 ## Notes for AI
 Do not touch repoos.toml. Never open a visible browser window.
+
+## Shots
+```json
+[
+{
+  "label": "New-task needs-input message",
+  "target": "default",
+  "route": "/work",
+  "highlight": "[role=\"status\"]",
+  "state": "toast:taskNeedsInput"
+}
+]
+```
 
 ## Activity
 
@@ -42,3 +55,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T21:08:28Z · message_delivered: 1 message(s)
 - 2026-11-18T21:08:28Z · status review→active
 - 2026-11-18T21:08:30Z · CTO nudge: held — remote validation is running
+- 2026-11-18T21:10:32Z · body
