@@ -49,6 +49,21 @@ describe("shot preview board fixtures (#0743)", () => {
     expect(document.documentElement.getAttribute(SHOT_PREVIEW_APPLIED_ATTR)).toBe("agents:empty");
   });
 
+  it("seeds the needs-input toast shown after task creation (#1203)", () => {
+    setActivePinia(createPinia());
+    const repo = useRepoStore();
+    applyShotPreviewFixture(repo, "toast:taskNeedsInput");
+    expect(repo.toasts).toHaveLength(1);
+    expect(repo.toasts[0]).toMatchObject({
+      type: "info",
+      message:
+        "Task created and needs your input: missing sections: Problem, Acceptance criteria, Notes for AI",
+    });
+    expect(document.documentElement.getAttribute(SHOT_PREVIEW_APPLIED_ATTR)).toBe(
+      "toast:taskNeedsInput",
+    );
+  });
+
   it.each([
     ["work:empty", null],
     ["work:failedLoad", "Can't reach the RepoOS server — it may be down."],
