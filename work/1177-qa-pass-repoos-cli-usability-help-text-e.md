@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 225070
-last_close_out_gate_at: "2026-11-18T08:49:19.378Z"
 id: "1177"
 title: "QA pass: RepoOS CLI usability – help text, error messages and exit codes"
 type: bug
-status: review
+status: done
 priority: p2
 area: core
+merged_commit: d7d5b8a6774ff26496d7c51e8dacb111aa6af7d3
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-repoos-cli-usability-help-text-e
 created_at: "2026-11-18T05:56:48Z"
 updated_at: "2026-11-18T08:49:19Z"
+last_close_out_gate_ms: 225070
+last_close_out_gate_at: "2026-11-18T08:49:19.378Z"
 review_passes: 4
 last_check_failure: "repoos check at 2026-11-18T06:45:34.810Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 2
