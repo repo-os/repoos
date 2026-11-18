@@ -1,16 +1,16 @@
 ---
-handoff_signal_retry_count: 2
 id: "1189"
 title: "QA pass: task creation and editing flows (new task, update, attach screenshot, dependencies)"
 type: bug
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-task-creation-and-editing-flows-
 created_at: "2026-11-18T16:17:39Z"
-updated_at: "2026-11-18T16:36:06Z"
+updated_at: "2026-11-18T16:41:27Z"
+handoff_signal_retry_count: 2
 ---
 ## Problem
 Creating and editing tasks in the UI has changed a lot and has no recent hands-on pass.
@@ -29,4 +29,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T16:17:53Z · status ready→active, branch
 - 2026-11-18T16:27:13Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: I did not complete the QA pass or request handoff. In the disposable scratch preview, clicking **Create** left the manual task form open, and I couldn’t confirm whether the task was saved. Dependency editing also remains untested, so I can… · stderr: Reading additional input from stdin... 2026-11-18T16:23:48.895845Z ERROR codex_core::tools::router: error=exec_command failed: CreateProcess { message: "Rejected(\"`/bin/zsh -lc 'git worktree remove --force /Users/nick/code/nick/repoos-worktrees/feat/qa-pass-task-creation-and-editing-flows-/.qa-scratch && rm -f /Users…
 - 2026-11-18T16:36:06Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: I can’t emit the handoff signal yet. The required `just serve-noauth` server rejects writes with HTTP 405 (`preview servers are read-only`), so this pass could not verify task creation, screenshot persistence, or dependency saves. I docume… · stderr: 2026-11-18T16:35:05.796149Z ERROR codex_core::tools::router: error=apply_patch verification failed: Failed to find expected lines in /Users/nick/code/nick/repoos-worktrees/feat/qa-pass-task-creation-and-editing-flows-/.repoos/engineering-report-drafts/1189.md: I attempted a disposable manual task creation in the scrat…
-
+- 2026-11-18T16:41:27Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
