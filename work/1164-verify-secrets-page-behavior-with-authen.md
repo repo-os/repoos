@@ -3,6 +3,9 @@ id: "1164"
 title: Verify Secrets page behavior with authenticated access
 type: bug
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: `needs some work` — unsigned 401 state is uncaptured (only shot stale); a stale sign-in error returns in the create dialog.
 priority: p2
 area: web
 assigned_to: ai
@@ -79,3 +82,4 @@ The initial evidence is an auth-less 401, not proof of a signed-in regression. Q
 - 2026-11-18T01:17:38Z · status active→review
 - 2026-11-18T01:24:15Z · note: ui verification passed: 1 of 1 shot captured with clean console
 - 2026-11-18T01:24:16Z · note: review pass 3: needs some work
+- 2026-11-18T01:24:16Z · needs_input
