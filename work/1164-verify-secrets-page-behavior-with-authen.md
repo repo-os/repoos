@@ -2,7 +2,7 @@
 id: "1164"
 title: Verify Secrets page behavior with authenticated access
 type: bug
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: ""
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T17:53:29Z"
-updated_at: "2026-11-18T00:17:38Z"
+updated_at: "2026-11-18T00:17:40Z"
 ---
 ## Problem
 During task #1157 browser QA using the auth-less preview server, GET /api/project-environments returned 401 and the Secrets page displayed a failure state. The endpoint requires sign-in; this run could not verify the normal authenticated product flow or whether the no-auth failure state provides useful guidance.
@@ -36,3 +36,4 @@ The initial evidence is an auth-less 401, not proof of a signed-in regression. Q
 - 2026-11-17T17:53:29Z · created · t@t
 - 2026-11-17T17:53:29Z · screenshots
 - 2026-11-18T00:17:38Z · cli_override, model_override
+- 2026-11-18T00:17:40Z · status inbox→ready
