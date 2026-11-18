@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-repoos-cli-usability-help-text-e
 created_at: "2026-11-18T05:56:48Z"
-updated_at: "2026-11-18T08:05:11Z"
+updated_at: "2026-11-18T08:05:20Z"
 review_passes: 3
 last_check_failure: "repoos check at 2026-11-18T06:45:34.810Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 2
@@ -64,3 +64,4 @@ Do not touch repoos.toml; do not run commands that mutate the real board.
 - 2026-11-18T08:05:05Z · status review→active
 - 2026-11-18T08:05:08Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-18T08:05:11Z · watchdog: restarting engineer because a queued message waited 30m with no live process
+- 2026-11-18T08:05:20Z · message_queued at 2026-11-18T08:05:20.054Z
