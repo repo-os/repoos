@@ -142,16 +142,16 @@ describe("SettingsView save sends only changed fields (#0797)", () => {
       ?.querySelector("input");
     expect(input).not.toBeNull();
 
-    await wrapper.find('#setting-attention\\.spendAlertUsd input').setValue("-1");
+    await wrapper.find("#setting-attention\\.spendAlertUsd input").setValue("-1");
     expect(wrapper.find("#spend-alert-error").text()).toContain("zero or more");
     expect(input?.getAttribute("aria-invalid")).toBe("true");
     expect(saveSpy).not.toHaveBeenCalled();
 
-    await wrapper.find('#setting-attention\\.spendAlertUsd input').setValue("12.5");
+    await wrapper.find("#setting-attention\\.spendAlertUsd input").setValue("12.5");
     expect(wrapper.find("#spend-alert-error").text()).toContain("whole dollar");
     expect(saveSpy).not.toHaveBeenCalled();
 
-    await wrapper.find('#setting-attention\\.spendAlertUsd input').setValue("12");
+    await wrapper.find("#setting-attention\\.spendAlertUsd input").setValue("12");
     expect(wrapper.find("#spend-alert-error").exists()).toBe(false);
     await vi.waitFor(() => expect(saveSpy).toHaveBeenCalled(), { timeout: 3000 });
     expect(saveSpy.mock.calls.at(-1)?.[0]).toEqual({ "attention.spendAlertUsd": "12" });
