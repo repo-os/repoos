@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-web-app-keyboard-and-accessibili
 created_at: "2026-11-18T12:17:32Z"
-updated_at: "2026-11-18T16:52:57Z"
+updated_at: "2026-11-18T16:57:02Z"
 close_out_repair_count: 1
 review_passes: 3
 review_rounds: 1
@@ -147,3 +147,4 @@ Do not touch repoos.toml.
 - 2026-11-18T16:34:33Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-18T16:34:33Z · message_delivered: 2 message(s)
 - 2026-11-18T16:52:57Z · body
+- 2026-11-18T16:57:02Z · CTO nudge: held — handoff gate is running
