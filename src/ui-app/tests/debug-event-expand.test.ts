@@ -205,4 +205,32 @@ describe("DebugPanel expanded rows (#0829)", () => {
     expect(wrapper.get(".debug-event-message").text()).toBe(report);
     wrapper.unmount();
   });
+
+  it("keeps very long unbroken log lines available when expanded", async () => {
+    const message = `request-id=${"x".repeat(12_000)}`;
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const repo = useRepoStore();
+    repo.taskLogs[TASK.id] = [
+      {
+        timestamp: "2026-11-07T03:00:00Z",
+        level: "error",
+        component: "task",
+        message,
+        context: { output: "y".repeat(2_000) },
+      },
+    ];
+    const wrapper = mount(DebugPanel, {
+      props: { task: TASK },
+      global: { plugins: [pinia], stubs: { teleport: true } },
+    });
+    await nextTick();
+    const row = wrapper.get(".debug-event");
+    expect(row.classes()).toContain("debug-event-expandable");
+    await row.trigger("click");
+    await nextTick();
+    expect(wrapper.get(".debug-event-message").text()).toBe(message);
+    expect(wrapper.get(".debug-log-inline").text()).toContain("y".repeat(2_000));
+    wrapper.unmount();
+  });
 });
