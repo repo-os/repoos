@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 435668
-last_close_out_gate_at: "2026-11-18T13:30:55.760Z"
 id: "1179"
 title: "QA pass: Settings and Agents pages – every control saves, validates and survives reload"
 type: bug
-status: review
+status: done
 priority: p2
 area: [web, server]
+merged_commit: b74063a32443566b25cdd3782ac74bcc73b448e8
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-settings-and-agents-pages-every-
 created_at: "2026-11-18T06:47:46Z"
 updated_at: "2026-11-18T13:30:55Z"
+last_close_out_gate_ms: 435668
+last_close_out_gate_at: "2026-11-18T13:30:55.760Z"
 review_passes: 7
 review_rounds: 2
 routing_switches: 1
