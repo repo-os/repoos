@@ -785,6 +785,57 @@ describe("feature releases", () => {
   });
 
   it.each([
+    { agents: 2, checks: 1, expected: "2 agents and 1 check running" },
+    { agents: 1, checks: 2, expected: "1 agent and 2 checks running" },
+    { agents: 1, checks: 1, expected: "1 agent and 1 check running" },
+    { agents: 0, checks: 0, expected: "0 agents and 0 checks running" },
+  ])("pluralizes active work counts: $expected", async ({ agents, checks, expected }) => {
+    vi.stubGlobal(
+      "fetch",
+      restartNoticeFetch({
+        supervised: false,
+        supervisorKind: "none",
+        activeWork: { agents, checks },
+      }),
+    );
+    const wrapper = mount(ReleaseUpdateNotification, { attachTo: document.body });
+    try {
+      await flushPromises();
+      const description = document.body.querySelector(".release-update-description")?.textContent;
+      expect(description?.replace(/\s+/g, " ")).toContain(expected);
+    } finally {
+      wrapper.unmount();
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("shows the scoped restart command when supervisor detection is uncertain", async () => {
+    const command = "repoos restart --root /fake/project --port 7123";
+    vi.stubGlobal(
+      "fetch",
+      restartNoticeFetch({
+        supervised: false,
+        supervisorKind: "uncertain",
+        supervisorReason: "service lookup timed out",
+        restartCommand: command,
+      }),
+    );
+    const wrapper = mount(ReleaseUpdateNotification, { attachTo: document.body });
+    try {
+      await flushPromises();
+      const notice = document.body.querySelector('[data-test-id="installed-restart-notice"]');
+      expect(notice?.querySelector('[role="alert"]')?.textContent).toContain(
+        "Automatic restart is unavailable",
+      );
+      expect(notice?.querySelector("code")?.textContent?.trim()).toBe(command);
+      expect(notice?.querySelectorAll("button")).toHaveLength(0);
+    } finally {
+      wrapper.unmount();
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it.each([
     {
       platform: "launchd",
       supervisor: { supervised: true, supervisorKind: "external", supervisorPlatform: "launchd" },
