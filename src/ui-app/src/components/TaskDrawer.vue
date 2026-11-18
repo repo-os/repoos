@@ -5710,7 +5710,7 @@ watch(
                 :model-value="ui.active.status"
                 @update:model-value="(v) => setStatus(v ?? '')"
               >
-                <SelectTrigger :disabled="ui.saving || handoffBusy">
+                <SelectTrigger class="task-status-select" :disabled="ui.saving || handoffBusy">
                   <SelectValue :placeholder="currentStatusLabel">{{
                     currentStatusLabel
                   }}</SelectValue>
