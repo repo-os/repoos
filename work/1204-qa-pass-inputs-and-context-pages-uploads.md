@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-inputs-and-context-pages-uploads
 created_at: "2026-11-18T20:47:45Z"
-updated_at: "2026-11-18T21:27:44Z"
+updated_at: "2026-11-18T21:27:46Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 2
@@ -86,3 +86,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T21:27:43Z · note: shots: failed — browser capture cancelled
 - 2026-11-18T21:27:43Z · message_delivered: 1 message(s)
 - 2026-11-18T21:27:44Z · status review→active
+- 2026-11-18T21:27:46Z · message_queued at 2026-11-18T21:27:46.665Z
