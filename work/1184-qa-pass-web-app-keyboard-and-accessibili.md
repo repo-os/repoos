@@ -60,3 +60,4 @@ Do not touch repoos.toml.
 - 2026-11-18T14:08:10Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-18T14:09:48Z · body
 - 2026-11-18T14:12:01Z · queued message undelivered for 4m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-18T14:12:01Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code unknown) · last assistant: The first check stopped at the formatter before build, tests, or smoke ran. I’ll apply the repo formatter as required, then rerun the same scoped check. · stderr: Reading additional input from stdin...
