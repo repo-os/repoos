@@ -55,7 +55,10 @@ remains authoritative if an earlier response finishes later; only the current
 request controls loading and error state. The Inputs store applies the same
 latest-request rule so an older list response cannot replace newer data, and a
 superseded failure does not surface as the current refresh's error. Regression
-tests cover both out-of-order successes and stale failures. The focused test run
-passed 17 tests across the two affected test files and the wrapper's boot-timing
-suite. The scoped RepoOS check passed formatting, lint, build, UI guards,
-rendered contrast, UI smoke, and the remote changed-path suite (1,705 tests).
+tests cover out-of-order successes and failures, including an older successful
+Inputs request completing after the latest refresh fails. A selected-document
+preview is also guarded so an older file fetch cannot replace the document
+selected by a newer listing. The focused regression suite and the wrapper's
+boot-timing tests passed. The scoped RepoOS check passed formatting, lint, build,
+UI guards, rendered contrast, UI smoke, and the remote changed-path suite (1,705
+tests).

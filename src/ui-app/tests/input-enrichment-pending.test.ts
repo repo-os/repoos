@@ -103,6 +103,29 @@ describe("enrichment-pending tracking (#0631)", () => {
     expect(repo.inputs.map((input) => input.id)).toEqual(["current"]);
   });
 
+  it("keeps a latest inputs failure visible when an older success finishes later", async () => {
+    setActivePinia(createPinia());
+    const pending: Array<{ resolve: (value: unknown) => void; reject: (reason: Error) => void }> =
+      [];
+    vi.spyOn(apiMod, "api").mockImplementation((path: string) => {
+      if (path !== "/api/inputs") return Promise.resolve([]) as never;
+      return new Promise((resolve, reject) => pending.push({ resolve, reject })) as never;
+    });
+    const repo = useRepoStore();
+    const olderLoad = repo.refreshInputs();
+    const newerLoad = repo.refreshInputs();
+    const older = pending[pending.length - 2];
+    const newer = pending[pending.length - 1];
+
+    newer.reject(new Error("current request failed"));
+    await expect(newerLoad).resolves.toBe(false);
+    older.resolve([rawInput("stale")]);
+    // InputsView awaits its startup call. Its result must reflect the latest
+    // request, otherwise that old success clears the current error banner.
+    await expect(olderLoad).resolves.toBe(false);
+    expect(repo.inputs).toEqual([]);
+  });
+
   it("marks the created input enriching on submit and clears on input.enriched", async () => {
     stubPostInput({ id: "abc-123", enriching: true });
     setActivePinia(createPinia());

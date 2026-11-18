@@ -85,6 +85,49 @@ describe("docs store search index (#0557)", () => {
     expect(docs.docs).toEqual([]);
   });
 
+  it("does not let an older preview fetch overwrite the document selected by a newer listing", async () => {
+    const docs = useDocsStore();
+    let resolveOlderList!: (value: unknown) => void;
+    let resolveNewerList!: (value: unknown) => void;
+    let resolveOldContent!: (value: { ok: boolean; text: () => Promise<string> }) => void;
+    let resolveNewContent!: (value: { ok: boolean; text: () => Promise<string> }) => void;
+    const olderList = new Promise((resolve) => {
+      resolveOlderList = resolve;
+    });
+    const newerList = new Promise((resolve) => {
+      resolveNewerList = resolve;
+    });
+    const oldContent = new Promise<{ ok: boolean; text: () => Promise<string> }>((resolve) => {
+      resolveOldContent = resolve;
+    });
+    const newContent = new Promise<{ ok: boolean; text: () => Promise<string> }>((resolve) => {
+      resolveNewContent = resolve;
+    });
+    api
+      .mockReturnValueOnce(olderList as ReturnType<typeof apiMod.api>)
+      .mockReturnValueOnce(newerList as ReturnType<typeof apiMod.api>);
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((path: string) => (path === "docs/old.md" ? oldContent : newContent)),
+    );
+
+    const olderLoad = docs.loadDocs();
+    resolveOlderList([{ path: "docs/old.md", title: "Old", mtimeMs: 1 }]);
+    await Promise.resolve();
+    const newerLoad = docs.loadDocs();
+    resolveNewerList([{ path: "docs/new.md", title: "New", mtimeMs: 2 }]);
+    await Promise.resolve();
+
+    resolveNewContent({ ok: true, text: async () => "# New document" });
+    await expect(newerLoad).resolves.toBe(true);
+    resolveOldContent({ ok: true, text: async () => "# Old document" });
+    await expect(olderLoad).resolves.toBe(true);
+
+    expect(docs.selDoc).toBe("docs/new.md");
+    expect(docs.docTitle).toBe("New");
+    expect(docs.docContent).toBe("# New document");
+  });
+
   it("syncDocAfterCreate indexes a path when the listing API omits it", async () => {
     const docs = useDocsStore();
     docs.docs = [{ path: "docs/existing.md", title: "Existing", mtimeMs: 1 }];

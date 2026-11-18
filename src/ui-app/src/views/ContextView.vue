@@ -293,7 +293,7 @@ watch(
 </script>
 
 <template>
-  <div class="ctx-page">
+  <div id="context-top" class="ctx-page">
     <header class="page-header">
       <div>
         <div class="page-title">Repo Context</div>
