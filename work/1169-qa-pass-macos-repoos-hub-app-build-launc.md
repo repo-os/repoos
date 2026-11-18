@@ -11,7 +11,7 @@ branch: feat/qa-pass-macos-repoos-hub-app-build-launc
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-18T02:19:44Z"
-updated_at: "2026-11-18T15:47:29Z"
+updated_at: "2026-11-18T15:57:36Z"
 review_passes: 10
 review_rounds: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-11-18T04:39:18.645Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-18T04:49:19.309Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-18T08:53:34.221Z\",\"reason\":\"clean-exit-without-handoff\"}]"
@@ -393,4 +393,4 @@ Signed-in projects and tasks remain unverified because automated email-code entr
 - 2026-11-18T15:36:46Z · status active→review
 - 2026-11-18T15:36:47Z · note: shots: skipped — the diff (32 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-18T15:47:29Z · note: review pass 10: good to go
-
+- 2026-11-18T15:57:36Z · message_queued at 2026-11-18T15:57:36.947Z
