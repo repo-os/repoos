@@ -1,106 +1,57 @@
 # Remote engineer sessions
 
-::: warning Planned — not yet available
-Running a whole engineer session on a remote runner is designed but not built
-yet. This page records the intended setup and behavior so a runner can be
-prepared ahead of time and so the design can be reviewed. Until the feature
-ships, every engineer session runs on the machine hosting RepoOS.
-:::
+RepoOS does not currently run the managed engineer process on a remote runner.
+Managed engineers run on the machine hosting RepoOS. Remote runners can run
+checks and browser evidence, and can perform the self-check for a managed
+engineer when remote validation is enabled.
 
-RepoOS already runs **checks, handoff/close-out gates and browser evidence** on
-remote runners (see [Checks before merge](/check)). Remote engineer sessions
-extend that to the engineer process itself: a task's engineer runs in its own
-git worktree on a chosen host, while the board, transcript, review and close-out
-stay on the machine you are using.
+This distinction matters: the task worktree, engineer CLI, and its child
+processes stay on the RepoOS host. With remote validation enabled, the managed
+engineer's self-check sends a verified checkout to a configured validation
+runner for install, build, and tests; format and lint remain local. A successful
+remote pass for the same commit can be reused at handoff. Turn this off with
+`remoteValidation.engineerSelfCheckRemote = false` to run install, build, tests,
+format, and lint on the RepoOS host. With remote validation disabled, the
+self-check runs locally.
 
-Remote validation also works from high-latency networks when the transfer
-bandwidth is sufficient: its link probe measures RTT separately from payload
-throughput and retries once before skipping an unreachable host. In Settings
-→ Remote validation, adjust `remoteValidation.linkThroughputFloorBps` and
-`remoteValidation.linkProbeBytes` if the network needs different thresholds.
+## Configure remote validation
 
-Local execution remains the default. A remote session is opt-in per repo and can
-always fall back to local.
+Remote validation is opt-in. Enable it in **Settings → Remote validation** or
+in `repoos.toml`, choose a provider, and configure at least one runner host.
+The Tailscale provider can use a single `tailscaleHost` or a pool of
+`tailscaleHosts`; see [Checks before merge](/check) and the
+[repoos.toml reference](/configuration#remote-validation) for host setup,
+selection, required tools, and fallback behavior.
 
-## What stays local, what moves
+```toml
+[remoteValidation]
+enabled = true
+provider = "tailscale"
+tailscaleHosts = ["runner-one", "runner-two"]
+```
 
-| Stays on your machine | Runs on the runner |
+`remoteValidation.engineerSelfCheckRemote` defaults to `true` when remote
+validation is enabled; set it to `false` only when you want those self-checks
+to run locally.
+
+Runner hosts need the tools required by the project check plan. Declare
+`requires` on check steps and use `runsOn` when a remote step needs a particular
+host capability. `repoos runners check` probes configured hosts and declared
+engineer CLIs; `repoos runners setup` can install the runner-side validation
+runtime. Engineer CLI credentials are separate from project secrets and are
+not uploaded with the checkout.
+
+## What runs where
+
+| Work | Location |
 | --- | --- |
-| Task file, task metadata and activity log | The engineer CLI and its child processes (build, tests) |
-| The board, transcript view, messages, pause/resume controls | The git worktree for that turn and its commits |
-| Review, the review lock, close-out and the merge pipeline | The runner's package cache and browser binaries |
-| The canonical task branch after commits are fetched back | |
+| Managed engineer CLI and child processes | RepoOS host |
+| Task worktree and task branch | RepoOS host |
+| Format and lint in the engineer self-check gate | RepoOS host |
+| Install, build, and tests in the engineer self-check gate, when enabled | Validation runner |
+| Handoff, close-out and merge decision | RepoOS server |
 
-The runner does not receive your shell environment, `.env` file or API keys.
-Credentials for the engineer CLI live on the runner; see the setup checklist
-below.
-
-## Intended configuration
-
-These keys are the design accepted in ADR 0009; they are not read by RepoOS yet.
-
-```toml
-[remoteEngineers]
-enabled = false                 # feature switch; local by default
-placement = "local-first"       # "local-first" | "runner-first" | "runner-only"
-maxPerHost = 1                  # concurrent engineer sessions per runner
-heartbeatTimeoutSeconds = 90
-recoverOnBoot = true            # re-attach across a RepoOS reload
-fallbackToLocal = true          # start locally if no runner is usable
-```
-
-A host can override the concurrency cap on its existing pool row:
-
-```toml
-[[remoteValidation.tailscaleHosts]]
-host = "bee"
-labels = ["engineer-opencode"]  # CLIs this host can run
-maxEngineers = 2
-```
-
-`placement` controls selection:
-
-- **`local-first`** (default) — run locally unless the task or the board asks
-  for a runner.
-- **`runner-first`** — use the least-loaded healthy runner that provides the
-  task's CLI, and fall back to local when none is usable.
-- **`runner-only`** — never start locally; queue with a visible reason instead.
-
-A host that is unreachable or under memory pressure is skipped, using the same
-health probe remote checks use. If every eligible host is pressured, the start
-queues and shows the same operating-system-specific fix the validation queue
-shows.
-
-## What the board shows
-
-- Which host is running the engineer, and whether that host is healthy.
-- `connection-lost` when the stream drops but the agent is still alive — the
-  session reconnects and continues; it is not treated as a crash.
-- `remote-crashed` when the supervisor is truly gone (reboot, OOM, kill), with
-  the existing crash-resume path.
-- `needs_input` for cases that need a person: a dirty worktree that could not
-  be checkpointed, or a local tree that diverged from the fetched branch tip.
-
-A remote run never starts a second engineer for the same task and never resets
-your local branch automatically.
-
-## Setup checklist (for the runner operator)
-
-Do this once per host, as the user RepoOS SSHes in as. Never put a key in
-`repoos.toml`, a task, a chat message, or a bundle.
-
-1. Install the engineer CLIs your board may use (`opencode`, `codex`, `cursor`,
-   `copilot`) for that user and make them available to a non-login SSH command.
-2. Log in once per CLI **on the host** with the CLI's own login command. This
-   writes its config under the runner user's home.
-3. For API-key CLIs, put the key in `~/.config/repoos/engineer.env` (directory
-   `700`, file `600`). The runner sources it; RepoOS never uploads it.
-4. Prove a non-interactive run from the laptop, for example
-   `ssh <host> 'cd /tmp && opencode run "say ok"'`. A CLI that needs a TTY or a
-   browser callback fails here and must be fixed on the runner first.
-5. Add an `engineer-<cli>` label for each installed CLI to that host's pool row,
-   so placement only sends a task to a host that can run its CLI.
-6. Optionally use a dedicated runner user, so a task's shell cannot read the
-   operator's personal credentials beyond the CLI config directories.
-
-Until a host has passed this checklist, leave remote engineer sessions off.
+The remote gate reports runner selection, progress, failures, and queued work
+through the Checks and task views. Runner unavailability follows the configured
+remote-validation fallback policy; it does not move the engineer session to a
+runner.

@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 170408
-last_close_out_gate_at: "2026-11-18T05:59:30.473Z"
 id: "1176"
 title: "QA pass: user-docs accuracy for Hub apps, Releases and remote runners vs current behavior"
 type: chore
-status: review
+status: done
 priority: p2
 area: docs
+merged_commit: e5203b6de932c9534f2af72c8435aa2d00d87d8e
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-user-docs-accuracy-for-hub-apps-
 created_at: "2026-11-18T05:49:21Z"
 updated_at: "2026-11-18T05:59:30Z"
+last_close_out_gate_ms: 170408
+last_close_out_gate_at: "2026-11-18T05:59:30.473Z"
 review_passes: 1
 ---
 ## Problem
