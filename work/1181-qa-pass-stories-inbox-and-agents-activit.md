@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-stories-inbox-and-agents-activit
 created_at: "2026-11-18T08:49:05Z"
-updated_at: "2026-11-18T09:19:24Z"
+updated_at: "2026-11-18T09:23:21Z"
 last_close_out_gate_ms: 106844
 last_close_out_gate_at: "2026-11-18T09:19:19.287Z"
 review_passes: 1
@@ -37,3 +37,4 @@ Do not touch repoos.toml; skip what #1157/#1170/#1173/#1178 covered.
 - 2026-11-18T08:56:59Z · note: review pass 1: good to go
 - 2026-11-18T09:19:19Z · close-out gate completed in 107s
 - 2026-11-18T09:19:24Z · status done→done, release:success
+- 2026-11-18T09:23:21Z · message_dropped: 1 queued message(s) discarded — task is done
