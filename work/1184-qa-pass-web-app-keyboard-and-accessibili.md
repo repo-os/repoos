@@ -114,3 +114,4 @@ Do not touch repoos.toml.
 - 2026-11-18T14:34:30Z · body
 - 2026-11-18T14:36:14Z · CTO nudge: held — handoff gate is running
 - 2026-11-18T14:38:34Z · note: ui verification failed: ui verification failed (2 issue(s)): [missing-target] Agents Skills dialog accessible close control (target "default"): click button.agent-skills-add: click: Error: strict mode violation: locator('button.agent-skills-add') resolved to 6 elements: on /agents?tab=default (http://127.0.0.1:42821/agents?tab=default); [missing-target] Agents Skills dialog accessible close control (target "default"): highlight .am-modal matched nothing on /agents?tab=default (http://127.0.0.1:4
+- 2026-11-18T14:38:34Z · message_queued at 2026-11-18T14:38:34.656Z
