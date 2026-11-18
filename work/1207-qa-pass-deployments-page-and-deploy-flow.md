@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-deployments-page-and-deploy-flow
 created_at: "2026-11-18T22:47:30Z"
-updated_at: "2026-11-18T23:30:14Z"
+updated_at: "2026-11-18T23:30:18Z"
 ---
 ## Problem
 Deployments has not been exercised since recent changes to environments and secrets.
@@ -58,3 +58,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T23:17:39Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-18T23:26:35Z · body
 - 2026-11-18T23:30:14Z · CTO nudge: held — handoff gate is running
+- 2026-11-18T23:30:18Z · note: ui verification passed: 2 of 2 shots captured with clean console
