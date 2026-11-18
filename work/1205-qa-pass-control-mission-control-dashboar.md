@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-control-mission-control-dashboar
 created_at: "2026-11-18T21:47:29Z"
-updated_at: "2026-11-18T21:53:46Z"
+updated_at: "2026-11-18T21:57:35Z"
 ---
 ## Problem
 The Control dashboard shows usage, costs and activity and has not had a recent pass.
@@ -25,10 +25,10 @@ Do not touch repoos.toml. Never open a visible browser window.
 ```json
 [
 {
-  "label": "Mission Control resource panel and process table",
-  "target": "default",
-  "route": "/",
-  "highlight": ".resource-panel"
+"label": "Mission Control resource panel and process table",
+"target": "default",
+"route": "/",
+"highlight": ".resource-panel"
 }
 ]
 ```
@@ -39,3 +39,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T21:47:32Z · status inbox→ready
 - 2026-11-18T21:47:34Z · status ready→active, branch
 - 2026-11-18T21:53:46Z · body
+- 2026-11-18T21:57:35Z · body
