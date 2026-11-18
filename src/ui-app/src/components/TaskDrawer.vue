@@ -200,6 +200,7 @@ import { resolveEffectiveAgent } from "../lib/effective-agent";
 import CopyableNumber from "./CopyableNumber.vue";
 import PmChatSurface from "./PmChatSurface.vue";
 import AreaPicker from "./AreaPicker.vue";
+import TaskDependencyPicker from "./TaskDependencyPicker.vue";
 import { defaultTaskArea, formatTaskAreas, parseTaskAreas } from "../../../core/areas.js";
 import {
   summarizeRequirementsChange,
@@ -1715,6 +1716,7 @@ async function createTask(): Promise<void> {
     ui.nt.priority = "p2";
     ui.nt.type = "feature";
     ui.nt.assignedTo = "";
+    ui.nt.dependsOn = [];
     // Per-open context, not a draft: the next New task starts untagged.
     ui.nt.story = "";
     routeAfterCreate(story);
@@ -2626,9 +2628,19 @@ interface TaskDraft {
   story: string;
   assignedTo: string;
   body: string;
+  dependsOn: string[];
 }
 
-const DRAFT_FIELDS = ["title", "type", "priority", "area", "story", "assignedTo", "body"] as const;
+const DRAFT_FIELDS = [
+  "title",
+  "type",
+  "priority",
+  "area",
+  "story",
+  "assignedTo",
+  "body",
+  "dependsOn",
+] as const;
 
 function emptyDraft(): TaskDraft {
   return {
@@ -2639,6 +2651,7 @@ function emptyDraft(): TaskDraft {
     story: "",
     assignedTo: "",
     body: "",
+    dependsOn: [],
   };
 }
 
@@ -2648,7 +2661,9 @@ const draft = reactive<TaskDraft>(emptyDraft());
 const original = reactive<TaskDraft>(emptyDraft());
 
 function baseline(): void {
-  for (const k of DRAFT_FIELDS) original[k] = draft[k];
+  for (const k of DRAFT_FIELDS) {
+    original[k] = k === "dependsOn" ? [...draft.dependsOn] : draft[k];
+  }
 }
 
 function initDraft(t: Task): void {
@@ -2659,11 +2674,17 @@ function initDraft(t: Task): void {
   draft.story = t.story ?? "";
   draft.assignedTo = t.assignedTo;
   draft.body = t.body;
+  draft.dependsOn = [...(t.dependsOn ?? [])];
   baseline();
 }
 
 function changedFields(): (keyof TaskDraft)[] {
-  return DRAFT_FIELDS.filter((k) => draft[k] !== original[k]);
+  return DRAFT_FIELDS.filter((k) =>
+    k === "dependsOn"
+      ? draft.dependsOn.length !== original.dependsOn.length ||
+        draft.dependsOn.some((id, index) => id !== original.dependsOn[index])
+      : draft[k] !== original[k],
+  );
 }
 
 const dirty = computed(() => changedFields().length > 0);
@@ -3043,7 +3064,7 @@ watch(
 
 async function saveDraft(): Promise<void> {
   if (!ui.active || !dirty.value) return;
-  const patch: Record<string, string> = {};
+  const patch: Record<string, string | string[]> = {};
   for (const k of changedFields()) patch[k] = draft[k];
   // Auto-derive the branch from the title for planning-stage tasks — but only
   // when the branch is unset or was itself derived. Never clobber an explicit
@@ -5477,6 +5498,12 @@ watch(
                 </Select>
               </div>
             </div>
+            <TaskDependencyPicker
+              v-if="newMode === 'manual'"
+              id="nt-dependencies"
+              v-model="ui.nt.dependsOn"
+              :tasks="repo.tasks"
+            />
             <div class="btn-row" style="margin-top: 20px">
               <Button variant="outline" @click="ui.close()">Cancel</Button>
               <Button variant="default" @click="createTask" :disabled="ui.saving || !ui.nt.title">
@@ -6524,6 +6551,12 @@ watch(
               </button>
             </div>
           </div>
+          <TaskDependencyPicker
+            id="et-dependencies"
+            v-model="draft.dependsOn"
+            :tasks="repo.tasks"
+            :exclude-id="ui.active.id"
+          />
           <div class="field-row">
             <div class="field">
               <label>Type</label>
