@@ -6,6 +6,8 @@ import type { DocMeta, SkillMeta } from "../types";
 
 export const useDocsStore = defineStore("docs", () => {
   const docs = ref<DocMeta[]>([]);
+  const docsLoading = ref(false);
+  const docsLoadError = ref("");
   const selDoc = ref<string | null>(null);
   const docContent = ref("");
   const docTitle = ref("");
@@ -14,15 +16,45 @@ export const useDocsStore = defineStore("docs", () => {
   const skillContent = ref("");
   const skillName = ref("");
   const skillDesc = ref("");
+  let docsLoadVersion = 0;
+  let latestDocsLoad: Promise<boolean> | null = null;
+  let docContentLoadVersion = 0;
 
   async function loadDocs(): Promise<boolean> {
-    try {
-      docs.value = await api<DocMeta[]>("/api/docs");
-      if (docs.value.length && !selDoc.value) await loadDoc(docs.value[0].path);
-      return true;
-    } catch {
-      return false;
-    }
+    const version = ++docsLoadVersion;
+    docsLoading.value = true;
+    docsLoadError.value = "";
+    const request = (async (): Promise<boolean> => {
+      try {
+        const nextDocs = await api<DocMeta[]>("/api/docs");
+        // App startup and the Context refresh button can overlap. Only the most
+        // recently requested listing may update shared data or request state.
+        if (version !== docsLoadVersion) return (await latestDocsLoad) ?? true;
+        docs.value = nextDocs;
+        if (!selDoc.value || !nextDocs.some((doc) => doc.path === selDoc.value)) {
+          if (nextDocs.length) {
+            await loadDoc(nextDocs[0].path);
+          } else {
+            // Invalidate any older preview fetch before clearing a selection
+            // that no longer exists in the refreshed listing.
+            docContentLoadVersion++;
+            selDoc.value = null;
+            docContent.value = "";
+            docTitle.value = "";
+          }
+        }
+        if (version !== docsLoadVersion) return (await latestDocsLoad) ?? true;
+        return true;
+      } catch {
+        if (version !== docsLoadVersion) return (await latestDocsLoad) ?? true;
+        docsLoadError.value = "Could not load docs. Try again.";
+        return false;
+      } finally {
+        if (version === docsLoadVersion) docsLoading.value = false;
+      }
+    })();
+    latestDocsLoad = request;
+    return request;
   }
 
   /**
@@ -50,14 +82,17 @@ export const useDocsStore = defineStore("docs", () => {
   }
 
   async function loadDoc(path: string): Promise<void> {
+    const version = ++docContentLoadVersion;
     selDoc.value = path;
     try {
       const r = await fetch(path);
       const text = r.ok ? await r.text() : "(could not load)";
+      if (version !== docContentLoadVersion || selDoc.value !== path) return;
       docContent.value = text.replace(/^---\s*\n[\s\S]*?\n---\s*\n?/, "");
       const d = docs.value.find((x) => x.path === path);
       docTitle.value = d ? d.title : path;
     } catch {
+      if (version !== docContentLoadVersion || selDoc.value !== path) return;
       docContent.value = "(error loading)";
     }
   }
@@ -86,6 +121,8 @@ export const useDocsStore = defineStore("docs", () => {
 
   return {
     docs,
+    docsLoading,
+    docsLoadError,
     selDoc,
     docContent,
     docTitle,

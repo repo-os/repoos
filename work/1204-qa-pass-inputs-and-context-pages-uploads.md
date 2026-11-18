@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 476521
-last_close_out_gate_at: "2026-11-18T22:38:33.842Z"
 id: "1204"
 title: "QA pass: Inputs and Context pages – uploads, docs ingestion and empty states"
 type: bug
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: 133c140ecffa000005ac4eafaa67b5bad4d3c054
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-inputs-and-context-pages-uploads
 created_at: "2026-11-18T20:47:45Z"
 updated_at: "2026-11-18T22:38:33Z"
+last_close_out_gate_ms: 476521
+last_close_out_gate_at: "2026-11-18T22:38:33.842Z"
 review_rounds: 2
 routing_switches: 1
 routing_escalations: 1

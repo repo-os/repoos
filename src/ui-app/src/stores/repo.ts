@@ -4065,6 +4065,8 @@ export const useRepoStore = defineStore("repo", () => {
    * is a pure backstop for a lost SSE stream, not the normal exit path.
    */
   const enrichingInputs = reactive(new Set<string>());
+  let inputsRefreshVersion = 0;
+  let latestInputsRefresh: Promise<boolean> | null = null;
   const enrichTimers = new Map<string, ReturnType<typeof setTimeout>>();
   const ENRICH_PENDING_TIMEOUT_MS = 180_000; // backstop only — see below
   /**
@@ -4172,15 +4174,28 @@ export const useRepoStore = defineStore("repo", () => {
     await refresh();
   }
 
-  async function refreshInputs(): Promise<void> {
+  async function refreshInputs(): Promise<boolean> {
+    const version = ++inputsRefreshVersion;
     const hadPending = enrichingInputs.size > 0;
-    try {
-      inputs.value = await api<(Input & { enriching?: boolean })[]>("/api/inputs");
-      reconcileEnrichmentPending();
-      if (hadPending) window.dispatchEvent(new Event("repoos:inputs-updated"));
-    } catch {
-      /* leave existing value in place on error */
-    }
+    const request = (async (): Promise<boolean> => {
+      try {
+        const nextInputs = await api<(Input & { enriching?: boolean })[]>("/api/inputs");
+        // Startup, SSE backstops, and view refreshes may overlap. Keep the
+        // newest requested snapshot authoritative even if an older request
+        // finishes later.
+        if (version !== inputsRefreshVersion) return (await latestInputsRefresh) ?? true;
+        inputs.value = nextInputs;
+        reconcileEnrichmentPending();
+        if (hadPending) window.dispatchEvent(new Event("repoos:inputs-updated"));
+        return true;
+      } catch {
+        /* leave existing value in place on error */
+        if (version !== inputsRefreshVersion) return (await latestInputsRefresh) ?? false;
+        return false;
+      }
+    })();
+    latestInputsRefresh = request;
+    return request;
   }
   /** @deprecated use repo.inputs + repo.refreshInputs() */
   async function loadInputs(): Promise<Input[]> {
