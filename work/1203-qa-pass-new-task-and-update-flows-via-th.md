@@ -2,14 +2,14 @@
 id: "1203"
 title: "QA pass: new-task and update flows via the CLI and UI agree – body sections, validation messages and needs-input handling"
 type: bug
-status: active
+status: review
 priority: p2
 area: [web, core]
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-new-task-and-update-flows-via-th
 created_at: "2026-11-18T20:47:36Z"
-updated_at: "2026-11-18T20:47:40Z"
+updated_at: "2026-11-18T21:08:00Z"
 ---
 ## Problem
 UI and CLI task creation have different validation (needs input, required sections) and may give confusing messages.
@@ -26,3 +26,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T20:47:36Z · created · t@t
 - 2026-11-18T20:47:39Z · status inbox→ready
 - 2026-11-18T20:47:40Z · status ready→active, branch
+- 2026-11-18T21:08:00Z · status active→review
