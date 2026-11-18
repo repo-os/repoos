@@ -898,6 +898,9 @@ select {
   background: var(--panel-solid);
   color: var(--txt);
   box-shadow: 0 20px 60px rgb(0 0 0 / 24%);
+  /* Commit notes come from remote latest.json: wrap any unbroken token.
+     overflow-wrap is inherited, so the heading, paragraphs and items wrap too. */
+  overflow-wrap: anywhere;
 }
 .update-dialog h2 {
   margin: 0 0 10px;

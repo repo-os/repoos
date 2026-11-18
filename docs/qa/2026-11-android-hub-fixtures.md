@@ -7,11 +7,15 @@ browser run recorded here; nothing was checked on a real device.
 ## Setup
 
 - `bunx vite --port 5188` in `mobile/` (served on `localhost:5188`).
-- Headless Chromium via Playwright, viewport **375 × 812**, device scale 2,
-  `platform=android`.
-- For each state: no horizontal page scroll (`scrollWidth === 375`), no
-  element extending past the viewport, no console or page errors, and a
-  screenshot read by eye.
+- Headless Chromium via `@playwright/test`, viewport **375 × 812**, device
+  scale 2, `platform=android`.
+- The checks are in `mobile/scripts/fixture-qa.ts`, so every number below can be
+  rerun from the branch. For each state it checks that no element extends past
+  the viewport and that the console is clean. For each wrapping case it checks
+  that every element's `scrollWidth` is at most its `clientWidth`. Element
+  bounds are used rather than page `scrollWidth`, because `body` has
+  `overflow: hidden` and hides overflow at the page level.
+- Screenshots were read by eye during the run and are not committed.
 
 ## Fixture states
 
@@ -59,14 +63,23 @@ Only `.server-row` had this shape among the hub's `flex: 1` rules. The
 discovery cards are full width with a `min-width: 0` text column already, and
 they stayed in bounds in the long-name run.
 
-**Same class, text that never wraps.** Review found that server-supplied text
-had no `overflow-wrap`, so one unbroken token overflowed its box and was
-clipped silently. Affected: the Edit sheet's server URL (`.hint`), the discovery
-message and form warning (`.discovery-message`, `.warn`), and the failure-row
-reason (`.reachability`). Each now sets `overflow-wrap: anywhere`.
+**Same class, text that never wraps.** Server-supplied text had no
+`overflow-wrap`, so one unbroken token overflowed its box and was clipped
+silently. Affected, each now with `overflow-wrap: anywhere`:
+
+- the Edit sheet's server URL (`.hint`);
+- the discovery message and form warning (`.discovery-message`, `.warn`);
+- the failure-row reason (`.reachability`);
+- the dev-update dialog's commit notes (`.update-dialog`, inherited by its
+  heading, paragraphs and list items). The notes come from a remote
+  `latest.json`, so this is the one place where text is not fixed UI copy.
+
+`.form-error` also lacks wrapping, but every string it can show is fixed copy,
+so no unbroken token reaches it. The `.server-name`, `.server-host` and
+`.discovery-trust-host` elements truncate with an ellipsis by design.
 
 Test: `src/ui-app/tests/mobile-hub-picker-layout.test.ts` pins the declarations
-(jsdom cannot lay out). The pre-fix stylesheet fails the `.server-row` check.
+(jsdom cannot lay out), and the pre-fix stylesheet fails the `.server-row` check.
 
 ## Not covered by this run
 
@@ -75,7 +88,9 @@ Test: `src/ui-app/tests/mobile-hub-picker-layout.test.ts` pins the declarations
 - **iOS.** Only `platform=android` was rendered.
 - **Live reachability.** Fixture rows get their status from fixture code, not a
   network check. The "Checking…" state was not exercised.
-- **Device lock overlay** and the dev-update dialog.
+- **Device lock overlay.** Not rendered in the sweep.
+- **Dev-update dialog, real trigger.** Its layout is checked by injecting the
+  dialog's markup. The sweep never fetches the remote manifest that opens it.
 - **Widths other than 375px.** A narrower phone (320px) was not tested.
 
 ## Re-running
@@ -86,14 +101,19 @@ cd mobile && bunx vite --port 5188
 # and the other fixture routes above, at 375px.
 ```
 
-The interaction states are reproduced by hand at 375px:
+The script runs the interaction states and the long-text cases automatically:
 
 1. **Edit sheet:** on `?fixture=many`, tap the ⋮ button on the first row.
 2. **Add-form error:** on `?fixture=add`, set the URL to `http://insecure.example.test`
    and press Save. The HTTPS error appears under the field.
 3. **Failure group:** on `?fixture=discover`, expand "Couldn't check these machines".
-4. **Long text:** the fixtures carry short names. To test wrapping, use a browser
-   devtools override or a route rewrite of `src/fixture.ts`, replacing a server URL
-   or the `reason` with a long unbroken token, then repeat steps 1 and 3.
+4. **Long text:** the fixtures carry short names, so the script rewrites the served
+   `src/fixture.ts` to put a long URL or `reason` into the list, and injects the
+   message, warning and dev-update note elements with the shell's real classes.
+
+To see the wrapping checks fail, run the sweep with the rules removed:
+`QA_STRIP_WRAP=1 bun scripts/fixture-qa.ts`. Six wrapping checks and the
+dev-update bounds check fail. The picker and row checks still pass, because
+they depend on the `.server-row` fix and not on wrapping.
 
 There is no `?fixture=error` route, so steps 2 and 4 are the only error paths.
