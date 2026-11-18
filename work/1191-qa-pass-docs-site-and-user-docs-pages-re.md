@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 68565
-last_close_out_gate_at: "2026-11-18T16:39:25.792Z"
 id: "1191"
 title: "QA pass: docs site and user-docs pages render, links and search"
 type: bug
-status: review
+status: done
 priority: p2
 area: docs
+merged_commit: 397969a237fff2b90d5d2411bcce11f58457711b
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-docs-site-and-user-docs-pages-re
 created_at: "2026-11-18T16:18:29Z"
 updated_at: "2026-11-18T16:39:25Z"
+last_close_out_gate_ms: 68565
+last_close_out_gate_at: "2026-11-18T16:39:25.792Z"
 review_passes: 1
 ---
 ## Problem
