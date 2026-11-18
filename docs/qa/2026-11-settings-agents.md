@@ -5,7 +5,7 @@
 - Worktree: `feat/qa-pass-settings-and-agents-pages-every-`.
 - Started `just serve-noauth 7272` from this worktree and drove the app at `http://127.0.0.1:7272` in Chrome.
 - The server identified itself as a preview build on the task branch. Settings showed the banner `Preview servers are read-only`.
-- No Settings or Agents values were changed. In particular, no credentials, provider keys, tokens, shared budget groups, schedules, agent assignments, or task state were edited.
+- No values were changed in this worktree or its project config. Save and reload checks ran against isolated scratch config roots under `.repoos/`; no credentials, provider keys, tokens, shared budget groups, schedules, agent assignments, or task state in the worktree were edited.
 
 ## Settings page
 
@@ -30,7 +30,19 @@ Visited Agents, Build Your Team, Scheduled Tasks, Reminders, Detected Coding Age
 
 ## Per-control save, validation, and reload audit
 
-The review round 4 finding was correct: the prior evidence was representative only. I then ran a Playwright WebKit audit against an in-process auth-less server rooted at `.repoos/qa-1179-control-audit-root`, with a separate scratch `repoos.toml`. The audit loaded General and Advanced independently, inventoried their visible schema-backed controls, changed every control, waited for the API to reflect its value, reloaded, and compared the restored UI value. Result: 115/115 controls passed (91 General, 24 Advanced): 38 numeric, 28 boolean, 20 select, 15 array, and 14 text controls. No changes were made to this worktree's project config or to any external service.
+The prior review's coverage finding was correct: the original 115-control matrix covered only schema-backed controls. I reran that Playwright WebKit audit against an in-process auth-less server rooted at `.repoos/qa-1179-control-audit-root`, with a separate scratch `repoos.toml`. It changed each of the 115 visible schema-backed controls on General and Advanced, waited for the API to reflect the value, reloaded, and compared the restored UI value. Result: 115/115 passed (91 General, 24 Advanced): 38 numeric, 28 boolean, 20 select, 15 array, and 14 text controls. Validation was checked per the field's supported rules: invalid numeric bounds and required values showed errors and did not save; role/email/viewport arrays received invalid-value checks; constrained booleans and selects were verified as value-constrained; free-form lists were recorded as having no invalid-entry rule.
+
+I separately audited the hand-rendered General controls that the schema-row inventory does not include: floating agent buttons, glide animations, keyboard navigation, theme selection and favorite, the animation motion/style/size/concurrency controls, and attachment storage provider. Each saved and restored after reload in the scratch browser/config. Attachment storage was returned to the local provider after the round-trip. The existing CTO safe-action checklist was included in the 115-control matrix and its unknown-action validation is covered by `cto-actions-settings.test.ts`.
+
+The remaining Settings tabs were audited control by control in a second scratch browser run:
+
+- **Notifications:** ntfy enable/topic, Telegram enable, spend threshold, sound, and all 24 event toggles saved and restored after reload. The spend threshold rejected `-1` with a visible error and preserved its prior value. Push notifications were not enabled because the browser would request an OS permission; the preference is local to the browser.
+- **Security:** voice provider and session duration saved and restored. Enabling auth without a configured login provider showed the provider-required error and remained off after reload. The voice API key stayed blank; no credential was available. User-management, invite, role, and Telegram-account actions were not verified because this auth-less run had no administrator session; invite and Telegram actions also have external effects.
+- **Import/Export:** all five export-category toggles were selected, a scratch export was downloaded, an invalid file showed an error, and a valid export was reviewed and applied to the scratch project.
+- **Support:** report type selection, required notes, local manual draft creation, and adding/removing a synthetic screenshot worked. A support bundle was created under the scratch root. AI report generation was not triggered because it sends notes to the configured PM agent; the GitHub link and file-browser action were not opened.
+- **repoos.toml:** a scratch-only edit saved and survived reload. A malformed TOML edit showed an error; the prior valid scratch content remained available after reload.
+
+These runs exercised the form controls and local workflows without changing the task's project config or contacting an external service. The remaining unverified actions are explicitly listed above; no result is claimed for them.
 
 Validation was exercised for all 38 numeric fields using an invalid value below the declared minimum and checking both unchanged server state and field error feedback. Required text controls were cleared and checked for an error with no save. The `model_routing.roles` and `release.email.to` arrays were tested with an invalid role and invalid email. The viewport-width list was tested with numeric strings, and its API now normalizes them to positive whole pixel widths and rejects empty, non-integer, or non-positive entries. Boolean and select controls cannot accept arbitrary invalid values through their UI; they were recorded as control-constrained. Thirteen free-form lists accept arbitrary text by design, so there is no invalid-entry case to exercise. The CTO safe-action checklist was toggled and verified after reload; its existing route test rejects unknown action IDs.
 
@@ -41,7 +53,7 @@ The pass exposed four persistence/configuration defects and fixes:
 - `model_routing.humanStepSticky` saved to TOML but was missing from the browser's flat config payload. It now survives Settings reload; the flattening test covers every model-routing key.
 - `uiVerification.viewportWidths` lost numeric entries when the form reloaded because the generic array formatter treated numbers as remote-host records. Numeric pixel widths now display and survive reload. The server normalizes valid numeric text and reports invalid entries instead of silently falling back.
 
-The other Settings tabs were visited and their specialized panels observed. Notifications' representative save, validation, and reload evidence remains covered by the scratch threshold flow and its component regression test. Security's auth enable control was not toggled because this harness intentionally runs without auth; voice API keys are write-only and were not entered. Import/Export and Support buttons initiate file or external-data actions rather than persist a setting; no import, report submission, or bundle upload was initiated. The TOML editor was viewed but not modified. The ntfy and browser “Send test” actions, Telegram connection flow, runner provisioning, and other credentialed integrations were not triggered because they send external messages, request permissions, or depend on credentials. These are documented limits rather than claims of successful end-to-end operations.
+The ntfy “Send test” action was not used because it sends an external message. Browser “Send test” was not used because it may request notification permission. Runner provisioning and other credentialed integrations were not triggered because they depend on external accounts or infrastructure.
 
 ## Agents page
 
@@ -49,7 +61,7 @@ Agents, Build Your Team, Scheduled Tasks, Reminders, Detected Coding Agents, Mod
 
 ## Check
 
-The final scoped check result will be recorded after source, tests, and this note are complete. The check exercises build, typecheck, changed-path tests, and the UI gate against this task branch.
+The source change fixes a cross-process lock initialization race in `ensureWorktree`: contenders no longer treat a newly created lock directory with no pid file as stale. A deterministic regression covers the directory-creation/pid-write gap. The task-specific Vitest file passed locally, including the separate-process serialization test and the new regression. The scoped RepoOS check is the handoff gate; RepoOS reports its final result in the handoff status.
 ## Control inventory audited
 
 ### Advanced (24 controls)
