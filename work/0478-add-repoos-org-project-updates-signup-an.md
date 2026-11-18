@@ -12,7 +12,7 @@ branch: feat/add-repoos-org-project-updates-signup-an
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-09-21T12:08:58Z"
-updated_at: "2026-11-18T01:49:43Z"
+updated_at: "2026-11-18T01:53:04Z"
 ---
 ## Problem
 
@@ -67,3 +67,4 @@ Run after #0477 (Build Neon Functions double-opt-in updates service).
 - 2026-11-18T01:49:40Z · note: ui verification passed: 1 of 1 shot captured with clean console
 - 2026-11-18T01:49:43Z · status active→review
 - 2026-11-18T01:49:43Z · message_queued at 2026-11-18T01:49:43.512Z
+- 2026-11-18T01:53:04Z · note: review pass 1: needs some work
