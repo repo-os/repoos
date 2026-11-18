@@ -7,6 +7,7 @@ import {
   AGENT_CLIS,
   AGENT_MODELS,
   DEFAULT_AGENTS,
+  NUMERIC_SELECT_CONFIG_KEYS,
   agentsForConfig,
   applyReloadedConfig,
   getConfigSchema,
@@ -725,11 +726,7 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
       // Numeric enum fields are exposed as string options for the Settings
       // dropdown, while API clients may send a JSON number. Compare their
       // canonical values so both wire forms validate against the same enum.
-      const numericSelect =
-        field.key === "maxActiveTasks" ||
-        field.key === "maxConcurrentAgents" ||
-        field.key === "remoteValidation.maxConcurrent" ||
-        field.key === "worktreeWarnThreshold";
+      const numericSelect = (NUMERIC_SELECT_CONFIG_KEYS as readonly string[]).includes(field.key);
       const normalized = numericSelect ? String(val) : val;
       if (
         (numericSelect && typeof val !== "number" && typeof val !== "string") ||
@@ -742,13 +739,7 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
       // Native/select components submit strings. These settings are numbers
       // in the runtime config, so persist them as TOML numeric syntax rather
       // than `maxActiveTasks = "5"`, which loadConfig intentionally rejects.
-      patch[field.key] =
-        field.key === "maxActiveTasks" ||
-        field.key === "maxConcurrentAgents" ||
-        field.key === "remoteValidation.maxConcurrent" ||
-        field.key === "worktreeWarnThreshold"
-          ? Number(val)
-          : val;
+      patch[field.key] = numericSelect ? Number(val) : val;
     } else if (field.type === "array") {
       // The area vocabulary (#0583) tolerates an EMPTY list: clearing it is the
       // deliberate "free text only" state, not a validation failure. Entries

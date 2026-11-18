@@ -9,7 +9,7 @@ import { Readable } from "node:stream";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { getConfigSchema, loadConfig } from "../../core/config.js";
+import { getConfigSchema, loadConfig, NUMERIC_SELECT_CONFIG_KEYS } from "../../core/config.js";
 import { patchConfig } from "../../server/routes/config.js";
 
 const roots: string[] = [];
@@ -128,7 +128,16 @@ describe("numeric enum select fields (#1161)", () => {
     ["maxConcurrentAgents", 4],
     ["remoteValidation.maxConcurrent", 3],
     ["worktreeWarnThreshold", 25],
+    ["heavySlots", 3],
+    ["vitest.maxWorkers", 4],
+    ["localChecks.maxConcurrent", 3],
+    ["playwright.workers", 3],
+    ["playwright.maxConcurrent", 2],
   ] as const;
+
+  it("covers the shared list of numeric select settings", () => {
+    expect(numericEnums.map(([key]) => key)).toEqual(NUMERIC_SELECT_CONFIG_KEYS);
+  });
 
   it.each(numericEnums)("accepts number and string forms for %s", async (key, value) => {
     const field = getConfigSchema().find((candidate) => candidate.key === key);
@@ -140,8 +149,13 @@ describe("numeric enum select fields (#1161)", () => {
       writeFileSync(join(root, "repoos.toml"), 'workDir = "work"\n', "utf8");
       const res = await patch(root, { [key]: wireValue });
       expect(res.status, `${key} with ${typeof wireValue}`).toBe(200);
+      const parsed = key.split(".").reduce<unknown>((current, part) => {
+        if (!current || typeof current !== "object") return undefined;
+        return (current as Record<string, unknown>)[part];
+      }, loadConfig(root));
+      expect(parsed, `${key} with ${typeof wireValue}`).toBe(value);
       const toml = readFileSync(join(root, "repoos.toml"), "utf8");
-      expect(toml).toContain(`${key.split(".").at(-1)} = ${value}`);
+      expect(toml).not.toContain(`${key.split(".").at(-1)} = "${value}"`);
     }
   });
 });
