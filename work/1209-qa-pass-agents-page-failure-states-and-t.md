@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-agents-page-failure-states-and-t
 created_at: "2026-11-18T23:17:32Z"
-updated_at: "2026-11-18T23:45:23Z"
+updated_at: "2026-11-18T23:45:31Z"
 ---
 ## Problem
 Agent failure states (signed out, missing CLI, rate limited) are common in practice and need verification.
@@ -32,3 +32,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T23:42:20Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-18T23:45:14Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-18T23:45:23Z · body
+- 2026-11-18T23:45:31Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
