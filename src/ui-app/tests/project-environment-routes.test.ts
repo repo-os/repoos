@@ -233,6 +233,29 @@ describe("project environment secret routes", () => {
     expect(JSON.stringify(reread.fake.payload)).toContain("integration");
   });
 
+  it("serves the Secrets inventory to a signed-in admin without returning source values", () => {
+    const fx = makeFixture();
+    root = fx.root;
+    const sentinel = "FAKE_SIGNED_IN_SECRET_1164";
+    writeFileSync(join(root, ".env.dev"), `TOKEN=${sentinel}\n`);
+
+    const environments = fx.response();
+    listProjectEnvironments(fx.ctx, fx.req(), environments.res, {});
+    expect(environments.fake.status).toBe(200);
+    expect(environments.fake.payload).toMatchObject({
+      environments: [{ id: "dev" }],
+    });
+
+    const secrets = fx.response();
+    listProjectEnvironmentSecrets(fx.ctx, fx.req(), secrets.res, { param1: "dev" });
+    expect(secrets.fake.status).toBe(200);
+    expect(secrets.fake.payload).toMatchObject({
+      environment: "dev",
+      keys: [{ name: "TOKEN", status: "set" }],
+    });
+    expect(secrets.fake.raw).not.toContain(sentinel);
+  });
+
   it("reports public visibility prefixes without returning file values", () => {
     const fx = makeFixture();
     root = fx.root;

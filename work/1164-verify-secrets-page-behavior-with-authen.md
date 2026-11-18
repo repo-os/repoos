@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 846216
-last_close_out_gate_at: "2026-11-18T05:38:46.056Z"
 id: "1164"
 title: Verify Secrets page behavior with authenticated access
 type: bug
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: 6c5547ea4ef833c1407a61209664083d3f5a0f01
 assigned_to: ai
 created_by: t@t
 branch: feat/verify-secrets-page-behavior-with-authen
@@ -14,6 +13,8 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T17:53:29Z"
 updated_at: "2026-11-18T05:38:46Z"
+last_close_out_gate_ms: 846216
+last_close_out_gate_at: "2026-11-18T05:38:46.056Z"
 review_passes: 4
 review_rounds: 2
 ---
