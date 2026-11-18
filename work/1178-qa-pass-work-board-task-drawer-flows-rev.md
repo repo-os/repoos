@@ -1,16 +1,16 @@
 ---
-updated_at: "2026-11-18T06:19:07Z"
-review_passes: 1
 id: "1178"
 title: "QA pass: Work board task drawer flows (review, changes, logs, close-out) desktop and mobile"
 type: bug
-status: review
+status: active
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-work-board-task-drawer-flows-rev
 created_at: "2026-11-18T05:56:51Z"
+updated_at: "2026-11-18T06:55:58Z"
+review_passes: 1
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -34,4 +34,5 @@ Do not touch repoos.toml.
 - 2026-11-18T06:18:28Z · message_queued at 2026-11-18T06:18:28.017Z
 - 2026-11-18T06:18:28Z · note: shots: skipped — the diff (3 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-18T06:19:07Z · note: review pass 1: good to go
-
+- 2026-11-18T06:55:58Z · status review→active
+- 2026-11-18T06:55:58Z · note: close-out repair: gate-failure
