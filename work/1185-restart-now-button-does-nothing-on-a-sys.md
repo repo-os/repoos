@@ -80,3 +80,4 @@ Reported by Nick 2026-11-18 20:22 from the phone UI. Related #1154. Do not touch
 - 2026-11-18T14:31:14Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-18T14:35:51Z · body
 - 2026-11-18T14:36:26Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-18T14:36:26Z · message_queued at 2026-11-18T14:36:26.890Z
