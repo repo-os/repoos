@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-checks-page-run-history-logs-and
 created_at: "2026-11-18T20:17:41Z"
-updated_at: "2026-11-18T20:43:19Z"
+updated_at: "2026-11-18T20:43:55Z"
 ---
 ## Problem
 Check run detail and failure views are dense and may overflow or hide the failing step.
@@ -49,3 +49,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T20:43:18Z · note: ui verification passed: 1 of 1 shot captured with clean console
 - 2026-11-18T20:43:19Z · status active→review
 - 2026-11-18T20:43:19Z · message_queued at 2026-11-18T20:43:19.804Z
+- 2026-11-18T20:43:55Z · note: review pass 1: good to go
