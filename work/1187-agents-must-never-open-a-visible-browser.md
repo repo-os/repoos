@@ -37,3 +37,4 @@ Do not touch repoos.toml (the live engineer instructions there are Nick's to edi
 - 2026-11-18T15:06:14Z · CTO nudge: held — handoff gate is running
 - 2026-11-18T15:17:02Z · CTO nudge: held — handoff gate is running
 - 2026-11-18T15:42:03Z · message_queued at 2026-11-18T15:42:03.801Z
+- 2026-11-18T15:42:03Z · handoff failed · handoff recovery attempted · finalization failed
