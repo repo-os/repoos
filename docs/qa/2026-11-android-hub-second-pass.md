@@ -18,7 +18,7 @@ The edit-server bottom sheet was opened from the server-list fixture with a deli
 
 The offline/failure fixture (`unreachable`) rendered in bounds at both widths. The discovery fixture's expanded failure row was checked with a 120-character unbroken reason. A long discovery message and warning were inserted using their real CSS classes, and the dev-update dialog was represented with its real shell classes and an unbroken commit note. All four text containers wrapped without measured overflow. The 85-character picker name and long URL case also remained in bounds.
 
-The final sweep reported 45 checks, all passing. The separate long-path and no-breakpoint URL checks passed, including the 360px and 412px edit-sheet runs. `bun run build` was run after the sweep as a typecheck and production Vite build.
+The final sweep reported 47 checks, all passing. The separate long-path and no-breakpoint URL checks passed, including the 360px and 412px edit-sheet runs. `bun run build` passed the mobile typecheck and production Vite build. `REPOOS_CHECK_CHANGED=main repoos check` also passed its remote scoped build and tests, formatting and lint, branch-artifact guard, and UI smoke test.
 
 ## Findings and changes
 
