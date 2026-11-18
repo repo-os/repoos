@@ -2,7 +2,7 @@
 id: "1204"
 title: "QA pass: Inputs and Context pages – uploads, docs ingestion and empty states"
 type: bug
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -92,3 +92,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T21:29:22Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-18T21:29:51Z · note: adopted orphaned engineer pid 83274
 - 2026-11-18T21:31:36Z · queued message undelivered for 4m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-18T21:31:36Z · status active→review
