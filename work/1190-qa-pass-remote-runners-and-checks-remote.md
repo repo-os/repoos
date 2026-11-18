@@ -2,14 +2,14 @@
 id: "1190"
 title: "QA pass: remote runners and Checks Remote tab – states and errors"
 type: bug
-status: inbox
+status: ready
 priority: p2
 area: [web, server]
 assigned_to: ai
 created_by: t@t
 branch: ""
 created_at: "2026-11-18T16:18:04Z"
-updated_at: "2026-11-18T16:18:04Z"
+updated_at: "2026-11-18T16:18:14Z"
 ---
 ## Problem
 The Remote runners tab shows host load, health and failures; recent flaky runs show it needs a hands-on pass.
@@ -24,3 +24,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 ## Activity
 
 - 2026-11-18T16:18:04Z · created · t@t
+- 2026-11-18T16:18:14Z · status inbox→ready
