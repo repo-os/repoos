@@ -1702,6 +1702,12 @@ async function createTask(): Promise<void> {
   const story = ui.nt.story;
   try {
     const created = await repo.createTask({ ...ui.nt });
+    if (created.needsInput) {
+      repo.pushToast(
+        `Task created and needs your input: ${created.needsInputDetail || created.needsInputReason || "review the task details"}`,
+        "info",
+      );
+    }
     await uploadPendingScreenshots(created.id);
     const uploadFailed = ui.pendingScreenshots.some((s) => s.uploadPhase === "failed");
     if (uploadFailed) {

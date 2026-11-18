@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 217826
-last_close_out_gate_at: "2026-11-18T21:59:47.148Z"
 id: "1203"
 title: "QA pass: new-task and update flows via the CLI and UI agree – body sections, validation messages and needs-input handling"
 type: bug
-status: review
+status: done
 priority: p2
 area: [web, core]
+merged_commit: 5bf1c3fd3812eaf14bc756c15cd67c703819568c
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-new-task-and-update-flows-via-th
 created_at: "2026-11-18T20:47:36Z"
 updated_at: "2026-11-18T21:59:47Z"
+last_close_out_gate_ms: 217826
+last_close_out_gate_at: "2026-11-18T21:59:47.148Z"
 review_passes: 2
 last_check_failure: "repoos check at 2026-11-18T21:29:29.351Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 1

@@ -1223,6 +1223,15 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
       // AgentsView reads this capture-only fixture and suppresses configured
       // roles locally; no project configuration is changed or saved.
       break;
+    case "toast:taskNeedsInput":
+      // Model the create response locally so the toast can be reviewed without
+      // writing a task from the read-only preview server.
+      repo.toasts.splice(0);
+      repo.pushToast(
+        "Task created and needs your input: missing sections: Problem, Acceptance criteria, Notes for AI",
+        "info",
+      );
+      break;
     case "release:emailSent":
     case "release:emailFailed":
       // ReleasesView reads this registered fixture and renders the email card
