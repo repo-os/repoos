@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-new-task-and-update-flows-via-th
 created_at: "2026-11-18T20:47:36Z"
-updated_at: "2026-11-18T21:59:47Z"
+updated_at: "2026-11-18T22:00:13Z"
 last_close_out_gate_ms: 217826
 last_close_out_gate_at: "2026-11-18T21:59:47.148Z"
 review_passes: 2
@@ -79,4 +79,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T21:55:59Z · note: review pass 2: good to go
 - 2026-11-18T21:56:00Z · handoff failed · task-file handoff failed at review · could not commit finalized engineering report: On branch feat/qa-pass-new-task-and-update-flows-via-th · nothing to commit, working tree clean
 - 2026-11-18T21:59:47Z · close-out gate completed in 218s
-
+- 2026-11-18T22:00:13Z · status done→done, release:success
