@@ -11,7 +11,7 @@ branch: feat/qa-pass-web-app-mobile-widths-375-768-ac
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-18T02:19:49Z"
-updated_at: "2026-11-18T05:22:01Z"
+updated_at: "2026-11-18T05:23:37Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-18T05:14:48.037Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_passes: 5
@@ -32,36 +32,36 @@ Do not touch repoos.toml. Pages use full .main width.
 ```json
 [
 {
-"label": "Work layout at 375px",
-"target": "default",
-"route": "/work",
-"highlight": ".work-page",
-"viewportWidth": 375,
-"viewportHeight": 844
+  "label": "Work mobile queue at 375px",
+  "target": "default",
+  "route": "/work",
+  "highlight": ".mobile-work",
+  "viewportWidth": 375,
+  "viewportHeight": 844
 },
 {
-"label": "Work parked controls at 768px",
-"target": "default",
-"route": "/work",
-"highlight": ".parked-lists",
-"viewportWidth": 768,
-"viewportHeight": 844
+  "label": "Work parked controls at 768px",
+  "target": "default",
+  "route": "/work",
+  "highlight": ".parked-lists",
+  "viewportWidth": 768,
+  "viewportHeight": 844
 },
 {
-"label": "Settings layout at 375px",
-"target": "default",
-"route": "/settings",
-"highlight": ".settings-tabs",
-"viewportWidth": 375,
-"viewportHeight": 844
+  "label": "Settings mobile navigation at 375px",
+  "target": "default",
+  "route": "/settings",
+  "highlight": ".settings-mobile-nav",
+  "viewportWidth": 375,
+  "viewportHeight": 844
 },
 {
-"label": "Settings tab strip at 768px",
-"target": "default",
-"route": "/settings",
-"highlight": ".settings-tabs",
-"viewportWidth": 768,
-"viewportHeight": 844
+  "label": "Settings tab strip at 768px",
+  "target": "default",
+  "route": "/settings",
+  "highlight": ".settings-tabs",
+  "viewportWidth": 768,
+  "viewportHeight": 844
 }
 ]
 ```
@@ -131,3 +131,4 @@ Do not touch repoos.toml. Pages use full .main width.
 - 2026-11-18T05:20:41Z · message_queued at 2026-11-18T05:20:41.719Z
 - 2026-11-18T05:21:05Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-18T05:22:01Z · note: highlight .work-page matched nothing on /work
+- 2026-11-18T05:23:37Z · body
