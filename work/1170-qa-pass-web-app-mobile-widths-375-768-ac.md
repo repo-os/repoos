@@ -16,6 +16,7 @@ check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-18T05:14:48.037Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_passes: 5
 review_rounds: 2
+deferred_handoff_resume_count: 1
 ---
 ## Problem
 Mobile-width layout regressions are likely after recent UI changes.
