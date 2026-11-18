@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 203360
-last_close_out_gate_at: "2026-11-18T08:08:25.379Z"
 id: "1178"
 title: "QA pass: Work board task drawer flows (review, changes, logs, close-out) desktop and mobile"
 type: bug
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: 904ad2ddaf3cc46f4401c5fca10359568a60e4f4
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-work-board-task-drawer-flows-rev
 created_at: "2026-11-18T05:56:51Z"
 updated_at: "2026-11-18T08:08:25Z"
+last_close_out_gate_ms: 203360
+last_close_out_gate_at: "2026-11-18T08:08:25.379Z"
 review_passes: 2
 handoff_signal_retry_count: 2
 close_out_repair_count: 1
