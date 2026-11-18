@@ -3,6 +3,9 @@ id: "1179"
 title: "QA pass: Settings and Agents pages – every control saves, validates and survives reload"
 type: bug
 status: review
+needs_input: true
+needs_input_reason: review-human-attention
+needs_input_detail: Review pass 6 still found issues (human flag after 5 passes). The reviewer was asked to summarise the repeated bug classes — read the newest report and decide whether to keep iterating or rescope.
 priority: p2
 area: [web, server]
 assigned_to: ai
@@ -139,3 +142,4 @@ Do not touch repoos.toml.
 - 2026-11-18T13:08:10Z · note: ui verification passed: 1 of 1 shot captured with clean console
 - 2026-11-18T13:08:11Z · message_queued at 2026-11-18T13:08:11.491Z
 - 2026-11-18T13:08:11Z · note: review pass 6: needs some work
+- 2026-11-18T13:08:11Z · needs_input
