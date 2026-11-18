@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 153327
-last_close_out_gate_at: "2026-11-18T23:45:53.469Z"
 id: "1207"
 title: "QA pass: Deployments page and deploy flows with fixtures – states, errors, 375px"
 type: bug
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: eb472572e7f8c18d9138ba08f52e7d272a8330fb
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-deployments-page-and-deploy-flow
 created_at: "2026-11-18T22:47:30Z"
 updated_at: "2026-11-18T23:45:53Z"
+last_close_out_gate_ms: 153327
+last_close_out_gate_at: "2026-11-18T23:45:53.469Z"
 review_passes: 1
 ---
 ## Problem
