@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/agents-must-never-open-a-visible-browser
 created_at: "2026-11-18T14:08:00Z"
-updated_at: "2026-11-18T15:56:00Z"
+updated_at: "2026-11-18T15:57:02Z"
 last_check_failure: "repoos check at 2026-11-18T15:42:06.935Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 ---
 ## Problem
@@ -41,3 +41,4 @@ Do not touch repoos.toml (the live engineer instructions there are Nick's to edi
 - 2026-11-18T15:42:03Z · handoff failed · handoff recovery attempted · finalization failed
 - 2026-11-18T15:42:06Z · message_delivered: 1 message(s)
 - 2026-11-18T15:56:00Z · body
+- 2026-11-18T15:57:02Z · CTO nudge: held — handoff gate is running
