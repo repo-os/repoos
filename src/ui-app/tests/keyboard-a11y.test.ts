@@ -13,6 +13,8 @@ describe("keyboard and screen-reader affordances", () => {
   });
 
   it("names each Agent card's skills button for its agent", () => {
-    expect(agentCard).toMatch(/class="agent-skills-add"[\s\S]*?:aria-label="`Add skills to \$\{agent\.name\}`"/);
+    expect(agentCard).toMatch(
+      /class="agent-skills-add"[\s\S]*?:aria-label="`Add skills to \$\{agent\.name\}`"/,
+    );
   });
 });
