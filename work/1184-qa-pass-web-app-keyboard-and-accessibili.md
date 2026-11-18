@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 106265
-last_close_out_gate_at: "2026-11-18T17:38:50.472Z"
 id: "1184"
 title: "QA pass: web app keyboard and accessibility – focus order, labels, dialogs, contrast"
 type: bug
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: 3a4bc1e376da2ed742e988b550a8fa2a75922b74
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-web-app-keyboard-and-accessibili
 created_at: "2026-11-18T12:17:32Z"
 updated_at: "2026-11-18T17:38:50Z"
+last_close_out_gate_ms: 106265
+last_close_out_gate_at: "2026-11-18T17:38:50.472Z"
 review_passes: 4
 close_out_repair_count: 1
 review_rounds: 1
