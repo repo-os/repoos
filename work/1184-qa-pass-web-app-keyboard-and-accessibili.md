@@ -6,13 +6,16 @@ status: active
 needs_input: true
 needs_input_reason: watchdog-stuck
 needs_input_detail: "3 automatic resume(s) in this active episode did not produce a handoff — the engineer keeps ending its turn without one. Review the transcript and resume it manually; if the conversation is poisoned, reset it with `repoos start 1184 --fresh`."
+debug_tldr: "Engineer keeps ending resumed turns without a handoff — review 1184's transcript, resume manually, or reset with repoos start 1184 --fresh."
+debug_tldr_at: "2026-11-18T13:13:14Z"
+debug_tldr_key: "watchdog-stuck|3 automatic resume(s) in this active episode did not produce a handoff — the engineer keeps ending its turn without one. Review the transcript and resume it manually; if the conversation is poisoned, reset it with `repoos start 1184 --fresh`."
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-web-app-keyboard-and-accessibili
 created_at: "2026-11-18T12:17:32Z"
-updated_at: "2026-11-18T13:12:45Z"
+updated_at: "2026-11-18T13:13:14Z"
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-11-18T12:45:29.556Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-18T12:54:45.117Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-18T13:03:30.252Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
