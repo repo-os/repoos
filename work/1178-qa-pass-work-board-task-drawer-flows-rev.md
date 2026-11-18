@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-18T07:43:27Z"
+review_passes: 2
 id: "1178"
 title: "QA pass: Work board task drawer flows (review, changes, logs, close-out) desktop and mobile"
 type: bug
@@ -9,12 +11,10 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-work-board-task-drawer-flows-rev
 created_at: "2026-11-18T05:56:51Z"
-updated_at: "2026-11-18T07:43:26Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ui-smoke — $ bun scripts/ui-smoke.mjs"
 last_handoff_failure_sha: 2f587557fee7acf9acf9a85c8d3a2a9558fc8ecb
 handoff_signal_retry_count: 2
 close_out_repair_count: 1
-review_passes: 1
 ---
 ## Problem
 The task drawer is the most-used screen and has had many recent changes.
@@ -53,3 +53,4 @@ Do not touch repoos.toml.
 - 2026-11-18T07:40:50Z · status active→review
 - 2026-11-18T07:40:52Z · note: shots: skipped — the diff (4 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-18T07:43:26Z · note: review pass 2: good to go
+
