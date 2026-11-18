@@ -12,7 +12,7 @@ branch: feat/remote-validation-let-any-project-run-it
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T17:06:33Z"
-updated_at: "2026-11-17T23:30:50Z"
+updated_at: "2026-11-18T00:17:43Z"
 last_close_out_gate_ms: 777852
 last_close_out_gate_at: "2026-11-17T23:30:33.132Z"
 review_passes: 5
@@ -139,3 +139,4 @@ Context: Nick's Tiao board on host bee (16 cores, encrypted btrfs, 3 projects) s
 - 2026-11-17T23:15:03Z · note: review pass 5: good to go
 - 2026-11-17T23:30:33Z · close-out gate completed in 778s
 - 2026-11-17T23:30:50Z · status done→done, release:success
+- 2026-11-18T00:17:43Z · message_dropped: 1 queued message(s) discarded — task is done
