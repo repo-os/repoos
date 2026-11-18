@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-macos-hub-app-second-pass-menu-b
 created_at: "2026-11-18T18:17:35Z"
-updated_at: "2026-11-18T18:27:22Z"
+updated_at: "2026-11-18T18:35:08Z"
 last_close_out_gate_ms: 67308
 last_close_out_gate_at: "2026-11-18T18:27:19.017Z"
 review_passes: 1
@@ -36,3 +36,4 @@ Do not touch repoos.toml. Signed-in project/task views are tracked in #1174 (hum
 - 2026-11-18T18:26:07Z · note: review pass 1: good to go
 - 2026-11-18T18:27:19Z · close-out gate completed in 67s
 - 2026-11-18T18:27:22Z · status done→done, release:success
+- 2026-11-18T18:35:08Z · message_dropped: 1 queued message(s) discarded — task is done
