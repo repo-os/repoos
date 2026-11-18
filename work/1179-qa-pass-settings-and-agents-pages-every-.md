@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-11-18T13:18:43Z"
-review_passes: 7
+last_close_out_gate_ms: 435668
+last_close_out_gate_at: "2026-11-18T13:30:55.760Z"
 id: "1179"
 title: "QA pass: Settings and Agents pages – every control saves, validates and survives reload"
 type: bug
@@ -11,6 +11,8 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-settings-and-agents-pages-every-
 created_at: "2026-11-18T06:47:46Z"
+updated_at: "2026-11-18T13:30:55Z"
+review_passes: 7
 review_rounds: 2
 routing_switches: 1
 routing_escalations: 1
@@ -142,4 +144,5 @@ Do not touch repoos.toml.
 - 2026-11-18T13:08:11Z · needs_input
 - 2026-11-18T13:17:48Z · needs_input (review-rounds-exhausted) cleared for review again by human
 - 2026-11-18T13:18:43Z · note: review pass 7: good to go
+- 2026-11-18T13:30:55Z · close-out gate completed in 436s
 
