@@ -2,14 +2,14 @@
 id: "1195"
 title: "QA pass: notifications, toasts and error banners across the app"
 type: bug
-status: ready
+status: active
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
-branch: ""
+branch: feat/qa-pass-notifications-toasts-and-error-b
 created_at: "2026-11-18T18:47:48Z"
-updated_at: "2026-11-18T18:47:51Z"
+updated_at: "2026-11-18T18:47:53Z"
 ---
 ## Problem
 Notifications and error banners are generated from many places and may be inconsistent or stale.
@@ -25,3 +25,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 
 - 2026-11-18T18:47:48Z · created · t@t
 - 2026-11-18T18:47:51Z · status inbox→ready
+- 2026-11-18T18:47:53Z · status ready→active, branch
