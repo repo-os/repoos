@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "1205"
 title: "QA pass: Control (Mission Control) dashboard – every card, chart and empty state at desktop and 375px"
 type: bug
@@ -52,3 +53,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T22:20:50Z · message_delivered: 1 message(s)
 - 2026-11-18T22:20:50Z · status review→active
 - 2026-11-18T22:20:53Z · CTO nudge: held — remote validation is running
+
