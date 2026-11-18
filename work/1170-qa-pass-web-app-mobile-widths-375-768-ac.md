@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-11-18T03:41:22Z"
-review_passes: 3
 id: "1170"
 title: "QA pass: web app mobile widths (375/768) across Work, Releases, Settings, Agents, Checks"
 type: bug
-status: active
+status: review
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 needs_input_detail: "`needs some work` — the dock lift stops at 1140px, but the centred pill still covers the last parked toggle from 1141px to ~1384px."
@@ -16,6 +14,8 @@ branch: feat/qa-pass-web-app-mobile-widths-375-768-ac
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-18T02:19:49Z"
+updated_at: "2026-11-18T03:41:22Z"
+review_passes: 3
 review_rounds: 2
 ---
 ## Problem
@@ -67,4 +67,4 @@ Do not touch repoos.toml. Pages use full .main width.
 - 2026-11-18T03:41:20Z · note: ui verification passed: 1 shot captured with clean console (1 shot warning)
 - 2026-11-18T03:41:21Z · note: review pass 3: needs some work
 - 2026-11-18T03:41:21Z · needs_input
-
+- 2026-11-18T03:41:22Z · status active→review
