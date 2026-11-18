@@ -2,14 +2,14 @@
 id: "1169"
 title: "QA pass: macOS RepoOS Hub app – build, launch, connect, and fix what is broken"
 type: bug
-status: inbox
+status: ready
 priority: p2
 area: macos
 assigned_to: ai
 created_by: t@t
 branch: ""
 created_at: "2026-11-18T02:19:44Z"
-updated_at: "2026-11-18T02:19:44Z"
+updated_at: "2026-11-18T02:20:04Z"
 ---
 ## Problem
 Nick reports the macOS Hub app has been unusable for weeks. Nobody has recently built and driven it.
@@ -25,3 +25,4 @@ Never capture the whole screen. Do not touch repoos.toml.
 ## Activity
 
 - 2026-11-18T02:19:44Z · created · t@t
+- 2026-11-18T02:20:04Z · status inbox→ready
