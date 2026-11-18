@@ -1,6 +1,4 @@
 ---
-check_retry_count: 1
-last_check_failure: "repoos check at 2026-11-18T21:29:29.351Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 id: "1203"
 title: "QA pass: new-task and update flows via the CLI and UI agree – body sections, validation messages and needs-input handling"
 type: bug
@@ -11,7 +9,9 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-new-task-and-update-flows-via-th
 created_at: "2026-11-18T20:47:36Z"
-updated_at: "2026-11-18T21:29:29Z"
+updated_at: "2026-11-18T21:29:51Z"
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-18T21:29:29.351Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -62,4 +62,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T21:29:22Z · CTO nudge: held — handoff gate is running
 - 2026-11-18T21:29:26Z · message_queued at 2026-11-18T21:29:26.348Z
 - 2026-11-18T21:29:29Z · message_delivered: 1 message(s)
-
+- 2026-11-18T21:29:51Z · note: adopted orphaned engineer pid 88619
