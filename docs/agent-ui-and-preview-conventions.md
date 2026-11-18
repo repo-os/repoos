@@ -130,6 +130,13 @@ Long-form versions of the conventions `AGENTS.md` summarises (moved verbatim on
 
 ## Rebuilds, `repoos shot` and previews
 
+- **Browser verification must not take over the human's desktop.** Never run
+  `open` or `xdg-open` on a URL, launch a headed browser, or use the user's
+  Chrome profile. For interactive verification, use headless Playwright with
+  its bundled browser. Keep browser launches explicitly headless; do not rely
+  on a machine's default browser or profile. This applies to QA and preview
+  work, including auth-less local servers.
+
 - After ANY UI change, rebuild (`bun run build:ui` for speed, or `bun run build`)
   so the worktree build is fresh. Do NOT automatically request a preview to
   verify it — previews are on request from the human, not something you spin up
@@ -277,4 +284,3 @@ serving the current directory. Check the directory first: a failed `cd` silently
 leaves you in the main checkout, and the server then runs against it (this
 happened on 2026-09-27, briefly, with no lasting effect). Confirm with the
 server's startup log line (`root` and `mode: "preview"`).
-

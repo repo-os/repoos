@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 251814
-last_close_out_gate_at: "2026-11-18T16:27:31.963Z"
 id: "1187"
 title: "Agents must never open a visible browser or steal focus: add rule + guard for QA/preview runs"
 type: chore
-status: review
+status: done
 priority: p2
 area: core
+merged_commit: b52a96bf158ee4dd96234416e680e675a6f85fc9
 assigned_to: ai
 created_by: t@t
 branch: feat/agents-must-never-open-a-visible-browser
 created_at: "2026-11-18T14:08:00Z"
 updated_at: "2026-11-18T16:27:31Z"
+last_close_out_gate_ms: 251814
+last_close_out_gate_at: "2026-11-18T16:27:31.963Z"
 review_passes: 1
 last_check_failure: "repoos check at 2026-11-18T15:42:06.935Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 ---
