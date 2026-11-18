@@ -2,14 +2,14 @@
 id: "1183"
 title: "QA pass: web app first-run and empty states – new project, no tasks, no agents, offline server"
 type: bug
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-web-app-first-run-and-empty-stat
 created_at: "2026-11-18T10:17:38Z"
-updated_at: "2026-11-18T11:36:28Z"
+updated_at: "2026-11-18T11:36:29Z"
 ---
 ## Problem
 First-run, empty and error states are rarely exercised and likely have rough edges.
@@ -70,3 +70,4 @@ Do not touch repoos.toml.
 - 2026-11-18T11:18:06Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-18T11:19:51Z · CTO nudge: held — handoff gate is running
 - 2026-11-18T11:36:28Z · note: ui verification passed: 2 of 2 shots captured with clean console
+- 2026-11-18T11:36:29Z · status active→review
