@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-18T20:43:55Z"
-review_passes: 1
 id: "1202"
 title: "QA pass: Checks page run history, logs and failure detail – desktop and 375px"
 type: bug
@@ -11,6 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-checks-page-run-history-logs-and
 created_at: "2026-11-18T20:17:41Z"
+updated_at: "2026-11-18T20:43:19Z"
 ---
 ## Problem
 Check run detail and failure views are dense and may overflow or hide the failing step.
@@ -22,33 +21,9 @@ A failed run clearly shows the failing step, logs scroll properly and nothing ov
 ## Notes for AI
 Do not touch repoos.toml. Never open a visible browser window.
 
-## Shots
-```json
-[
-{
-"label": "Checks run history with expanded step details",
-"target": "default",
-"route": "/checks?tab=runs",
-"highlight": ".cr-detail-row",
-"steps": [
-{
-"click": "tr[data-outcome=\"pass\"]"
-}
-],
-"state": "checks:timings"
-}
-]
-```
-
 ## Activity
 
 - 2026-11-18T20:17:41Z · created · t@t
 - 2026-11-18T20:17:45Z · status inbox→ready
 - 2026-11-18T20:17:47Z · status ready→active, branch
-- 2026-11-18T20:28:32Z · body
-- 2026-11-18T20:32:16Z · CTO nudge: held — handoff gate is running
-- 2026-11-18T20:43:18Z · note: ui verification passed: 1 of 1 shot captured with clean console
 - 2026-11-18T20:43:19Z · status active→review
-- 2026-11-18T20:43:19Z · message_queued at 2026-11-18T20:43:19.804Z
-- 2026-11-18T20:43:55Z · note: review pass 1: good to go
-
