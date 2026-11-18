@@ -176,8 +176,7 @@ let savePending = false;
 function sync(): void {
   syncing = true;
   const fixture = route.query.shotState;
-  localAgents.value =
-    fixture === "agents:empty" ? [] : config.agents.map((a) => ({ ...a }));
+  localAgents.value = fixture === "agents:empty" ? [] : config.agents.map((a) => ({ ...a }));
   syncing = false;
 }
 
