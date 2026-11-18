@@ -155,7 +155,7 @@ describe("work ?task= deep-link (#0345)", () => {
     wrapper.unmount();
   });
 
-  it("?task=<id> opens that task's drawer and clears the param", async () => {
+  it("?task=<id> opens the drawer and keeps the param available for reload", async () => {
     useRepoStore().tasks = [makeTask("0340"), makeTask("0341", "active")];
     setRouteQuery({ task: "0340" });
     api.mockResolvedValue(makeTask("0340")); // drawer background refresh
@@ -165,12 +165,12 @@ describe("work ?task= deep-link (#0345)", () => {
     const ui = useUiStore();
     expect(ui.isNew).toBe(false);
     expect(ui.active?.id).toBe("0340");
-    expect(replaceSpy).toHaveBeenCalledTimes(1);
-    expect(replaceSpy).toHaveBeenCalledWith({ query: {} });
+    expect(replaceSpy).not.toHaveBeenCalled();
+    expect(routeQuery).toEqual({ task: "0340" });
     wrapper.unmount();
   });
 
-  it("?task=new opens the new-task panel and clears the param", async () => {
+  it("?task=new opens the new-task panel and keeps its deep link", async () => {
     useRepoStore().tasks = [];
     setRouteQuery({ task: "new" });
     const wrapper = mount(WorkView, { global: { stubs: WORK_STUBS } });
@@ -179,7 +179,8 @@ describe("work ?task= deep-link (#0345)", () => {
     const ui = useUiStore();
     expect(ui.isNew).toBe(true);
     expect(ui.active).toBeNull();
-    expect(replaceSpy).toHaveBeenCalledWith({ query: {} });
+    expect(replaceSpy).not.toHaveBeenCalled();
+    expect(routeQuery).toEqual({ task: "new" });
     wrapper.unmount();
   });
 
@@ -192,7 +193,8 @@ describe("work ?task= deep-link (#0345)", () => {
 
     expect(api).toHaveBeenCalledWith("/api/tasks/0999");
     expect(useUiStore().active?.id).toBe("0999");
-    expect(replaceSpy).toHaveBeenCalledWith({ query: {} });
+    expect(replaceSpy).not.toHaveBeenCalled();
+    expect(routeQuery).toEqual({ task: "0999" });
     wrapper.unmount();
   });
 
@@ -219,20 +221,21 @@ describe("work ?task= deep-link (#0345)", () => {
     wrapper.unmount();
   });
 
-  it("clearing the param preserves other query keys (e.g. ?status=)", async () => {
+  it("preserves other query keys while retaining the open task deep link", async () => {
     useRepoStore().tasks = [makeTask("0340", "active")];
     setRouteQuery({ status: "active", task: "0340" });
     api.mockResolvedValue(makeTask("0340"));
     const wrapper = mount(WorkView, { global: { stubs: WORK_STUBS } });
     await flushPromises();
 
-    expect(replaceSpy).toHaveBeenCalledWith({ query: { status: "active" } });
+    expect(replaceSpy).not.toHaveBeenCalled();
+    expect(routeQuery).toEqual({ status: "active", task: "0340" });
     wrapper.unmount();
   });
 
-  // #0755: a `?tab=` alongside `?task=` selects the drawer tab, so a handoff
-  // shot can reach the Changes tab by route instead of click steps.
-  it("?task=<id>&tab=changes opens the drawer on the Changes tab", async () => {
+  // A deep link remains intact while its drawer is open, so a full reload can
+  // reconstruct both the selected task and tab.
+  it("?task=<id>&tab=changes reopens the same drawer tab after a remount", async () => {
     useRepoStore().tasks = [makeTask("0755", "review")];
     setRouteQuery({ task: "0755", tab: "changes" });
     api.mockResolvedValue(makeTask("0755", "review"));
@@ -242,9 +245,20 @@ describe("work ?task= deep-link (#0345)", () => {
     const ui = useUiStore();
     expect(ui.active?.id).toBe("0755");
     expect(ui.activeTab).toBe("changes");
-    // Both the task and tab params are cleared; nothing lingers to re-open.
-    expect(replaceSpy).toHaveBeenCalledWith({ query: {} });
+    expect(replaceSpy).not.toHaveBeenCalled();
+    expect(routeQuery).toEqual({ task: "0755", tab: "changes" });
     wrapper.unmount();
+
+    // Simulate a document reload: stores reset but the browser URL remains.
+    setActivePinia(createPinia());
+    useRepoStore().tasks = [makeTask("0755", "review")];
+    api.mockResolvedValue(makeTask("0755", "review"));
+    const reloaded = mount(WorkView, { global: { stubs: WORK_STUBS } });
+    await flushPromises();
+    expect(useUiStore().active?.id).toBe("0755");
+    expect(useUiStore().activeTab).toBe("changes");
+    expect(replaceSpy).not.toHaveBeenCalled();
+    reloaded.unmount();
   });
 
   it("an unknown ?tab= id is ignored (drawer keeps its status default)", async () => {

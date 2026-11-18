@@ -292,6 +292,9 @@ export function searchAll(query: string, src: SearchSource): SearchResult[] {
   const q = query.trim().toLowerCase();
   if (!q) return [];
   const terms = tokenizeQuery(q);
+  // Task ids are shown with a leading `#` throughout the app, so accept that
+  // same notation when someone searches from the command palette.
+  const taskIdQuery = q.startsWith("#") ? q.slice(1) : q;
 
   // Field weights: title/id are a much stronger relevance signal than a
   // stray body/content mention, so they must outrank it even when the body
@@ -304,7 +307,7 @@ export function searchAll(query: string, src: SearchSource): SearchResult[] {
   const scoredTasks: { result: SearchResult; score: number }[] = [];
   for (const t of src.tasks) {
     if (
-      includes(t.id, q) ||
+      includes(t.id, taskIdQuery) ||
       includes(t.title, q) ||
       includes(t.body, q) ||
       includes(taskAreaText(t), q) ||
@@ -312,7 +315,7 @@ export function searchAll(query: string, src: SearchSource): SearchResult[] {
       fuzzyMatch(t.body, q)
     ) {
       const score =
-        fieldScore(t.id, 8, terms, taskIdf, q) +
+        fieldScore(t.id, 8, terms, taskIdf, taskIdQuery) +
         fieldScore(t.title, 4, terms, taskIdf, q) +
         fieldScore(taskAreaText(t), 3, terms, taskIdf, q) +
         fieldScore(t.body, 1, terms, taskIdf, q);
