@@ -1213,7 +1213,7 @@ onUnmounted(() => {
         <DialogContent class="am-modal">
           <div class="am-modal-head">
             <DialogTitle>Skills for {{ skillsModalAgent?.name }}</DialogTitle
-            ><DialogClose class="close-x">×</DialogClose>
+            ><DialogClose class="close-x" aria-label="Close dialog">×</DialogClose>
           </div>
           <DialogDescription class="am-modal-desc"
             >Choose preferred candidates for this agent. RepoOS still selects only task-relevant
