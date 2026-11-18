@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-stories-inbox-and-agents-activit
 created_at: "2026-11-18T08:49:05Z"
-updated_at: "2026-11-18T08:49:12Z"
+updated_at: "2026-11-18T08:54:52Z"
 ---
 ## Problem
 Stories, Inbox and activity-style views have not had a recent hands-on QA pass.
@@ -26,3 +26,4 @@ Do not touch repoos.toml; skip what #1157/#1170/#1173/#1178 covered.
 - 2026-11-18T08:49:05Z · created · t@t
 - 2026-11-18T08:49:09Z · status inbox→ready
 - 2026-11-18T08:49:12Z · status ready→active, branch
+- 2026-11-18T08:54:52Z · note: adopted orphaned engineer pid 10765
