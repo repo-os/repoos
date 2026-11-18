@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-remote-runners-and-checks-remote
 created_at: "2026-11-18T16:18:04Z"
-updated_at: "2026-11-18T16:34:35Z"
+updated_at: "2026-11-18T16:44:40Z"
 ---
 ## Problem
 The Remote runners tab shows host load, health and failures; recent flaky runs show it needs a hands-on pass.
@@ -43,3 +43,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T16:30:36Z · body
 - 2026-11-18T16:31:54Z · body
 - 2026-11-18T16:34:35Z · CTO nudge: held — handoff gate is running
+- 2026-11-18T16:44:40Z · note: ui verification passed: 1 of 1 shot captured with clean console
