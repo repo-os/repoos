@@ -732,7 +732,7 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
         field.key === "worktreeWarnThreshold";
       const normalized = numericSelect ? String(val) : val;
       if (
-        (numericSelect && (typeof val !== "number" && typeof val !== "string")) ||
+        (numericSelect && typeof val !== "number" && typeof val !== "string") ||
         !valid.includes(normalized as string)
       ) {
         return json(res, 400, {
