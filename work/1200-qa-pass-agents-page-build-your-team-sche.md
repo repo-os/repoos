@@ -2,14 +2,14 @@
 id: "1200"
 title: "QA pass: Agents page Build Your Team, Scheduled Tasks, Reminders and Detected Coding Agents tabs"
 type: bug
-status: ready
+status: active
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
-branch: ""
+branch: feat/qa-pass-agents-page-build-your-team-sche
 created_at: "2026-11-18T19:47:54Z"
-updated_at: "2026-11-18T19:47:58Z"
+updated_at: "2026-11-18T19:48:01Z"
 ---
 ## Problem
 The Agents page has several tabs beyond the main list that have not been exercised.
@@ -25,3 +25,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 
 - 2026-11-18T19:47:54Z · created · t@t
 - 2026-11-18T19:47:58Z · status inbox→ready
+- 2026-11-18T19:48:01Z · status ready→active, branch
