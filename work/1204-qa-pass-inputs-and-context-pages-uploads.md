@@ -2,14 +2,14 @@
 id: "1204"
 title: "QA pass: Inputs and Context pages – uploads, docs ingestion and empty states"
 type: bug
-status: review
+status: active
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-inputs-and-context-pages-uploads
 created_at: "2026-11-18T20:47:45Z"
-updated_at: "2026-11-18T21:31:36Z"
+updated_at: "2026-11-18T21:31:37Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-18T21:27:46.766Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 1
