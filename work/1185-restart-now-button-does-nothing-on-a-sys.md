@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/restart-now-button-does-nothing-on-a-sys
 created_at: "2026-11-18T12:27:18Z"
-updated_at: "2026-11-18T14:36:26Z"
+updated_at: "2026-11-18T14:36:27Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-18T14:30:25.814Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 2
@@ -82,3 +82,4 @@ Reported by Nick 2026-11-18 20:22 from the phone UI. Related #1154. Do not touch
 - 2026-11-18T14:35:51Z · body
 - 2026-11-18T14:36:26Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-18T14:36:26Z · message_queued at 2026-11-18T14:36:26.890Z
+- 2026-11-18T14:36:27Z · ↻ resuming engineer to read queued message
