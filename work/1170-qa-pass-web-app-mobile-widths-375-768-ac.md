@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 914401
-last_close_out_gate_at: "2026-11-18T06:33:24.596Z"
 id: "1170"
 title: "QA pass: web app mobile widths (375/768) across Work, Releases, Settings, Agents, Checks"
 type: bug
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: 621432ee6456197e5367e70e5f4c408f1ff4ec14
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-web-app-mobile-widths-375-768-ac
@@ -14,6 +13,8 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-18T02:19:49Z"
 updated_at: "2026-11-18T06:33:24Z"
+last_close_out_gate_ms: 914401
+last_close_out_gate_at: "2026-11-18T06:33:24.596Z"
 review_passes: 6
 last_check_failure: "repoos check at 2026-11-18T05:14:48.037Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 2
