@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-inputs-and-context-pages-uploads
 created_at: "2026-11-18T20:47:45Z"
-updated_at: "2026-11-18T20:54:35Z"
+updated_at: "2026-11-18T20:58:51Z"
 ---
 ## Problem
 Inputs and Context pages have not had a hands-on pass.
@@ -25,16 +25,16 @@ Do not touch repoos.toml. Never open a visible browser window.
 ```json
 [
 {
-  "label": "Inputs list with new-input action",
-  "target": "default",
-  "route": "/inputs",
-  "highlight": ".inputs-header"
+"label": "Inputs list with new-input action",
+"target": "default",
+"route": "/inputs",
+"highlight": ".inputs-header"
 },
 {
-  "label": "Context docs tree and document preview",
-  "target": "default",
-  "route": "/repo",
-  "highlight": ".repo-grid"
+"label": "Context docs tree and document preview",
+"target": "default",
+"route": "/repo",
+"highlight": ".repo-grid"
 }
 ]
 ```
@@ -45,3 +45,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T20:47:48Z · status inbox→ready
 - 2026-11-18T20:47:50Z · status ready→active, branch
 - 2026-11-18T20:54:35Z · body
+- 2026-11-18T20:58:51Z · body
