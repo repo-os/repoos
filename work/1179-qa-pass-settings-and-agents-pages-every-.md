@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-settings-and-agents-pages-every-
 created_at: "2026-11-18T06:47:46Z"
-updated_at: "2026-11-18T07:43:46Z"
+updated_at: "2026-11-18T07:44:11Z"
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -32,3 +32,4 @@ Do not touch repoos.toml.
 - 2026-11-18T07:43:45Z · status active→review
 - 2026-11-18T07:43:46Z · message_queued at 2026-11-18T07:43:46.038Z
 - 2026-11-18T07:43:46Z · note: shots: skipped — the diff (3 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-11-18T07:44:11Z · note: review pass 1: needs some work
