@@ -74,3 +74,4 @@ The initial evidence is an auth-less 401, not proof of a signed-in regression. Q
 - 2026-11-18T00:58:30Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-18T01:00:22Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-18T01:05:36Z · queued message undelivered for 7m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-18T01:05:36Z · message_delivered: 1 message(s)
