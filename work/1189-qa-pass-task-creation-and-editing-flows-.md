@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: "check|remote validation failed: test failure: gate exit 1 on bee — fix it in the feature branch and re-run the gate"
+last_handoff_failure_sha: 68ba09e1c0b8603f3e4bcef797bde8383f2576bf
 id: "1189"
 title: "QA pass: task creation and editing flows (new task, update, attach screenshot, dependencies)"
 type: bug
@@ -99,3 +101,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T17:22:55Z · status active→review
 - 2026-11-18T17:32:12Z · message_queued at 2026-11-18T17:32:12.387Z
 - 2026-11-18T17:32:12Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: gate exit 1 on bee — fix it in the feature branch and re-run the gate
+
