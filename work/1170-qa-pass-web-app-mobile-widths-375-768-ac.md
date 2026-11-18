@@ -2,7 +2,7 @@
 id: "1170"
 title: "QA pass: web app mobile widths (375/768) across Work, Releases, Settings, Agents, Checks"
 type: bug
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/qa-pass-web-app-mobile-widths-375-768-ac
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-18T02:19:49Z"
-updated_at: "2026-11-18T03:08:10Z"
+updated_at: "2026-11-18T03:08:12Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -43,3 +43,4 @@ Do not touch repoos.toml. Pages use full .main width.
 - 2026-11-18T03:00:31Z · message_delivered: 1 message(s)
 - 2026-11-18T03:04:30Z · body
 - 2026-11-18T03:08:10Z · note: ui verification passed: 1 shot captured with clean console
+- 2026-11-18T03:08:12Z · status active→review
