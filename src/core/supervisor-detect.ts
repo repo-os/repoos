@@ -312,7 +312,9 @@ function detectLinuxSupervisor(pid: number, execFile: typeof execFileSync): Supe
     // The process cgroup records its unit even when argv/comm was renamed.
     try {
       const cgroup = execFile("cat", [`/proc/${pid}/cgroup`], {
-        encoding: "utf8", timeout: 1500, stdio: ["ignore", "pipe", "ignore"],
+        encoding: "utf8",
+        timeout: 1500,
+        stdio: ["ignore", "pipe", "ignore"],
       });
       const unit = cgroup.match(/(?:^|\/)([^/]+\.service)(?:\/|$)/m)?.[1];
       if (unit && !unit.startsWith("user@")) {
@@ -325,7 +327,9 @@ function detectLinuxSupervisor(pid: number, execFile: typeof execFileSync): Supe
             : { kind: "external", info };
         }
       }
-    } catch { /* fall through to parent check */ }
+    } catch {
+      /* fall through to parent check */
+    }
     const ppid = readPpid(pid, execFile);
     if (ppid !== null) {
       const parent = parentCommand(ppid, execFile);
