@@ -1,9 +1,8 @@
 ---
-last_check_failure: "repoos check at 2026-11-18T00:54:42.638Z: repoos check failed: ui-smoke — [queue] waiting for a Playwright slot — position 2 (1 ahead)"
 id: "1168"
 title: "QA pass: exercise the new Releases 'Generate AI notes and publish' flow and the update/restart modal end to end"
 type: bug
-status: active
+status: review
 priority: p1
 area: [web, server]
 assigned_to: ai
@@ -12,7 +11,8 @@ branch: feat/qa-pass-exercise-the-new-releases-genera
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-18T00:17:51Z"
-updated_at: "2026-11-18T00:54:42Z"
+updated_at: "2026-11-18T00:57:59Z"
+last_check_failure: "repoos check at 2026-11-18T00:54:42.638Z: repoos check failed: ui-smoke — [queue] waiting for a Playwright slot — position 2 (1 ahead)"
 ---
 ## Problem
 
@@ -53,5 +53,4 @@ Do not edit repoos.toml.
 - 2026-11-18T00:53:30Z · CTO nudge: held — handoff gate is running
 - 2026-11-18T00:54:39Z · message_queued at 2026-11-18T00:54:39.480Z
 - 2026-11-18T00:54:42Z · message_delivered: 1 message(s)
-
-
+- 2026-11-18T00:57:59Z · status active→review
