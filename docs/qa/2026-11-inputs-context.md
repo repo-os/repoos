@@ -43,6 +43,10 @@ resource errors corresponded to the deliberately simulated 503 responses; no
 uncaught page errors occurred. Screenshots from the responsive pass are in the
 worktree's ignored `.repoos/qa-1204/` directory.
 
+The review handoff now declares separate Inputs and Context captures at
+1280 × 900 and 375 × 812 so the screenshots themselves record the required
+desktop and phone widths.
+
 ## Regression coverage
 
 The docs-store test covers failure state, loading completion, and error clearing
