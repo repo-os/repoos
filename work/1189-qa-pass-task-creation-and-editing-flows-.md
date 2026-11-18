@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-task-creation-and-editing-flows-
 created_at: "2026-11-18T16:17:39Z"
-updated_at: "2026-11-18T16:49:57Z"
+updated_at: "2026-11-18T16:49:58Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -43,3 +43,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T16:44:50Z · status review→active
 - 2026-11-18T16:44:53Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-18T16:49:57Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-11-18T16:49:58Z · note: handoff requested (cli)
