@@ -1,3 +1,14 @@
+---
+id: summary
+title: summary
+type: feature
+status: inbox
+priority: p2
+area: general
+assigned_to: ai
+created_by: ""
+branch: ""
+---
 ## TL;DR
 
 Task 1199 was a QA pass over the Stories page and story detail view at desktop (1280px) and 375px mobile width, driven by headless Playwright against the auth-less dev server. No reproducible product defect was found, so the only change is the QA record `docs/qa/2026-11-stories-detail.md` (+30 lines). The required docs were committed, the RepoOS check passed, review verdict was "good to go" on the first pass, and the task merged cleanly and is done.
@@ -22,9 +33,9 @@ Final verdict: **good to go** (review pass 1, 2026-11-18T19:54:43Z); close-out s
 - Wall-clock from creation to done: 11 minutes 51 seconds (2026-11-18T19:47:44Z → 2026-11-18T19:59:35Z).
 - Close-out gate: completed in 73s.
 - Agents and models per role:
-  - Engineer: agent `codex`, model gpt-6-luna — elapsed 171s, 1,340,577 tokens. One restart/swap event: an orphaned engineer process (pid 1671) was adopted at 19:49:51Z rather than restarted.
-  - Reviewer: model gpt-6-luna — elapsed 19s, 127,084 tokens. No reviewer swaps or restarts.
-  - Routing (Model router, openrouter): two 1s sessions, model "unknown", no tokens recorded.
+- Engineer: agent `codex`, model gpt-6-luna — elapsed 171s, 1,340,577 tokens. One restart/swap event: an orphaned engineer process (pid 1671) was adopted at 19:49:51Z rather than restarted.
+- Reviewer: model gpt-6-luna — elapsed 19s, 127,084 tokens. No reviewer swaps or restarts.
+- Routing (Model router, openrouter): two 1s sessions, model "unknown", no tokens recorded.
 - Token totals where recorded: engineer 1,340,577 + reviewer 127,084 = 1,467,661 tokens across the two sessions with token accounting.
 - Costs: not recorded (sessions table shows "—" for all roles).
 - Handoff screenshots: none required — the diff touches no capture target's globs, so shot capture was skipped as a docs-only change.
