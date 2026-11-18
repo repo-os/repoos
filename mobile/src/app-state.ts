@@ -80,7 +80,7 @@ export async function init(): Promise<void> {
   const fixtureList = fixtureServers(fixture);
   servers.value = fixtureList ?? srv;
   selectedId.value = sel;
-  lockSettings.value = lock;
+  lockSettings.value = fixture === "lock" ? { enabled: true, scope: "reopen" } : lock;
   lockSupported.value = lockProbe.supported;
   designTheme.value = themePrefs.design;
   appearanceMode.value = themePrefs.appearanceMode;

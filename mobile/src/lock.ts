@@ -8,6 +8,7 @@
  * cancel/failure, so success is "it returned".
  */
 import type { LockSettings, DeviceLockResult, ServerEntry } from "./types";
+import { readLockFixtureResult } from "./fixture";
 export { lockOverlayShouldRemainOpen } from "./lock-state";
 
 export async function probeDeviceLock(): Promise<DeviceLockResult> {
@@ -23,6 +24,8 @@ export async function probeDeviceLock(): Promise<DeviceLockResult> {
 }
 
 export async function verifyWithDeviceLock(reason: string): Promise<boolean> {
+  const fixtureResult = readLockFixtureResult();
+  if (fixtureResult !== null) return fixtureResult;
   try {
     const mod = await import("@capgo/capacitor-native-biometric").catch(() => null);
     if (!mod?.NativeBiometric) return true; // no native plugin → skip (web dev)
