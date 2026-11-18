@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-task-creation-and-editing-flows-
 created_at: "2026-11-18T16:17:39Z"
-updated_at: "2026-11-18T17:07:54Z"
+updated_at: "2026-11-18T17:17:28Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -29,33 +29,33 @@ Do not touch repoos.toml. Never open a visible browser window.
 ```json
 [
 {
-  "label": "Manual task creation with prerequisite picker",
-  "target": "default",
-  "route": "/work",
-  "highlight": ".task-dependency-picker",
-  "steps": [
-    {
-      "click": "button.new-btn"
-    },
-    {
-      "click": "[role=dialog] .drawer-tabs button:nth-child(2)"
-    },
-    {
-      "fill": "#nt-dependencies",
-      "text": "QA pass"
-    }
-  ]
+"label": "Manual task creation with prerequisite picker",
+"target": "default",
+"route": "/work",
+"highlight": ".task-dependency-picker",
+"steps": [
+  {
+    "click": "button.new-btn"
+  },
+  {
+    "click": "[role=dialog] .drawer-tabs button:nth-child(2)"
+  },
+  {
+    "fill": "#nt-dependencies",
+    "text": "QA pass"
+  }
+]
 },
 {
-  "label": "Task Details with editable prerequisites",
-  "target": "default",
-  "route": "/work?task=1189",
-  "highlight": ".task-dependency-picker",
-  "steps": [
-    {
-      "click": "[role=dialog] .drawer-tabs button:first-child"
-    }
-  ]
+"label": "Task Details with editable prerequisites",
+"target": "default",
+"route": "/work?task=1189",
+"highlight": ".task-dependency-picker",
+"steps": [
+  {
+    "click": "[role=dialog] .drawer-tabs button:first-child"
+  }
+]
 }
 ]
 ```
@@ -86,3 +86,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T16:52:31Z · message_delivered: 3 message(s)
 - 2026-11-18T16:57:29Z · note: adopted orphaned engineer pid 70051
 - 2026-11-18T17:07:54Z · body
+- 2026-11-18T17:17:28Z · message_queued at 2026-11-18T17:17:28.202Z
