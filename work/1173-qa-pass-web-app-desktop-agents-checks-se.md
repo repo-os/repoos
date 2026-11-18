@@ -1,5 +1,4 @@
 ---
-handoff_signal_retry_count: 2
 id: "1173"
 title: "QA pass: web app desktop – Agents, Checks, Settings, Releases pages end to end"
 type: bug
@@ -10,7 +9,8 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-web-app-desktop-agents-checks-se
 created_at: "2026-11-18T03:57:22Z"
-updated_at: "2026-11-18T04:10:03Z"
+updated_at: "2026-11-18T04:18:32Z"
+handoff_signal_retry_count: 2
 ---
 ## Problem
 Desktop web pages beyond Work may hide regressions after many recent UI changes.
@@ -32,4 +32,4 @@ Do not touch repoos.toml.
 - 2026-11-18T04:00:53Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The live QA pass is blocked: the browser host exposed no tabs, and the runner instructions prohibit starting the long-lived local server the task requires. I did not verify the pages or console, so I made no code changes and did not create… · stderr: Reading additional input from stdin...
 - 2026-11-18T04:09:32Z · body
 - 2026-11-18T04:10:03Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The task is still incomplete, so I did not emit the handoff signal. I started `just serve-noauth 7272` in the assigned worktree and opened `/agents` in Chrome. The server bound on the runner, but Chrome received `ERR_CONNECTION_REFUSED` be… · stderr: 2026-11-18T04:07:12.907838Z ERROR codex_core::tools::router: error=apply_patch verification failed: Failed to find expected lines in /Users/nick/code/nick/repoos-worktrees/feat/qa-pass-web-app-desktop-agents-checks-se/.repoos/engineering-report-drafts/1173.md: A follow-up turn needs an authorized, available way to ser…
-
+- 2026-11-18T04:18:32Z · body
