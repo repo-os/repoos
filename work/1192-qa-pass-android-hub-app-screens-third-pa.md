@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-android-hub-app-screens-third-pa
 created_at: "2026-11-18T17:47:42Z"
-updated_at: "2026-11-18T18:00:56Z"
+updated_at: "2026-11-18T18:00:57Z"
 ---
 ## Problem
 Theme switching, very long server/project names and narrow/rotated layouts have not been checked in the Hub UI.
@@ -32,3 +32,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T17:59:45Z · watchdog: check wait ended or recovered — cleared needs_input
 - 2026-11-18T18:00:56Z · status active→review
 - 2026-11-18T18:00:56Z · message_queued at 2026-11-18T18:00:56.928Z
+- 2026-11-18T18:00:57Z · note: shots: skipped — the diff (4 changed paths) touches no capture target's globs — no UI change to capture
