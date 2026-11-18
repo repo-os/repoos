@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 2
 id: "1178"
 title: "QA pass: Work board task drawer flows (review, changes, logs, close-out) desktop and mobile"
 type: bug
@@ -12,7 +13,6 @@ created_at: "2026-11-18T05:56:51Z"
 updated_at: "2026-11-18T07:01:06Z"
 close_out_repair_count: 1
 review_passes: 1
-handoff_signal_retry_count: 1
 ---
 ## Problem
 The task drawer is the most-used screen and has had many recent changes.
@@ -39,3 +39,4 @@ Do not touch repoos.toml.
 - 2026-11-18T06:55:58Z · note: close-out repair: gate-failure
 - 2026-11-18T06:56:01Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-18T07:01:06Z · message_queued at 2026-11-18T07:01:06.549Z
+
