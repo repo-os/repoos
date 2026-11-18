@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/fix-401-on-api-project-environments-in-t
 created_at: "2026-11-18T04:17:45Z"
-updated_at: "2026-11-18T04:54:29Z"
+updated_at: "2026-11-18T04:55:59Z"
 ---
 ## Problem
 #1157 was blocked for several review passes (landed via Land anyway) because automated UI verification recorded HTTP 401 for /api/project-environments (Secrets page) in the no-auth handoff preview as a console error.
@@ -22,8 +22,22 @@ Opening the Secrets page in the handoff preview produces no 401/console error, o
 ## Notes for AI
 Related: #1164. Do not touch repoos.toml.
 
+## Shots
+```json
+[
+{
+  "label": "Secrets page without authenticated API requests",
+  "target": "default",
+  "route": "/secrets",
+  "highlight": ".secrets-ledger",
+  "state": "secrets:populated"
+}
+]
+```
+
 ## Activity
 
 - 2026-11-18T04:17:45Z · created · t@t
 - 2026-11-18T04:54:21Z · status inbox→ready
 - 2026-11-18T04:54:29Z · status ready→active, branch
+- 2026-11-18T04:55:59Z · body
