@@ -116,3 +116,4 @@ Signed-in projects and tasks remain unverified because automated email-code entr
 - 2026-11-18T05:56:38Z · CTO nudge: held — handoff gate is running
 - 2026-11-18T06:05:16Z · status active→review
 - 2026-11-18T06:05:16Z · message_queued at 2026-11-18T06:05:16.637Z
+- 2026-11-18T06:05:16Z · note: shots: skipped — the diff (14 changed paths) touches no capture target's globs — no UI change to capture
