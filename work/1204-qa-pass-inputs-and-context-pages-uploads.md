@@ -2,14 +2,14 @@
 id: "1204"
 title: "QA pass: Inputs and Context pages – uploads, docs ingestion and empty states"
 type: bug
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
 branch: ""
 created_at: "2026-11-18T20:47:45Z"
-updated_at: "2026-11-18T20:47:45Z"
+updated_at: "2026-11-18T20:47:48Z"
 ---
 ## Problem
 Inputs and Context pages have not had a hands-on pass.
@@ -24,3 +24,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 ## Activity
 
 - 2026-11-18T20:47:45Z · created · t@t
+- 2026-11-18T20:47:48Z · status inbox→ready
