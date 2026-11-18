@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-web-app-first-run-and-empty-stat
 created_at: "2026-11-18T10:17:38Z"
-updated_at: "2026-11-18T11:11:25Z"
+updated_at: "2026-11-18T11:11:26Z"
 ---
 ## Problem
 First-run, empty and error states are rarely exercised and likely have rough edges.
@@ -59,3 +59,4 @@ Do not touch repoos.toml.
 - 2026-11-18T10:59:08Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-18T11:05:18Z · body
 - 2026-11-18T11:11:25Z · queued message undelivered for 13m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-18T11:11:26Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code unknown) · last assistant: Formatting is fixed. The gate is back through the remote build and changed-path suite; its selected set is broad and test output is noisy, but the current cases are passing. · stderr: 2026-11-18T10:54:57.542500Z ERROR codex_core::util: Custom tool call output is missing for call id: call_4af0e59c46ec41b8ad326053d0f08f26 2026-11-18T10:55:01.034818Z ERROR codex_core::tools::router: error=write_stdin failed: Unknown process id 56016 2026-11-18T10:55:01.041368Z ERROR codex_core::util: Custom tool call …
