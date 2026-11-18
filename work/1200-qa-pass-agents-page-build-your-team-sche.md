@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-agents-page-build-your-team-sche
 created_at: "2026-11-18T19:47:54Z"
-updated_at: "2026-11-18T21:04:22Z"
+updated_at: "2026-11-18T21:05:18Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-18T21:03:27.069Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_passes: 2
@@ -29,22 +29,22 @@ Do not touch repoos.toml. Never open a visible browser window.
 ```json
 [
 {
-  "label": "Build Your Team tab at 1280px",
-  "target": "default",
-  "route": "/agents?tab=team",
-  "highlight": ".agent-tabs"
+"label": "Build Your Team tab at 1280px",
+"target": "default",
+"route": "/agents?tab=team",
+"highlight": ".agent-tabs"
 },
 {
-  "label": "Scheduled tasks with seeded template warning",
-  "target": "default",
-  "route": "/agents?tab=scheduled&shotState=agents:scheduledSeeded",
-  "highlight": ".agent-tabs"
+"label": "Scheduled tasks with seeded template warning",
+"target": "default",
+"route": "/agents?tab=scheduled&shotState=agents:scheduledSeeded",
+"highlight": ".agent-tabs"
 },
 {
-  "label": "Reminders with due and upcoming items",
-  "target": "default",
-  "route": "/agents?tab=reminders&shotState=reminders:due",
-  "highlight": ".agent-tabs"
+"label": "Reminders with due and upcoming items",
+"target": "default",
+"route": "/agents?tab=reminders&shotState=reminders:due",
+"highlight": ".agent-tabs"
 }
 ]
 ```
@@ -78,3 +78,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T21:03:55Z · status review→active
 - 2026-11-18T21:03:57Z · CTO nudge: held — remote validation is running
 - 2026-11-18T21:04:22Z · body
+- 2026-11-18T21:05:18Z · note: ui verification passed: 3 of 3 shots captured with clean console
