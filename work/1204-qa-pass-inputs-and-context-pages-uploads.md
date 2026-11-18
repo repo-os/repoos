@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-inputs-and-context-pages-uploads
 created_at: "2026-11-18T20:47:45Z"
-updated_at: "2026-11-18T21:18:40Z"
+updated_at: "2026-11-18T21:26:23Z"
 review_passes: 1
 ---
 ## Problem
@@ -26,36 +26,36 @@ Do not touch repoos.toml. Never open a visible browser window.
 ```json
 [
 {
-  "label": "Inputs list at 1280px",
-  "target": "default",
-  "route": "/inputs",
-  "highlight": ".inputs-header",
-  "viewportWidth": 1280,
-  "viewportHeight": 900
+"label": "Inputs list at 1280px",
+"target": "default",
+"route": "/inputs",
+"highlight": ".inputs-header",
+"viewportWidth": 1280,
+"viewportHeight": 900
 },
 {
-  "label": "Inputs list at 375px",
-  "target": "default",
-  "route": "/inputs",
-  "highlight": ".inputs-header",
-  "viewportWidth": 375,
-  "viewportHeight": 812
+"label": "Inputs list at 375px",
+"target": "default",
+"route": "/inputs",
+"highlight": ".inputs-header",
+"viewportWidth": 375,
+"viewportHeight": 812
 },
 {
-  "label": "Context docs at 1280px",
-  "target": "default",
-  "route": "/repo",
-  "highlight": ".repo-grid",
-  "viewportWidth": 1280,
-  "viewportHeight": 900
+"label": "Context docs at 1280px",
+"target": "default",
+"route": "/repo",
+"highlight": ".repo-grid",
+"viewportWidth": 1280,
+"viewportHeight": 900
 },
 {
-  "label": "Context docs at 375px",
-  "target": "default",
-  "route": "/repo",
-  "highlight": ".repo-grid",
-  "viewportWidth": 375,
-  "viewportHeight": 812
+"label": "Context docs at 375px",
+"target": "default",
+"route": "/repo",
+"highlight": ".repo-grid",
+"viewportWidth": 375,
+"viewportHeight": 812
 }
 ]
 ```
@@ -77,3 +77,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T21:17:31Z · status review→active
 - 2026-11-18T21:17:33Z · message_delivered: 1 message(s)
 - 2026-11-18T21:18:40Z · body
+- 2026-11-18T21:26:23Z · body
