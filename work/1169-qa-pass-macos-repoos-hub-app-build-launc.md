@@ -386,3 +386,4 @@ Signed-in projects and tasks remain unverified because automated email-code entr
 - 2026-11-18T15:35:03Z · body
 - 2026-11-18T15:36:04Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-18T15:36:05Z · message_queued at 2026-11-18T15:36:05.004Z
+- 2026-11-18T15:36:05Z · ↻ resuming engineer to read queued message
