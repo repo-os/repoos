@@ -12,7 +12,7 @@ branch: feat/add-repoos-org-project-updates-signup-an
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-09-21T12:08:58Z"
-updated_at: "2026-11-18T01:58:06Z"
+updated_at: "2026-11-18T02:00:42Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -46,16 +46,16 @@ Run after #0477 (Build Neon Functions double-opt-in updates service).
 ```json
 [
 {
-  "label": "Project updates signup by the closing call to action",
-  "target": "Landing page",
-  "route": "/",
-  "highlight": "#project-updates"
+"label": "Project updates signup by the closing call to action",
+"target": "Landing page",
+"route": "/",
+"highlight": "#project-updates"
 },
 {
-  "label": "Expired confirmation with a path back to signup",
-  "target": "Landing page",
-  "route": "/?updates=expired",
-  "highlight": "#project-updates"
+"label": "Expired confirmation with a path back to signup",
+"target": "Landing page",
+"route": "/?updates=expired",
+"highlight": "#project-updates"
 }
 ]
 ```
@@ -79,3 +79,4 @@ Run after #0477 (Build Neon Functions double-opt-in updates service).
 - 2026-11-18T01:53:04Z · message_delivered: 1 message(s)
 - 2026-11-18T01:53:04Z · status review→active
 - 2026-11-18T01:58:06Z · body
+- 2026-11-18T02:00:42Z · body
