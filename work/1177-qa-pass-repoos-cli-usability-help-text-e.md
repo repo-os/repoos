@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-repoos-cli-usability-help-text-e
 created_at: "2026-11-18T05:56:48Z"
-updated_at: "2026-11-18T08:08:55Z"
+updated_at: "2026-11-18T08:08:56Z"
 review_passes: 3
 last_check_failure: "repoos check at 2026-11-18T06:45:34.810Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 2
@@ -69,3 +69,4 @@ Do not touch repoos.toml; do not run commands that mutate the real board.
 - 2026-11-18T08:08:55Z · queued message undelivered for 4m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-18T08:08:55Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code unknown) · last assistant: The check has reached RepoOS remote validation and is still waiting without reporting a failure. I’m leaving it to finish, then I’ll record the checked-tree outcome in the required report draft and confirm the final diff and handoff status. · stderr: Reading additional input from stdin...
 - 2026-11-18T08:08:55Z · status active→review
+- 2026-11-18T08:08:56Z · message_delivered: 1 message(s)
