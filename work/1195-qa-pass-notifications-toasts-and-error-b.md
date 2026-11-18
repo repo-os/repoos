@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-notifications-toasts-and-error-b
 created_at: "2026-11-18T18:47:48Z"
-updated_at: "2026-11-18T19:14:20Z"
+updated_at: "2026-11-18T19:14:46Z"
 last_close_out_gate_ms: 80956
 last_close_out_gate_at: "2026-11-18T19:14:20.452Z"
 review_passes: 1
@@ -38,4 +38,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T19:11:45Z · message_queued at 2026-11-18T19:11:45.553Z
 - 2026-11-18T19:12:10Z · note: review pass 1: good to go
 - 2026-11-18T19:14:20Z · close-out gate completed in 81s
-
+- 2026-11-18T19:14:46Z · status done→done, release:success
