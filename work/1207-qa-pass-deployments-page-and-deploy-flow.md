@@ -2,7 +2,7 @@
 id: "1207"
 title: "QA pass: Deployments page and deploy flows with fixtures – states, errors, 375px"
 type: bug
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -59,3 +59,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T23:26:35Z · body
 - 2026-11-18T23:30:14Z · CTO nudge: held — handoff gate is running
 - 2026-11-18T23:30:18Z · note: ui verification passed: 2 of 2 shots captured with clean console
+- 2026-11-18T23:30:18Z · status active→review
