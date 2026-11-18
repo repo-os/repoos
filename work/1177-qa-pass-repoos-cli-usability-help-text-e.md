@@ -2,7 +2,7 @@
 id: "1177"
 title: "QA pass: RepoOS CLI usability – help text, error messages and exit codes"
 type: bug
-status: active
+status: review
 priority: p2
 area: core
 assigned_to: ai
@@ -68,3 +68,4 @@ Do not touch repoos.toml; do not run commands that mutate the real board.
 - 2026-11-18T08:05:25Z · message_delivered: 1 message(s)
 - 2026-11-18T08:08:55Z · queued message undelivered for 4m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-18T08:08:55Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code unknown) · last assistant: The check has reached RepoOS remote validation and is still waiting without reporting a failure. I’m leaving it to finish, then I’ll record the checked-tree outcome in the required report draft and confirm the final diff and handoff status. · stderr: Reading additional input from stdin...
+- 2026-11-18T08:08:55Z · status active→review
