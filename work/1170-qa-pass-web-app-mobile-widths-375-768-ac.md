@@ -3,9 +3,6 @@ id: "1170"
 title: "QA pass: web app mobile widths (375/768) across Work, Releases, Settings, Agents, Checks"
 type: bug
 status: active
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: `needs some work` — The changed mobile layouts lack handoff screenshots or verification assertions.
 priority: p2
 area: web
 assigned_to: ai
@@ -14,7 +11,7 @@ branch: feat/qa-pass-web-app-mobile-widths-375-768-ac
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-18T02:19:49Z"
-updated_at: "2026-11-18T05:17:48Z"
+updated_at: "2026-11-18T05:17:51Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-18T05:14:48.037Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_passes: 5
@@ -124,3 +121,4 @@ Do not touch repoos.toml. Pages use full .main width.
 - 2026-11-18T05:14:45Z · needs_input
 - 2026-11-18T05:14:47Z · message_delivered: 1 message(s)
 - 2026-11-18T05:17:48Z · status review→active
+- 2026-11-18T05:17:51Z · needs_input
