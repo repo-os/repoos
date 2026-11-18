@@ -3,9 +3,6 @@ id: "1169"
 title: "QA pass: macOS RepoOS Hub app – build, launch, connect, and fix what is broken"
 type: bug
 status: review
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: `needs some work` — the signed-in Projects and Tasks criterion remains unmet; see Bugs.
 priority: p2
 area: macos
 assigned_to: ai
@@ -14,7 +11,7 @@ branch: feat/qa-pass-macos-repoos-hub-app-build-launc
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-18T02:19:44Z"
-updated_at: "2026-11-18T14:17:46Z"
+updated_at: "2026-11-18T14:17:47Z"
 review_passes: 7
 review_rounds: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-11-18T04:39:18.645Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-18T04:49:19.309Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-18T08:53:34.221Z\",\"reason\":\"clean-exit-without-handoff\"}]"
@@ -361,3 +358,4 @@ Signed-in projects and tasks remain unverified because automated email-code entr
 - 2026-11-18T13:51:18Z · needs_input
 - 2026-11-18T13:51:19Z · message_queued at 2026-11-18T13:51:19.307Z
 - 2026-11-18T14:17:46Z · body: Desired UX (added 1, removed 1)
+- 2026-11-18T14:17:47Z · needs_input (review-rounds-exhausted) cleared for review again by human
