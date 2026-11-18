@@ -19,8 +19,27 @@ import { chromium, type Page } from "@playwright/test";
 
 const BASE = process.env.QA_BASE_URL ?? "http://localhost:5188";
 const STRIP_WRAP = process.env.QA_STRIP_WRAP === "1";
-const VIEWPORTS = [360, 412].map((width) => ({ width, height: 812 }));
+const PORTRAIT_VIEWPORTS = [
+  { width: 360, height: 800 },
+  { width: 412, height: 915 },
+];
+const LANDSCAPE_VIEWPORTS = [
+  { width: 800, height: 360 },
+  { width: 915, height: 412 },
+];
+const VIEWPORTS = [...PORTRAIT_VIEWPORTS, ...LANDSCAPE_VIEWPORTS];
 const FIXTURES = ["many", "one", "empty", "unreachable", "settings", "add", "discover"];
+const THEMES = [
+  "classic",
+  "clear",
+  "gen z",
+  "jelly",
+  "gruvbox",
+  "catppuccin",
+  "solarized",
+  "hypercolor",
+];
+const APPEARANCES = ["light", "dark", "system"];
 const LONG_PATH_URL =
   "https://celleris-long-hostname.internal-tailnet.example.ts.net:8443/repoos/very/long/path/segments/that/keep/going/and/going/and/going";
 const UNBROKEN_URL =
@@ -96,14 +115,18 @@ async function run() {
 
   // The requested phone widths: nothing past the viewport, no console or page errors.
   for (const viewport of VIEWPORTS) {
+    const orientation = viewport.width > viewport.height ? "landscape" : "portrait";
     await page.setViewportSize(viewport);
     for (const fx of FIXTURES) {
       errors.length = 0;
       await page.goto(`${BASE}/?fixture=${fx}&platform=android`);
       await page.waitForTimeout(700);
-      await checkNoPastViewport(page, `${viewport.width}px fixture ${fx}: in bounds`);
+      await checkNoPastViewport(
+        page,
+        `${viewport.width}x${viewport.height} ${orientation} fixture ${fx}: in bounds`,
+      );
       record(
-        `${viewport.width}px fixture ${fx}: no console errors`,
+        `${viewport.width}x${viewport.height} ${orientation} fixture ${fx}: no console errors`,
         errors.length === 0,
         errors.join("; ") || "clean",
       );
@@ -114,12 +137,15 @@ async function run() {
     const lockToggle = page.getByTestId("hub-lock-toggle");
     if ((await lockToggle.getAttribute("aria-checked")) !== "true") await lockToggle.click();
     await page.getByTestId("hub-lock-scope").waitFor();
-    await checkNoPastViewport(page, `${viewport.width}px settings with lock enabled: in bounds`);
+    await checkNoPastViewport(
+      page,
+      `${viewport.width}x${viewport.height} ${orientation} settings with lock enabled: in bounds`,
+    );
     const lockDetails = await page.evaluate(() => ({
       scope: Boolean(document.querySelector('[data-testid="hub-lock-scope"]')),
     }));
     record(
-      `${viewport.width}px settings lock controls visible`,
+      `${viewport.width}x${viewport.height} ${orientation} settings lock controls visible`,
       lockDetails.scope,
       `scope selector ${lockDetails.scope ? "present" : "missing"}`,
     );
@@ -128,12 +154,19 @@ async function run() {
     await page.goto(`${BASE}/?fixture=lock&auth=failure&platform=android`);
     const lockOverlay = page.locator(".lock-overlay");
     await lockOverlay.waitFor({ state: "visible" });
-    await checkNoPastViewport(page, `${viewport.width}px failed lock screen: in bounds`);
-    await checkFits(page, `${viewport.width}px failed lock card content fits`, ".lock-card");
+    await checkNoPastViewport(
+      page,
+      `${viewport.width}x${viewport.height} ${orientation} failed lock screen: in bounds`,
+    );
+    await checkFits(
+      page,
+      `${viewport.width}x${viewport.height} ${orientation} failed lock card content fits`,
+      ".lock-card",
+    );
     await page.getByRole("button", { name: "Try again" }).click();
     await lockOverlay.waitFor({ state: "visible" });
     record(
-      `${viewport.width}px rejected lock attempt stays locked`,
+      `${viewport.width}x${viewport.height} ${orientation} rejected lock attempt stays locked`,
       await lockOverlay.isVisible(),
       "overlay remains visible after failed authentication",
     );
@@ -145,10 +178,48 @@ async function run() {
     await page.getByRole("button", { name: "Try again" }).click();
     await lockOverlay.waitFor({ state: "hidden" });
     record(
-      `${viewport.width}px successful lock retry unlocks`,
+      `${viewport.width}x${viewport.height} ${orientation} successful lock retry unlocks`,
       !(await lockOverlay.isVisible()),
       "overlay closes after successful authentication",
     );
+  }
+
+  // Exercise each design theme with light, dark, and system appearance while
+  // checking the rendered theme tokens and layout at every portrait/rotation size.
+  for (const viewport of VIEWPORTS) {
+    const orientation = viewport.width > viewport.height ? "landscape" : "portrait";
+    await page.setViewportSize(viewport);
+    await page.goto(`${BASE}/?fixture=settings&platform=android`);
+    await page.waitForTimeout(300);
+    for (const theme of THEMES) {
+      await page.getByTestId("hub-theme-picker").selectOption(theme);
+      for (const appearance of APPEARANCES) {
+        await page
+          .getByTestId("hub-appearance-mode")
+          .getByRole("button", { name: new RegExp(`^${appearance}$`, "i") })
+          .click();
+        const state = await page.evaluate(() => ({
+          theme: document.documentElement.dataset.uiTheme,
+          appearance: document.documentElement.dataset.theme,
+          colorScheme: document.documentElement.style.colorScheme,
+          background: getComputedStyle(document.body).backgroundColor,
+        }));
+        const valid =
+          state.theme === theme &&
+          ["light", "dark"].includes(state.appearance ?? "") &&
+          state.colorScheme === state.appearance &&
+          state.background !== "rgba(0, 0, 0, 0)";
+        record(
+          `${viewport.width}x${viewport.height} ${orientation} ${theme}/${appearance} theme applies`,
+          valid,
+          JSON.stringify(state),
+        );
+        await checkNoPastViewport(
+          page,
+          `${viewport.width}x${viewport.height} ${orientation} ${theme}/${appearance} settings in bounds`,
+        );
+      }
+    }
   }
 
   await page.setViewportSize(VIEWPORTS[0]);
@@ -158,20 +229,63 @@ async function run() {
     ['name: "celleris"', `name: "${LONG_NAME}"`],
     ['url: "https://celleris.repoos.org"', `url: "${LONG_PATH_URL}"`],
   ]);
-  await page.goto(`${BASE}/?fixture=many&platform=android`);
-  await page.waitForTimeout(700);
-  await checkNoPastViewport(page, "picker, long name and URL: in bounds");
+  for (const viewport of VIEWPORTS) {
+    const orientation = viewport.width > viewport.height ? "landscape" : "portrait";
+    await page.setViewportSize(viewport);
+    await page.goto(`${BASE}/?fixture=many&platform=android`);
+    await page.waitForTimeout(700);
+    await checkNoPastViewport(
+      page,
+      `${viewport.width}x${viewport.height} ${orientation} picker, long name and URL: in bounds`,
+    );
+    const rowState = await page.evaluate(() => {
+      const row = document.querySelector<HTMLElement>(".server-row");
+      const more = document.querySelector<HTMLElement>('[data-testid="hub-server-more"]');
+      if (!row || !more)
+        return {
+          rowFound: Boolean(row),
+          moreFound: Boolean(more),
+          rowFits: false,
+          moreVisible: false,
+        };
+      const rowRect = row.getBoundingClientRect();
+      const listRect = row.parentElement?.getBoundingClientRect();
+      const moreRect = more.getBoundingClientRect();
+      return {
+        rowFound: true,
+        moreFound: true,
+        rowFits: Boolean(
+          listRect && rowRect.left >= listRect.left && rowRect.right <= listRect.right,
+        ),
+        moreVisible:
+          moreRect.width > 0 && moreRect.left >= 0 && moreRect.right <= window.innerWidth,
+      };
+    });
+    record(
+      `${viewport.width}x${viewport.height} ${orientation} long-name row and menu fit`,
+      rowState.rowFits && rowState.moreVisible,
+      JSON.stringify(rowState),
+    );
+  }
 
   // Edit sheet with a long saved URL, and one with no break points, at both widths.
   await serveFixture(page, [['url: "https://dev.repoos.org"', `url: "${LONG_PATH_URL}"`]]);
   for (const viewport of VIEWPORTS) {
+    const orientation = viewport.width > viewport.height ? "landscape" : "portrait";
     await page.setViewportSize(viewport);
     await page.goto(`${BASE}/?fixture=many&platform=android`);
     await page.waitForTimeout(700);
     await page.getByTestId("hub-server-more").first().click();
     await page.waitForTimeout(500);
-    await checkFits(page, `${viewport.width}px edit sheet URL (path) wraps`, ".sheet-panel .hint");
-    await checkNoPastViewport(page, `${viewport.width}px edit sheet, long URL: in bounds`);
+    await checkFits(
+      page,
+      `${viewport.width}x${viewport.height} ${orientation} edit sheet URL (path) wraps`,
+      ".sheet-panel .hint",
+    );
+    await checkNoPastViewport(
+      page,
+      `${viewport.width}x${viewport.height} ${orientation} edit sheet, long URL: in bounds`,
+    );
   }
 
   await serveFixture(page, [['url: "https://dev.repoos.org"', `url: "${UNBROKEN_URL}"`]]);
