@@ -1,5 +1,4 @@
 ---
-close_out_repair_count: 1
 id: "1178"
 title: "QA pass: Work board task drawer flows (review, changes, logs, close-out) desktop and mobile"
 type: bug
@@ -10,7 +9,8 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-work-board-task-drawer-flows-rev
 created_at: "2026-11-18T05:56:51Z"
-updated_at: "2026-11-18T06:55:58Z"
+updated_at: "2026-11-18T06:56:01Z"
+close_out_repair_count: 1
 review_passes: 1
 handoff_signal_retry_count: 1
 ---
@@ -37,4 +37,4 @@ Do not touch repoos.toml.
 - 2026-11-18T06:19:07Z · note: review pass 1: good to go
 - 2026-11-18T06:55:58Z · status review→active
 - 2026-11-18T06:55:58Z · note: close-out repair: gate-failure
-
+- 2026-11-18T06:56:01Z · CTO nudge: held — an undelivered message is already queued
