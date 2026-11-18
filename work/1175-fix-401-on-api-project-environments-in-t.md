@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 560758
-last_close_out_gate_at: "2026-11-18T05:48:43.100Z"
 id: "1175"
 title: Fix 401 on /api/project-environments in the handoff preview so UI verification stops flagging it
 type: bug
-status: review
+status: done
 priority: p2
 area: [web, server]
+merged_commit: 4114762540a50a22d09fe70331389324be7a6e31
 assigned_to: ai
 created_by: t@t
 branch: feat/fix-401-on-api-project-environments-in-t
 created_at: "2026-11-18T04:17:45Z"
 updated_at: "2026-11-18T05:48:43Z"
+last_close_out_gate_ms: 560758
+last_close_out_gate_at: "2026-11-18T05:48:43.100Z"
 review_passes: 1
 ---
 ## Problem
