@@ -14,8 +14,11 @@ teleported fields.
 
 The Agents page's Skills dialog used a close button whose only content was the
 `×` glyph. That is not a useful spoken action name for screen-reader users. The
-button now has the explicit accessible name “Close dialog,” and
-`src/ui-app/tests/keyboard-a11y.test.ts` protects that markup from regression.
+button now has the explicit accessible name “Close dialog.” During the live
+keyboard walkthrough, Chrome's accessibility tree also exposed the skills-add
+controls on Agent cards as unnamed buttons: their `title` was not used as the
+accessible name. Each now has the agent-specific name “Add skills to <role>.”
+`src/ui-app/tests/keyboard-a11y.test.ts` protects both names from regression.
 
 ## Verification
 
@@ -26,11 +29,14 @@ screen states (15,292 visible text runs) and found no text below the WCAG floor.
 The configured UI smoke test passed as well, including its existing responsive
 checks at 1440, 390 and 320 pixels in light and dark modes.
 
-Live keyboard-only walkthroughs of Work, Settings, Releases and Agents were not
-completed. The browser-control host again reported that browser access was
-unavailable in the resumed session. Managed task-runner instructions prohibit
-starting a local server or creating a scratch worktree, so no auth-less dev
-server was driven. The automated contrast audit and smoke run passed, but they
-do not establish keyboard-only Tab order, Escape behavior or focus restoration
-on those four screens. Those interactions remain to be verified in a browser
-session.
+The auth-less app was opened at `127.0.0.1:7273` and traversed with keyboard
+input in Chrome. On Work, Tab reached the global actions, navigation links,
+board filters and task actions in a coherent order. Releases rendered its
+controls in the accessibility tree; the email Preview action expanded its
+inline preview and Escape left it expanded, as expected for a non-dialog
+disclosure. Settings rendered its section tabs and form controls. Agents
+rendered role controls and exposed the unnamed skills buttons, which were fixed
+above. The Skills dialog was not successfully opened in this browser pass, so
+its keyboard trap, Escape dismissal and focus restoration remain unverified.
+The automated contrast audit and smoke run passed, but they do not establish
+those interaction details on all four screens.
