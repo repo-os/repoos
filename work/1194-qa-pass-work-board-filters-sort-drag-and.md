@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-work-board-filters-sort-drag-and
 created_at: "2026-11-18T18:47:40Z"
-updated_at: "2026-11-18T18:54:40Z"
+updated_at: "2026-11-18T19:11:45Z"
 last_close_out_gate_ms: 78975
 last_close_out_gate_at: "2026-11-18T18:54:36.435Z"
 review_passes: 1
@@ -36,3 +36,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T18:52:23Z · note: review pass 1: good to go
 - 2026-11-18T18:54:36Z · close-out gate completed in 79s
 - 2026-11-18T18:54:40Z · status done→done, release:success
+- 2026-11-18T19:11:45Z · message_dropped: 1 queued message(s) discarded — task is done
