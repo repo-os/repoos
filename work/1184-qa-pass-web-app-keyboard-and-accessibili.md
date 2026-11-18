@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-web-app-keyboard-and-accessibili
 created_at: "2026-11-18T12:17:32Z"
-updated_at: "2026-11-18T17:39:12Z"
+updated_at: "2026-11-18T17:47:33Z"
 last_close_out_gate_ms: 106265
 last_close_out_gate_at: "2026-11-18T17:38:50.472Z"
 review_passes: 4
@@ -166,3 +166,4 @@ Do not touch repoos.toml.
 - 2026-11-18T17:36:18Z · note: review pass 5: good to go
 - 2026-11-18T17:38:50Z · close-out gate completed in 106s
 - 2026-11-18T17:39:12Z · status done→done, release:success
+- 2026-11-18T17:47:33Z · message_dropped: 1 queued message(s) discarded — task is done
