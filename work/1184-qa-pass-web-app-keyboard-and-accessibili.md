@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-web-app-keyboard-and-accessibili
 created_at: "2026-11-18T12:17:32Z"
-updated_at: "2026-11-18T17:35:39Z"
+updated_at: "2026-11-18T17:36:18Z"
 close_out_repair_count: 1
 review_passes: 3
 review_rounds: 1
@@ -160,3 +160,4 @@ Do not touch repoos.toml.
 - 2026-11-18T17:35:38Z · note: ui verification passed: 4 of 4 shots captured with clean console
 - 2026-11-18T17:35:39Z · status active→review
 - 2026-11-18T17:35:39Z · message_queued at 2026-11-18T17:35:39.454Z
+- 2026-11-18T17:36:18Z · note: review pass 5: good to go
