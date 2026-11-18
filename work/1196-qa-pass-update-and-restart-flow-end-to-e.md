@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-update-and-restart-flow-end-to-e
 created_at: "2026-11-18T19:23:55Z"
-updated_at: "2026-11-18T19:49:18Z"
+updated_at: "2026-11-18T19:49:49Z"
 last_close_out_gate_ms: 110609
 last_close_out_gate_at: "2026-11-18T19:49:18.985Z"
 review_passes: 1
@@ -38,4 +38,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T19:45:11Z · message_queued at 2026-11-18T19:45:11.783Z
 - 2026-11-18T19:45:54Z · note: review pass 1: good to go
 - 2026-11-18T19:49:18Z · close-out gate completed in 111s
-
+- 2026-11-18T19:49:49Z · status done→done, release:success
