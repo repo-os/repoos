@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-11-18T19:45:54Z"
-review_passes: 1
+last_close_out_gate_ms: 110609
+last_close_out_gate_at: "2026-11-18T19:49:18.985Z"
 id: "1196"
 title: "QA pass: update and restart flow end to end on service-managed and hand-run servers (follow-up to #1185)"
 type: bug
@@ -11,6 +11,8 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-update-and-restart-flow-end-to-e
 created_at: "2026-11-18T19:23:55Z"
+updated_at: "2026-11-18T19:49:18Z"
+review_passes: 1
 ---
 ## Problem
 #1185 fixed supervisor detection; the whole update, restart and reconnect flow still needs an end to end check using fixtures.
@@ -34,4 +36,5 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T19:45:11Z · status active→review
 - 2026-11-18T19:45:11Z · message_queued at 2026-11-18T19:45:11.783Z
 - 2026-11-18T19:45:54Z · note: review pass 1: good to go
+- 2026-11-18T19:49:18Z · close-out gate completed in 111s
 
