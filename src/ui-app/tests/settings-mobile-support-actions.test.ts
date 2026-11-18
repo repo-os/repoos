@@ -9,29 +9,31 @@ const css = readFileSync(resolve(__dirname, "../src/style.css"), "utf8").replace
   "",
 );
 
-describe.skipIf(!existsSync(webkit.executablePath()))("Settings Support actions at phone width", () => {
-  let browser: Browser | undefined;
-  let launchError: string | null = null;
+describe.skipIf(!existsSync(webkit.executablePath()))(
+  "Settings Support actions at phone width",
+  () => {
+    let browser: Browser | undefined;
+    let launchError: string | null = null;
 
-  beforeAll(async () => {
-    try {
-      browser = await webkit.launch();
-    } catch (error) {
-      launchError = error instanceof Error ? error.message : String(error);
-    }
-  });
+    beforeAll(async () => {
+      try {
+        browser = await webkit.launch();
+      } catch (error) {
+        launchError = error instanceof Error ? error.message : String(error);
+      }
+    });
 
-  afterAll(async () => {
-    await browser?.close();
-  });
+    afterAll(async () => {
+      await browser?.close();
+    });
 
-  it("wraps the long report action inside the padded card at 375px", async (ctx) => {
-    if (!browser) return ctx.skip(`WebKit could not launch: ${launchError ?? "unknown error"}`);
+    it("wraps the long report action inside the padded card at 375px", async (ctx) => {
+      if (!browser) return ctx.skip(`WebKit could not launch: ${launchError ?? "unknown error"}`);
 
-    const page = await browser.newPage({ viewport: { width: 375, height: 844 } });
-    try {
-      await page.setContent(
-        `<style>
+      const page = await browser.newPage({ viewport: { width: 375, height: 844 } });
+      try {
+        await page.setContent(
+          `<style>
           ${css}
           html, body { width: 100%; margin: 0; }
           .support-bug-report-section { width: 263px; padding: 18px; border: 1px solid; }
@@ -46,31 +48,32 @@ describe.skipIf(!existsSync(webkit.executablePath()))("Settings Support actions 
             <button>Write it manually</button>
           </div>
         </section>`,
-      );
+        );
 
-      const geometry = await page.evaluate(() => {
-        const actions = document.querySelector<HTMLElement>(".bug-report-actions")!;
-        const actionRect = actions.getBoundingClientRect();
-        const buttons = [...actions.querySelectorAll("button")].map((button) => {
-          const rect = button.getBoundingClientRect();
-          return { left: rect.left, right: rect.right, height: rect.height };
+        const geometry = await page.evaluate(() => {
+          const actions = document.querySelector<HTMLElement>(".bug-report-actions")!;
+          const actionRect = actions.getBoundingClientRect();
+          const buttons = [...actions.querySelectorAll("button")].map((button) => {
+            const rect = button.getBoundingClientRect();
+            return { left: rect.left, right: rect.right, height: rect.height };
+          });
+          return {
+            actionLeft: actionRect.left,
+            actionRight: actionRect.right,
+            buttons,
+            pageWidth: document.documentElement.scrollWidth,
+          };
         });
-        return {
-          actionLeft: actionRect.left,
-          actionRight: actionRect.right,
-          buttons,
-          pageWidth: document.documentElement.scrollWidth,
-        };
-      });
 
-      expect(geometry.pageWidth).toBeLessThanOrEqual(375);
-      for (const button of geometry.buttons) {
-        expect(button.left).toBeGreaterThanOrEqual(geometry.actionLeft);
-        expect(button.right).toBeLessThanOrEqual(geometry.actionRight);
+        expect(geometry.pageWidth).toBeLessThanOrEqual(375);
+        for (const button of geometry.buttons) {
+          expect(button.left).toBeGreaterThanOrEqual(geometry.actionLeft);
+          expect(button.right).toBeLessThanOrEqual(geometry.actionRight);
+        }
+        expect(geometry.buttons[0]?.height).toBeGreaterThan(34);
+      } finally {
+        await page.close();
       }
-      expect(geometry.buttons[0]?.height).toBeGreaterThan(34);
-    } finally {
-      await page.close();
-    }
-  });
-});
+    });
+  },
+);
