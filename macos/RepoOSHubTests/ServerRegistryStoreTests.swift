@@ -41,6 +41,31 @@ final class ServerRegistryStoreTests: XCTestCase {
         )
     }
 
+    func testApplicationSupportDirectoryResolutionTable() {
+        let realDirectory = ServerRegistryStore.applicationSupportDirectory(environment: [:]).path
+        let cases: [(name: String, environment: [String: String], expectation: (String) -> Bool)] = [
+          (
+            "explicit override wins under XCTest",
+            ["REPOOS_HUB_SUPPORT_DIRECTORY": "/tmp/override", "XCTestConfigurationFilePath": "/x"],
+            { $0 == "/tmp/override" }
+          ),
+          (
+            "XCTest host without override never uses the real registry",
+            ["XCTestConfigurationFilePath": "/x"],
+            { $0 != realDirectory && !$0.contains("Application Support") && $0.contains("RepoOS Hub-xctest-") }
+          ),
+          (
+            "normal launch keeps the user's Application Support registry",
+            [:],
+            { $0.hasSuffix("/RepoOS Hub") && $0.contains("Application Support") }
+          ),
+        ]
+        for testCase in cases {
+          let resolved = ServerRegistryStore.applicationSupportDirectory(environment: testCase.environment).path
+          XCTAssertTrue(testCase.expectation(resolved), "\(testCase.name): got \(resolved)")
+        }
+    }
+
     func testDuplicateOriginRejected() throws {
         let store = ServerRegistryStore(directoryURL: directoryURL)
         var document = ServerRegistryDocument()

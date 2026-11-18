@@ -114,6 +114,13 @@ extension ServerRegistryStore {
         if let override = environment["REPOOS_HUB_SUPPORT_DIRECTORY"], !override.isEmpty {
             return URL(fileURLWithPath: override, isDirectory: true)
         }
+        // `xcodebuild test` launches this app as the test host with no override, so
+        // without this branch every test run rewrote the user's real registry.
+        // Each test-host process gets its own scratch directory instead.
+        if environment["XCTestConfigurationFilePath"] != nil {
+            return FileManager.default.temporaryDirectory
+                .appendingPathComponent("\(appName)-xctest-\(ProcessInfo.processInfo.processIdentifier)", isDirectory: true)
+        }
         let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
         return base.appendingPathComponent(appName, isDirectory: true)
     }

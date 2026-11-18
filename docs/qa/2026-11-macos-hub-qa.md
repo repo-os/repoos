@@ -2,45 +2,85 @@
 
 Scope: build, launch, server discovery, connect, and first-run screens of the
 native Hub in `macos/`. Environment: macOS 27.2.1, Xcode 27.2 (27B52), Debug,
-`CODE_SIGNING_ALLOWED=NO`, DerivedData kept outside the repo, Hub registry
-isolated with `REPOOS_HUB_SUPPORT_DIRECTORY`.
+`CODE_SIGNING_ALLOWED=NO`, DerivedData kept outside the repo. The app run used
+`REPOOS_HUB_SUPPORT_DIRECTORY` pointing at a scratch directory; the unit-test
+run did **not** (see "Registry written by the test host" below).
 
 ## Checked
 
 | Step | Result |
 | --- | --- |
 | `xcodebuild … build` (RepoOSHub scheme, Debug, own derivedDataPath) | Pass — `BUILD SUCCEEDED` |
-| `xcodebuild … test` (RepoOSHub scheme, macOS destination) | Pass — 188 XCTest cases, 0 failures |
-| Launch built `RepoOS Hub.app` with an isolated support directory | Pass via `open -n --env …`. A direct exec of the binary from a shell produced a process with no visible window; this is a launch-path difference, not a crash, and was not chased further. |
-| Empty-state window (no servers) | Renders: sidebar with "No servers yet", "Add your first RepoOS server" pane. Window-only capture. |
-| Add server sheet, "Running locally" discovery | Pass — discovered `repoos` at `localhost:7171` from the `~/.repoos/servers` registry plus the live health probe. |
-| Add discovered server (health check + persist) | Pass — `servers.json` entry written with `lastHealth: healthy`, sidebar row shows. |
-| Connected server web view | Pass — renders the RepoOS sign-in page inside the isolated web view, with no blank screen. |
+| `xcodebuild … test`, first run (before the fix below) | Pass — 188 XCTest cases, 0 failures. This run also wrote the real Hub registry; see below. |
+| Launch built `RepoOS Hub.app` via `open -n --env REPOOS_HUB_SUPPORT_DIRECTORY=…` | Pass — one 1485×967 content window (CGWindow ID 9249). |
+| Launch by direct exec of the binary from a shell | A process started, but the first window check (about 6 s after launch) listed only menu-bar-sized windows (34 pt tall) for that PID and no content window. Not explained, not a crash, not investigated further. The `open` path is the one used for everything else. |
+| Empty-state window (no servers) | Renders: sidebar with "No servers yet", and the "Add your first RepoOS server" pane. Window-only capture, viewed and described here. |
+| Add server sheet, "Running locally" discovery | Pass — found `repoos` at `localhost:7171` from `~/.repoos/servers` plus the live health probe. The sheet lists that one server with a `+` add control. |
+| Add discovered server (health check + persist) | Pass — isolated `servers.json` entry written with `lastHealth: healthy`; sidebar row appears. |
+| Connected server web view | Pass — renders the RepoOS sign-in page in the isolated web view; no blank screen. |
 
-Screenshots were captured window-only with `screencapture -l<windowid>`; the
-full screen was never captured.
+All screenshots were captured window-only with `screencapture -l<windowid>`;
+the full screen was never captured. The PNGs are not committed: the
+pre-commit secret scan cannot read their compressed payloads (it fails
+closed above its 4 MiB expansion limit), so the findings above are the record.
+The captures stay outside the repo in the run's scratch directory.
+
+## Registry written by the test host (fixed)
+
+`xcodebuild test` launches the Hub as the test host (`TEST_HOST`). With no
+`REPOOS_HUB_SUPPORT_DIRECTORY` set, that process wrote Nick's real registry,
+`~/Library/Application Support/RepoOS Hub/servers.json`, at 02:22:55Z (UTC).
+What changed, as far as this run can tell:
+
+- A new recents entry: route `/` on the server `repoos` (`127.0.0.1:7171`,
+  ID `7B800A52-…`), `lastVisitedAt 2026-11-18T02:22:55Z`.
+- `lastSelectedServerID` now points at that server.
+- The eight saved server entries are intact, and their names, origins, and
+  pin state were not touched.
+
+The values `lastSelectedServerID` held before the run were not recorded, so
+they are not restored here. Nick should decide whether to remove that single
+recents entry and reselect a server by hand.
+
+**Fix:** `ServerRegistryStore.applicationSupportDirectory` now returns a
+per-process scratch directory when `XCTestConfigurationFilePath` is set, after
+the explicit override check. The table-driven test
+`testApplicationSupportDirectoryResolutionTable` covers three cases: an explicit
+override under XCTest, an XCTest host with no override, and a normal launch. The
+five `ServerRegistryStoreTests` cases pass. The real registry's modification time
+did not change across that run.
+
+The full unit suite was rerun after the fix: 189 cases pass, 0 fail (188 before,
+plus the new table test), and the real registry's modification time was
+unchanged across that run.
 
 ## Not verified
 
 - **Logged-in views (projects, tasks, drawers).** The sign-in page requires an
   email code. I entered the bootstrap admin email through synthetic clicks and
-  keystrokes, but the field did not accept input, so I could not reach the
-  logged-in UI in this run. A human (or a session with the dev-login code at
-  hand) needs to sign in and check the project and task screens.
-- **Discovery of a server not already running.** Only the live `localhost:7171`
-  server was exercised.
+  keystrokes, but the field did not accept input, so the logged-in UI was not
+  reached. AppleScript clicks did reach the native Add server sheet but not the
+  `WKWebView` email field. That is an automation limitation, not evidence of a
+  Hub input bug. A person needs to sign in and check the project and task
+  screens, or the check should be split into a held human task.
+- **Discovery of a server that is not already running.** Only the live
+  `localhost:7171` server was exercised.
 - **Settings, command palette, notifications, Dock badge, WebKit OAuth.** Not
   exercised.
 
 ## Fixed
 
-No crash, blank screen, or broken screen was found in the checked paths, so no
-source change was made in this pass. The unit suite is green.
+- **Test host wrote the real Hub registry.** Fixed as described above, with a
+  table-driven test.
+
+No crash, blank screen, or broken screen was found in the checked UI paths, so
+no UI source change was made.
 
 ## Follow-ups for a human
 
 - Sign in to the connected server and verify the projects and tasks screens
-  (the acceptance criterion "shows projects/tasks without errors"). This needs a
-  person at the keyboard, or a session that can drive the sign-in field.
-- Investigate the direct-binary launch showing no window (see the table) if it
-  matters for anyone launching the Hub outside LaunchServices.
+  (the acceptance criterion "shows projects/tasks without errors").
+- Decide what to do about the recents entry and selection written to the real
+  registry at 02:22:55Z (see above).
+- Look into the direct-exec launch that showed no content window, if anyone
+  launches the Hub outside LaunchServices.
