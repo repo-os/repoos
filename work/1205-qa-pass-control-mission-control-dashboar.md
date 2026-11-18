@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-control-mission-control-dashboar
 created_at: "2026-11-18T21:47:29Z"
-updated_at: "2026-11-18T23:08:55Z"
+updated_at: "2026-11-18T23:26:26Z"
 handoff_signal_retry_count: 1
 review_rounds: 1
 routing_switches: 1
@@ -83,3 +83,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T23:08:47Z · message_delivered: 1 message(s)
 - 2026-11-18T23:08:47Z · note: handoff requested (cli)
 - 2026-11-18T23:08:55Z · status active→review
+- 2026-11-18T23:26:26Z · handoff failed · task-file handoff failed at check · repoos check failed: check-fmt:check — Formatting failed — run `bun run fmt` to fix:
