@@ -2,14 +2,14 @@
 id: "1176"
 title: "QA pass: user-docs accuracy for Hub apps, Releases and remote runners vs current behavior"
 type: chore
-status: active
+status: review
 priority: p2
 area: docs
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-user-docs-accuracy-for-hub-apps-
 created_at: "2026-11-18T05:49:21Z"
-updated_at: "2026-11-18T05:49:29Z"
+updated_at: "2026-11-18T05:53:04Z"
 ---
 ## Problem
 Many Hub, Releases and runner changes landed in v0.5.90; user-docs may describe old behavior.
@@ -26,3 +26,4 @@ Docs only unless a doc reveals a real bug (then file a note in the QA record). D
 - 2026-11-18T05:49:21Z · created · t@t
 - 2026-11-18T05:49:26Z · status inbox→ready
 - 2026-11-18T05:49:29Z · status ready→active, branch
+- 2026-11-18T05:53:04Z · status active→review
