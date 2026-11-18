@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-web-app-desktop-agents-checks-se
 created_at: "2026-11-18T03:57:22Z"
-updated_at: "2026-11-18T06:17:28Z"
+updated_at: "2026-11-18T06:17:33Z"
 last_close_out_gate_ms: 994540
 last_close_out_gate_at: "2026-11-18T06:17:28.315Z"
 review_passes: 2
@@ -76,4 +76,4 @@ Do not touch repoos.toml.
 - 2026-11-18T05:53:19Z · message_queued at 2026-11-18T05:53:19.138Z
 - 2026-11-18T05:53:46Z · note: review pass 2: good to go
 - 2026-11-18T06:17:28Z · close-out gate completed in 995s
-
+- 2026-11-18T06:17:33Z · message_dropped: 1 queued message(s) discarded — task is done
