@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/restart-now-button-does-nothing-on-a-sys
 created_at: "2026-11-18T12:27:18Z"
-updated_at: "2026-11-18T19:23:15Z"
+updated_at: "2026-11-18T19:23:39Z"
 last_close_out_gate_ms: 261063
 last_close_out_gate_at: "2026-11-18T19:23:15.588Z"
 review_passes: 8
@@ -191,4 +191,4 @@ Reported by Nick 2026-11-18 20:22 from the phone UI. Related #1154. Do not touch
 - 2026-11-18T19:17:33Z · needs_input (review-human-attention) cleared for review again by human
 - 2026-11-18T19:18:29Z · note: review pass 8: good to go
 - 2026-11-18T19:23:15Z · close-out gate completed in 261s
-
+- 2026-11-18T19:23:39Z · status done→done, release:success
