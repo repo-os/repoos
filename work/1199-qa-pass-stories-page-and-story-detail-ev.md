@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-stories-page-and-story-detail-ev
 created_at: "2026-11-18T19:47:44Z"
-updated_at: "2026-11-18T19:54:19Z"
+updated_at: "2026-11-18T19:54:20Z"
 ---
 ## Problem
 Stories cards and detail views changed recently (#1150) and need a full pass.
@@ -29,3 +29,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T19:49:51Z · note: adopted orphaned engineer pid 1671
 - 2026-11-18T19:52:43Z · CTO nudge: held — handoff gate is running
 - 2026-11-18T19:54:19Z · status active→review
+- 2026-11-18T19:54:20Z · message_queued at 2026-11-18T19:54:20.577Z
