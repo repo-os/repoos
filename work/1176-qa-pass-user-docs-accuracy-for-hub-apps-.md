@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-user-docs-accuracy-for-hub-apps-
 created_at: "2026-11-18T05:49:21Z"
-updated_at: "2026-11-18T05:53:04Z"
+updated_at: "2026-11-18T05:53:05Z"
 ---
 ## Problem
 Many Hub, Releases and runner changes landed in v0.5.90; user-docs may describe old behavior.
@@ -28,3 +28,4 @@ Docs only unless a doc reveals a real bug (then file a note in the QA record). D
 - 2026-11-18T05:49:29Z · status ready→active, branch
 - 2026-11-18T05:52:12Z · CTO nudge: held — handoff gate is running
 - 2026-11-18T05:53:04Z · status active→review
+- 2026-11-18T05:53:05Z · message_queued at 2026-11-18T05:53:05.010Z
