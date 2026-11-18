@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-18T18:09:29Z"
+review_passes: 4
 id: "1189"
 title: "QA pass: task creation and editing flows (new task, update, attach screenshot, dependencies)"
 type: bug
@@ -9,9 +11,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-task-creation-and-editing-flows-
 created_at: "2026-11-18T16:17:39Z"
-updated_at: "2026-11-18T18:09:29Z"
 last_check_failure: "repoos check at 2026-11-18T18:01:10.518Z: repoos check failed: reused check inputs changed during handoff — run the check again"
-review_passes: 3
 review_rounds: 1
 routing_switches: 1
 handoff_signal_retry_count: 2
@@ -121,3 +121,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T18:08:29Z · status active→review
 - 2026-11-18T18:08:30Z · message_queued at 2026-11-18T18:08:30.545Z
 - 2026-11-18T18:09:29Z · note: review pass 4: needs some work
+
