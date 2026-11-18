@@ -118,3 +118,4 @@ Reported by Nick 2026-11-18 20:22 from the phone UI. Related #1154. Do not touch
 - 2026-11-18T14:49:07Z · body
 - 2026-11-18T14:50:39Z · body
 - 2026-11-18T14:52:47Z · queued message undelivered for 5m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-18T14:52:47Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code unknown) · last assistant: The required check has started and RepoOS checkpointed the changed source for its remote validation. One task metadata wrinkle: `repoos update --shots` reports success on the canonical board, while this worktree’s task markdown remains the… · stderr: Reading additional input from stdin...
