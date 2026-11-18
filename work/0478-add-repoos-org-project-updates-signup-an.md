@@ -12,7 +12,7 @@ branch: feat/add-repoos-org-project-updates-signup-an
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-09-21T12:08:58Z"
-updated_at: "2026-11-18T03:08:12Z"
+updated_at: "2026-11-18T03:57:36Z"
 review_passes: 2
 review_rounds: 1
 ---
@@ -86,3 +86,4 @@ Run after #0477 (Build Neon Functions double-opt-in updates service).
 - 2026-11-18T02:05:39Z · message_queued at 2026-11-18T02:05:39.318Z
 - 2026-11-18T02:08:32Z · note: review pass 2: good to go
 - 2026-11-18T03:08:12Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-18T03:57:36Z · message_overdue: still queued after 60m without being delivered
