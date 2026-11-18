@@ -146,6 +146,7 @@ function badgeLabel(): string | null {
             size="sm"
             class="agent-skills-add"
             title="Add skills to agent"
+            :aria-label="`Add skills to ${agent.name}`"
             @click="emit('open-skills')"
           >
             <Plus class="size-3.5" aria-hidden="true" />

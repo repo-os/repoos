@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-18T17:36:18Z"
-review_passes: 4
 id: "1184"
 title: "QA pass: web app keyboard and accessibility – focus order, labels, dialogs, contrast"
 type: bug
@@ -11,7 +9,9 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-web-app-keyboard-and-accessibili
 created_at: "2026-11-18T12:17:32Z"
+updated_at: "2026-11-18T17:35:39Z"
 close_out_repair_count: 1
+review_passes: 3
 review_rounds: 1
 routing_switches: 1
 routing_escalations: 1
@@ -146,19 +146,4 @@ Do not touch repoos.toml.
 - 2026-11-18T16:34:33Z · note: close-out repair: gate-failure
 - 2026-11-18T16:34:33Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-18T16:34:33Z · message_delivered: 2 message(s)
-- 2026-11-18T16:52:57Z · body
-- 2026-11-18T16:57:02Z · CTO nudge: held — handoff gate is running
-- 2026-11-18T17:02:28Z · CTO nudge: held — handoff gate is running
-- 2026-11-18T17:11:25Z · note: ui verification passed: 4 of 4 shots captured with clean console
-- 2026-11-18T17:11:25Z · message_queued at 2026-11-18T17:11:25.943Z
-- 2026-11-18T17:11:26Z · handoff failed · handoff recovery attempted · finalization failed
-- 2026-11-18T17:12:28Z · CTO nudge: held — an undelivered message is already queued
-- 2026-11-18T17:14:29Z · watchdog: restarting engineer because a queued message waited 3m with no live process
-- 2026-11-18T17:14:30Z · message_delivered: 1 message(s)
-- 2026-11-18T17:20:08Z · body
-- 2026-11-18T17:22:28Z · CTO nudge: held — handoff gate is running
-- 2026-11-18T17:35:38Z · note: ui verification passed: 4 of 4 shots captured with clean console
 - 2026-11-18T17:35:39Z · status active→review
-- 2026-11-18T17:35:39Z · message_queued at 2026-11-18T17:35:39.454Z
-- 2026-11-18T17:36:18Z · note: review pass 5: good to go
-
