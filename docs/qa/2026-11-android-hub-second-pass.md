@@ -14,11 +14,13 @@ The fixture matrix passed at both widths: `many`, `one`, `empty`, `unreachable`,
 
 At both widths, ensuring Device lock was enabled revealed its scope selector and the settings screen remained within the viewport. The check reads `aria-checked` and only toggles if needed, so it handles the saved setting without flipping it off on a later width. The browser environment reports a supported native biometric plugin interface, so the unsupported-device warning does not appear there. That absence is expected for this fixture environment and is not evidence that device authentication works.
 
+The lock screen is exercised with the browser-only `?fixture=lock&auth=failure` state. The overlay and lock card stayed within bounds at 360px and 412px. Pressing **Try again** with the failure result kept the overlay open; switching the fixture response to success and retrying closed it at both widths. This verifies the Hub overlay state transitions in Chromium. It does not validate the Android biometric prompt itself.
+
 The edit-server bottom sheet was opened from the server-list fixture with a deliberately long path URL. Its URL hint wrapped with zero measured horizontal overflow at 360px and 412px, and the sheet remained within the viewport. The add-server flow was submitted with `http://insecure.example.test`; the HTTPS validation error fit its text box and the form remained in bounds at both widths.
 
 The offline/failure fixture (`unreachable`) rendered in bounds at both widths. The discovery fixture's expanded failure row was checked with a 120-character unbroken reason. A long discovery message and warning were inserted using their real CSS classes, and the dev-update dialog was represented with its real shell classes and an unbroken commit note. All four text containers wrapped without measured overflow. The 85-character picker name and long URL case also remained in bounds.
 
-The final sweep reported 47 checks, all passing. The separate long-path and no-breakpoint URL checks passed, including the 360px and 412px edit-sheet runs. `bun run build` passed the mobile typecheck and production Vite build. `REPOOS_CHECK_CHANGED=main repoos check` also passed its remote scoped build and tests, formatting and lint, branch-artifact guard, and UI smoke test.
+The final sweep reported 55 checks, all passing. The separate long-path and no-breakpoint URL checks passed, including the 360px and 412px edit-sheet runs. `bun run build` passed the mobile typecheck and production Vite build. `REPOOS_CHECK_CHANGED=main repoos check` also passed its remote scoped build and tests, formatting and lint, branch-artifact guard, and UI smoke test.
 
 ## Findings and changes
 

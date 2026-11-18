@@ -109,7 +109,7 @@ async function run() {
       );
     }
 
-    // Enabling the lock reveals the scope selector and the browser's unsupported-device note.
+    // Enabling the lock reveals its scope selector.
     await page.goto(`${BASE}/?fixture=settings&platform=android`);
     const lockToggle = page.getByTestId("hub-lock-toggle");
     if ((await lockToggle.getAttribute("aria-checked")) !== "true") await lockToggle.click();
@@ -122,6 +122,32 @@ async function run() {
       `${viewport.width}px settings lock controls visible`,
       lockDetails.scope,
       `scope selector ${lockDetails.scope ? "present" : "missing"}`,
+    );
+
+    // Exercise a rejected authentication, retry, and successful unlock.
+    await page.goto(`${BASE}/?fixture=lock&auth=failure&platform=android`);
+    const lockOverlay = page.locator(".lock-overlay");
+    await lockOverlay.waitFor({ state: "visible" });
+    await checkNoPastViewport(page, `${viewport.width}px failed lock screen: in bounds`);
+    await checkFits(page, `${viewport.width}px failed lock card content fits`, ".lock-card");
+    await page.getByRole("button", { name: "Try again" }).click();
+    await lockOverlay.waitFor({ state: "visible" });
+    record(
+      `${viewport.width}px rejected lock attempt stays locked`,
+      await lockOverlay.isVisible(),
+      "overlay remains visible after failed authentication",
+    );
+    await page.evaluate(() => {
+      const url = new URL(window.location.href);
+      url.searchParams.set("auth", "success");
+      window.history.replaceState({}, "", url);
+    });
+    await page.getByRole("button", { name: "Try again" }).click();
+    await lockOverlay.waitFor({ state: "hidden" });
+    record(
+      `${viewport.width}px successful lock retry unlocks`,
+      !(await lockOverlay.isVisible()),
+      "overlay closes after successful authentication",
     );
   }
 
