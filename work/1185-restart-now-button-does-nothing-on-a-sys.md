@@ -173,3 +173,4 @@ Reported by Nick 2026-11-18 20:22 from the phone UI. Related #1154. Do not touch
 - 2026-11-18T18:34:14Z · CTO nudge: held — handoff gate is running
 - 2026-11-18T18:45:18Z · note: ui verification passed: 2 of 2 shots captured with clean console
 - 2026-11-18T18:45:19Z · status active→review
+- 2026-11-18T18:45:19Z · message_queued at 2026-11-18T18:45:19.470Z
