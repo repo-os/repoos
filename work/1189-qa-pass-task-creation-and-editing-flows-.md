@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-task-creation-and-editing-flows-
 created_at: "2026-11-18T16:17:39Z"
-updated_at: "2026-11-18T17:17:28Z"
+updated_at: "2026-11-18T17:18:08Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -35,14 +35,14 @@ Do not touch repoos.toml. Never open a visible browser window.
 "highlight": ".task-dependency-picker",
 "steps": [
 {
-  "click": "button.new-btn"
+"click": "button.new-btn"
 },
 {
-  "click": "[role=dialog] .drawer-tabs button:nth-child(2)"
+"click": "[role=dialog] .drawer-tabs button:nth-child(2)"
 },
 {
-  "fill": "#nt-dependencies",
-  "text": "QA pass"
+"fill": "#nt-dependencies",
+"text": "QA pass"
 }
 ]
 },
@@ -53,7 +53,7 @@ Do not touch repoos.toml. Never open a visible browser window.
 "highlight": ".task-dependency-picker",
 "steps": [
 {
-  "click": "[role=dialog] .drawer-tabs button:first-child"
+"click": "[role=dialog] .drawer-tabs button:first-child"
 }
 ]
 }
@@ -88,3 +88,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T17:07:54Z · body
 - 2026-11-18T17:17:28Z · message_queued at 2026-11-18T17:17:28.202Z
 - 2026-11-18T17:17:28Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-18T17:18:08Z · CTO nudge: held — an undelivered message is already queued
