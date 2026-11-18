@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-18T17:32:13Z"
-review_passes: 2
 id: "1189"
 title: "QA pass: task creation and editing flows (new task, update, attach screenshot, dependencies)"
 type: bug
@@ -11,6 +9,8 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-task-creation-and-editing-flows-
 created_at: "2026-11-18T16:17:39Z"
+updated_at: "2026-11-18T17:34:06Z"
+review_passes: 2
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: gate exit 1 on bee — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: 68ba09e1c0b8603f3e4bcef797bde8383f2576bf
 review_rounds: 1
@@ -102,4 +102,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T17:32:12Z · message_queued at 2026-11-18T17:32:12.387Z
 - 2026-11-18T17:32:12Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: gate exit 1 on bee — fix it in the feature branch and re-run the gate
 - 2026-11-18T17:32:13Z · note: review pass 2: needs some work
-
+- 2026-11-18T17:34:06Z · note: ui verification passed: 2 of 2 shots captured with clean console
