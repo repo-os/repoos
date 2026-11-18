@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-11-18T18:26:07Z"
-review_passes: 1
+last_close_out_gate_ms: 67308
+last_close_out_gate_at: "2026-11-18T18:27:19.017Z"
 id: "1193"
 title: "QA pass: macOS Hub app second pass – menu bar, Cmd-K search, server add/edit and relaunch"
 type: bug
@@ -11,6 +11,8 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-macos-hub-app-second-pass-menu-b
 created_at: "2026-11-18T18:17:35Z"
+updated_at: "2026-11-18T18:27:19Z"
+review_passes: 1
 ---
 ## Problem
 #1169 covered build, launch and first-run; the menu bar, Cmd-K search and add/edit/relaunch flows need another pass.
@@ -31,4 +33,5 @@ Do not touch repoos.toml. Signed-in project/task views are tracked in #1174 (hum
 - 2026-11-18T18:25:47Z · message_queued at 2026-11-18T18:25:47.241Z
 - 2026-11-18T18:25:47Z · note: shots: skipped — the diff (3 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-18T18:26:07Z · note: review pass 1: good to go
+- 2026-11-18T18:27:19Z · close-out gate completed in 67s
 
