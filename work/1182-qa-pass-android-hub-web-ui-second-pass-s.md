@@ -42,3 +42,4 @@ Do not touch repoos.toml.
 - 2026-11-18T09:38:47Z · body
 - 2026-11-18T09:39:51Z · CTO nudge: held — handoff gate is running
 - 2026-11-18T09:54:21Z · status active→review
+- 2026-11-18T09:54:21Z · message_queued at 2026-11-18T09:54:21.894Z
