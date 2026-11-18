@@ -7,6 +7,7 @@ enum ServerRegistryStoreError: Error, Equatable {
 }
 
 final class ServerRegistryStore: @unchecked Sendable {
+    private static let xctestSupportDirectoryName = "RepoOS Hub-xctest-\(UUID().uuidString)"
     private let fileURL: URL
     private let encoder: JSONEncoder
     private let decoder: JSONDecoder
@@ -107,6 +108,15 @@ final class ServerRegistryStore: @unchecked Sendable {
 }
 
 extension ServerRegistryStore {
+    static func removeXCTestSupportDirectory(
+        environment: [String: String] = ProcessInfo.processInfo.environment
+    ) {
+        guard environment["XCTestConfigurationFilePath"] != nil else { return }
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent(xctestSupportDirectoryName, isDirectory: true)
+        try? FileManager.default.removeItem(at: directory)
+    }
+
     static func applicationSupportDirectory(
         appName: String = "RepoOS Hub",
         environment: [String: String] = ProcessInfo.processInfo.environment
@@ -119,7 +129,7 @@ extension ServerRegistryStore {
         // Each test-host process gets its own scratch directory instead.
         if environment["XCTestConfigurationFilePath"] != nil {
             return FileManager.default.temporaryDirectory
-                .appendingPathComponent("\(appName)-xctest-\(ProcessInfo.processInfo.processIdentifier)", isDirectory: true)
+                .appendingPathComponent(xctestSupportDirectoryName, isDirectory: true)
         }
         let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
         return base.appendingPathComponent(appName, isDirectory: true)

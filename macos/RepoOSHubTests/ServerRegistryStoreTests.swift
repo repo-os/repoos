@@ -66,6 +66,18 @@ final class ServerRegistryStoreTests: XCTestCase {
         }
     }
 
+    func testRemovesXCTestSupportDirectory() throws {
+        let supportPath = ServerRegistryStore.applicationSupportDirectory(
+            environment: ["XCTestConfigurationFilePath": "/x"]
+        ).path
+        let directory = URL(fileURLWithPath: supportPath, isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+
+        ServerRegistryStore.removeXCTestSupportDirectory(environment: ["XCTestConfigurationFilePath": "/x"])
+
+        XCTAssertFalse(FileManager.default.fileExists(atPath: directory.path))
+    }
+
     func testDuplicateOriginRejected() throws {
         let store = ServerRegistryStore(directoryURL: directoryURL)
         var document = ServerRegistryDocument()

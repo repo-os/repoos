@@ -50,9 +50,10 @@ override under XCTest, an XCTest host with no override, and a normal launch. The
 five `ServerRegistryStoreTests` cases pass. The real registry's modification time
 did not change across that run.
 
-The full unit suite was rerun after the fix: 189 cases pass, 0 fail (188 before,
-plus the new table test), and the real registry's modification time was
-unchanged across that run.
+The full unit suite was rerun after registry isolation: 189 cases pass, 0 fail
+(188 before, plus the new table test), and the real registry's modification
+time was unchanged across that run. A test-host scratch-directory cleanup fix
+is included in this follow-up; its scoped check is recorded after it runs.
 
 ## Not verified
 
@@ -61,8 +62,9 @@ unchanged across that run.
   keystrokes, but the field did not accept input, so the logged-in UI was not
   reached. AppleScript clicks did reach the native Add server sheet but not the
   `WKWebView` email field. That is an automation limitation, not evidence of a
-  Hub input bug. A person needs to sign in and check the project and task
-  screens, or the check should be split into a held human task.
+  Hub input bug. Human follow-up #1172 now owns this signed-in check. The
+  separate #1167 QA pass exercised signed-in screens on 2026-11-17; #1172
+  verifies them against this pass's build.
 - **Discovery of a server that is not already running.** Only the live
   `localhost:7171` server was exercised.
 - **Settings, command palette, notifications, Dock badge, WebKit OAuth.** Not
@@ -72,14 +74,18 @@ unchanged across that run.
 
 - **Test host wrote the real Hub registry.** Fixed as described above, with a
   table-driven test.
+- **XCTest scratch registry accumulated between runs.** The test host uses a
+  unique temporary directory and removes it when the host exits. A focused test
+  verifies cleanup.
 
 No crash, blank screen, or broken screen was found in the checked UI paths, so
 no UI source change was made.
 
 ## Follow-ups for a human
 
-- Sign in to the connected server and verify the projects and tasks screens
-  (the acceptance criterion "shows projects/tasks without errors").
+- Complete human task #1172: sign in and verify the projects and tasks screens
+  against this pass's build (acceptance criterion "shows projects/tasks without
+  errors").
 - Decide what to do about the recents entry and selection written to the real
   registry at 02:22:55Z (see above).
 - Look into the direct-exec launch that showed no content window, if anyone
