@@ -2,14 +2,14 @@
 id: "1179"
 title: "QA pass: Settings and Agents pages – every control saves, validates and survives reload"
 type: bug
-status: ready
+status: active
 priority: p2
 area: [web, server]
 assigned_to: ai
 created_by: t@t
-branch: ""
+branch: feat/qa-pass-settings-and-agents-pages-every-
 created_at: "2026-11-18T06:47:46Z"
-updated_at: "2026-11-18T06:48:02Z"
+updated_at: "2026-11-18T06:48:09Z"
 ---
 ## Problem
 Settings and Agents pages have many controls added over time; some may not save or validate.
@@ -25,3 +25,4 @@ Do not touch repoos.toml.
 
 - 2026-11-18T06:47:46Z · created · t@t
 - 2026-11-18T06:48:02Z · status inbox→ready
+- 2026-11-18T06:48:09Z · status ready→active, branch
