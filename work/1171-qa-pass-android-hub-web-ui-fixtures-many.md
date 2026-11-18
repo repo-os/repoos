@@ -12,7 +12,7 @@ branch: feat/qa-pass-android-hub-web-ui-fixtures-many
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-18T02:19:54Z"
-updated_at: "2026-11-18T03:57:09Z"
+updated_at: "2026-11-18T03:57:36Z"
 last_close_out_gate_ms: 127044
 last_close_out_gate_at: "2026-11-18T03:56:15.464Z"
 review_passes: 3
@@ -59,3 +59,4 @@ Do not touch repoos.toml.
 - 2026-11-18T03:26:07Z · note: review pass 3: good to go
 - 2026-11-18T03:56:15Z · close-out gate completed in 127s
 - 2026-11-18T03:57:09Z · status done→done, release:success
+- 2026-11-18T03:57:36Z · message_dropped: 1 queued message(s) discarded — task is done
