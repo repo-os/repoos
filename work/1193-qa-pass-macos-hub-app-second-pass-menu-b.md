@@ -28,3 +28,4 @@ Do not touch repoos.toml. Signed-in project/task views are tracked in #1174 (hum
 - 2026-11-18T18:17:40Z · status ready→active, branch
 - 2026-11-18T18:25:47Z · status active→review
 - 2026-11-18T18:25:47Z · message_queued at 2026-11-18T18:25:47.241Z
+- 2026-11-18T18:25:47Z · note: shots: skipped — the diff (3 changed paths) touches no capture target's globs — no UI change to capture
