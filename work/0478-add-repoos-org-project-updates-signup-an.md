@@ -12,9 +12,7 @@ branch: feat/add-repoos-org-project-updates-signup-an
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-09-21T12:08:58Z"
-updated_at: "2026-11-18T03:57:36Z"
-review_passes: 2
-review_rounds: 1
+updated_at: "2026-11-18T01:49:43Z"
 ---
 ## Problem
 
@@ -42,24 +40,6 @@ Do not implement the service or recreate subscription state in the browser. Keep
 
 Run after #0477 (Build Neon Functions double-opt-in updates service).
 
-## Shots
-```json
-[
-{
-"label": "Project updates signup by the closing call to action",
-"target": "Landing page",
-"route": "/",
-"highlight": "#project-updates"
-},
-{
-"label": "Expired confirmation with a path back to signup",
-"target": "Landing page",
-"route": "/?updates=expired",
-"highlight": "#project-updates"
-}
-]
-```
-
 ## Activity
 
 - 2026-09-21T12:08:58Z · created · unknown
@@ -67,23 +47,4 @@ Run after #0477 (Build Neon Functions double-opt-in updates service).
 - 2026-11-18T01:17:46Z · cli_override, model_override
 - 2026-11-18T01:17:54Z · status inbox→ready
 - 2026-11-18T01:17:59Z · status ready→active, branch
-- 2026-11-18T01:24:00Z · body
-- 2026-11-18T01:27:54Z · body
-- 2026-11-18T01:33:23Z · body
-- 2026-11-18T01:35:06Z · body
-- 2026-11-18T01:38:30Z · CTO nudge: held — handoff gate is running
-- 2026-11-18T01:49:40Z · note: ui verification passed: 1 of 1 shot captured with clean console
 - 2026-11-18T01:49:43Z · status active→review
-- 2026-11-18T01:49:43Z · message_queued at 2026-11-18T01:49:43.512Z
-- 2026-11-18T01:53:04Z · note: review pass 1: needs some work
-- 2026-11-18T01:53:04Z · message_delivered: 1 message(s)
-- 2026-11-18T01:53:04Z · status review→active
-- 2026-11-18T01:58:06Z · body
-- 2026-11-18T02:00:42Z · body
-- 2026-11-18T02:03:30Z · CTO nudge: held — handoff gate is running
-- 2026-11-18T02:05:37Z · note: ui verification passed: 2 of 2 shots captured with clean console
-- 2026-11-18T02:05:39Z · status active→review
-- 2026-11-18T02:05:39Z · message_queued at 2026-11-18T02:05:39.318Z
-- 2026-11-18T02:08:32Z · note: review pass 2: good to go
-- 2026-11-18T03:08:12Z · message_overdue: still queued after 60m without being delivered
-- 2026-11-18T03:57:36Z · message_overdue: still queued after 60m without being delivered
