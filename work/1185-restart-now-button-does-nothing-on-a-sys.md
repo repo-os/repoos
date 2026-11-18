@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/restart-now-button-does-nothing-on-a-sys
 created_at: "2026-11-18T12:27:18Z"
-updated_at: "2026-11-18T14:30:23Z"
+updated_at: "2026-11-18T14:30:25Z"
 review_rounds: 2
 routing_switches: 1
 routing_escalations: 1
@@ -74,3 +74,4 @@ Reported by Nick 2026-11-18 20:22 from the phone UI. Related #1154. Do not touch
 - 2026-11-18T14:30:22Z · note: shots: failed — browser capture cancelled
 - 2026-11-18T14:30:22Z · message_delivered: 1 message(s)
 - 2026-11-18T14:30:23Z · status review→active
+- 2026-11-18T14:30:25Z · message_queued at 2026-11-18T14:30:25.691Z
