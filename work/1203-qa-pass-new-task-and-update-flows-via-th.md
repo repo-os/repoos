@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-18T21:55:59Z"
-review_passes: 2
 id: "1203"
 title: "QA pass: new-task and update flows via the CLI and UI agree – body sections, validation messages and needs-input handling"
 type: bug
@@ -11,6 +9,8 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-new-task-and-update-flows-via-th
 created_at: "2026-11-18T20:47:36Z"
+updated_at: "2026-11-18T21:56:00Z"
+review_passes: 2
 last_check_failure: "repoos check at 2026-11-18T21:29:29.351Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 1
 routing_switches: 1
@@ -74,4 +74,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T21:55:17Z · status active→review
 - 2026-11-18T21:55:59Z · note: ui verification passed: 1 of 1 shot captured with clean console
 - 2026-11-18T21:55:59Z · note: review pass 2: good to go
-
+- 2026-11-18T21:56:00Z · handoff failed · task-file handoff failed at review · could not commit finalized engineering report: On branch feat/qa-pass-new-task-and-update-flows-via-th · nothing to commit, working tree clean
