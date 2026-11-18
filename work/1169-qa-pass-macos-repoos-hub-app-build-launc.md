@@ -245,3 +245,4 @@ Signed-in projects and tasks remain unverified because automated email-code entr
 - 2026-11-18T10:07:55Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code unknown) · last assistant: The remote full suite is running on `84300cf`; the test cases reported so far are passing. The report draft remains in place for the handoff. · stderr: (empty)
 - 2026-11-18T10:07:55Z · status active→review
 - 2026-11-18T10:07:55Z · message_delivered: 1 message(s)
+- 2026-11-18T10:07:56Z · note: handoff requested (cli)
