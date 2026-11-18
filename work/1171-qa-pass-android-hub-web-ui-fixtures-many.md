@@ -8,8 +8,10 @@ area: mobile
 assigned_to: ai
 created_by: t@t
 branch: ""
+cli_override: claude code
+model_override: haiku
 created_at: "2026-11-18T02:19:54Z"
-updated_at: "2026-11-18T02:20:59Z"
+updated_at: "2026-11-18T02:21:12Z"
 ---
 ## Problem
 The Android Hub Vite UI needs a fixture-driven QA sweep before device QA (#1162).
@@ -26,3 +28,4 @@ Do not touch repoos.toml.
 
 - 2026-11-18T02:19:54Z · created · t@t
 - 2026-11-18T02:20:59Z · status inbox→ready
+- 2026-11-18T02:21:12Z · cli_override, model_override
