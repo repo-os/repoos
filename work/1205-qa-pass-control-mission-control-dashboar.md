@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-control-mission-control-dashboar
 created_at: "2026-11-18T21:47:29Z"
-updated_at: "2026-11-18T22:01:34Z"
+updated_at: "2026-11-18T22:05:14Z"
 ---
 ## Problem
 The Control dashboard shows usage, costs and activity and has not had a recent pass.
@@ -41,3 +41,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T21:53:46Z · body
 - 2026-11-18T21:57:35Z · body
 - 2026-11-18T22:01:34Z · body
+- 2026-11-18T22:05:14Z · CTO nudge: held — handoff gate is running
