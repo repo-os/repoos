@@ -1,5 +1,4 @@
 ---
-last_check_failure: "repoos check at 2026-11-18T15:42:06.935Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 id: "1187"
 title: "Agents must never open a visible browser or steal focus: add rule + guard for QA/preview runs"
 type: chore
@@ -10,7 +9,8 @@ assigned_to: ai
 created_by: t@t
 branch: feat/agents-must-never-open-a-visible-browser
 created_at: "2026-11-18T14:08:00Z"
-updated_at: "2026-11-18T15:42:06Z"
+updated_at: "2026-11-18T15:56:00Z"
+last_check_failure: "repoos check at 2026-11-18T15:42:06.935Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 ---
 ## Problem
 Nick reports QA engineers' preview servers (e.g. http://127.0.0.1:7273/agents from #1184's 'just serve-noauth') pop open in his real Chrome and take focus from his laptop. Nothing in serve/justfile opens a browser, so the engineer (codex luna) did it via open/xdg-open, a headed browser, or system Chrome.
@@ -40,5 +40,4 @@ Do not touch repoos.toml (the live engineer instructions there are Nick's to edi
 - 2026-11-18T15:42:03Z · message_queued at 2026-11-18T15:42:03.801Z
 - 2026-11-18T15:42:03Z · handoff failed · handoff recovery attempted · finalization failed
 - 2026-11-18T15:42:06Z · message_delivered: 1 message(s)
-
-
+- 2026-11-18T15:56:00Z · body
