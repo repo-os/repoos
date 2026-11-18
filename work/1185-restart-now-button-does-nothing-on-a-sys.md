@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/restart-now-button-does-nothing-on-a-sys
 created_at: "2026-11-18T12:27:18Z"
-updated_at: "2026-11-18T18:34:14Z"
+updated_at: "2026-11-18T18:45:18Z"
 review_passes: 5
 close_out_repair_count: 1
 last_check_failure: "repoos check at 2026-11-18T14:30:25.814Z: repoos check failed: reused check inputs changed during handoff — run the check again"
@@ -171,3 +171,4 @@ Reported by Nick 2026-11-18 20:22 from the phone UI. Related #1154. Do not touch
 - 2026-11-18T18:15:48Z · message_delivered: 1 message(s)
 - 2026-11-18T18:31:19Z · body
 - 2026-11-18T18:34:14Z · CTO nudge: held — handoff gate is running
+- 2026-11-18T18:45:18Z · note: ui verification passed: 2 of 2 shots captured with clean console
