@@ -29,7 +29,16 @@ const LANDSCAPE_VIEWPORTS = [
 ];
 const VIEWPORTS = [...PORTRAIT_VIEWPORTS, ...LANDSCAPE_VIEWPORTS];
 const FIXTURES = ["many", "one", "empty", "unreachable", "settings", "add", "discover"];
-const THEMES = ["classic", "clear", "gen z", "jelly", "gruvbox", "catppuccin", "solarized", "hypercolor"];
+const THEMES = [
+  "classic",
+  "clear",
+  "gen z",
+  "jelly",
+  "gruvbox",
+  "catppuccin",
+  "solarized",
+  "hypercolor",
+];
 const APPEARANCES = ["light", "dark", "system"];
 const LONG_PATH_URL =
   "https://celleris-long-hostname.internal-tailnet.example.ts.net:8443/repoos/very/long/path/segments/that/keep/going/and/going/and/going";
@@ -112,7 +121,10 @@ async function run() {
       errors.length = 0;
       await page.goto(`${BASE}/?fixture=${fx}&platform=android`);
       await page.waitForTimeout(700);
-      await checkNoPastViewport(page, `${viewport.width}x${viewport.height} ${orientation} fixture ${fx}: in bounds`);
+      await checkNoPastViewport(
+        page,
+        `${viewport.width}x${viewport.height} ${orientation} fixture ${fx}: in bounds`,
+      );
       record(
         `${viewport.width}x${viewport.height} ${orientation} fixture ${fx}: no console errors`,
         errors.length === 0,
@@ -125,7 +137,10 @@ async function run() {
     const lockToggle = page.getByTestId("hub-lock-toggle");
     if ((await lockToggle.getAttribute("aria-checked")) !== "true") await lockToggle.click();
     await page.getByTestId("hub-lock-scope").waitFor();
-    await checkNoPastViewport(page, `${viewport.width}x${viewport.height} ${orientation} settings with lock enabled: in bounds`);
+    await checkNoPastViewport(
+      page,
+      `${viewport.width}x${viewport.height} ${orientation} settings with lock enabled: in bounds`,
+    );
     const lockDetails = await page.evaluate(() => ({
       scope: Boolean(document.querySelector('[data-testid="hub-lock-scope"]')),
     }));
@@ -139,8 +154,15 @@ async function run() {
     await page.goto(`${BASE}/?fixture=lock&auth=failure&platform=android`);
     const lockOverlay = page.locator(".lock-overlay");
     await lockOverlay.waitFor({ state: "visible" });
-    await checkNoPastViewport(page, `${viewport.width}x${viewport.height} ${orientation} failed lock screen: in bounds`);
-    await checkFits(page, `${viewport.width}x${viewport.height} ${orientation} failed lock card content fits`, ".lock-card");
+    await checkNoPastViewport(
+      page,
+      `${viewport.width}x${viewport.height} ${orientation} failed lock screen: in bounds`,
+    );
+    await checkFits(
+      page,
+      `${viewport.width}x${viewport.height} ${orientation} failed lock card content fits`,
+      ".lock-card",
+    );
     await page.getByRole("button", { name: "Try again" }).click();
     await lockOverlay.waitFor({ state: "visible" });
     record(
@@ -172,17 +194,30 @@ async function run() {
     for (const theme of THEMES) {
       await page.getByTestId("hub-theme-picker").selectOption(theme);
       for (const appearance of APPEARANCES) {
-        await page.getByTestId("hub-appearance-mode").getByRole("button", { name: new RegExp(`^${appearance}$`, "i") }).click();
+        await page
+          .getByTestId("hub-appearance-mode")
+          .getByRole("button", { name: new RegExp(`^${appearance}$`, "i") })
+          .click();
         const state = await page.evaluate(() => ({
           theme: document.documentElement.dataset.uiTheme,
           appearance: document.documentElement.dataset.theme,
           colorScheme: document.documentElement.style.colorScheme,
           background: getComputedStyle(document.body).backgroundColor,
         }));
-        const valid = state.theme === theme && ["light", "dark"].includes(state.appearance ?? "") &&
-          state.colorScheme === state.appearance && state.background !== "rgba(0, 0, 0, 0)";
-        record(`${viewport.width}x${viewport.height} ${orientation} ${theme}/${appearance} theme applies`, valid, JSON.stringify(state));
-        await checkNoPastViewport(page, `${viewport.width}x${viewport.height} ${orientation} ${theme}/${appearance} settings in bounds`);
+        const valid =
+          state.theme === theme &&
+          ["light", "dark"].includes(state.appearance ?? "") &&
+          state.colorScheme === state.appearance &&
+          state.background !== "rgba(0, 0, 0, 0)";
+        record(
+          `${viewport.width}x${viewport.height} ${orientation} ${theme}/${appearance} theme applies`,
+          valid,
+          JSON.stringify(state),
+        );
+        await checkNoPastViewport(
+          page,
+          `${viewport.width}x${viewport.height} ${orientation} ${theme}/${appearance} settings in bounds`,
+        );
       }
     }
   }
@@ -199,22 +234,38 @@ async function run() {
     await page.setViewportSize(viewport);
     await page.goto(`${BASE}/?fixture=many&platform=android`);
     await page.waitForTimeout(700);
-    await checkNoPastViewport(page, `${viewport.width}x${viewport.height} ${orientation} picker, long name and URL: in bounds`);
+    await checkNoPastViewport(
+      page,
+      `${viewport.width}x${viewport.height} ${orientation} picker, long name and URL: in bounds`,
+    );
     const rowState = await page.evaluate(() => {
       const row = document.querySelector<HTMLElement>(".server-row");
       const more = document.querySelector<HTMLElement>('[data-testid="hub-server-more"]');
-      if (!row || !more) return { rowFound: Boolean(row), moreFound: Boolean(more), rowFits: false, moreVisible: false };
+      if (!row || !more)
+        return {
+          rowFound: Boolean(row),
+          moreFound: Boolean(more),
+          rowFits: false,
+          moreVisible: false,
+        };
       const rowRect = row.getBoundingClientRect();
       const listRect = row.parentElement?.getBoundingClientRect();
       const moreRect = more.getBoundingClientRect();
       return {
         rowFound: true,
         moreFound: true,
-        rowFits: Boolean(listRect && rowRect.left >= listRect.left && rowRect.right <= listRect.right),
-        moreVisible: moreRect.width > 0 && moreRect.left >= 0 && moreRect.right <= window.innerWidth,
+        rowFits: Boolean(
+          listRect && rowRect.left >= listRect.left && rowRect.right <= listRect.right,
+        ),
+        moreVisible:
+          moreRect.width > 0 && moreRect.left >= 0 && moreRect.right <= window.innerWidth,
       };
     });
-    record(`${viewport.width}x${viewport.height} ${orientation} long-name row and menu fit`, rowState.rowFits && rowState.moreVisible, JSON.stringify(rowState));
+    record(
+      `${viewport.width}x${viewport.height} ${orientation} long-name row and menu fit`,
+      rowState.rowFits && rowState.moreVisible,
+      JSON.stringify(rowState),
+    );
   }
 
   // Edit sheet with a long saved URL, and one with no break points, at both widths.
@@ -226,8 +277,15 @@ async function run() {
     await page.waitForTimeout(700);
     await page.getByTestId("hub-server-more").first().click();
     await page.waitForTimeout(500);
-    await checkFits(page, `${viewport.width}x${viewport.height} ${orientation} edit sheet URL (path) wraps`, ".sheet-panel .hint");
-    await checkNoPastViewport(page, `${viewport.width}x${viewport.height} ${orientation} edit sheet, long URL: in bounds`);
+    await checkFits(
+      page,
+      `${viewport.width}x${viewport.height} ${orientation} edit sheet URL (path) wraps`,
+      ".sheet-panel .hint",
+    );
+    await checkNoPastViewport(
+      page,
+      `${viewport.width}x${viewport.height} ${orientation} edit sheet, long URL: in bounds`,
+    );
   }
 
   await serveFixture(page, [['url: "https://dev.repoos.org"', `url: "${UNBROKEN_URL}"`]]);
