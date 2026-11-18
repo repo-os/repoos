@@ -161,3 +161,4 @@ Do not touch repoos.toml. Pages use full .main width.
 - 2026-11-18T05:32:12Z · CTO nudge: held — handoff gate is running
 - 2026-11-18T05:32:41Z · body
 - 2026-11-18T05:33:27Z · status active→review
+- 2026-11-18T05:33:27Z · note: shots: skipped — 7 shots already captured — an engineer-made capture pre-empts the automatic one
