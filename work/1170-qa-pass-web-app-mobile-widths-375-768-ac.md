@@ -3,6 +3,9 @@ id: "1170"
 title: "QA pass: web app mobile widths (375/768) across Work, Releases, Settings, Agents, Checks"
 type: bug
 status: active
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: "`needs some work` — the dock lift stops at 1140px, but the centred pill still covers the last parked toggle from 1141px to ~1384px."
 priority: p2
 area: web
 assigned_to: ai
@@ -63,3 +66,4 @@ Do not touch repoos.toml. Pages use full .main width.
 - 2026-11-18T03:40:55Z · message_queued at 2026-11-18T03:40:55.165Z
 - 2026-11-18T03:41:20Z · note: ui verification passed: 1 shot captured with clean console (1 shot warning)
 - 2026-11-18T03:41:21Z · note: review pass 3: needs some work
+- 2026-11-18T03:41:21Z · needs_input
