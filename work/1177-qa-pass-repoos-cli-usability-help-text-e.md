@@ -10,7 +10,6 @@ created_by: t@t
 branch: feat/qa-pass-repoos-cli-usability-help-text-e
 created_at: "2026-11-18T05:56:48Z"
 updated_at: "2026-11-18T07:34:28Z"
-check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-18T06:45:34.810Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 2
 routing_switches: 1
@@ -59,3 +58,4 @@ Do not touch repoos.toml; do not run commands that mutate the real board.
 - 2026-11-18T07:33:51Z · body
 - 2026-11-18T07:34:26Z · status active→review
 - 2026-11-18T07:34:28Z · note: shots: skipped — the diff (11 changed paths) touches no capture target's globs — no UI change to capture
+
