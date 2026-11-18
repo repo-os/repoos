@@ -1,6 +1,4 @@
 ---
-check_retry_count: 1
-last_check_failure: "repoos check at 2026-11-18T06:45:34.810Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 id: "1177"
 title: "QA pass: RepoOS CLI usability – help text, error messages and exit codes"
 type: bug
@@ -11,7 +9,9 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-repoos-cli-usability-help-text-e
 created_at: "2026-11-18T05:56:48Z"
-updated_at: "2026-11-18T06:45:34Z"
+updated_at: "2026-11-18T06:45:35Z"
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-18T06:45:34.810Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 2
 routing_switches: 1
 routing_escalations: 1
@@ -52,4 +52,4 @@ Do not touch repoos.toml; do not run commands that mutate the real board.
 - 2026-11-18T06:45:33Z · message_delivered: 1 message(s)
 - 2026-11-18T06:45:33Z · status review→active
 - 2026-11-18T06:45:34Z · message_queued at 2026-11-18T06:45:34.688Z
-
+- 2026-11-18T06:45:35Z · CTO nudge: held — an undelivered message is already queued
