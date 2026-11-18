@@ -317,3 +317,4 @@ Signed-in projects and tasks remain unverified because automated email-code entr
 - 2026-11-18T12:31:16Z · status review→active
 - 2026-11-18T12:31:18Z · CTO nudge: held — handoff gate is running
 - 2026-11-18T12:46:59Z · handoff failed · remote validation failed: test failure: tests/servers-command.test.ts > repoos servers --tailscale > skips unsupported mobile peers instead of reporting misleading SSH failures, tests/servers-command.test.ts > repoos servers --tailscale > falls back to configured hosts when the Tailscale CLI is unavailable, tests/servers-command.test.ts > repoos servers --tailscale > uses configured per-host users and the global Tailscale user in SSH targets on thinkpad — fix it in the feature branch and re-run the gate
+- 2026-11-18T12:46:59Z · message_queued at 2026-11-18T12:46:59.941Z
