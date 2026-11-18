@@ -26,7 +26,9 @@ The script uses headless Chromium and synthetic responses for release status, ru
 | Failed | The phase summary, tl;dr, failed test, output, and Debugger action are legible. | Details scroll inside the drawer while Publish/Cancel stay pinned at the bottom. |
 | Done | The success outcome and updated version appear on the Releases page. | The success outcome fits above the bottom navigation. |
 
-The browser script also checks for horizontal overflow, missing chooser options, failure/success copy, disabled cut entry under blockers, action-footer bounds, and uncaught page errors at both widths. All ten state/viewport combinations passed. The observed release POST count was zero.
+The browser script also checks for horizontal overflow, missing chooser options, failure/success copy, disabled cut entry under blockers, action-footer bounds, and uncaught page errors at both widths. Page errors are collected and now explicitly fail the scenario with its state and viewport. All ten state/viewport combinations passed. The observed release POST count was zero.
+
+Review round 1 identified that the collected page errors were not yet an assertion. The harness now throws with the scenario name, viewport, and error messages if any uncaught error occurs; I reran the entire matrix after that change and all ten cases passed.
 
 ## Verification
 

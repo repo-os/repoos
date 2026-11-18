@@ -223,6 +223,8 @@ try {
         throw new Error(`failure summary missing at ${width}px`);
       if (name === "done" && !body.includes("Published v0.5.90"))
         throw new Error(`success outcome missing at ${width}px`);
+      if (pageErrors.length > 0)
+        throw new Error(`${name} at ${width}px raised page errors: ${pageErrors.join("; ")}`);
       results.push({
         width,
         state: name,
