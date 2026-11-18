@@ -64,7 +64,9 @@ const FIXTURE_SERVERS: Record<
 };
 
 export function readHubFixture(): HubFixture | null {
-  if (typeof window === "undefined") return null;
+  // Vite replaces DEV at build time, so query fixtures cannot affect production
+  // server lists, lock settings, or authentication decisions.
+  if (typeof window === "undefined" || !import.meta.env.DEV) return null;
   const raw = new URLSearchParams(window.location.search).get("fixture")?.trim().toLowerCase();
   if (!raw) return null;
   const allowed: HubFixture[] = [
@@ -88,7 +90,8 @@ export function fixtureServers(fixture: HubFixture | null): ServerEntry[] | null
 
 /** Deterministic browser-only biometric result for exercising the lock overlay. */
 export function readLockFixtureResult(): boolean | null {
-  if (readHubFixture() !== "lock") return null;
+  // Vite replaces DEV at build time; production sessions always use native auth.
+  if (!import.meta.env.DEV || readHubFixture() !== "lock") return null;
   const result = new URLSearchParams(window.location.search).get("auth");
   if (result === "success") return true;
   if (result === "failure") return false;
