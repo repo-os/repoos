@@ -2,7 +2,7 @@
 id: "1169"
 title: "QA pass: macOS RepoOS Hub app – build, launch, connect, and fix what is broken"
 type: bug
-status: review
+status: active
 priority: p2
 area: macos
 assigned_to: ai
