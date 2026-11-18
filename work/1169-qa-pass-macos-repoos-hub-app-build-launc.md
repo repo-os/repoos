@@ -1,4 +1,5 @@
 ---
+close_out_repair_count: 1
 id: "1169"
 title: "QA pass: macOS RepoOS Hub app – build, launch, connect, and fix what is broken"
 type: bug
@@ -398,3 +399,4 @@ Signed-in projects and tasks remain unverified because automated email-code entr
 - 2026-11-18T16:31:49Z · status review→active
 - 2026-11-18T16:31:49Z · note: close-out repair: gate-failure
 - 2026-11-18T16:31:49Z · message_delivered: 1 message(s)
+
