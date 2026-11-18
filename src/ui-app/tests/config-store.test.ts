@@ -130,6 +130,31 @@ describe("fillForm resolves nested config keys", () => {
   });
 });
 
+describe("config refresh visibility", () => {
+  it("keeps an already loaded Settings page mounted while refreshing after an import", async () => {
+    const store = useConfigStore();
+    api.mockResolvedValueOnce(
+      configResponse({ maxActiveTasks: 3, "whisper.enabled": false, ntfyTopic: "" }),
+    );
+    await store.load();
+    expect(store.loaded).toBe(true);
+
+    let resolveRefresh!: (value: unknown) => void;
+    api.mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveRefresh = resolve;
+      }) as never,
+    );
+    const refresh = store.load({ keepLoaded: true });
+    expect(store.loaded).toBe(true);
+    resolveRefresh(configResponse({ maxActiveTasks: 4, "whisper.enabled": false, ntfyTopic: "" }));
+    await refresh;
+
+    expect(store.loaded).toBe(true);
+    expect(store.form.maxActiveTasks).toBe("4");
+  });
+});
+
 describe("setUiTheme keeps form.uiTheme in sync (#0240)", () => {
   it("updates form.uiTheme so the Settings dropdown reflects the sidebar choice", async () => {
     const store = useConfigStore();
