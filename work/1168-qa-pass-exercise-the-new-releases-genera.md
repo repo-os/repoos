@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "1168"
 title: "QA pass: exercise the new Releases 'Generate AI notes and publish' flow and the update/restart modal end to end"
 type: bug
@@ -61,3 +62,4 @@ Do not edit repoos.toml.
 - 2026-11-18T01:07:30Z · note: review pass 1: needs some work
 - 2026-11-18T01:07:31Z · message_delivered: 1 message(s)
 - 2026-11-18T01:07:32Z · status review→active
+
