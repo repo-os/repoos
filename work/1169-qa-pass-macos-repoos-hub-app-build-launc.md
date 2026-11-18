@@ -51,3 +51,4 @@ Never capture the whole screen. Do not touch repoos.toml.
 - 2026-11-18T03:19:54Z · body
 - 2026-11-18T03:20:26Z · status active→review
 - 2026-11-18T03:20:26Z · note: shots: skipped — the diff (6 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-11-18T03:20:51Z · message_queued at 2026-11-18T03:20:51.679Z
