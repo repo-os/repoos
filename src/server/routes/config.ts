@@ -21,6 +21,7 @@ import {
 } from "../../core/config.js";
 import { effectiveAreaVocabulary } from "../../core/areas.js";
 import { effectiveAreaNames, unresolvedAreaReport } from "../../core/areas.js";
+import { resolvedUiVerification } from "../../core/ui-verification-config.js";
 import { normalizeStringList } from "../../core/config.js";
 import { isValidEmail } from "../../core/auth.js";
 import {
@@ -109,6 +110,7 @@ export function safeConfigForBrowser(config: Record<string, unknown>): Record<st
   // Env values (dev targets and services) may be credentials: they never reach
   // the browser. Settings saves restore them from disk (#0843 review round 25).
   const safeDev = rest.dev ? redactDevEnv(rest.dev as never) : rest.dev;
+  const safeUiVerification = resolvedUiVerification(config as never);
   return {
     ...rest,
     ...(safeDev !== undefined ? { dev: safeDev } : {}),
@@ -138,6 +140,9 @@ export function safeConfigForBrowser(config: Record<string, unknown>): Record<st
       ?.humanStepCheck,
     "model_routing.humanStepSticky": (_rawModelRouting as { humanStepSticky?: boolean } | undefined)
       ?.humanStepSticky,
+    "uiVerification.enabled": safeUiVerification.enabled,
+    "uiVerification.autoRefreshStaleOnce": safeUiVerification.autoRefreshStaleOnce,
+    "uiVerification.viewportWidths": safeUiVerification.viewportWidths,
     /**
      * Declared dev targets (#0749): the Settings control edits this
      * `[[dev.targets]]` list. Exposed as the parsed objects (never the raw
@@ -895,6 +900,17 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
           return json(res, 400, { error: "Select at least one role for the router." });
         }
         patch[field.key] = normalized;
+        continue;
+      }
+      if (field.key === "uiVerification.viewportWidths") {
+        if (!Array.isArray(val) || val.length === 0) {
+          return json(res, 400, { error: `${field.label} must contain positive whole pixel widths` });
+        }
+        const widths = val.map((item) => Number(item));
+        if (widths.some((width) => !Number.isSafeInteger(width) || width <= 0)) {
+          return json(res, 400, { error: `${field.label} must contain positive whole pixel widths` });
+        }
+        patch[field.key] = widths;
         continue;
       }
       if (field.key === "cto.actions") {
