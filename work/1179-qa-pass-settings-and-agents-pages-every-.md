@@ -35,13 +35,13 @@ Do not touch repoos.toml.
 "route": "/settings?tab=notifications",
 "highlight": "#spend-alert-error",
 "steps": [
-  {
-    "fill": "#setting-attention\\.spendAlertUsd input",
-    "text": "-1"
-  },
-  {
-    "waitFor": "#spend-alert-error"
-  }
+{
+  "fill": "#setting-attention\\.spendAlertUsd input",
+  "text": "-1"
+},
+{
+  "waitFor": "#spend-alert-error"
+}
 ]
 }
 ]
@@ -115,3 +115,4 @@ Do not touch repoos.toml.
 - 2026-11-18T10:32:45Z · message_delivered: 1 message(s)
 - 2026-11-18T10:59:50Z · body
 - 2026-11-18T11:09:51Z · message_queued at 2026-11-18T11:09:51.193Z
+- 2026-11-18T11:09:51Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
