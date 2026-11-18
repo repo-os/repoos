@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 622709
-last_close_out_gate_at: "2026-11-18T18:46:54.427Z"
 id: "1189"
 title: "QA pass: task creation and editing flows (new task, update, attach screenshot, dependencies)"
 type: bug
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: e09881bf2a13e177cc9507d6e4ab706e559e3d05
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-task-creation-and-editing-flows-
 created_at: "2026-11-18T16:17:39Z"
 updated_at: "2026-11-18T18:46:54Z"
+last_close_out_gate_ms: 622709
+last_close_out_gate_at: "2026-11-18T18:46:54.427Z"
 review_passes: 5
 review_rounds: 2
 routing_switches: 1

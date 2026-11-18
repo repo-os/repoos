@@ -3954,6 +3954,7 @@ export const useRepoStore = defineStore("repo", () => {
     priority: string;
     area: string;
     assignedTo: string;
+    dependsOn?: string[];
     status?: Status;
     body?: string;
     /** Story tag (#0555) — the server normalizes it with `normalizeStoryName`. */
