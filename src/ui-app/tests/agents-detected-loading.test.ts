@@ -278,6 +278,40 @@ describe("AgentsView detected-tab loading (#0950)", () => {
       revisit.unmount();
     },
   );
+
+  it("announces a failed update check while keeping the detected agents visible", async () => {
+    class FinishedEventSource {
+      onerror: (() => void) | null = null;
+      listeners = new Map<string, (event: { data: string }) => void>();
+      static latest: FinishedEventSource;
+      constructor() {
+        FinishedEventSource.latest = this;
+      }
+      addEventListener(type: string, listener: (event: { data: string }) => void): void {
+        this.listeners.set(type, listener);
+      }
+      close(): void {}
+    }
+    vi.stubGlobal("EventSource", FinishedEventSource);
+    const wrapper = await mountAgents("/?tab=detected", async (url) => {
+      if (String(url).includes("/api/agents/detect"))
+        return json({ agents: detectedAgents, cachedAt: null });
+      if (String(url).includes("/api/agents/updates"))
+        throw new Error("update service unavailable");
+      return new Promise<Response>(() => {});
+    });
+    FinishedEventSource.latest.listeners.get("done")?.({ data: '{"cachedAt":null}' });
+    await flushPromises();
+
+    await detectedPanel(wrapper).get(".detect-updates-btn").trigger("click");
+    await flushPromises();
+
+    expect(detectedPanel(wrapper).find('[role="status"]').text()).toContain(
+      "Update checks are temporarily unavailable.",
+    );
+    expect(detectedPanel(wrapper).find(".detect-agent-name").text()).toBe("Codex");
+    wrapper.unmount();
+  });
 });
 
 describe("Agents page panels share the skeleton (#0950)", () => {

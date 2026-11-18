@@ -4054,6 +4054,7 @@ export const useRepoStore = defineStore("repo", () => {
 
   const inputs = ref<Input[]>([]);
   const schedules = ref<import("../../../core/schedule.js").TaskSchedule[]>([]);
+  const schedulesError = ref("");
 
   /**
    * Inputs created in this tab whose background PM enrichment has not landed
@@ -4119,8 +4120,9 @@ export const useRepoStore = defineStore("repo", () => {
     try {
       schedules.value =
         await api<import("../../../core/schedule.js").TaskSchedule[]>("/api/schedules");
-    } catch {
-      /* keep existing */
+      schedulesError.value = "";
+    } catch (err) {
+      schedulesError.value = err instanceof Error ? err.message : "Could not load schedules";
     }
     // #1005 — a `?shotState=agents:scheduledSeeded` capture must survive a live
     // refresh. An SSE `schedule.changed`/`schedule.run` event calls this and
@@ -4640,6 +4642,7 @@ export const useRepoStore = defineStore("repo", () => {
     createDocument,
     inputs,
     schedules,
+    schedulesError,
     refreshSchedules,
     createSchedule,
     patchSchedule,
