@@ -2,7 +2,7 @@
 id: "1178"
 title: "QA pass: Work board task drawer flows (review, changes, logs, close-out) desktop and mobile"
 type: bug
-status: review
+status: active
 priority: p2
 area: web
 assigned_to: ai
