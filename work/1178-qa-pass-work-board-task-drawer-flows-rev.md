@@ -1,16 +1,16 @@
 ---
-handoff_signal_retry_count: 2
 id: "1178"
 title: "QA pass: Work board task drawer flows (review, changes, logs, close-out) desktop and mobile"
 type: bug
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-work-board-task-drawer-flows-rev
 created_at: "2026-11-18T05:56:51Z"
-updated_at: "2026-11-18T07:01:06Z"
+updated_at: "2026-11-18T07:06:18Z"
+handoff_signal_retry_count: 2
 close_out_repair_count: 1
 review_passes: 1
 ---
@@ -39,4 +39,4 @@ Do not touch repoos.toml.
 - 2026-11-18T06:55:58Z · note: close-out repair: gate-failure
 - 2026-11-18T06:56:01Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-18T07:01:06Z · message_queued at 2026-11-18T07:01:06.549Z
-
+- 2026-11-18T07:06:18Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
