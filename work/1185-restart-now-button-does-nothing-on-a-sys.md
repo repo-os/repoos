@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/restart-now-button-does-nothing-on-a-sys
 created_at: "2026-11-18T12:27:18Z"
-updated_at: "2026-11-18T15:48:40Z"
+updated_at: "2026-11-18T15:48:41Z"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/shot-fixtures.test.ts > shot preview fixtures (#0743) > accepts the restart progress and error dialog fixtures (#1185) on mini — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: 5171c2a1f74fc8ac45bca8ad80c4c2d789d27cfb
 review_passes: 3
@@ -139,3 +139,4 @@ Reported by Nick 2026-11-18 20:22 from the phone UI. Related #1154. Do not touch
 - 2026-11-18T15:48:39Z · ↻ resuming engineer to read queued message
 - 2026-11-18T15:48:40Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code unknown · last assistant: no assistant message · stderr: 2026-11-18T14:52:50.543076Z ERROR codex_core::util: Custom tool call output is missing for call id: call_a7339017f48a46e38004a2d1a382c49e 2026-11-18T14:52:57.693131Z ERROR codex_core::util: Custom tool call output is missing for call id: call_a7339017f48a46e38004a2d1a382c49e 2026-11-18T14:53:04.215878Z ERROR codex_cor…
 - 2026-11-18T15:48:40Z · status active→review
+- 2026-11-18T15:48:41Z · message_delivered: 2 message(s)
