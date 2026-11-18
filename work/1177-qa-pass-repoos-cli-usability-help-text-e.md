@@ -2,7 +2,7 @@
 id: "1177"
 title: "QA pass: RepoOS CLI usability – help text, error messages and exit codes"
 type: bug
-status: review
+status: active
 priority: p2
 area: core
 assigned_to: ai
