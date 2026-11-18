@@ -2,14 +2,14 @@
 id: "1193"
 title: "QA pass: macOS Hub app second pass – menu bar, Cmd-K search, server add/edit and relaunch"
 type: bug
-status: ready
+status: active
 priority: p2
 area: macos
 assigned_to: ai
 created_by: t@t
-branch: ""
+branch: feat/qa-pass-macos-hub-app-second-pass-menu-b
 created_at: "2026-11-18T18:17:35Z"
-updated_at: "2026-11-18T18:17:38Z"
+updated_at: "2026-11-18T18:17:40Z"
 ---
 ## Problem
 #1169 covered build, launch and first-run; the menu bar, Cmd-K search and add/edit/relaunch flows need another pass.
@@ -25,3 +25,4 @@ Do not touch repoos.toml. Signed-in project/task views are tracked in #1174 (hum
 
 - 2026-11-18T18:17:35Z · created · t@t
 - 2026-11-18T18:17:38Z · status inbox→ready
+- 2026-11-18T18:17:40Z · status ready→active, branch
