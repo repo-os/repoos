@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-web-app-desktop-agents-checks-se
 created_at: "2026-11-18T03:57:22Z"
-updated_at: "2026-11-18T05:24:13Z"
+updated_at: "2026-11-18T05:32:03Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -31,10 +31,10 @@ Do not touch repoos.toml.
 ```json
 [
 {
-  "label": "Settings import/export flow",
-  "target": "default",
-  "route": "/settings?tab=import-export",
-  "highlight": "#settings-panel-import-export"
+"label": "Settings import/export flow",
+"target": "default",
+"route": "/settings?tab=import-export",
+"highlight": "#settings-panel-import-export"
 }
 ]
 ```
@@ -65,3 +65,4 @@ Do not touch repoos.toml.
 - 2026-11-18T05:05:04Z · message_delivered: 1 message(s)
 - 2026-11-18T05:05:04Z · status review→active
 - 2026-11-18T05:24:13Z · body
+- 2026-11-18T05:32:03Z · body
