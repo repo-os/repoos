@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-debug-panel-logs-and-activity-vi
 created_at: "2026-11-18T19:24:11Z"
-updated_at: "2026-11-18T19:31:27Z"
+updated_at: "2026-11-18T19:33:08Z"
 ---
 ## Problem
 Log and debug views with large or odd output may overflow or freeze.
@@ -25,19 +25,19 @@ Do not touch repoos.toml. Never open a visible browser window.
 ```json
 [
 {
-"label": "Debug logs and activity at mobile width",
-"target": "default",
-"route": "/work?task=1198&tab=changes",
-"highlight": ".debug-events",
-"steps": [
-  {
-    "click": "button.tab-btn:nth-child(7)"
-  },
-  {
-    "click": ".debug-tab:nth-child(2)"
-  }
-],
-"state": "drawer:debugLogs"
+  "label": "Debug logs and activity with long messages",
+  "target": "default",
+  "route": "/work?task=1198&tab=changes",
+  "highlight": ".debug-events",
+  "steps": [
+    {
+      "click": "button.tab-btn:nth-child(7)"
+    },
+    {
+      "click": ".debug-tab:nth-child(2)"
+    }
+  ],
+  "state": "drawer:debugLogs"
 }
 ]
 ```
@@ -49,3 +49,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T19:24:17Z · status ready→active, branch
 - 2026-11-18T19:29:45Z · body
 - 2026-11-18T19:31:27Z · body
+- 2026-11-18T19:33:08Z · body
