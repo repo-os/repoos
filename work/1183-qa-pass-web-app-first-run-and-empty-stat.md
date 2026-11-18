@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-web-app-first-run-and-empty-stat
 created_at: "2026-11-18T10:17:38Z"
-updated_at: "2026-11-18T11:17:55Z"
+updated_at: "2026-11-18T11:17:56Z"
 ---
 ## Problem
 First-run, empty and error states are rarely exercised and likely have rough edges.
@@ -64,3 +64,4 @@ Do not touch repoos.toml.
 - 2026-11-18T11:14:51Z · message_queued at 2026-11-18T11:14:51.422Z
 - 2026-11-18T11:14:51Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-18T11:17:55Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-18T11:17:56Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code unknown) · last assistant: The second run was interrupted before it returned a final status (the remote suite had reached the later tests). The CTO reminder appears to have canceled the long-running shell session, so I’m restarting the check and will keep reporting … · stderr: 2026-11-18T11:11:28.727529Z ERROR codex_core::util: Custom tool call output is missing for call id: call_4af0e59c46ec41b8ad326053d0f08f26 2026-11-18T11:11:28.727659Z ERROR codex_core::util: Custom tool call output is missing for call id: call_dbc768ecf49b4a038004ef5ceca2a84b 2026-11-18T11:11:31.936264Z ERROR codex_cor…
