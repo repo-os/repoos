@@ -288,3 +288,4 @@ Signed-in projects and tasks remain unverified because automated email-code entr
 - 2026-11-18T11:40:19Z · status review→active
 - 2026-11-18T11:40:22Z · CTO nudge: held — handoff gate is running
 - 2026-11-18T11:40:37Z · status active→review
+- 2026-11-18T11:40:37Z · message_queued at 2026-11-18T11:40:37.977Z
