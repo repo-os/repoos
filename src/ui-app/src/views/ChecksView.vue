@@ -648,12 +648,14 @@ const RESULT_ICON: Record<string, string> = {
       title="Release check slot?"
       confirm-label="Release slot"
       content-class="ck-slot-release-dialog"
-      @update:open="(open) => { if (!open) slotToRelease = null; }"
+      @update:open="
+        (open) => {
+          if (!open) slotToRelease = null;
+        }
+      "
       @confirm="confirmReleaseWedgedSlot"
-      >This will terminate the managed process group holding slot {{ slotToRelease?.slot }}<template
-        v-if="slotToRelease?.pid"
-        >, PID {{ slotToRelease.pid }}.</template
-      ></ConfirmDialog
+      >This will terminate the managed process group holding slot {{ slotToRelease?.slot
+      }}<template v-if="slotToRelease?.pid">, PID {{ slotToRelease.pid }}.</template></ConfirmDialog
     >
   </div>
 </template>

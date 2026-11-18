@@ -383,13 +383,20 @@ describe("ChecksView default tab (#0738)", () => {
     expect(wrapper.text()).toContain("PID 123");
     expect(releaseCalls()).toHaveLength(0);
 
-    await wrapper.findAll("button").find((button) => button.text() === "Cancel")!.trigger("click");
+    await wrapper
+      .findAll("button")
+      .find((button) => button.text() === "Cancel")!
+      .trigger("click");
     await flushPromises();
     expect(wrapper.text()).not.toContain("Release check slot?");
     expect(releaseCalls()).toHaveLength(0);
 
     await wrapper.get(".ck-local-slot button").trigger("click");
-    await wrapper.findAll("button").filter((button) => button.text() === "Release slot").at(-1)!.trigger("click");
+    await wrapper
+      .findAll("button")
+      .filter((button) => button.text() === "Release slot")
+      .at(-1)!
+      .trigger("click");
     await flushPromises();
     expect(releaseCalls()).toHaveLength(1);
     wrapper.unmount();
