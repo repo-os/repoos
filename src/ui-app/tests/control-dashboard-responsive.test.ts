@@ -18,21 +18,23 @@ describe("Control dashboard process table", () => {
   });
 });
 
-describe.skipIf(!existsSync(webkit.executablePath()))("Control dashboard process table (WebKit)", () => {
-  let browser: Browser;
+describe.skipIf(!existsSync(webkit.executablePath()))(
+  "Control dashboard process table (WebKit)",
+  () => {
+    let browser: Browser;
 
-  beforeAll(async () => {
-    browser = await webkit.launch();
-  });
+    beforeAll(async () => {
+      browser = await webkit.launch();
+    });
 
-  afterAll(async () => {
-    await browser?.close();
-  });
+    afterAll(async () => {
+      await browser?.close();
+    });
 
-  it.each([375, 1280])("contains the process table at %i px", async (width) => {
-    const page = await browser.newPage({ viewport: { width, height: 812 } });
-    try {
-      await page.setContent(`
+    it.each([375, 1280])("contains the process table at %i px", async (width) => {
+      const page = await browser.newPage({ viewport: { width, height: 812 } });
+      try {
+        await page.setContent(`
         <style>
           * { box-sizing: border-box; }
           body { margin: 0; padding: 16px; font: 12px sans-serif; }
@@ -54,21 +56,22 @@ describe.skipIf(!existsSync(webkit.executablePath()))("Control dashboard process
           </div>
         </section>
       `);
-      const geometry = await page.locator(".process-table-wrap").evaluate((wrap) => {
-        const row = wrap.querySelector<HTMLElement>(".process-row")!;
-        return {
-          wrapperWidth: (wrap as HTMLElement).clientWidth,
-          contentWidth: (wrap as HTMLElement).scrollWidth,
-          rowWidth: row.getBoundingClientRect().width,
-          viewport: innerWidth,
-        };
-      });
-      expect(geometry.wrapperWidth).toBeLessThanOrEqual(geometry.viewport - 32);
-      expect(geometry.rowWidth).toBeGreaterThanOrEqual(560);
-      if (width === 375) expect(geometry.contentWidth).toBeGreaterThan(geometry.wrapperWidth);
-      else expect(geometry.contentWidth).toBeLessThanOrEqual(geometry.wrapperWidth);
-    } finally {
-      await page.close();
-    }
-  });
-});
+        const geometry = await page.locator(".process-table-wrap").evaluate((wrap) => {
+          const row = wrap.querySelector<HTMLElement>(".process-row")!;
+          return {
+            wrapperWidth: (wrap as HTMLElement).clientWidth,
+            contentWidth: (wrap as HTMLElement).scrollWidth,
+            rowWidth: row.getBoundingClientRect().width,
+            viewport: innerWidth,
+          };
+        });
+        expect(geometry.wrapperWidth).toBeLessThanOrEqual(geometry.viewport - 32);
+        expect(geometry.rowWidth).toBeGreaterThanOrEqual(560);
+        if (width === 375) expect(geometry.contentWidth).toBeGreaterThan(geometry.wrapperWidth);
+        else expect(geometry.contentWidth).toBeLessThanOrEqual(geometry.wrapperWidth);
+      } finally {
+        await page.close();
+      }
+    });
+  },
+);
