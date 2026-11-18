@@ -52,8 +52,9 @@ did not change across that run.
 
 The full unit suite was rerun after registry isolation: 189 cases pass, 0 fail
 (188 before, plus the new table test), and the real registry's modification
-time was unchanged across that run. A test-host scratch-directory cleanup fix
-is included in this follow-up; its scoped check is recorded after it runs.
+time was unchanged across that run. This follow-up's focused XCTest
+`ServerRegistryStoreTests.testRemovesXCTestSupportDirectory` passed on
+2026-11-18, confirming the disposable registry directory is removed.
 
 ## Not verified
 
