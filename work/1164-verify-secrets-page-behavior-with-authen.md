@@ -2,7 +2,7 @@
 id: "1164"
 title: Verify Secrets page behavior with authenticated access
 type: bug
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/verify-secrets-page-behavior-with-authen
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T17:53:29Z"
-updated_at: "2026-11-18T04:50:39Z"
+updated_at: "2026-11-18T04:50:41Z"
 review_passes: 3
 review_rounds: 2
 ---
@@ -103,3 +103,4 @@ The initial evidence is an auth-less 401, not proof of a signed-in regression. Q
 - 2026-11-18T04:38:51Z · note: handoff requested (cli)
 - 2026-11-18T04:42:12Z · CTO nudge: held — handoff gate is running
 - 2026-11-18T04:50:39Z · note: ui verification passed: 2 of 2 shots captured with clean console
+- 2026-11-18T04:50:41Z · status active→review
