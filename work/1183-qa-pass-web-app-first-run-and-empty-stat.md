@@ -2,14 +2,14 @@
 id: "1183"
 title: "QA pass: web app first-run and empty states – new project, no tasks, no agents, offline server"
 type: bug
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-web-app-first-run-and-empty-stat
 created_at: "2026-11-18T10:17:38Z"
-updated_at: "2026-11-18T11:52:12Z"
+updated_at: "2026-11-18T11:52:13Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -81,3 +81,4 @@ Do not touch repoos.toml.
 - 2026-11-18T11:37:34Z · CTO nudge: held — remote validation is running
 - 2026-11-18T11:49:17Z · body
 - 2026-11-18T11:52:12Z · note: ui verification passed: 2 of 2 shots captured with clean console
+- 2026-11-18T11:52:13Z · status active→review
