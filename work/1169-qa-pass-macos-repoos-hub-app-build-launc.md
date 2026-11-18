@@ -11,7 +11,7 @@ branch: feat/qa-pass-macos-repoos-hub-app-build-launc
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-18T02:19:44Z"
-updated_at: "2026-11-18T03:58:30Z"
+updated_at: "2026-11-18T04:02:12Z"
 review_passes: 3
 ---
 ## Problem
@@ -66,3 +66,4 @@ Never capture the whole screen. Do not touch repoos.toml.
 - 2026-11-18T03:57:58Z · watchdog: restarting engineer because a queued message waited 8m with no live process
 - 2026-11-18T03:58:00Z · message_delivered: 1 message(s)
 - 2026-11-18T03:58:00Z · message_queued at 2026-11-18T03:58:00.650Z
+- 2026-11-18T04:02:12Z · CTO nudge: held — an undelivered message is already queued
