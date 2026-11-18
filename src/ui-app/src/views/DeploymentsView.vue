@@ -190,7 +190,10 @@ async function load(): Promise<void> {
   if (readShotPreviewFixtureFromLocation(window.location) === "deployments:loading") return;
   try {
     const shotState = readShotPreviewFixtureFromLocation(window.location);
-    if (shotState === "deployments:environmentBinding") {
+    if (
+      shotState === "deployments:environmentBinding" ||
+      shotState === "deployments:deployFailure"
+    ) {
       // Screenshot-only state: the preview fixture represents an admin
       // reviewing the binding controls. Production auth still gates every
       // write, and this branch makes no API calls.
@@ -230,6 +233,10 @@ async function load(): Promise<void> {
         currentBranch: "main",
         environments: [{ id: "dev" }, { id: "staging" }, { id: "production" }],
       };
+      if (shotState === "deployments:deployFailure") {
+        confirmBranch.value = "prod";
+        deployError.value = "Push rejected: remote branch has diverged";
+      }
       return;
     }
     await refreshPageData(
