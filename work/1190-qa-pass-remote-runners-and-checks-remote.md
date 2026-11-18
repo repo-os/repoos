@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-18T16:45:47Z"
+review_passes: 1
 id: "1190"
 title: "QA pass: remote runners and Checks Remote tab – states and errors"
 type: bug
@@ -9,7 +11,6 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-remote-runners-and-checks-remote
 created_at: "2026-11-18T16:18:04Z"
-updated_at: "2026-11-18T16:45:47Z"
 ---
 ## Problem
 The Remote runners tab shows host load, health and failures; recent flaky runs show it needs a hands-on pass.
@@ -47,3 +48,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T16:44:42Z · status active→review
 - 2026-11-18T16:44:42Z · message_queued at 2026-11-18T16:44:42.957Z
 - 2026-11-18T16:45:47Z · note: review pass 1: good to go
+
