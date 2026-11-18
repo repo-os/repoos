@@ -3,6 +3,9 @@ id: "1169"
 title: "QA pass: macOS RepoOS Hub app – build, launch, connect, and fix what is broken"
 type: bug
 status: review
+needs_input: true
+needs_input_reason: review-human-attention
+needs_input_detail: Review pass 7 still found issues (human flag after 5 passes). The reviewer was asked to summarise the repeated bug classes — read the newest report and decide whether to keep iterating or rescope.
 priority: p2
 area: macos
 assigned_to: ai
@@ -353,3 +356,4 @@ Signed-in projects and tasks remain unverified because automated email-code entr
 - 2026-11-18T13:39:50Z · orphaned run process stopped · pid 6360 · ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new -o ConnectTimeout=15 -o ServerAliveInterval · cpu 0s · age 12m
 - 2026-11-18T13:47:29Z · needs_input (review-rounds-exhausted) cleared for review again by human
 - 2026-11-18T13:51:18Z · note: review pass 7: needs some work
+- 2026-11-18T13:51:18Z · needs_input
