@@ -2,14 +2,14 @@
 id: "1207"
 title: "QA pass: Deployments page and deploy flows with fixtures – states, errors, 375px"
 type: bug
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
 branch: ""
 created_at: "2026-11-18T22:47:30Z"
-updated_at: "2026-11-18T22:47:30Z"
+updated_at: "2026-11-18T22:47:33Z"
 ---
 ## Problem
 Deployments has not been exercised since recent changes to environments and secrets.
@@ -24,3 +24,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 ## Activity
 
 - 2026-11-18T22:47:30Z · created · t@t
+- 2026-11-18T22:47:33Z · status inbox→ready
