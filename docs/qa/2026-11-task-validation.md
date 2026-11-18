@@ -41,9 +41,12 @@ attention. Human-assigned tasks are exempt from the agent task-body contract.
   an existing needs-input state showed the reason and next steps. No page errors
   were observed. Port 7272 was already occupied, so the QA server used 7273 and
   was stopped after verification.
-- The preview server is read-only, so the browser pass did not submit a task or
-  exercise the post-create toast. Creation and update behavior is covered by
-  server/CLI tests; no disposable task was written into this worktree.
+- For review round 2, added the client-only `toast:taskNeedsInput` shot fixture
+  and declared a capture for the resulting toast. Headless Playwright rendered
+  the toast over the Work queue and showed the complete missing-sections detail;
+  no page errors were observed. The screenshot is in the ignored `.repoos`
+  directory. The preview remains read-only, so no disposable task was submitted
+  or written into this worktree.
 
 ## Remaining note
 
