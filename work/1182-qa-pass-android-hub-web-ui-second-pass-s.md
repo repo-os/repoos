@@ -2,14 +2,14 @@
 id: "1182"
 title: "QA pass: Android Hub web UI second pass – settings, add-server and error flows at 360px"
 type: bug
-status: inbox
+status: ready
 priority: p2
 area: mobile
 assigned_to: ai
 created_by: t@t
 branch: ""
 created_at: "2026-11-18T09:17:43Z"
-updated_at: "2026-11-18T09:17:43Z"
+updated_at: "2026-11-18T09:17:50Z"
 ---
 ## Problem
 #1171 covered the main fixtures; add-server, settings and failure flows need another hands-on pass.
@@ -24,3 +24,4 @@ Do not touch repoos.toml.
 ## Activity
 
 - 2026-11-18T09:17:43Z · created · t@t
+- 2026-11-18T09:17:50Z · status inbox→ready
