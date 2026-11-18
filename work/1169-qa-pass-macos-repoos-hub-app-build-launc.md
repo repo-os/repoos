@@ -12,7 +12,7 @@ branch: feat/qa-pass-macos-repoos-hub-app-build-launc
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-18T02:19:44Z"
-updated_at: "2026-11-18T17:20:41Z"
+updated_at: "2026-11-18T17:32:12Z"
 last_close_out_gate_ms: 112753
 last_close_out_gate_at: "2026-11-18T17:20:34.528Z"
 review_passes: 12
@@ -411,3 +411,4 @@ Signed-in projects and tasks remain unverified because automated email-code entr
 - 2026-11-18T17:18:32Z · note: review pass 12: good to go
 - 2026-11-18T17:20:34Z · close-out gate completed in 113s
 - 2026-11-18T17:20:41Z · status done→done, release:success
+- 2026-11-18T17:32:12Z · message_dropped: 1 queued message(s) discarded — task is done
