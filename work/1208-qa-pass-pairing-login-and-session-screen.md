@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-pairing-login-and-session-screen
 created_at: "2026-11-18T22:47:38Z"
-updated_at: "2026-11-18T23:17:39Z"
+updated_at: "2026-11-18T23:17:43Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -72,3 +72,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T23:09:30Z · body
 - 2026-11-18T23:17:39Z · message_queued at 2026-11-18T23:17:39.447Z
 - 2026-11-18T23:17:39Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-18T23:17:43Z · CTO nudge: held — an undelivered message is already queued
