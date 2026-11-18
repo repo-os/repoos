@@ -7,6 +7,7 @@ import Select from "../src/components/ui/select/root.vue";
 import SecretsView from "../src/views/SecretsView.vue";
 import { navFromConfig } from "../src/nav";
 import { useAuthStore } from "../src/stores/auth";
+import { useRepoStore } from "../src/stores/repo";
 import { invalidatePageData } from "../src/composables/page-data-cache";
 import { SKELETON_MIN_VISIBLE_MS, SKELETON_SHOW_DELAY_MS } from "../src/lib/loading-skeleton";
 
@@ -54,7 +55,7 @@ const snapshots: Record<string, unknown> = {
   },
   integration: { environment: "integration", version: "v2", keys: [] },
 };
-function mountPage(role: "admin" | "member" = "admin") {
+function mountPage(role: "admin" | "member" | null = "admin") {
   const pinia = createPinia();
   setActivePinia(pinia);
   useAuthStore().role = role;
@@ -85,18 +86,46 @@ afterEach(() => {
 
 describe("SecretsView (#0929)", () => {
   it("gives unsigned sessions sign-in guidance without showing secret values", async () => {
-    api.mockRejectedValue(new ApiError("Unauthorized", 401, {}));
-    const wrapper = mountPage();
+    api.mockImplementation(async (path) => {
+      if (path === "/api/project-environments")
+        throw new ApiError("Authentication required", 401, { error: "Authentication required" });
+      return {} as never;
+    });
+    const wrapper = mountPage(null);
     await flushPromises();
 
-    expect(wrapper.get('[role="alert"]').text()).toContain(
-      "Sign in to view project environments and keys.",
+    expect(wrapper.get('[role="alert"]').text()).toBe(
+      "Sign in to view project environments and keys.Reload",
     );
-    expect(wrapper.text()).not.toContain("Unauthorized");
+    expect(wrapper.text()).not.toContain("Authentication required");
     expect(wrapper.text()).not.toContain("DATABASE_URL");
     expect(wrapper.text()).not.toContain("FAKE_SECRET_VALUE");
-    expect(wrapper.get('[role="alert"] button').text()).toBe("Reload");
+    expect(wrapper.find(".secrets-empty").exists()).toBe(false);
+    expect(wrapper.find('[data-testid="new-environment"]').exists()).toBe(false);
     wrapper.unmount();
+  });
+
+  it("clears warm environment and key metadata after a 401", async () => {
+    const first = mountPage();
+    await flushPromises();
+    expect(first.text()).toContain("DATABASE_URL");
+    first.unmount();
+
+    api.mockRejectedValue(
+      new ApiError("Authentication required", 401, { error: "Authentication required" }),
+    );
+    const revisit = mountPage(null);
+    await flushPromises();
+
+    expect(revisit.get('[role="alert"]').text()).toContain(
+      "Sign in to view project environments and keys.",
+    );
+    expect(revisit.find(".secrets-ledger").exists()).toBe(false);
+    expect(revisit.find(".secrets-empty").exists()).toBe(false);
+    expect(revisit.find('[data-testid="new-environment"]').exists()).toBe(false);
+    expect(revisit.text()).not.toContain("DATABASE_URL");
+    expect(revisit.text()).not.toContain("Authentication required");
+    revisit.unmount();
   });
 
   it("renders the registered fake shot fixture without loading project secrets", async () => {
@@ -300,6 +329,29 @@ describe("SecretsView (#0929)", () => {
     expect(document.body.querySelector('[role="alert"]')?.textContent).toContain("already exists");
     wrapper.unmount();
   });
+  it("uses sign-in guidance when environment creation returns 401", async () => {
+    api.mockImplementation(async (path, opts) => {
+      if (path === "/api/project-environments" && opts?.method === "POST")
+        throw new ApiError("Authentication required", 401, { error: "Authentication required" });
+      return answer(path) as never;
+    });
+    const wrapper = mountPage();
+    await flushPromises();
+    await wrapper.get('[data-testid="new-environment"]').trigger("click");
+    const input = document.querySelector<HTMLInputElement>('input[placeholder="dev-local"]')!;
+    input.value = "fresh";
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+    document
+      .querySelector<HTMLButtonElement>(".secrets-create-actions button[type=submit]")!
+      .click();
+    await flushPromises();
+
+    expect(document.body.textContent).toContain("Sign in to view project environments and keys.");
+    expect(document.body.textContent).not.toContain("Authentication required");
+    expect(wrapper.find('[data-testid="new-environment"]').exists()).toBe(false);
+    expect(wrapper.find(".secrets-empty").exists()).toBe(false);
+    wrapper.unmount();
+  });
   it("changes the viewed environment without rebinding anything", async () => {
     const wrapper = mountPage();
     await flushPromises();
@@ -485,6 +537,23 @@ describe("SecretsView (#0929)", () => {
     // Never a path, a file name, or any value-shaped payload.
     expect(JSON.stringify(sent)).not.toContain(".env");
     expect(JSON.stringify(sent)).not.toContain("value");
+    wrapper.unmount();
+  });
+  it("uses sign-in guidance when opening the environment file returns 401", async () => {
+    window.history.replaceState({}, "", "/secrets?shotState=secrets%3Apopulated");
+    api.mockImplementation(async (path: string) => {
+      if (path.includes("/open-in-editor"))
+        throw new ApiError("Authentication required", 401, { error: "Authentication required" });
+      return {} as never;
+    });
+    const wrapper = mountPage();
+    const repo = useRepoStore();
+    await flushPromises();
+    await wrapper.get(".secrets-open-editor").trigger("click");
+    await flushPromises();
+
+    expect(repo.toasts[0]?.message).toBe("Sign in to view project environments and keys.");
+    expect(wrapper.text()).not.toContain("Authentication required");
     wrapper.unmount();
   });
   it("shows concurrent edit feedback accessibly and offers refresh", async () => {
