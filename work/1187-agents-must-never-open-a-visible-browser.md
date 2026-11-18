@@ -1,5 +1,4 @@
 ---
-check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-18T15:42:06.935Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 id: "1187"
 title: "Agents must never open a visible browser or steal focus: add rule + guard for QA/preview runs"
@@ -41,4 +40,5 @@ Do not touch repoos.toml (the live engineer instructions there are Nick's to edi
 - 2026-11-18T15:42:03Z · message_queued at 2026-11-18T15:42:03.801Z
 - 2026-11-18T15:42:03Z · handoff failed · handoff recovery attempted · finalization failed
 - 2026-11-18T15:42:06Z · message_delivered: 1 message(s)
+
 
