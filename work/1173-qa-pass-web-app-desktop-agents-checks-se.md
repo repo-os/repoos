@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-18T05:53:46Z"
+review_passes: 2
 id: "1173"
 title: "QA pass: web app desktop – Agents, Checks, Settings, Releases pages end to end"
 type: bug
@@ -9,10 +11,8 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-web-app-desktop-agents-checks-se
 created_at: "2026-11-18T03:57:22Z"
-updated_at: "2026-11-18T05:53:46Z"
 review_rounds: 1
 routing_switches: 1
-review_passes: 1
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-11-18T04:29:14.766Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-18T04:41:03.570Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-18T04:49:49.328Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
@@ -72,3 +72,4 @@ Do not touch repoos.toml.
 - 2026-11-18T05:53:18Z · status active→review
 - 2026-11-18T05:53:19Z · message_queued at 2026-11-18T05:53:19.138Z
 - 2026-11-18T05:53:46Z · note: review pass 2: good to go
+
