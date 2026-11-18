@@ -665,8 +665,8 @@ export const useConfigStore = defineStore("config", () => {
     form.whisperEnabled = res.config.whisperEnabled === true;
   }
 
-  async function load(): Promise<void> {
-    loaded.value = false;
+  async function load(options: { keepLoaded?: boolean } = {}): Promise<void> {
+    if (!options.keepLoaded) loaded.value = false;
     error.value = "";
     msg.value = "";
     try {
