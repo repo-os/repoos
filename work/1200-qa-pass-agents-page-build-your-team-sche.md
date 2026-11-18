@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-18T20:20:31Z"
-review_passes: 1
 id: "1200"
 title: "QA pass: Agents page Build Your Team, Scheduled Tasks, Reminders and Detected Coding Agents tabs"
 type: bug
@@ -11,6 +9,8 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-agents-page-build-your-team-sche
 created_at: "2026-11-18T19:47:54Z"
+updated_at: "2026-11-18T20:23:04Z"
+review_passes: 1
 handoff_signal_retry_count: 2
 ---
 ## Problem
@@ -39,4 +39,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T20:19:44Z · status active→review
 - 2026-11-18T20:19:44Z · message_queued at 2026-11-18T20:19:44.248Z
 - 2026-11-18T20:20:31Z · note: review pass 1: needs some work
-
+- 2026-11-18T20:23:04Z · note: ui verification passed: 1 shot captured with clean console
