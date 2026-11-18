@@ -3,6 +3,9 @@ id: "1170"
 title: "QA pass: web app mobile widths (375/768) across Work, Releases, Settings, Agents, Checks"
 type: bug
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: `needs some work` — The changed mobile layouts lack handoff screenshots or verification assertions.
 priority: p2
 area: web
 assigned_to: ai
@@ -116,3 +119,4 @@ Do not touch repoos.toml. Pages use full .main width.
 - 2026-11-18T05:14:44Z · message_queued at 2026-11-18T05:14:44.788Z
 - 2026-11-18T05:14:45Z · note: shots: failed — browser capture cancelled
 - 2026-11-18T05:14:45Z · note: review pass 5: needs some work
+- 2026-11-18T05:14:45Z · needs_input
