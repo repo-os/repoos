@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-notifications-toasts-and-error-b
 created_at: "2026-11-18T18:47:48Z"
-updated_at: "2026-11-18T18:55:34Z"
+updated_at: "2026-11-18T18:59:14Z"
 ---
 ## Problem
 Notifications and error banners are generated from many places and may be inconsistent or stale.
@@ -28,3 +28,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T18:47:53Z · status ready→active, branch
 - 2026-11-18T18:52:42Z · body
 - 2026-11-18T18:55:34Z · body
+- 2026-11-18T18:59:14Z · CTO nudge: held — handoff gate is running
