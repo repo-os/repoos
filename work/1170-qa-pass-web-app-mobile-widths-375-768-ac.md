@@ -11,7 +11,7 @@ branch: feat/qa-pass-web-app-mobile-widths-375-768-ac
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-18T02:19:49Z"
-updated_at: "2026-11-18T05:14:44Z"
+updated_at: "2026-11-18T05:14:45Z"
 review_passes: 4
 review_rounds: 2
 ---
@@ -114,3 +114,4 @@ Do not touch repoos.toml. Pages use full .main width.
 - 2026-11-18T05:12:44Z · body
 - 2026-11-18T05:13:50Z · status active→review
 - 2026-11-18T05:14:44Z · message_queued at 2026-11-18T05:14:44.788Z
+- 2026-11-18T05:14:45Z · note: shots: failed — browser capture cancelled
