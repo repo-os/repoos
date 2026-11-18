@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-releases-page-and-checks-page-ev
 created_at: "2026-11-18T08:17:32Z"
-updated_at: "2026-11-18T08:54:30Z"
+updated_at: "2026-11-18T08:54:33Z"
 last_close_out_gate_ms: 276416
 last_close_out_gate_at: "2026-11-18T08:54:30.023Z"
 review_passes: 1
@@ -52,4 +52,4 @@ Do not touch repoos.toml; skip what #1168 and #1173 covered.
 - 2026-11-18T08:42:31Z · message_queued at 2026-11-18T08:42:31.182Z
 - 2026-11-18T08:43:14Z · note: review pass 1: good to go
 - 2026-11-18T08:54:30Z · close-out gate completed in 276s
-
+- 2026-11-18T08:54:33Z · message_dropped: 1 queued message(s) discarded — task is done
