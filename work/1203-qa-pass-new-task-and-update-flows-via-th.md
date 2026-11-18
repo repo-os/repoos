@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-new-task-and-update-flows-via-th
 created_at: "2026-11-18T20:47:36Z"
-updated_at: "2026-11-18T21:10:32Z"
+updated_at: "2026-11-18T21:28:07Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -28,11 +28,11 @@ Do not touch repoos.toml. Never open a visible browser window.
 ```json
 [
 {
-  "label": "New-task needs-input message",
-  "target": "default",
-  "route": "/work",
-  "highlight": "[role=\"status\"]",
-  "state": "toast:taskNeedsInput"
+"label": "New-task needs-input message",
+"target": "default",
+"route": "/work",
+"highlight": "[role=\"status\"]",
+"state": "toast:taskNeedsInput"
 }
 ]
 ```
@@ -56,3 +56,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T21:08:28Z · status review→active
 - 2026-11-18T21:08:30Z · CTO nudge: held — remote validation is running
 - 2026-11-18T21:10:32Z · body
+- 2026-11-18T21:28:07Z · body
