@@ -296,7 +296,9 @@ describe("feature releases", () => {
   });
 
   it("keeps the available-release notice above mobile navigation", () => {
-    expect(releaseUpdateNotificationSource).toMatch(/class="release-update-banner"\s+data-overlay-layer="floating"/);
+    expect(releaseUpdateNotificationSource).toMatch(
+      /class="release-update-banner"\s+data-overlay-layer="floating"/,
+    );
     expect(releaseUpdateNotificationSource).toMatch(
       /\.release-update-banner\s*\{[^}]*position:\s*fixed/s,
     );
