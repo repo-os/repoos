@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-task-creation-and-editing-flows-
 created_at: "2026-11-18T16:17:39Z"
-updated_at: "2026-11-18T17:20:54Z"
+updated_at: "2026-11-18T17:20:55Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -94,3 +94,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T17:20:54Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code unknown) · last assistant: The remote changed-path suite is running now; it’s past the halfway mark with the reported tests passing so far. I’m continuing to wait for the final result. · stderr: (empty)
 - 2026-11-18T17:20:54Z · status active→review
 - 2026-11-18T17:20:54Z · message_delivered: 1 message(s)
+- 2026-11-18T17:20:55Z · note: handoff requested (cli)
