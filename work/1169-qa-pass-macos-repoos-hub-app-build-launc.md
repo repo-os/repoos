@@ -2,7 +2,7 @@
 id: "1169"
 title: "QA pass: macOS RepoOS Hub app – build, launch, connect, and fix what is broken"
 type: bug
-status: review
+status: active
 priority: p2
 area: macos
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/qa-pass-macos-repoos-hub-app-build-launc
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-18T02:19:44Z"
-updated_at: "2026-11-18T07:31:56Z"
+updated_at: "2026-11-18T07:31:57Z"
 review_rounds: 1
 review_passes: 5
 engineer_stall_resume_log: "[{\"at\":\"2026-11-18T04:39:18.645Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-18T04:49:19.309Z\",\"reason\":\"clean-exit-without-handoff\"}]"
@@ -147,4 +147,3 @@ Signed-in projects and tasks remain unverified because automated email-code entr
 - 2026-11-18T07:28:37Z · watchdog: restarting engineer after 42m with no live process
 - 2026-11-18T07:31:00Z · body
 - 2026-11-18T07:31:56Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The requested scoped check passed on `c089428d6b427ece90cd706ae6a6a37f0706cda3`, and I updated the engineering report draft to describe this tree and check. I did **not** request handoff: the latest review requires signed-in Projects and T… · stderr: Reading additional input from stdin... 2026-11-18T07:31:17.552629Z ERROR codex_core::tools::router: error=write_stdin failed: Unknown process id 31261
-- 2026-11-18T07:31:56Z · status active→review
