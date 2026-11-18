@@ -29,12 +29,13 @@ browser run recorded here; nothing was checked on a real device.
 
 | Flow | Result |
 | --- | --- |
-| `many`: ⋮ on a row opens the Edit server sheet | Pass. URL wraps inside the sheet. |
+| `many`: ⋮ on a row opens the Edit server sheet | Pass for the fixture's short URLs. A long saved URL was clipped until the wrap fix below; with it, a 119-character path URL wraps inside the sheet at 375px. |
 | `add`: enter `http://…` and press Save | Pass. Inline red error "Enter an HTTPS URL (e.g. https://dev.repoos.org)." sits under the field; buttons stay on-screen. |
 | `discover`: expand "Couldn't check these machines" | Pass. |
 | `many` with a 66-character server name and a long URL | **Defect, fixed.** See below. |
 | `discover` with the same long name and URL | Pass. |
-| `many` with an 85-character URL and no break points | Pass after the fix. The picker and sheet stay in bounds. Not measured before the fix. |
+| `many` with an 85-character URL and no break points | Pass after the fix. The sheet's URL wraps within its box (343 of 343px). The picker row truncates the host with an ellipsis by design, so its text is wider than the row. |
+| Long unbroken server-supplied text: a 120-character discovery reason, a discovery message, a form warning | Pass after the wrap fix. Each element's `scrollWidth` equals its `clientWidth`. Without the fix they overflowed (for example 720px of content in a 317px reason row). |
 
 There is no `?fixture=error` route. The error states above were reached by
 interaction, so future sweeps need that path to be re-typed by hand.
@@ -45,7 +46,7 @@ interaction, so future sweeps need that path to be re-typed by hand.
 a `<button class="server-row">` inside a flex card with `overflow: hidden`.
 A button is a flex item with `min-width: auto`, so its nowrap name and host set
 its minimum width. The row grew to about 570px, the card clipped it, and the
-⋮ edit button was pushed out of view. The name's start was cut off too.
+⋮ edit button was pushed out of view. Only the row's right end was clipped, so the name still began at its normal position and ran off the card's edge.
 
 Reproduced on this branch with only the fix reverted, at a 375px viewport: the
 row's right edge is at 587px, the card's at 359px, and the ⋮ button ends at 635px.
@@ -57,6 +58,12 @@ Fix (`mobile/src/style.css`): `.server-row` gets `min-width: 0`. The existing
 Only `.server-row` had this shape among the hub's `flex: 1` rules. The
 discovery cards are full width with a `min-width: 0` text column already, and
 they stayed in bounds in the long-name run.
+
+**Same class, text that never wraps.** Review found that server-supplied text
+had no `overflow-wrap`, so one unbroken token overflowed its box and was
+clipped silently. Affected: the Edit sheet's server URL (`.hint`), the discovery
+message and form warning (`.discovery-message`, `.warn`), and the failure-row
+reason (`.reachability`). Each now sets `overflow-wrap: anywhere`.
 
 Test: `src/ui-app/tests/mobile-hub-picker-layout.test.ts` pins the declarations
 (jsdom cannot lay out). The pre-fix stylesheet fails the `.server-row` check.
@@ -78,3 +85,15 @@ cd mobile && bunx vite --port 5188
 # then open http://localhost:5188/?fixture=many&platform=android
 # and the other fixture routes above, at 375px.
 ```
+
+The interaction states are reproduced by hand at 375px:
+
+1. **Edit sheet:** on `?fixture=many`, tap the ⋮ button on the first row.
+2. **Add-form error:** on `?fixture=add`, set the URL to `http://insecure.example.test`
+   and press Save. The HTTPS error appears under the field.
+3. **Failure group:** on `?fixture=discover`, expand "Couldn't check these machines".
+4. **Long text:** the fixtures carry short names. To test wrapping, use a browser
+   devtools override or a route rewrite of `src/fixture.ts`, replacing a server URL
+   or the `reason` with a long unbroken token, then repeat steps 1 and 3.
+
+There is no `?fixture=error` route, so steps 2 and 4 are the only error paths.

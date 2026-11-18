@@ -170,12 +170,15 @@ select {
   font-size: 13px;
   line-height: 1.45;
   margin: 0;
+  /* Server URLs and reasons can be one unbroken token; wrap it, never clip it. */
+  overflow-wrap: anywhere;
 }
 
 .warn {
   color: var(--shell-danger);
   font-size: 13px;
   margin: 0;
+  overflow-wrap: anywhere;
 }
 
 .muted {
@@ -368,6 +371,7 @@ select {
   font-size: 12px;
   color: var(--txt-faint);
   margin-top: 2px;
+  overflow-wrap: anywhere;
 }
 
 .reachability.reachable {
@@ -477,6 +481,7 @@ select {
   color: var(--txt-dim);
   font-size: 14px;
   line-height: 1.5;
+  overflow-wrap: anywhere;
 }
 
 .discovery-list {

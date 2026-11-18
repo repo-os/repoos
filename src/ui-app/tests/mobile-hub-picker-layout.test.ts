@@ -40,4 +40,14 @@ describe("mobile hub server picker at phone width", () => {
     expect(body).toContain("white-space: nowrap");
     expect(body).toContain("text-overflow: ellipsis");
   });
+
+  // Server-supplied text (a saved URL, a tailnet reason or message) can be one
+  // unbroken token. Without overflow-wrap it overflows the 375px box and is
+  // clipped by `html, body { overflow: hidden }` rather than wrapping.
+  it.each([".hint", ".warn", ".discovery-message", ".reachability"])(
+    "%s wraps long unbroken text",
+    (selector) => {
+      expect(ruleBody(selector)).toContain("overflow-wrap: anywhere");
+    },
+  );
 });
