@@ -290,3 +290,4 @@ Signed-in projects and tasks remain unverified because automated email-code entr
 - 2026-11-18T11:40:37Z · status active→review
 - 2026-11-18T11:40:37Z · message_queued at 2026-11-18T11:40:37.977Z
 - 2026-11-18T11:40:38Z · note: shots: skipped — the diff (25 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-11-18T11:40:38Z · message_delivered: 2 message(s)
