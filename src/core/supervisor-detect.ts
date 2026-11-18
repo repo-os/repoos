@@ -291,7 +291,10 @@ function detectDarwinSupervisor(
   return { kind: "none" };
 }
 
-function detectLinuxSupervisor(pid: number, execFile: typeof execFileSync): SupervisorDetectResult {
+export function detectLinuxSupervisor(
+  pid: number,
+  execFile: typeof execFileSync = execFileSync,
+): SupervisorDetectResult {
   try {
     const out = execFile("systemctl", ["status", String(pid)], {
       encoding: "utf8",
@@ -316,7 +319,9 @@ function detectLinuxSupervisor(pid: number, execFile: typeof execFileSync): Supe
         timeout: 1500,
         stdio: ["ignore", "pipe", "ignore"],
       });
-      const unit = cgroup.match(/(?:^|\/)([^/]+\.service)(?:\/|$)/m)?.[1];
+      const unit = [...cgroup.matchAll(/(?:^|\/)([^/]+\.service)(?=\/|$)/gm)]
+        .map((match) => match[1]!)
+        .find((candidate) => !candidate.startsWith("user@"));
       if (unit && !unit.startsWith("user@")) {
         const info = parseSystemdPidStatus(`● ${unit}\n${cgroup}`);
         if (info) {
