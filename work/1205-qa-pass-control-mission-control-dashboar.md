@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-control-mission-control-dashboar
 created_at: "2026-11-18T21:47:29Z"
-updated_at: "2026-11-18T22:43:17Z"
+updated_at: "2026-11-18T22:46:18Z"
 handoff_signal_retry_count: 1
 review_rounds: 1
 routing_switches: 1
@@ -29,10 +29,24 @@ Do not touch repoos.toml. Never open a visible browser window.
 ```json
 [
 {
-"label": "Mission Control resource panel and process table",
-"target": "default",
-"route": "/",
-"highlight": ".resource-panel"
+  "label": "Mission Control resources at desktop",
+  "target": "default",
+  "route": "/",
+  "selector": ".resource-panel",
+  "highlight": ".process-table-wrap",
+  "state": "system:processTable",
+  "viewportWidth": 1280,
+  "viewportHeight": 1200
+},
+{
+  "label": "Mission Control resources at 375px",
+  "target": "default",
+  "route": "/",
+  "selector": ".resource-panel",
+  "highlight": ".process-table-wrap",
+  "state": "system:processTable",
+  "viewportWidth": 375,
+  "viewportHeight": 1200
 }
 ]
 ```
@@ -59,3 +73,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T22:40:14Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-18T22:43:16Z · watchdog: restarting engineer because a queued message waited 3m with no live process
 - 2026-11-18T22:43:17Z · message_delivered: 1 message(s)
+- 2026-11-18T22:46:18Z · body
