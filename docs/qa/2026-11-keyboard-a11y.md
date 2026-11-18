@@ -2,41 +2,30 @@
 
 ## Scope
 
-The requested pass covers Work, Settings, Releases, and Agents, with focus order,
-control names, overlay dismissal and light/dark contrast in scope. The task
-worktree was reviewed for shared Radix dialog usage, Escape handlers and
-accessible labels. The shared dialog wrapper is built on Radix Vue, which
-provides modal focus containment, Escape dismissal and focus restoration; the
-existing floating-layer regression test covers focus behavior for nested
-teleported fields.
+Keyboard navigation was checked on Work, Settings, Releases and Agents using a
+headless Playwright browser against the auth-less server from this worktree.
+The pass covered initial Tab order on each route, the Agents Skills dialog's
+focus containment, Escape dismissal and focus restoration, accessible names,
+and automated contrast in light and dark themes.
 
 ## Finding and fix
 
-The Agents page's Skills dialog used a close button whose only content was the
-`×` glyph. That is not a useful spoken action name for screen-reader users. The
-button now has the explicit accessible name “Close dialog.” During the live
-keyboard walkthrough, Chrome's accessibility tree also exposed the skills-add
-controls on Agent cards as unnamed buttons: their `title` was not used as the
-accessible name. Each now has the agent-specific name “Add skills to <role>.”
-`src/ui-app/tests/keyboard-a11y.test.ts` protects both names from regression.
+The Agents Skills dialog close button had only an `×` glyph. It now has the
+accessible name “Close dialog.” The shared Agent card's skills-add button had a
+`title` but no accessible name; each instance now has the role-specific name
+“Add skills to <role>.” The keyboard and accessibility regression test protects
+both labels.
 
 ## Verification
 
-The focused Vitest run passed 21 tests: the new accessible-name regression and
-the existing contrast-audit unit tests. `REPOOS_CHECK_CHANGED=main repoos
-check` also passed. Its rendered contrast audit examined 16 theme scopes × 14
-screen states (15,292 visible text runs) and found no text below the WCAG floor.
-The configured UI smoke test passed as well, including its existing responsive
-checks at 1440, 390 and 320 pixels in light and dark modes.
+The headless keyboard pass reached the first ten focus stops on each of Work,
+Settings, Releases and Agents. On Agents, keyboard input opened the Skills
+dialog; twelve Tab presses remained inside it; Escape closed it and returned
+focus to “Add skills to engineer.” Releases' Preview action expands an inline
+disclosure rather than a dialog, so Escape correctly left that preview open.
 
-The auth-less app was opened at `127.0.0.1:7273` and traversed with keyboard
-input in Chrome. On Work, Tab reached the global actions, navigation links,
-board filters and task actions in a coherent order. Releases rendered its
-controls in the accessibility tree; the email Preview action expanded its
-inline preview and Escape left it expanded, as expected for a non-dialog
-disclosure. Settings rendered its section tabs and form controls. Agents
-rendered role controls and exposed the unnamed skills buttons, which were fixed
-above. The Skills dialog was not successfully opened in this browser pass, so
-its keyboard trap, Escape dismissal and focus restoration remain unverified.
-The automated contrast audit and smoke run passed, but they do not establish
-those interaction details on all four screens.
+The changed-path test suite passed 185 tests across 11 files, including both
+keyboard and accessible-name regression assertions. The rendered contrast
+audit examined 15,292 visible text runs across 16 theme scopes and 14 screen
+states, finding no text below the WCAG floor. The UI smoke test passed at 1440,
+390 and 320 pixels in light and dark modes.
