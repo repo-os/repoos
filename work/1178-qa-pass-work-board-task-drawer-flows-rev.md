@@ -42,3 +42,4 @@ Do not touch repoos.toml.
 - 2026-11-18T07:06:18Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
 - 2026-11-18T07:06:19Z · note: handoff requested (cli)
 - 2026-11-18T07:07:11Z · message_queued at 2026-11-18T07:07:11.213Z
+- 2026-11-18T07:07:11Z · handoff failed · task-file handoff failed at check · repoos check failed: ui-smoke — $ bun scripts/ui-smoke.mjs
