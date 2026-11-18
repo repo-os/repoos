@@ -31,6 +31,60 @@ describe("docs store search index (#0557)", () => {
     expect(docs.docs).toEqual([]);
   });
 
+  it("keeps the latest docs refresh authoritative while requests overlap", async () => {
+    const docs = useDocsStore();
+    let resolveOlder!: (value: unknown) => void;
+    let resolveNewer!: (value: unknown) => void;
+    const older = new Promise((resolve) => {
+      resolveOlder = resolve;
+    });
+    const newer = new Promise((resolve) => {
+      resolveNewer = resolve;
+    });
+    api
+      .mockReturnValueOnce(older as ReturnType<typeof apiMod.api>)
+      .mockReturnValueOnce(newer as ReturnType<typeof apiMod.api>);
+
+    const olderLoad = docs.loadDocs();
+    const newerLoad = docs.loadDocs();
+    resolveOlder([{ path: "docs/old.md", title: "Old", mtimeMs: 1 }]);
+    await Promise.resolve();
+    expect(docs.docsLoading).toBe(true);
+    expect(docs.docs).toEqual([]);
+
+    resolveNewer([{ path: "docs/new.md", title: "New", mtimeMs: 2 }]);
+    await expect(newerLoad).resolves.toBe(true);
+    await expect(olderLoad).resolves.toBe(true);
+    expect(docs.docsLoading).toBe(false);
+    expect(docs.docs.map((doc) => doc.path)).toEqual(["docs/new.md"]);
+  });
+
+  it("ignores a stale docs failure after a newer refresh succeeds", async () => {
+    const docs = useDocsStore();
+    let rejectOlder!: (reason: Error) => void;
+    let resolveNewer!: (value: unknown) => void;
+    const older = new Promise((_, reject) => {
+      rejectOlder = reject;
+    });
+    const newer = new Promise((resolve) => {
+      resolveNewer = resolve;
+    });
+    api
+      .mockReturnValueOnce(older as ReturnType<typeof apiMod.api>)
+      .mockReturnValueOnce(newer as ReturnType<typeof apiMod.api>);
+
+    const olderLoad = docs.loadDocs();
+    const newerLoad = docs.loadDocs();
+    resolveNewer([]);
+    await expect(newerLoad).resolves.toBe(true);
+    rejectOlder(new Error("late failure"));
+    await expect(olderLoad).resolves.toBe(true);
+
+    expect(docs.docsLoading).toBe(false);
+    expect(docs.docsLoadError).toBe("");
+    expect(docs.docs).toEqual([]);
+  });
+
   it("syncDocAfterCreate indexes a path when the listing API omits it", async () => {
     const docs = useDocsStore();
     docs.docs = [{ path: "docs/existing.md", title: "Existing", mtimeMs: 1 }];

@@ -10,6 +10,7 @@ import { createPinia, setActivePinia } from "pinia";
 import { nextTick } from "vue";
 import { mount } from "@vue/test-utils";
 import { useRepoStore } from "../src/stores/repo";
+import * as apiMod from "../src/api";
 import InputCard from "../src/components/InputCard.vue";
 import type { Input } from "../../core/input.js";
 import type { RepoEvent } from "../src/types";
@@ -58,6 +59,50 @@ const rawInput = (id: string): Input =>
   }) as Input;
 
 describe("enrichment-pending tracking (#0631)", () => {
+  it("does not let an older overlapping inputs refresh replace the latest snapshot", async () => {
+    setActivePinia(createPinia());
+    const pending: Array<{ resolve: (value: unknown) => void }> = [];
+    vi.spyOn(apiMod, "api").mockImplementation((path: string) => {
+      if (path !== "/api/inputs") return Promise.resolve([]) as never;
+      return new Promise((resolve) => pending.push({ resolve })) as never;
+    });
+    const repo = useRepoStore();
+    const firstLoad = repo.refreshInputs();
+    const secondLoad = repo.refreshInputs();
+    const first = pending[pending.length - 2];
+    const second = pending[pending.length - 1];
+    const olderInput = rawInput("older");
+    const newerInput = rawInput("newer");
+
+    second.resolve([newerInput]);
+    await expect(secondLoad).resolves.toBe(true);
+    first.resolve([olderInput]);
+    await expect(firstLoad).resolves.toBe(true);
+
+    expect(repo.inputs.map((input) => input.id)).toEqual(["newer"]);
+  });
+
+  it("does not report a superseded inputs failure as the latest refresh result", async () => {
+    setActivePinia(createPinia());
+    const pending: Array<{ resolve: (value: unknown) => void; reject: (reason: Error) => void }> =
+      [];
+    vi.spyOn(apiMod, "api").mockImplementation((path: string) => {
+      if (path !== "/api/inputs") return Promise.resolve([]) as never;
+      return new Promise((resolve, reject) => pending.push({ resolve, reject })) as never;
+    });
+    const repo = useRepoStore();
+    const olderLoad = repo.refreshInputs();
+    const newerLoad = repo.refreshInputs();
+    const older = pending[pending.length - 2];
+    const newer = pending[pending.length - 1];
+
+    newer.resolve([rawInput("current")]);
+    await expect(newerLoad).resolves.toBe(true);
+    older.reject(new Error("stale offline response"));
+    await expect(olderLoad).resolves.toBe(true);
+    expect(repo.inputs.map((input) => input.id)).toEqual(["current"]);
+  });
+
   it("marks the created input enriching on submit and clears on input.enriched", async () => {
     stubPostInput({ id: "abc-123", enriching: true });
     setActivePinia(createPinia());

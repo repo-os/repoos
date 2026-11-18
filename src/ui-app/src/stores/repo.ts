@@ -4064,6 +4064,7 @@ export const useRepoStore = defineStore("repo", () => {
    * is a pure backstop for a lost SSE stream, not the normal exit path.
    */
   const enrichingInputs = reactive(new Set<string>());
+  let inputsRefreshVersion = 0;
   const enrichTimers = new Map<string, ReturnType<typeof setTimeout>>();
   const ENRICH_PENDING_TIMEOUT_MS = 180_000; // backstop only — see below
   /**
@@ -4171,14 +4172,23 @@ export const useRepoStore = defineStore("repo", () => {
   }
 
   async function refreshInputs(): Promise<boolean> {
+    const version = ++inputsRefreshVersion;
     const hadPending = enrichingInputs.size > 0;
     try {
-      inputs.value = await api<(Input & { enriching?: boolean })[]>("/api/inputs");
+      const nextInputs = await api<(Input & { enriching?: boolean })[]>("/api/inputs");
+      // Startup, SSE backstops, and view refreshes may overlap. Keep the
+      // newest requested snapshot authoritative even if an older request
+      // finishes later.
+      if (version !== inputsRefreshVersion) return true;
+      inputs.value = nextInputs;
       reconcileEnrichmentPending();
       if (hadPending) window.dispatchEvent(new Event("repoos:inputs-updated"));
       return true;
     } catch {
       /* leave existing value in place on error */
+      // A failure from a superseded request is not the result of the current
+      // refresh and must not make a waiting caller show a stale error state.
+      if (version !== inputsRefreshVersion) return true;
       return false;
     }
   }

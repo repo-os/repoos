@@ -49,10 +49,13 @@ desktop and phone widths.
 
 ## Regression coverage
 
-The docs-store test covers failure state, loading completion, and error clearing
-after a successful retry. The Inputs view test covers showing the error instead
-of the successful-empty message and recovering to that empty message after a
-successful retry. The focused test run passed all 13 tests across the two
-affected test files and the wrapper's boot-timing suite. The scoped RepoOS
-check passed formatting, lint, build, UI guards, rendered contrast, UI smoke,
-and the remote changed-path suite (1,705 tests).
+The docs-store test covers failure state, loading completion, error clearing
+after a successful retry, and overlapping refreshes. A newer docs response now
+remains authoritative if an earlier response finishes later; only the current
+request controls loading and error state. The Inputs store applies the same
+latest-request rule so an older list response cannot replace newer data, and a
+superseded failure does not surface as the current refresh's error. Regression
+tests cover both out-of-order successes and stale failures. The focused test run
+passed 17 tests across the two affected test files and the wrapper's boot-timing
+suite. The scoped RepoOS check passed formatting, lint, build, UI guards,
+rendered contrast, UI smoke, and the remote changed-path suite (1,705 tests).

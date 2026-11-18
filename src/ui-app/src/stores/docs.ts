@@ -16,19 +16,26 @@ export const useDocsStore = defineStore("docs", () => {
   const skillContent = ref("");
   const skillName = ref("");
   const skillDesc = ref("");
+  let docsLoadVersion = 0;
 
   async function loadDocs(): Promise<boolean> {
+    const version = ++docsLoadVersion;
     docsLoading.value = true;
     docsLoadError.value = "";
     try {
-      docs.value = await api<DocMeta[]>("/api/docs");
-      if (docs.value.length && !selDoc.value) await loadDoc(docs.value[0].path);
+      const nextDocs = await api<DocMeta[]>("/api/docs");
+      // App startup and the Context refresh button can overlap. Only the most
+      // recently requested listing may update shared data or request state.
+      if (version !== docsLoadVersion) return true;
+      docs.value = nextDocs;
+      if (nextDocs.length && !selDoc.value) await loadDoc(nextDocs[0].path);
       return true;
     } catch {
+      if (version !== docsLoadVersion) return true;
       docsLoadError.value = "Could not load docs. Try again.";
       return false;
     } finally {
-      docsLoading.value = false;
+      if (version === docsLoadVersion) docsLoading.value = false;
     }
   }
 
