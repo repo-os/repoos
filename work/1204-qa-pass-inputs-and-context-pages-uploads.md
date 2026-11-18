@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-18T21:27:46.766Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 id: "1204"
 title: "QA pass: Inputs and Context pages – uploads, docs ingestion and empty states"
 type: bug
@@ -87,3 +89,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T21:27:43Z · message_delivered: 1 message(s)
 - 2026-11-18T21:27:44Z · status review→active
 - 2026-11-18T21:27:46Z · message_queued at 2026-11-18T21:27:46.665Z
+
