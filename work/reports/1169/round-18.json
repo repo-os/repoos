@@ -1,0 +1,12 @@
+{
+  "taskId": "1169",
+  "round": 18,
+  "at": "2026-11-18T15:47:28.947Z",
+  "agent": "codex",
+  "model": "gpt-6-luna",
+  "branch": "feat/qa-pass-macos-repoos-hub-app-build-launc",
+  "baseSha": "455f9f7e9e4efe8fd591197d41e5fa0a274448b2",
+  "sourceSha": "d465bf8116e720620064b37ede09a84add512ab3",
+  "wordCount": 206,
+  "markdown": "## TL;DR\nReview pass 9 was good to go for the in-scope macOS Hub build, launch, discovery, and connection checks. No code changes are needed. Signed-in Projects and Tasks remain assigned to human follow-up #1174 and are not claimed as verified.\n\n## Work and rationale\nThe QA record documents the checked native Hub flows and the fixes for test-host registry isolation and XCTest scratch cleanup. The latest review found no bugs and states that the signed-in screens are out of scope pending #1174. The branch is clean at the current tree.\n\n## Approaches tried\nAutomated email-code entry did not reach the signed-in web UI. The updated task requirements track that verification in human task #1174. The QA record continues to identify those screens as unverified until the human result is recorded.\n\n## Challenges and blockers\nThe remaining signed-in check requires the normal email-code flow and human observation. #1174 is still human-assigned with no results. The last `repoos check` passed on this tree, including build, the test suite, UI smoke, rendered contrast, and macOS Hub icon transparency.\n\n## Key learnings\nRepoOS consumes the engineering report draft during handoff finalization. Each handoff attempt needs a fresh draft with these required sections, even after a good-to-go review when no implementation changes are needed.\n\n## Generated change summary\n\nBase tree: `455f9f7e9e4efe8fd591197d41e5fa0a274448b2`\nSource tree: `f164ff9bd8e636dcb4bab22aeaf343c08c41ecb1`\n\n- No changed files."
+}
