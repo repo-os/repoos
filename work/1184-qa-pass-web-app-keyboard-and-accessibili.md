@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-web-app-keyboard-and-accessibili
 created_at: "2026-11-18T12:17:32Z"
-updated_at: "2026-11-18T13:42:19Z"
+updated_at: "2026-11-18T13:47:40Z"
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-11-18T12:45:29.556Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-18T12:54:45.117Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-18T13:03:30.252Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
@@ -52,3 +52,4 @@ Do not touch repoos.toml.
 - 2026-11-18T13:40:52Z · body
 - 2026-11-18T13:42:02Z · note: The required live keyboard-only walkthrough of Work, Settings, Releases, and Agents remains unverified. This session's browser host reports unavailable, and managed runner rules prohibit launching the task-specified scratch auth-less server here. Automated check passed, but does not prove Tab order, Escape dismissal, focus containment, or restoration. Please split the remaining walkthrough into a held human task and complete it in an available browser/server session; do not mark this criterion complete from automated evidence alone.
 - 2026-11-18T13:42:19Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The existing implementation and regression test are in place, and the required scoped check passed: 184 tests, build, contrast audit, and UI smoke. I couldn’t complete the required keyboard-only walkthrough. The browser access host was una… · stderr: Reading additional input from stdin...
+- 2026-11-18T13:47:40Z · CTO action: restart-stalled-agent (fresh) · agent exited without emitting the handoff signal
