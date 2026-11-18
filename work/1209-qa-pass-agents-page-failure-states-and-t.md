@@ -1,0 +1,26 @@
+---
+id: "1209"
+title: "QA pass: Agents page failure states and Test button – missing CLI, signed-out agent, rate limit"
+type: bug
+status: inbox
+priority: p2
+area: web
+assigned_to: ai
+created_by: t@t
+branch: ""
+created_at: "2026-11-18T23:17:32Z"
+updated_at: "2026-11-18T23:17:32Z"
+---
+## Problem
+Agent failure states (signed out, missing CLI, rate limited) are common in practice and need verification.
+## Desired UX
+Each failure shows a clear, actionable message and the Test button reports accurately.
+## Acceptance criteria
+- Headless Playwright only against the auth-less dev server with fixtures (just serve-noauth from a scratch worktree); never open a visible browser. Fix bugs with tests.
+- Commit docs/qa/2026-11-agent-failures.md.
+## Notes for AI
+Do not touch repoos.toml. Never open a visible browser window.
+
+## Activity
+
+- 2026-11-18T23:17:32Z · created · t@t
