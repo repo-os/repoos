@@ -2,14 +2,14 @@
 id: "1208"
 title: "QA pass: pairing, login and session screens – OTP, expired sessions, sign-out, mobile widths"
 type: bug
-status: active
+status: review
 priority: p2
 area: [web, server]
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-pairing-login-and-session-screen
 created_at: "2026-11-18T22:47:38Z"
-updated_at: "2026-11-18T22:47:43Z"
+updated_at: "2026-11-18T23:05:53Z"
 ---
 ## Problem
 Auth screens are the first thing users see and must work on phones.
@@ -26,3 +26,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T22:47:38Z · created · t@t
 - 2026-11-18T22:47:41Z · status inbox→ready
 - 2026-11-18T22:47:43Z · status ready→active, branch
+- 2026-11-18T23:05:53Z · status active→review
