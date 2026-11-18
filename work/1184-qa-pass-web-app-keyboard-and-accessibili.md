@@ -52,12 +52,12 @@ Do not touch repoos.toml.
 "route": "/agents?tab=default",
 "highlight": ".am-modal",
 "steps": [
-  {
-    "click": "button.agent-skills-add[aria-label=\"Add skills to engineer\"]"
-  },
-  {
-    "waitMs": 300
-  }
+{
+  "click": "button.agent-skills-add[aria-label=\"Add skills to engineer\"]"
+},
+{
+  "waitMs": 300
+}
 ]
 }
 ]
@@ -120,3 +120,4 @@ Do not touch repoos.toml.
 - 2026-11-18T14:38:37Z · message_delivered: 1 message(s)
 - 2026-11-18T14:39:10Z · body
 - 2026-11-18T15:01:14Z · message_queued at 2026-11-18T15:01:14.424Z
+- 2026-11-18T15:01:14Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
