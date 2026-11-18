@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-18T03:50:26Z"
+review_passes: 3
 id: "1169"
 title: "QA pass: macOS RepoOS Hub app – build, launch, connect, and fix what is broken"
 type: bug
@@ -11,8 +13,6 @@ branch: feat/qa-pass-macos-repoos-hub-app-build-launc
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-18T02:19:44Z"
-updated_at: "2026-11-18T03:50:26Z"
-review_passes: 2
 ---
 ## Problem
 Nick reports the macOS Hub app has been unusable for weeks. Nobody has recently built and driven it.
@@ -62,3 +62,4 @@ Never capture the whole screen. Do not touch repoos.toml.
 - 2026-11-18T03:49:35Z · note: shots: skipped — the diff (9 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-18T03:49:58Z · message_queued at 2026-11-18T03:49:58.287Z
 - 2026-11-18T03:50:26Z · note: review pass 3: needs some work
+
