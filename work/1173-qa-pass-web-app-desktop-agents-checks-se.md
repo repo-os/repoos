@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 994540
-last_close_out_gate_at: "2026-11-18T06:17:28.315Z"
 id: "1173"
 title: "QA pass: web app desktop – Agents, Checks, Settings, Releases pages end to end"
 type: bug
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: 0835df41f0e52ec9f94d49871cd3886f52444cac
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-web-app-desktop-agents-checks-se
 created_at: "2026-11-18T03:57:22Z"
 updated_at: "2026-11-18T06:17:28Z"
+last_close_out_gate_ms: 994540
+last_close_out_gate_at: "2026-11-18T06:17:28.315Z"
 review_passes: 2
 review_rounds: 1
 routing_switches: 1
