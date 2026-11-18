@@ -71,3 +71,4 @@ The initial evidence is an auth-less 401, not proof of a signed-in regression. Q
 - 2026-11-18T00:50:54Z · message_delivered: 1 message(s)
 - 2026-11-18T00:50:55Z · status review→active
 - 2026-11-18T00:58:30Z · message_queued at 2026-11-18T00:58:30.658Z
+- 2026-11-18T00:58:30Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
