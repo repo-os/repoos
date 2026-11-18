@@ -16,7 +16,6 @@ review_rounds: 2
 routing_switches: 1
 routing_escalations: 1
 review_passes: 2
-deferred_handoff_resume_count: 1
 ---
 ## Problem
 On bee, the tuk-driver server runs as the systemd user unit com.repoos.serve.tuk-driver-aaa442e5.service (parent pid 1111 = systemd --user), but the 'RepoOS v0.5.90 is installed' modal said 'This server was started by hand'. Clicking Restart now made the button flicker and the modal stayed; nothing restarted (process start time unchanged, no journal entries). A manual systemctl --user restart worked.
