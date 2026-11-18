@@ -1,18 +1,21 @@
 ---
-updated_at: "2026-11-18T01:58:28Z"
-review_passes: 2
 id: "1168"
 title: "QA pass: exercise the new Releases 'Generate AI notes and publish' flow and the update/restart modal end to end"
 type: bug
-status: review
+status: done
 priority: p1
 area: [web, server]
+merged_commit: 2c645f40252ba299aae7c201719867c38c65d605
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-exercise-the-new-releases-genera
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-18T00:17:51Z"
+updated_at: "2026-11-18T03:40:48Z"
+last_close_out_gate_ms: 771419
+last_close_out_gate_at: "2026-11-18T03:29:19.795Z"
+review_passes: 2
 handoff_signal_retry_count: 2
 review_rounds: 1
 last_check_failure: "repoos check at 2026-11-18T00:54:42.638Z: repoos check failed: ui-smoke — [queue] waiting for a Playwright slot — position 2 (1 ahead)"
@@ -99,4 +102,7 @@ Do not edit repoos.toml.
 - 2026-11-18T01:53:36Z · status active→review
 - 2026-11-18T01:53:36Z · message_queued at 2026-11-18T01:53:36.336Z
 - 2026-11-18T01:58:28Z · note: review pass 2: good to go
-
+- 2026-11-18T02:55:13Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-18T03:29:19Z · close-out gate completed in 771s
+- 2026-11-18T03:29:54Z · status done→done, release:success
+- 2026-11-18T03:40:48Z · message_dropped: 1 queued message(s) discarded — task is done

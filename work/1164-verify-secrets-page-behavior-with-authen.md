@@ -2,10 +2,7 @@
 id: "1164"
 title: Verify Secrets page behavior with authenticated access
 type: bug
-status: review
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: `needs some work` — unsigned 401 state is uncaptured (only shot stale); a stale sign-in error returns in the create dialog.
+status: active
 priority: p2
 area: web
 assigned_to: ai
@@ -14,7 +11,7 @@ branch: feat/verify-secrets-page-behavior-with-authen
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T17:53:29Z"
-updated_at: "2026-11-18T01:24:19Z"
+updated_at: "2026-11-18T04:03:15Z"
 review_passes: 3
 review_rounds: 2
 ---
@@ -36,7 +33,13 @@ The initial evidence is an auth-less 401, not proof of a signed-in regression. Q
 ```json
 [
 {
-"label": "Secrets inventory in the populated signed-in view",
+"label": "Secrets sign-in required state",
+"target": "default",
+"route": "/secrets?shotState=secrets%3Aunauthorized",
+"highlight": "[role=\"alert\"]"
+},
+{
+"label": "Secrets environment with masked keys",
 "target": "default",
 "route": "/secrets?shotState=secrets%3Apopulated",
 "highlight": ".secrets-ledger"
@@ -84,3 +87,10 @@ The initial evidence is an auth-less 401, not proof of a signed-in regression. Q
 - 2026-11-18T01:24:16Z · note: review pass 3: needs some work
 - 2026-11-18T01:24:16Z · needs_input
 - 2026-11-18T01:24:19Z · message_queued at 2026-11-18T01:24:19.068Z
+- 2026-11-18T02:30:10Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-18T03:41:20Z · status review→active
+- 2026-11-18T03:41:23Z · needs_input
+- 2026-11-18T03:41:23Z · message_delivered: 1 message(s)
+- 2026-11-18T03:43:13Z · body
+- 2026-11-18T03:57:13Z · note: adopted orphaned engineer pid 20173
+- 2026-11-18T04:03:15Z · body
