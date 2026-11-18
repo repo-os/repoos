@@ -98,3 +98,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T17:22:28Z · CTO nudge: held — handoff gate is running
 - 2026-11-18T17:22:55Z · status active→review
 - 2026-11-18T17:32:12Z · message_queued at 2026-11-18T17:32:12.387Z
+- 2026-11-18T17:32:12Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: gate exit 1 on bee — fix it in the feature branch and re-run the gate
