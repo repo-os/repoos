@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-repoos-cli-usability-help-text-e
 created_at: "2026-11-18T05:56:48Z"
-updated_at: "2026-11-18T08:08:56Z"
+updated_at: "2026-11-18T08:13:22Z"
 review_passes: 3
 last_check_failure: "repoos check at 2026-11-18T06:45:34.810Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 2
@@ -71,3 +71,4 @@ Do not touch repoos.toml; do not run commands that mutate the real board.
 - 2026-11-18T08:08:55Z · status active→review
 - 2026-11-18T08:08:56Z · message_delivered: 1 message(s)
 - 2026-11-18T08:08:56Z · note: handoff requested (cli)
+- 2026-11-18T08:13:22Z · CTO nudge: held — handoff gate is running
