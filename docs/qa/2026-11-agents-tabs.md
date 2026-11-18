@@ -13,15 +13,18 @@ checks used headless Playwright WebKit only. Layout checks ran at 1280×900 and
 
 | Tab | Browser observations | Result |
 | --- | --- | --- |
-| Build Your Team | Ross and CTO team cards plus built-in agent cards loaded. At 375px the document stayed 375px wide. | Pass for render and horizontal overflow. Persistence could not be verified. |
-| Scheduled Tasks | The `agents:scheduledSeeded` fixture rendered its incomplete-template warning and seeded schedule. The server-backed list also loaded two stored schedules. At 1280px and 375px there was no horizontal overflow. | Render and layout pass. Save attempt was rejected by the preview server (HTTP 405); the form kept its entered values and showed the returned error. |
-| Reminders | The `reminders:due` fixture showed due and upcoming reminders, their links, and actions. At 1280px and 375px there was no horizontal overflow. The reminder editor fit the 375px viewport. | Render and layout pass. Creating a reminder was rejected by the preview server (HTTP 405); the editor showed “preview servers are read-only”. |
+| Build Your Team | Ross and CTO team cards plus built-in agent cards loaded. At 375px the document stayed 375px wide. A Playwright API stub accepted Ross instruction edits; desktop and mobile edits remained after reload. | Render/layout and simulated persistence pass. |
+| Scheduled Tasks | The `agents:scheduledSeeded` fixture rendered its incomplete-template warning and seeded schedule. The server-backed list loaded two stored schedules. There was no horizontal overflow at either width. Playwright API stubs accepted create/edit; each remained after reload. | Render/layout and simulated persistence pass. Direct preview save returned HTTP 405 with an inline error. |
+| Reminders | The `reminders:due` fixture showed due and upcoming reminders, links, and actions. There was no horizontal overflow at either width. The editor fit 375px. Playwright API stubs accepted create/edit; each remained after reload. | Render/layout and simulated persistence pass. Direct preview save returned HTTP 405 with an inline error. |
 | Detected Coding Agents | The live PATH snapshot populated rows and the loading/cache status. The refresh/update-check action was not invoked because it contacts a public source. At 1280px and 375px there was no horizontal overflow. | Render and layout pass. Error announcement behavior is covered with a mocked failure in the UI test. |
 
-The preview child enforces read-only behavior for every non-GET request. This
-means that this authorized server setup cannot verify that schedule, reminder,
-or agent edits persist after reload. The rejection is server-side and is not
-evidence of a product save failure. No data was changed in the scratch checkout.
+The preview child enforces read-only behavior for every non-GET request. Direct
+schedule and reminder saves returned HTTP 405, so real backend persistence
+could not be observed. To exercise the UI save/reload flows without changing
+server data, Playwright intercepted the relevant API calls and retained an
+in-memory response store across reloads. Those checks verify the browser
+workflow after successful responses, not RepoOS filesystem durability. No data
+was changed in the scratch checkout.
 
 ## Findings fixed
 
@@ -40,6 +43,6 @@ evidence of a product save failure. No data was changed in the scratch checkout.
   targeted runs (including the test runner's boot-timing pass).
 - Browser checks used headless WebKit at the viewport sizes above. All four tab
   routes loaded; measured document width matched the viewport width at 375px.
-- Persistence across reload remains unverified due to the preview server's
-  enforced read-only policy. A writable authorized environment is required to
-  complete that portion of the desired UX check.
+- Playwright's in-memory API stub verified team instruction, schedule, and
+  reminder changes survive reload at 1280px and 375px. Actual backend
+  persistence remains unverified because the preview rejects non-GET requests.
