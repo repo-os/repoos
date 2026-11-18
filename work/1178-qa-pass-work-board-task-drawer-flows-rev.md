@@ -2,14 +2,14 @@
 id: "1178"
 title: "QA pass: Work board task drawer flows (review, changes, logs, close-out) desktop and mobile"
 type: bug
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-work-board-task-drawer-flows-rev
 created_at: "2026-11-18T05:56:51Z"
-updated_at: "2026-11-18T07:38:27Z"
+updated_at: "2026-11-18T07:40:50Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ui-smoke — $ bun scripts/ui-smoke.mjs"
 last_handoff_failure_sha: 2f587557fee7acf9acf9a85c8d3a2a9558fc8ecb
 handoff_signal_retry_count: 2
@@ -50,3 +50,4 @@ Do not touch repoos.toml.
 - 2026-11-18T07:32:17Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-18T07:38:25Z · message_delivered: 3 message(s)
 - 2026-11-18T07:38:27Z · CTO action: restart-stalled-agent (resume) · agent crashed or was interrupted mid-turn — task-file handoff failed at check · repoos check failed: ui-smoke — $ bun scripts/ui-smoke.mjs
+- 2026-11-18T07:40:50Z · status active→review
