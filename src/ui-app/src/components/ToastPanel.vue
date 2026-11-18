@@ -24,13 +24,16 @@ const COLORS: Record<string, { bg: string; border: string; icon: string }> = {
     tag="div"
     class="toast-panel"
     name="toast"
-    aria-live="assertive"
-    aria-atomic="true"
+    role="region"
+    aria-label="Notifications"
+    aria-live="polite"
+    aria-atomic="false"
   >
     <div
       v-for="toast in toasts"
       :key="toast.id"
       class="toast-item"
+      :role="toast.type === 'error' ? 'alert' : 'status'"
       data-overlay-layer="floating"
       :style="{
         background: COLORS[toast.type].bg,
@@ -46,7 +49,7 @@ const COLORS: Record<string, { bg: string; border: string; icon: string }> = {
       <button
         type="button"
         class="toast-close"
-        aria-label="Dismiss"
+        :aria-label="`Dismiss notification: ${toast.message}`"
         @click="repo.removeToast(toast.id)"
       >
         <X class="size-[14px]" />
