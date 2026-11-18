@@ -10468,10 +10468,10 @@
     flex-wrap: wrap;
   }
 }
-@media (max-width: 960px) {
+@media (max-width: 1000px) {
   /* the seven tabs need ~695px. Beside the rail (720-900px) and the 210px
-     sidebar (901-960px) the strip gets less than that, so scroll it instead of
-     clipping the last tab (#1170). overflow clips at the padding box, so drop
+     sidebar (901-1000px) the strip gets less than that or only just that, so
+     scroll it instead of clipping the last tab (#1170). overflow clips at the padding box, so drop
      the -1px overlap that normally lets the active underline sit on the
      strip's border. */
   .settings-tabs {
@@ -14944,12 +14944,14 @@
     overflow-y: auto;
   }
 }
-/* Tablet and small desktop widths (761-1100px): the integration pill is
+/* Tablet and small desktop widths (761-1140px): the integration pill is
    centred on the bottom row, and the side-by-side dock's 520px pill
-   reservation leaves the toggles 12-244px wide, so they wrapped and sat over
-   the Active column and its controls (#1170). Lift the row above the pill
-   instead; it then needs only the width between the sidebar and the edge. */
-@media (min-width: 761px) and (max-width: 1100px) {
+   reservation leaves the toggles 12-364px wide, so they wrapped and sat over
+   the Active column and its controls (#1170). The three chips need about
+   378px on one line, which the side-by-side width only reaches at 1140px.
+   Lift the row above the pill below that; it then needs only the width
+   between the sidebar and the edge. */
+@media (min-width: 761px) and (max-width: 1140px) {
   .work-page .parked-lists {
     right: 16px;
     bottom: 66px;

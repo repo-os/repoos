@@ -13,7 +13,7 @@ const integrationCss = readFileSync(
   .split("</style>")[0]!;
 
 // #1170: tablet and small desktop widths run the 60px icon rail (720-900px) or
-// the 210px sidebar beside a centred integration pill (901-1100px). Rules
+// the 210px sidebar beside a centred integration pill (901-1140px). Rules
 // written for the wide layout must not leak into those bands: the Work parked
 // toggles overlapped the Active column and the pill, the Settings tab strip
 // clipped its last tab, and the rail's theme switcher and build widget spilled
@@ -53,7 +53,7 @@ describe.skipIf(!existsSync(webkit.executablePath()))("tablet icon rail layout (
     },
   );
 
-  it.each([720, 768, 900, 940, 960])(
+  it.each([720, 768, 900, 940, 1000])(
     "scrolls the Settings tab strip instead of clipping its last tab at %spx",
     async (width) => {
       const page = await browser.newPage({ viewport: { width, height: 800 } });
@@ -74,7 +74,7 @@ describe.skipIf(!existsSync(webkit.executablePath()))("tablet icon rail layout (
           `<style>${css}</style><div style="display:flex"><aside class="sidebar" style="width:${sidebar}px"></aside><main style="flex:1;min-width:0;padding:0 26px"><div class="settings-tabs" role="tablist">${tabs.map((label) => `<button role="tab" class="settings-tab-btn">${label}</button>`).join("")}</div></main></div>`,
         );
         // Seven tabs need about 695px, more than the strip gets beside the
-        // rail or the 210px sidebar up to 960px. The strip must scroll, or the
+        // rail or the 210px sidebar up to 1000px. The strip must scroll, or the
         // last tab is clipped at the content edge with no way to reach it.
         const overflowX = await page
           .locator(".settings-tabs")
@@ -86,7 +86,7 @@ describe.skipIf(!existsSync(webkit.executablePath()))("tablet icon rail layout (
     },
   );
 
-  it.each([768, 900, 1000])(
+  it.each([768, 900, 1000, 1101, 1120, 1140])(
     "lifts the Work parked toggles above the integration pill and off the sidebar at %spx",
     async (width) => {
       const page = await browser.newPage({ viewport: { width, height: 800 } });
