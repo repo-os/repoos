@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-inputs-and-context-pages-uploads
 created_at: "2026-11-18T20:47:45Z"
-updated_at: "2026-11-18T22:17:21Z"
+updated_at: "2026-11-18T22:21:09Z"
 review_rounds: 2
 routing_switches: 1
 routing_escalations: 1
@@ -30,36 +30,32 @@ Do not touch repoos.toml. Never open a visible browser window.
 ```json
 [
 {
-"label": "Inputs list at 1280px",
-"target": "default",
-"route": "/inputs",
-"highlight": ".inputs-header",
-"viewportWidth": 1280,
-"viewportHeight": 900
+  "label": "Inputs desktop empty and error states",
+  "target": "default",
+  "route": "/inputs",
+  "viewportWidth": 1280,
+  "viewportHeight": 900
 },
 {
-"label": "Inputs list at 375px",
-"target": "default",
-"route": "/inputs",
-"highlight": ".inputs-header",
-"viewportWidth": 375,
-"viewportHeight": 812
+  "label": "Inputs phone layout",
+  "target": "default",
+  "route": "/inputs",
+  "viewportWidth": 375,
+  "viewportHeight": 812
 },
 {
-"label": "Context docs at 1280px",
-"target": "default",
-"route": "/repo",
-"highlight": ".repo-grid",
-"viewportWidth": 1280,
-"viewportHeight": 900
+  "label": "Context Docs desktop from page top",
+  "target": "default",
+  "route": "/repo?tab=docs",
+  "viewportWidth": 1280,
+  "viewportHeight": 900
 },
 {
-"label": "Context docs at 375px",
-"target": "default",
-"route": "/repo",
-"highlight": ".repo-grid",
-"viewportWidth": 375,
-"viewportHeight": 812
+  "label": "Context Docs phone from page top",
+  "target": "default",
+  "route": "/repo?tab=docs#context-top",
+  "viewportWidth": 375,
+  "viewportHeight": 812
 }
 ]
 ```
@@ -111,3 +107,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T22:16:49Z · status review→active
 - 2026-11-18T22:16:51Z · CTO nudge: held — remote validation is running
 - 2026-11-18T22:17:21Z · note: Fix review round 4 concurrent refresh findings and recapture the narrow Context view from the top
+- 2026-11-18T22:21:09Z · body
