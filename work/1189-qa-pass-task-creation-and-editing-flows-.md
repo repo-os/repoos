@@ -2,7 +2,7 @@
 id: "1189"
 title: "QA pass: task creation and editing flows (new task, update, attach screenshot, dependencies)"
 type: bug
-status: review
+status: active
 priority: p2
 area: web
 assigned_to: ai
@@ -10,6 +10,8 @@ created_by: t@t
 branch: feat/qa-pass-task-creation-and-editing-flows-
 created_at: "2026-11-18T16:17:39Z"
 updated_at: "2026-11-18T16:44:50Z"
+review_rounds: 1
+routing_switches: 1
 review_passes: 1
 handoff_signal_retry_count: 2
 ---
@@ -38,3 +40,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T16:44:16Z · note: shots: skipped — the diff (3 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-18T16:44:49Z · note: review pass 1: needs some work
 - 2026-11-18T16:44:50Z · message_queued at 2026-11-18T16:44:50.217Z
+- 2026-11-18T16:44:50Z · status review→active
