@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-settings-and-agents-pages-every-
 created_at: "2026-11-18T06:47:46Z"
-updated_at: "2026-11-18T13:31:12Z"
+updated_at: "2026-11-18T13:36:14Z"
 last_close_out_gate_ms: 435668
 last_close_out_gate_at: "2026-11-18T13:30:55.760Z"
 review_passes: 7
@@ -147,3 +147,4 @@ Do not touch repoos.toml.
 - 2026-11-18T13:18:43Z · note: review pass 7: good to go
 - 2026-11-18T13:30:55Z · close-out gate completed in 436s
 - 2026-11-18T13:31:12Z · status done→done, release:success
+- 2026-11-18T13:36:14Z · message_dropped: 1 queued message(s) discarded — task is done
