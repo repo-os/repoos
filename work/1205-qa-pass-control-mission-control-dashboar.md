@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-control-mission-control-dashboar
 created_at: "2026-11-18T21:47:29Z"
-updated_at: "2026-11-18T22:40:14Z"
+updated_at: "2026-11-18T22:43:16Z"
 handoff_signal_retry_count: 1
 review_rounds: 1
 routing_switches: 1
@@ -57,3 +57,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T22:40:03Z · note: ui verification passed: 1 of 1 shot captured with clean console
 - 2026-11-18T22:40:04Z · message_queued at 2026-11-18T22:40:04.228Z
 - 2026-11-18T22:40:14Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-18T22:43:16Z · watchdog: restarting engineer because a queued message waited 3m with no live process
