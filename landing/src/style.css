@@ -261,6 +261,118 @@ body {
   padding-inline: 24px;
 }
 
+/* Compact opt-in alongside the closing CTA; fields may shrink before the page can overflow. */
+.updates-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.9fr);
+  gap: 32px;
+  align-items: center;
+  padding: 28px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--panel);
+}
+.updates-copy,
+.updates-form-wrap,
+.updates-form,
+.updates-controls {
+  min-width: 0;
+}
+.updates-copy h2 {
+  margin-top: 10px;
+  font-size: clamp(20px, 3vw, 26px);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+}
+.updates-promise,
+.updates-hint {
+  margin-top: 10px;
+  color: var(--txt-dim);
+  font-size: 13px;
+  line-height: 1.65;
+}
+.updates-form label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.updates-controls {
+  display: flex;
+  gap: 9px;
+}
+.updates-controls input {
+  min-width: 0;
+  flex: 1;
+  border: 1px solid var(--border-bright);
+  border-radius: 8px;
+  padding: 11px 12px;
+  color: var(--txt);
+  background: var(--bg-2);
+  font: inherit;
+  font-size: 14px;
+}
+.updates-controls button {
+  flex: 0 0 auto;
+  border: 1px solid var(--cyan);
+  border-radius: 8px;
+  padding: 10px 14px;
+  color: var(--bg);
+  background: var(--cyan);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.updates-controls button:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+.updates-message {
+  color: var(--green);
+  font-size: 14px;
+  line-height: 1.65;
+}
+.updates-message--expired,
+.updates-message--used,
+.updates-message--failed {
+  color: var(--red);
+}
+.updates-result {
+  display: grid;
+  justify-items: start;
+  gap: 12px;
+}
+.updates-back {
+  border: 1px solid var(--border-bright);
+  border-radius: 7px;
+  padding: 7px 10px;
+  color: var(--cyan);
+  background: transparent;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.updates-error {
+  margin-top: 9px;
+  color: var(--red);
+  font-size: 13px;
+  line-height: 1.5;
+}
+@media (max-width: 640px) {
+  .updates-panel {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 20px;
+    padding: 20px;
+  }
+  .updates-controls {
+    flex-direction: column;
+  }
+  .updates-controls button {
+    width: 100%;
+  }
+}
+
 .eyebrow {
   font-family: var(--font-mono);
   font-size: 12px;

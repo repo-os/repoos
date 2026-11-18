@@ -1,13 +1,12 @@
 ---
-last_close_out_gate_ms: 922395
-last_close_out_gate_at: "2026-11-18T05:21:02.731Z"
 id: "0478"
 title: Add RepoOS.org project updates signup and confirmation UX
 type: feature
-status: review
+status: done
 priority: p2
 area: landing
 story: Email subscriber list
+merged_commit: ee04e978948e45dedc1364a1bcb2a4ea31bef6ea
 assigned_to: ai
 created_by: ""
 branch: feat/add-repoos-org-project-updates-signup-an
@@ -15,6 +14,8 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-09-21T12:08:58Z"
 updated_at: "2026-11-18T05:21:02Z"
+last_close_out_gate_ms: 922395
+last_close_out_gate_at: "2026-11-18T05:21:02.731Z"
 review_passes: 2
 review_rounds: 1
 ---
