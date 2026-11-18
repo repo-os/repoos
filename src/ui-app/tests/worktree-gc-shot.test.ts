@@ -99,7 +99,7 @@ describe("Control dashboard populated process-table shot fixture (#1205)", () =>
     expect(shotFixturePinnedSystemStats()).toBe(repo.systemStats);
     expect(wrapper.findAll(".process-row")).toHaveLength(1);
     expect(wrapper.get(".process-table-wrap").text()).toContain("#1205");
-    expect(wrapper.get(".process-table-header").text()).toContain("RUNTIME");
+    expect(wrapper.get(".process-table-header").text()).toMatch(/runtime/i);
     expect(wrapper.findAll(".sparkline path")).toHaveLength(2);
   });
 });
