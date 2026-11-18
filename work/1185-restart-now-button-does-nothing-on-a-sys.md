@@ -2,7 +2,7 @@
 id: "1185"
 title: Restart now button does nothing on a systemd-managed server (misdetected as hand-run)
 type: bug
-status: review
+status: active
 priority: p1
 area: [web, server]
 assigned_to: ai
