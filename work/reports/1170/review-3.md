@@ -1,11 +1,19 @@
 ---
+id: review-3
+title: review-3
+type: feature
+status: inbox
+priority: p2
+area: general
+assigned_to: ai
+created_by: ""
+branch: feat/qa-pass-web-app-mobile-widths-375-768-ac
 task: "1170"
 pass: 3
 at: "2026-11-18T03:38:14.449Z"
 agent: reviewer
 cli: opencode
 model: opencode-go/deepseek-v4.1-flash
-branch: feat/qa-pass-web-app-mobile-widths-375-768-ac
 state: ok
 tree_identity: "d7fba27f7:d7fba27f72"
 ---
@@ -20,7 +28,7 @@ None
 
 ## Bugs
 - **Class: breakpoint band mismatch** — `src/ui-app/src/style.css:14955`: the lift ends at 1140px, so from 1141px the dock returns to `bottom:14px` and the "Archived (9)" chip (x 470–592) is covered by the collapsed integration strip (174–200px wide, centred): strip x 471–671 at 1141, 500–700 at 1200, 550–750 at 1300, 580–780 at 1360; it only clears at 1440. Measured in WebKit with the real CSS and the branch's own toggle markup: overlap width 121px at 1141, 92px at 1200, 42px at 1300, 12px at 1360. The 520px reservation in the wide rule assumes a pill pinned to the right edge, but the desktop bar has been centred (`left:50%; transform:translateX(-50%)`, IntegrationStatusBar.vue) since #0224. This is the other side of the boundary pass 2 flagged; the `it.each` stops at 1140 and never renders `.ibar-strip`, so no case catches it. Extend the lifted band to ~1390px, or reserve the centred pill's real box. (Pass-2 findings verified fixed: dock base 761, Settings scroller 1000, `.sidebar`-scoped rail hide.)
-  No further findings of this class were found after grepping: `.parked-lists`/`.work-page::after` rules at 14839–14990, `.settings-tabs`/`.settings-tab-btn` rules and the phone `display:none` block, the 720–900 `.sidebar` query and its hidden children plus the later base rules at 13658/13785, the 760px reflow query, `.ibar`/`.ibar-wrap` phone and desktop queries, and all 15 test cases (0 fail on HEAD, 13 fail on main's CSS).
+No further findings of this class were found after grepping: `.parked-lists`/`.work-page::after` rules at 14839–14990, `.settings-tabs`/`.settings-tab-btn` rules and the phone `display:none` block, the 720–900 `.sidebar` query and its hidden children plus the later base rules at 13658/13785, the 760px reflow query, `.ibar`/`.ibar-wrap` phone and desktop queries, and all 15 test cases (0 fail on HEAD, 13 fail on main's CSS).
 
 ## Edge cases
 - Expanded bar at 761–1140 still covers the row: 113px tall at 768 (bar top 673 vs row 703–734) and 73px at 1000/1140 (21px overlap). Documented, but the test's `.ibar` is a 39px bare span, so the assertion can't see it.

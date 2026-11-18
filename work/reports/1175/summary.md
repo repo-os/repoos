@@ -1,3 +1,14 @@
+---
+id: summary
+title: summary
+type: feature
+status: inbox
+priority: p2
+area: general
+assigned_to: ai
+created_by: ""
+branch: ""
+---
 ## TL;DR
 
 Task #1175 fixed the recurring HTTP 401 on `/api/project-environments` that automated UI verification kept flagging in the no-auth handoff preview (the issue that had blocked #1157). The endpoint and its auth guard were correct; the real defect was the shot plan capturing the live `/secrets` route without the page's registered `secrets:populated` fixture. The fix declares the Secrets handoff shot with that fixture, adds a regression test for the fixture-state wiring, updates the November QA doc, and passed review and close-out on the first pass.
@@ -26,9 +37,9 @@ The authenticated Secrets flow itself remains unverified and is deliberately not
 - **Wall-clock, created → done:** 2026-11-18T04:17:45Z → 2026-11-18T05:49:09Z (1 h 31 m 24 s).
 - **Status timeline:** inbox→ready 04:54:21Z, ready→active 04:54:29Z, active→review 05:10:26Z, done 05:49:09Z.
 - **Agents and models:**
-  - Engineer: `codex` / `gpt-6-luna` — recorded elapsed 723 s, 2,120,184 tokens, cost not recorded.
-  - Reviewer: `codex` / `gpt-6-luna` — recorded elapsed 30 s, 213,239 tokens, cost not recorded.
-  - Model router (openrouter): two routing sessions (1 s and 0 s), tokens and costs not recorded.
+- Engineer: `codex` / `gpt-6-luna` — recorded elapsed 723 s, 2,120,184 tokens, cost not recorded.
+- Reviewer: `codex` / `gpt-6-luna` — recorded elapsed 30 s, 213,239 tokens, cost not recorded.
+- Model router (openrouter): two routing sessions (1 s and 0 s), tokens and costs not recorded.
 - **Close-out gate:** completed in 561 s.
 - **Total tokens (where known):** 2,333,423 (engineer + reviewer); router sessions not recorded. **Total cost:** not recorded (all cost cells blank).
 

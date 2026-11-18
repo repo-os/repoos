@@ -1,11 +1,19 @@
 ---
+id: review-4
+title: review-4
+type: feature
+status: inbox
+priority: p2
+area: general
+assigned_to: ai
+created_by: ""
+branch: feat/qa-pass-use-the-repoos-web-app-on-deskto
 task: "1157"
 pass: 4
 at: "2026-11-17T19:23:48.279Z"
 agent: reviewer
 cli: opencode
 model: opencode-go/deepseek-v4.1-flash
-branch: feat/qa-pass-use-the-repoos-web-app-on-deskto
 state: ok
 tree_identity: "45888f7a0:"
 ---
@@ -20,10 +28,10 @@ None
 
 ## Bugs
 - **Class: narrow-width control clipping/overlap** — `MobileWorkQueue.vue` `.mobile-queue-row` (grid `1fr 1fr auto`; `.mobile-sort` lacks `min-width: 0`) at 320 px: the status Select clips "Needs attention" to "Needs attentic" and the sort button paints over it (`work-board-320-light.png`, `-dark.png`). Same class, same width, all in captures the report calls clean:
-  - TaskDrawer quickbar status select clips to "Ac" (`drawer-320-light/dark.png`).
-  - Inputs card byline clipped to "by hello@re" (`inputs-320-light.png`).
-  - Agents error card clips the unbroken `CURSOR_API_KEY/CURSOR_AUTH_TOKEN` token (`agents-320-light.png`).
-  These are the "small and clear" defects AC3 says to fix with a test; the report instead states "no … clipping, or overlapping controls at the tested viewports".
+- TaskDrawer quickbar status select clips to "Ac" (`drawer-320-light/dark.png`).
+- Inputs card byline clipped to "by hello@re" (`inputs-320-light.png`).
+- Agents error card clips the unbroken `CURSOR_API_KEY/CURSOR_AUTH_TOKEN` token (`agents-320-light.png`).
+These are the "small and clear" defects AC3 says to fix with a test; the report instead states "no … clipping, or overlapping controls at the tested viewports".
 - **Class: verification overclaim** — `docs/qa/2026-11-web-qa-pass.md`: the drawer's Changes/Tokens/Debug tabs are reported as selected, but `action-drawer-changes|debug|tokens-390-light.png` are byte-identical captures of an open "Move to review?" dialog (the harness clicked the unscoped "Review" action button), and no distinct Tokens/Debug capture exists in the evidence.
 - **Class: dangling evidence reference** — the same doc's reproduce steps (`bun .repoos/qa/1157/pass.mjs`) and every cited PNG live under gitignored `.repoos/`, so after close-out the matrix it references is gone; attach representative captures with `repoos update 1157 --screenshot`.
 
