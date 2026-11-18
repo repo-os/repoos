@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-settings-tabs-on-phone-widths-ev
 created_at: "2026-11-18T19:24:03Z"
-updated_at: "2026-11-18T19:52:40Z"
+updated_at: "2026-11-18T19:53:11Z"
 last_close_out_gate_ms: 105506
 last_close_out_gate_at: "2026-11-18T19:52:40.027Z"
 review_passes: 1
@@ -52,4 +52,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T19:43:17Z · message_queued at 2026-11-18T19:43:17.896Z
 - 2026-11-18T19:43:59Z · note: review pass 1: good to go
 - 2026-11-18T19:52:40Z · close-out gate completed in 106s
-
+- 2026-11-18T19:53:11Z · status done→done, release:success
