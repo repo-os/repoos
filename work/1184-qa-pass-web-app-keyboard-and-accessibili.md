@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-web-app-keyboard-and-accessibili
 created_at: "2026-11-18T12:17:32Z"
-updated_at: "2026-11-18T15:33:14Z"
+updated_at: "2026-11-18T15:33:17Z"
 review_rounds: 1
 routing_switches: 1
 routing_escalations: 1
@@ -136,3 +136,4 @@ Do not touch repoos.toml.
 - 2026-11-18T15:33:12Z · status active→review
 - 2026-11-18T15:33:14Z · message_queued at 2026-11-18T15:33:14.739Z
 - 2026-11-18T15:33:14Z · status review→active
+- 2026-11-18T15:33:17Z · CTO nudge: held — handoff gate is running
