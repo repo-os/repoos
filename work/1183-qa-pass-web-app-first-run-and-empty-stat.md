@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-web-app-first-run-and-empty-stat
 created_at: "2026-11-18T10:17:38Z"
-updated_at: "2026-11-18T12:09:51Z"
+updated_at: "2026-11-18T12:10:23Z"
 review_rounds: 2
 routing_switches: 1
 routing_escalations: 1
@@ -90,3 +90,4 @@ Do not touch repoos.toml.
 - 2026-11-18T11:53:03Z · CTO nudge: held — remote validation is running
 - 2026-11-18T12:06:49Z · body
 - 2026-11-18T12:09:51Z · CTO nudge: held — handoff gate is running
+- 2026-11-18T12:10:23Z · note: ui verification passed: 2 of 2 shots captured with clean console
