@@ -295,6 +295,22 @@ describe("feature releases", () => {
     }
   });
 
+  it("keeps the available-release notice above mobile navigation", () => {
+    expect(releaseUpdateNotificationSource).toMatch(/class="release-update-banner"\s+data-overlay-layer="floating"/);
+    expect(releaseUpdateNotificationSource).toMatch(
+      /\.release-update-banner\s*\{[^}]*position:\s*fixed/s,
+    );
+    expect(releaseUpdateNotificationSource).toMatch(
+      /@media \(max-width:\s*560px\)\s*\{[^}]*\.release-update-banner\s*\{[^}]*bottom:\s*calc\(78px \+ var\(--safe-bot\)\)/s,
+    );
+    expect(releaseUpdateNotificationSource).toMatch(
+      /\.release-update-actions\s*>\s*\[role="alert"\]\s*\{[^}]*margin:\s*0/s,
+    );
+    expect(releaseUpdateNotificationSource).toMatch(
+      /\.release-update-actions\s*>\s*\.release-update-manual,\s*\.release-update-actions\s*>\s*\[role="alert"\]\s*\{[^}]*flex:\s*1 0 100%/s,
+    );
+  });
+
   it("shows the upgrade command in a code block and relabels the release button (#1073)", async () => {
     const fetchMock = vi.fn().mockImplementation(
       () =>
