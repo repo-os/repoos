@@ -145,3 +145,4 @@ Reported by Nick 2026-11-18 20:22 from the phone UI. Related #1154. Do not touch
 - 2026-11-18T15:53:01Z · note: review pass 4: good to go
 - 2026-11-18T16:37:15Z · status review→active
 - 2026-11-18T16:37:15Z · note: close-out repair: gate-failure
+- 2026-11-18T16:37:15Z · message_delivered: 1 message(s)
