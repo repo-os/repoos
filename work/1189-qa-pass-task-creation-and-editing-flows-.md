@@ -1,17 +1,17 @@
 ---
-check_retry_count: 1
-last_check_failure: "repoos check at 2026-11-18T18:01:10.518Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 id: "1189"
 title: "QA pass: task creation and editing flows (new task, update, attach screenshot, dependencies)"
 type: bug
-status: review
+status: active
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-task-creation-and-editing-flows-
 created_at: "2026-11-18T16:17:39Z"
-updated_at: "2026-11-18T18:01:10Z"
+updated_at: "2026-11-18T18:01:39Z"
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-18T18:01:10.518Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_passes: 3
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: gate exit 1 on bee — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: 68ba09e1c0b8603f3e4bcef797bde8383f2576bf
@@ -116,4 +116,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T18:01:07Z · note: shots: failed — browser capture cancelled
 - 2026-11-18T18:01:07Z · note: review pass 3: needs some work
 - 2026-11-18T18:01:10Z · message_delivered: 1 message(s)
-
+- 2026-11-18T18:01:39Z · status review→active
