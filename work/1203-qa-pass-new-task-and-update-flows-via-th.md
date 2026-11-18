@@ -2,14 +2,14 @@
 id: "1203"
 title: "QA pass: new-task and update flows via the CLI and UI agree – body sections, validation messages and needs-input handling"
 type: bug
-status: review
+status: active
 priority: p2
 area: [web, core]
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-new-task-and-update-flows-via-th
 created_at: "2026-11-18T20:47:36Z"
-updated_at: "2026-11-18T21:43:06Z"
+updated_at: "2026-11-18T21:43:07Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-18T21:29:29.351Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 1
