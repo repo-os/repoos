@@ -266,6 +266,22 @@ export async function fetchLatestRelease(
 }
 
 export async function cmdUpgrade(args: string[]): Promise<void> {
+  const channelFlag = args.indexOf("--channel");
+  if (channelFlag !== -1) {
+    const value = args[channelFlag + 1];
+    if (!value || value.startsWith("--") || !["beta", "canary", "rc"].includes(value)) {
+      console.error(
+        c.red(
+          `  Invalid --channel value: ${value && !value.startsWith("--") ? value : "(missing)"}.`,
+        ),
+      );
+      console.error(
+        c.dim("  Choose beta, canary, or rc. Usage: repoos upgrade [--channel beta|canary|rc]"),
+      );
+      process.exitCode = 1;
+      return;
+    }
+  }
   const root = installRoot();
   const channel = parseChannel(args);
 

@@ -4,12 +4,32 @@
  * users saw only the version bump, with no way to know what changed short of
  * going to look at GitHub themselves (#0371).
  */
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  cmdUpgrade,
   packageManagerUpgrade,
   releaseNotesToPrint,
   upgradeRestartReminder,
 } from "../../commands/upgrade";
+
+describe("repoos upgrade argument validation", () => {
+  afterEach(() => {
+    process.exitCode = 0;
+    vi.restoreAllMocks();
+  });
+
+  it.each(["invalid", undefined])(
+    "rejects unsupported or missing channels (%s)",
+    async (channel) => {
+      const error = vi.spyOn(console, "error").mockImplementation(() => {});
+      await cmdUpgrade(channel === undefined ? ["--channel"] : ["--channel", channel]);
+
+      expect(process.exitCode).toBe(1);
+      expect(error).toHaveBeenCalledWith(expect.stringContaining("Invalid --channel value"));
+      expect(error).toHaveBeenCalledWith(expect.stringContaining("Choose beta, canary, or rc"));
+    },
+  );
+});
 
 describe("upgradeRestartReminder", () => {
   it("tells the user when the server still runs the previous version", () => {
