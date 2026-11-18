@@ -11,11 +11,11 @@ branch: feat/qa-pass-macos-repoos-hub-app-build-launc
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-18T02:19:44Z"
-updated_at: "2026-11-18T04:44:14Z"
+updated_at: "2026-11-18T04:49:19Z"
 last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from 113b674b to 34fd29e7; commit \"Merge main into task #1169\" touched docs/qa/2026-11-android-hub-fixtures.md, docs/qa/2026-11-releases-and-restart-qa.md, mobile/scripts/fixture-qa.ts, mobile/src/style.css, repoos.toml, src/ui-app/src/components/ReleaseUpdateNotification.vue, src/ui-app/tests/mobile-hub-picker-layout.test.ts, src/ui-app/tests/releases.test.ts) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 last_handoff_failure_sha: 113b674bb16af3bd98e04abcea9a12c179325b61
 review_passes: 3
-engineer_stall_resume_log: "[{\"at\":\"2026-11-18T04:39:18.645Z\",\"reason\":\"clean-exit-without-handoff\"}]"
+engineer_stall_resume_log: "[{\"at\":\"2026-11-18T04:39:18.645Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-18T04:49:19.309Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
 ## Problem
 Nick reports the macOS Hub app has been unusable for weeks. Nobody has recently built and driven it.
@@ -94,3 +94,4 @@ Signed-in projects and tasks remain unverified because automated email-code entr
 - 2026-11-18T04:39:18Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 1/3
 - 2026-11-18T04:42:53Z · body
 - 2026-11-18T04:44:14Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The **scoped RepoOS check passed**. I corrected the QA record to say human-assigned task #1174 has no result yet, and updated the engineering report draft with this check’s result and the remaining gap. The existing branch changes also add… · stderr: Reading additional input from stdin... 2026-11-18T04:40:57.848699Z ERROR codex_core::tools::router: error=apply_patch verification failed: Failed to find expected lines in /Users/nick/code/nick/repoos-worktrees/feat/qa-pass-macos-repoos-hub-app-build-launc/docs/qa/2026-11-macos-hub-qa.md: separate #1167 QA pass exerci…
+- 2026-11-18T04:49:19Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 2/3
