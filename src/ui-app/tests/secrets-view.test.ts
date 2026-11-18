@@ -344,6 +344,7 @@ describe("SecretsView (#0929)", () => {
     wrapper.unmount();
   });
   it("uses sign-in guidance when environment creation returns 401", async () => {
+    window.history.replaceState({}, "", "/");
     api.mockImplementation(async (path, opts) => {
       if (path === "/api/project-environments" && opts?.method === "POST")
         throw new ApiError("Authentication required", 401, { error: "Authentication required" });
@@ -370,9 +371,10 @@ describe("SecretsView (#0929)", () => {
     expect(wrapper.find('[data-testid="new-environment"]').exists()).toBe(true);
     await wrapper.get('[data-testid="new-environment"]').trigger("click");
     await flushPromises();
-    expect(wrapper.find(".secrets-create-panel").exists()).toBe(true);
-    expect(wrapper.find('.secrets-create-panel [role="alert"]').exists()).toBe(false);
-    expect(wrapper.find(".secrets-create-panel").text()).not.toContain(
+    const createPanel = document.body.querySelector<HTMLElement>(".secrets-create-panel");
+    expect(createPanel).not.toBeNull();
+    expect(createPanel?.querySelector('[role="alert"]')).toBeNull();
+    expect(createPanel?.textContent).not.toContain(
       "Sign in to view project environments and keys.",
     );
     wrapper.unmount();
