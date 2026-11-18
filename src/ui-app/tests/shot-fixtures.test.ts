@@ -60,9 +60,9 @@ describe("shot preview fixtures (#0743)", () => {
       state: "secrets:populated",
     });
     expect(url).toBe("http://127.0.0.1:8000/secrets?shotState=secrets%3Apopulated");
-    expect(
-      readShotPreviewFixtureFromLocation({ search: new URL(url).search }),
-    ).toBe("secrets:populated");
+    expect(readShotPreviewFixtureFromLocation({ search: new URL(url).search })).toBe(
+      "secrets:populated",
+    );
     const body = `## Shots\n\`\`\`json\n[{"route":"/secrets","state":"secrets:populated"}]\n\`\`\``;
     expect(parseShotPlan(body).errors).toEqual([]);
     expect(
