@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-11-18T19:12:10Z"
-review_passes: 1
+last_close_out_gate_ms: 80956
+last_close_out_gate_at: "2026-11-18T19:14:20.452Z"
 id: "1195"
 title: "QA pass: notifications, toasts and error banners across the app"
 type: bug
@@ -11,6 +11,8 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-notifications-toasts-and-error-b
 created_at: "2026-11-18T18:47:48Z"
+updated_at: "2026-11-18T19:14:20Z"
+review_passes: 1
 ---
 ## Problem
 Notifications and error banners are generated from many places and may be inconsistent or stale.
@@ -34,4 +36,5 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T19:11:45Z · status active→review
 - 2026-11-18T19:11:45Z · message_queued at 2026-11-18T19:11:45.553Z
 - 2026-11-18T19:12:10Z · note: review pass 1: good to go
+- 2026-11-18T19:14:20Z · close-out gate completed in 81s
 
