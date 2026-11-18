@@ -2,7 +2,7 @@
 id: "1189"
 title: "QA pass: task creation and editing flows (new task, update, attach screenshot, dependencies)"
 type: bug
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -92,3 +92,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T17:20:27Z · body
 - 2026-11-18T17:20:44Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-18T17:20:54Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code unknown) · last assistant: The remote changed-path suite is running now; it’s past the halfway mark with the reported tests passing so far. I’m continuing to wait for the final result. · stderr: (empty)
+- 2026-11-18T17:20:54Z · status active→review
