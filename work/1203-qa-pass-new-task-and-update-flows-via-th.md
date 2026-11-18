@@ -69,3 +69,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T21:43:06Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code unknown) · last assistant: The rerun is progressing normally; I haven’t seen a failing test. Build freshness was the reason it rebuilt first, and remote validation is now repeating the changed-path suite plus the handoff checks. · stderr: 2026-11-18T21:28:41.375280Z ERROR codex_core::tools::router: error=write_stdin failed: Unknown process id 81024
 - 2026-11-18T21:43:06Z · status active→review
 - 2026-11-18T21:43:06Z · message_delivered: 1 message(s)
+- 2026-11-18T21:43:07Z · note: handoff requested (cli)
