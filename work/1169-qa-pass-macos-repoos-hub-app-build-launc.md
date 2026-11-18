@@ -11,7 +11,7 @@ branch: feat/qa-pass-macos-repoos-hub-app-build-launc
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-18T02:19:44Z"
-updated_at: "2026-11-18T04:09:28Z"
+updated_at: "2026-11-18T04:09:29Z"
 review_passes: 3
 ---
 ## Problem
@@ -75,3 +75,4 @@ Signed-in projects and tasks remain unverified because automated email-code entr
 - 2026-11-18T04:07:36Z · body: Not verified (added)
 - 2026-11-18T04:07:36Z · message_queued at 2026-11-18T04:07:36.755Z
 - 2026-11-18T04:09:28Z · queued message undelivered for 11m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-18T04:09:29Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code unknown) · last assistant: I filed held human follow-up #1174 and updated the QA record and task notes to point to it. The final scoped gate is running once more after those documentation changes; once green, I’ll save the required engineer report draft and stop wit… · stderr: Reading additional input from stdin... 2026-11-18T03:59:27.261958Z ERROR codex_core::tools::router: error=apply_patch verification failed: Failed to find expected lines in /Users/nick/code/nick/repoos-worktrees/feat/qa-pass-macos-repoos-hub-app-build-launc/docs/qa/2026-11-macos-hub-qa.md: The focused XCTest `ServerReg…
