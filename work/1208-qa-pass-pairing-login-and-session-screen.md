@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-pairing-login-and-session-screen
 created_at: "2026-11-18T22:47:38Z"
-updated_at: "2026-11-18T23:05:54Z"
+updated_at: "2026-11-18T23:06:22Z"
 last_check_failure: "repoos check at 2026-11-18T23:00:21.596Z: repoos check failed: ui verification failed (2 issue(s)): [missing-target] Login fields with accessible names and announced errors (target \"default\"): highlight .login-card matched nothing on /login (http://127.0.0.1:34587/); [route] Login fields with accessible names and announced errors: declared route /login but the browser landed on / (login or redirect?) (captured http://127.0.0.1:34587/) (http://127.0.0.1:34587/)"
 ---
 ## Problem
@@ -43,3 +43,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T23:05:53Z · note: ui verification passed: 1 shot captured with clean console
 - 2026-11-18T23:05:54Z · status active→review
 - 2026-11-18T23:05:54Z · message_queued at 2026-11-18T23:05:54.198Z
+- 2026-11-18T23:06:22Z · note: review pass 1: needs some work
