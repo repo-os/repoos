@@ -2,14 +2,14 @@
 id: "1185"
 title: Restart now button does nothing on a systemd-managed server (misdetected as hand-run)
 type: bug
-status: active
+status: review
 priority: p1
 area: [web, server]
 assigned_to: ai
 created_by: t@t
 branch: feat/restart-now-button-does-nothing-on-a-sys
 created_at: "2026-11-18T12:27:18Z"
-updated_at: "2026-11-18T14:52:47Z"
+updated_at: "2026-11-18T14:52:48Z"
 review_passes: 3
 last_check_failure: "repoos check at 2026-11-18T14:30:25.814Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 2
@@ -119,3 +119,4 @@ Reported by Nick 2026-11-18 20:22 from the phone UI. Related #1154. Do not touch
 - 2026-11-18T14:50:39Z · body
 - 2026-11-18T14:52:47Z · queued message undelivered for 5m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-18T14:52:47Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code unknown) · last assistant: The required check has started and RepoOS checkpointed the changed source for its remote validation. One task metadata wrinkle: `repoos update --shots` reports success on the canonical board, while this worktree’s task markdown remains the… · stderr: Reading additional input from stdin...
+- 2026-11-18T14:52:48Z · status active→review
