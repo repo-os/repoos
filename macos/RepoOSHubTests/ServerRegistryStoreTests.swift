@@ -79,19 +79,13 @@ final class ServerRegistryStoreTests: XCTestCase {
     }
 
     func testXCTestSupportCleanupPropagatesRemovalFailure() throws {
-        let supportPath = ServerRegistryStore.applicationSupportDirectory(
-            environment: ["XCTestConfigurationFilePath": "/x"]
-        ).path
-        let directory = URL(fileURLWithPath: supportPath, isDirectory: true)
-        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-        let child = directory.appendingPathComponent("not-empty")
-        try Data().write(to: child)
-        defer { try? FileManager.default.removeItem(at: directory) }
+        let fileManager = FailingRemovalFileManager()
 
         XCTAssertThrowsError(try ServerRegistryStore.removeXCTestSupportDirectory(
-            environment: ["XCTestConfigurationFilePath": "/x"]
+            environment: ["XCTestConfigurationFilePath": "/x"],
+            fileManager: fileManager
         ))
-        XCTAssertTrue(FileManager.default.fileExists(atPath: directory.path))
+        XCTAssertEqual(fileManager.removalAttempts, 1)
     }
 
     func testDuplicateOriginRejected() throws {
@@ -116,5 +110,16 @@ final class ServerRegistryStoreTests: XCTestCase {
         try store.removeEntry(id: first.id, document: &document)
         XCTAssertEqual(document.entries.map(\.name), ["B"])
         XCTAssertEqual(document.lastSelectedServerID, second.id)
+    }
+}
+
+private final class FailingRemovalFileManager: FileManager {
+    private(set) var removalAttempts = 0
+
+    override func fileExists(atPath path: String) -> Bool { true }
+
+    override func removeItem(at URL: URL) throws {
+        removalAttempts += 1
+        throw CocoaError(.fileWriteNoPermission)
     }
 }
