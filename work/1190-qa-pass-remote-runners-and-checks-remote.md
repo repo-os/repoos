@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 605528
-last_close_out_gate_at: "2026-11-18T16:56:59.420Z"
 id: "1190"
 title: "QA pass: remote runners and Checks Remote tab – states and errors"
 type: bug
-status: review
+status: done
 priority: p2
 area: [web, server]
+merged_commit: 75209a9e3c7f68db921cc31e2924ce5c3a905576
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-remote-runners-and-checks-remote
 created_at: "2026-11-18T16:18:04Z"
 updated_at: "2026-11-18T16:56:59Z"
+last_close_out_gate_ms: 605528
+last_close_out_gate_at: "2026-11-18T16:56:59.420Z"
 review_passes: 1
 ---
 ## Problem

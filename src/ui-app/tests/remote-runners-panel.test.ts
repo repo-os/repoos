@@ -17,6 +17,91 @@ afterEach(() => {
 });
 
 describe("RemoteRunnersPanel", () => {
+  it("labels healthy, busy, unreachable, and recently failing hosts explicitly", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string | URL) => {
+        if (String(url).startsWith("/api/remote-validation/status")) {
+          return jsonResponse({
+            enabled: true,
+            running: true,
+            provider: "tailscale",
+            tailscaleHosts: ["healthy", "busy", "down", "failing"],
+            tailscaleHost: "",
+            tailscaleHostPinsTop: false,
+            hostPoolEditable: false,
+            hosts: [
+              {
+                host: "healthy",
+                user: "qa",
+                labels: [],
+                maxConcurrent: 1,
+                inFlight: 0,
+                queued: 0,
+                probed: true,
+                healthy: true,
+              },
+              {
+                host: "busy",
+                user: "qa",
+                labels: [],
+                maxConcurrent: 1,
+                inFlight: 1,
+                queued: 1,
+                probed: true,
+                healthy: true,
+              },
+              {
+                host: "down",
+                user: "qa",
+                labels: [],
+                maxConcurrent: 1,
+                inFlight: 0,
+                queued: 0,
+                probed: true,
+                healthy: false,
+              },
+              {
+                host: "failing",
+                user: "qa",
+                labels: [],
+                maxConcurrent: 1,
+                inFlight: 0,
+                queued: 0,
+                probed: true,
+                healthy: true,
+                lastRun: { taskId: "1188", ok: false, at: new Date().toISOString() },
+              },
+            ],
+          });
+        }
+        throw new Error(`Unexpected ${String(url)}`);
+      }),
+    );
+
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const wrapper = mount(RemoteRunnersPanel, {
+      global: { plugins: [pinia], stubs: { "router-link": true } },
+    });
+    await flushPromises();
+
+    const states = wrapper.findAll(".rr-host").map((host) => ({
+      name: host.get(".rr-host-name").text(),
+      label: host.get(".rr-health").text().trim(),
+      class: host.get(".rr-health").classes(),
+    }));
+    expect(states).toEqual([
+      { name: "qa@healthy", label: "● ready", class: ["rr-health", "ok"] },
+      { name: "qa@busy", label: "● busy", class: ["rr-health", "busy"] },
+      { name: "qa@down", label: "✕ unreachable", class: ["rr-health", "bad"] },
+      { name: "qa@failing", label: "✕ last run failed", class: ["rr-health", "failing"] },
+    ]);
+    expect(wrapper.get(".rr-host[data-health='busy']").text()).toContain("1/1 in flight");
+    expect(wrapper.get(".rr-host[data-health='failing']").text()).toContain("failed");
+    wrapper.unmount();
+  });
+
   it("shows tie-break guidance and saves keyboard-accessible host reordering", async () => {
     const calls: Array<{ path: string; method: string; body?: unknown }> = [];
     let hostSpecs = [
