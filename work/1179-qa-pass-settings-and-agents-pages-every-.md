@@ -3,16 +3,13 @@ id: "1179"
 title: "QA pass: Settings and Agents pages – every control saves, validates and survives reload"
 type: bug
 status: active
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: "`needs some work` — The required control-by-control save, validation, and reload audit remains incomplete."
 priority: p2
 area: [web, server]
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-settings-and-agents-pages-every-
 created_at: "2026-11-18T06:47:46Z"
-updated_at: "2026-11-18T09:17:35Z"
+updated_at: "2026-11-18T09:17:36Z"
 review_passes: 4
 review_rounds: 2
 routing_switches: 1
@@ -105,3 +102,4 @@ Do not touch repoos.toml.
 - 2026-11-18T09:13:10Z · needs_input
 - 2026-11-18T09:17:33Z · status review→active
 - 2026-11-18T09:17:35Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-18T09:17:36Z · needs_input
