@@ -11,7 +11,7 @@ branch: feat/qa-pass-exercise-the-new-releases-genera
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-18T00:17:51Z"
-updated_at: "2026-11-18T00:30:46Z"
+updated_at: "2026-11-18T00:33:10Z"
 ---
 ## Problem
 
@@ -40,3 +40,4 @@ Do not edit repoos.toml.
 - 2026-11-18T00:17:58Z · status ready→active, branch
 - 2026-11-18T00:28:56Z · body
 - 2026-11-18T00:30:46Z · message_queued at 2026-11-18T00:30:46.860Z
+- 2026-11-18T00:33:10Z · CTO nudge: held — an undelivered message is already queued
