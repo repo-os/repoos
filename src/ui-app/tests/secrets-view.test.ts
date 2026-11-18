@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { flushPromises, mount } from "@vue/test-utils";
 import { createPinia, setActivePinia } from "pinia";
+import { ApiError } from "../src/api";
 import * as apiMod from "../src/api";
 import Select from "../src/components/ui/select/root.vue";
 import SecretsView from "../src/views/SecretsView.vue";
@@ -83,6 +84,21 @@ afterEach(() => {
 });
 
 describe("SecretsView (#0929)", () => {
+  it("gives unsigned sessions sign-in guidance without showing secret values", async () => {
+    api.mockRejectedValue(new ApiError("Unauthorized", 401));
+    const wrapper = mountPage();
+    await flushPromises();
+
+    expect(wrapper.get('[role="alert"]').text()).toContain(
+      "Sign in to view project environments and keys.",
+    );
+    expect(wrapper.text()).not.toContain("Unauthorized");
+    expect(wrapper.text()).not.toContain("DATABASE_URL");
+    expect(wrapper.text()).not.toContain("FAKE_SECRET_VALUE");
+    expect(wrapper.get('[role="alert"] button').text()).toBe("Reload");
+    wrapper.unmount();
+  });
+
   it("renders the registered fake shot fixture without loading project secrets", async () => {
     window.history.replaceState({}, "", "/secrets?shotState=secrets%3Apopulated");
     const wrapper = mountPage();

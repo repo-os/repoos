@@ -354,6 +354,8 @@ async function loadSnapshot(): Promise<void> {
   }
 }
 function safeError(e: unknown): string {
+  if (e instanceof ApiError && e.status === 401)
+    return "Sign in to view project environments and keys.";
   if (e instanceof ApiError && e.status === 409)
     return "This environment changed since it was loaded. Reload the key list, then retry your change.";
   return "Could not update environment metadata. Check the environment and try again.";
