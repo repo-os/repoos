@@ -82,7 +82,9 @@ describe("board-write commands resolve to the main checkout, not cwd (#0202)", (
       expect(content).toMatch(/^needs_input_reason: underspecified$/m);
 
       const substantive =
-        "This section gives enough concrete context to describe the change and its expected behavior. ".repeat(2);
+        "This section gives enough concrete context to describe the change and its expected behavior. ".repeat(
+          2,
+        );
       const completeBody = [
         "## Problem",
         substantive,

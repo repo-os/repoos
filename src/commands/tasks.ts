@@ -1024,7 +1024,9 @@ export async function cmdUpdate(args: string[]): Promise<void> {
     console.log("  " + c.green("updated ") + c.dim("#" + updated.id) + "  " + updated.title);
     if (updated.needsInput) {
       console.log(
-        "  " + c.yellow("needs input ") + c.dim(updated.needsInputDetail || updated.needsInputReason || "waiting for a person"),
+        "  " +
+          c.yellow("needs input ") +
+          c.dim(updated.needsInputDetail || updated.needsInputReason || "waiting for a person"),
       );
     }
     const guideWarning = humanTaskGuideWarning(updated.assignee, updated.body);
