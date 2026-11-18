@@ -302,3 +302,4 @@ Signed-in projects and tasks remain unverified because automated email-code entr
 - 2026-11-18T12:09:51Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-18T12:10:26Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-18T12:14:26Z · queued message undelivered for 5m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-18T12:14:26Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code unknown) · last assistant: The remote suite is at 617 of 745 test files and remains green. When it completes, I’ll hand off the checked tree with a fresh report; the human-only sign-in result will remain clearly identified as pending. · stderr: (empty)
