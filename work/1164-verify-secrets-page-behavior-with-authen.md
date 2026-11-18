@@ -2,7 +2,7 @@
 id: "1164"
 title: Verify Secrets page behavior with authenticated access
 type: bug
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -65,3 +65,4 @@ The initial evidence is an auth-less 401, not proof of a signed-in regression. Q
 - 2026-11-18T00:40:17Z · body
 - 2026-11-18T00:43:30Z · CTO nudge: held — handoff gate is running
 - 2026-11-18T00:44:44Z · note: ui verification passed: 1 of 1 shot captured with clean console
+- 2026-11-18T00:44:44Z · status active→review
