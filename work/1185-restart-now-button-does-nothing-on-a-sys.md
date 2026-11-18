@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/restart-now-button-does-nothing-on-a-sys
 created_at: "2026-11-18T12:27:18Z"
-updated_at: "2026-11-18T13:28:15Z"
+updated_at: "2026-11-18T13:29:13Z"
 ---
 ## Problem
 On bee, the tuk-driver server runs as the systemd user unit com.repoos.serve.tuk-driver-aaa442e5.service (parent pid 1111 = systemd --user), but the 'RepoOS v0.5.90 is installed' modal said 'This server was started by hand'. Clicking Restart now made the button flicker and the modal stayed; nothing restarted (process start time unchanged, no journal entries). A manual systemctl --user restart worked.
@@ -34,3 +34,4 @@ Reported by Nick 2026-11-18 20:22 from the phone UI. Related #1154. Do not touch
 - 2026-11-18T13:28:15Z · queued message undelivered for 4m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-18T13:28:15Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code unknown) · last assistant: The remote build, scoped tests, contrast audit, and UI smoke passed. The local format gate found formatting issues in the two edited source files, so I’m applying the repository formatter and will rerun the scoped check as required. · stderr: Reading additional input from stdin... 2026-11-18T13:18:22.724866Z ERROR codex_core::tools::router: error=apply_patch verification failed: invalid hunk at line 35, Update hunk does not contain any lines
 - 2026-11-18T13:28:15Z · message_delivered: 1 message(s)
+- 2026-11-18T13:29:13Z · message_queued at 2026-11-18T13:29:13.142Z
