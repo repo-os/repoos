@@ -2,14 +2,14 @@
 id: "1191"
 title: "QA pass: docs site and user-docs pages render, links and search"
 type: bug
-status: inbox
+status: ready
 priority: p2
 area: docs
 assigned_to: ai
 created_by: t@t
 branch: ""
 created_at: "2026-11-18T16:18:29Z"
-updated_at: "2026-11-18T16:18:29Z"
+updated_at: "2026-11-18T16:18:43Z"
 ---
 ## Problem
 The docs pages and in-app help links may have dead links or broken rendering after many doc changes.
@@ -24,3 +24,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 ## Activity
 
 - 2026-11-18T16:18:29Z · created · t@t
+- 2026-11-18T16:18:43Z · status inbox→ready
