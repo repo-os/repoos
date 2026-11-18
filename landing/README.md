@@ -164,6 +164,20 @@ pages still 404 (this is not an unrestricted SPA fallback).
 Verify locally before deploying: `cd landing && bunx wrangler deploy --dry-run`.
 See the enquiry setup below before enabling the form in production.
 
+### Project updates signup (#0478)
+
+The static landing page submits directly to the public updates service. Set the
+single public build variable `VITE_PROJECT_UPDATES_ENDPOINT` to the service
+origin (for example, `https://updates.example.net`) in the Cloudflare Pages
+project's build environment and in a local `landing/.env.local` when testing.
+The browser appends `/updates/subscribe`; this value is an origin only and must
+not contain credentials, tokens, or a path. It is public configuration, not a
+secret. Do not add Neon, Resend, or webhook credentials to Pages variables with
+the `VITE_` prefix. Confirmation links are sent by the service and return to
+`https://repoos.org/?updates=confirmed`, `expired`, `used`, or `failed` so the
+landing page can explain the outcome. The service owns confirmation and
+subscription state; the static page stores no subscriber data.
+
 ## Notes for future edits
 
 - The board stats (task counts) in `src/App.vue` (and the `og:image`/

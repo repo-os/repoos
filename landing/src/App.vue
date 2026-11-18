@@ -3,6 +3,7 @@ import { onBeforeUnmount, onMounted, ref } from "vue";
 import AgentPromptCta from "./components/AgentPromptCta.vue";
 import ForClients from "./components/ForClients.vue";
 import InstallBox from "./components/InstallBox.vue";
+import ProjectUpdatesSignup from "./components/ProjectUpdatesSignup.vue";
 import SiteLogo from "./components/SiteLogo.vue";
 import { CURRENT_RELEASE, formatReleaseDate } from "../../shared/release";
 import {
@@ -935,6 +936,7 @@ const year = new Date().getFullYear();
         >
       </div>
     </section>
+    <ProjectUpdatesSignup />
   </main>
 
   <footer class="foot">
