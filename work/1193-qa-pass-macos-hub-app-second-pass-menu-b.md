@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 67308
-last_close_out_gate_at: "2026-11-18T18:27:19.017Z"
 id: "1193"
 title: "QA pass: macOS Hub app second pass – menu bar, Cmd-K search, server add/edit and relaunch"
 type: bug
-status: review
+status: done
 priority: p2
 area: macos
+merged_commit: 5333cd088a0fa07fdd4aa01ad0e4cdbad2747a2f
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-macos-hub-app-second-pass-menu-b
 created_at: "2026-11-18T18:17:35Z"
 updated_at: "2026-11-18T18:27:19Z"
+last_close_out_gate_ms: 67308
+last_close_out_gate_at: "2026-11-18T18:27:19.017Z"
 review_passes: 1
 ---
 ## Problem
