@@ -36,15 +36,27 @@ async function submit(): Promise<void> {
     });
     const result = (await response.json().catch(() => ({}))) as { status?: string; code?: string };
     const outcome = result.status ?? result.code;
-    if (response.ok && (outcome === "already_active" || outcome === "active")) {
+    if (
+      response.ok &&
+      (outcome === "already_active" || outcome === "duplicate_active" || outcome === "active")
+    ) {
       signupState.value = "active";
-    } else if (response.ok && (outcome === "already_pending" || outcome === "pending")) {
+    } else if (
+      response.ok &&
+      (outcome === "already_pending" || outcome === "duplicate_pending" || outcome === "pending")
+    ) {
       signupState.value = "duplicate-pending";
     } else if (response.ok && outcome !== "error") {
       signupState.value = "success";
-    } else if (response.status === 409 && (outcome === "already_active" || outcome === "active")) {
+    } else if (
+      response.status === 409 &&
+      (outcome === "already_active" || outcome === "duplicate_active" || outcome === "active")
+    ) {
       signupState.value = "active";
-    } else if (response.status === 409 && (outcome === "already_pending" || outcome === "pending")) {
+    } else if (
+      response.status === 409 &&
+      (outcome === "already_pending" || outcome === "duplicate_pending" || outcome === "pending")
+    ) {
       signupState.value = "duplicate-pending";
     } else {
       signupState.value = "failure";
@@ -112,11 +124,15 @@ const confirmationCopy: Record<ConfirmationState, string> = {
               {{ busy ? "Sending…" : "Get updates" }}
             </button>
           </div>
-          <p id="updates-hint" class="updates-hint">We’ll send a confirmation link before adding you.</p>
+          <p id="updates-hint" class="updates-hint">
+            We’ll send a confirmation link before adding you.
+          </p>
           <p v-if="signupState === 'failure'" id="updates-error" class="updates-error" role="alert">
             We couldn’t request updates just now. Please try again in a moment.
           </p>
-          <p v-if="busy" class="updates-hint" role="status" aria-live="polite">Requesting your confirmation email…</p>
+          <p v-if="busy" class="updates-hint" role="status" aria-live="polite">
+            Requesting your confirmation email…
+          </p>
         </form>
       </div>
     </div>
