@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-18T03:26:08Z"
+review_passes: 3
 id: "1171"
 title: "QA pass: Android Hub web UI fixtures (many servers, errors, offline) and fix issues"
 type: bug
@@ -11,9 +13,7 @@ branch: feat/qa-pass-android-hub-web-ui-fixtures-many
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-18T02:19:54Z"
-updated_at: "2026-11-18T03:26:07Z"
 review_rounds: 2
-review_passes: 2
 ---
 ## Problem
 The Android Hub Vite UI needs a fixture-driven QA sweep before device QA (#1162).
@@ -54,3 +54,4 @@ Do not touch repoos.toml.
 - 2026-11-18T03:19:16Z · message_queued at 2026-11-18T03:19:16.072Z
 - 2026-11-18T03:19:16Z · note: shots: skipped — the diff (10 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-18T03:26:07Z · note: review pass 3: good to go
+
