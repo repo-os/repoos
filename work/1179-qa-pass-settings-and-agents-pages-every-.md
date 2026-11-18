@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-settings-and-agents-pages-every-
 created_at: "2026-11-18T06:47:46Z"
-updated_at: "2026-11-18T08:32:57Z"
+updated_at: "2026-11-18T08:37:21Z"
 review_rounds: 2
 routing_switches: 1
 routing_escalations: 1
@@ -79,3 +79,4 @@ Do not touch repoos.toml.
 - 2026-11-18T08:29:50Z · message_queued at 2026-11-18T08:29:50.482Z
 - 2026-11-18T08:32:56Z · watchdog: restarting engineer because a queued message waited 3m with no live process
 - 2026-11-18T08:32:57Z · message_delivered: 1 message(s)
+- 2026-11-18T08:37:21Z · body
