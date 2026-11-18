@@ -68,8 +68,9 @@ that error during shutdown. A test verifies a failed removal is propagated.
   Hub input bug. The separate #1167 QA pass exercised signed-in screens on
   2026-11-17, but that does not verify them against this pass's build. The
   earlier record named human follow-up #1172; its task file is not present in
-  this worktree, and completion has not been confirmed. This acceptance
-  criterion remains open pending a human sign-in check on this build.
+  this worktree, and completion has not been confirmed. Held human task #1174
+  now tracks the sign-in check for this build. This acceptance criterion
+  remains open until that task records its result.
 - **Discovery of a server that is not already running.** Only the live
   `localhost:7171` server was exercised.
 - **Settings, command palette, notifications, Dock badge, WebKit OAuth.** Not
@@ -88,10 +89,10 @@ no UI source change was made.
 
 ## Follow-ups for a human
 
-- File or restore a human task for signing in and verifying the projects and
-  tasks screens against this pass's build (acceptance criterion
-  "shows projects/tasks without errors"). The previously referenced #1172 is
-  not available in this worktree and is not claimed complete.
+- Complete held human task #1174: sign in and verify the projects and tasks
+  screens against this pass's build (acceptance criterion "shows
+  projects/tasks without errors"). The previously referenced #1172 was not
+  available in this worktree and is not claimed complete.
 - Decide what to do about the recents entry and selection written to the real
   registry at 02:22:55Z (see above).
 - Look into the direct-exec launch that showed no content window, if anyone
