@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   pidOwnership,
   restartRepoServer,
+  restartSupervisorUnit,
   waitForServerRestart,
   type RestartRepoServerOptions,
 } from "./server-restart.js";
@@ -100,21 +101,55 @@ describe("restartRepoServer", () => {
     expect(result.newPid).toBe(21);
   });
 
-  it("external-supervisor success reports the new pid after the supervisor respawns", async () => {
+  it("restarts a detected supervisor directly and reports the healthy replacement", async () => {
     const stop = vi.fn();
+    const restartSupervisor = vi.fn(() => ({ ok: true }));
+    const info = {
+      platform: "systemd" as const,
+      job: "com.repoos.serve.demo",
+      manualCommand: "systemctl --user restart com.repoos.serve.demo.service",
+    };
     const result = await restart(root, {
       locate: async () => server({ pid: 31 }),
-      classify: async () => "external-supervisor",
+      classify: async () => "supervisor",
       ownership: () => ({ uid: 1000, canSignal: true, otherUser: false }),
       health: async () => ({ ok: true, root, serverVersion: "0.5.80", activeEngineers: 0 }),
-      supervisor: () => null,
+      supervisorInfo: () => info,
+      restartSupervisor,
       stop,
       verifyPid: () => true,
       wait: async () => ({ ok: true, pid: 32, version: "0.5.82" }),
     });
-    expect(stop).toHaveBeenCalledWith(31);
-    expect(result).toMatchObject({ ok: true, path: "external-supervisor", oldPid: 31, newPid: 32 });
+    expect(restartSupervisor).toHaveBeenCalledWith(info);
+    expect(stop).not.toHaveBeenCalled();
+    expect(result).toMatchObject({ ok: true, path: "supervisor", oldPid: 31, newPid: 32 });
     expect(result.newVersion).toBe("0.5.82");
+  });
+
+  it("surfaces supervisor restart failures without signalling the server", async () => {
+    const stop = vi.fn();
+    const info = {
+      platform: "systemd" as const,
+      job: "com.repoos.serve.demo",
+      manualCommand: "systemctl --user restart com.repoos.serve.demo.service",
+    };
+    const result = await restart(root, {
+      locate: async () => server({ pid: 31 }),
+      classify: async () => "supervisor",
+      ownership: () => ({ uid: 1000, canSignal: true, otherUser: false }),
+      health: async () => ({ ok: true, root, serverVersion: "0.5.80", activeEngineers: 0 }),
+      supervisorInfo: () => info,
+      restartSupervisor: () => ({ ok: false, error: "systemctl exited 1" }),
+      stop,
+      verifyPid: () => true,
+    });
+    expect(result).toMatchObject({
+      ok: false,
+      path: "supervisor",
+      message: /Failed to restart systemd unit com\.repoos\.serve\.demo: systemctl exited 1/,
+      manualCommand: info.manualCommand,
+    });
+    expect(stop).not.toHaveBeenCalled();
   });
 
   it("an uncertain supervisor refuses and says kill only stops the server", async () => {
@@ -133,10 +168,15 @@ describe("restartRepoServer", () => {
     expect(result.manualCommand).not.toMatch(/kill \d+ &&/);
   });
 
-  it("external-supervisor reports manual command when respawn times out", async () => {
+  it("supervisor reports its restart command when the new server does not return", async () => {
+    const info = {
+      platform: "launchd" as const,
+      job: "org.repoos.serve.kamrai",
+      manualCommand: "launchctl kickstart -k system/org.repoos.serve.kamrai",
+    };
     const result = await restart(root, {
       locate: async () => server({ pid: 30 }),
-      classify: async () => "external-supervisor",
+      classify: async () => "supervisor",
       ownership: () => ({ uid: 1000, canSignal: true, otherUser: false }),
       health: async () => ({
         ok: true,
@@ -144,11 +184,8 @@ describe("restartRepoServer", () => {
         serverVersion: "0.5.80",
         activeEngineers: 0,
       }),
-      supervisor: () => ({
-        platform: "launchd",
-        job: "org.repoos.serve.kamrai",
-        manualCommand: "launchctl kickstart -k system/org.repoos.serve.kamrai",
-      }),
+      supervisorInfo: () => info,
+      restartSupervisor: () => ({ ok: true }),
       stop: () => {},
       verifyPid: () => true,
       wait: async () => ({
@@ -159,8 +196,43 @@ describe("restartRepoServer", () => {
       }),
     });
     expect(result.ok).toBe(false);
-    expect(result.path).toBe("external-supervisor");
+    expect(result.path).toBe("supervisor");
     expect(result.manualCommand).toContain("kickstart");
+  });
+
+  it("builds direct, shell-free restart argv for systemd and launchd", () => {
+    const execFile = vi.fn(() => "");
+    expect(
+      restartSupervisorUnit(
+        {
+          platform: "systemd",
+          job: "com.repoos.serve.demo",
+          manualCommand: "systemctl --user restart com.repoos.serve.demo.service",
+        },
+        execFile as never,
+      ),
+    ).toEqual({ ok: true });
+    expect(execFile).toHaveBeenLastCalledWith(
+      "systemctl",
+      ["--user", "restart", "com.repoos.serve.demo.service"],
+      expect.any(Object),
+    );
+
+    expect(
+      restartSupervisorUnit(
+        {
+          platform: "launchd",
+          job: "org.repoos.serve.demo",
+          manualCommand: "launchctl kickstart -k gui/501/org.repoos.serve.demo",
+        },
+        execFile as never,
+      ),
+    ).toEqual({ ok: true });
+    expect(execFile).toHaveBeenLastCalledWith(
+      "launchctl",
+      ["kickstart", "-k", "gui/501/org.repoos.serve.demo"],
+      expect.any(Object),
+    );
   });
 
   it("hand-run succeeds when spawn and health return a new pid", async () => {
@@ -216,7 +288,6 @@ describe("restartRepoServer", () => {
         serverVersion: "0.5.80",
         activeEngineers: 0,
       }),
-      supervisor: () => null,
       verifyPid: () => true,
     });
     expect(result.ok).toBe(false);

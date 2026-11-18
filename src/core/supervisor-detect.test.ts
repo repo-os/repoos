@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   detectSupervisor,
+  detectLinuxSupervisor,
   launchctlRestartCommand,
   launchdDomainForUid,
   parseLaunchctlListForPid,
@@ -229,5 +230,114 @@ describe("detectSupervisor", () => {
     });
     const r = detectSupervisor(48210, execFile as never);
     expect(r.kind).toBe("none");
+  });
+});
+
+describe("detectLinuxSupervisor", () => {
+  it("finds a renamed RepoOS server from its user service cgroup", () => {
+    const execFile = vi.fn().mockImplementation((cmd: string, args: string[]) => {
+      if (cmd === "systemctl") throw new Error("unit lookup unavailable");
+      if (cmd === "cat" && args[0] === "/proc/48210/cgroup")
+        return "0::/user.slice/user-1000.slice/user@1000.service/app.slice/com.repoos.serve.tuk-driver-aaa442e5.service\n";
+      throw new Error(`unexpected ${cmd} ${args.join(" ")}`);
+    });
+
+    expect(detectLinuxSupervisor(48210, execFile as never)).toEqual({
+      kind: "managed",
+      job: "com.repoos.serve.tuk-driver-aaa442e5",
+      info: {
+        platform: "systemd",
+        job: "com.repoos.serve.tuk-driver-aaa442e5",
+        manualCommand: "systemctl --user restart com.repoos.serve.tuk-driver-aaa442e5.service",
+      },
+    });
+  });
+
+  it("checks cgroup when systemctl only identifies the user manager", () => {
+    const execFile = vi.fn().mockImplementation((cmd: string, args: string[]) => {
+      if (cmd === "systemctl")
+        return "● user@1000.service - User Manager\n   Main PID: 1111 (systemd)\n";
+      if (cmd === "cat" && args[0] === "/proc/48210/cgroup")
+        return "0::/user.slice/user-1000.slice/user@1000.service/app.slice/com.repoos.serve.tuk-driver-aaa442e5.service\n";
+      throw new Error(`unexpected ${cmd} ${args.join(" ")}`);
+    });
+
+    expect(detectLinuxSupervisor(48210, execFile as never)).toEqual({
+      kind: "managed",
+      job: "com.repoos.serve.tuk-driver-aaa442e5",
+      info: {
+        platform: "systemd",
+        job: "com.repoos.serve.tuk-driver-aaa442e5",
+        manualCommand: "systemctl --user restart com.repoos.serve.tuk-driver-aaa442e5.service",
+      },
+    });
+    expect(execFile).toHaveBeenCalledWith(
+      "cat",
+      ["/proc/48210/cgroup"],
+      expect.objectContaining({ encoding: "utf8" }),
+    );
+  });
+
+  it("uses the external unit in the cgroup after skipping the user manager unit", () => {
+    const execFile = vi.fn().mockImplementation((cmd: string) => {
+      if (cmd === "systemctl") throw new Error("unit lookup unavailable");
+      if (cmd === "cat")
+        return "0::/user.slice/user-1000.slice/user@1000.service/app.slice/other.service\n";
+      throw new Error("unexpected command");
+    });
+
+    expect(detectLinuxSupervisor(48210, execFile as never)).toMatchObject({
+      kind: "external",
+      info: {
+        platform: "systemd",
+        job: "other",
+        manualCommand: "systemctl --user restart other.service",
+      },
+    });
+  });
+
+  it("recognizes a renamed managed server from its systemd parent when cgroup lookup fails", () => {
+    const execFile = vi.fn().mockImplementation((cmd: string, args: string[]) => {
+      if (cmd === "systemctl") throw new Error("unit lookup unavailable");
+      if (cmd === "cat") throw new Error("cgroup unavailable");
+      if (cmd === "ps" && args.includes("ppid=")) return "1111\n";
+      if (cmd === "ps" && args.includes("command="))
+        return "/lib/systemd/systemd --user com.repoos.serve.tuk-driver-aaa442e5.service\n";
+      throw new Error(`unexpected ${cmd} ${args.join(" ")}`);
+    });
+
+    expect(detectLinuxSupervisor(48210, execFile as never)).toEqual({
+      kind: "managed",
+      job: "com.repoos.serve.tuk-driver-aaa442e5",
+      info: {
+        platform: "systemd",
+        job: "com.repoos.serve.tuk-driver-aaa442e5",
+        manualCommand: "systemctl --user restart com.repoos.serve.tuk-driver-aaa442e5.service",
+      },
+    });
+  });
+
+  it("does not mistake a shell-parented hand-run server for a systemd unit", () => {
+    const execFile = vi.fn().mockImplementation((cmd: string, args: string[]) => {
+      if (cmd === "systemctl") throw new Error("not managed");
+      if (cmd === "cat") throw new Error("no cgroup data");
+      if (cmd === "ps" && args.includes("ppid=")) return "9001\n";
+      if (cmd === "ps" && args.includes("command=")) return "-zsh\n";
+      throw new Error(`unexpected ${cmd} ${args.join(" ")}`);
+    });
+
+    expect(detectLinuxSupervisor(48210, execFile as never)).toEqual({ kind: "none" });
+  });
+
+  it("returns uncertain when a systemd parent is visible but the unit is unavailable", () => {
+    const execFile = vi.fn().mockImplementation((cmd: string, args: string[]) => {
+      if (cmd === "systemctl") throw new Error("unit lookup unavailable");
+      if (cmd === "cat") throw new Error("cgroup hidden");
+      if (cmd === "ps" && args.includes("ppid=")) return "1\n";
+      if (cmd === "ps" && args.includes("command=")) return "/lib/systemd/systemd --user\n";
+      throw new Error(`unexpected ${cmd} ${args.join(" ")}`);
+    });
+
+    expect(detectLinuxSupervisor(48210, execFile as never).kind).toBe("uncertain");
   });
 });

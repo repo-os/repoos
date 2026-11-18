@@ -220,6 +220,9 @@ export const SHOT_PREVIEW_FIXTURE_IDS = [
   // #1075 — installed build newer than this live server, for light/dark restart-notice shots.
   "release:restartPendingLight",
   "release:restartPendingDark",
+  // #1185 — deterministic restart progress and failure dialog captures.
+  "release:restartProgress",
+  "release:restartError",
   // #1089 — Releases page and cut drawer while a release run is in progress, so
   // captures show the shared ActivityIndicator on the pill and progress heading.
   "release:cutRunning",
@@ -258,8 +261,12 @@ export function shotFixtureContainer(fixture: string): ShotFixtureContainer | nu
     fixture.startsWith("panel:") ||
     fixture.startsWith("schedule:") ||
     // #1073 — `release:updateAvailable` pins the release-update modal open.
+    // #1185 — restart progress/error fixtures pin the installed-update modal
+    // open with their respective action state.
     // #1071 — `release:email*` render a card on the Releases page, no dialog.
-    fixture === "release:updateAvailable"
+    fixture === "release:updateAvailable" ||
+    fixture === "release:restartProgress" ||
+    fixture === "release:restartError"
   ) {
     return "dialog";
   }

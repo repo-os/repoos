@@ -20,7 +20,7 @@ export type SupervisorDetectResult =
   | { kind: "external"; info: SupervisorInfo }
   | { kind: "none" }
   /** A RepoOS-installed service unit (`com.repoos.serve.*`): restart via the service manager, never by signalling. */
-  | { kind: "managed"; job: string }
+  | { kind: "managed"; job: string; info: SupervisorInfo }
   | { kind: "uncertain"; reason: string };
 
 /**
@@ -237,18 +237,17 @@ function detectDarwinSupervisor(
       }
     }
   }
-  if (listed && MANAGED_LABEL_RE.test(listed)) {
-    return { kind: "managed", job: listed };
-  }
   if (listed) {
     const uid = readPidUid(pid, execFile);
+    const info: SupervisorInfo = {
+      platform: "launchd",
+      job: listed,
+      manualCommand: launchctlRestartCommand(listed, uid, execFile),
+    };
+    if (MANAGED_LABEL_RE.test(listed)) return { kind: "managed", job: listed, info };
     return {
       kind: "external",
-      info: {
-        platform: "launchd",
-        job: listed,
-        manualCommand: launchctlRestartCommand(listed, uid, execFile),
-      },
+      info,
     };
   }
 
@@ -291,7 +290,10 @@ function detectDarwinSupervisor(
   return { kind: "none" };
 }
 
-function detectLinuxSupervisor(pid: number, execFile: typeof execFileSync): SupervisorDetectResult {
+export function detectLinuxSupervisor(
+  pid: number,
+  execFile: typeof execFileSync = execFileSync,
+): SupervisorDetectResult {
   try {
     const out = execFile("systemctl", ["status", String(pid)], {
       encoding: "utf8",
@@ -299,8 +301,10 @@ function detectLinuxSupervisor(pid: number, execFile: typeof execFileSync): Supe
       stdio: ["ignore", "pipe", "pipe"],
     });
     const info = parseSystemdPidStatus(out);
-    if (info && MANAGED_LABEL_RE.test(info.job)) return { kind: "managed", job: info.job };
+    if (info && MANAGED_LABEL_RE.test(info.job)) return { kind: "managed", job: info.job, info };
     if (info) return { kind: "external", info };
+    const fallback = detectLinuxSupervisorFromCgroupOrParent(pid, execFile);
+    if (fallback) return fallback;
     if (/\b\.service\b/.test(out) || /Main PID:/.test(out)) {
       return {
         kind: "uncertain",
@@ -309,16 +313,58 @@ function detectLinuxSupervisor(pid: number, execFile: typeof execFileSync): Supe
     }
     return { kind: "none" };
   } catch {
-    const ppid = readPpid(pid, execFile);
-    if (ppid !== null) {
-      const parent = parentCommand(ppid, execFile);
-      if (parent && /\bsystemd\b/.test(parent)) {
-        return {
-          kind: "uncertain",
-          reason: `systemctl could not describe pid ${pid} but parent looks systemd-managed`,
-        };
+    return detectLinuxSupervisorFromCgroupOrParent(pid, execFile) ?? { kind: "none" };
+  }
+}
+
+/** Read the process's cgroup and parent when `systemctl status <pid>` is inconclusive. */
+function detectLinuxSupervisorFromCgroupOrParent(
+  pid: number,
+  execFile: typeof execFileSync,
+): SupervisorDetectResult | null {
+  // The process cgroup records its unit even when argv/comm was renamed.
+  try {
+    const cgroup = execFile("cat", [`/proc/${pid}/cgroup`], {
+      encoding: "utf8",
+      timeout: 1500,
+      stdio: ["ignore", "pipe", "ignore"],
+    });
+    const unit = [...cgroup.matchAll(/(?:^|\/)([^/]+\.service)(?=\/|$)/gm)]
+      .map((match) => match[1]!)
+      .find((candidate) => !candidate.startsWith("user@"));
+    if (unit && !unit.startsWith("user@")) {
+      const info = parseSystemdPidStatus(`● ${unit}\n${cgroup}`);
+      if (info) {
+        const userScope = /\/user\.slice\/user-\d+\.slice/.test(cgroup);
+        info.manualCommand = `${userScope ? "systemctl --user" : "systemctl"} restart ${info.job}.service`;
+        return MANAGED_LABEL_RE.test(info.job)
+          ? { kind: "managed", job: info.job, info }
+          : { kind: "external", info };
       }
     }
-    return { kind: "none" };
+  } catch {
+    /* fall through to parent check */
   }
+  const ppid = readPpid(pid, execFile);
+  if (ppid !== null) {
+    const parent = parentCommand(ppid, execFile);
+    if (parent && /\bsystemd(?:\s+--user)?\b/.test(parent)) {
+      const unit = parent.match(/(com\.repoos\.serve\.[\w.-]+\.service)/)?.[1];
+      if (unit) {
+        const job = unit.slice(0, -8);
+        const userScope = /\bsystemd\s+--user\b/.test(parent);
+        const ctl = userScope ? "systemctl --user" : "systemctl";
+        return {
+          kind: "managed",
+          job,
+          info: { platform: "systemd", job, manualCommand: `${ctl} restart ${unit}` },
+        };
+      }
+      return {
+        kind: "uncertain",
+        reason: `systemctl could not describe pid ${pid} but parent looks systemd-managed`,
+      };
+    }
+  }
+  return null;
 }

@@ -11,7 +11,7 @@ import { readLocalCliToken } from "../server/local-token.js";
 
 const PATH_LABEL: Record<RestartPath, string> = {
   "managed-service": "managed service (`repoos service`)",
-  "external-supervisor": "externally supervised process (supervisor respawn)",
+  supervisor: "supervised process (restarted by its supervisor)",
   "hand-run": "hand-run `repoos serve` (stop + start)",
 };
 

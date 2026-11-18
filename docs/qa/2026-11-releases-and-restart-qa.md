@@ -36,5 +36,11 @@ The inspected release screenshots are `release-chooser-1440-light.png`, `release
 
 ## Verification
 
+- **Real restart check for #1185: not performed.** This session did not control a real hand-run server or a systemd/launchd managed instance, so no live restart outcome is claimed. The restart flow is covered by automated tests; operator QA remains needed for a real hand-run server.
+
+- **Resumed #1185 engineering session: real hand-run restart still not performed.** This worktree session added regression coverage for the systemd-parent fallback but did not operate a real server, so it does not change the live QA result above.
+
+- **Current #1185 restart routing follow-up: real hand-run restart not performed.** This session reviewed the direct supervisor restart path and its automated coverage, but did not operate a real hand-run server. No live restart result is claimed; the manual QA requirement remains outstanding.
+
 - `bun run test:vitest -- src/ui-app/tests/releases.test.ts` — passed, 44 tests.
 - `REPOOS_CHECK_CHANGED=main repoos check` — passed. Remote validation passed build, 173 scoped tests, and UI smoke; local format, lint, build freshness, contrast audit, and UI smoke passed.

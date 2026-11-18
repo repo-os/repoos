@@ -105,7 +105,18 @@ describe("installed upgrade status and restart route", () => {
       },
       true,
     ],
-    [{ kind: "managed", job: "com.repoos.serve.test" }, true],
+    [
+      {
+        kind: "managed",
+        job: "com.repoos.serve.test",
+        info: {
+          platform: "systemd",
+          job: "com.repoos.serve.test",
+          manualCommand: "systemctl --user restart com.repoos.serve.test.service",
+        },
+      },
+      true,
+    ],
   ] as const)("classifies supervisor state %#", (result, expected) => {
     expect(isRestartSupervised(result)).toBe(expected);
   });

@@ -118,7 +118,9 @@ function writeDismissedVersion(version: string | null): void {
 onMounted(async () => {
   const fixtureState = readShotPreviewFixtureFromLocation(window.location);
   const restartFixture =
-    fixtureState === "release:restartPendingLight" || fixtureState === "release:restartPendingDark";
+    fixtureState?.startsWith("release:restartPending") ||
+    fixtureState === "release:restartProgress" ||
+    fixtureState === "release:restartError";
   if (restartFixture) {
     restartFixtureActive.value = true;
     release.value = {
@@ -136,8 +138,16 @@ onMounted(async () => {
       runningVersion: "0.5.78",
       installedVersion: "0.5.79",
       activeWork: { agents: 2, checks: 1 },
-      supervised: false,
+      supervised: true,
+      supervisorKind: "systemd",
+      supervisorPlatform: "systemd",
     };
+    if (fixtureState === "release:restartProgress") {
+      restartPendingAction.value = true;
+      restartAccepted.value = true;
+    }
+    if (fixtureState === "release:restartError")
+      restartError.value = "The service manager could not restart this server.";
     releaseRun.value = { state: "idle", phase: null };
     document.documentElement.dataset.theme = fixtureState.endsWith("Dark") ? "dark" : "light";
   }
@@ -348,9 +358,9 @@ onUnmounted(() => {
           </template>
           <template v-else-if="restartStatus.supervised">
             <template v-if="!restartStatus.restartWhenIdlePending">
-              <Button size="sm" :disabled="restartPendingAction" @click="void restartInstalled()"
-                >Restart now</Button
-              >
+              <Button size="sm" :disabled="restartPendingAction" @click="void restartInstalled()">{{
+                restartPendingAction ? "Restarting…" : "Restart now"
+              }}</Button>
               <Button
                 size="sm"
                 variant="ghost"

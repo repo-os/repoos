@@ -108,4 +108,15 @@ describe("shot preview fixtures (#0743)", () => {
     // The fixture pins a modal open, so the capture container must be a dialog.
     expect(shotFixtureContainer("release:updateAvailable")).toBe("dialog");
   });
+
+  it("accepts the restart progress and error dialog fixtures (#1185)", () => {
+    for (const state of ["release:restartProgress", "release:restartError"]) {
+      const url = shotCapturePageUrl("http://127.0.0.1:8000", { route: "/", state });
+      expect(new URL(url).searchParams.get("shotState")).toBe(state);
+      expect(
+        parseShotPlan(`## Shots\n\`\`\`json\n[{"route":"/","state":"${state}"}]\n\`\`\``).errors,
+      ).toEqual([]);
+      expect(shotFixtureContainer(state)).toBe("dialog");
+    }
+  });
 });
