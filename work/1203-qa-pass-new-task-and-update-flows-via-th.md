@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-18T21:08:27Z"
+review_passes: 1
 id: "1203"
 title: "QA pass: new-task and update flows via the CLI and UI agree – body sections, validation messages and needs-input handling"
 type: bug
@@ -9,7 +11,6 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-new-task-and-update-flows-via-th
 created_at: "2026-11-18T20:47:36Z"
-updated_at: "2026-11-18T21:08:27Z"
 ---
 ## Problem
 UI and CLI task creation have different validation (needs input, required sections) and may give confusing messages.
@@ -36,3 +37,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T21:08:01Z · status active→review
 - 2026-11-18T21:08:01Z · message_queued at 2026-11-18T21:08:01.218Z
 - 2026-11-18T21:08:27Z · note: review pass 1: needs some work
+
