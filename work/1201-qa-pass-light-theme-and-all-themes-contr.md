@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-18T20:21:57Z"
+review_passes: 1
 id: "1201"
 title: "QA pass: light theme and all themes – contrast, readability and hard-coded colors on main pages"
 type: bug
@@ -9,7 +11,6 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-light-theme-and-all-themes-contr
 created_at: "2026-11-18T20:17:30Z"
-updated_at: "2026-11-18T20:21:57Z"
 ---
 ## Problem
 Dark theme gets most attention; light and other themes may have unreadable or inconsistent areas.
@@ -30,3 +31,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T20:21:33Z · message_queued at 2026-11-18T20:21:33.842Z
 - 2026-11-18T20:21:34Z · note: shots: skipped — the diff (3 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-18T20:21:57Z · note: review pass 1: good to go
+
