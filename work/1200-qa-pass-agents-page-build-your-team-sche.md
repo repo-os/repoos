@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-18T21:23:26Z"
+review_passes: 3
 id: "1200"
 title: "QA pass: Agents page Build Your Team, Scheduled Tasks, Reminders and Detected Coding Agents tabs"
 type: bug
@@ -9,9 +11,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-agents-page-build-your-team-sche
 created_at: "2026-11-18T19:47:54Z"
-updated_at: "2026-11-18T21:23:26Z"
 last_check_failure: "repoos check at 2026-11-18T21:03:27.069Z: repoos check failed: reused check inputs changed during handoff — run the check again"
-review_passes: 2
 handoff_signal_retry_count: 2
 ---
 ## Problem
@@ -84,3 +84,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T21:22:43Z · status active→review
 - 2026-11-18T21:22:43Z · message_queued at 2026-11-18T21:22:43.539Z
 - 2026-11-18T21:23:26Z · note: review pass 3: good to go
+
