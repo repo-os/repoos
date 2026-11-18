@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: "check|repoos check failed: check-fmt:check — Formatting failed — run `bun run fmt` to fix:"
+last_handoff_failure_sha: a33d6a689dbd8428e920b3807946463fd8171337
 id: "1179"
 title: "QA pass: Settings and Agents pages – every control saves, validates and survives reload"
 type: bug
@@ -124,3 +126,4 @@ Do not touch repoos.toml.
 - 2026-11-18T11:14:51Z · CTO nudge: held — handoff gate is running
 - 2026-11-18T11:18:04Z · status active→review
 - 2026-11-18T11:22:21Z · handoff failed · task-file handoff failed at check · repoos check failed: check-fmt:check — Formatting failed — run `bun run fmt` to fix:
+
