@@ -2,7 +2,7 @@
 id: "1170"
 title: "QA pass: web app mobile widths (375/768) across Work, Releases, Settings, Agents, Checks"
 type: bug
-status: review
+status: active
 priority: p2
 area: web
 assigned_to: ai
