@@ -1481,6 +1481,8 @@ export interface ConfigField {
   description: string;
   /** Minimum value for number fields (schema + validator). */
   min?: number;
+  /** Maximum value for number fields (schema + validator). */
+  max?: number;
   /** Step for number inputs; non-integer step allows decimals on save. */
   step?: number;
 }

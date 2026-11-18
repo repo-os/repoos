@@ -136,6 +136,8 @@ export function safeConfigForBrowser(config: Record<string, unknown>): Record<st
     "model_routing.timeoutMs": (_rawModelRouting as { timeoutMs?: number } | undefined)?.timeoutMs,
     "model_routing.humanStepCheck": (_rawModelRouting as { humanStepCheck?: boolean } | undefined)
       ?.humanStepCheck,
+    "model_routing.humanStepSticky": (_rawModelRouting as { humanStepSticky?: boolean } | undefined)
+      ?.humanStepSticky,
     /**
      * Declared dev targets (#0749): the Settings control edits this
      * `[[dev.targets]]` list. Exposed as the parsed objects (never the raw
@@ -688,15 +690,20 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
     } else if (field.type === "number") {
       const num = Number(val);
       const min = field.min ?? 0;
+      const max = field.max;
       // If step is defined and not an integer (e.g., 0.1), decimals are allowed.
       // Otherwise, only whole numbers are allowed.
       const allowDecimals = field.step !== undefined && !Number.isInteger(field.step);
       const isValidNumber = allowDecimals ? Number.isFinite(num) : Number.isInteger(num);
 
-      if (!isValidNumber || num < min) {
-        const msg = allowDecimals
-          ? `${field.label} must be a number ${min > 0 ? `greater than ${min}` : `at least ${min}`}`
-          : `${field.label} must be a whole number`;
+      if (!isValidNumber || num < min || (max !== undefined && num > max)) {
+        const msg = !isValidNumber
+          ? allowDecimals
+            ? `${field.label} must be a number ${min > 0 ? `greater than ${min}` : `at least ${min}`}`
+            : `${field.label} must be a whole number`
+          : max !== undefined
+            ? `${field.label} must be between ${min} and ${max}`
+            : `${field.label} must be a number ${min > 0 ? `greater than ${min}` : `at least ${min}`}`;
         return json(res, 400, { error: msg });
       }
       if (field.key === "model_routing.timeoutMs") {

@@ -1763,6 +1763,11 @@ onUnmounted(() => {
                               fieldDurationUnit(f)!,
                             )
                           "
+                          :max="
+                            typeof f.max === 'number'
+                              ? durationBound(f.max, fieldDurationUnit(f)!)
+                              : undefined
+                          "
                           :step="
                             durationBound(
                               typeof f.step === 'number' ? f.step : 1000,
@@ -1783,6 +1788,7 @@ onUnmounted(() => {
                         :model-value="form[f.key] == null ? '' : String(form[f.key])"
                         type="number"
                         :min="typeof f.min === 'number' ? f.min : 0"
+                        :max="typeof f.max === 'number' ? f.max : undefined"
                         :step="typeof f.step === 'number' ? f.step : 1"
                         style="width: 100px"
                         :disabled="config.saving"
