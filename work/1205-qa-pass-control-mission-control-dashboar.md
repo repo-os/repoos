@@ -2,14 +2,14 @@
 id: "1205"
 title: "QA pass: Control (Mission Control) dashboard – every card, chart and empty state at desktop and 375px"
 type: bug
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-control-mission-control-dashboar
 created_at: "2026-11-18T21:47:29Z"
-updated_at: "2026-11-18T21:47:34Z"
+updated_at: "2026-11-18T22:20:08Z"
 ---
 ## Problem
 The Control dashboard shows usage, costs and activity and has not had a recent pass.
@@ -26,3 +26,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T21:47:29Z · created · t@t
 - 2026-11-18T21:47:32Z · status inbox→ready
 - 2026-11-18T21:47:34Z · status ready→active, branch
+- 2026-11-18T22:20:08Z · status active→review
