@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-pairing-login-and-session-screen
 created_at: "2026-11-18T22:47:38Z"
-updated_at: "2026-11-18T22:47:43Z"
+updated_at: "2026-11-18T22:53:35Z"
 ---
 ## Problem
 Auth screens are the first thing users see and must work on phones.
@@ -21,8 +21,21 @@ Login, code entry, expired-session and sign-out flows are clear and usable at 37
 ## Notes for AI
 Do not touch repoos.toml. Never open a visible browser window.
 
+## Shots
+```json
+[
+{
+  "label": "Login fields with accessible names and announced errors",
+  "target": "default",
+  "route": "/login",
+  "highlight": ".login-card"
+}
+]
+```
+
 ## Activity
 
 - 2026-11-18T22:47:38Z · created · t@t
 - 2026-11-18T22:47:41Z · status inbox→ready
 - 2026-11-18T22:47:43Z · status ready→active, branch
+- 2026-11-18T22:53:35Z · body
