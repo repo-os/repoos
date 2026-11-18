@@ -2,43 +2,32 @@
 
 ## Result
 
-No product defects were found. No source fixes or follow-up tasks were needed. The only issue during the pass was in the Playwright sequence: cancelling the first pending request closed the cut drawer, so the script had to reopen it before exercising the second choice. The app behaved as designed.
+The QA pass found and fixed one UI defect: the update notice rendered “1 agents” and “1 checks.” The count labels now use singular forms when the count is one, with component tests covering 0, 1, and multiple agents/checks. No release was cut or published, no tag or push was made, and no restart action was invoked.
 
-Screenshots are stored locally under the ignored path `.repoos/qa-evidence-1168/`; they are deliberately not included in git. I inspected every captured screenshot. The releases captures show the chooser, pending Notify, and pending Publish states. Restart captures cover every supervisor, viewport, and theme combination described below.
+This record distinguishes what was exercised from the round-one reviewer’s re-capture requests. The prior visual captures are retained locally under ignored `.repoos/qa-evidence-1168/` and `.repoos/qa-pass-1168/`; they are not attached to this task yet. The reviewer correctly noted that some chooser and dark-mode captures were taken during transitions. Those captures do not establish settled-state readability. A later recapture attempt in `.repoos/qa-pass-1168-round2/qa-round2.mjs` did not reach the chooser because its UI setup left “Generate with AI” disabled. Therefore this turn does not claim that the requested settled chooser recapture or 390px chooser capture was completed.
 
-## What I drove
+## What was driven
 
-I built and ran `just serve-noauth 7278` from a disposable detached scratch worktree under `.repoos/qa-scratch-1168`, not from the served checkout. I used the existing `release:cutReady` fixture to make the cut panel ready. Playwright opened Releases, opened the cut drawer, and opened the “When the AI notes are ready” chooser.
+A prior pass launched `just serve-noauth 7278` from the disposable `.repoos/qa-scratch-1168` worktree. It used Playwright request interception for release and notes endpoints, and selected both Notify and Publish. It observed pending UI states and reload persistence in the intercepted setup, then canceled pending actions. The browser did not press Publish. A failure-path test seam was used in code tests; the requested failed-draft browser screenshot is absent. No external release or agent operation was allowed by the stubs.
 
-The chooser showed both choices and their descriptions. Publish said it would publish the exact release when notes land after the normal Publish checks. Notify said the notes would be filled in for review and the operator must press Publish. Playwright intercepted the notes POST and auto-publish GET/DELETE requests, returning pending records locally instead of starting an agent. I selected Notify, confirmed its request used `whenReady: notify`, reloaded while pending, confirmed the Notify banner persisted and did not claim to publish, then cancelled it. I reopened the drawer, selected Publish, confirmed `whenReady: publish` and the version/tag, reloaded while pending, confirmed the guarded-publish banner persisted, then cancelled it. I did not click Publish.
+The served test instance and run did not use port 7371; that value in the earlier record was an error. The screenshots under `.repoos/qa-pass-1168/` show the task-worktree title bar and are from the earlier 7371 attempt; they are not evidence from the scratch server. The first evidence set under `.repoos/qa-evidence-1168/` is the 7278 scratch run.
 
-The browser reported no page errors. The failed-draft test in `release-auto-publish.test.ts` verified that an AI draft failure records the error and does not call the publish starter. The focused test run also covered the UI choice/cancel behavior and update-status handling.
+## Restart notice coverage and limits
 
-## Restart notice matrix
+The first evidence set contains screenshots for hand-run, launchd, and systemd notices at 1440 and 390 widths in light and dark themes. The second evidence set contains another 12 supervisor/viewport/theme captures. These are the files present in the two ignored directories, not committed artifacts. Review round one found several dark captures mid-transition; settled dark readability must be recaptured before treating that portion as verified.
 
-I rendered the update/restart notice for each supervisor state using the existing restart notice fixture for hand-run and the existing update-status test payloads for launchd and systemd. Launchd and systemd API responses were intercepted in Playwright; no system service was restarted.
-
-| Supervisor | 1440 light | 1440 dark | 390 light | 390 dark |
-| --- | --- | --- | --- | --- |
-| Hand-run | Captured and inspected | Captured and inspected | Captured and inspected | Captured and inspected |
-| launchd | Captured and inspected | Captured and inspected | Captured and inspected | Captured and inspected |
-| systemd | Captured and inspected | Captured and inspected | Captured and inspected | Captured and inspected |
-
-Hand-run showed the recorded serve flags and port explanation, with a real “Restart now” action and “Restart when idle.” launchd and systemd showed the supervised restart actions without hand-run instructions. At 390 pixels, the modal and its text/actions remained within the viewport and readable. I did not click any restart action.
+The hand-run notice presents a “Restart now” action and says RepoOS will relaunch with recorded serve flags and port. It does not print the actual flag or port values. launchd and systemd display restart actions without `launchctl`/`systemctl` command text, consistent with the component tests. The “uncertain supervisor” state is the one that displays a manual command; this state was missing from the earlier screenshot matrix. A component test now verifies the scoped command `repoos restart --root /fake/project --port 7123` and that the restart button is absent for that state.
 
 ## Defects and disposition
 
-- **Release chooser wording and pending states:** no defect found. Notify explicitly says nothing is published until the operator presses Publish; Publish remains tied to the selected tag and normal checks. No fix or task filed.
-- **Hand-run restart notice:** no defect found. The notice offers “Restart now” and explains that RepoOS relaunches with recorded flags and port. No fix or task filed.
-- **launchd/systemd restart notice:** no defect found. The supervised choices render without misleading hand-run copy. No fix or task filed.
-- **Responsive/theme rendering:** no defect found in the captured 1440/390 light/dark states. No fix or task filed.
+- **Count pluralization — fixed with tests.** Both labels now pluralize independently. Tests cover (2,1), (1,2), (1,1), and (0,0).
+- **Chooser screenshot timing and mobile chooser — evidence gap.** Round one did not provide a settled dark chooser capture or 390px chooser capture. The recapture attempt failed before opening the chooser, so these remain unverified.
+- **Uncertain supervisor command — clarified and tested.** launchd/systemd use visible restart actions; the uncertain state shows the explicit CLI command. The component test verifies that state.
+- **Hand-run actual flags/port — copy scope clarified.** The existing notice describes replaying recorded flags and port without exposing their values. The earlier QA wording overstated what the screen showed; no product defect is asserted from that wording alone.
 
-## Not tested
-
-This pass did not cut or publish a release, push or tag anything, start a real AI agent, or restart the real server. It did not exercise a real launchd or systemd host; those two notice variants were rendered from test-shaped intercepted responses on this macOS host. The Publish/Notify browser requests were intercepted, so the browser pass verified UI state and request intent rather than a real agent completion. A failed draft was verified by the existing server test seam, not by running a live failed agent. No user-facing or service side effect was attempted.
+No larger defect was confirmed that needs a follow-up task. Screenshots remain outside git. Attachment to the task drawer is still outstanding.
 
 ## Verification
 
-- `bun run test:vitest -- src/ui-app/tests/release-auto-publish.test.ts src/ui-app/tests/release-when-ready.test.ts src/ui-app/tests/update-status.test.ts` — passed, 39 tests.
-- `REPOOS_CHECK_CHANGED=main repoos check` — passed in the preceding pass (remote validation, format, lint, build, and UI smoke).
-- `repoos check --changed main` — passed on the final documentation tree. The docs-only path ran format, lockfile/runtime-dependency guards, task-asset validation, and task parsing; build, lint, tests, and UI smoke were skipped by the docs/bookkeeping-only check policy.
+- `bun run test:vitest -- src/ui-app/tests/releases.test.ts` — passed, 44 tests after correcting the uncertain-supervisor assertion.
+- A full `REPOOS_CHECK_CHANGED=main repoos check` was run before that assertion correction and failed in the scoped tests on the incorrect assertion. It has not yet been rerun successfully in this record.
