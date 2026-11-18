@@ -90,6 +90,7 @@ describe("repoos servers --tailscale", () => {
             },
           },
         }),
+      httpDiscovery: async () => null,
       remoteExec,
     });
 
@@ -165,6 +166,7 @@ describe("repoos servers --tailscale", () => {
             b: { HostName: "slow", Online: true },
           },
         }),
+      httpDiscovery: async () => null,
       remoteExec,
     });
     expect(result.tailscaleUnavailable).toBe(false);
@@ -185,6 +187,7 @@ describe("repoos servers --tailscale", () => {
         throw new Error("tailscale: not found");
       },
       configuredHosts: ["bee"],
+      httpDiscovery: async () => null,
       remoteExec,
     });
     expect(result.tailscaleUnavailable).toBe(true);
@@ -200,6 +203,7 @@ describe("repoos servers --tailscale", () => {
         throw new Error("tailscale: not found");
       },
       configuredHosts: [],
+      httpDiscovery: async () => null,
       remoteExec,
     });
     expect(result.tailscaleUnavailable).toBe(true);
@@ -222,6 +226,7 @@ describe("repoos servers --tailscale", () => {
             b: { HostName: "mini", Online: true },
           },
         }),
+      httpDiscovery: async () => null,
       remoteHosts: [{ host: "bee", user: "operator" }],
       remoteValidation: { tailscaleUser: "nick" },
       remoteExec,
@@ -391,6 +396,7 @@ describe("repoos servers --tailscale", () => {
         throw new Error("tailscale: not found");
       },
       configuredHosts: ["bee", "thinkpad"],
+      httpDiscovery: async () => null,
       remoteExec: async (host) => {
         if (host === "bee") throw sshError;
         return JSON.stringify({ servers: [{ port: 7499, projectName: "thinkpad-project" }] });
