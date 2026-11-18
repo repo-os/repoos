@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/fix-401-on-api-project-environments-in-t
 created_at: "2026-11-18T04:17:45Z"
-updated_at: "2026-11-18T05:48:43Z"
+updated_at: "2026-11-18T05:49:09Z"
 last_close_out_gate_ms: 560758
 last_close_out_gate_at: "2026-11-18T05:48:43.100Z"
 review_passes: 1
@@ -53,4 +53,4 @@ Related: #1164. Do not touch repoos.toml.
 - 2026-11-18T05:10:26Z · message_queued at 2026-11-18T05:10:26.641Z
 - 2026-11-18T05:10:59Z · note: review pass 1: good to go
 - 2026-11-18T05:48:43Z · close-out gate completed in 561s
-
+- 2026-11-18T05:49:09Z · status done→done, release:success
