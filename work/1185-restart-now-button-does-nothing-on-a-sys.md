@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/restart-now-button-does-nothing-on-a-sys
 created_at: "2026-11-18T12:27:18Z"
-updated_at: "2026-11-18T14:08:08Z"
+updated_at: "2026-11-18T14:08:59Z"
 ---
 ## Problem
 On bee, the tuk-driver server runs as the systemd user unit com.repoos.serve.tuk-driver-aaa442e5.service (parent pid 1111 = systemd --user), but the 'RepoOS v0.5.90 is installed' modal said 'This server was started by hand'. Clicking Restart now made the button flicker and the modal stayed; nothing restarted (process start time unchanged, no journal entries). A manual systemctl --user restart worked.
@@ -52,3 +52,4 @@ Reported by Nick 2026-11-18 20:22 from the phone UI. Related #1154. Do not touch
 - 2026-11-18T14:08:06Z · note: ui verification passed: 1 shot captured with clean console
 - 2026-11-18T14:08:08Z · status active→review
 - 2026-11-18T14:08:08Z · message_queued at 2026-11-18T14:08:08.783Z
+- 2026-11-18T14:08:59Z · note: review pass 1: needs some work
