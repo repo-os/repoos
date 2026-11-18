@@ -3,6 +3,9 @@ id: "1179"
 title: "QA pass: Settings and Agents pages – every control saves, validates and survives reload"
 type: bug
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: `needs some work` — The audit still omits control-by-control coverage for several Settings tabs.
 priority: p2
 area: [web, server]
 assigned_to: ai
@@ -127,3 +130,4 @@ Do not touch repoos.toml.
 - 2026-11-18T11:18:04Z · status active→review
 - 2026-11-18T11:22:21Z · handoff failed · task-file handoff failed at check · repoos check failed: check-fmt:check — Formatting failed — run `bun run fmt` to fix:
 - 2026-11-18T11:22:21Z · note: review pass 5: needs some work
+- 2026-11-18T11:22:21Z · needs_input
