@@ -213,6 +213,7 @@ function googleLogin(): void {
           <input
             v-model="bootstrapEmail"
             type="email"
+            aria-label="Administrator email"
             placeholder="admin@example.com"
             class="login-input"
             @keyup.enter="doBootstrap"
@@ -225,7 +226,7 @@ function googleLogin(): void {
             {{ bootstrapping ? "Setting up..." : "Create Admin" }}
           </button>
         </div>
-        <p v-if="errorMsg" class="login-error">{{ errorMsg }}</p>
+        <p v-if="errorMsg" class="login-error" role="alert">{{ errorMsg }}</p>
       </div>
 
       <!-- Login form -->
@@ -239,6 +240,7 @@ function googleLogin(): void {
             <input
               v-model="email"
               type="email"
+              aria-label="Email address"
               placeholder="you@example.com"
               class="login-input"
               @keyup.enter="requestOtp"
@@ -293,6 +295,7 @@ function googleLogin(): void {
           <input
             v-model="otpCode"
             type="text"
+            aria-label="One-time code"
             inputmode="numeric"
             maxlength="6"
             placeholder="000000"
@@ -315,7 +318,7 @@ function googleLogin(): void {
           </div>
         </div>
 
-        <p v-if="errorMsg" class="login-error">{{ errorMsg }}</p>
+        <p v-if="errorMsg" class="login-error" role="alert">{{ errorMsg }}</p>
       </div>
     </div>
   </div>
