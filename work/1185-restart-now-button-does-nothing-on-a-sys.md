@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/restart-now-button-does-nothing-on-a-sys
 created_at: "2026-11-18T12:27:18Z"
-updated_at: "2026-11-18T14:48:12Z"
+updated_at: "2026-11-18T14:49:07Z"
 review_passes: 3
 last_check_failure: "repoos check at 2026-11-18T14:30:25.814Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 2
@@ -27,6 +27,26 @@ Supervisor detection recognizes a systemd user unit (and launchd) even when the 
 - Add a QA note to docs/qa/2026-11-releases-and-restart-qa.md that restart was checked against a real hand-run server, or say it was not.
 ## Notes for AI
 Reported by Nick 2026-11-18 20:22 from the phone UI. Related #1154. Do not touch repoos.toml.
+
+## Shots
+```json
+[
+{
+  "label": "Restart dialog while restart is in progress",
+  "target": "default",
+  "route": "/",
+  "highlight": ".release-update-dialog",
+  "state": "release:restartProgress"
+},
+{
+  "label": "Restart dialog with a surfaced supervisor error",
+  "target": "default",
+  "route": "/",
+  "highlight": ".release-update-dialog",
+  "state": "release:restartError"
+}
+]
+```
 
 ## Activity
 
@@ -95,3 +115,4 @@ Reported by Nick 2026-11-18 20:22 from the phone UI. Related #1154. Do not touch
 - 2026-11-18T14:47:34Z · message_delivered: 1 message(s)
 - 2026-11-18T14:47:35Z · message_queued at 2026-11-18T14:47:35.822Z
 - 2026-11-18T14:47:41Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-18T14:49:07Z · body
