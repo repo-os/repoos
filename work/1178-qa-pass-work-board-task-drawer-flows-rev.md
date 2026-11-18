@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-work-board-task-drawer-flows-rev
 created_at: "2026-11-18T05:56:51Z"
-updated_at: "2026-11-18T08:08:25Z"
+updated_at: "2026-11-18T08:08:31Z"
 last_close_out_gate_ms: 203360
 last_close_out_gate_at: "2026-11-18T08:08:25.379Z"
 review_passes: 2
@@ -56,4 +56,4 @@ Do not touch repoos.toml.
 - 2026-11-18T07:43:26Z · note: review pass 2: good to go
 - 2026-11-18T07:43:31Z · message_queued at 2026-11-18T07:43:31.065Z
 - 2026-11-18T08:08:25Z · close-out gate completed in 203s
-
+- 2026-11-18T08:08:31Z · status done→done, release:success
