@@ -36,4 +36,4 @@ The representative save/reload path was verified in the isolated writable harnes
 
 ## Check
 
-`bun run test -- settings-save-only-changed` passed (5 tests). `bun run build:ui` passed. The required `REPOOS_CHECK_CHANGED=main repoos check` is being rerun for the source and test changes in this revision.
+`bun run test -- settings-save-only-changed` passed (5 tests). `bun run build:ui` passed. `REPOOS_CHECK_CHANGED=main repoos check` passed on the final source and test changes. Remote validation passed the build, 218 scoped tests, and browser gate; local format, lint, build, contrast, and UI smoke checks passed.
