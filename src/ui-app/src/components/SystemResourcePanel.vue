@@ -1012,11 +1012,15 @@ const serveMessage = computed(() => {
 .process-table-wrap {
   border-top: 1px solid var(--border);
   padding-top: 10px;
+  min-width: 0;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
 }
 
 .process-table-header {
   display: grid;
   grid-template-columns: 1fr 2fr 1fr 1.5fr 1.5fr 0.6fr;
+  min-width: 560px;
   gap: 6px;
   padding: 4px 4px 6px;
   font-size: 10px;
@@ -1029,6 +1033,7 @@ const serveMessage = computed(() => {
 .process-row {
   display: grid;
   grid-template-columns: 1fr 2fr 1fr 1.5fr 1.5fr 0.6fr;
+  min-width: 560px;
   gap: 6px;
   padding: 6px 4px;
   font-size: 12px;
