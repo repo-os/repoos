@@ -180,6 +180,29 @@ describe("schedule editor drawer (#0841)", () => {
 });
 
 describe("schedule CRUD from the panel", () => {
+  it("shows a load error instead of an empty state when schedules cannot be fetched", async () => {
+    const repo = useRepoStore();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(JSON.stringify({ error: "schedule service unavailable" }), {
+          status: 503,
+          headers: { "content-type": "application/json" },
+        }),
+      ),
+    );
+    await repo.refreshSchedules();
+    repo.refreshSchedules = vi.fn().mockResolvedValue(undefined);
+
+    const wrapper = mountPanel();
+    await flushPromises();
+
+    expect(document.body.querySelector('[role="alert"]')?.textContent).toContain(
+      "schedule service unavailable",
+    );
+    expect(wrapper.text()).not.toContain("No schedules yet");
+  });
+
   it("announces schedule save failures as alerts and keeps the editor open", async () => {
     const repo = useRepoStore();
     repo.refreshSchedules = vi.fn().mockResolvedValue(undefined);

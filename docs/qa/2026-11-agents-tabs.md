@@ -46,3 +46,23 @@ was changed in the scratch checkout.
 - Playwright's in-memory API stub verified team instruction, schedule, and
   reminder changes survive reload at 1280px and 375px. Actual backend
   persistence remains unverified because the preview rejects non-GET requests.
+
+## Review evidence
+
+The headless Playwright rerun captured each tab at 1280×900 and 375×812.
+All measured page widths matched their viewport widths. The scheduled list
+error capture used a mocked 503 response and showed the alert while suppressing
+the empty state. Images are committed beside this note:
+
+| View | Desktop | Mobile |
+| --- | --- | --- |
+| Build Your Team | [1280px](2026-11-agents-tabs/team-1280.jpg) | [375px](2026-11-agents-tabs/team-375.jpg) |
+| Scheduled Tasks | [1280px](2026-11-agents-tabs/scheduled-1280.jpg) | [375px](2026-11-agents-tabs/scheduled-375.jpg) |
+| Reminders | [1280px](2026-11-agents-tabs/reminders-1280.jpg) | [375px](2026-11-agents-tabs/reminders-375.jpg) |
+| Detected Coding Agents | [1280px](2026-11-agents-tabs/detected-1280.jpg) | [375px](2026-11-agents-tabs/detected-375.jpg) |
+
+The schedule fetch failure is shown in [this 1280px capture](2026-11-agents-tabs/scheduled-load-error-1280.jpg).
+It exposed that `refreshSchedules()` previously swallowed the fetch error,
+making a service failure look like an empty list. The store now retains the
+error, and the panel announces it as an alert instead of showing “No schedules
+yet.” The new regression test covers the error response and visible state.
