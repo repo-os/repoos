@@ -49,6 +49,6 @@ The docs-store test covers failure state, loading completion, and error clearing
 after a successful retry. The Inputs view test covers showing the error instead
 of the successful-empty message and recovering to that empty message after a
 successful retry. The focused test run passed all 13 tests across the two
-affected test files and the wrapper's boot-timing suite. `bun run build:ui`
-completed successfully. The required scoped RepoOS check result is recorded in
-the task handoff.
+affected test files and the wrapper's boot-timing suite. The scoped RepoOS
+check passed formatting, lint, build, UI guards, rendered contrast, UI smoke,
+and the remote changed-path suite (1,705 tests).
