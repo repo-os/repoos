@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/restart-now-button-does-nothing-on-a-sys
 created_at: "2026-11-18T12:27:18Z"
-updated_at: "2026-11-18T15:02:47Z"
+updated_at: "2026-11-18T15:04:28Z"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/shot-fixtures.test.ts > shot preview fixtures (#0743) > accepts the restart progress and error dialog fixtures (#1185) on mini — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: 5171c2a1f74fc8ac45bca8ad80c4c2d789d27cfb
 review_passes: 3
@@ -34,18 +34,18 @@ Reported by Nick 2026-11-18 20:22 from the phone UI. Related #1154. Do not touch
 ```json
 [
 {
-  "label": "Restart notice showing progress",
-  "target": "default",
-  "route": "/",
-  "highlight": "[data-test-id=\"installed-restart-notice\"]",
-  "state": "release:restartProgress"
+"label": "Restart notice showing progress",
+"target": "default",
+"route": "/",
+"highlight": "[data-test-id=\"installed-restart-notice\"]",
+"state": "release:restartProgress"
 },
 {
-  "label": "Restart notice showing a service error",
-  "target": "default",
-  "route": "/",
-  "highlight": "[data-test-id=\"installed-restart-notice\"]",
-  "state": "release:restartError"
+"label": "Restart notice showing a service error",
+"target": "default",
+"route": "/",
+"highlight": "[data-test-id=\"installed-restart-notice\"]",
+"state": "release:restartError"
 }
 ]
 ```
@@ -128,3 +128,4 @@ Reported by Nick 2026-11-18 20:22 from the phone UI. Related #1154. Do not touch
 - 2026-11-18T15:01:55Z · message_queued at 2026-11-18T15:01:55.803Z
 - 2026-11-18T15:01:56Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: tests/shot-fixtures.test.ts > shot preview fixtures (#0743) > accepts the restart progress and error dialog fixtures (#1185) on mini — fix it in the feature branch and re-run the gate
 - 2026-11-18T15:02:47Z · body
+- 2026-11-18T15:04:28Z · CTO nudge: held — an undelivered message is already queued
