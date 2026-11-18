@@ -2,14 +2,14 @@
 id: "1196"
 title: "QA pass: update and restart flow end to end on service-managed and hand-run servers (follow-up to #1185)"
 type: bug
-status: active
+status: review
 priority: p2
 area: [web, server]
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-update-and-restart-flow-end-to-e
 created_at: "2026-11-18T19:23:55Z"
-updated_at: "2026-11-18T19:45:10Z"
+updated_at: "2026-11-18T19:45:11Z"
 ---
 ## Problem
 #1185 fixed supervisor detection; the whole update, restart and reconnect flow still needs an end to end check using fixtures.
@@ -30,3 +30,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T19:39:59Z · body
 - 2026-11-18T19:43:19Z · CTO nudge: held — handoff gate is running
 - 2026-11-18T19:45:10Z · note: ui verification passed: 1 shot captured with clean console
+- 2026-11-18T19:45:11Z · status active→review
