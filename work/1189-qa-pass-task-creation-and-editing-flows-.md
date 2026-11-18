@@ -12,8 +12,6 @@ created_at: "2026-11-18T16:17:39Z"
 updated_at: "2026-11-18T18:08:29Z"
 last_check_failure: "repoos check at 2026-11-18T18:01:10.518Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_passes: 3
-last_handoff_failure_fingerprint: "check|remote validation failed: test failure: gate exit 1 on bee — fix it in the feature branch and re-run the gate"
-last_handoff_failure_sha: 68ba09e1c0b8603f3e4bcef797bde8383f2576bf
 review_rounds: 1
 routing_switches: 1
 handoff_signal_retry_count: 2
@@ -121,3 +119,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T18:05:19Z · body
 - 2026-11-18T18:08:28Z · note: ui verification passed: 2 of 2 shots captured with clean console
 - 2026-11-18T18:08:29Z · status active→review
+
