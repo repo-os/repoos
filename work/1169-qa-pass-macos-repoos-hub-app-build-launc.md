@@ -1,18 +1,21 @@
 ---
-updated_at: "2026-11-18T17:18:33Z"
-review_passes: 12
 id: "1169"
 title: "QA pass: macOS RepoOS Hub app – build, launch, connect, and fix what is broken"
 type: bug
-status: review
+status: done
 priority: p2
 area: macos
+merged_commit: aa6d60da646ae4dee2bd240365911d702e9aae6f
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-macos-repoos-hub-app-build-launc
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-18T02:19:44Z"
+updated_at: "2026-11-18T17:32:12Z"
+last_close_out_gate_ms: 112753
+last_close_out_gate_at: "2026-11-18T17:20:34.528Z"
+review_passes: 12
 close_out_repair_count: 1
 review_rounds: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-11-18T04:39:18.645Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-18T04:49:19.309Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-18T08:53:34.221Z\",\"reason\":\"clean-exit-without-handoff\"}]"
@@ -406,4 +409,6 @@ Signed-in projects and tasks remain unverified because automated email-code entr
 - 2026-11-18T17:18:06Z · message_queued at 2026-11-18T17:18:06.020Z
 - 2026-11-18T17:18:06Z · note: shots: skipped — the diff (35 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-18T17:18:32Z · note: review pass 12: good to go
-
+- 2026-11-18T17:20:34Z · close-out gate completed in 113s
+- 2026-11-18T17:20:41Z · status done→done, release:success
+- 2026-11-18T17:32:12Z · message_dropped: 1 queued message(s) discarded — task is done
