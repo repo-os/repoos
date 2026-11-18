@@ -2,7 +2,7 @@
 id: "1189"
 title: "QA pass: task creation and editing flows (new task, update, attach screenshot, dependencies)"
 type: bug
-status: review
+status: active
 priority: p2
 area: web
 assigned_to: ai
