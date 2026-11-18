@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-18T14:38:37.835Z: repoos check failed: ui verification failed (2 issue(s)): [missing-target] Agents Skills dialog accessible close control (target \"default\"): click button.agent-skills-add: click: Error: strict mode violation: locator('button.agent-skills-add') resolved to 6 elements: on /agents?tab=default (http://127.0.0.1:42821/agents?tab=default); [missing-target] Agents Skills dialog accessible close control (target \"default\"): highlight .am-modal matched nothing on /agents?tab=default (http://127.0.0.1:4282… (truncated)"
 id: "1184"
 title: "QA pass: web app keyboard and accessibility – focus order, labels, dialogs, contrast"
 type: bug
@@ -116,3 +118,4 @@ Do not touch repoos.toml.
 - 2026-11-18T14:38:34Z · note: ui verification failed: ui verification failed (2 issue(s)): [missing-target] Agents Skills dialog accessible close control (target "default"): click button.agent-skills-add: click: Error: strict mode violation: locator('button.agent-skills-add') resolved to 6 elements: on /agents?tab=default (http://127.0.0.1:42821/agents?tab=default); [missing-target] Agents Skills dialog accessible close control (target "default"): highlight .am-modal matched nothing on /agents?tab=default (http://127.0.0.1:4
 - 2026-11-18T14:38:34Z · message_queued at 2026-11-18T14:38:34.656Z
 - 2026-11-18T14:38:37Z · message_delivered: 1 message(s)
+
