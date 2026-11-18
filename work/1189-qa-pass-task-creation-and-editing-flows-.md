@@ -2,14 +2,14 @@
 id: "1189"
 title: "QA pass: task creation and editing flows (new task, update, attach screenshot, dependencies)"
 type: bug
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-task-creation-and-editing-flows-
 created_at: "2026-11-18T16:17:39Z"
-updated_at: "2026-11-18T17:58:32Z"
+updated_at: "2026-11-18T18:00:07Z"
 review_passes: 2
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: gate exit 1 on bee — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: 68ba09e1c0b8603f3e4bcef797bde8383f2576bf
@@ -107,3 +107,6 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T17:47:37Z · message_delivered: 1 message(s)
 - 2026-11-18T17:51:44Z · body
 - 2026-11-18T17:58:32Z · body
+- 2026-11-18T17:59:45Z · watchdog: check wait escalated · waiting: waiting for a Playwright slot — position 2 (1 ahead); slot holder 75126 is dead for 10s · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-11-18T18:00:00Z · watchdog: check wait ended or recovered — cleared needs_input
+- 2026-11-18T18:00:07Z · status active→review
