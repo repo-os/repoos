@@ -78,3 +78,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T23:33:35Z · body
 - 2026-11-18T23:34:31Z · status active→review
 - 2026-11-18T23:35:15Z · message_queued at 2026-11-18T23:35:15.054Z
+- 2026-11-18T23:35:15Z · note: shots: failed — browser capture cancelled
