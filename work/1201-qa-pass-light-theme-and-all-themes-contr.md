@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-light-theme-and-all-themes-contr
 created_at: "2026-11-18T20:17:30Z"
-updated_at: "2026-11-18T20:24:20Z"
+updated_at: "2026-11-18T20:43:19Z"
 last_close_out_gate_ms: 79504
 last_close_out_gate_at: "2026-11-18T20:24:15.816Z"
 review_passes: 1
@@ -36,3 +36,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T20:21:57Z · note: review pass 1: good to go
 - 2026-11-18T20:24:15Z · close-out gate completed in 80s
 - 2026-11-18T20:24:20Z · status done→done, release:success
+- 2026-11-18T20:43:19Z · message_dropped: 1 queued message(s) discarded — task is done
