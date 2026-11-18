@@ -2,7 +2,7 @@
 id: "1164"
 title: Verify Secrets page behavior with authenticated access
 type: bug
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -100,3 +100,4 @@ The initial evidence is an auth-less 401, not proof of a signed-in regression. Q
 - 2026-11-18T04:17:45Z · body
 - 2026-11-18T04:37:06Z · body
 - 2026-11-18T04:38:49Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The scoped check passed: the remote build and changed-path tests, format/lint, contrast audit, and UI smoke test were green. The 401 create-dialog recovery test is present, both screenshots are declared, and the engineering report draft is… · stderr: Reading additional input from stdin... 2026-11-18T04:29:49.278004Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
+- 2026-11-18T04:38:49Z · status active→review
