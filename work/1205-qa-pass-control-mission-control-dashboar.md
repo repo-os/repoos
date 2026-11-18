@@ -2,7 +2,7 @@
 id: "1205"
 title: "QA pass: Control (Mission Control) dashboard – every card, chart and empty state at desktop and 375px"
 type: bug
-status: review
+status: active
 priority: p2
 area: web
 assigned_to: ai
