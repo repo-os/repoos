@@ -33,3 +33,4 @@ Found on 2026-11-18 while capping engineers on the Tiao project. Small independe
 - 2026-11-18T00:17:47Z · status ready→active, branch
 - 2026-11-18T00:24:02Z · body
 - 2026-11-18T00:30:26Z · message_queued at 2026-11-18T00:30:26.220Z
+- 2026-11-18T00:30:26Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
