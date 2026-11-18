@@ -248,3 +248,4 @@ Signed-in projects and tasks remain unverified because automated email-code entr
 - 2026-11-18T10:07:56Z · note: handoff requested (cli)
 - 2026-11-18T10:08:16Z · status active→review
 - 2026-11-18T10:08:16Z · message_queued at 2026-11-18T10:08:16.521Z
+- 2026-11-18T10:08:16Z · note: shots: skipped — the diff (22 changed paths) touches no capture target's globs — no UI change to capture
