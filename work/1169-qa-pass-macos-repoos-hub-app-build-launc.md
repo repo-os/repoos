@@ -3,6 +3,11 @@ id: "1169"
 title: "QA pass: macOS RepoOS Hub app – build, launch, connect, and fix what is broken"
 type: bug
 status: review
+needs_input: true
+needs_input_reason: review-failed
+debug_tldr: "Review skipped: unchanged tree, open findings — reopen #1169 to fix Hub registry isolation and verify signed-in screens, then re-handoff."
+debug_tldr_at: "2026-11-18T03:02:14Z"
+debug_tldr_key: review-failed|
 priority: p2
 area: macos
 assigned_to: ai
@@ -11,7 +16,7 @@ branch: feat/qa-pass-macos-repoos-hub-app-build-launc
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-18T02:19:44Z"
-updated_at: "2026-11-18T02:56:48Z"
+updated_at: "2026-11-18T03:02:14Z"
 review_passes: 1
 ---
 ## Problem
@@ -43,3 +48,4 @@ Never capture the whole screen. Do not touch repoos.toml.
 - 2026-11-18T02:51:37Z · note: shots: skipped — the diff (9 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-18T02:51:43Z · message_queued at 2026-11-18T02:51:43.250Z
 - 2026-11-18T02:56:48Z · watchdog: auto-retried dead reviewer session · the reviewer agent produced no report and its session ended — starting a fresh review
+- 2026-11-18T03:01:58Z · watchdog: escalated to needs_input · reviewer session died and the automatic retry did not recover it — the review agent may be misconfigured · next step: resume the session manually from the task's worktree and check for uncommitted work
