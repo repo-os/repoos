@@ -2,14 +2,14 @@
 id: "1179"
 title: "QA pass: Settings and Agents pages – every control saves, validates and survives reload"
 type: bug
-status: active
+status: review
 priority: p2
 area: [web, server]
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-settings-and-agents-pages-every-
 created_at: "2026-11-18T06:47:46Z"
-updated_at: "2026-11-18T07:43:21Z"
+updated_at: "2026-11-18T07:43:45Z"
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -29,3 +29,4 @@ Do not touch repoos.toml.
 - 2026-11-18T06:48:09Z · status ready→active, branch
 - 2026-11-18T07:39:03Z · body
 - 2026-11-18T07:43:21Z · CTO nudge: held — handoff gate is running
+- 2026-11-18T07:43:45Z · status active→review
