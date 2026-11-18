@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-11-18T23:31:07Z"
-review_passes: 1
+last_close_out_gate_ms: 153327
+last_close_out_gate_at: "2026-11-18T23:45:53.469Z"
 id: "1207"
 title: "QA pass: Deployments page and deploy flows with fixtures – states, errors, 375px"
 type: bug
@@ -11,6 +11,8 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-deployments-page-and-deploy-flow
 created_at: "2026-11-18T22:47:30Z"
+updated_at: "2026-11-18T23:45:53Z"
+review_passes: 1
 ---
 ## Problem
 Deployments has not been exercised since recent changes to environments and secrets.
@@ -63,4 +65,5 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T23:30:18Z · status active→review
 - 2026-11-18T23:30:19Z · message_queued at 2026-11-18T23:30:19.105Z
 - 2026-11-18T23:31:07Z · note: review pass 1: good to go
+- 2026-11-18T23:45:53Z · close-out gate completed in 153s
 
