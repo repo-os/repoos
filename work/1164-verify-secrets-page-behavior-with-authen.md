@@ -54,3 +54,4 @@ The initial evidence is an auth-less 401, not proof of a signed-in regression. Q
 - 2026-11-18T00:24:50Z · body
 - 2026-11-18T00:27:02Z · note: ui verification passed: 1 of 1 shot captured with clean console
 - 2026-11-18T00:27:03Z · status active→review
+- 2026-11-18T00:27:03Z · message_queued at 2026-11-18T00:27:03.161Z
