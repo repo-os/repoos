@@ -4,8 +4,8 @@ title: "QA pass: macOS RepoOS Hub app – build, launch, connect, and fix what i
 type: bug
 status: review
 needs_input: true
-needs_input_reason: review-human-attention
-needs_input_detail: Review pass 7 still found issues (human flag after 5 passes). The reviewer was asked to summarise the repeated bug classes — read the newest report and decide whether to keep iterating or rescope.
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: `needs some work` — the signed-in Projects and Tasks criterion remains unmet; see Bugs.
 priority: p2
 area: macos
 assigned_to: ai
