@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-remote-runners-and-checks-remote
 created_at: "2026-11-18T16:18:04Z"
-updated_at: "2026-11-18T16:18:19Z"
+updated_at: "2026-11-18T16:28:35Z"
 ---
 ## Problem
 The Remote runners tab shows host load, health and failures; recent flaky runs show it needs a hands-on pass.
@@ -26,3 +26,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T16:18:04Z · created · t@t
 - 2026-11-18T16:18:14Z · status inbox→ready
 - 2026-11-18T16:18:19Z · status ready→active, branch
+- 2026-11-18T16:28:35Z · body
