@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-task-creation-and-editing-flows-
 created_at: "2026-11-18T16:17:39Z"
-updated_at: "2026-11-18T16:57:29Z"
+updated_at: "2026-11-18T17:07:54Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -24,6 +24,41 @@ Creating, editing, attaching images and setting dependencies works with clear va
 - Commit docs/qa/2026-11-task-creation.md.
 ## Notes for AI
 Do not touch repoos.toml. Never open a visible browser window.
+
+## Shots
+```json
+[
+{
+  "label": "Manual task creation with prerequisite picker",
+  "target": "default",
+  "route": "/work",
+  "highlight": ".task-dependency-picker",
+  "steps": [
+    {
+      "click": "button.new-btn"
+    },
+    {
+      "click": "[role=dialog] .drawer-tabs button:nth-child(2)"
+    },
+    {
+      "fill": "#nt-dependencies",
+      "text": "QA pass"
+    }
+  ]
+},
+{
+  "label": "Task Details with editable prerequisites",
+  "target": "default",
+  "route": "/work?task=1189",
+  "highlight": ".task-dependency-picker",
+  "steps": [
+    {
+      "click": "[role=dialog] .drawer-tabs button:first-child"
+    }
+  ]
+}
+]
+```
 
 ## Activity
 
@@ -50,3 +85,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T16:52:31Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: I’m not emitting the handoff signal because the required write flows remain unverified. I confirmed that `just serve-noauth` rejects POST requests with HTTP 405 (`preview servers are read-only`), so it cannot test task creation, screenshot… · stderr: 2026-11-18T16:23:48.895845Z ERROR codex_core::tools::router: error=exec_command failed: CreateProcess { message: "Rejected(\"`/bin/zsh -lc 'git worktree remove --force /Users/nick/code/nick/repoos-worktrees/feat/qa-pass-task-creation-and-editing-flows-/.qa-scratch && rm -f /Users/nick/code/nick/repoos-worktrees/feat/q…
 - 2026-11-18T16:52:31Z · message_delivered: 3 message(s)
 - 2026-11-18T16:57:29Z · note: adopted orphaned engineer pid 70051
+- 2026-11-18T17:07:54Z · body
