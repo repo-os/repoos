@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-18T23:00:21.596Z: repoos check failed: ui verification failed (2 issue(s)): [missing-target] Login fields with accessible names and announced errors (target \"default\"): highlight .login-card matched nothing on /login (http://127.0.0.1:34587/); [route] Login fields with accessible names and announced errors: declared route /login but the browser landed on / (login or redirect?) (captured http://127.0.0.1:34587/) (http://127.0.0.1:34587/)"
 id: "1208"
 title: "QA pass: pairing, login and session screens – OTP, expired sessions, sign-out, mobile widths"
 type: bug
@@ -44,3 +46,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T23:00:18Z · note: ui verification failed: ui verification failed (2 issue(s)): [missing-target] Login fields with accessible names and announced errors (target "default"): highlight .login-card matched nothing on /login (http://127.0.0.1:34587/); [route] Login fields with accessible names and announced errors: declared route /login but the browser landed on / (login or redirect?) (captured http://127.0.0.1:34587/) (http://127.0.0.1:34587/)
 - 2026-11-18T23:00:18Z · message_queued at 2026-11-18T23:00:18.440Z
 - 2026-11-18T23:00:21Z · message_delivered: 1 message(s)
+
