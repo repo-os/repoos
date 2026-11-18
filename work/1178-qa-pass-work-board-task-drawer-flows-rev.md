@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-work-board-task-drawer-flows-rev
 created_at: "2026-11-18T05:56:51Z"
-updated_at: "2026-11-18T06:18:27Z"
+updated_at: "2026-11-18T06:18:28Z"
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -30,3 +30,4 @@ Do not touch repoos.toml.
 - 2026-11-18T06:04:06Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: I recorded the test results and the `drawer:reviewWithBranch` fixture inspection in [the QA report](/Users/nick/code/nick/repoos-worktrees/feat/qa-pass-work-board-task-drawer-flows-rev/docs/qa/2026-11-task-drawer.md). The targeted suites p… · stderr: Reading additional input from stdin... 2026-11-18T06:02:56.818164Z ERROR codex_core::tools::router: error=apply_patch verification failed: Failed to find expected lines in /Users/nick/code/nick/repoos-worktrees/feat/qa-pass-work-board-task-drawer-flows-rev/docs/qa/2026-11-task-drawer.md: The targeted suites passed and…
 - 2026-11-18T06:17:12Z · CTO nudge: held — handoff gate is running
 - 2026-11-18T06:18:27Z · status active→review
+- 2026-11-18T06:18:28Z · message_queued at 2026-11-18T06:18:28.017Z
