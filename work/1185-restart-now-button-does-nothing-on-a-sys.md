@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-18T14:30:22Z"
-review_passes: 2
 id: "1185"
 title: Restart now button does nothing on a systemd-managed server (misdetected as hand-run)
 type: bug
@@ -11,6 +9,8 @@ assigned_to: ai
 created_by: t@t
 branch: feat/restart-now-button-does-nothing-on-a-sys
 created_at: "2026-11-18T12:27:18Z"
+updated_at: "2026-11-18T14:30:22Z"
+review_passes: 2
 review_rounds: 1
 routing_switches: 1
 ---
@@ -69,4 +69,4 @@ Reported by Nick 2026-11-18 20:22 from the phone UI. Related #1154. Do not touch
 - 2026-11-18T14:28:59Z · body
 - 2026-11-18T14:29:46Z · status active→review
 - 2026-11-18T14:30:22Z · note: review pass 2: needs some work
-
+- 2026-11-18T14:30:22Z · message_queued at 2026-11-18T14:30:22.688Z
