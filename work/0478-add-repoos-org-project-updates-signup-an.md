@@ -2,7 +2,7 @@
 id: "0478"
 title: Add RepoOS.org project updates signup and confirmation UX
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: landing
 story: Email subscriber list
@@ -12,7 +12,7 @@ branch: ""
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-09-21T12:08:58Z"
-updated_at: "2026-11-18T01:17:46Z"
+updated_at: "2026-11-18T01:17:54Z"
 ---
 ## Problem
 
@@ -45,3 +45,4 @@ Run after #0477 (Build Neon Functions double-opt-in updates service).
 - 2026-09-21T12:08:58Z · created · unknown
 - 2026-09-21T20:11:02Z · story
 - 2026-11-18T01:17:46Z · cli_override, model_override
+- 2026-11-18T01:17:54Z · status inbox→ready
