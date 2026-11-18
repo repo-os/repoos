@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-control-mission-control-dashboar
 created_at: "2026-11-18T21:47:29Z"
-updated_at: "2026-11-18T22:20:08Z"
+updated_at: "2026-11-18T22:20:49Z"
 ---
 ## Problem
 The Control dashboard shows usage, costs and activity and has not had a recent pass.
@@ -45,3 +45,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T22:20:07Z · note: ui verification passed: 1 of 1 shot captured with clean console
 - 2026-11-18T22:20:08Z · status active→review
 - 2026-11-18T22:20:08Z · message_queued at 2026-11-18T22:20:08.743Z
+- 2026-11-18T22:20:49Z · note: review pass 1: needs some work
