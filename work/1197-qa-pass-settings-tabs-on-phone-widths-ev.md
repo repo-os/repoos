@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 105506
-last_close_out_gate_at: "2026-11-18T19:52:40.027Z"
 id: "1197"
 title: "QA pass: Settings tabs on phone widths – every tab, control and dialog at 375px"
 type: bug
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: 08951db317bd3d469b0e37b29df2d2ed80f8a24e
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-settings-tabs-on-phone-widths-ev
 created_at: "2026-11-18T19:24:03Z"
 updated_at: "2026-11-18T19:52:40Z"
+last_close_out_gate_ms: 105506
+last_close_out_gate_at: "2026-11-18T19:52:40.027Z"
 review_passes: 1
 ---
 ## Problem
