@@ -3,9 +3,6 @@ id: "1170"
 title: "QA pass: web app mobile widths (375/768) across Work, Releases, Settings, Agents, Checks"
 type: bug
 status: review
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: "`needs some work` — the dock lift stops at 1140px, but the centred pill still covers the last parked toggle from 1141px to ~1384px."
 priority: p2
 area: web
 assigned_to: ai
@@ -14,7 +11,7 @@ branch: feat/qa-pass-web-app-mobile-widths-375-768-ac
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-18T02:19:49Z"
-updated_at: "2026-11-18T03:57:14Z"
+updated_at: "2026-11-18T04:16:13Z"
 review_passes: 3
 review_rounds: 2
 ---
@@ -69,3 +66,4 @@ Do not touch repoos.toml. Pages use full .main width.
 - 2026-11-18T03:41:21Z · needs_input
 - 2026-11-18T03:41:22Z · status active→review
 - 2026-11-18T03:41:23Z · message_queued at 2026-11-18T03:41:23.054Z
+- 2026-11-18T04:16:13Z · needs_input (review-rounds-exhausted) cleared for review again by hello@repoos.org
