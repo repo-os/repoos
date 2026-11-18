@@ -1,3 +1,14 @@
+---
+id: summary
+title: summary
+type: feature
+status: inbox
+priority: p2
+area: general
+assigned_to: ai
+created_by: ""
+branch: ""
+---
 ## TL;DR
 
 Task 1195 shipped a targeted accessibility fix to the app-wide toast surface (`ToastPanel.vue`): the notification stack is now a named, polite, non-atomic live region, each toast carries urgency by type (errors announce as `alert`, successes/info as `status`), and dismiss buttons name the message they dismiss. A new component regression test pins these semantics, and `docs/qa/2026-11-notifications-banners.md` records the pass and its coverage boundaries. One engineering round, one review pass (verdict: good to go), close-out completed, task done and merged.
@@ -22,9 +33,9 @@ Final verdict: **good to go** (review pass 1). Status: **done**, merged as commi
 - **Review passes:** 1 (pass 1, 2026-11-18T19:12:09.887Z, verdict "good to go"). No re-reviews were needed.
 - **Wall-clock start → done:** created 2026-11-18T18:47:48Z, done 2026-11-18T19:14:46Z — 26 minutes 58 seconds.
 - **Agents and models (per recorded sessions):**
-  - Engineer: `engineer`, model `gpt-6-luna`, started 18:47:55Z, elapsed 502s, 5,526,899 tokens. Cost: not recorded.
-  - Reviewer: `reviewer`, model `gpt-6-luna`, started 19:11:47Z, elapsed 23s, 195,849 tokens. Cost: not recorded.
-  - Routing: two "Model router (openrouter)" calls (1s and 0s), model recorded as unknown, tokens not recorded.
+- Engineer: `engineer`, model `gpt-6-luna`, started 18:47:55Z, elapsed 502s, 5,526,899 tokens. Cost: not recorded.
+- Reviewer: `reviewer`, model `gpt-6-luna`, started 19:11:47Z, elapsed 23s, 195,849 tokens. Cost: not recorded.
+- Routing: two "Model router (openrouter)" calls (1s and 0s), model recorded as unknown, tokens not recorded.
 - **Restarts or model swaps:** none recorded.
 - **Automated gates:** close-out gate completed in 81s (2026-11-18T19:14:20Z). Handoff capture at 19:11:37Z passed the browser console-error check. Guard negative-test evidence was skipped (no check-guard rules changed on the branch).
 - **Shots:** 1 captured, clean console.
