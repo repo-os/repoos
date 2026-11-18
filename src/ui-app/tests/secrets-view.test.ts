@@ -85,7 +85,7 @@ afterEach(() => {
 
 describe("SecretsView (#0929)", () => {
   it("gives unsigned sessions sign-in guidance without showing secret values", async () => {
-    api.mockRejectedValue(new ApiError("Unauthorized", 401));
+    api.mockRejectedValue(new ApiError("Unauthorized", 401, {}));
     const wrapper = mountPage();
     await flushPromises();
 
