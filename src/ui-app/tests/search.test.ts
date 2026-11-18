@@ -97,6 +97,10 @@ describe("searchAll", () => {
     const hits = searchAll("0000", { tasks: many, docs: [], fields: [] });
     expect(hits.some((hit) => hit.kind === "task" && hit.task.id === "0000")).toBe(true);
   });
+  it("finds a task by the hash-prefixed id shown in the UI", () => {
+    const hits = searchAll("#0007", { tasks, docs: [], fields: [] });
+    expect(hits.some((hit) => hit.kind === "task" && hit.task.id === "0007")).toBe(true);
+  });
   it("returns nothing for an empty or whitespace query", () => {
     expect(searchAll("", { tasks, docs, fields })).toEqual([]);
     expect(searchAll("   ", { tasks, docs, fields })).toEqual([]);
