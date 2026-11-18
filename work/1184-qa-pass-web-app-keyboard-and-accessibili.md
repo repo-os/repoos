@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-web-app-keyboard-and-accessibili
 created_at: "2026-11-18T12:17:32Z"
-updated_at: "2026-11-18T14:28:00Z"
+updated_at: "2026-11-18T14:29:58Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -25,6 +25,41 @@ Every dialog/drawer traps and restores focus, controls have accessible names, Es
 - Commit docs/qa/2026-11-keyboard-a11y.md.
 ## Notes for AI
 Do not touch repoos.toml.
+
+## Shots
+```json
+[
+{
+  "label": "Work route keyboard QA",
+  "target": "default",
+  "route": "/work"
+},
+{
+  "label": "Settings route keyboard QA",
+  "target": "default",
+  "route": "/settings"
+},
+{
+  "label": "Releases route keyboard QA",
+  "target": "default",
+  "route": "/releases"
+},
+{
+  "label": "Agents Skills dialog accessible close control",
+  "target": "default",
+  "route": "/agents?tab=default",
+  "highlight": ".am-modal",
+  "steps": [
+    {
+      "click": "button.agent-skills-add"
+    },
+    {
+      "waitMs": 300
+    }
+  ]
+}
+]
+```
 
 ## Activity
 
@@ -75,3 +110,4 @@ Do not touch repoos.toml.
 - 2026-11-18T14:27:58Z · message_delivered: 1 message(s)
 - 2026-11-18T14:27:58Z · status review→active
 - 2026-11-18T14:28:00Z · CTO nudge: held — remote validation is running
+- 2026-11-18T14:29:58Z · body
