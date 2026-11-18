@@ -63,6 +63,45 @@ async function withCwd<T>(dir: string, fn: () => Promise<T> | T): Promise<T> {
 }
 
 describe("board-write commands resolve to the main checkout, not cwd (#0202)", () => {
+  it("reassesses needs_input after body edits just like the API update route", async () => {
+    const { root, taskPath, clean } = makeRepoWithTask();
+    try {
+      writeFileSync(
+        taskPath,
+        `---\nid: "0001"\ntitle: Test task\ntype: feature\nstatus: inbox\npriority: p2\narea: core\nassigned_to: ai\nbranch: feat/test\n---\nBody.\n`,
+      );
+      await withCwd(root, () =>
+        cmdUpdate([
+          "0001",
+          "--body",
+          "## Problem\n\nShort.\n\n## Acceptance criteria\n\n- [ ] Done.\n\n## Notes for AI\n\nShort.",
+        ]),
+      );
+      let content = readFileSync(taskPath, "utf8");
+      expect(content).toMatch(/^needs_input: true$/m);
+      expect(content).toMatch(/^needs_input_reason: underspecified$/m);
+
+      const substantive =
+        "This section gives enough concrete context to describe the change and its expected behavior. ".repeat(2);
+      const completeBody = [
+        "## Problem",
+        substantive,
+        "## Desired UX",
+        substantive,
+        "## Acceptance criteria",
+        "- [ ] A focused test covers this behavior.",
+        "## Notes for AI",
+        substantive,
+      ].join("\n\n");
+      await withCwd(root, () => cmdUpdate(["0001", "--body", completeBody]));
+      content = readFileSync(taskPath, "utf8");
+      expect(content).not.toMatch(/^needs_input: true$/m);
+      expect(content).not.toMatch(/^needs_input_reason: underspecified$/m);
+    } finally {
+      clean();
+    }
+  });
+
   it("does not flag a complete bundle after a --section edit", async () => {
     const { root, taskPath, clean } = makeRepoWithTask();
     const substantive =

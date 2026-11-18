@@ -744,7 +744,7 @@ function shotsSectionContent(
  * Desired UX / Acceptance criteria / Notes for AI) is refused unless `--force`
  * is passed.
  */
-export function cmdUpdate(args: string[]): void {
+export async function cmdUpdate(args: string[]): Promise<void> {
   const [id, ...rest] = args;
   const usage = UPDATE_USAGE;
   if (!id) {
@@ -1012,8 +1012,21 @@ export function cmdUpdate(args: string[]): void {
     }
   }
   try {
-    const updated = patchTaskFile(repoos.config, task.absPath, patch);
+    let updated = patchTaskFile(repoos.config, task.absPath, patch);
+    // Keep direct CLI edits in lockstep with PATCH /api/tasks/:id: changing a
+    // task body, section, or assignee can raise or clear the spec-owned
+    // needs_input flag. Without this pass the UI and CLI leave different task
+    // states for the same edit.
+    if (patch.body !== undefined || patch.section !== undefined || patch.assignedTo !== undefined) {
+      const flagged = await flagTaskSpecFlagsIfNeededAsync(repoos.config, updated);
+      if (flagged) updated = flagged;
+    }
     console.log("  " + c.green("updated ") + c.dim("#" + updated.id) + "  " + updated.title);
+    if (updated.needsInput) {
+      console.log(
+        "  " + c.yellow("needs input ") + c.dim(updated.needsInputDetail || updated.needsInputReason || "waiting for a person"),
+      );
+    }
     const guideWarning = humanTaskGuideWarning(updated.assignee, updated.body);
     if (guideWarning) console.log("  " + c.yellow("warning: ") + c.dim(guideWarning));
   } catch (e) {
