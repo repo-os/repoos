@@ -50,7 +50,7 @@ function settingsConfigResponse(): {
     config: {
       maxActiveTasks: 3,
       activityAnimationStyle: "orbital-pixel",
-      attention: { slowRunMultiplier: 1.5 },
+      attention: { slowRunMultiplier: 1.5, spendAlertUsd: 0 },
       remoteValidation: { command: "", requiredTools: [] },
     },
     schema: [
@@ -64,6 +64,7 @@ function settingsConfigResponse(): {
         min: 0.1,
         step: 0.1,
       }),
+      schemaField("attention.spendAlertUsd", "number", { default: 0, min: 0, step: 1 }),
       schemaField("remoteValidation.command", "string", {
         default: "",
         tier: "restart",
@@ -129,6 +130,35 @@ afterEach(() => {
 });
 
 describe("SettingsView save sends only changed fields (#0797)", () => {
+  it("shows spend alert validation and saves only whole nonnegative dollar amounts", async () => {
+    await loadSettingsConfig();
+    const config = useConfigStore();
+    const saveSpy = vi.spyOn(config, "save").mockResolvedValue(undefined);
+    const wrapper = await mountSettings();
+    await wrapper.findAll('[role="tab"]')[1]!.trigger("click");
+
+    const input = document
+      .getElementById("setting-attention.spendAlertUsd")
+      ?.querySelector("input");
+    expect(input).not.toBeNull();
+
+    await wrapper.find('#setting-attention\\.spendAlertUsd input').setValue("-1");
+    expect(wrapper.find("#spend-alert-error").text()).toContain("zero or more");
+    expect(input?.getAttribute("aria-invalid")).toBe("true");
+    expect(saveSpy).not.toHaveBeenCalled();
+
+    await wrapper.find('#setting-attention\\.spendAlertUsd input').setValue("12.5");
+    expect(wrapper.find("#spend-alert-error").text()).toContain("whole dollar");
+    expect(saveSpy).not.toHaveBeenCalled();
+
+    await wrapper.find('#setting-attention\\.spendAlertUsd input').setValue("12");
+    expect(wrapper.find("#spend-alert-error").exists()).toBe(false);
+    await vi.waitFor(() => expect(saveSpy).toHaveBeenCalled(), { timeout: 3000 });
+    expect(saveSpy.mock.calls.at(-1)?.[0]).toEqual({ "attention.spendAlertUsd": "12" });
+
+    wrapper.unmount();
+  });
+
   it("uses the mobile section navigation below 720px and keeps save errors visible", async () => {
     let onChange: ((event: MediaQueryListEvent) => void) | undefined;
     const media = {

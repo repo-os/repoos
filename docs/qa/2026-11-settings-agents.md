@@ -13,7 +13,9 @@ Visited all Settings tabs: General, Notifications, Security, Advanced, Import/Ex
 
 The UI exposed the expected controls and context descriptions. Security showed authentication disabled in this auth-less instance. Import/Export exposed export controls. The raw TOML tab was viewed but not edited. Support’s private diagnostics preview remained in its “Preparing a private bundle preview” state during the visit; no bundle was created or uploaded.
 
-Attempted to exercise negative validation on Notifications’ Spend alert threshold by entering `-1`. The preview server rejected mutation requests globally; the UI retained `0` and displayed the read-only preview banner. Therefore the validation result and persistence across reload could not be established in this environment. No config file was changed.
+The preview server rejected the initial `-1` attempt because it blocks mutations globally. To exercise persistence safely, I used an in-process ephemeral server rooted at `.repoos/qa-1179-sandbox`, with an isolated scratch `repoos.toml` and auth disabled. Entering `12` saved `attention.spendAlertUsd = 12`; after a browser reload, the value remained `12`. The scratch config was separate from the worktree’s project config.
+
+The negative-value attempt on the writable harness exposed a UI defect: `-1` silently reverted to the prior value without an error. The same control advertised fractional values (`step="0.01"`) although the server accepts whole dollars only.
 
 ## Agents page
 
@@ -28,8 +30,10 @@ Visited Agents, Build Your Team, Scheduled Tasks, Reminders, Detected Coding Age
 
 ## Findings and limits
 
-No confirmed product defect was reproduced. The observed Cursor refresh error was an environment authentication condition with a saved-list fallback, rather than evidence of incorrect persisted state. The task’s core save/validation/reload acceptance criterion remains unverified: `just serve-noauth` runs the server as a read-only preview child, and its router blocks all non-GET/HEAD requests. Testing writes would require an explicitly isolated writable server/config setup; bypassing the preview guard or pointing a server at the real project config would be unsafe. This pass made no source-code changes and added no bug-specific tests.
+Fixed the spend-alert validation defect. The field now reports a clear inline error for negative values and fractional dollar amounts, marks the input invalid for assistive technology, and advertises a whole-number step. A regression test verifies invalid values do not save, the error clears for a valid value, and a valid whole amount is sent to the config store.
+
+The representative save/reload path was verified in the isolated writable harness. The full inventory across Settings and Agents was visited, but not every field’s persistence and validation was individually exercised. The observed Cursor refresh error was an environment authentication condition with a saved-list fallback, rather than evidence of incorrect persisted state. The browser access host was unavailable during the follow-up rebuild, so the new inline message was verified in the component regression test, not in a second browser session. No credentials, external provider keys, schedules, agent assignments, shared budgets, or task state were changed.
 
 ## Check
 
-`REPOOS_CHECK_CHANGED=main repoos check` passed. Remote validation completed the build, scoped tests, and browser gate; local format, lint, build, and UI smoke steps passed. No changed paths existed relative to `main` at the time of that first run.
+`bun run test -- settings-save-only-changed` passed (5 tests). `bun run build:ui` passed. The required `REPOOS_CHECK_CHANGED=main repoos check` is being rerun for the source and test changes in this revision.
