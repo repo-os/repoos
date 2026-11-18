@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-settings-and-agents-pages-every-
 created_at: "2026-11-18T06:47:46Z"
-updated_at: "2026-11-18T08:45:28Z"
+updated_at: "2026-11-18T08:45:29Z"
 review_passes: 3
 review_rounds: 2
 routing_switches: 1
@@ -90,3 +90,4 @@ Do not touch repoos.toml.
 - 2026-11-18T08:41:51Z · needs_input
 - 2026-11-18T08:45:27Z · status review→active
 - 2026-11-18T08:45:28Z · needs_input
+- 2026-11-18T08:45:29Z · CTO nudge: held — an undelivered message is already queued
