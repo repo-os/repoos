@@ -2,7 +2,7 @@
 id: "1169"
 title: "QA pass: macOS RepoOS Hub app – build, launch, connect, and fix what is broken"
 type: bug
-status: active
+status: review
 priority: p2
 area: macos
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/qa-pass-macos-repoos-hub-app-build-launc
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-18T02:19:44Z"
-updated_at: "2026-11-18T06:22:12Z"
+updated_at: "2026-11-18T06:22:31Z"
 review_rounds: 1
 review_passes: 5
 engineer_stall_resume_log: "[{\"at\":\"2026-11-18T04:39:18.645Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-18T04:49:19.309Z\",\"reason\":\"clean-exit-without-handoff\"}]"
@@ -126,3 +126,4 @@ Signed-in projects and tasks remain unverified because automated email-code entr
 - 2026-11-18T06:22:11Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The scoped check passed on `409d6fd0a9b5898f0fcad395fd87226067c3ba33`. I saved the required 994-word engineer report draft at [.repoos/engineering-report-drafts/1169.md](/Users/nick/code/nick/repoos-worktrees/feat/qa-pass-macos-repoos-hub-… · stderr: Reading additional input from stdin...
 - 2026-11-18T06:22:12Z · note: handoff requested (cli)
 - 2026-11-18T06:22:12Z · CTO nudge: held — handoff gate is running
+- 2026-11-18T06:22:31Z · status active→review
