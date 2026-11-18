@@ -2,7 +2,7 @@
 id: "1169"
 title: "QA pass: macOS RepoOS Hub app – build, launch, connect, and fix what is broken"
 type: bug
-status: active
+status: review
 priority: p2
 area: macos
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/qa-pass-macos-repoos-hub-app-build-launc
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-18T02:19:44Z"
-updated_at: "2026-11-18T03:49:00Z"
+updated_at: "2026-11-18T03:49:34Z"
 review_passes: 2
 ---
 ## Problem
@@ -58,3 +58,4 @@ Never capture the whole screen. Do not touch repoos.toml.
 - 2026-11-18T03:40:48Z · message_delivered: 1 message(s)
 - 2026-11-18T03:45:49Z · body
 - 2026-11-18T03:49:00Z · body
+- 2026-11-18T03:49:34Z · status active→review
