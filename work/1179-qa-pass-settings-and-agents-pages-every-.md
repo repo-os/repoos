@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-settings-and-agents-pages-every-
 created_at: "2026-11-18T06:47:46Z"
-updated_at: "2026-11-18T07:43:45Z"
+updated_at: "2026-11-18T07:43:46Z"
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -30,3 +30,4 @@ Do not touch repoos.toml.
 - 2026-11-18T07:39:03Z · body
 - 2026-11-18T07:43:21Z · CTO nudge: held — handoff gate is running
 - 2026-11-18T07:43:45Z · status active→review
+- 2026-11-18T07:43:46Z · message_queued at 2026-11-18T07:43:46.038Z
