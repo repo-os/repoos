@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-web-app-desktop-agents-checks-se
 created_at: "2026-11-18T03:57:22Z"
-updated_at: "2026-11-18T03:57:32Z"
+updated_at: "2026-11-18T03:59:58Z"
 ---
 ## Problem
 Desktop web pages beyond Work may hide regressions after many recent UI changes.
@@ -27,3 +27,4 @@ Do not touch repoos.toml.
 - 2026-11-18T03:57:22Z · created · t@t
 - 2026-11-18T03:57:29Z · status inbox→ready
 - 2026-11-18T03:57:32Z · status ready→active, branch
+- 2026-11-18T03:59:58Z · body
