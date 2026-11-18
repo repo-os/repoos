@@ -5,11 +5,13 @@ type: bug
 status: inbox
 priority: p1
 area: [web, server]
-assigned_to: ""
+assigned_to: ai
 created_by: t@t
 branch: ""
+cli_override: codex
+model_override: gpt-6-luna
 created_at: "2026-11-18T00:17:51Z"
-updated_at: "2026-11-18T00:17:51Z"
+updated_at: "2026-11-18T00:17:54Z"
 ---
 ## Problem
 
@@ -33,3 +35,4 @@ Do not edit repoos.toml.
 ## Activity
 
 - 2026-11-18T00:17:51Z · created · t@t
+- 2026-11-18T00:17:54Z · cli_override, model_override
