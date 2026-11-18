@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-numeric-enum-settings
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T17:09:11Z"
-updated_at: "2026-11-18T00:33:08Z"
+updated_at: "2026-11-18T00:37:09Z"
 ---
 ## Problem
 `repoos config set maxConcurrentAgents 4` (and `repoos api PATCH /api/config --json '{"maxConcurrentAgents":4}'`) fail with "Maximum concurrent agent processes must be one of: 1, 2, ..., 16" even though 4 is in the list. Sending the value as a string works: `--json '{"maxConcurrentAgents":"4"}'` returns 200 and writes `maxConcurrentAgents = 4`. So the validator compares a number against a list of strings (or the enum is typed as strings) and rejects real integers, while the schema/settings UI describe it as a number.
@@ -38,3 +38,4 @@ Found on 2026-11-18 while capping engineers on the Tiao project. Small independe
 - 2026-11-18T00:33:08Z · status active→review
 - 2026-11-18T00:33:08Z · message_queued at 2026-11-18T00:33:08.698Z
 - 2026-11-18T00:33:08Z · note: shots: skipped — the diff (4 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-11-18T00:37:09Z · note: review pass 1: needs some work
