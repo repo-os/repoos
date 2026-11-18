@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/restart-now-button-does-nothing-on-a-sys
 created_at: "2026-11-18T12:27:18Z"
-updated_at: "2026-11-18T14:41:14Z"
+updated_at: "2026-11-18T14:41:20Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-18T14:30:25.814Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 2
@@ -85,3 +85,4 @@ Reported by Nick 2026-11-18 20:22 from the phone UI. Related #1154. Do not touch
 - 2026-11-18T14:36:27Z · message_delivered: 2 message(s)
 - 2026-11-18T14:41:14Z · message_queued at 2026-11-18T14:41:14.223Z
 - 2026-11-18T14:41:14Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-18T14:41:20Z · body
