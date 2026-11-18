@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-web-app-keyboard-and-accessibili
 created_at: "2026-11-18T12:17:32Z"
-updated_at: "2026-11-18T15:04:28Z"
+updated_at: "2026-11-18T15:06:14Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-18T14:38:37.835Z: repoos check failed: ui verification failed (2 issue(s)): [missing-target] Agents Skills dialog accessible close control (target \"default\"): click button.agent-skills-add: click: Error: strict mode violation: locator('button.agent-skills-add') resolved to 6 elements: on /agents?tab=default (http://127.0.0.1:42821/agents?tab=default); [missing-target] Agents Skills dialog accessible close control (target \"default\"): highlight .am-modal matched nothing on /agents?tab=default (http://127.0.0.1:4282… (truncated)"
 review_rounds: 1
@@ -126,3 +126,4 @@ Do not touch repoos.toml.
 - 2026-11-18T15:04:18Z · message_delivered: 1 message(s)
 - 2026-11-18T15:04:28Z · message_queued at 2026-11-18T15:04:28.223Z
 - 2026-11-18T15:04:28Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-18T15:06:14Z · CTO nudge: held — an undelivered message is already queued
