@@ -2,14 +2,14 @@
 id: "1198"
 title: "QA pass: Debug panel, logs and activity views – large outputs, long lines, empty and error states"
 type: bug
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-debug-panel-logs-and-activity-vi
 created_at: "2026-11-18T19:24:11Z"
-updated_at: "2026-11-18T19:49:05Z"
+updated_at: "2026-11-18T19:49:07Z"
 ---
 ## Problem
 Log and debug views with large or odd output may overflow or freeze.
@@ -31,10 +31,10 @@ Do not touch repoos.toml. Never open a visible browser window.
 "highlight": ".debug-events",
 "steps": [
 {
-  "click": "button.tab-btn:nth-child(7)"
+"click": "button.tab-btn:nth-child(7)"
 },
 {
-  "click": ".debug-tab:nth-child(2)"
+"click": ".debug-tab:nth-child(2)"
 }
 ],
 "state": "drawer:debugLogs"
@@ -52,3 +52,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T19:33:08Z · body
 - 2026-11-18T19:34:14Z · CTO nudge: held — handoff gate is running
 - 2026-11-18T19:49:05Z · note: ui verification passed: 1 of 1 shot captured with clean console
+- 2026-11-18T19:49:07Z · status active→review
