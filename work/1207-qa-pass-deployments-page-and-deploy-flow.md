@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-deployments-page-and-deploy-flow
 created_at: "2026-11-18T22:47:30Z"
-updated_at: "2026-11-18T22:53:48Z"
+updated_at: "2026-11-18T23:05:56Z"
 ---
 ## Problem
 Deployments has not been exercised since recent changes to environments and secrets.
@@ -25,18 +25,18 @@ Do not touch repoos.toml. Never open a visible browser window.
 ```json
 [
 {
-  "label": "Deployment with local environment binding",
-  "target": "default",
-  "route": "/deployments",
-  "highlight": ".dep-env-binding",
-  "state": "deployments:environmentBinding"
+"label": "Deployment with local environment binding",
+"target": "default",
+"route": "/deployments",
+"highlight": ".dep-env-binding",
+"state": "deployments:environmentBinding"
 },
 {
-  "label": "Refused deploy remains in confirmation",
-  "target": "default",
-  "route": "/deployments",
-  "highlight": "[role=\"alert\"]",
-  "state": "deployments:deployFailure"
+"label": "Refused deploy remains in confirmation",
+"target": "default",
+"route": "/deployments",
+"highlight": "[role=\"alert\"]",
+"state": "deployments:deployFailure"
 }
 ]
 ```
@@ -47,3 +47,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T22:47:33Z · status inbox→ready
 - 2026-11-18T22:47:35Z · status ready→active, branch
 - 2026-11-18T22:53:48Z · body
+- 2026-11-18T23:05:56Z · message_queued at 2026-11-18T23:05:56.428Z
