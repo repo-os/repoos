@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-11-18T14:19:59Z"
-review_passes: 1
+last_close_out_gate_ms: 108621
+last_close_out_gate_at: "2026-11-18T15:11:40.945Z"
 id: "1186"
 title: "QA pass: web app Search, command palette and navigation – every route loads, deep links, back button"
 type: bug
@@ -11,6 +11,8 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-web-app-search-command-palette-a
 created_at: "2026-11-18T13:47:31Z"
+updated_at: "2026-11-18T15:11:40Z"
+review_passes: 1
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -41,4 +43,5 @@ Do not touch repoos.toml.
 - 2026-11-18T14:19:22Z · status active→review
 - 2026-11-18T14:19:22Z · message_queued at 2026-11-18T14:19:22.513Z
 - 2026-11-18T14:19:59Z · note: review pass 1: good to go
+- 2026-11-18T15:11:40Z · close-out gate completed in 109s
 
