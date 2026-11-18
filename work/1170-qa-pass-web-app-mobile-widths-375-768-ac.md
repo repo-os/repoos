@@ -11,7 +11,7 @@ branch: feat/qa-pass-web-app-mobile-widths-375-768-ac
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-18T02:19:49Z"
-updated_at: "2026-11-18T02:43:31Z"
+updated_at: "2026-11-18T02:50:46Z"
 ---
 ## Problem
 Mobile-width layout regressions are likely after recent UI changes.
@@ -32,3 +32,4 @@ Do not touch repoos.toml. Pages use full .main width.
 - 2026-11-18T02:20:33Z · status ready→active, branch
 - 2026-11-18T02:41:04Z · body
 - 2026-11-18T02:43:31Z · CTO nudge: held — handoff gate is running
+- 2026-11-18T02:50:46Z · note: ui verification passed: 1 shot captured with clean console
