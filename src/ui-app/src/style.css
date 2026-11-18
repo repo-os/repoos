@@ -10468,11 +10468,12 @@
     flex-wrap: wrap;
   }
 }
-@media (max-width: 900px) {
-  /* the seven tabs need ~700px, and tablet widths (720-900px, next to the
-     60px rail) give the strip less than that: scroll it instead of clipping
-     the last ones (#1170). overflow clips at the padding box, so drop the -1px
-     overlap that normally lets the active underline sit on the strip's border. */
+@media (max-width: 960px) {
+  /* the seven tabs need ~695px. Beside the rail (720-900px) and the 210px
+     sidebar (901-960px) the strip gets less than that, so scroll it instead of
+     clipping the last tab (#1170). overflow clips at the padding box, so drop
+     the -1px overlap that normally lets the active underline sit on the
+     strip's border. */
   .settings-tabs {
     overflow-x: auto;
     scrollbar-width: none;
@@ -14893,7 +14894,7 @@
 /* Desktop: dock the toggle row bottom-left on the same row as the pinned
    integration bar (bottom: 14px), with the open lists stacking upward from it
    (column-reverse: the toggle row is first in the DOM, so it sits lowest). */
-@media (min-width: 720px) {
+@media (min-width: 761px) {
   .work-page .parked-lists {
     /* Float above the full-height column scrollports, like .ibar-wrap.
        Their shared end inset lets the last card clear this row. */
@@ -14943,17 +14944,22 @@
     overflow-y: auto;
   }
 }
-/* Tablet widths (720-900px) run the 60px icon rail, and the integration pill
-   is centred on the bottom row. The desktop dock's 210px sidebar offset and
-   its 520px pill reservation leave the toggles about 12px wide here, so they
-   wrapped and sat over the Active column and its controls (#1170). Start the
-   row at the rail edge and lift it above the pill instead. */
-@media (min-width: 720px) and (max-width: 900px) {
+/* Tablet and small desktop widths (761-1100px): the integration pill is
+   centred on the bottom row, and the side-by-side dock's 520px pill
+   reservation leaves the toggles 12-244px wide, so they wrapped and sat over
+   the Active column and its controls (#1170). Lift the row above the pill
+   instead; it then needs only the width between the sidebar and the edge. */
+@media (min-width: 761px) and (max-width: 1100px) {
   .work-page .parked-lists {
-    left: calc(60px + 16px);
     right: 16px;
     bottom: 66px;
     width: auto;
+  }
+}
+/* The 60px icon rail (720-900px) also moves the row to the rail edge. */
+@media (min-width: 761px) and (max-width: 900px) {
+  .work-page .parked-lists {
+    left: calc(60px + 16px);
   }
   .work-page::after {
     left: 60px;
