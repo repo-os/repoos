@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-18T08:43:14Z"
-review_passes: 1
 id: "1180"
 title: "QA pass: Releases page and Checks page – every state and action"
 type: bug
@@ -11,6 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-releases-page-and-checks-page-ev
 created_at: "2026-11-18T08:17:32Z"
+updated_at: "2026-11-18T08:42:30Z"
 ---
 ## Problem
 Releases and Checks pages changed a lot in v0.5.90 and may have state bugs.
@@ -22,30 +21,9 @@ Every state (ready, blocked, running, failed, done) of the Releases and Checks p
 ## Notes for AI
 Do not touch repoos.toml; skip what #1168 and #1173 covered.
 
-## Shots
-```json
-[
-{
-"label": "Checks page progress and local slot recovery",
-"target": "default",
-"route": "/checks?tab=now&shotState=checks:progress",
-"highlight": "[data-test-id=\"checks-page-progress\"]"
-}
-]
-```
-
 ## Activity
 
 - 2026-11-18T08:17:32Z · created · t@t
 - 2026-11-18T08:17:37Z · status inbox→ready
 - 2026-11-18T08:17:41Z · status ready→active, branch
-- 2026-11-18T08:27:34Z · body
-- 2026-11-18T08:30:00Z · body
-- 2026-11-18T08:38:13Z · body
-- 2026-11-18T08:39:37Z · body
-- 2026-11-18T08:41:11Z · CTO nudge: held — handoff gate is running
-- 2026-11-18T08:42:29Z · note: ui verification passed: 1 of 1 shot captured with clean console
 - 2026-11-18T08:42:30Z · status active→review
-- 2026-11-18T08:42:31Z · message_queued at 2026-11-18T08:42:31.182Z
-- 2026-11-18T08:43:14Z · note: review pass 1: good to go
-

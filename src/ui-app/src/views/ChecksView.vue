@@ -21,6 +21,7 @@ import type {
   TaskCheckRun,
 } from "../types";
 import NoCheckPlanReminder from "../components/NoCheckPlanReminder.vue";
+import ConfirmDialog from "../components/ConfirmDialog.vue";
 import { isGenuinelyEmptyPlan } from "../lib/check-setup";
 import {
   type ChecksTab,
@@ -116,6 +117,7 @@ const localSlotHolders = ref<
 >([]);
 const localSlotQueue = ref<Array<{ taskId: string; position: number; since: string }>>([]);
 const activeCheckRuns = ref<TaskCheckRun[]>([]);
+const slotToRelease = ref<(typeof localSlotHolders.value)[number] | null>(null);
 let activeCheckPoll: number | undefined;
 let localSlotPoll: number | undefined;
 
@@ -153,17 +155,17 @@ async function loadLocalSlotHolders(): Promise<void> {
   }
 }
 
-async function releaseWedgedSlot(holder: (typeof localSlotHolders.value)[number]): Promise<void> {
+function releaseWedgedSlot(holder: (typeof localSlotHolders.value)[number]): void {
   if (!holder.pid) return;
-  const task = holder.meta?.taskId ? `#${String(holder.meta.taskId)} check` : "check";
-  if (
-    !window.confirm(
-      `Release slot ${holder.slot}, held by ${task}, PID ${holder.pid}? This will terminate its managed process group.`,
-    )
-  )
-    return;
+  slotToRelease.value = holder;
+}
+
+async function confirmReleaseWedgedSlot(): Promise<void> {
+  const holder = slotToRelease.value;
+  if (!holder?.pid) return;
   try {
     await api(`/api/local-check-slots/${holder.slot}/release/${holder.pid}`, { method: "POST" });
+    slotToRelease.value = null;
     await loadLocalSlotHolders();
   } catch (e) {
     error.value = e instanceof Error ? e.message : "Could not release the local check slot.";
@@ -641,6 +643,20 @@ const RESULT_ICON: Record<string, string> = {
         </template>
       </template>
     </div>
+    <ConfirmDialog
+      :open="slotToRelease !== null"
+      title="Release check slot?"
+      confirm-label="Release slot"
+      content-class="ck-slot-release-dialog"
+      @update:open="
+        (open) => {
+          if (!open) slotToRelease = null;
+        }
+      "
+      @confirm="confirmReleaseWedgedSlot"
+      >This will terminate the managed process group holding slot {{ slotToRelease?.slot
+      }}<template v-if="slotToRelease?.pid">, PID {{ slotToRelease.pid }}.</template></ConfirmDialog
+    >
   </div>
 </template>
 
