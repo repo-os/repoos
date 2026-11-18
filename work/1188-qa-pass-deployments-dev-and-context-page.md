@@ -28,3 +28,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T15:47:46Z · status ready→active, branch
 - 2026-11-18T15:54:05Z · status active→review
 - 2026-11-18T15:54:05Z · message_queued at 2026-11-18T15:54:05.389Z
+- 2026-11-18T15:54:05Z · note: shots: skipped — the diff (3 changed paths) touches no capture target's globs — no UI change to capture
