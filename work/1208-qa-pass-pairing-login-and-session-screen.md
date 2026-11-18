@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-pairing-login-and-session-screen
 created_at: "2026-11-18T22:47:38Z"
-updated_at: "2026-11-18T23:00:14Z"
+updated_at: "2026-11-18T23:00:18Z"
 ---
 ## Problem
 Auth screens are the first thing users see and must work on phones.
@@ -41,3 +41,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T22:53:35Z · body
 - 2026-11-18T22:55:53Z · body
 - 2026-11-18T23:00:14Z · CTO nudge: held — handoff gate is running
+- 2026-11-18T23:00:18Z · note: ui verification failed: ui verification failed (2 issue(s)): [missing-target] Login fields with accessible names and announced errors (target "default"): highlight .login-card matched nothing on /login (http://127.0.0.1:34587/); [route] Login fields with accessible names and announced errors: declared route /login but the browser landed on / (login or redirect?) (captured http://127.0.0.1:34587/) (http://127.0.0.1:34587/)
