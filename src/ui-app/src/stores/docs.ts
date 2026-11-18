@@ -6,6 +6,8 @@ import type { DocMeta, SkillMeta } from "../types";
 
 export const useDocsStore = defineStore("docs", () => {
   const docs = ref<DocMeta[]>([]);
+  const docsLoading = ref(false);
+  const docsLoadError = ref("");
   const selDoc = ref<string | null>(null);
   const docContent = ref("");
   const docTitle = ref("");
@@ -16,12 +18,17 @@ export const useDocsStore = defineStore("docs", () => {
   const skillDesc = ref("");
 
   async function loadDocs(): Promise<boolean> {
+    docsLoading.value = true;
+    docsLoadError.value = "";
     try {
       docs.value = await api<DocMeta[]>("/api/docs");
       if (docs.value.length && !selDoc.value) await loadDoc(docs.value[0].path);
       return true;
     } catch {
+      docsLoadError.value = "Could not load docs. Try again.";
       return false;
+    } finally {
+      docsLoading.value = false;
     }
   }
 
@@ -86,6 +93,8 @@ export const useDocsStore = defineStore("docs", () => {
 
   return {
     docs,
+    docsLoading,
+    docsLoadError,
     selDoc,
     docContent,
     docTitle,

@@ -4170,14 +4170,16 @@ export const useRepoStore = defineStore("repo", () => {
     await refresh();
   }
 
-  async function refreshInputs(): Promise<void> {
+  async function refreshInputs(): Promise<boolean> {
     const hadPending = enrichingInputs.size > 0;
     try {
       inputs.value = await api<(Input & { enriching?: boolean })[]>("/api/inputs");
       reconcileEnrichmentPending();
       if (hadPending) window.dispatchEvent(new Event("repoos:inputs-updated"));
+      return true;
     } catch {
       /* leave existing value in place on error */
+      return false;
     }
   }
   /** @deprecated use repo.inputs + repo.refreshInputs() */

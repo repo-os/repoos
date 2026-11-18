@@ -18,6 +18,19 @@ describe("docs store search index (#0557)", () => {
     );
   });
 
+  it("exposes docs loading failures and clears them after a successful retry", async () => {
+    const docs = useDocsStore();
+    api.mockRejectedValueOnce(new Error("offline")).mockResolvedValueOnce([]);
+
+    expect(await docs.loadDocs()).toBe(false);
+    expect(docs.docsLoading).toBe(false);
+    expect(docs.docsLoadError).toContain("Could not load docs");
+
+    expect(await docs.loadDocs()).toBe(true);
+    expect(docs.docsLoadError).toBe("");
+    expect(docs.docs).toEqual([]);
+  });
+
   it("syncDocAfterCreate indexes a path when the listing API omits it", async () => {
     const docs = useDocsStore();
     docs.docs = [{ path: "docs/existing.md", title: "Existing", mtimeMs: 1 }];

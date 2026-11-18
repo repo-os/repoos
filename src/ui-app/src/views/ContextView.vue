@@ -27,6 +27,8 @@ const route = useRoute();
 const router = useRouter();
 const {
   docs: docList,
+  docsLoading,
+  docsLoadError,
   selDoc,
   docContent,
   docTitle,
@@ -378,7 +380,12 @@ watch(
     <div v-else class="repo-grid">
       <Card class="doc-list">
         <template v-if="tab === 'docs'">
-          <div v-if="!docList.length" class="ctx-empty">No docs found.</div>
+          <div v-if="docsLoading" class="ctx-empty">Loading docs…</div>
+          <div v-else-if="docsLoadError" class="ctx-empty ctx-load-error" role="alert">
+            <div>{{ docsLoadError }}</div>
+            <Button variant="outline" size="sm" @click="refreshDocs">Retry</Button>
+          </div>
+          <div v-else-if="!docList.length" class="ctx-empty">No docs found.</div>
           <div v-else class="doc-tree">
             <div v-if="refreshError" class="ctx-refresh-error">{{ refreshError }}</div>
             <template v-for="node in flatDocTree" :key="node.key">
