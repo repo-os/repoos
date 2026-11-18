@@ -11,7 +11,7 @@ branch: feat/qa-pass-macos-repoos-hub-app-build-launc
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-18T02:19:44Z"
-updated_at: "2026-11-18T04:28:46Z"
+updated_at: "2026-11-18T04:33:40Z"
 last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from 113b674b to 34fd29e7; commit \"Merge main into task #1169\" touched docs/qa/2026-11-android-hub-fixtures.md, docs/qa/2026-11-releases-and-restart-qa.md, mobile/scripts/fixture-qa.ts, mobile/src/style.css, repoos.toml, src/ui-app/src/components/ReleaseUpdateNotification.vue, src/ui-app/tests/mobile-hub-picker-layout.test.ts, src/ui-app/tests/releases.test.ts) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 last_handoff_failure_sha: 113b674bb16af3bd98e04abcea9a12c179325b61
 review_passes: 3
@@ -88,3 +88,4 @@ Signed-in projects and tasks remain unverified because automated email-code entr
 - 2026-11-18T04:27:12Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-18T04:28:44Z · watchdog: restarting engineer because a queued message waited 3m with no live process
 - 2026-11-18T04:28:46Z · message_delivered: 1 message(s)
+- 2026-11-18T04:33:40Z · body
