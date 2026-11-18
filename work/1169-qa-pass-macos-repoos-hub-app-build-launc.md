@@ -2,7 +2,7 @@
 id: "1169"
 title: "QA pass: macOS RepoOS Hub app – build, launch, connect, and fix what is broken"
 type: bug
-status: review
+status: active
 priority: p2
 area: macos
 assigned_to: ai
@@ -268,3 +268,4 @@ Signed-in projects and tasks remain unverified because automated email-code entr
 - 2026-11-18T10:58:45Z · status active→review
 - 2026-11-18T10:58:46Z · note: shots: skipped — the diff (23 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-18T10:58:47Z · message_queued at 2026-11-18T10:58:47.372Z
+- 2026-11-18T10:58:47Z · status review→active
