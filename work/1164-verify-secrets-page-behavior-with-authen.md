@@ -11,7 +11,7 @@ branch: feat/verify-secrets-page-behavior-with-authen
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T17:53:29Z"
-updated_at: "2026-11-18T03:41:48Z"
+updated_at: "2026-11-18T03:43:13Z"
 review_passes: 3
 review_rounds: 2
 ---
@@ -33,10 +33,16 @@ The initial evidence is an auth-less 401, not proof of a signed-in regression. Q
 ```json
 [
 {
-"label": "Secrets inventory in the populated signed-in view",
-"target": "default",
-"route": "/secrets?shotState=secrets%3Apopulated",
-"highlight": ".secrets-ledger"
+  "label": "Secrets sign-in required state",
+  "target": "default",
+  "route": "/secrets?shotState=secrets%3Aunauthorized",
+  "highlight": "[role=\"alert\"]"
+},
+{
+  "label": "Secrets environment with masked keys",
+  "target": "default",
+  "route": "/secrets?shotState=secrets%3Apopulated",
+  "highlight": ".secrets-ledger"
 }
 ]
 ```
@@ -85,3 +91,4 @@ The initial evidence is an auth-less 401, not proof of a signed-in regression. Q
 - 2026-11-18T03:41:20Z · status review→active
 - 2026-11-18T03:41:23Z · needs_input
 - 2026-11-18T03:41:23Z · message_delivered: 1 message(s)
+- 2026-11-18T03:43:13Z · body
