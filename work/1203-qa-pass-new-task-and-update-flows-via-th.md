@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-new-task-and-update-flows-via-th
 created_at: "2026-11-18T20:47:36Z"
-updated_at: "2026-11-18T21:04:51Z"
+updated_at: "2026-11-18T21:06:51Z"
 ---
 ## Problem
 UI and CLI task creation have different validation (needs input, required sections) and may give confusing messages.
@@ -31,3 +31,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T20:56:23Z · watchdog: check wait escalated · waiting: waiting for a Playwright slot — position 2 (1 ahead); slot holder 75497 is dead for 7s · next step: investigate the abnormal wait; the flag clears when the check starts
 - 2026-11-18T20:56:38Z · watchdog: check wait ended or recovered — cleared needs_input
 - 2026-11-18T21:04:51Z · body
+- 2026-11-18T21:06:51Z · CTO nudge: held — handoff gate is running
