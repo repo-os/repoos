@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 157533
-last_close_out_gate_at: "2026-11-18T19:56:55.271Z"
 id: "1198"
 title: "QA pass: Debug panel, logs and activity views – large outputs, long lines, empty and error states"
 type: bug
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: dec9e8d1956d46343b81bd19f1d106daa32dbcc7
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-debug-panel-logs-and-activity-vi
 created_at: "2026-11-18T19:24:11Z"
 updated_at: "2026-11-18T19:56:55Z"
+last_close_out_gate_ms: 157533
+last_close_out_gate_at: "2026-11-18T19:56:55.271Z"
 review_passes: 1
 ---
 ## Problem

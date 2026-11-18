@@ -1121,8 +1121,11 @@ watch([() => ui.debugCheckFocus, () => repo.taskChecks[props.task.id]], applyDeb
   font-size: 11px;
   line-height: 1.5;
   color: var(--txt-dim);
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
   white-space: pre-wrap;
-  word-break: break-word;
+  overflow-wrap: anywhere;
   max-height: 320px;
   overflow-y: auto;
 }
@@ -1216,6 +1219,7 @@ watch([() => ui.debugCheckFocus, () => repo.taskChecks[props.task.id]], applyDeb
   color: var(--txt);
   overflow: hidden;
   text-overflow: ellipsis;
+  overflow-wrap: anywhere;
   white-space: nowrap;
 }
 .debug-event-message {
@@ -1224,7 +1228,7 @@ watch([() => ui.debugCheckFocus, () => repo.taskChecks[props.task.id]], applyDeb
   line-height: 1.45;
   color: var(--txt);
   white-space: pre-wrap;
-  word-break: break-word;
+  overflow-wrap: anywhere;
   user-select: text;
 }
 .debug-event-remote {
