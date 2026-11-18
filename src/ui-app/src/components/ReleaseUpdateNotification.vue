@@ -330,9 +330,11 @@ onUnmounted(() => {
         </div>
         <DialogDescription class="release-update-description">
           This server is still running v{{ restartStatus.runningVersion }}.
-          {{ restartStatus.activeWork.agents }} agents and
-          {{ restartStatus.activeWork.checks }} checks running. Restart now briefly interrupts
-          agents and checks; the agents resume after the new server starts. See
+          {{ restartStatus.activeWork.agents }}
+          {{ restartStatus.activeWork.agents === 1 ? "agent" : "agents" }} and
+          {{ restartStatus.activeWork.checks }}
+          {{ restartStatus.activeWork.checks === 1 ? "check" : "checks" }} running. Restart now
+          briefly interrupts agents and checks; the agents resume after the new server starts. See
           <a href="https://github.com/repo-os/repoos/issues/214">#0214</a> for details.
         </DialogDescription>
         <div class="release-update-actions">

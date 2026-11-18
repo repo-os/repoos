@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 771419
-last_close_out_gate_at: "2026-11-18T03:29:19.795Z"
 id: "1168"
 title: "QA pass: exercise the new Releases 'Generate AI notes and publish' flow and the update/restart modal end to end"
 type: bug
-status: review
+status: done
 priority: p1
 area: [web, server]
+merged_commit: 2c645f40252ba299aae7c201719867c38c65d605
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-exercise-the-new-releases-genera
@@ -14,6 +13,8 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-18T00:17:51Z"
 updated_at: "2026-11-18T03:29:19Z"
+last_close_out_gate_ms: 771419
+last_close_out_gate_at: "2026-11-18T03:29:19.795Z"
 review_passes: 2
 handoff_signal_retry_count: 2
 review_rounds: 1
