@@ -54,7 +54,9 @@ The full unit suite was rerun after registry isolation: 189 cases pass, 0 fail
 (188 before, plus the new table test), and the real registry's modification
 time was unchanged across that run. This follow-up's focused XCTest
 `ServerRegistryStoreTests.testRemovesXCTestSupportDirectory` passed on
-2026-11-18, confirming the disposable registry directory is removed.
+2026-11-18, confirming the disposable registry directory is removed. Cleanup
+now throws on removal failure instead of silently swallowing it; the app logs
+that error during shutdown. A test verifies a failed removal is propagated.
 
 ## Not verified
 
@@ -63,9 +65,11 @@ time was unchanged across that run. This follow-up's focused XCTest
   keystrokes, but the field did not accept input, so the logged-in UI was not
   reached. AppleScript clicks did reach the native Add server sheet but not the
   `WKWebView` email field. That is an automation limitation, not evidence of a
-  Hub input bug. Human follow-up #1172 now owns this signed-in check. The
-  separate #1167 QA pass exercised signed-in screens on 2026-11-17; #1172
-  verifies them against this pass's build.
+  Hub input bug. The separate #1167 QA pass exercised signed-in screens on
+  2026-11-17, but that does not verify them against this pass's build. The
+  earlier record named human follow-up #1172; its task file is not present in
+  this worktree, and completion has not been confirmed. This acceptance
+  criterion remains open pending a human sign-in check on this build.
 - **Discovery of a server that is not already running.** Only the live
   `localhost:7171` server was exercised.
 - **Settings, command palette, notifications, Dock badge, WebKit OAuth.** Not
@@ -84,9 +88,10 @@ no UI source change was made.
 
 ## Follow-ups for a human
 
-- Complete human task #1172: sign in and verify the projects and tasks screens
-  against this pass's build (acceptance criterion "shows projects/tasks without
-  errors").
+- File or restore a human task for signing in and verifying the projects and
+  tasks screens against this pass's build (acceptance criterion
+  "shows projects/tasks without errors"). The previously referenced #1172 is
+  not available in this worktree and is not claimed complete.
 - Decide what to do about the recents entry and selection written to the real
   registry at 02:22:55Z (see above).
 - Look into the direct-exec launch that showed no content window, if anyone

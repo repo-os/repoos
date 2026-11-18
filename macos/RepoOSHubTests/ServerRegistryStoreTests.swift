@@ -73,9 +73,25 @@ final class ServerRegistryStoreTests: XCTestCase {
         let directory = URL(fileURLWithPath: supportPath, isDirectory: true)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
 
-        ServerRegistryStore.removeXCTestSupportDirectory(environment: ["XCTestConfigurationFilePath": "/x"])
+        try ServerRegistryStore.removeXCTestSupportDirectory(environment: ["XCTestConfigurationFilePath": "/x"])
 
         XCTAssertFalse(FileManager.default.fileExists(atPath: directory.path))
+    }
+
+    func testXCTestSupportCleanupPropagatesRemovalFailure() throws {
+        let supportPath = ServerRegistryStore.applicationSupportDirectory(
+            environment: ["XCTestConfigurationFilePath": "/x"]
+        ).path
+        let directory = URL(fileURLWithPath: supportPath, isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let child = directory.appendingPathComponent("not-empty")
+        try Data().write(to: child)
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        XCTAssertThrowsError(try ServerRegistryStore.removeXCTestSupportDirectory(
+            environment: ["XCTestConfigurationFilePath": "/x"]
+        ))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: directory.path))
     }
 
     func testDuplicateOriginRejected() throws {

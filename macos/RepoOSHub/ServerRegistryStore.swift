@@ -110,11 +110,12 @@ final class ServerRegistryStore: @unchecked Sendable {
 extension ServerRegistryStore {
     static func removeXCTestSupportDirectory(
         environment: [String: String] = ProcessInfo.processInfo.environment
-    ) {
+    ) throws {
         guard environment["XCTestConfigurationFilePath"] != nil else { return }
         let directory = FileManager.default.temporaryDirectory
             .appendingPathComponent(xctestSupportDirectoryName, isDirectory: true)
-        try? FileManager.default.removeItem(at: directory)
+        guard FileManager.default.fileExists(atPath: directory.path) else { return }
+        try FileManager.default.removeItem(at: directory)
     }
 
     static func applicationSupportDirectory(
