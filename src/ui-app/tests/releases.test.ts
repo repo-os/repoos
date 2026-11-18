@@ -828,7 +828,11 @@ describe("feature releases", () => {
         "Automatic restart is unavailable",
       );
       expect(notice?.querySelector("code")?.textContent?.trim()).toBe(command);
-      expect(Array.from(notice?.querySelectorAll("button") ?? []).map((button) => button.textContent?.trim())).not.toContain("Restart now");
+      expect(
+        Array.from(notice?.querySelectorAll("button") ?? []).map((button) =>
+          button.textContent?.trim(),
+        ),
+      ).not.toContain("Restart now");
     } finally {
       wrapper.unmount();
       vi.unstubAllGlobals();
