@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-settings-and-agents-pages-every-
 created_at: "2026-11-18T06:47:46Z"
-updated_at: "2026-11-18T08:26:56Z"
+updated_at: "2026-11-18T08:28:22Z"
 review_rounds: 2
 routing_switches: 1
 routing_escalations: 1
@@ -35,13 +35,13 @@ Do not touch repoos.toml.
 "route": "/settings?tab=notifications",
 "highlight": "#spend-alert-error",
 "steps": [
-  {
-    "fill": "#setting-attention\\.spendAlertUsd input",
-    "text": "-1"
-  },
-  {
-    "waitFor": "#spend-alert-error"
-  }
+{
+  "fill": "#setting-attention\\.spendAlertUsd input",
+  "text": "-1"
+},
+{
+  "waitFor": "#spend-alert-error"
+}
 ]
 }
 ]
@@ -74,3 +74,4 @@ Do not touch repoos.toml.
 - 2026-11-18T08:23:22Z · note: Review round 2 requested a Notifications validation screenshot; resuming to add targeted capture evidence and recheck.
 - 2026-11-18T08:23:52Z · body
 - 2026-11-18T08:26:56Z · body
+- 2026-11-18T08:28:22Z · CTO nudge: held — handoff gate is running
