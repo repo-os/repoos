@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-releases-page-and-checks-page-ev
 created_at: "2026-11-18T08:17:32Z"
-updated_at: "2026-11-18T08:17:41Z"
+updated_at: "2026-11-18T08:27:34Z"
 ---
 ## Problem
 Releases and Checks pages changed a lot in v0.5.90 and may have state bugs.
@@ -26,3 +26,4 @@ Do not touch repoos.toml; skip what #1168 and #1173 covered.
 - 2026-11-18T08:17:32Z · created · t@t
 - 2026-11-18T08:17:37Z · status inbox→ready
 - 2026-11-18T08:17:41Z · status ready→active, branch
+- 2026-11-18T08:27:34Z · body
