@@ -2,14 +2,14 @@
 id: "1186"
 title: "QA pass: web app Search, command palette and navigation – every route loads, deep links, back button"
 type: bug
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
 branch: ""
 created_at: "2026-11-18T13:47:31Z"
-updated_at: "2026-11-18T13:47:31Z"
+updated_at: "2026-11-18T13:47:34Z"
 ---
 ## Problem
 Navigation, search/command palette and deep links have not had a recent pass.
@@ -24,3 +24,4 @@ Do not touch repoos.toml.
 ## Activity
 
 - 2026-11-18T13:47:31Z · created · t@t
+- 2026-11-18T13:47:34Z · status inbox→ready
