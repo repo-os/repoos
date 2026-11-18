@@ -1,3 +1,14 @@
+---
+id: summary
+title: summary
+type: feature
+status: inbox
+priority: p2
+area: general
+assigned_to: ai
+created_by: ""
+branch: ""
+---
 ## TL;DR
 
 Task 1191 was a QA pass over the docs site and in-app user-docs pages: rendering, link resolution, and search. Headless Playwright verified all 29 sitemap URLs of the VitePress docs build, confirmed local search finds "Authentication" and that a sidebar section deep link reaches its target heading, and smoke-tested the auth-less app server's help-link destinations without page errors. No reproducible broken link or rendering defect was found, so no product-code change was needed; the deliverable is the QA report `docs/qa/2026-11-docs-site.md`. Review passed on the first pass ("good to go") and the task closed out cleanly.
@@ -6,10 +17,10 @@ Task 1191 was a QA pass over the docs site and in-app user-docs pages: rendering
 
 - Shipped: `docs/qa/2026-11-docs-site.md` (+21 lines), a record of the QA run. No code changes.
 - What was verified:
-  - The `user-docs/` VitePress site builds cleanly (after a frozen-lockfile dependency install) and passes its post-build LLM index and AI-agent guide checks.
-  - All 29 sitemap URLs render with HTTP 200 and an H1, driven by headless Playwright.
-  - VitePress local search returns results for "authentication"; a sidebar section URL sets the hash, finds the heading, and scrolls correctly.
-  - The auth-less dev server (`just serve-noauth 7272`) serves the root plus the Agents, Checks, Settings, Deployments, and Releases routes with HTTP 200 and no browser page errors; the docs destinations referenced from the UI (`/agents`, `/check`, `/configuration`, `/troubleshooting`, `/deployments-and-releases`) all exist in the local docs build.
+- The `user-docs/` VitePress site builds cleanly (after a frozen-lockfile dependency install) and passes its post-build LLM index and AI-agent guide checks.
+- All 29 sitemap URLs render with HTTP 200 and an H1, driven by headless Playwright.
+- VitePress local search returns results for "authentication"; a sidebar section URL sets the hash, finds the heading, and scrolls correctly.
+- The auth-less dev server (`just serve-noauth 7272`) serves the root plus the Agents, Checks, Settings, Deployments, and Releases routes with HTTP 200 and no browser page errors; the docs destinations referenced from the UI (`/agents`, `/check`, `/configuration`, `/troubleshooting`, `/deployments-and-releases`) all exist in the local docs build.
 - One non-blocking issue was documented rather than fixed: `vitepress-plugin-llms` warns about the section-level sidebar URL `/getting-started#starting-a-new-project-as-an-agent`, but browser verification shows the URL works, so the link was left intact and the warning recorded in the QA report.
 - Final verdict: review pass 1 returned **good to go**; status is **done** (release:success), merged as commit `397969a237fff2b90d5d2411bcce11f58457711b`.
 
@@ -19,9 +30,9 @@ Task 1191 was a QA pass over the docs site and in-app user-docs pages: rendering
 - Review rounds: 1 (pass 1, verdict "good to go", 2026-11-18T16:27:09Z).
 - Wall-clock start → done: 2026-11-18T16:18:29Z → 2026-11-18T16:39:31Z, i.e. 21 minutes 2 seconds. Close-out gate itself took 69s.
 - Agents and models:
-  - Engineer: `engineer`, model gpt-6-luna (codex) — 352s, 2,113,639 tokens.
-  - Reviewer: `reviewer`, model gpt-6-luna (codex) — 29s, 134,298 tokens.
-  - Two `routing` sessions (Model router, openrouter) ran at 1s and 0s; their token counts and models are not recorded.
+- Engineer: `engineer`, model gpt-6-luna (codex) — 352s, 2,113,639 tokens.
+- Reviewer: `reviewer`, model gpt-6-luna (codex) — 29s, 134,298 tokens.
+- Two `routing` sessions (Model router, openrouter) ran at 1s and 0s; their token counts and models are not recorded.
 - Restarts or model swaps: none recorded.
 - Token total (engineer + reviewer): 2,247,937. Cost totals: not recorded (sessions table shows "—" for cost on all sessions).
 
