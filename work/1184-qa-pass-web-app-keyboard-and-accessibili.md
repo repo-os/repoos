@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-web-app-keyboard-and-accessibili
 created_at: "2026-11-18T12:17:32Z"
-updated_at: "2026-11-18T14:38:34Z"
+updated_at: "2026-11-18T14:38:37Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -115,3 +115,4 @@ Do not touch repoos.toml.
 - 2026-11-18T14:36:14Z · CTO nudge: held — handoff gate is running
 - 2026-11-18T14:38:34Z · note: ui verification failed: ui verification failed (2 issue(s)): [missing-target] Agents Skills dialog accessible close control (target "default"): click button.agent-skills-add: click: Error: strict mode violation: locator('button.agent-skills-add') resolved to 6 elements: on /agents?tab=default (http://127.0.0.1:42821/agents?tab=default); [missing-target] Agents Skills dialog accessible close control (target "default"): highlight .am-modal matched nothing on /agents?tab=default (http://127.0.0.1:4
 - 2026-11-18T14:38:34Z · message_queued at 2026-11-18T14:38:34.656Z
+- 2026-11-18T14:38:37Z · message_delivered: 1 message(s)
