@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 674283
-last_close_out_gate_at: "2026-11-18T18:12:57.291Z"
 id: "1192"
 title: "QA pass: Android Hub app screens third pass – theme switching, long names and rotation at phone sizes"
 type: bug
-status: review
+status: done
 priority: p2
 area: mobile
+merged_commit: 58304aa8e239256961a40e4c77e5bb3dff1842f3
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-android-hub-app-screens-third-pa
 created_at: "2026-11-18T17:47:42Z"
 updated_at: "2026-11-18T18:12:57Z"
+last_close_out_gate_ms: 674283
+last_close_out_gate_at: "2026-11-18T18:12:57.291Z"
 review_passes: 1
 ---
 ## Problem
