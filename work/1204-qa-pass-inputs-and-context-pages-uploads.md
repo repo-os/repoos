@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-inputs-and-context-pages-uploads
 created_at: "2026-11-18T20:47:45Z"
-updated_at: "2026-11-18T22:15:53Z"
+updated_at: "2026-11-18T22:16:49Z"
 review_rounds: 1
 routing_switches: 1
 routing_escalations: 1
@@ -106,3 +106,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T22:15:52Z · note: ui verification passed: 4 of 4 shots captured with clean console
 - 2026-11-18T22:15:53Z · status active→review
 - 2026-11-18T22:15:53Z · message_queued at 2026-11-18T22:15:53.831Z
+- 2026-11-18T22:16:49Z · note: review pass 4: needs some work
