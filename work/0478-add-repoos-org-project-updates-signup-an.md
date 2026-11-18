@@ -9,8 +9,10 @@ story: Email subscriber list
 assigned_to: ai
 created_by: ""
 branch: ""
+cli_override: codex
+model_override: gpt-6-luna
 created_at: "2026-09-21T12:08:58Z"
-updated_at: "2026-09-21T20:11:02Z"
+updated_at: "2026-11-18T01:17:46Z"
 ---
 ## Problem
 
@@ -42,3 +44,4 @@ Run after #0477 (Build Neon Functions double-opt-in updates service).
 
 - 2026-09-21T12:08:58Z · created · unknown
 - 2026-09-21T20:11:02Z · story
+- 2026-11-18T01:17:46Z · cli_override, model_override
