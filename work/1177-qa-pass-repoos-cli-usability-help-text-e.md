@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-11-18T07:35:12Z"
-review_passes: 3
 id: "1177"
 title: "QA pass: RepoOS CLI usability – help text, error messages and exit codes"
 type: bug
-status: review
+status: active
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 needs_input_detail: `needs some work` — `upgrade` still silently ignores `--channel=value` inputs.
@@ -14,6 +12,8 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-repoos-cli-usability-help-text-e
 created_at: "2026-11-18T05:56:48Z"
+updated_at: "2026-11-18T08:05:08Z"
+review_passes: 3
 last_check_failure: "repoos check at 2026-11-18T06:45:34.810Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 2
 routing_switches: 1
@@ -64,4 +64,5 @@ Do not touch repoos.toml; do not run commands that mutate the real board.
 - 2026-11-18T07:35:04Z · message_queued at 2026-11-18T07:35:04.352Z
 - 2026-11-18T07:35:12Z · note: review pass 3: needs some work
 - 2026-11-18T07:35:12Z · needs_input
-
+- 2026-11-18T08:05:05Z · status review→active
+- 2026-11-18T08:05:08Z · CTO nudge: held — an undelivered message is already queued
