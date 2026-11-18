@@ -2801,6 +2801,19 @@ export interface ConfigFieldMeta {
   step?: number;
 }
 
+/** Select fields whose dropdown/API representations persist as numeric config values. */
+export const NUMERIC_SELECT_CONFIG_KEYS = [
+  "maxActiveTasks",
+  "maxConcurrentAgents",
+  "remoteValidation.maxConcurrent",
+  "worktreeWarnThreshold",
+  "heavySlots",
+  "vitest.maxWorkers",
+  "localChecks.maxConcurrent",
+  "playwright.workers",
+  "playwright.maxConcurrent",
+] as const;
+
 export function getConfigSchema(): ConfigFieldMeta[] {
   return [
     {

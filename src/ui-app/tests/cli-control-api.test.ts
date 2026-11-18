@@ -8,6 +8,7 @@ import { tmpdir } from "node:os";
 import { join, basename, dirname } from "node:path";
 import { startServer, type ServerHandle } from "../../server/server";
 import { getAuthStore, resetAuthStoreInstance } from "../../core/auth-store";
+import { loadConfig } from "../../core/config";
 import { clearCliSession } from "../../cli/cli-session";
 import { SUMMARY_PENDING_STALE_MS } from "../../core/task-summary";
 import {
@@ -405,6 +406,16 @@ describe("control API CLI", () => {
       const port = Number(new URL(s.url).port);
       const cfg = await runJsonCmd(port, cmdConfig, ["get", "agents"]);
       expect(cfg).toHaveProperty("key", "agents");
+    });
+  });
+
+  it("config set accepts a numeric enum and persists it as an integer", async () => {
+    const root = tmpDir();
+    await withServer(root, async (s) => {
+      const port = Number(new URL(s.url).port);
+      await runJsonCmd(port, cmdConfig, ["set", "maxConcurrentAgents", "4"]);
+      expect(loadConfig(root).maxConcurrentAgents).toBe(4);
+      expect(readFileSync(join(root, "repoos.toml"), "utf8")).toContain("maxConcurrentAgents = 4");
     });
   });
 

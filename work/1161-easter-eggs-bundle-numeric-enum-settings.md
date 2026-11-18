@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 1047631
-last_close_out_gate_at: "2026-11-18T01:28:58.344Z"
 id: "1161"
 title: "Easter eggs bundle: numeric enum settings reject real integers (maxConcurrentAgents)"
 type: feature
-status: review
+status: done
 priority: p3
 area: server
+merged_commit: aa6cfe73fd70ab41a07b0ea48630918033c4dd33
 assigned_to: ai
 created_by: t@t
 branch: feat/easter-eggs-bundle-numeric-enum-settings
@@ -14,6 +13,8 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T17:09:11Z"
 updated_at: "2026-11-18T01:28:58Z"
+last_close_out_gate_ms: 1047631
+last_close_out_gate_at: "2026-11-18T01:28:58.344Z"
 review_passes: 2
 review_rounds: 1
 ---
