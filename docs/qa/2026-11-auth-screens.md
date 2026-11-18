@@ -37,3 +37,8 @@ expired sessions and the native pairing handoff.
 for all three login-flow inputs and alert semantics for both bootstrap and
 sign-in errors. `router-guard.test.ts` and `mobile-hub-return.test.ts` were run
 alongside it. All 34 tests across those three files passed.
+
+The managed preview disables auth, so `/login` normally redirects to the
+dashboard during handoff capture. Preview-only `auth:login` and `auth:otp`
+fixtures now let declared 375px captures render the actual login component;
+regular auth-disabled navigation still redirects as before.
