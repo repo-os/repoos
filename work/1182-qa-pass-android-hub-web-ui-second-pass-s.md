@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-18T09:55:05Z"
+review_passes: 2
 id: "1182"
 title: "QA pass: Android Hub web UI second pass – settings, add-server and error flows at 360px"
 type: bug
@@ -9,10 +11,8 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-android-hub-web-ui-second-pass-s
 created_at: "2026-11-18T09:17:43Z"
-updated_at: "2026-11-18T09:55:05Z"
 review_rounds: 1
 routing_switches: 1
-review_passes: 1
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -45,3 +45,4 @@ Do not touch repoos.toml.
 - 2026-11-18T09:54:21Z · message_queued at 2026-11-18T09:54:21.894Z
 - 2026-11-18T09:54:22Z · note: shots: skipped — the diff (9 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-18T09:55:05Z · note: review pass 2: needs some work
+
