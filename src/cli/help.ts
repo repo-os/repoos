@@ -75,8 +75,8 @@ const GROUPS: readonly CommandGroup[] = [
     commands: [
       {
         name: "list",
-        usage: "list [status]",
-        desc: "Show the board, or one status column (inbox|ready|active|review|done)",
+        usage: "list [inbox|ready|active|review|done|archived]",
+        desc: "Show the board, one status column, or archived tasks",
       },
       { name: "show", usage: "show <id>", desc: "Show a task's full spec" },
       {

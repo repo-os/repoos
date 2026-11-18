@@ -4,12 +4,63 @@
  * users saw only the version bump, with no way to know what changed short of
  * going to look at GitHub themselves (#0371).
  */
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  cmdUpgrade,
+  parseChannel,
   packageManagerUpgrade,
   releaseNotesToPrint,
   upgradeRestartReminder,
 } from "../../commands/upgrade";
+
+describe("repoos upgrade argument validation", () => {
+  afterEach(() => {
+    process.exitCode = 0;
+    vi.restoreAllMocks();
+  });
+
+  it.each([
+    [["--channel=beta"], "beta"],
+    [["--channel", "canary"], "canary"],
+    [["--channel=rc"], "rc"],
+    [[], null],
+  ] as const)("parses channel arguments %j", (args, expected) => {
+    expect(parseChannel([...args])).toBe(expected);
+  });
+
+  it.each(["--channel=invalid", "--channel="])(
+    "rejects invalid equals-form channel %s",
+    async (flag) => {
+      const error = vi.spyOn(console, "error").mockImplementation(() => {});
+      await cmdUpgrade([flag]);
+
+      expect(process.exitCode).toBe(1);
+      expect(error).toHaveBeenCalledWith(expect.stringContaining("Invalid --channel value"));
+      expect(error).toHaveBeenCalledWith(expect.stringContaining("Choose beta, canary, or rc"));
+    },
+  );
+
+  it.each(["invalid", undefined])(
+    "rejects unsupported or missing channels (%s)",
+    async (channel) => {
+      const error = vi.spyOn(console, "error").mockImplementation(() => {});
+      await cmdUpgrade(channel === undefined ? ["--channel"] : ["--channel", channel]);
+
+      expect(process.exitCode).toBe(1);
+      expect(error).toHaveBeenCalledWith(expect.stringContaining("Invalid --channel value"));
+      expect(error).toHaveBeenCalledWith(expect.stringContaining("Choose beta, canary, or rc"));
+    },
+  );
+
+  it("rejects repeated --channel flags instead of silently using the first", async () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    await cmdUpgrade(["--channel", "beta", "--channel", "invalid"]);
+
+    expect(process.exitCode).toBe(1);
+    expect(error).toHaveBeenCalledWith(expect.stringContaining("Use --channel only once"));
+    expect(error).toHaveBeenCalledWith(expect.stringContaining("Choose one channel"));
+  });
+});
 
 describe("upgradeRestartReminder", () => {
   it("tells the user when the server still runs the previous version", () => {
