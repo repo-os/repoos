@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { shotCapturePageUrl, shotFixtureContainer } from "../../core/shot-fixtures.js";
 import { parseShotPlan } from "../../core/shot-plan.js";
+import { readShotPreviewFixtureFromLocation } from "../src/lib/shot-preview-fixtures.js";
 
 describe("shot preview fixtures (#0743)", () => {
   it("appends shotState query for a declared fixture", () => {
@@ -59,6 +60,9 @@ describe("shot preview fixtures (#0743)", () => {
       state: "secrets:populated",
     });
     expect(url).toBe("http://127.0.0.1:8000/secrets?shotState=secrets%3Apopulated");
+    expect(
+      readShotPreviewFixtureFromLocation({ search: new URL(url).search }),
+    ).toBe("secrets:populated");
     const body = `## Shots\n\`\`\`json\n[{"route":"/secrets","state":"secrets:populated"}]\n\`\`\``;
     expect(parseShotPlan(body).errors).toEqual([]);
     expect(
