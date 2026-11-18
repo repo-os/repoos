@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-web-app-keyboard-and-accessibili
 created_at: "2026-11-18T12:17:32Z"
-updated_at: "2026-11-18T12:19:14Z"
+updated_at: "2026-11-18T12:23:04Z"
 ---
 ## Problem
 Keyboard and screen-reader behavior of dialogs, drawers and menus has not had a recent pass.
@@ -27,3 +27,4 @@ Do not touch repoos.toml.
 - 2026-11-18T12:17:36Z · status inbox→ready
 - 2026-11-18T12:17:39Z · status ready→active, branch
 - 2026-11-18T12:19:14Z · note: adopted orphaned engineer pid 52979
+- 2026-11-18T12:23:04Z · body
