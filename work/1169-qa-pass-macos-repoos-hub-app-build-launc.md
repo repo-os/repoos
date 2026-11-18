@@ -11,7 +11,7 @@ branch: feat/qa-pass-macos-repoos-hub-app-build-launc
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-18T02:19:44Z"
-updated_at: "2026-11-18T03:20:26Z"
+updated_at: "2026-11-18T03:20:51Z"
 review_passes: 1
 ---
 ## Problem
