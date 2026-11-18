@@ -34,7 +34,7 @@ browser run recorded here; nothing was checked on a real device.
 | `discover`: expand "Couldn't check these machines" | Pass. |
 | `many` with a 66-character server name and a long URL | **Defect, fixed.** See below. |
 | `discover` with the same long name and URL | Pass. |
-| `many` with an unbroken 80-character host and no break points | Pass after the fix. The picker and sheet stay in bounds. Not measured before the fix. |
+| `many` with an 85-character URL and no break points | Pass after the fix. The picker and sheet stay in bounds. Not measured before the fix. |
 
 There is no `?fixture=error` route. The error states above were reached by
 interaction, so future sweeps need that path to be re-typed by hand.
@@ -46,6 +46,9 @@ a `<button class="server-row">` inside a flex card with `overflow: hidden`.
 A button is a flex item with `min-width: auto`, so its nowrap name and host set
 its minimum width. The row grew to about 570px, the card clipped it, and the
 ⋮ edit button was pushed out of view. The name's start was cut off too.
+
+Reproduced on this branch with only the fix reverted, at a 375px viewport: the
+row's right edge is at 587px, the card's at 359px, and the ⋮ button ends at 635px.
 
 Fix (`mobile/src/style.css`): `.server-row` gets `min-width: 0`. The existing
 `.server-meta` / `.server-name` / `.server-host` ellipsis then truncates, and the
