@@ -2,7 +2,7 @@
 id: "1203"
 title: "QA pass: new-task and update flows via the CLI and UI agree – body sections, validation messages and needs-input handling"
 type: bug
-status: review
+status: active
 priority: p2
 area: [web, core]
 assigned_to: ai
@@ -10,6 +10,8 @@ created_by: t@t
 branch: feat/qa-pass-new-task-and-update-flows-via-th
 created_at: "2026-11-18T20:47:36Z"
 updated_at: "2026-11-18T21:08:28Z"
+review_rounds: 1
+routing_switches: 1
 review_passes: 1
 ---
 ## Problem
@@ -38,3 +40,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T21:08:01Z · message_queued at 2026-11-18T21:08:01.218Z
 - 2026-11-18T21:08:27Z · note: review pass 1: needs some work
 - 2026-11-18T21:08:28Z · message_delivered: 1 message(s)
+- 2026-11-18T21:08:28Z · status review→active
