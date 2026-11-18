@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-agents-page-build-your-team-sche
 created_at: "2026-11-18T19:47:54Z"
-updated_at: "2026-11-18T20:53:40Z"
+updated_at: "2026-11-18T21:01:57Z"
 review_passes: 1
 handoff_signal_retry_count: 2
 ---
@@ -27,22 +27,22 @@ Do not touch repoos.toml. Never open a visible browser window.
 ```json
 [
 {
-  "label": "Build Your Team tab",
-  "target": "default",
-  "route": "/agents?tab=team",
-  "highlight": ".agent-tabs"
+"label": "Build Your Team tab",
+"target": "default",
+"route": "/agents?tab=team",
+"highlight": ".agent-tabs"
 },
 {
-  "label": "Scheduled tasks and seeded empty template warning",
-  "target": "default",
-  "route": "/agents?tab=scheduled&shotState=agents:scheduledSeeded",
-  "highlight": ".agent-tabs"
+"label": "Scheduled tasks and seeded empty template warning",
+"target": "default",
+"route": "/agents?tab=scheduled&shotState=agents:scheduledSeeded",
+"highlight": ".agent-tabs"
 },
 {
-  "label": "Reminders with due and upcoming items",
-  "target": "default",
-  "route": "/agents?tab=reminders&shotState=reminders:due",
-  "highlight": ".agent-tabs"
+"label": "Reminders with due and upcoming items",
+"target": "default",
+"route": "/agents?tab=reminders&shotState=reminders:due",
+"highlight": ".agent-tabs"
 }
 ]
 ```
@@ -67,3 +67,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T20:47:32Z · status review→active
 - 2026-11-18T20:47:34Z · message_delivered: 1 message(s)
 - 2026-11-18T20:53:40Z · body
+- 2026-11-18T21:01:57Z · body
