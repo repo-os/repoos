@@ -8,8 +8,10 @@ area: web
 assigned_to: ai
 created_by: t@t
 branch: ""
+cli_override: claude code
+model_override: haiku
 created_at: "2026-11-18T02:19:49Z"
-updated_at: "2026-11-18T02:20:25Z"
+updated_at: "2026-11-18T02:20:30Z"
 ---
 ## Problem
 Mobile-width layout regressions are likely after recent UI changes.
@@ -26,3 +28,4 @@ Do not touch repoos.toml. Pages use full .main width.
 
 - 2026-11-18T02:19:49Z · created · t@t
 - 2026-11-18T02:20:25Z · status inbox→ready
+- 2026-11-18T02:20:30Z · cli_override, model_override
