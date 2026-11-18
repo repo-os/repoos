@@ -19,7 +19,7 @@ import { chromium, type Page } from "@playwright/test";
 
 const BASE = process.env.QA_BASE_URL ?? "http://localhost:5188";
 const STRIP_WRAP = process.env.QA_STRIP_WRAP === "1";
-const VIEWPORT = { width: 375, height: 812 };
+const VIEWPORTS = [360, 412].map((width) => ({ width, height: 812 }));
 const FIXTURES = ["many", "one", "empty", "unreachable", "settings", "add", "discover"];
 const LONG_PATH_URL =
   "https://celleris-long-hostname.internal-tailnet.example.ts.net:8443/repoos/very/long/path/segments/that/keep/going/and/going/and/going";
@@ -86,7 +86,7 @@ async function checkNoPastViewport(page: Page, name: string) {
 
 async function run() {
   const browser = await chromium.launch();
-  const page = await browser.newPage({ viewport: VIEWPORT, deviceScaleFactor: 2 });
+  const page = await browser.newPage({ viewport: VIEWPORTS[0], deviceScaleFactor: 2 });
   await serveStylesheet(page);
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(`pageerror: ${e.message}`));
@@ -94,14 +94,64 @@ async function run() {
     if (m.type() === "error") errors.push(`console: ${m.text()}`);
   });
 
-  // Default fixtures: nothing past the viewport, no console or page errors.
-  for (const fx of FIXTURES) {
-    errors.length = 0;
-    await page.goto(`${BASE}/?fixture=${fx}&platform=android`);
-    await page.waitForTimeout(700);
-    await checkNoPastViewport(page, `fixture ${fx}: in bounds`);
-    record(`fixture ${fx}: no console errors`, errors.length === 0, errors.join("; ") || "clean");
+  // The requested phone widths: nothing past the viewport, no console or page errors.
+  for (const viewport of VIEWPORTS) {
+    await page.setViewportSize(viewport);
+    for (const fx of FIXTURES) {
+      errors.length = 0;
+      await page.goto(`${BASE}/?fixture=${fx}&platform=android`);
+      await page.waitForTimeout(700);
+      await checkNoPastViewport(page, `${viewport.width}px fixture ${fx}: in bounds`);
+      record(
+        `${viewport.width}px fixture ${fx}: no console errors`,
+        errors.length === 0,
+        errors.join("; ") || "clean",
+      );
+    }
+
+    // Enabling the lock reveals its scope selector.
+    await page.goto(`${BASE}/?fixture=settings&platform=android`);
+    const lockToggle = page.getByTestId("hub-lock-toggle");
+    if ((await lockToggle.getAttribute("aria-checked")) !== "true") await lockToggle.click();
+    await page.getByTestId("hub-lock-scope").waitFor();
+    await checkNoPastViewport(page, `${viewport.width}px settings with lock enabled: in bounds`);
+    const lockDetails = await page.evaluate(() => ({
+      scope: Boolean(document.querySelector('[data-testid="hub-lock-scope"]')),
+    }));
+    record(
+      `${viewport.width}px settings lock controls visible`,
+      lockDetails.scope,
+      `scope selector ${lockDetails.scope ? "present" : "missing"}`,
+    );
+
+    // Exercise a rejected authentication, retry, and successful unlock.
+    await page.goto(`${BASE}/?fixture=lock&auth=failure&platform=android`);
+    const lockOverlay = page.locator(".lock-overlay");
+    await lockOverlay.waitFor({ state: "visible" });
+    await checkNoPastViewport(page, `${viewport.width}px failed lock screen: in bounds`);
+    await checkFits(page, `${viewport.width}px failed lock card content fits`, ".lock-card");
+    await page.getByRole("button", { name: "Try again" }).click();
+    await lockOverlay.waitFor({ state: "visible" });
+    record(
+      `${viewport.width}px rejected lock attempt stays locked`,
+      await lockOverlay.isVisible(),
+      "overlay remains visible after failed authentication",
+    );
+    await page.evaluate(() => {
+      const url = new URL(window.location.href);
+      url.searchParams.set("auth", "success");
+      window.history.replaceState({}, "", url);
+    });
+    await page.getByRole("button", { name: "Try again" }).click();
+    await lockOverlay.waitFor({ state: "hidden" });
+    record(
+      `${viewport.width}px successful lock retry unlocks`,
+      !(await lockOverlay.isVisible()),
+      "overlay closes after successful authentication",
+    );
   }
+
+  await page.setViewportSize(VIEWPORTS[0]);
 
   // Long server name and URL in the picker: the row shrinks and ⋮ stays on the card.
   await serveFixture(page, [
@@ -112,14 +162,17 @@ async function run() {
   await page.waitForTimeout(700);
   await checkNoPastViewport(page, "picker, long name and URL: in bounds");
 
-  // Edit sheet with a long saved URL, and one with no break points.
+  // Edit sheet with a long saved URL, and one with no break points, at both widths.
   await serveFixture(page, [['url: "https://dev.repoos.org"', `url: "${LONG_PATH_URL}"`]]);
-  await page.goto(`${BASE}/?fixture=many&platform=android`);
-  await page.waitForTimeout(700);
-  await page.getByTestId("hub-server-more").first().click();
-  await page.waitForTimeout(500);
-  await checkFits(page, "edit sheet URL (path) wraps", ".sheet-panel .hint");
-  await checkNoPastViewport(page, "edit sheet, long URL: in bounds");
+  for (const viewport of VIEWPORTS) {
+    await page.setViewportSize(viewport);
+    await page.goto(`${BASE}/?fixture=many&platform=android`);
+    await page.waitForTimeout(700);
+    await page.getByTestId("hub-server-more").first().click();
+    await page.waitForTimeout(500);
+    await checkFits(page, `${viewport.width}px edit sheet URL (path) wraps`, ".sheet-panel .hint");
+    await checkNoPastViewport(page, `${viewport.width}px edit sheet, long URL: in bounds`);
+  }
 
   await serveFixture(page, [['url: "https://dev.repoos.org"', `url: "${UNBROKEN_URL}"`]]);
   await page.goto(`${BASE}/?fixture=many&platform=android`);
@@ -130,13 +183,16 @@ async function run() {
 
   // Add form: the HTTPS error appears under the field and stays in bounds.
   await serveFixture(page, []);
-  await page.goto(`${BASE}/?fixture=add&platform=android`);
-  await page.waitForTimeout(700);
-  await page.getByLabel("Server URL (HTTPS)").fill("http://insecure.example.test");
-  await page.getByRole("button", { name: "Save" }).click();
-  await page.waitForTimeout(1000);
-  await checkFits(page, "add form error: fits", ".form-error");
-  await checkNoPastViewport(page, "add form error: in bounds");
+  for (const viewport of VIEWPORTS) {
+    await page.setViewportSize(viewport);
+    await page.goto(`${BASE}/?fixture=add&platform=android`);
+    await page.waitForTimeout(700);
+    await page.getByLabel("Server URL (HTTPS)").fill("http://insecure.example.test");
+    await page.getByRole("button", { name: "Save" }).click();
+    await page.waitForTimeout(1000);
+    await checkFits(page, `${viewport.width}px add form error: fits`, ".form-error");
+    await checkNoPastViewport(page, `${viewport.width}px add form error: in bounds`);
+  }
 
   // Discovery: failure reason with an unbroken token, plus message and warning text.
   await serveFixture(page, [['reason: "timed out"', `reason: "${LONG_TOKEN}"`]]);

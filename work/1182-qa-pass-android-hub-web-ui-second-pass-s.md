@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 79724
-last_close_out_gate_at: "2026-11-18T10:10:41.332Z"
 id: "1182"
 title: "QA pass: Android Hub web UI second pass – settings, add-server and error flows at 360px"
 type: bug
-status: review
+status: done
 priority: p2
 area: mobile
+merged_commit: c3adf554c7ad6f9b0054958b3758be8633589626
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-android-hub-web-ui-second-pass-s
 created_at: "2026-11-18T09:17:43Z"
 updated_at: "2026-11-18T10:10:41Z"
+last_close_out_gate_ms: 79724
+last_close_out_gate_at: "2026-11-18T10:10:41.332Z"
 review_passes: 3
 handoff_signal_retry_count: 2
 review_rounds: 2
