@@ -6,7 +6,7 @@
  */
 import { describe, expect, it, afterEach } from "vitest";
 import { Readable } from "node:stream";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { getConfigSchema, loadConfig } from "../../core/config.js";
@@ -119,5 +119,29 @@ describe("PATCH with decimal fields (#0797)", () => {
     expect(res.status).toBe(200);
     expect(loadConfig(root).activityAnimationStyle).toBe("cursor-scan-pulse");
     expect(loadConfig(root).attention?.slowRunMultiplier).toBe(1.5);
+  });
+});
+
+describe("numeric enum select fields (#1161)", () => {
+  const numericEnums = [
+    ["maxActiveTasks", 5],
+    ["maxConcurrentAgents", 4],
+    ["remoteValidation.maxConcurrent", 3],
+    ["worktreeWarnThreshold", 25],
+  ] as const;
+
+  it.each(numericEnums)("accepts number and string forms for %s", async (key, value) => {
+    const field = getConfigSchema().find((candidate) => candidate.key === key);
+    expect(field?.type).toBe("select");
+    expect(field?.options?.some((option) => Number(option.value) === value)).toBe(true);
+
+    for (const wireValue of [value, String(value)]) {
+      const root = tempRoot();
+      writeFileSync(join(root, "repoos.toml"), 'workDir = "work"\n', "utf8");
+      const res = await patch(root, { [key]: wireValue });
+      expect(res.status, `${key} with ${typeof wireValue}`).toBe(200);
+      const toml = readFileSync(join(root, "repoos.toml"), "utf8");
+      expect(toml).toContain(`${key.split(".").at(-1)} = ${value}`);
+    }
   });
 });

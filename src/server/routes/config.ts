@@ -722,7 +722,19 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
         continue;
       }
       const valid = field.options?.map((o) => o.value) ?? [];
-      if (!valid.includes(val as string)) {
+      // Numeric enum fields are exposed as string options for the Settings
+      // dropdown, while API clients may send a JSON number. Compare their
+      // canonical values so both wire forms validate against the same enum.
+      const numericSelect =
+        field.key === "maxActiveTasks" ||
+        field.key === "maxConcurrentAgents" ||
+        field.key === "remoteValidation.maxConcurrent" ||
+        field.key === "worktreeWarnThreshold";
+      const normalized = numericSelect ? String(val) : val;
+      if (
+        (numericSelect && (typeof val !== "number" && typeof val !== "string")) ||
+        !valid.includes(normalized as string)
+      ) {
         return json(res, 400, {
           error: `${field.label} must be one of: ${valid.join(", ")}`,
         });
