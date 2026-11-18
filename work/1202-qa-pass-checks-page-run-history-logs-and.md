@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-checks-page-run-history-logs-and
 created_at: "2026-11-18T20:17:41Z"
-updated_at: "2026-11-18T20:32:16Z"
+updated_at: "2026-11-18T20:43:18Z"
 ---
 ## Problem
 Check run detail and failure views are dense and may overflow or hide the failing step.
@@ -30,9 +30,9 @@ Do not touch repoos.toml. Never open a visible browser window.
 "route": "/checks?tab=runs",
 "highlight": ".cr-detail-row",
 "steps": [
-  {
-    "click": "tr[data-outcome=\"pass\"]"
-  }
+{
+  "click": "tr[data-outcome=\"pass\"]"
+}
 ],
 "state": "checks:timings"
 }
@@ -46,3 +46,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T20:17:47Z · status ready→active, branch
 - 2026-11-18T20:28:32Z · body
 - 2026-11-18T20:32:16Z · CTO nudge: held — handoff gate is running
+- 2026-11-18T20:43:18Z · note: ui verification passed: 1 of 1 shot captured with clean console
