@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-web-app-first-run-and-empty-stat
 created_at: "2026-11-18T10:17:38Z"
-updated_at: "2026-11-18T10:24:33Z"
+updated_at: "2026-11-18T10:34:51Z"
 ---
 ## Problem
 First-run, empty and error states are rarely exercised and likely have rough edges.
@@ -25,18 +25,18 @@ Do not touch repoos.toml.
 ```json
 [
 {
-  "label": "Empty work board guidance",
-  "target": "default",
-  "route": "/work",
-  "highlight": "[data-testid=\"work-empty-state\"]",
-  "state": "work:empty"
+"label": "Empty work board guidance",
+"target": "default",
+"route": "/work",
+"highlight": "[data-testid=\"work-empty-state\"]",
+"state": "work:empty"
 },
 {
-  "label": "Work board failed-load recovery",
-  "target": "default",
-  "route": "/work",
-  "highlight": "[data-testid=\"work-load-error\"]",
-  "state": "work:failedLoad"
+"label": "Work board failed-load recovery",
+"target": "default",
+"route": "/work",
+"highlight": "[data-testid=\"work-load-error\"]",
+"state": "work:failedLoad"
 }
 ]
 ```
@@ -47,3 +47,4 @@ Do not touch repoos.toml.
 - 2026-11-18T10:17:41Z · status inbox→ready
 - 2026-11-18T10:17:43Z · status ready→active, branch
 - 2026-11-18T10:24:33Z · body
+- 2026-11-18T10:34:51Z · message_queued at 2026-11-18T10:34:51.349Z
