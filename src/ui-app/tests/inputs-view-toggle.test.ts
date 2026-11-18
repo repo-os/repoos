@@ -40,7 +40,7 @@ function makeInput(overrides: Partial<Input> = {}): Input {
 
 async function mountView(
   inputs: Input[] = [makeInput()],
-  opts: { holdLoad?: { release: (inputs: Input[]) => void } } = {},
+  opts: { holdLoad?: { release: (inputs: Input[]) => void }; failFirstLoad?: boolean } = {},
 ): Promise<VueWrapper> {
   let resolveHeld: ((inputs: Input[]) => void) | null = null;
   const held = opts.holdLoad
@@ -49,9 +49,12 @@ async function mountView(
         opts.holdLoad!.release = (list) => resolve(list);
       })
     : null;
+  let loadCount = 0;
 
   api.mockImplementation(async (path: string, init?: RequestInit) => {
     if (path === "/api/inputs" && !init?.method) {
+      loadCount++;
+      if (opts.failFirstLoad && loadCount === 1) throw new Error("offline");
       if (held) return held;
       return inputs;
     }
@@ -93,6 +96,19 @@ describe("InputsView list/board toggle", () => {
     expect(wrapper.find(".input-list").exists()).toBe(true);
     expect(wrapper.find(".inputs-board").exists()).toBe(false);
     expect(wrapper.find(".view-toggle-btn.active").text()).toContain("List");
+  });
+
+  it("shows a retryable error instead of the empty state when inputs fail to load", async () => {
+    const wrapper = await mountView([], { failFirstLoad: true });
+
+    expect(wrapper.find('[role="alert"]').text()).toContain("Could not load inputs");
+    expect(wrapper.text()).not.toContain("No inputs here yet");
+
+    await wrapper.get('[role="alert"] button').trigger("click");
+    await flushPromises();
+
+    expect(wrapper.find('[role="alert"]').exists()).toBe(false);
+    expect(wrapper.text()).toContain("No inputs here yet");
   });
 
   it("switches to board view and persists the preference", async () => {

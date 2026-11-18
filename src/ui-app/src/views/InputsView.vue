@@ -67,6 +67,7 @@ const viewMode = ref<InputsViewMode>("list");
 /** Gates collapse defaults + reveal-on-arrival until the first load finishes,
  *  so an empty first paint never collapses every column permanently. */
 const inputsLoaded = ref(false);
+const loadError = ref(false);
 const visible = computed(() => inputs.value.filter((i) => selected.value.has(i.status)));
 /** Board view always shows every status as a column (like the Work board) —
  *  it has no checkbox filter row of its own, so it isn't tied to `selected`. */
@@ -84,7 +85,8 @@ watch(statusCounts, (now, prev) => {
   revealInputArrivals(prev ?? {}, now);
 });
 async function load(): Promise<void> {
-  await repo.refreshInputs();
+  const ok = await repo.refreshInputs();
+  loadError.value = !ok;
   const firstLoad = !inputsLoaded.value;
   inputsLoaded.value = true;
   // Defer empty-column defaults until real data is in — mirrors BoardColumn
@@ -345,6 +347,11 @@ function tryOpenInput(ref: string, attempt: number): void {
         >
       </div>
     </div>
+    <div v-if="loadError" class="inputs-empty" role="alert">
+      <div class="empty-title">Could not load inputs</div>
+      <div>Check your connection, then try again.</div>
+      <Button variant="outline" @click="load">Retry</Button>
+    </div>
     <template v-if="viewMode === 'list'">
       <div class="input-filters" role="group" aria-label="Filter inputs by status">
         <label v-for="s in statuses" :key="s.id" class="input-filter"
@@ -358,7 +365,7 @@ function tryOpenInput(ref: string, attempt: number): void {
           }}</span></label
         >
       </div>
-      <div v-if="!visible.length" class="inputs-empty">
+      <div v-if="!visible.length && !loadError" class="inputs-empty">
         <div class="empty-title">No inputs here yet</div>
         <div>Capture an idea, question, bug, or observation for the team.</div>
         <Button variant="outline" @click="ui.openNewInput">Submit your first input</Button>

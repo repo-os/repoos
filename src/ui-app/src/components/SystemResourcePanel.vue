@@ -150,8 +150,14 @@ watch(
     if (!active || !systemStats.value) return;
     // Give the deterministic responsive capture a short history so both
     // sparklines render without waiting for multiple live sampling intervals.
-    cpuHistory.value = [systemStats.value.totals.cpuPercent * 0.8, systemStats.value.totals.cpuPercent];
-    memHistory.value = [systemStats.value.totals.memPercent * 0.9, systemStats.value.totals.memPercent];
+    cpuHistory.value = [
+      systemStats.value.totals.cpuPercent * 0.8,
+      systemStats.value.totals.cpuPercent,
+    ];
+    memHistory.value = [
+      systemStats.value.totals.memPercent * 0.9,
+      systemStats.value.totals.memPercent,
+    ];
   },
   { immediate: true },
 );

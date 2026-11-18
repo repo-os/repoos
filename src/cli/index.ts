@@ -247,7 +247,7 @@ function main(): void {
       void cmdRm(rest);
       break;
     case "update":
-      cmdUpdate(rest);
+      void cmdUpdate(rest);
       break;
     case "split":
       void cmdSplit(rest).then(() => {});
