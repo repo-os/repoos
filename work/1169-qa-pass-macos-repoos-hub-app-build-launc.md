@@ -1,8 +1,10 @@
 ---
+updated_at: "2026-11-18T17:18:33Z"
+review_passes: 12
 id: "1169"
 title: "QA pass: macOS RepoOS Hub app – build, launch, connect, and fix what is broken"
 type: bug
-status: active
+status: review
 priority: p2
 area: macos
 assigned_to: ai
@@ -11,15 +13,16 @@ branch: feat/qa-pass-macos-repoos-hub-app-build-launc
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-18T02:19:44Z"
-updated_at: "2026-11-18T13:14:33Z"
+close_out_repair_count: 1
 review_rounds: 2
-review_passes: 6
 engineer_stall_resume_log: "[{\"at\":\"2026-11-18T04:39:18.645Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-18T04:49:19.309Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-18T08:53:34.221Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
 ## Problem
 Nick reports the macOS Hub app has been unusable for weeks. Nobody has recently built and driven it.
+
 ## Desired UX
-App builds, launches, discovers servers, connects, and shows projects/tasks without errors.
+App builds, launches, discovers servers and connects. Showing signed-in projects and tasks needs a real sign-in and is tracked in held human task #1174, so it is out of scope for this AI task; the QA record must say so.
+
 ## Acceptance criteria
 - Build with xcodebuild (CODE_SIGNING_ALLOWED=NO, own derivedDataPath); launch it; capture window-only screenshots (screencapture -l<windowid>, never the full screen).
 - Fix every crash/blank/broken screen found, with tests where possible.
@@ -336,3 +339,71 @@ Signed-in projects and tasks remain unverified because automated email-code entr
 - 2026-11-18T13:14:32Z · message_queued at 2026-11-18T13:14:32.997Z
 - 2026-11-18T13:14:33Z · handoff failed · task-file handoff failed at review · Engineering report draft is missing: .repoos/engineering-report-drafts/1169.md
 - 2026-11-18T13:14:33Z · message_delivered: 1 message(s)
+- 2026-11-18T13:24:13Z · message_queued at 2026-11-18T13:24:13.407Z
+- 2026-11-18T13:24:13Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-18T13:27:15Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-18T13:27:15Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code unknown) · last assistant: The check has passed build and is progressing through the remote test suite. The runner has started the full test phase; I’m letting it finish before I submit the handoff request. · stderr: 2026-11-18T12:52:31.764221Z ERROR codex_core::tools::router: error=apply_patch verification failed: Failed to find expected lines in /Users/nick/code/nick/repoos-worktrees/feat/qa-pass-macos-repoos-hub-app-build-launc/.repoos/engineering-report-drafts/1169.md: The previously reported `servers-command.test.ts` failures…
+- 2026-11-18T13:27:15Z · status active→review
+- 2026-11-18T13:27:15Z · message_delivered: 1 message(s)
+- 2026-11-18T13:27:16Z · note: handoff requested (cli)
+- 2026-11-18T13:29:13Z · CTO nudge: held — handoff gate is running
+- 2026-11-18T13:31:14Z · note: adopted orphaned engineer pid 5741
+- 2026-11-18T13:36:14Z · message_queued at 2026-11-18T13:36:14.554Z
+- 2026-11-18T13:36:14Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-18T13:39:45Z · status active→review
+- 2026-11-18T13:39:47Z · note: shots: skipped — the diff (28 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-11-18T13:39:47Z · needs_input
+- 2026-11-18T13:39:50Z · orphaned run process stopped · pid 6360 · ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new -o ConnectTimeout=15 -o ServerAliveInterval · cpu 0s · age 12m
+- 2026-11-18T13:47:29Z · needs_input (review-rounds-exhausted) cleared for review again by human
+- 2026-11-18T13:51:18Z · note: review pass 7: needs some work
+- 2026-11-18T13:51:18Z · needs_input
+- 2026-11-18T13:51:19Z · message_queued at 2026-11-18T13:51:19.307Z
+- 2026-11-18T14:17:46Z · body: Desired UX (added 1, removed 1)
+- 2026-11-18T14:17:47Z · needs_input (review-rounds-exhausted) cleared for review again by human
+- 2026-11-18T14:18:39Z · note: review pass 8: good to go
+- 2026-11-18T14:57:27Z · status review→active
+- 2026-11-18T14:57:27Z · note: follow-up message — moved from review to active so work can be committed and re-handoffed
+- 2026-11-18T14:57:27Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-18T14:57:29Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-18T14:57:44Z · note: handoff requested (cli)
+- 2026-11-18T15:01:14Z · CTO nudge: held — handoff gate is running
+- 2026-11-18T15:04:18Z · message_delivered: 1 message(s)
+- 2026-11-18T15:04:25Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The handoff passed. Task #1169 is now in review. · stderr: 2026-11-18T15:04:19.997009Z ERROR codex_core::util: Custom tool call output is missing for call id: call_2c771a6d1918427a900672a4b5be1359
+- 2026-11-18T15:04:25Z · status active→review
+- 2026-11-18T15:04:26Z · note: shots: skipped — the diff (31 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-11-18T15:09:30Z · note: message interrupts in-flight review — delivering to engineer first
+- 2026-11-18T15:09:30Z · status review→active
+- 2026-11-18T15:09:30Z · note: follow-up message — moved from review to active so work can be committed and re-handoffed
+- 2026-11-18T15:09:31Z · message_queued at 2026-11-18T15:09:31.133Z
+- 2026-11-18T15:09:33Z · CTO nudge: held — handoff gate is running
+- 2026-11-18T15:10:22Z · message_queued at 2026-11-18T15:10:22.324Z
+- 2026-11-18T15:10:22Z · handoff failed · task-file handoff failed at review · Engineering report draft is missing: .repoos/engineering-report-drafts/1169.md
+- 2026-11-18T15:10:22Z · message_delivered: 2 message(s)
+- 2026-11-18T15:10:23Z · note: review pass 9: good to go
+- 2026-11-18T15:12:03Z · note: adopted orphaned engineer pid 90037
+- 2026-11-18T15:17:34Z · message_queued at 2026-11-18T15:17:34.685Z
+- 2026-11-18T15:22:02Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-18T15:35:03Z · body
+- 2026-11-18T15:36:04Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-18T15:36:05Z · message_queued at 2026-11-18T15:36:05.004Z
+- 2026-11-18T15:36:05Z · ↻ resuming engineer to read queued message
+- 2026-11-18T15:36:05Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code unknown · last assistant: `repoos check` passed on the current tree. I recreated the consumed engineering report draft and requested handoff; RepoOS will finalize the review transition. #1174 remains the human follow-up for signed-in Projects and Tasks. · stderr: 2026-11-18T15:10:25.646627Z ERROR codex_core::util: Custom tool call output is missing for call id: call_2c771a6d1918427a900672a4b5be1359 2026-11-18T15:10:34.484234Z ERROR codex_core::util: Custom tool call output is missing for call id: call_2c771a6d1918427a900672a4b5be1359 2026-11-18T15:10:40.967475Z ERROR codex_cor…
+- 2026-11-18T15:36:05Z · status active→review
+- 2026-11-18T15:36:05Z · message_delivered: 2 message(s)
+- 2026-11-18T15:36:06Z · note: handoff requested (cli)
+- 2026-11-18T15:36:46Z · status active→review
+- 2026-11-18T15:36:47Z · note: shots: skipped — the diff (32 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-11-18T15:47:29Z · note: review pass 10: good to go
+- 2026-11-18T15:57:36Z · message_queued at 2026-11-18T15:57:36.947Z
+- 2026-11-18T16:18:25Z · note: review pass 11: good to go
+- 2026-11-18T16:31:49Z · status review→active
+- 2026-11-18T16:31:49Z · note: close-out repair: gate-failure
+- 2026-11-18T16:31:49Z · message_delivered: 1 message(s)
+- 2026-11-18T16:49:30Z · body
+- 2026-11-18T16:52:08Z · CTO nudge: held — handoff gate is running
+- 2026-11-18T17:02:28Z · CTO nudge: held — handoff gate is running
+- 2026-11-18T17:18:05Z · status active→review
+- 2026-11-18T17:18:06Z · message_queued at 2026-11-18T17:18:06.020Z
+- 2026-11-18T17:18:06Z · note: shots: skipped — the diff (35 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-11-18T17:18:32Z · note: review pass 12: good to go
+
