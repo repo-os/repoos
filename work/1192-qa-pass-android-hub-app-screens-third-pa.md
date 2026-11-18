@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-android-hub-app-screens-third-pa
 created_at: "2026-11-18T17:47:42Z"
-updated_at: "2026-11-18T17:47:47Z"
+updated_at: "2026-11-18T17:55:19Z"
 ---
 ## Problem
 Theme switching, very long server/project names and narrow/rotated layouts have not been checked in the Hub UI.
@@ -26,3 +26,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T17:47:42Z · created · t@t
 - 2026-11-18T17:47:45Z · status inbox→ready
 - 2026-11-18T17:47:47Z · status ready→active, branch
+- 2026-11-18T17:55:19Z · body
