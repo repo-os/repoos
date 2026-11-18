@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-settings-and-agents-pages-every-
 created_at: "2026-11-18T06:47:46Z"
-updated_at: "2026-11-18T08:22:44Z"
+updated_at: "2026-11-18T08:22:47Z"
 review_rounds: 2
 routing_switches: 1
 routing_escalations: 1
@@ -49,3 +49,4 @@ Do not touch repoos.toml.
 - 2026-11-18T08:22:44Z · note: review pass 2: needs some work
 - 2026-11-18T08:22:44Z · message_delivered: 1 message(s)
 - 2026-11-18T08:22:44Z · status review→active
+- 2026-11-18T08:22:47Z · CTO nudge: held — remote validation is running
