@@ -1,5 +1,4 @@
 ---
-handoff_signal_retry_count: 1
 id: "1179"
 title: "QA pass: Settings and Agents pages – every control saves, validates and survives reload"
 type: bug
@@ -10,7 +9,8 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-settings-and-agents-pages-every-
 created_at: "2026-11-18T06:47:46Z"
-updated_at: "2026-11-18T06:48:09Z"
+updated_at: "2026-11-18T07:39:03Z"
+handoff_signal_retry_count: 1
 ---
 ## Problem
 Settings and Agents pages have many controls added over time; some may not save or validate.
@@ -27,4 +27,4 @@ Do not touch repoos.toml.
 - 2026-11-18T06:47:46Z · created · t@t
 - 2026-11-18T06:48:02Z · status inbox→ready
 - 2026-11-18T06:48:09Z · status ready→active, branch
-
+- 2026-11-18T07:39:03Z · body
