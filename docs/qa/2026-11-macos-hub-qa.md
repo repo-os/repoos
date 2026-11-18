@@ -42,6 +42,14 @@ The values `lastSelectedServerID` held before the run were not recorded, so
 they are not restored here. Nick should decide whether to remove that single
 recents entry and reselect a server by hand.
 
+During a later review attempt on 2026-11-18, the built app was opened through
+the computer-use launcher without `REPOOS_HUB_SUPPORT_DIRECTORY`. It displayed
+the connected server's sign-in page, and the real registry's modification time
+advanced to 13:19:29 +08. The registry contents were not inspected or restored
+because there is no before-state for this launch. This attempt is not counted as
+an isolated QA run; future launches must use `open -n --env` with a disposable
+support directory.
+
 **Fix:** `ServerRegistryStore.applicationSupportDirectory` now returns a
 per-process scratch directory when `XCTestConfigurationFilePath` is set, after
 the explicit override check. The table-driven test
