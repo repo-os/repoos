@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-18T07:43:27Z"
-review_passes: 2
 id: "1178"
 title: "QA pass: Work board task drawer flows (review, changes, logs, close-out) desktop and mobile"
 type: bug
@@ -11,6 +9,8 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-work-board-task-drawer-flows-rev
 created_at: "2026-11-18T05:56:51Z"
+updated_at: "2026-11-18T07:43:29Z"
+review_passes: 2
 last_handoff_failure_fingerprint: "check|repoos check failed: ui-smoke — $ bun scripts/ui-smoke.mjs"
 last_handoff_failure_sha: 2f587557fee7acf9acf9a85c8d3a2a9558fc8ecb
 handoff_signal_retry_count: 2
