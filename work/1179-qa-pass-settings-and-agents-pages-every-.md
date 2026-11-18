@@ -2,7 +2,7 @@
 id: "1179"
 title: "QA pass: Settings and Agents pages – every control saves, validates and survives reload"
 type: bug
-status: active
+status: review
 priority: p2
 area: [web, server]
 assigned_to: ai
@@ -81,3 +81,4 @@ Do not touch repoos.toml.
 - 2026-11-18T08:32:57Z · message_delivered: 1 message(s)
 - 2026-11-18T08:37:21Z · body
 - 2026-11-18T08:38:15Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The missing report draft is now at [.repoos/engineering-report-drafts/1179.md](/Users/nick/code/nick/repoos-worktrees/feat/qa-pass-settings-and-agents-pages-every-/.repoos/engineering-report-drafts/1179.md). `REPOOS_CHECK_CHANGED=main repo… · stderr: Reading additional input from stdin...
+- 2026-11-18T08:38:15Z · status active→review
