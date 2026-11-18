@@ -11,7 +11,7 @@ branch: feat/qa-pass-android-hub-web-ui-fixtures-many
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-18T02:19:54Z"
-updated_at: "2026-11-18T03:07:22Z"
+updated_at: "2026-11-18T03:08:44Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -41,3 +41,4 @@ Do not touch repoos.toml.
 - 2026-11-18T03:03:00Z · message_delivered: 1 message(s)
 - 2026-11-18T03:03:00Z · status review→active
 - 2026-11-18T03:07:22Z · body
+- 2026-11-18T03:08:44Z · CTO nudge: held — handoff gate is running
