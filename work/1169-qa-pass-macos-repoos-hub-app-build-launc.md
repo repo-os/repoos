@@ -3,6 +3,9 @@ id: "1169"
 title: "QA pass: macOS RepoOS Hub app – build, launch, connect, and fix what is broken"
 type: bug
 status: review
+needs_input: true
+needs_input_reason: review-human-attention
+needs_input_detail: Review pass 6 still found issues (human flag after 5 passes). The reviewer was asked to summarise the repeated bug classes — read the newest report and decide whether to keep iterating or rescope.
 priority: p2
 area: macos
 assigned_to: ai
@@ -326,3 +329,4 @@ Signed-in projects and tasks remain unverified because automated email-code entr
 - 2026-11-18T12:56:29Z · note: shots: skipped — the diff (26 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-18T12:57:06Z · message_queued at 2026-11-18T12:57:06.397Z
 - 2026-11-18T12:57:13Z · note: review pass 6: needs some work
+- 2026-11-18T12:57:13Z · needs_input
