@@ -183,3 +183,4 @@ Reported by Nick 2026-11-18 20:22 from the phone UI. Related #1154. Do not touch
 - 2026-11-18T19:04:10Z · status active→review
 - 2026-11-18T19:17:03Z · note: ui verification passed: 2 of 2 shots captured with clean console
 - 2026-11-18T19:17:04Z · message_queued at 2026-11-18T19:17:04.749Z
+- 2026-11-18T19:17:04Z · note: review pass 7: needs some work
