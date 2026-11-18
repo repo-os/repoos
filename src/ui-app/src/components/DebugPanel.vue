@@ -956,6 +956,7 @@ watch([() => ui.debugCheckFocus, () => repo.taskChecks[props.task.id]], applyDeb
 
 .debug-tabs {
   display: flex;
+  flex-wrap: wrap;
   gap: 6px;
   flex-shrink: 0;
 }

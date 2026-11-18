@@ -7233,6 +7233,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: 10px;
   margin-bottom: 10px;
 }
@@ -14090,6 +14091,7 @@
 }
 .am-list-notice-text {
   min-width: 0;
+  overflow-wrap: anywhere;
 }
 .am-list-notice-retry {
   flex: none;
@@ -16970,9 +16972,10 @@
 }
 .secrets-env-control {
   display: grid;
-  justify-items: end;
+  justify-items: stretch;
   gap: 6px;
   flex-shrink: 0;
+  min-width: 0;
 }
 .secrets-label,
 .secrets-view-note {
@@ -16986,10 +16989,14 @@
   position: relative;
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
+  min-width: 0;
+  width: 100%;
 }
 .secrets-picker {
-  width: 220px;
+  width: min(220px, 100%);
+  min-width: 0;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -17514,6 +17521,10 @@
   .drawer-quickbar,
   .drawer-critical {
     padding-inline: 16px;
+  }
+  .drawer-quickbar .task-status-select {
+    flex: 1 1 100%;
+    min-width: 0;
   }
   /* #1147: the preview helper used to share a flex row with the target select
      and Start preview, so it wrapped one or two words per line beside them.
