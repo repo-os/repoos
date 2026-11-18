@@ -1,4 +1,5 @@
 ---
+close_out_repair_count: 1
 id: "1178"
 title: "QA pass: Work board task drawer flows (review, changes, logs, close-out) desktop and mobile"
 type: bug
@@ -36,3 +37,4 @@ Do not touch repoos.toml.
 - 2026-11-18T06:19:07Z · note: review pass 1: good to go
 - 2026-11-18T06:55:58Z · status review→active
 - 2026-11-18T06:55:58Z · note: close-out repair: gate-failure
+
