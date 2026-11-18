@@ -361,6 +361,46 @@ describe("ChecksView default tab (#0738)", () => {
     expect(slots[1]?.text()).toContain("heartbeat 2.0s ago");
     wrapper.unmount();
   });
+
+  it("confirms a wedged slot release in the app dialog and allows cancel", async () => {
+    const holder = {
+      slot: 1,
+      pid: 123,
+      ageMs: 90_000,
+      heartbeatAgeMs: 80_000,
+      wedged: true,
+      dead: false,
+      meta: { taskId: "1003" },
+    };
+    const { wrapper } = await mountChecks("/checks?tab=now", [holder]);
+    const fetchMock = vi.mocked(fetch);
+    const releaseCalls = () =>
+      fetchMock.mock.calls.filter(([url]) => String(url).includes("/release/123"));
+
+    await wrapper.get(".ck-local-slot button").trigger("click");
+    await flushPromises();
+    expect(wrapper.text()).toContain("Release check slot?");
+    expect(wrapper.text()).toContain("PID 123");
+    expect(releaseCalls()).toHaveLength(0);
+
+    await wrapper
+      .findAll("button")
+      .find((button) => button.text() === "Cancel")!
+      .trigger("click");
+    await flushPromises();
+    expect(wrapper.text()).not.toContain("Release check slot?");
+    expect(releaseCalls()).toHaveLength(0);
+
+    await wrapper.get(".ck-local-slot button").trigger("click");
+    await wrapper
+      .findAll("button")
+      .filter((button) => button.text() === "Release slot")
+      .at(-1)!
+      .trigger("click");
+    await flushPromises();
+    expect(releaseCalls()).toHaveLength(1);
+    wrapper.unmount();
+  });
 });
 
 describe("IntegrationPipelineSummary (#0738)", () => {

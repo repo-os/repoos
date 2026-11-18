@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 276416
-last_close_out_gate_at: "2026-11-18T08:54:30.023Z"
 id: "1180"
 title: "QA pass: Releases page and Checks page – every state and action"
 type: bug
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: c442210a5622981e0924a43030b7b7f85169f927
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-releases-page-and-checks-page-ev
 created_at: "2026-11-18T08:17:32Z"
 updated_at: "2026-11-18T08:54:30Z"
+last_close_out_gate_ms: 276416
+last_close_out_gate_at: "2026-11-18T08:54:30.023Z"
 review_passes: 1
 ---
 ## Problem
