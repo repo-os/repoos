@@ -1,4 +1,6 @@
 ---
+last_close_out_gate_ms: 476521
+last_close_out_gate_at: "2026-11-18T22:38:33.842Z"
 id: "1204"
 title: "QA pass: Inputs and Context pages – uploads, docs ingestion and empty states"
 type: bug
@@ -9,7 +11,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-inputs-and-context-pages-uploads
 created_at: "2026-11-18T20:47:45Z"
-updated_at: "2026-11-18T22:29:50Z"
+updated_at: "2026-11-18T22:38:33Z"
 review_rounds: 2
 routing_switches: 1
 routing_escalations: 1
@@ -114,3 +116,5 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T22:29:06Z · status active→review
 - 2026-11-18T22:29:06Z · message_queued at 2026-11-18T22:29:06.278Z
 - 2026-11-18T22:29:50Z · note: review pass 5: good to go
+- 2026-11-18T22:38:33Z · close-out gate completed in 477s
+
