@@ -4,6 +4,9 @@
  * on preview builds (`isPreviewBuild`).
  */
 export const SHOT_PREVIEW_FIXTURE_IDS = [
+  // #1208 — Login screen states for the auth-disabled managed preview.
+  "auth:login",
+  "auth:otp",
   // #0923 — Control dashboard Codebase data so worktree GC captures never
   // race the live resource sampler's loading state.
   "system:worktreeGc",

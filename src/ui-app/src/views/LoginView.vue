@@ -4,10 +4,12 @@ import { useRoute, useRouter } from "vue-router";
 import { useAuthStore } from "../stores/auth";
 import RepoLogoMark from "../components/RepoLogoMark.vue";
 import { readHubShellSession, returnToHubServerPicker } from "../lib/hub-shell";
+import { readShotPreviewFixtureFromLocation } from "../lib/shot-preview-fixtures";
 
 const route = useRoute();
 const router = useRouter();
 const auth = useAuthStore();
+const shotFixture = readShotPreviewFixtureFromLocation(window.location);
 
 /**
  * The login screen is part of the connected server, so an expired session must
@@ -53,6 +55,26 @@ async function checkStatus(): Promise<void> {
     hasEmailProvider.value = data.hasEmailProvider;
     repoName.value = data.repoName ?? "";
     if (!data.enabled) {
+      if (shotFixture === "auth:login" || shotFixture === "auth:otp") {
+        try {
+          const healthRes = await fetch("/api/health");
+          const health = await healthRes.json();
+          if (health.isPreviewBuild) {
+            // The managed preview disables auth. These preview-only fixtures
+            // let handoff captures show the real login component without
+            // changing normal auth-disabled navigation.
+            authEnabled.value = true;
+            hasEmailProvider.value = true;
+            if (shotFixture === "auth:otp") {
+              step.value = "otp";
+              email.value = "hello@repoos.org";
+            }
+            return;
+          }
+        } catch {
+          // If the preview marker cannot be confirmed, keep the normal redirect.
+        }
+      }
       // Auth not enabled, go to dashboard
       router.replace("/");
       return;
@@ -213,6 +235,7 @@ function googleLogin(): void {
           <input
             v-model="bootstrapEmail"
             type="email"
+            aria-label="Administrator email"
             placeholder="admin@example.com"
             class="login-input"
             @keyup.enter="doBootstrap"
@@ -225,7 +248,7 @@ function googleLogin(): void {
             {{ bootstrapping ? "Setting up..." : "Create Admin" }}
           </button>
         </div>
-        <p v-if="errorMsg" class="login-error">{{ errorMsg }}</p>
+        <p v-if="errorMsg" class="login-error" role="alert">{{ errorMsg }}</p>
       </div>
 
       <!-- Login form -->
@@ -239,6 +262,7 @@ function googleLogin(): void {
             <input
               v-model="email"
               type="email"
+              aria-label="Email address"
               placeholder="you@example.com"
               class="login-input"
               @keyup.enter="requestOtp"
@@ -293,6 +317,7 @@ function googleLogin(): void {
           <input
             v-model="otpCode"
             type="text"
+            aria-label="One-time code"
             inputmode="numeric"
             maxlength="6"
             placeholder="000000"
@@ -315,7 +340,7 @@ function googleLogin(): void {
           </div>
         </div>
 
-        <p v-if="errorMsg" class="login-error">{{ errorMsg }}</p>
+        <p v-if="errorMsg" class="login-error" role="alert">{{ errorMsg }}</p>
       </div>
     </div>
   </div>
