@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-agents-page-build-your-team-sche
 created_at: "2026-11-18T19:47:54Z"
-updated_at: "2026-11-18T19:57:10Z"
+updated_at: "2026-11-18T19:57:17Z"
 ---
 ## Problem
 The Agents page has several tabs beyond the main list that have not been exercised.
@@ -28,3 +28,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T19:48:01Z · status ready→active, branch
 - 2026-11-18T19:49:52Z · note: adopted orphaned engineer pid 2419
 - 2026-11-18T19:57:10Z · body
+- 2026-11-18T19:57:17Z · note: adopted orphaned engineer pid 2419
