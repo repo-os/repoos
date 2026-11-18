@@ -168,15 +168,37 @@ See the enquiry setup below before enabling the form in production.
 
 The static landing page submits directly to the public updates service. Set the
 single public build variable `VITE_PROJECT_UPDATES_ENDPOINT` to the service
-origin (for example, `https://updates.example.net`) in the Cloudflare Pages
-project's build environment and in a local `landing/.env.local` when testing.
+origin (for example, `https://updates.example.net`) in the Cloudflare Worker
+build environment for each deployed environment and in a local
+`landing/.env.local` when testing.
 The browser appends `/updates/subscribe`; this value is an origin only and must
 not contain credentials, tokens, or a path. It is public configuration, not a
-secret. Do not add Neon, Resend, or webhook credentials to Pages variables with
-the `VITE_` prefix. Confirmation links are sent by the service and return to
+secret. Do not add Neon, Resend, or webhook credentials to public build
+variables or any `VITE_` variable.
+
+The service contract for #0477 is:
+
+- `POST /updates/subscribe` accepts JSON `{ "email": "…" }`.
+- A new pending subscription returns a 2xx JSON body
+  `{ "ok": true, "status": "pending" }`.
+- An existing pending or active address may return HTTP 409 with
+  `{ "ok": false, "status": "already_pending" }` or
+  `{ "ok": false, "status": "already_active" }`. These explicit outcomes
+  are shown as informational states; any unrecognized status or ordinary 2xx
+  response without the success marker is treated as a failure.
+- Throttling returns HTTP 429. Other failures use a non-2xx response and do not
+  include provider secrets or internal details.
+
+Because the browser calls a different origin with JSON, the service must answer
+the browser's `OPTIONS` preflight for the site origin, allow `POST` and
+`Content-Type`, and include the appropriate CORS headers on the POST response.
+Allow only the deployed landing origin (and an explicitly chosen local
+development origin when needed), not arbitrary origins. Confirmation links
+are sent by the service and redirect to
 `https://repoos.org/?updates=confirmed`, `expired`, `used`, or `failed` so the
-landing page can explain the outcome. The service owns confirmation and
-subscription state; the static page stores no subscriber data.
+landing page can explain the outcome and offer a path back to signup. The
+service owns confirmation and subscription state; the static page stores no
+subscriber data.
 
 ## Notes for future edits
 

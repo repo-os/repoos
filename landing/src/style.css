@@ -333,6 +333,26 @@ body {
   font-size: 14px;
   line-height: 1.65;
 }
+.updates-message--expired,
+.updates-message--used,
+.updates-message--failed {
+  color: var(--red);
+}
+.updates-result {
+  display: grid;
+  justify-items: start;
+  gap: 12px;
+}
+.updates-back {
+  border: 1px solid var(--border-bright);
+  border-radius: 7px;
+  padding: 7px 10px;
+  color: var(--cyan);
+  background: transparent;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
 .updates-error {
   margin-top: 9px;
   color: var(--red);

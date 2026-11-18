@@ -1,14 +1,38 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, onBeforeUnmount, ref } from "vue";
 
 type ConfirmationState = "confirmed" | "expired" | "used" | "failed";
 type SignupState = "idle" | "pending" | "success" | "duplicate-pending" | "active" | "failure";
 
-const endpointOrigin = import.meta.env.VITE_PROJECT_UPDATES_ENDPOINT?.trim() ?? "";
+const REQUEST_TIMEOUT_MS = 15_000;
+const endpointOrigin = parseEndpointOrigin(import.meta.env.VITE_PROJECT_UPDATES_ENDPOINT);
 const email = ref("");
 const signupState = ref<SignupState>("idle");
 const confirmationState = ref<ConfirmationState | "">(readConfirmationState());
+const failureMessage = ref("We couldn’t request updates just now. Please try again in a moment.");
 const busy = computed(() => signupState.value === "pending");
+let controller: AbortController | undefined;
+let timeout: ReturnType<typeof setTimeout> | undefined;
+let mounted = true;
+
+function parseEndpointOrigin(value: string | undefined): string {
+  if (!value?.trim()) return "";
+  try {
+    const url = new URL(value.trim());
+    if (
+      (url.protocol !== "https:" && !(url.protocol === "http:" && url.hostname === "localhost")) ||
+      url.username ||
+      url.password ||
+      url.pathname !== "/" ||
+      url.search ||
+      url.hash
+    )
+      return "";
+    return url.origin;
+  } catch {
+    return "";
+  }
+}
 
 function readConfirmationState(): ConfirmationState | "" {
   const value = new URLSearchParams(window.location.search).get("updates");
@@ -17,54 +41,66 @@ function readConfirmationState(): ConfirmationState | "" {
     : "";
 }
 
-function endpoint(path: string): string {
-  const origin = new URL(endpointOrigin);
-  if (origin.protocol !== "https:" && origin.hostname !== "localhost") {
-    throw new Error("invalid endpoint origin");
-  }
-  return new URL(path, origin.origin).href;
-}
-
 async function submit(): Promise<void> {
-  if (busy.value) return;
+  if (busy.value || !endpointOrigin) return;
   signupState.value = "pending";
+  failureMessage.value = "We couldn’t request updates just now. Please try again in a moment.";
+  controller = new AbortController();
+  timeout = setTimeout(() => controller?.abort(), REQUEST_TIMEOUT_MS);
   try {
-    const response = await fetch(endpoint("/updates/subscribe"), {
+    const response = await fetch(new URL("/updates/subscribe", endpointOrigin).href, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email: email.value.trim() }),
+      signal: controller.signal,
     });
-    const result = (await response.json().catch(() => ({}))) as { status?: string; code?: string };
+    const result = (await response.json().catch(() => ({}))) as {
+      ok?: boolean;
+      status?: string;
+      code?: string;
+    };
     const outcome = result.status ?? result.code;
-    if (
-      response.ok &&
-      (outcome === "already_active" || outcome === "duplicate_active" || outcome === "active")
-    ) {
-      signupState.value = "active";
-    } else if (
-      response.ok &&
-      (outcome === "already_pending" || outcome === "duplicate_pending" || outcome === "pending")
-    ) {
-      signupState.value = "duplicate-pending";
-    } else if (response.ok && outcome !== "error") {
+    const duplicateResponse = response.status === 409;
+    if (outcome === "already_active" || outcome === "duplicate_active") {
+      if (response.ok || duplicateResponse) signupState.value = "active";
+      else signupState.value = "failure";
+    } else if (outcome === "already_pending" || outcome === "duplicate_pending") {
+      if (response.ok || duplicateResponse) signupState.value = "duplicate-pending";
+      else signupState.value = "failure";
+    } else if (response.ok && result.ok === true && outcome === "pending") {
       signupState.value = "success";
-    } else if (
-      response.status === 409 &&
-      (outcome === "already_active" || outcome === "duplicate_active" || outcome === "active")
-    ) {
-      signupState.value = "active";
-    } else if (
-      response.status === 409 &&
-      (outcome === "already_pending" || outcome === "duplicate_pending" || outcome === "pending")
-    ) {
-      signupState.value = "duplicate-pending";
     } else {
       signupState.value = "failure";
+      if (response.status === 429) {
+        failureMessage.value = "Too many attempts. Please wait a minute before trying again.";
+      }
     }
   } catch {
+    if (!mounted) return;
     signupState.value = "failure";
+    if (controller?.signal.aborted) {
+      failureMessage.value = "This request took too long. Please try again.";
+    }
+  } finally {
+    if (timeout) clearTimeout(timeout);
+    timeout = undefined;
+    controller = undefined;
+    if (mounted && signupState.value === "pending") signupState.value = "failure";
   }
 }
+
+function returnToSignup(): void {
+  confirmationState.value = "";
+  const url = new URL(window.location.href);
+  url.searchParams.delete("updates");
+  window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
+}
+
+onBeforeUnmount(() => {
+  mounted = false;
+  if (timeout) clearTimeout(timeout);
+  controller?.abort();
+});
 
 const confirmationCopy: Record<ConfirmationState, string> = {
   confirmed: "Your email is confirmed. You’re on the RepoOS project updates list.",
@@ -87,8 +123,19 @@ const confirmationCopy: Record<ConfirmationState, string> = {
       </div>
 
       <div class="updates-form-wrap">
-        <p v-if="confirmationState" class="updates-message" role="status" aria-live="polite">
-          {{ confirmationCopy[confirmationState] }}
+        <div v-if="confirmationState" class="updates-result">
+          <p
+            class="updates-message"
+            :class="`updates-message--${confirmationState}`"
+            role="status"
+            aria-live="polite"
+          >
+            {{ confirmationCopy[confirmationState] }}
+          </p>
+          <button type="button" class="updates-back" @click="returnToSignup">Sign up again</button>
+        </div>
+        <p v-else-if="!endpointOrigin" class="updates-hint" role="status">
+          Project updates signup is temporarily unavailable. Please check back later.
         </p>
         <template v-else-if="signupState === 'success'">
           <p class="updates-message" role="status" aria-live="polite">
@@ -128,7 +175,7 @@ const confirmationCopy: Record<ConfirmationState, string> = {
             We’ll send a confirmation link before adding you.
           </p>
           <p v-if="signupState === 'failure'" id="updates-error" class="updates-error" role="alert">
-            We couldn’t request updates just now. Please try again in a moment.
+            {{ failureMessage }}
           </p>
           <p v-if="busy" class="updates-hint" role="status" aria-live="polite">
             Requesting your confirmation email…
