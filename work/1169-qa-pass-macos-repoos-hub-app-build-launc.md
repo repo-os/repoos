@@ -11,7 +11,7 @@ branch: feat/qa-pass-macos-repoos-hub-app-build-launc
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-18T02:19:44Z"
-updated_at: "2026-11-18T04:12:12Z"
+updated_at: "2026-11-18T04:14:15Z"
 review_passes: 3
 ---
 ## Problem
@@ -80,3 +80,4 @@ Signed-in projects and tasks remain unverified because automated email-code entr
 - 2026-11-18T04:09:29Z · message_delivered: 2 message(s)
 - 2026-11-18T04:09:29Z · note: handoff requested (cli)
 - 2026-11-18T04:12:12Z · CTO nudge: held — handoff gate is running
+- 2026-11-18T04:14:15Z · body
