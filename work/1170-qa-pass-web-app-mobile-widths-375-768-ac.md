@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-18T03:14:14Z"
+review_passes: 2
 id: "1170"
 title: "QA pass: web app mobile widths (375/768) across Work, Releases, Settings, Agents, Checks"
 type: bug
@@ -11,9 +13,7 @@ branch: feat/qa-pass-web-app-mobile-widths-375-768-ac
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-18T02:19:49Z"
-updated_at: "2026-11-18T03:14:13Z"
 review_rounds: 1
-review_passes: 1
 ---
 ## Problem
 Mobile-width layout regressions are likely after recent UI changes.
@@ -46,3 +46,4 @@ Do not touch repoos.toml. Pages use full .main width.
 - 2026-11-18T03:08:12Z · status active→review
 - 2026-11-18T03:08:13Z · message_queued at 2026-11-18T03:08:13.041Z
 - 2026-11-18T03:14:13Z · note: review pass 2: needs some work
+
