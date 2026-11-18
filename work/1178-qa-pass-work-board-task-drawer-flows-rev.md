@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: "check|repoos check failed: ui-smoke — $ bun scripts/ui-smoke.mjs"
+last_handoff_failure_sha: 2f587557fee7acf9acf9a85c8d3a2a9558fc8ecb
 id: "1178"
 title: "QA pass: Work board task drawer flows (review, changes, logs, close-out) desktop and mobile"
 type: bug
@@ -43,3 +45,4 @@ Do not touch repoos.toml.
 - 2026-11-18T07:06:19Z · note: handoff requested (cli)
 - 2026-11-18T07:07:11Z · message_queued at 2026-11-18T07:07:11.213Z
 - 2026-11-18T07:07:11Z · handoff failed · task-file handoff failed at check · repoos check failed: ui-smoke — $ bun scripts/ui-smoke.mjs
+
