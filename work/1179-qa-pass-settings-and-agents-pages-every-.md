@@ -132,3 +132,4 @@ Do not touch repoos.toml.
 - 2026-11-18T11:22:21Z · note: review pass 5: needs some work
 - 2026-11-18T11:22:21Z · needs_input
 - 2026-11-18T11:32:37Z · handoff failed · remote validation failed: test failure: tests/ensure-worktree-resilience.test.ts > ensureWorktree resilience (#0994) > serializes concurrent starts from separate processes on one branch on bee — fix it in the feature branch and re-run the gate
+- 2026-11-18T11:32:37Z · message_queued at 2026-11-18T11:32:37.315Z
