@@ -212,10 +212,12 @@ export function releaseNotesToPrint(body: string | null | undefined): string | n
 }
 
 /** `--channel beta|canary|rc` from argv, or null for the default stable channel. */
-function parseChannel(args: string[]): string | null {
-  const flag = args.indexOf("--channel");
-  const value = flag !== -1 ? args[flag + 1] : undefined;
-  return value && !value.startsWith("--") ? value : null;
+export function parseChannel(args: string[]): string | null {
+  const flag = args.find((arg) => arg === "--channel" || arg.startsWith("--channel="));
+  if (!flag) return null;
+  return flag === "--channel"
+    ? (args[args.indexOf(flag) + 1] ?? null)
+    : flag.slice("--channel=".length);
 }
 
 /**
@@ -266,7 +268,9 @@ export async function fetchLatestRelease(
 }
 
 export async function cmdUpgrade(args: string[]): Promise<void> {
-  const channelFlags = args.flatMap((arg, index) => (arg === "--channel" ? [index] : []));
+  const channelFlags = args.flatMap((arg, index) =>
+    arg === "--channel" || arg.startsWith("--channel=") ? [index] : [],
+  );
   if (channelFlags.length > 1) {
     console.error(c.red("  Use --channel only once."));
     console.error(
@@ -279,7 +283,8 @@ export async function cmdUpgrade(args: string[]): Promise<void> {
   }
   const channelFlag = channelFlags[0] ?? -1;
   if (channelFlag !== -1) {
-    const value = args[channelFlag + 1];
+    const arg = args[channelFlag];
+    const value = arg === "--channel" ? args[channelFlag + 1] : arg.slice("--channel=".length);
     if (!value || value.startsWith("--") || !["beta", "canary", "rc"].includes(value)) {
       console.error(
         c.red(

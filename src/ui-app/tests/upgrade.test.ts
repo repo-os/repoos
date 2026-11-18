@@ -7,6 +7,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   cmdUpgrade,
+  parseChannel,
   packageManagerUpgrade,
   releaseNotesToPrint,
   upgradeRestartReminder,
@@ -17,6 +18,27 @@ describe("repoos upgrade argument validation", () => {
     process.exitCode = 0;
     vi.restoreAllMocks();
   });
+
+  it.each([
+    [["--channel=beta"], "beta"],
+    [["--channel", "canary"], "canary"],
+    [["--channel=rc"], "rc"],
+    [[], null],
+  ] as const)("parses channel arguments %j", (args, expected) => {
+    expect(parseChannel([...args])).toBe(expected);
+  });
+
+  it.each(["--channel=invalid", "--channel="])(
+    "rejects invalid equals-form channel %s",
+    async (flag) => {
+      const error = vi.spyOn(console, "error").mockImplementation(() => {});
+      await cmdUpgrade([flag]);
+
+      expect(process.exitCode).toBe(1);
+      expect(error).toHaveBeenCalledWith(expect.stringContaining("Invalid --channel value"));
+      expect(error).toHaveBeenCalledWith(expect.stringContaining("Choose beta, canary, or rc"));
+    },
+  );
 
   it.each(["invalid", undefined])(
     "rejects unsupported or missing channels (%s)",
