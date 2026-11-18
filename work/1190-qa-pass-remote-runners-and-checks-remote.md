@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-remote-runners-and-checks-remote
 created_at: "2026-11-18T16:18:04Z"
-updated_at: "2026-11-18T16:57:26Z"
+updated_at: "2026-11-18T16:57:47Z"
 last_close_out_gate_ms: 605528
 last_close_out_gate_at: "2026-11-18T16:56:59.420Z"
 review_passes: 1
@@ -53,3 +53,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T16:45:47Z · note: review pass 1: good to go
 - 2026-11-18T16:56:59Z · close-out gate completed in 606s
 - 2026-11-18T16:57:26Z · status done→done, release:success
+- 2026-11-18T16:57:47Z · message_dropped: 1 queued message(s) discarded — task is done
