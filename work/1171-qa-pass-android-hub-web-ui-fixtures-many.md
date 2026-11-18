@@ -34,3 +34,4 @@ Do not touch repoos.toml.
 - 2026-11-18T02:38:31Z · CTO nudge: held — handoff gate is running
 - 2026-11-18T02:55:13Z · status active→review
 - 2026-11-18T02:55:14Z · message_queued at 2026-11-18T02:55:14.175Z
+- 2026-11-18T02:55:14Z · note: shots: skipped — the diff (5 changed paths) touches no capture target's globs — no UI change to capture
