@@ -242,3 +242,4 @@ Signed-in projects and tasks remain unverified because automated email-code entr
 - 2026-11-18T10:06:52Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-18T10:07:35Z · body
 - 2026-11-18T10:07:55Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-18T10:07:55Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code unknown) · last assistant: The remote full suite is running on `84300cf`; the test cases reported so far are passing. The report draft remains in place for the handoff. · stderr: (empty)
