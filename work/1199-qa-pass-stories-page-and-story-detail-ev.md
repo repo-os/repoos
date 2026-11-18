@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-11-18T19:54:43Z"
-review_passes: 1
+last_close_out_gate_ms: 73249
+last_close_out_gate_at: "2026-11-18T19:59:32.607Z"
 id: "1199"
 title: "QA pass: Stories page and story detail – every state at desktop and 375px"
 type: bug
@@ -11,6 +11,8 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-stories-page-and-story-detail-ev
 created_at: "2026-11-18T19:47:44Z"
+updated_at: "2026-11-18T19:59:32Z"
+review_passes: 1
 ---
 ## Problem
 Stories cards and detail views changed recently (#1150) and need a full pass.
@@ -33,4 +35,5 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T19:54:20Z · message_queued at 2026-11-18T19:54:20.577Z
 - 2026-11-18T19:54:20Z · note: shots: skipped — the diff (3 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-18T19:54:43Z · note: review pass 1: good to go
+- 2026-11-18T19:59:32Z · close-out gate completed in 73s
 
