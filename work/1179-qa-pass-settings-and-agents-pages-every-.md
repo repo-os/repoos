@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-settings-and-agents-pages-every-
 created_at: "2026-11-18T06:47:46Z"
-updated_at: "2026-11-18T08:41:09Z"
+updated_at: "2026-11-18T08:41:51Z"
 review_rounds: 2
 routing_switches: 1
 routing_escalations: 1
@@ -86,3 +86,4 @@ Do not touch repoos.toml.
 - 2026-11-18T08:41:08Z · note: ui verification passed: 1 of 1 shot captured with clean console
 - 2026-11-18T08:41:09Z · status active→review
 - 2026-11-18T08:41:09Z · message_queued at 2026-11-18T08:41:09.640Z
+- 2026-11-18T08:41:51Z · note: review pass 3: needs some work
