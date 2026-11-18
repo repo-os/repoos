@@ -2,7 +2,7 @@
 id: "1169"
 title: "QA pass: macOS RepoOS Hub app – build, launch, connect, and fix what is broken"
 type: bug
-status: active
+status: review
 priority: p2
 area: macos
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/qa-pass-macos-repoos-hub-app-build-launc
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-18T02:19:44Z"
-updated_at: "2026-11-18T02:47:37Z"
+updated_at: "2026-11-18T02:51:36Z"
 review_passes: 1
 ---
 ## Problem
@@ -39,3 +39,4 @@ Never capture the whole screen. Do not touch repoos.toml.
 - 2026-11-18T02:47:35Z · status review→active
 - 2026-11-18T02:47:37Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-18T02:47:37Z · message_delivered: 1 message(s)
+- 2026-11-18T02:51:36Z · status active→review
