@@ -2,7 +2,7 @@
 id: "1168"
 title: "QA pass: exercise the new Releases 'Generate AI notes and publish' flow and the update/restart modal end to end"
 type: bug
-status: active
+status: review
 priority: p1
 area: [web, server]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/qa-pass-exercise-the-new-releases-genera
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-18T00:17:51Z"
-updated_at: "2026-11-18T00:17:58Z"
+updated_at: "2026-11-18T00:57:59Z"
 ---
 ## Problem
 
@@ -38,3 +38,4 @@ Do not edit repoos.toml.
 - 2026-11-18T00:17:54Z · cli_override, model_override
 - 2026-11-18T00:17:56Z · status inbox→ready
 - 2026-11-18T00:17:58Z · status ready→active, branch
+- 2026-11-18T00:57:59Z · status active→review
