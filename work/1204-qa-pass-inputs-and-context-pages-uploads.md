@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-inputs-and-context-pages-uploads
 created_at: "2026-11-18T20:47:45Z"
-updated_at: "2026-11-18T21:06:51Z"
+updated_at: "2026-11-18T21:09:25Z"
 ---
 ## Problem
 Inputs and Context pages have not had a hands-on pass.
@@ -48,3 +48,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T20:58:51Z · body
 - 2026-11-18T21:05:50Z · body
 - 2026-11-18T21:06:51Z · CTO nudge: held — handoff gate is running
+- 2026-11-18T21:09:25Z · note: ui verification passed: 2 of 2 shots captured with clean console
