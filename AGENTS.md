@@ -340,6 +340,7 @@ Full text: `docs/agent-ui-and-preview-conventions.md`.
 - After ANY UI change rebuild (`bun run build:ui` or `bun run build`). Don't
   request a preview to verify it routinely; previews are on the human's request
   (#0268).
+- **Browser verification stays headless:** never open URLs with `open`/`xdg-open`, launch a headed browser, or use the user's Chrome profile; use headless Playwright with its bundled browser. Details: `docs/agent-ui-and-preview-conventions.md`.
 - **`repoos shot`:** at handoff the server captures declared `## Shots` itself
   (and one auto shot per touched UI target). Your job is to DECLARE what a review
   should see: `repoos update <id> --shots '<JSON list>'` (1–3 entries with

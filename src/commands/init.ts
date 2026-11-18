@@ -1514,26 +1514,6 @@ async function askLayout(): Promise<ScaffoldLayout> {
   return "repoos";
 }
 
-/** Open a URL in the default browser. Fail-soft (best effort, never blocks). */
-function openBrowser(url: string): void {
-  const cmd =
-    process.platform === "darwin"
-      ? ["open", url]
-      : process.platform === "win32"
-        ? ["cmd", "/c", "start", "", url]
-        : ["xdg-open", url];
-  try {
-    const child = spawn(cmd[0], cmd.slice(1), {
-      detached: true,
-      stdio: "ignore",
-    });
-    child.on("error", () => {});
-    child.unref();
-  } catch {
-    /* fail-soft */
-  }
-}
-
 function probePort(port: number): Promise<boolean> {
   return new Promise((resolve) => {
     const srv = createServer();
@@ -2054,12 +2034,10 @@ async function guidedNewRepo(opts: NewProjectOptions): Promise<void> {
       );
     }
     console.log(c.dim("  Starting the RepoOS web console…"));
-    // Opening the browser is deferred to onReady — the server isn't actually
-    // listening until cmdServe's startServer() resolves, and opening a tab
-    // any earlier races that startup, showing connection errors until a
-    // manual reload.
+    // Don't launch a browser automatically: init may run from a headless
+    // engineer session, and opening the user's default browser steals focus.
     await cmdServe(["--port", String(port)], {
-      onReady: (url) => openBrowser(url),
+      onReady: (url) => console.log(c.dim(`  Open the web console at ${url}`)),
       onShutdown: dirHint
         ? () =>
             console.log(
