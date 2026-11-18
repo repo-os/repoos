@@ -11,7 +11,7 @@ branch: feat/qa-pass-macos-repoos-hub-app-build-launc
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-18T02:19:44Z"
-updated_at: "2026-11-18T04:06:17Z"
+updated_at: "2026-11-18T04:07:36Z"
 review_passes: 3
 ---
 ## Problem
@@ -24,6 +24,9 @@ App builds, launches, discovers servers, connects, and shows projects/tasks with
 - Commit a record docs/qa/2026-11-macos-hub-qa.md listing what was checked and fixed.
 ## Notes for AI
 Never capture the whole screen. Do not touch repoos.toml.
+
+## Not verified
+Signed-in projects and tasks remain unverified because automated email-code entry did not reach the signed-in web UI. Held human follow-up #1174 now tracks this step; #1172 was not present in this worktree. Do not treat this criterion as complete until #1174 reports results.
 
 ## Activity
 
@@ -69,3 +72,4 @@ Never capture the whole screen. Do not touch repoos.toml.
 - 2026-11-18T04:02:12Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-18T04:02:12Z · body
 - 2026-11-18T04:06:17Z · body
+- 2026-11-18T04:07:36Z · body: Not verified (added)
