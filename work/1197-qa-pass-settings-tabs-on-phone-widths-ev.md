@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-settings-tabs-on-phone-widths-ev
 created_at: "2026-11-18T19:24:03Z"
-updated_at: "2026-11-18T19:39:26Z"
+updated_at: "2026-11-18T19:43:16Z"
 ---
 ## Problem
 Settings has many tabs and dialogs that are hard to use on a phone.
@@ -43,3 +43,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T19:32:21Z · body
 - 2026-11-18T19:35:02Z · body
 - 2026-11-18T19:39:26Z · body
+- 2026-11-18T19:43:16Z · note: ui verification passed: 1 of 1 shot captured with clean console
