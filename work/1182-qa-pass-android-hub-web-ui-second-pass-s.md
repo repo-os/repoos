@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 2
 id: "1182"
 title: "QA pass: Android Hub web UI second pass – settings, add-server and error flows at 360px"
 type: bug
@@ -14,7 +15,6 @@ review_rounds: 2
 routing_switches: 1
 routing_escalations: 1
 review_passes: 2
-handoff_signal_retry_count: 1
 ---
 ## Problem
 #1171 covered the main fixtures; add-server, settings and failure flows need another hands-on pass.
@@ -49,3 +49,4 @@ Do not touch repoos.toml.
 - 2026-11-18T09:55:06Z · message_delivered: 1 message(s)
 - 2026-11-18T09:55:06Z · status review→active
 - 2026-11-18T10:00:16Z · body
+
