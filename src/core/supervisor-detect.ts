@@ -309,10 +309,29 @@ function detectLinuxSupervisor(pid: number, execFile: typeof execFileSync): Supe
     }
     return { kind: "none" };
   } catch {
+    // The process cgroup records its unit even when argv/comm was renamed.
+    try {
+      const cgroup = execFile("cat", [`/proc/${pid}/cgroup`], {
+        encoding: "utf8", timeout: 1500, stdio: ["ignore", "pipe", "ignore"],
+      });
+      const unit = cgroup.match(/(?:^|\/)([^/]+\.service)(?:\/|$)/m)?.[1];
+      if (unit && !unit.startsWith("user@")) {
+        const info = parseSystemdPidStatus(`● ${unit}\n${cgroup}`);
+        if (info) {
+          const userScope = /\/user\.slice\/user-\d+\.slice/.test(cgroup);
+          info.manualCommand = `${userScope ? "systemctl --user" : "systemctl"} restart ${info.job}.service`;
+          return MANAGED_LABEL_RE.test(info.job)
+            ? { kind: "managed", job: info.job }
+            : { kind: "external", info };
+        }
+      }
+    } catch { /* fall through to parent check */ }
     const ppid = readPpid(pid, execFile);
     if (ppid !== null) {
       const parent = parentCommand(ppid, execFile);
-      if (parent && /\bsystemd\b/.test(parent)) {
+      if (parent && /\bsystemd(?:\s+--user)?\b/.test(parent)) {
+        const unit = parent.match(/(com\.repoos\.serve\.[\w.-]+\.service)/)?.[1];
+        if (unit) return { kind: "managed", job: unit.slice(0, -8) };
         return {
           kind: "uncertain",
           reason: `systemctl could not describe pid ${pid} but parent looks systemd-managed`,

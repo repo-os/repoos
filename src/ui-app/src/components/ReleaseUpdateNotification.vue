@@ -349,7 +349,7 @@ onUnmounted(() => {
           <template v-else-if="restartStatus.supervised">
             <template v-if="!restartStatus.restartWhenIdlePending">
               <Button size="sm" :disabled="restartPendingAction" @click="void restartInstalled()"
-                >Restart now</Button
+                >{{ restartPendingAction ? "Restarting…" : "Restart now" }}</Button
               >
               <Button
                 size="sm"
