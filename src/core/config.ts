@@ -176,7 +176,8 @@ export const DEFAULT_AGENTS: Agent[] = [
       "Never invent evidence: do not fabricate device sessions, live API measurements, external account IDs, " +
       "registration confirmations, or other proof you cannot observe in this run — leave those fields blank and say a human must supply them. " +
       "Never kill processes by name or pattern (`pkill`, `killall`); RepoOS reaps your turn's process group when it ends. " +
-      "Stop only a helper's PID if you must stop it early.",
+      "Stop only a helper's PID if you must stop it early. " +
+      "Browser verification must stay headless: never run `open` or `xdg-open` on URLs, launch a headed browser, or use the user's Chrome profile; use headless Playwright with its bundled browser.",
   },
   {
     name: "reviewer",
@@ -2797,7 +2798,7 @@ export interface ConfigFieldMeta {
   min?: number;
   /** Maximum value for number fields */
   max?: number;
-  /** Step size for number fields; if > 1, decimals are not allowed */
+  /** Step size for number fields; a non-integer step allows decimals. */
   step?: number;
 }
 
@@ -3809,6 +3810,9 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       tier: "live",
       restartRequired: false,
       default: 0.08,
+      min: 0,
+      max: 1,
+      step: 0.01,
       description:
         "Block new checks, browser steps and engineer starts when reclaimable memory falls below this fraction of total RAM. Default 0.08 (8%).",
     },
@@ -3819,6 +3823,9 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       tier: "live",
       restartRequired: false,
       default: 0.5,
+      min: 0.01,
+      max: 1,
+      step: 0.01,
       description:
         "Warn when swap in use exceeds this fraction of total swap (occupancy alone does not block). Default 0.5 (50%).",
     },
@@ -3829,6 +3836,9 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       tier: "live",
       restartRequired: false,
       default: 0.35,
+      min: 0.01,
+      max: 1,
+      step: 0.01,
       description:
         "Warn when the macOS memory compressor holds more than this fraction of total RAM. The fraction alone does not block; the byte cap does. Default 0.35 (35%).",
     },

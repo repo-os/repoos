@@ -1,6 +1,7 @@
 import { describe, expect, it, afterEach } from "vitest";
 import { execFileSync, spawn } from "node:child_process";
-import { mkdirSync, mkdtempSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, rmSync } from "node:fs";
+import { createHash } from "node:crypto";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -198,6 +199,56 @@ describe("ensureWorktree resilience (#0994)", () => {
       const again = await runEnsureWorktreeInSubprocess(root, branch);
       expect(again.ok).toBe(true);
       expect(again.created).toBe(false);
+    } finally {
+      clean();
+    }
+  });
+
+  it("does not steal a lock directory while its owner is writing the pid", async () => {
+    const { root, clean } = makeRepo();
+    const branch = "feat/lock-initializing";
+    const lockName = createHash("sha256").update(branch).digest("hex").slice(0, 16);
+    const lockDir = join(root, ".repoos", "worktree-add-locks", lockName);
+    const target = join(worktreesDir(root), branch);
+    try {
+      // Model the observable gap between mkdir(lockDir) and writeFile(pid).
+      mkdirSync(lockDir, { recursive: true });
+      const marker = "attempting ensureWorktree";
+      const script =
+        `import { ensureWorktree } from ${JSON.stringify(join(repoRoot, "src/core/git.ts"))};` +
+        `console.log(${JSON.stringify(marker)});` +
+        `console.log(JSON.stringify(ensureWorktree(${JSON.stringify(root)}, ${JSON.stringify(branch)})));`;
+      const child = spawn("bun", ["-e", script], {
+        cwd: repoRoot,
+        env: process.env,
+        stdio: ["ignore", "pipe", "pipe"],
+      });
+      let stdout = "";
+      let stderr = "";
+      let resolveStarted!: () => void;
+      const started = new Promise<void>((resolve) => (resolveStarted = resolve));
+      const completed = new Promise<EnsureWorktreeResult>((resolve, reject) => {
+        child.stdout.on("data", (chunk: Buffer) => {
+          stdout += chunk.toString("utf8");
+          if (stdout.includes(marker)) resolveStarted();
+        });
+        child.stderr.on("data", (chunk: Buffer) => (stderr += chunk.toString("utf8")));
+        child.on("error", reject);
+        child.on("close", (code) => {
+          if (code !== 0) return reject(new Error(stderr || stdout || `exit ${code}`));
+          const resultLine = stdout.split(/\r?\n/).find((line) => line.startsWith("{"));
+          if (!resultLine) return reject(new Error(`missing ensureWorktree result: ${stdout}`));
+          resolve(JSON.parse(resultLine) as EnsureWorktreeResult);
+        });
+      });
+      await started;
+      await new Promise((resolve) => setTimeout(resolve, 150));
+      expect(existsSync(target)).toBe(false);
+
+      rmSync(lockDir, { recursive: true, force: true });
+      const result = await completed;
+      expect(result.ok).toBe(true);
+      expect(result.created).toBe(true);
     } finally {
       clean();
     }

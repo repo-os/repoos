@@ -79,6 +79,10 @@ describe("built-in role prompts (#0872)", () => {
     expect(engineer).toMatch(/Never move your own task out of `active`/);
     expect(engineer).toMatch(/split into a held human task/);
     expect(engineer).toContain("self-review the change against that same checklist");
+    expect(engineer).toMatch(/Browser verification must stay headless/);
+    expect(engineer).toMatch(/never run `open` or `xdg-open` on URLs/);
+    expect(engineer).toMatch(/never.*launch a headed browser.*user's Chrome profile/);
+    expect(engineer).toMatch(/headless Playwright with its bundled browser/);
   });
 
   it("gives the PM the task-body, board, story, dependency, bundle and human-step rules", () => {

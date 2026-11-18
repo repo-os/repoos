@@ -1325,12 +1325,12 @@ const drawerStatusDetails = computed(() => {
 const open = computed(() => ui.active !== null || ui.isNew);
 
 /**
- * #1137: on a phone the drawer IS the Work task page, so closing it must also
- * drop the `?task=`/`?tab=` route. Otherwise WorkView's deep-link watcher sees
- * the param still present and re-opens the drawer immediately after a dismiss.
+ * The Work drawer reflects `?task=`/`?tab=` deep links on both desktop and
+ * phone. Clear those params when the drawer closes so reloads preserve an open
+ * deep link, while a dismissed drawer does not reopen from stale route state.
  */
-async function clearPhoneTaskRoute(): Promise<void> {
-  if (!isNarrow.value || route.path !== "/work" || typeof route.query.task !== "string") return;
+async function clearTaskRoute(): Promise<void> {
+  if (route.path !== "/work" || typeof route.query.task !== "string") return;
   const query = { ...route.query };
   delete query.task;
   delete query.tab;
@@ -1344,7 +1344,7 @@ function setOpen(v: boolean): void {
 // Every close path (X, Escape, overlay, an action that calls ui.close) must
 // drop the phone task route, not just the dialog's own dismiss event.
 watch(open, (isOpen) => {
-  if (!isOpen) void clearPhoneTaskRoute();
+  if (!isOpen) void clearTaskRoute();
 });
 
 /** Phone-only header control: leave the task detail and return to the queue. */

@@ -2,17 +2,18 @@
 id: "1179"
 title: "QA pass: Settings and Agents pages – every control saves, validates and survives reload"
 type: bug
-status: active
+status: done
 priority: p2
 area: [web, server]
+merged_commit: b74063a32443566b25cdd3782ac74bcc73b448e8
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-settings-and-agents-pages-every-
 created_at: "2026-11-18T06:47:46Z"
-updated_at: "2026-11-18T12:16:34Z"
-review_passes: 5
-last_handoff_failure_fingerprint: "check|repoos check failed: check-fmt:check — Formatting failed — run `bun run fmt` to fix:"
-last_handoff_failure_sha: a33d6a689dbd8428e920b3807946463fd8171337
+updated_at: "2026-11-18T13:36:14Z"
+last_close_out_gate_ms: 435668
+last_close_out_gate_at: "2026-11-18T13:30:55.760Z"
+review_passes: 7
 review_rounds: 2
 routing_switches: 1
 routing_escalations: 1
@@ -32,19 +33,19 @@ Do not touch repoos.toml.
 ```json
 [
 {
-  "label": "Spend threshold validation error",
-  "target": "default",
-  "route": "/settings?tab=notifications",
-  "highlight": "#spend-alert-error",
-  "steps": [
-    {
-      "fill": "#setting-attention\\.spendAlertUsd input",
-      "text": "-1"
-    },
-    {
-      "waitFor": "#spend-alert-error"
-    }
-  ]
+"label": "Spend threshold validation error",
+"target": "default",
+"route": "/settings?tab=notifications",
+"highlight": "#spend-alert-error",
+"steps": [
+{
+"fill": "#setting-attention\\.spendAlertUsd input",
+"text": "-1"
+},
+{
+"waitFor": "#spend-alert-error"
+}
+]
 }
 ]
 ```
@@ -134,3 +135,16 @@ Do not touch repoos.toml.
 - 2026-11-18T11:47:38Z · needs_input
 - 2026-11-18T11:47:39Z · message_delivered: 1 message(s)
 - 2026-11-18T12:16:34Z · body
+- 2026-11-18T12:19:13Z · note: adopted orphaned engineer pid 4920
+- 2026-11-18T12:34:33Z · body
+- 2026-11-18T13:03:40Z · body
+- 2026-11-18T13:05:00Z · status active→review
+- 2026-11-18T13:08:10Z · note: ui verification passed: 1 of 1 shot captured with clean console
+- 2026-11-18T13:08:11Z · message_queued at 2026-11-18T13:08:11.491Z
+- 2026-11-18T13:08:11Z · note: review pass 6: needs some work
+- 2026-11-18T13:08:11Z · needs_input
+- 2026-11-18T13:17:48Z · needs_input (review-rounds-exhausted) cleared for review again by human
+- 2026-11-18T13:18:43Z · note: review pass 7: good to go
+- 2026-11-18T13:30:55Z · close-out gate completed in 436s
+- 2026-11-18T13:31:12Z · status done→done, release:success
+- 2026-11-18T13:36:14Z · message_dropped: 1 queued message(s) discarded — task is done
