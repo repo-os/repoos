@@ -11,7 +11,7 @@ branch: feat/qa-pass-macos-repoos-hub-app-build-launc
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-18T02:19:44Z"
-updated_at: "2026-11-18T17:18:05Z"
+updated_at: "2026-11-18T17:18:06Z"
 close_out_repair_count: 1
 review_passes: 11
 review_rounds: 2
@@ -403,3 +403,4 @@ Signed-in projects and tasks remain unverified because automated email-code entr
 - 2026-11-18T16:52:08Z · CTO nudge: held — handoff gate is running
 - 2026-11-18T17:02:28Z · CTO nudge: held — handoff gate is running
 - 2026-11-18T17:18:05Z · status active→review
+- 2026-11-18T17:18:06Z · message_queued at 2026-11-18T17:18:06.020Z
