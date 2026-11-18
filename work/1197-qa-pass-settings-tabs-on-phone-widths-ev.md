@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-settings-tabs-on-phone-widths-ev
 created_at: "2026-11-18T19:24:03Z"
-updated_at: "2026-11-18T19:32:21Z"
+updated_at: "2026-11-18T19:35:02Z"
 ---
 ## Problem
 Settings has many tabs and dialogs that are hard to use on a phone.
@@ -25,12 +25,12 @@ Do not touch repoos.toml. Never open a visible browser window.
 ```json
 [
 {
-  "label": "Support actions wrap at phone width",
-  "target": "default",
-  "route": "/settings?tab=support",
-  "highlight": ".bug-report-actions",
-  "viewportWidth": 375,
-  "viewportHeight": 844
+"label": "Support actions wrap at phone width",
+"target": "default",
+"route": "/settings?tab=support",
+"highlight": ".bug-report-actions",
+"viewportWidth": 375,
+"viewportHeight": 844
 }
 ]
 ```
@@ -41,3 +41,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T19:24:06Z · status inbox→ready
 - 2026-11-18T19:24:08Z · status ready→active, branch
 - 2026-11-18T19:32:21Z · body
+- 2026-11-18T19:35:02Z · body
