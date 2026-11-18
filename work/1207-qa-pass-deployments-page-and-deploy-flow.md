@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-deployments-page-and-deploy-flow
 created_at: "2026-11-18T22:47:30Z"
-updated_at: "2026-11-18T23:05:56Z"
+updated_at: "2026-11-18T23:06:25Z"
 ---
 ## Problem
 Deployments has not been exercised since recent changes to environments and secrets.
@@ -49,3 +49,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T22:53:48Z · body
 - 2026-11-18T23:05:56Z · message_queued at 2026-11-18T23:05:56.428Z
 - 2026-11-18T23:05:56Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-18T23:06:25Z · CTO nudge: held — an undelivered message is already queued
