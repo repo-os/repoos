@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 106844
-last_close_out_gate_at: "2026-11-18T09:19:19.287Z"
 id: "1181"
 title: "QA pass: Stories, Inbox and Agents-activity views – desktop and 375px"
 type: bug
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: dac18bd64dc398a61572dbca7f1dd3c99e6e7c9f
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-stories-inbox-and-agents-activit
 created_at: "2026-11-18T08:49:05Z"
 updated_at: "2026-11-18T09:19:19Z"
+last_close_out_gate_ms: 106844
+last_close_out_gate_at: "2026-11-18T09:19:19.287Z"
 review_passes: 1
 ---
 ## Problem
