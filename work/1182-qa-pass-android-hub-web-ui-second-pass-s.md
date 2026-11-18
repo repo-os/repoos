@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-android-hub-web-ui-second-pass-s
 created_at: "2026-11-18T09:17:43Z"
-updated_at: "2026-11-18T09:17:54Z"
+updated_at: "2026-11-18T09:24:38Z"
 ---
 ## Problem
 #1171 covered the main fixtures; add-server, settings and failure flows need another hands-on pass.
@@ -26,3 +26,4 @@ Do not touch repoos.toml.
 - 2026-11-18T09:17:43Z · created · t@t
 - 2026-11-18T09:17:50Z · status inbox→ready
 - 2026-11-18T09:17:54Z · status ready→active, branch
+- 2026-11-18T09:24:38Z · body
