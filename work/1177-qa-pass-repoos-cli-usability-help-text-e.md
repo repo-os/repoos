@@ -2,14 +2,14 @@
 id: "1177"
 title: "QA pass: RepoOS CLI usability – help text, error messages and exit codes"
 type: bug
-status: inbox
+status: ready
 priority: p2
 area: core
 assigned_to: ai
 created_by: t@t
 branch: ""
 created_at: "2026-11-18T05:56:48Z"
-updated_at: "2026-11-18T05:56:48Z"
+updated_at: "2026-11-18T05:56:59Z"
 ---
 ## Problem
 CLI commands (list, show, new, update, start, mv, done, review, handoff-status, upgrade, restart) may have unclear help or errors.
@@ -24,3 +24,4 @@ Do not touch repoos.toml; do not run commands that mutate the real board.
 ## Activity
 
 - 2026-11-18T05:56:48Z · created · t@t
+- 2026-11-18T05:56:59Z · status inbox→ready
