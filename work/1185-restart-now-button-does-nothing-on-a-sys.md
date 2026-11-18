@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/restart-now-button-does-nothing-on-a-sys
 created_at: "2026-11-18T12:27:18Z"
-updated_at: "2026-11-18T14:21:14Z"
+updated_at: "2026-11-18T14:22:47Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -64,3 +64,4 @@ Reported by Nick 2026-11-18 20:22 from the phone UI. Related #1154. Do not touch
 - 2026-11-18T14:19:43Z · note: ui verification passed: 1 shot captured with clean console
 - 2026-11-18T14:19:44Z · message_queued at 2026-11-18T14:19:44.094Z
 - 2026-11-18T14:21:14Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-18T14:22:47Z · watchdog: restarting engineer because a queued message waited 3m with no live process
