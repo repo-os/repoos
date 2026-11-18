@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-pairing-login-and-session-screen
 created_at: "2026-11-18T22:47:38Z"
-updated_at: "2026-11-18T23:57:24Z"
+updated_at: "2026-11-18T23:57:44Z"
 last_close_out_gate_ms: 559894
 last_close_out_gate_at: "2026-11-18T23:57:24.693Z"
 check_retry_count: 1
@@ -88,4 +88,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T23:46:00Z · body
 - 2026-11-18T23:46:40Z · message_queued at 2026-11-18T23:46:40.283Z
 - 2026-11-18T23:57:24Z · close-out gate completed in 560s
-
+- 2026-11-18T23:57:44Z · status done→done, release:success
