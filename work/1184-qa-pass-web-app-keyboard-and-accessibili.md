@@ -2,14 +2,14 @@
 id: "1184"
 title: "QA pass: web app keyboard and accessibility – focus order, labels, dialogs, contrast"
 type: bug
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
 branch: ""
 created_at: "2026-11-18T12:17:32Z"
-updated_at: "2026-11-18T12:17:32Z"
+updated_at: "2026-11-18T12:17:36Z"
 ---
 ## Problem
 Keyboard and screen-reader behavior of dialogs, drawers and menus has not had a recent pass.
@@ -24,3 +24,4 @@ Do not touch repoos.toml.
 ## Activity
 
 - 2026-11-18T12:17:32Z · created · t@t
+- 2026-11-18T12:17:36Z · status inbox→ready
