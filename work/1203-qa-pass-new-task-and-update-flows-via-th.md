@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-new-task-and-update-flows-via-th
 created_at: "2026-11-18T20:47:36Z"
-updated_at: "2026-11-18T20:52:48Z"
+updated_at: "2026-11-18T20:55:11Z"
 ---
 ## Problem
 UI and CLI task creation have different validation (needs input, required sections) and may give confusing messages.
@@ -27,3 +27,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T20:47:39Z · status inbox→ready
 - 2026-11-18T20:47:40Z · status ready→active, branch
 - 2026-11-18T20:52:48Z · body
+- 2026-11-18T20:55:11Z · body
