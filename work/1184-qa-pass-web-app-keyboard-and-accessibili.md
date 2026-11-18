@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-web-app-keyboard-and-accessibili
 created_at: "2026-11-18T12:17:32Z"
-updated_at: "2026-11-18T17:22:28Z"
+updated_at: "2026-11-18T17:35:38Z"
 close_out_repair_count: 1
 review_passes: 3
 review_rounds: 1
@@ -157,3 +157,4 @@ Do not touch repoos.toml.
 - 2026-11-18T17:14:30Z · message_delivered: 1 message(s)
 - 2026-11-18T17:20:08Z · body
 - 2026-11-18T17:22:28Z · CTO nudge: held — handoff gate is running
+- 2026-11-18T17:35:38Z · note: ui verification passed: 4 of 4 shots captured with clean console
