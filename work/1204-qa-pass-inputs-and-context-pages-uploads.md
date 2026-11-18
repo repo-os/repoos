@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-inputs-and-context-pages-uploads
 created_at: "2026-11-18T20:47:45Z"
-updated_at: "2026-11-18T22:38:33Z"
+updated_at: "2026-11-18T22:38:55Z"
 last_close_out_gate_ms: 476521
 last_close_out_gate_at: "2026-11-18T22:38:33.842Z"
 review_rounds: 2
@@ -118,4 +118,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T22:29:06Z · message_queued at 2026-11-18T22:29:06.278Z
 - 2026-11-18T22:29:50Z · note: review pass 5: good to go
 - 2026-11-18T22:38:33Z · close-out gate completed in 477s
-
+- 2026-11-18T22:38:55Z · status done→done, release:success
