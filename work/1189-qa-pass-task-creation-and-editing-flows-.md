@@ -34,16 +34,16 @@ Do not touch repoos.toml. Never open a visible browser window.
 "route": "/work",
 "highlight": ".task-dependency-picker",
 "steps": [
-  {
-    "click": "button.new-btn"
-  },
-  {
-    "click": "[role=dialog] .drawer-tabs button:nth-child(2)"
-  },
-  {
-    "fill": "#nt-dependencies",
-    "text": "QA pass"
-  }
+{
+  "click": "button.new-btn"
+},
+{
+  "click": "[role=dialog] .drawer-tabs button:nth-child(2)"
+},
+{
+  "fill": "#nt-dependencies",
+  "text": "QA pass"
+}
 ]
 },
 {
@@ -52,9 +52,9 @@ Do not touch repoos.toml. Never open a visible browser window.
 "route": "/work?task=1189",
 "highlight": ".task-dependency-picker",
 "steps": [
-  {
-    "click": "[role=dialog] .drawer-tabs button:first-child"
-  }
+{
+  "click": "[role=dialog] .drawer-tabs button:first-child"
+}
 ]
 }
 ]
@@ -87,3 +87,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T16:57:29Z · note: adopted orphaned engineer pid 70051
 - 2026-11-18T17:07:54Z · body
 - 2026-11-18T17:17:28Z · message_queued at 2026-11-18T17:17:28.202Z
+- 2026-11-18T17:17:28Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
