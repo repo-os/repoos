@@ -83,3 +83,4 @@ Run after #0477 (Build Neon Functions double-opt-in updates service).
 - 2026-11-18T02:03:30Z · CTO nudge: held — handoff gate is running
 - 2026-11-18T02:05:37Z · note: ui verification passed: 2 of 2 shots captured with clean console
 - 2026-11-18T02:05:39Z · status active→review
+- 2026-11-18T02:05:39Z · message_queued at 2026-11-18T02:05:39.318Z
