@@ -114,8 +114,7 @@ describe("shot preview fixtures (#0743)", () => {
       const url = shotCapturePageUrl("http://127.0.0.1:8000", { route: "/", state });
       expect(new URL(url).searchParams.get("shotState")).toBe(state);
       expect(
-        parseShotPlan(`## Shots\n\`\`\`json\n[{"route":"/","state":"${state}"}]\n\`\`\``)
-          .errors,
+        parseShotPlan(`## Shots\n\`\`\`json\n[{"route":"/","state":"${state}"}]\n\`\`\``).errors,
       ).toEqual([]);
       expect(shotFixtureContainer(state)).toBe("dialog");
     }

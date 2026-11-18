@@ -261,8 +261,12 @@ export function shotFixtureContainer(fixture: string): ShotFixtureContainer | nu
     fixture.startsWith("panel:") ||
     fixture.startsWith("schedule:") ||
     // #1073 — `release:updateAvailable` pins the release-update modal open.
+    // #1185 — restart progress/error fixtures pin the installed-update modal
+    // open with their respective action state.
     // #1071 — `release:email*` render a card on the Releases page, no dialog.
-    fixture === "release:updateAvailable"
+    fixture === "release:updateAvailable" ||
+    fixture === "release:restartProgress" ||
+    fixture === "release:restartError"
   ) {
     return "dialog";
   }
