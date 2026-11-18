@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 101161
-last_close_out_gate_at: "2026-11-18T16:29:50.686Z"
 id: "1188"
 title: "QA pass: Deployments, Dev and Context pages – every state and action"
 type: bug
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: d7086aa435b10c88a8083fb07def9280c439d3b0
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-deployments-dev-and-context-page
 created_at: "2026-11-18T15:47:34Z"
 updated_at: "2026-11-18T16:29:50Z"
+last_close_out_gate_ms: 101161
+last_close_out_gate_at: "2026-11-18T16:29:50.686Z"
 review_passes: 2
 review_rounds: 1
 routing_switches: 1
