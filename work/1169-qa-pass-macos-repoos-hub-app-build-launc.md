@@ -11,7 +11,7 @@ branch: feat/qa-pass-macos-repoos-hub-app-build-launc
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-18T02:19:44Z"
-updated_at: "2026-11-18T02:51:37Z"
+updated_at: "2026-11-18T02:51:43Z"
 review_passes: 1
 ---
 ## Problem
@@ -41,3 +41,4 @@ Never capture the whole screen. Do not touch repoos.toml.
 - 2026-11-18T02:47:37Z · message_delivered: 1 message(s)
 - 2026-11-18T02:51:36Z · status active→review
 - 2026-11-18T02:51:37Z · note: shots: skipped — the diff (9 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-11-18T02:51:43Z · message_queued at 2026-11-18T02:51:43.250Z
