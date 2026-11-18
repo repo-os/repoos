@@ -362,3 +362,4 @@ Signed-in projects and tasks remain unverified because automated email-code entr
 - 2026-11-18T14:18:39Z · note: review pass 8: good to go
 - 2026-11-18T14:57:27Z · status review→active
 - 2026-11-18T14:57:27Z · note: follow-up message — moved from review to active so work can be committed and re-handoffed
+- 2026-11-18T14:57:27Z · message_overdue: still queued after 60m without being delivered
