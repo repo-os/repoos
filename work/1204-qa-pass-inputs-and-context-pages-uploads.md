@@ -93,3 +93,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T21:29:51Z · note: adopted orphaned engineer pid 83274
 - 2026-11-18T21:31:36Z · queued message undelivered for 4m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-18T21:31:36Z · status active→review
+- 2026-11-18T21:31:36Z · phantom runner detected: no live process, restarted
