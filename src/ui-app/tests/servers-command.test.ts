@@ -91,6 +91,8 @@ describe("repoos servers --tailscale", () => {
           },
         }),
       remoteExec,
+      httpDiscovery: async () => null,
+      annotateUrls: false,
     });
 
     expect(result.servers).toEqual([]);
@@ -186,6 +188,8 @@ describe("repoos servers --tailscale", () => {
       },
       configuredHosts: ["bee"],
       remoteExec,
+      httpDiscovery: async () => null,
+      annotateUrls: false,
     });
     expect(result.tailscaleUnavailable).toBe(true);
     expect(result.source).toBe("configured-hosts");
@@ -225,6 +229,8 @@ describe("repoos servers --tailscale", () => {
       remoteHosts: [{ host: "bee", user: "operator" }],
       remoteValidation: { tailscaleUser: "nick" },
       remoteExec,
+      httpDiscovery: async () => null,
+      annotateUrls: false,
     });
     expect(result.servers).toEqual([]);
     expect(remoteExec).toHaveBeenCalledWith("bee", "operator", 8_000, "repoos servers --json");
@@ -395,6 +401,8 @@ describe("repoos servers --tailscale", () => {
         if (host === "bee") throw sshError;
         return JSON.stringify({ servers: [{ port: 7499, projectName: "thinkpad-project" }] });
       },
+      httpDiscovery: async () => null,
+      annotateUrls: false,
     });
     expect(result.servers).toEqual([
       { host: "bee", unreachable: true, reason: "command not found: repoos on the remote PATH" },
