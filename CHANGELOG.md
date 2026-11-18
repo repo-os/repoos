@@ -5,6 +5,22 @@ pipeline from `release-history.json`; the newest entry is also the GitHub
 release body. The full discussion of each change lives in the release notes
 and on GitHub.
 
+## [v0.5.90] - 2026-11-18
+
+## Highlights
+
+- **Find servers on my tailnet, done properly.** The Hub app and `repoos servers --tailscale` now find RepoOS servers over a small tailnet discovery request instead of relying on SSH keys between machines. Phones are left out, machines that could not be checked are explained instead of shown as bare "unreachable" rows, and a per-project setting lets a project opt out of being advertised (#1153).
+- **Restarting after an update works for hand-run servers.** The "RepoOS is installed" notice no longer shows a launchd command for a service that does not exist. A hand-run server gets a real Restart now button, and `repoos restart` no longer fails with an authentication error (#1154).
+- **macOS Hub is usable again.** The sidebar now follows the system light and dark appearance, so server names are readable, and offline and unhealthy servers show clearly (#1155). A follow-up pass that actually used the app fixed the sidebar after editing a server, stale Cmd-K search results, the Dock badge counting unhealthy servers, and local servers losing their Start and Stop entries after a relaunch (#1167).
+- **Any project can run its own check on the remote runners.** A project that is not RepoOS can now set its own check command, root and required tools, and the Tailscale and Docker runners run it instead of the fixed Bun gate; a Docker host that never started the gate is reported as an infrastructure failure, not a green result (#1160).
+- **Android Hub.** Fixed status-bar contrast on Android 16 across the themes (#1166), fixed the lock retry flow and other defects found while using the app on a phone (#1159), and added an in-app dev update check for dev builds so a new dev build can reach your phone from any network (#1156; it needs a one-time setup before it does anything).
+- **Phone screens.** Stories cards on mobile keep enough title and summary to identify the work (#1150).
+- **Web app polish.** A desktop and phone-width QA pass fixed review and debug toolbars that overflowed their drawers; they now wrap (#1157).
+- **Numeric settings.** Settings such as `maxConcurrentAgents` now accept real integers, not only text (#1161).
+- **Checks and agent errors.** Investigated why a long Checks-tab browser pass stalled (#1163) and verified the Agents page guidance for a missing agent sign-in (#1165).
+
+[Release on GitHub](https://github.com/repo-os/repoos/releases/tag/v0.5.90)
+
 ## [v0.5.89] - 2026-11-17
 
 ## Highlights
