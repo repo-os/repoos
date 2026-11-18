@@ -2,14 +2,14 @@
 id: "1192"
 title: "QA pass: Android Hub app screens third pass – theme switching, long names and rotation at phone sizes"
 type: bug
-status: active
+status: review
 priority: p2
 area: mobile
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-android-hub-app-screens-third-pa
 created_at: "2026-11-18T17:47:42Z"
-updated_at: "2026-11-18T17:47:47Z"
+updated_at: "2026-11-18T18:00:56Z"
 ---
 ## Problem
 Theme switching, very long server/project names and narrow/rotated layouts have not been checked in the Hub UI.
@@ -26,3 +26,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T17:47:42Z · created · t@t
 - 2026-11-18T17:47:45Z · status inbox→ready
 - 2026-11-18T17:47:47Z · status ready→active, branch
+- 2026-11-18T18:00:56Z · status active→review
