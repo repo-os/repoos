@@ -2,7 +2,7 @@
 id: "1168"
 title: "QA pass: exercise the new Releases 'Generate AI notes and publish' flow and the update/restart modal end to end"
 type: bug
-status: active
+status: review
 priority: p1
 area: [web, server]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/qa-pass-exercise-the-new-releases-genera
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-18T00:17:51Z"
-updated_at: "2026-11-18T01:53:34Z"
+updated_at: "2026-11-18T01:53:36Z"
 handoff_signal_retry_count: 2
 review_rounds: 1
 review_passes: 1
@@ -96,3 +96,4 @@ Do not edit repoos.toml.
 - 2026-11-18T01:49:35Z · body
 - 2026-11-18T01:53:06Z · CTO nudge: held — handoff gate is running
 - 2026-11-18T01:53:34Z · note: ui verification passed: 1 shot captured with clean console
+- 2026-11-18T01:53:36Z · status active→review
