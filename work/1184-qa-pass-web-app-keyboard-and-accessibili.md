@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-web-app-keyboard-and-accessibili
 created_at: "2026-11-18T12:17:32Z"
-updated_at: "2026-11-18T14:27:58Z"
+updated_at: "2026-11-18T14:28:00Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -74,3 +74,4 @@ Do not touch repoos.toml.
 - 2026-11-18T14:27:57Z · note: review pass 1: needs some work
 - 2026-11-18T14:27:58Z · message_delivered: 1 message(s)
 - 2026-11-18T14:27:58Z · status review→active
+- 2026-11-18T14:28:00Z · CTO nudge: held — remote validation is running
