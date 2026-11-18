@@ -2,7 +2,7 @@
 id: "1169"
 title: "QA pass: macOS RepoOS Hub app – build, launch, connect, and fix what is broken"
 type: bug
-status: active
+status: review
 priority: p2
 area: macos
 assigned_to: ai
@@ -246,4 +246,4 @@ Signed-in projects and tasks remain unverified because automated email-code entr
 - 2026-11-18T10:07:55Z · status active→review
 - 2026-11-18T10:07:55Z · message_delivered: 1 message(s)
 - 2026-11-18T10:07:56Z · note: handoff requested (cli)
-- 2026-11-18T10:08:16Z · engineer stopped by request
+- 2026-11-18T10:08:16Z · status active→review
