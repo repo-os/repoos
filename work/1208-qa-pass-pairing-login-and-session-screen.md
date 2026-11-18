@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-pairing-login-and-session-screen
 created_at: "2026-11-18T22:47:38Z"
-updated_at: "2026-11-18T23:06:25Z"
+updated_at: "2026-11-18T23:09:30Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -27,7 +27,26 @@ Do not touch repoos.toml. Never open a visible browser window.
 
 ## Shots
 ```json
-[]
+[
+{
+  "label": "Login screen at 375px",
+  "target": "default",
+  "route": "/login",
+  "highlight": ".login-card",
+  "state": "auth:login",
+  "viewportWidth": 375,
+  "viewportHeight": 844
+},
+{
+  "label": "One-time code screen at 375px",
+  "target": "default",
+  "route": "/login",
+  "highlight": ".login-card",
+  "state": "auth:otp",
+  "viewportWidth": 375,
+  "viewportHeight": 844
+}
+]
 ```
 
 ## Activity
@@ -50,3 +69,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T23:06:22Z · message_delivered: 1 message(s)
 - 2026-11-18T23:06:23Z · status review→active
 - 2026-11-18T23:06:25Z · CTO nudge: held — remote validation is running
+- 2026-11-18T23:09:30Z · body
