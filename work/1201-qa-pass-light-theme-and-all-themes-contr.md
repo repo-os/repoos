@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 79504
-last_close_out_gate_at: "2026-11-18T20:24:15.816Z"
 id: "1201"
 title: "QA pass: light theme and all themes – contrast, readability and hard-coded colors on main pages"
 type: bug
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: c0aba53d82edfc3f043c59ca178c9a398965cfee
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-light-theme-and-all-themes-contr
 created_at: "2026-11-18T20:17:30Z"
 updated_at: "2026-11-18T20:24:15Z"
+last_close_out_gate_ms: 79504
+last_close_out_gate_at: "2026-11-18T20:24:15.816Z"
 review_passes: 1
 ---
 ## Problem
