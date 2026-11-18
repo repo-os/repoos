@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-control-mission-control-dashboar
 created_at: "2026-11-18T21:47:29Z"
-updated_at: "2026-11-18T23:47:49Z"
+updated_at: "2026-11-18T23:50:46Z"
 close_out_repair_count: 1
 review_passes: 2
 last_handoff_failure_fingerprint: "check|repoos check failed: check-fmt:check — Formatting failed — run `bun run fmt` to fix:"
@@ -94,3 +94,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T23:42:18Z · message_delivered: 1 message(s)
 - 2026-11-18T23:47:38Z · message_queued at 2026-11-18T23:47:38.768Z
 - 2026-11-18T23:47:49Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-18T23:50:46Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
