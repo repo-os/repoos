@@ -3,6 +3,9 @@ id: "1179"
 title: "QA pass: Settings and Agents pages – every control saves, validates and survives reload"
 type: bug
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: "`needs some work` — The QA pass did not verify save, validation, and reload behavior for every control."
 priority: p2
 area: [web, server]
 assigned_to: ai
@@ -87,3 +90,4 @@ Do not touch repoos.toml.
 - 2026-11-18T08:41:09Z · status active→review
 - 2026-11-18T08:41:09Z · message_queued at 2026-11-18T08:41:09.640Z
 - 2026-11-18T08:41:51Z · note: review pass 3: needs some work
+- 2026-11-18T08:41:51Z · needs_input
