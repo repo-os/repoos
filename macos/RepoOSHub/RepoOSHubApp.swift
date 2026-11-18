@@ -169,6 +169,16 @@ final class HubAppDelegate: NSObject, NSApplicationDelegate {
     }
   }
 
+  func applicationWillTerminate(_ notification: Notification) {
+    // XCTest launches the app as a test host. Remove its disposable registry
+    // after the test-host process exits so repeated runs do not accumulate it.
+    do {
+      try ServerRegistryStore.removeXCTestSupportDirectory()
+    } catch {
+      NSLog("RepoOS Hub could not remove XCTest support directory: %@", error.localizedDescription)
+    }
+  }
+
   deinit {
     if let systemAppearanceObserver {
       DistributedNotificationCenter.default().removeObserver(systemAppearanceObserver)

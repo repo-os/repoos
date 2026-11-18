@@ -1,0 +1,12 @@
+{
+  "taskId": "1169",
+  "round": 15,
+  "at": "2026-11-18T11:40:37.652Z",
+  "agent": "codex",
+  "model": "gpt-6-luna",
+  "branch": "feat/qa-pass-macos-repoos-hub-app-build-launc",
+  "baseSha": "13d57a164a575e89d8e12963da911577097d99f0",
+  "sourceSha": "c20ba664451d79b4e196c5815a9d37686b8223a3",
+  "wordCount": 241,
+  "markdown": "## TL;DR\n\nThe full `repoos check` passed on source commit `c20ba664451d79b4e196c5815a9d37686b8223a3`. The macOS Hub QA record and XCTest registry-isolation fix are present. Signed-in Projects and Tasks remain unverified because human-assigned task #1174 has no results.\n\n## Work and rationale\n\nThe QA record covers the Hub build and launch, first-run rendering, local server discovery and connection, and the sign-in page. Testing found the XCTest host could write to the developer's real Hub registry. The fix isolates XCTest in a unique temporary support directory, removes it on exit, surfaces cleanup errors, and tests those behaviors.\n\nThe QA record explicitly leaves logged-in Projects and Tasks unverified. Human task #1174 remains in inbox without results. No claim is made that this criterion passed.\n\n## Approaches tried\n\nRan the full `repoos check` once against this tree. Remote build and test validation passed. Local formatting, lint, build, branch-artifact and task-asset checks passed; rendered contrast, UI smoke, landing and Telegram manager checks passed as well.\n\n## Challenges and blockers\n\nThe signed-in acceptance check requires the human-assigned #1174 flow: sign in through the authorized email-code process, inspect Projects and Tasks, and record the tested build and results. That task has no results yet. The older review report citing source `2ac8b76` does not describe this checked source commit.\n\n## Key learnings\n\nShowing the sign-in page confirms connection and web-view rendering, not authenticated Projects or Tasks behavior. The report narrative must match the checked tree; RepoOS appends the generated change summary when finalizing the report.\n\n## Generated change summary\n\nBase tree: `13d57a164a575e89d8e12963da911577097d99f0`\nSource tree: `e142da771c39c184a4c2ddd62df29acc5a9f7d7f`\n\n- No changed files."
+}
