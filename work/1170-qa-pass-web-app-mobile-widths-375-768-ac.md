@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-11-18T05:50:15Z"
-review_passes: 6
+last_close_out_gate_ms: 914401
+last_close_out_gate_at: "2026-11-18T06:33:24.596Z"
 id: "1170"
 title: "QA pass: web app mobile widths (375/768) across Work, Releases, Settings, Agents, Checks"
 type: bug
@@ -13,6 +13,8 @@ branch: feat/qa-pass-web-app-mobile-widths-375-768-ac
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-18T02:19:49Z"
+updated_at: "2026-11-18T06:33:24Z"
+review_passes: 6
 last_check_failure: "repoos check at 2026-11-18T05:14:48.037Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 2
 ---
@@ -166,4 +168,5 @@ Do not touch repoos.toml. Pages use full .main width.
 - 2026-11-18T05:38:42Z · message_queued at 2026-11-18T05:38:42.240Z
 - 2026-11-18T05:49:42Z · needs_input (review-rounds-exhausted) cleared for review again by hello@repoos.org
 - 2026-11-18T05:50:15Z · note: review pass 6: good to go
+- 2026-11-18T06:33:24Z · close-out gate completed in 914s
 
