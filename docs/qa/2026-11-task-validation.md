@@ -32,10 +32,18 @@ attention. Human-assigned tasks are exempt from the agent task-body contract.
 - Ran `bun run test -- src/ui-app/tests/cli-worktree-write-target.test.ts`.
   Result: 2 test files passed (the wrapper also ran the isolated boot-timing
   suite), 15 tests passed.
-- The required `REPOOS_CHECK_CHANGED=main repoos check` result is recorded in
-  this task's handoff transcript.
-- This managed task-runner session did not start a local server or a visible
-  browser. The repository's scoped check runs its UI smoke coverage headlessly.
+- Ran `REPOOS_CHECK_CHANGED=main repoos check`. The remote changed-path gate,
+  build, format/lint, CSS/theme guards, rendered contrast audit, and local
+  headless UI smoke test passed. The first run caught formatting in the touched
+  TypeScript files; `bun run fmt` fixed it before the green rerun.
+- Started `just serve-noauth 7273` from this task worktree and used headless
+  Playwright. The dashboard and New task drawer loaded, and a task drawer with
+  an existing needs-input state showed the reason and next steps. No page errors
+  were observed. Port 7272 was already occupied, so the QA server used 7273 and
+  was stopped after verification.
+- The preview server is read-only, so the browser pass did not submit a task or
+  exercise the post-create toast. Creation and update behavior is covered by
+  server/CLI tests; no disposable task was written into this worktree.
 
 ## Remaining note
 
