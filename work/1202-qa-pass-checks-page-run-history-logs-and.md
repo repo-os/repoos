@@ -2,14 +2,14 @@
 id: "1202"
 title: "QA pass: Checks page run history, logs and failure detail – desktop and 375px"
 type: bug
-status: ready
+status: active
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
-branch: ""
+branch: feat/qa-pass-checks-page-run-history-logs-and
 created_at: "2026-11-18T20:17:41Z"
-updated_at: "2026-11-18T20:17:45Z"
+updated_at: "2026-11-18T20:17:47Z"
 ---
 ## Problem
 Check run detail and failure views are dense and may overflow or hide the failing step.
@@ -25,3 +25,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 
 - 2026-11-18T20:17:41Z · created · t@t
 - 2026-11-18T20:17:45Z · status inbox→ready
+- 2026-11-18T20:17:47Z · status ready→active, branch
