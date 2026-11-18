@@ -1,0 +1,26 @@
+---
+id: "1183"
+title: "QA pass: web app first-run and empty states – new project, no tasks, no agents, offline server"
+type: bug
+status: inbox
+priority: p2
+area: web
+assigned_to: ai
+created_by: t@t
+branch: ""
+created_at: "2026-11-18T10:17:38Z"
+updated_at: "2026-11-18T10:17:38Z"
+---
+## Problem
+First-run, empty and error states are rarely exercised and likely have rough edges.
+## Desired UX
+Empty board, no agents configured, server offline and failed-load states show clear guidance, at 1280 and 375 widths, with no console errors.
+## Acceptance criteria
+- Drive the auth-less dev server (just serve-noauth from a scratch worktree) and fixtures for these states; fix bugs with tests.
+- Commit docs/qa/2026-11-empty-states.md.
+## Notes for AI
+Do not touch repoos.toml.
+
+## Activity
+
+- 2026-11-18T10:17:38Z · created · t@t
