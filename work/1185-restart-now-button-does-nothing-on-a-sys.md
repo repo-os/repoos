@@ -2,14 +2,14 @@
 id: "1185"
 title: Restart now button does nothing on a systemd-managed server (misdetected as hand-run)
 type: bug
-status: review
+status: active
 priority: p1
 area: [web, server]
 assigned_to: ai
 created_by: t@t
 branch: feat/restart-now-button-does-nothing-on-a-sys
 created_at: "2026-11-18T12:27:18Z"
-updated_at: "2026-11-18T15:48:41Z"
+updated_at: "2026-11-18T15:48:43Z"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/shot-fixtures.test.ts > shot preview fixtures (#0743) > accepts the restart progress and error dialog fixtures (#1185) on mini — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: 5171c2a1f74fc8ac45bca8ad80c4c2d789d27cfb
 review_passes: 3
