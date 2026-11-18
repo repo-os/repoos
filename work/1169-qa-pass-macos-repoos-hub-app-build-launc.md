@@ -2,7 +2,7 @@
 id: "1169"
 title: "QA pass: macOS RepoOS Hub app – build, launch, connect, and fix what is broken"
 type: bug
-status: active
+status: review
 priority: p2
 area: macos
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/qa-pass-macos-repoos-hub-app-build-launc
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-18T02:19:44Z"
-updated_at: "2026-11-18T02:28:31Z"
+updated_at: "2026-11-18T02:30:09Z"
 ---
 ## Problem
 Nick reports the macOS Hub app has been unusable for weeks. Nobody has recently built and driven it.
@@ -31,3 +31,4 @@ Never capture the whole screen. Do not touch repoos.toml.
 - 2026-11-18T02:20:08Z · cli_override, model_override
 - 2026-11-18T02:20:10Z · status ready→active, branch
 - 2026-11-18T02:28:31Z · CTO nudge: held — handoff gate is running
+- 2026-11-18T02:30:09Z · status active→review
