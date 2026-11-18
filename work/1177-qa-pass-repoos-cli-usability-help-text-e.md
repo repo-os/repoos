@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-repoos-cli-usability-help-text-e
 created_at: "2026-11-18T05:56:48Z"
-updated_at: "2026-11-18T08:49:19Z"
+updated_at: "2026-11-18T08:49:45Z"
 last_close_out_gate_ms: 225070
 last_close_out_gate_at: "2026-11-18T08:49:19.378Z"
 review_passes: 4
@@ -82,4 +82,4 @@ Do not touch repoos.toml; do not run commands that mutate the real board.
 - 2026-11-18T08:20:56Z · note: review pass 4: good to go
 - 2026-11-18T08:32:01Z · message_queued at 2026-11-18T08:32:01.018Z
 - 2026-11-18T08:49:19Z · close-out gate completed in 225s
-
+- 2026-11-18T08:49:45Z · status done→done, release:success
