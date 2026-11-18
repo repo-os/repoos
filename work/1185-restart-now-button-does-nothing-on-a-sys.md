@@ -83,3 +83,4 @@ Reported by Nick 2026-11-18 20:22 from the phone UI. Related #1154. Do not touch
 - 2026-11-18T14:36:26Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-18T14:36:26Z · message_queued at 2026-11-18T14:36:26.890Z
 - 2026-11-18T14:36:27Z · ↻ resuming engineer to read queued message
+- 2026-11-18T14:36:27Z · message_delivered: 2 message(s)
