@@ -1,5 +1,4 @@
 ---
-handoff_signal_retry_count: 2
 id: "1184"
 title: "QA pass: web app keyboard and accessibility – focus order, labels, dialogs, contrast"
 type: bug
@@ -10,7 +9,8 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-web-app-keyboard-and-accessibili
 created_at: "2026-11-18T12:17:32Z"
-updated_at: "2026-11-18T12:33:53Z"
+updated_at: "2026-11-18T12:40:19Z"
+handoff_signal_retry_count: 2
 ---
 ## Problem
 Keyboard and screen-reader behavior of dialogs, drawers and menus has not had a recent pass.
@@ -32,4 +32,4 @@ Do not touch repoos.toml.
 - 2026-11-18T12:24:59Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code unknown · last assistant: Implemented the Agents Skills dialog fix: its close button now has the accessible name “Close dialog,” with a regression test in [keyboard-a11y.test.ts](/Users/nick/code/nick/repoos-worktrees/feat/qa-pass-web-app-keyboard-and-accessibili/s… · stderr: Reading additional input from stdin...
 - 2026-11-18T12:33:03Z · body
 - 2026-11-18T12:33:53Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The worktree is clean, and `REPOOS_CHECK_CHANGED=main repoos check` passed again. The rendered contrast audit and UI smoke test passed; 184 scoped tests passed on the remote runner. I retried browser access, but the browser host is still u… · stderr: (empty)
-
+- 2026-11-18T12:40:19Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The recheck passed, including build, scoped tests, rendered contrast, and UI smoke. Chrome itself was accessible, but its `127.0.0.1:7272/work` tab showed a stale preview with the server disconnected, so it could not provide the requested … · stderr: (empty)
