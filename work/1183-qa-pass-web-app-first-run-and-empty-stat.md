@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 76098
-last_close_out_gate_at: "2026-11-18T12:18:49.505Z"
 id: "1183"
 title: "QA pass: web app first-run and empty states – new project, no tasks, no agents, offline server"
 type: bug
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: 8a4bfa7fa5ec62c2ca20128d0404a8f8f2cb251c
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-web-app-first-run-and-empty-stat
 created_at: "2026-11-18T10:17:38Z"
 updated_at: "2026-11-18T12:18:49Z"
+last_close_out_gate_ms: 76098
+last_close_out_gate_at: "2026-11-18T12:18:49.505Z"
 review_passes: 3
 review_rounds: 2
 routing_switches: 1

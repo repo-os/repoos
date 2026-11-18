@@ -713,6 +713,9 @@ export const useRepoStore = defineStore("repo", () => {
   const holdNow = useNow();
   const origin = window.location.origin;
   const loading = ref(true);
+  /** Initial board load failure kept separate from an empty, successful board. */
+  const boardLoadError = ref<string | null>(null);
+  let boardRefreshRequestId = 0;
   const connected = ref(false);
   /**
    * Debounced "the event stream is genuinely down" signal for the header
@@ -2658,7 +2661,20 @@ export const useRepoStore = defineStore("repo", () => {
   }
 
   async function refresh(): Promise<void> {
-    const idx = await api<BoardIndex>("/api/board");
+    const requestId = ++boardRefreshRequestId;
+    let idx: BoardIndex;
+    try {
+      idx = await api<BoardIndex>("/api/board");
+      if (requestId === boardRefreshRequestId) boardLoadError.value = null;
+    } catch (err) {
+      if (requestId === boardRefreshRequestId) {
+        boardLoadError.value = err instanceof Error ? err.message : "Could not load project tasks.";
+      }
+      throw err;
+    }
+    // Concurrent refreshes can finish out of order. Only the latest request is
+    // authoritative for both the visible load error and the board snapshot.
+    if (requestId !== boardRefreshRequestId) return;
     // /api/board has no preview state; keep any live previews across rebuilds.
     const previews = new Map(tasks.value.map((t) => [t.id, t.preview] as const));
     // Preserve full bodies already in the store (from SSE task.updated events).
@@ -4463,6 +4479,7 @@ export const useRepoStore = defineStore("repo", () => {
   }
 
   async function init(): Promise<void> {
+    const refreshRequestAtStart = boardRefreshRequestId;
     try {
       health.value = await api<Health>("/api/health");
       await refresh();
@@ -4473,8 +4490,12 @@ export const useRepoStore = defineStore("repo", () => {
       // the running server so a reload that already landed clears it.
       void reconcileVersion();
       void refreshInputs();
-    } catch {
-      /* server not reachable — UI still renders */
+    } catch (err) {
+      // refresh() owns errors from /api/board and sequences concurrent loads.
+      // Keep this catch for failures before refresh starts (such as /api/health).
+      if (refreshRequestAtStart === boardRefreshRequestId) {
+        boardLoadError.value = err instanceof Error ? err.message : "Could not load project tasks.";
+      }
     } finally {
       loading.value = false;
       // Sidebar git row (#0584), in `finally` so a failed first fetch still
@@ -4490,6 +4511,7 @@ export const useRepoStore = defineStore("repo", () => {
   return {
     origin,
     loading,
+    boardLoadError,
     connected,
     streamDown,
     health,

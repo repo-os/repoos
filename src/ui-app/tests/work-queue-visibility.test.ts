@@ -220,6 +220,52 @@ describe("Work Queue category visibility (#1141)", () => {
   });
 });
 
+describe("Work board first-run and load-error placement (#1183 review)", () => {
+  it("keeps empty-board guidance in the page flow outside the column layout", async () => {
+    wrapper = mountWork([]);
+    await flush();
+
+    const guidance = wrapper.get("[data-testid='work-empty-state']");
+    expect(guidance.text()).toContain("Start this project with a task");
+    expect(guidance.element.parentElement?.classList.contains("board")).toBe(false);
+  });
+
+  it("keeps load recovery visible outside the columns with a status filter active", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const repo = useRepoStore();
+    repo.loading = false;
+    repo.tasks = [];
+    repo.counts = { ...EMPTY_COUNTS };
+    repo.boardLoadError = "Can't reach the RepoOS server — it may be down.";
+    const router = makeRouter();
+    await router.push("/work?status=ready");
+    wrapper = mount(WorkView, {
+      global: {
+        plugins: [pinia, router],
+        stubs: {
+          BoardColumn: BoardColumnStub,
+          IntegrationStatusBar: true,
+          PipelineView: true,
+          Select: selectStub,
+          SelectTrigger: selectStub,
+          SelectContent: selectStub,
+          SelectItem: selectStub,
+          SelectViewport: selectStub,
+          SelectValue: selectStub,
+        },
+      },
+    });
+    await flush();
+
+    const error = wrapper.get("[data-testid='work-load-error']");
+    expect(error.text()).toContain("Couldn't load this project's tasks");
+    expect(error.text()).toContain("Can't reach the RepoOS server");
+    expect(error.element.parentElement?.classList.contains("board")).toBe(false);
+    expect(wrapper.get(".filter-chip").text()).toContain("Ready · 0");
+  });
+});
+
 describe("BoardColumn with a filtered task list (#1141)", () => {
   const TaskCardStub = {
     props: ["task"],

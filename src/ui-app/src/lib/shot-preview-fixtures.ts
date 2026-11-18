@@ -1209,6 +1209,20 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
   // pin freezing the live snapshot (#0782).
   resetShotFixturePins();
   switch (fixture) {
+    case "work:empty":
+      repo.tasks.splice(0);
+      repo.boardLoadError = null;
+      repo.loading = false;
+      break;
+    case "work:failedLoad":
+      repo.tasks.splice(0);
+      repo.boardLoadError = "Can't reach the RepoOS server — it may be down.";
+      repo.loading = false;
+      break;
+    case "agents:empty":
+      // AgentsView reads this capture-only fixture and suppresses configured
+      // roles locally; no project configuration is changed or saved.
+      break;
     case "release:emailSent":
     case "release:emailFailed":
       // ReleasesView reads this registered fixture and renders the email card
