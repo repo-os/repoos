@@ -2,7 +2,7 @@
 id: "1184"
 title: "QA pass: web app keyboard and accessibility – focus order, labels, dialogs, contrast"
 type: bug
-status: review
+status: active
 priority: p2
 area: web
 assigned_to: ai
@@ -10,10 +10,11 @@ created_by: t@t
 branch: feat/qa-pass-web-app-keyboard-and-accessibili
 created_at: "2026-11-18T12:17:32Z"
 updated_at: "2026-11-18T15:33:14Z"
-review_passes: 2
-last_check_failure: "repoos check at 2026-11-18T14:38:37.835Z: repoos check failed: ui verification failed (2 issue(s)): [missing-target] Agents Skills dialog accessible close control (target \"default\"): click button.agent-skills-add: click: Error: strict mode violation: locator('button.agent-skills-add') resolved to 6 elements: on /agents?tab=default (http://127.0.0.1:42821/agents?tab=default); [missing-target] Agents Skills dialog accessible close control (target \"default\"): highlight .am-modal matched nothing on /agents?tab=default (http://127.0.0.1:4282… (truncated)"
 review_rounds: 1
 routing_switches: 1
+routing_escalations: 1
+review_passes: 2
+last_check_failure: "repoos check at 2026-11-18T14:38:37.835Z: repoos check failed: ui verification failed (2 issue(s)): [missing-target] Agents Skills dialog accessible close control (target \"default\"): click button.agent-skills-add: click: Error: strict mode violation: locator('button.agent-skills-add') resolved to 6 elements: on /agents?tab=default (http://127.0.0.1:42821/agents?tab=default); [missing-target] Agents Skills dialog accessible close control (target \"default\"): highlight .am-modal matched nothing on /agents?tab=default (http://127.0.0.1:4282… (truncated)"
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-11-18T12:45:29.556Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-18T12:54:45.117Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-18T13:03:30.252Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
@@ -134,3 +135,4 @@ Do not touch repoos.toml.
 - 2026-11-18T15:32:37Z · body
 - 2026-11-18T15:33:12Z · status active→review
 - 2026-11-18T15:33:14Z · message_queued at 2026-11-18T15:33:14.739Z
+- 2026-11-18T15:33:14Z · status review→active
