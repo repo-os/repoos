@@ -904,11 +904,15 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
       }
       if (field.key === "uiVerification.viewportWidths") {
         if (!Array.isArray(val) || val.length === 0) {
-          return json(res, 400, { error: `${field.label} must contain positive whole pixel widths` });
+          return json(res, 400, {
+            error: `${field.label} must contain positive whole pixel widths`,
+          });
         }
         const widths = val.map((item) => Number(item));
         if (widths.some((width) => !Number.isSafeInteger(width) || width <= 0)) {
-          return json(res, 400, { error: `${field.label} must contain positive whole pixel widths` });
+          return json(res, 400, {
+            error: `${field.label} must contain positive whole pixel widths`,
+          });
         }
         patch[field.key] = widths;
         continue;
