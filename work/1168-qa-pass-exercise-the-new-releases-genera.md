@@ -1,5 +1,4 @@
 ---
-check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-18T00:54:42.638Z: repoos check failed: ui-smoke — [queue] waiting for a Playwright slot — position 2 (1 ahead)"
 id: "1168"
 title: "QA pass: exercise the new Releases 'Generate AI notes and publish' flow and the update/restart modal end to end"
@@ -54,4 +53,5 @@ Do not edit repoos.toml.
 - 2026-11-18T00:53:30Z · CTO nudge: held — handoff gate is running
 - 2026-11-18T00:54:39Z · message_queued at 2026-11-18T00:54:39.480Z
 - 2026-11-18T00:54:42Z · message_delivered: 1 message(s)
+
 
