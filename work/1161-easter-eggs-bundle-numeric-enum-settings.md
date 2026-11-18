@@ -12,7 +12,7 @@ branch: feat/easter-eggs-bundle-numeric-enum-settings
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T17:09:11Z"
-updated_at: "2026-11-18T01:29:27Z"
+updated_at: "2026-11-18T01:33:25Z"
 last_close_out_gate_ms: 1047631
 last_close_out_gate_at: "2026-11-18T01:28:58.344Z"
 review_passes: 2
@@ -53,3 +53,4 @@ Found on 2026-11-18 while capping engineers on the Tiao project. Small independe
 - 2026-11-18T01:02:54Z · note: review pass 2: good to go
 - 2026-11-18T01:28:58Z · close-out gate completed in 1048s
 - 2026-11-18T01:29:27Z · status done→done, release:success
+- 2026-11-18T01:33:25Z · message_dropped: 1 queued message(s) discarded — task is done
