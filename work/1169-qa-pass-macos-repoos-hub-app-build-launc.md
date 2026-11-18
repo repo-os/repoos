@@ -238,3 +238,4 @@ Signed-in projects and tasks remain unverified because automated email-code entr
 - 2026-11-18T09:54:45Z · handoff failed · task-file handoff failed at review · Engineering report draft is missing: .repoos/engineering-report-drafts/1169.md
 - 2026-11-18T09:54:46Z · message_delivered: 1 message(s)
 - 2026-11-18T10:04:51Z · message_queued at 2026-11-18T10:04:51.224Z
+- 2026-11-18T10:04:51Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
