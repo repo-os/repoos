@@ -2,7 +2,7 @@
 id: "1185"
 title: Restart now button does nothing on a systemd-managed server (misdetected as hand-run)
 type: bug
-status: active
+status: review
 priority: p1
 area: [web, server]
 assigned_to: ai
@@ -142,4 +142,4 @@ Reported by Nick 2026-11-18 20:22 from the phone UI. Related #1154. Do not touch
 - 2026-11-18T15:48:46Z · note: handoff requested (cli)
 - 2026-11-18T15:52:02Z · CTO nudge: held — handoff gate is running
 - 2026-11-18T15:52:06Z · note: ui verification passed: 2 of 2 shots captured with clean console
-- 2026-11-18T15:52:07Z · engineer stopped by request
+- 2026-11-18T15:52:07Z · status active→review
