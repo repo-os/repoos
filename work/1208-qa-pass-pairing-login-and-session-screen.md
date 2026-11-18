@@ -2,14 +2,14 @@
 id: "1208"
 title: "QA pass: pairing, login and session screens – OTP, expired sessions, sign-out, mobile widths"
 type: bug
-status: active
+status: review
 priority: p2
 area: [web, server]
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-pairing-login-and-session-screen
 created_at: "2026-11-18T22:47:38Z"
-updated_at: "2026-11-18T23:33:35Z"
+updated_at: "2026-11-18T23:34:31Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -76,3 +76,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T23:20:46Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-18T23:20:46Z · message_delivered: 1 message(s)
 - 2026-11-18T23:33:35Z · body
+- 2026-11-18T23:34:31Z · status active→review
