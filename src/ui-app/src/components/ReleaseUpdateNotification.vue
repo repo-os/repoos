@@ -428,6 +428,7 @@ onUnmounted(() => {
     <div
       v-if="visible"
       class="release-update-banner"
+      data-overlay-layer="floating"
       role="button"
       tabindex="0"
       aria-label="View available RepoOS update"
@@ -530,6 +531,71 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
+.release-update-banner {
+  position: fixed;
+  z-index: 90;
+  left: 50%;
+  bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: min(560px, calc(100vw - 32px));
+  padding: 12px 14px;
+  transform: translateX(-50%);
+  border: 1px solid var(--border-bright);
+  border-radius: 12px;
+  background: var(--panel-solid);
+  color: var(--txt);
+  box-shadow: 0 12px 36px rgb(0 0 0 / 24%);
+  cursor: pointer;
+}
+.release-update-banner:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 3px;
+}
+.release-update-mark {
+  display: grid;
+  flex: 0 0 30px;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border-radius: 9px;
+  background: var(--violet-dim);
+  color: var(--violet);
+}
+.release-update-copy {
+  display: grid;
+  flex: 1;
+  gap: 3px;
+  min-width: 0;
+  font-size: 12px;
+}
+.release-update-copy strong {
+  font-size: 13px;
+}
+.release-update-copy > span {
+  color: var(--txt-dim);
+}
+.release-update-arrow {
+  flex: 0 0 auto;
+  color: var(--txt-faint);
+}
+.release-update-dismiss {
+  display: grid;
+  flex: 0 0 30px;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--txt-dim);
+  cursor: pointer;
+}
+.release-update-dismiss:hover {
+  background: var(--bg-2);
+  color: var(--txt);
+}
 .release-update-manual {
   display: grid;
   gap: 10px;
@@ -661,11 +727,30 @@ onUnmounted(() => {
 }
 .release-update-actions {
   display: flex;
+  flex-wrap: wrap;
   justify-content: flex-end;
   gap: 8px;
   margin-top: 22px;
 }
+.release-update-actions > .release-update-manual,
+.release-update-actions > [role="alert"] {
+  flex: 1 0 100%;
+}
+.release-update-actions > [role="alert"] {
+  margin: 0;
+}
 @media (max-width: 560px) {
+  .release-update-banner {
+    bottom: calc(78px + var(--safe-bot));
+    width: calc(100vw - 24px);
+    padding: 10px 12px;
+  }
+  .release-update-copy {
+    font-size: 11px;
+  }
+  .release-update-copy strong {
+    font-size: 12px;
+  }
   .release-update-modal {
     padding: 20px;
   }

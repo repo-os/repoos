@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 110609
-last_close_out_gate_at: "2026-11-18T19:49:18.985Z"
 id: "1196"
 title: "QA pass: update and restart flow end to end on service-managed and hand-run servers (follow-up to #1185)"
 type: bug
-status: review
+status: done
 priority: p2
 area: [web, server]
+merged_commit: 6f82f70ee9aa6ef3b098f0b3e58f39c935ba173a
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-update-and-restart-flow-end-to-e
 created_at: "2026-11-18T19:23:55Z"
 updated_at: "2026-11-18T19:49:18Z"
+last_close_out_gate_ms: 110609
+last_close_out_gate_at: "2026-11-18T19:49:18.985Z"
 review_passes: 1
 ---
 ## Problem
