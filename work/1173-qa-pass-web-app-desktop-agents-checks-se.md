@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-web-app-desktop-agents-checks-se
 created_at: "2026-11-18T03:57:22Z"
-updated_at: "2026-11-18T05:05:04Z"
+updated_at: "2026-11-18T05:24:13Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -26,6 +26,18 @@ Agents, Checks, Settings and Releases pages load without console errors and ever
 - Commit docs/qa/2026-11-web-desktop-pages.md with findings.
 ## Notes for AI
 Do not touch repoos.toml.
+
+## Shots
+```json
+[
+{
+  "label": "Settings import/export flow",
+  "target": "default",
+  "route": "/settings?tab=import-export",
+  "highlight": "#settings-panel-import-export"
+}
+]
+```
 
 ## Activity
 
@@ -52,3 +64,4 @@ Do not touch repoos.toml.
 - 2026-11-18T05:05:03Z · note: review pass 1: needs some work
 - 2026-11-18T05:05:04Z · message_delivered: 1 message(s)
 - 2026-11-18T05:05:04Z · status review→active
+- 2026-11-18T05:24:13Z · body
