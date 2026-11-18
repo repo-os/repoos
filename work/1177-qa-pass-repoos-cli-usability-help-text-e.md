@@ -28,3 +28,4 @@ Do not touch repoos.toml; do not run commands that mutate the real board.
 - 2026-11-18T05:57:02Z · status ready→active, branch
 - 2026-11-18T06:07:52Z · body
 - 2026-11-18T06:09:29Z · status active→review
+- 2026-11-18T06:09:29Z · message_queued at 2026-11-18T06:09:29.575Z
