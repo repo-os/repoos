@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-18T18:01:10.518Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 id: "1189"
 title: "QA pass: task creation and editing flows (new task, update, attach screenshot, dependencies)"
 type: bug
@@ -114,3 +116,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T18:01:07Z · note: shots: failed — browser capture cancelled
 - 2026-11-18T18:01:07Z · note: review pass 3: needs some work
 - 2026-11-18T18:01:10Z · message_delivered: 1 message(s)
+
