@@ -2,17 +2,20 @@
 id: "1164"
 title: Verify Secrets page behavior with authenticated access
 type: bug
-status: active
+status: done
 priority: p2
 area: web
+merged_commit: 6c5547ea4ef833c1407a61209664083d3f5a0f01
 assigned_to: ai
 created_by: t@t
 branch: feat/verify-secrets-page-behavior-with-authen
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T17:53:29Z"
-updated_at: "2026-11-18T04:03:15Z"
-review_passes: 3
+updated_at: "2026-11-18T05:40:54Z"
+last_close_out_gate_ms: 846216
+last_close_out_gate_at: "2026-11-18T05:38:46.056Z"
+review_passes: 4
 review_rounds: 2
 ---
 ## Problem
@@ -94,3 +97,18 @@ The initial evidence is an auth-less 401, not proof of a signed-in regression. Q
 - 2026-11-18T03:43:13Z · body
 - 2026-11-18T03:57:13Z · note: adopted orphaned engineer pid 20173
 - 2026-11-18T04:03:15Z · body
+- 2026-11-18T04:16:03Z · engineer stopped by request
+- 2026-11-18T04:16:06Z · status active→review
+- 2026-11-18T04:16:06Z · status review→active
+- 2026-11-18T04:17:45Z · body
+- 2026-11-18T04:37:06Z · body
+- 2026-11-18T04:38:49Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The scoped check passed: the remote build and changed-path tests, format/lint, contrast audit, and UI smoke test were green. The 401 create-dialog recovery test is present, both screenshots are declared, and the engineering report draft is… · stderr: Reading additional input from stdin... 2026-11-18T04:29:49.278004Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
+- 2026-11-18T04:38:51Z · note: handoff requested (cli)
+- 2026-11-18T04:42:12Z · CTO nudge: held — handoff gate is running
+- 2026-11-18T04:50:39Z · note: ui verification passed: 2 of 2 shots captured with clean console
+- 2026-11-18T04:50:41Z · status active→review
+- 2026-11-18T04:50:42Z · message_queued at 2026-11-18T04:50:42.038Z
+- 2026-11-18T04:51:26Z · note: review pass 4: good to go
+- 2026-11-18T05:38:46Z · close-out gate completed in 846s
+- 2026-11-18T05:39:12Z · status done→done, release:success
+- 2026-11-18T05:40:54Z · message_dropped: 1 queued message(s) discarded — task is done

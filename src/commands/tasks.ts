@@ -201,6 +201,19 @@ function printTaskList(rootName: string, tasks: ApiListTask[], statusArg?: strin
 
 /** `repoos list [status]` — board overview or a single column. */
 export async function cmdList(statusArg?: string): Promise<void> {
+  const listStatuses = [...STATUSES.filter((status) => status !== "draft"), "archived"];
+  if (
+    statusArg !== undefined &&
+    !listStatuses.includes(statusArg as (typeof listStatuses)[number])
+  ) {
+    console.error(
+      c.red(`  Unknown list status: ${statusArg}. `) +
+        c.dim(`Choose one of: ${listStatuses.join(" | ")}.`),
+    );
+    console.error(c.dim("  Usage: repoos list [status]"));
+    process.exitCode = 1;
+    return;
+  }
   const remote = await listTasksViaApi(statusArg);
   if (remote) {
     printTaskList(remote.rootName, remote.tasks, statusArg);

@@ -119,14 +119,22 @@ describe("safeConfigForBrowser model_routing flattening", () => {
       modelRouting: {
         mode: "shadow",
         provider: "openrouter",
+        model: "test-model",
+        baseUrl: "https://example.test/v1",
         roles: ["engineer"],
         timeoutMs: 4000,
+        humanStepCheck: true,
+        humanStepSticky: false,
       },
     } as Record<string, unknown>);
     expect(flat["model_routing.mode"]).toBe("shadow");
     expect(flat["model_routing.provider"]).toBe("openrouter");
+    expect(flat["model_routing.model"]).toBe("test-model");
+    expect(flat["model_routing.baseUrl"]).toBe("https://example.test/v1");
     expect(flat["model_routing.roles"]).toEqual(["engineer"]);
     expect(flat["model_routing.timeoutMs"]).toBe(4000);
+    expect(flat["model_routing.humanStepCheck"]).toBe(true);
+    expect(flat["model_routing.humanStepSticky"]).toBe(false);
     expect(flat.modelRouting).toBeUndefined();
   });
 });

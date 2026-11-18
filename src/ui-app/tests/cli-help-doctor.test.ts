@@ -84,8 +84,8 @@ describe("renderHelp", () => {
     // The full usage now lives behind `repoos <cmd> --help`, not in the table.
     expect(out).not.toContain("doctor [--json] [--verbose]");
     expect(out).not.toContain("check [--profile");
-    // `list` takes no flags — the usage must not claim a `--json` it ignores.
-    expect(out).not.toContain("list [status] [--json]");
+    // `list` supports the archived view but does not accept `--json`.
+    expect(out).not.toContain("list [inbox|ready|active|review|done|archived] [--json]");
     expect(out).toContain("repoos <command> --help");
   });
 
@@ -115,7 +115,8 @@ describe("commandUsage / printCommandHelp", () => {
       lines.push(args.map(String).join(" "));
     });
     expect(printCommandHelp("ls", 80)).toBe(true);
-    expect(lines.join("\n")).toContain("repoos list [status]");
+    expect(lines.join("\n")).toContain("repoos list [inbox|ready|active|review|done|archived]");
+    expect(lines.join("\n")).toContain("archived tasks");
   });
 
   it("prints the usage, description and flags", () => {

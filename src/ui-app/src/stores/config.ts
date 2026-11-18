@@ -2,6 +2,7 @@ import { computed, reactive, ref, watch } from "vue";
 import { defineStore } from "pinia";
 import { api, ApiError, JSON_OPTS, MODEL_API_TIMEOUT_MS } from "../api";
 import { FAVORITE_THEMES_KEY } from "../lib/settings-transfer";
+import { arrayFieldValueForForm } from "../settings-form";
 import type {
   Agent,
   AgentsMeta,
@@ -646,10 +647,7 @@ export const useConfigStore = defineStore("config", () => {
         // pool (#0521) arrives as host objects and must not render as
         // "[object Object]" — show its host names, which is what editing sends
         // back (per-host attrs live in repoos.toml rows, not this field).
-        const items = Array.isArray(val)
-          ? val.map((item) => (typeof item === "string" ? item : hostNameOf(item)))
-          : [String(val)];
-        form[f.key] = items.filter(Boolean).join(", ");
+        form[f.key] = arrayFieldValueForForm(f.key, val);
       } else if (f.type === "boolean") form[f.key] = !!val;
       // Settings saves include the complete schema-backed form. Preserve the
       // wire type declared by the schema so an unrelated toggle cannot submit
@@ -665,8 +663,8 @@ export const useConfigStore = defineStore("config", () => {
     form.whisperEnabled = res.config.whisperEnabled === true;
   }
 
-  async function load(): Promise<void> {
-    loaded.value = false;
+  async function load(options: { keepLoaded?: boolean } = {}): Promise<void> {
+    if (!options.keepLoaded) loaded.value = false;
     error.value = "";
     msg.value = "";
     try {

@@ -85,10 +85,10 @@ const filterCol = computed<Column | null>(() => {
 });
 
 // ── #0345 Deep-linking: /work?task=<id> opens that task's drawer and
-// ?task=new opens the new-task panel. On desktop the task param is cleared
-// once the drawer opens; on narrow screens it stays in history as the detail
-// page route so Back returns to the queue. Other query keys (e.g. ?status=)
-// are preserved. A link that arrives through the login round-trip
+// ?task=new opens the new-task panel. Keep the task and optional tab params
+// while the drawer is open so a reload preserves a deep link on every screen
+// size. TaskDrawer clears them when the user closes the panel. Other query keys
+// (e.g. ?status=) are preserved. A link that arrives through the login round-trip
 // survives end-to-end: the router guard redirects with redirect=to.fullPath
 // and LoginView restores the full path after sign-in.
 //
@@ -166,7 +166,6 @@ async function openFromTaskParam(raw: string): Promise<void> {
   const request = ++taskOpenRequest;
   if (raw === "new") {
     ui.openNewTask();
-    await clearTaskParam();
     return;
   }
   const id = raw.replace(/^#/, "");
@@ -223,9 +222,6 @@ async function openFromTaskParam(raw: string): Promise<void> {
       ui.debugView = "status";
     }
   }
-  // On narrow screens the task query is the detail-page route. Keeping it in
-  // history lets browser Back return to the still-mounted queue and its state.
-  if (!isNarrow.value) await clearTaskParam();
 }
 
 // ── #1141 Show/hide human and held tasks ───────────────────────────────
@@ -637,6 +633,39 @@ function openHeld(task: Task): void {
 
     <PipelineView v-show="effectiveView === 'pipeline'" />
 
+    <section
+      v-if="effectiveView === 'board' && !repo.loading && repo.boardLoadError"
+      class="work-load-error"
+      role="alert"
+      data-testid="work-load-error"
+    >
+      <div>
+        <h2>Couldn't load this project's tasks</h2>
+        <p>{{ repo.boardLoadError }}</p>
+        <p>Check that the RepoOS server is running, then retry.</p>
+      </div>
+      <Button variant="outline" @click="repo.refresh().catch(() => {})">Retry</Button>
+    </section>
+    <section
+      v-else-if="
+        effectiveView === 'board' &&
+        !repo.loading &&
+        !repo.boardLoadError &&
+        repo.total === 0 &&
+        !statusFilter
+      "
+      class="work-empty-state"
+      aria-labelledby="work-empty-title"
+      data-testid="work-empty-state"
+    >
+      <div class="work-empty-mark" aria-hidden="true">＋</div>
+      <div>
+        <h2 id="work-empty-title">Start this project with a task</h2>
+        <p>Add the first task to give your team a clear place to begin.</p>
+      </div>
+      <Button variant="accent" @click="ui.openNewTask()">Create a task</Button>
+    </section>
+
     <div v-show="effectiveView === 'board'" ref="boardEl" class="board">
       <template v-if="statusFilter">
         <BoardColumn
@@ -902,6 +931,69 @@ function openHeld(task: Task): void {
 }
 .mobile-detail-state :deep(button) {
   min-height: 44px;
+}
+.work-empty-state,
+.work-load-error {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 0 0 14px;
+  padding: 18px 20px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--panel);
+}
+.work-empty-state h2,
+.work-load-error h2 {
+  margin: 0;
+  color: var(--txt);
+  font-size: 15px;
+}
+.work-empty-state p,
+.work-load-error p {
+  margin: 4px 0 0;
+  color: var(--txt-muted);
+  font-size: 13px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+.work-empty-state > div:nth-child(2),
+.work-load-error > div {
+  flex: 1;
+  min-width: 0;
+}
+.work-empty-mark {
+  display: grid;
+  flex: none;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border-radius: 10px;
+  background: var(--cyan-tint);
+  color: var(--cyan);
+  font-size: 25px;
+}
+.work-empty-state :deep(button),
+.work-load-error :deep(button) {
+  min-height: 42px;
+  flex: none;
+}
+@media (max-width: 600px) {
+  .work-empty-state,
+  .work-load-error {
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 15px;
+  }
+  .work-empty-state > div:nth-child(2),
+  .work-load-error > div {
+    flex-basis: calc(100% - 50px);
+  }
+  .work-empty-state :deep(button),
+  .work-load-error :deep(button) {
+    margin-left: 50px;
+  }
 }
 .mobile-detail-spinner {
   width: 20px;

@@ -2,20 +2,21 @@
 id: "1170"
 title: "QA pass: web app mobile widths (375/768) across Work, Releases, Settings, Agents, Checks"
 type: bug
-status: review
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: "`needs some work` — the dock lift stops at 1140px, but the centred pill still covers the last parked toggle from 1141px to ~1384px."
+status: done
 priority: p2
 area: web
+merged_commit: 621432ee6456197e5367e70e5f4c408f1ff4ec14
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-web-app-mobile-widths-375-768-ac
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-18T02:19:49Z"
-updated_at: "2026-11-18T03:57:14Z"
-review_passes: 3
+updated_at: "2026-11-18T06:34:01Z"
+last_close_out_gate_ms: 914401
+last_close_out_gate_at: "2026-11-18T06:33:24.596Z"
+review_passes: 6
+last_check_failure: "repoos check at 2026-11-18T05:14:48.037Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 2
 ---
 ## Problem
@@ -28,6 +29,64 @@ No horizontal scroll, clipped buttons, unreachable controls or overlapping drawe
 - Commit docs/qa/2026-11-web-mobile-widths.md with findings.
 ## Notes for AI
 Do not touch repoos.toml. Pages use full .main width.
+
+## Shots
+```json
+[
+{
+"label": "Work mobile queue at 375px",
+"target": "default",
+"route": "/work",
+"highlight": ".mobile-work",
+"steps": [
+{
+"waitFor": ".mobile-task-card"
+}
+],
+"viewportWidth": 375,
+"viewportHeight": 844
+},
+{
+"label": "Work parked controls at 768px",
+"target": "default",
+"route": "/work",
+"highlight": ".parked-lists",
+"steps": [
+{
+"waitFor": ".task-card"
+}
+],
+"viewportWidth": 768,
+"viewportHeight": 844
+},
+{
+"label": "Settings mobile navigation at 375px",
+"target": "default",
+"route": "/settings",
+"highlight": ".settings-mobile-nav",
+"steps": [
+{
+"waitFor": ".settings-mobile-nav"
+}
+],
+"viewportWidth": 375,
+"viewportHeight": 844
+},
+{
+"label": "Settings tab strip at 768px",
+"target": "default",
+"route": "/settings",
+"highlight": ".settings-tabs",
+"steps": [
+{
+"waitFor": ".settings-tabs"
+}
+],
+"viewportWidth": 768,
+"viewportHeight": 844
+}
+]
+```
 
 ## Activity
 
@@ -69,3 +128,47 @@ Do not touch repoos.toml. Pages use full .main width.
 - 2026-11-18T03:41:21Z · needs_input
 - 2026-11-18T03:41:22Z · status active→review
 - 2026-11-18T03:41:23Z · message_queued at 2026-11-18T03:41:23.054Z
+- 2026-11-18T04:16:13Z · needs_input (review-rounds-exhausted) cleared for review again by hello@repoos.org
+- 2026-11-18T04:17:23Z · note: review pass 4: needs some work
+- 2026-11-18T04:21:12Z · note: ui verification passed: 1 shot captured with clean console
+- 2026-11-18T04:41:04Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-18T05:09:02Z · status review→active
+- 2026-11-18T05:09:04Z · message_delivered: 2 message(s)
+- 2026-11-18T05:09:41Z · body
+- 2026-11-18T05:12:44Z · body
+- 2026-11-18T05:13:50Z · status active→review
+- 2026-11-18T05:14:44Z · message_queued at 2026-11-18T05:14:44.788Z
+- 2026-11-18T05:14:45Z · note: shots: failed — browser capture cancelled
+- 2026-11-18T05:14:45Z · note: review pass 5: needs some work
+- 2026-11-18T05:14:45Z · needs_input
+- 2026-11-18T05:14:47Z · message_delivered: 1 message(s)
+- 2026-11-18T05:17:48Z · status review→active
+- 2026-11-18T05:17:51Z · needs_input
+- 2026-11-18T05:17:51Z · message_queued at 2026-11-18T05:17:51.693Z
+- 2026-11-18T05:18:38Z · body
+- 2026-11-18T05:19:37Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-18T05:19:38Z · message_queued at 2026-11-18T05:19:38.105Z
+- 2026-11-18T05:19:38Z · ↻ resuming engineer to read queued message
+- 2026-11-18T05:19:38Z · message_delivered: 2 message(s)
+- 2026-11-18T05:20:41Z · message_queued at 2026-11-18T05:20:41.719Z
+- 2026-11-18T05:21:05Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-18T05:22:01Z · note: highlight .work-page matched nothing on /work
+- 2026-11-18T05:23:37Z · body
+- 2026-11-18T05:26:36Z · body
+- 2026-11-18T05:28:15Z · queued message undelivered for 8m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-18T05:28:15Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code unknown) · last assistant: I verified the four routes with the managed preview; Work at 768px loads its board after a wait. I’ve updated the shot declarations to wait for the real controls and use matching highlights. I’ll run the requested scoped check once now, th… · stderr: 2026-11-18T05:24:12.353333Z ERROR codex_core::tools::router: error=write_stdin failed: Unknown process id 69416
+- 2026-11-18T05:28:15Z · status active→review
+- 2026-11-18T05:28:15Z · message_delivered: 1 message(s)
+- 2026-11-18T05:28:15Z · note: handoff requested (cli)
+- 2026-11-18T05:32:12Z · CTO nudge: held — handoff gate is running
+- 2026-11-18T05:32:41Z · body
+- 2026-11-18T05:33:27Z · status active→review
+- 2026-11-18T05:33:27Z · note: shots: skipped — 7 shots already captured — an engineer-made capture pre-empts the automatic one
+- 2026-11-18T05:33:28Z · needs_input
+- 2026-11-18T05:37:55Z · handoff failed · task-file handoff failed at review · Engineering report draft is missing: .repoos/engineering-report-drafts/1170.md
+- 2026-11-18T05:38:42Z · message_queued at 2026-11-18T05:38:42.240Z
+- 2026-11-18T05:49:42Z · needs_input (review-rounds-exhausted) cleared for review again by hello@repoos.org
+- 2026-11-18T05:50:15Z · note: review pass 6: good to go
+- 2026-11-18T06:33:24Z · close-out gate completed in 914s
+- 2026-11-18T06:33:42Z · message_dropped: 1 queued message(s) discarded — task is done
+- 2026-11-18T06:34:01Z · status done→done, release:success

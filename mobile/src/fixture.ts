@@ -5,10 +5,18 @@
 import type { ServerEntry } from "./types";
 import type { TailnetServer } from "./tailnet";
 
-export type HubFixture = "empty" | "one" | "many" | "unreachable" | "settings" | "add" | "discover";
+export type HubFixture =
+  | "empty"
+  | "one"
+  | "many"
+  | "unreachable"
+  | "settings"
+  | "add"
+  | "discover"
+  | "lock";
 
 const FIXTURE_SERVERS: Record<
-  Exclude<HubFixture, "settings" | "add" | "discover">,
+  Exclude<HubFixture, "settings" | "add" | "discover" | "lock">,
   ServerEntry[]
 > = {
   empty: [],
@@ -56,7 +64,9 @@ const FIXTURE_SERVERS: Record<
 };
 
 export function readHubFixture(): HubFixture | null {
-  if (typeof window === "undefined") return null;
+  // Vite replaces DEV at build time, so query fixtures cannot affect production
+  // server lists, lock settings, or authentication decisions.
+  if (typeof window === "undefined" || !import.meta.env.DEV) return null;
   const raw = new URLSearchParams(window.location.search).get("fixture")?.trim().toLowerCase();
   if (!raw) return null;
   const allowed: HubFixture[] = [
@@ -67,14 +77,25 @@ export function readHubFixture(): HubFixture | null {
     "settings",
     "add",
     "discover",
+    "lock",
   ];
   return allowed.includes(raw as HubFixture) ? (raw as HubFixture) : null;
 }
 
 export function fixtureServers(fixture: HubFixture | null): ServerEntry[] | null {
   if (!fixture || fixture === "settings" || fixture === "add") return null;
-  if (fixture === "discover") return FIXTURE_SERVERS.many;
+  if (fixture === "discover" || fixture === "lock") return FIXTURE_SERVERS.many;
   return FIXTURE_SERVERS[fixture] ?? null;
+}
+
+/** Deterministic browser-only biometric result for exercising the lock overlay. */
+export function readLockFixtureResult(): boolean | null {
+  // Vite replaces DEV at build time; production sessions always use native auth.
+  if (!import.meta.env.DEV || readHubFixture() !== "lock") return null;
+  const result = new URLSearchParams(window.location.search).get("auth");
+  if (result === "success") return true;
+  if (result === "failure") return false;
+  return null;
 }
 
 /**

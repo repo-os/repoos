@@ -390,7 +390,7 @@ function tryOpenInput(ref: string, attempt: number): void {
                 ><span class="state-dot"></span>{{ i.status }}</span
               ><span v-if="i.type">{{ i.type }}</span
               ><span v-if="i.area">{{ i.area }}</span
-              ><span>by {{ i.createdBy || "Unknown" }}</span
+              ><span class="input-byline">by {{ i.createdBy || "Unknown" }}</span
               ><span v-if="i.createdAt">{{ new Date(i.createdAt).toLocaleDateString() }}</span>
             </div>
             <h2>{{ i.title }}</h2>
@@ -733,10 +733,15 @@ function tryOpenInput(ref: string, attempt: number): void {
 .input-row-meta,
 .detail-meta {
   display: flex;
+  flex-wrap: wrap;
   gap: 10px;
   align-items: center;
   color: var(--txt-faint);
   font-size: 11px;
+}
+.input-byline {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 .input-number {
   font-family: var(--font-mono);

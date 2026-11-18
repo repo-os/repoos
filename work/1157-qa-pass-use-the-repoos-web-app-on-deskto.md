@@ -2,16 +2,19 @@
 id: "1157"
 title: "QA pass: use the RepoOS web app on desktop and phone widths, find broken things and fix them"
 type: bug
-status: review
+status: done
 priority: p1
 area: web
+merged_commit: 5aa1e32fe832f49751e36453d5a602d637b58b8d
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-use-the-repoos-web-app-on-deskto
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T15:21:15Z"
-updated_at: "2026-11-17T22:55:45Z"
+updated_at: "2026-11-18T04:38:47Z"
+last_close_out_gate_ms: 1179514
+last_close_out_gate_at: "2026-11-18T04:37:15.682Z"
 review_passes: 4
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/agent-review.test.ts > agent review before human sign-off (#0101) > gates follow-up creation before the freeze and rejects Land anyway without an eligible review on thinkpad — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: 121f350123544f935cc91124afd200aede44bb8e
@@ -234,3 +237,6 @@ Start with the Work page at 390px and the bottom dock/heads/pipeline bar overlap
 - 2026-11-17T22:49:52Z · needs_input (review-rounds-exhausted) cleared for review again by human
 - 2026-11-17T22:54:23Z · note: review pass 8: needs some work — clamped by automated verification: browser verification: Handoff browser verification recorded 2 blocking issue(s): [request] HTTP 401 for http://127.0.0.1:38321/api/project-environments; [request] Failed to load resource: the server responded with a status of 401 (Unauthorized)
 - 2026-11-17T22:55:45Z · note: ui verification failed: ui verification failed (2 issue(s)): [request] HTTP 401 for http://127.0.0.1:33185/api/project-environments (http://127.0.0.1:33185/api/project-environments); [request] Failed to load resource: the server responded with a status of 401 (Unauthorized) (http://127.0.0.1:33185/api/project-environments)
+- 2026-11-18T04:17:31Z · note: Land anyway accepted by human: Nick approved landing: remaining blocker is a 401 on /api/project-environments in the no-auth preview that automated verification counts as a console error; code findings fixed.
+- 2026-11-18T04:37:15Z · close-out gate completed in 1180s
+- 2026-11-18T04:38:47Z · status done→done, release:success

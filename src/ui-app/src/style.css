@@ -947,8 +947,10 @@
   }
   .nav-item .nav-label,
   .side-foot,
-  .theme-switch,
-  .build-widget {
+  /* The base rules for these two come later in the file with the same
+     specificity, so scope the hide to beat them (#1170). */
+  .sidebar .theme-switch,
+  .sidebar .build-widget {
     display: none;
   }
   .nav-item.active::before {
@@ -7233,6 +7235,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: 10px;
   margin-bottom: 10px;
 }
@@ -10466,10 +10469,12 @@
     flex-wrap: wrap;
   }
 }
-@media (max-width: 760px) {
-  /* five tabs don't fit a phone: scroll the strip instead of clipping the
-     last ones. overflow clips at the padding box, so drop the -1px overlap
-     that normally lets the active underline sit on the strip's border. */
+@media (max-width: 1000px) {
+  /* the seven tabs need ~695px. Beside the rail (720-900px) and the 210px
+     sidebar (901-1000px) the strip gets less than that or only just that, so
+     scroll it instead of clipping the last tab (#1170). overflow clips at the padding box, so drop
+     the -1px overlap that normally lets the active underline sit on the
+     strip's border. */
   .settings-tabs {
     overflow-x: auto;
     scrollbar-width: none;
@@ -11033,8 +11038,38 @@
   flex-direction: column;
 }
 .agents-page > .page-header,
+.agents-page > .agents-first-run,
 .agents-page > .agent-tabs {
   flex-shrink: 0;
+}
+.agents-first-run {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 14px;
+  padding: 13px 15px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--panel);
+}
+.agents-first-run-copy {
+  min-width: 0;
+}
+.agents-first-run h2 {
+  margin: 0;
+  color: var(--txt);
+  font-size: 14px;
+}
+.agents-first-run p {
+  margin: 4px 0 0;
+  color: var(--txt-muted);
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+.agents-first-run :deep(button) {
+  min-height: 42px;
+  flex: none;
 }
 .agents-tab-content {
   flex: 1;
@@ -11459,6 +11494,10 @@
     display: block;
     /* Outer scroller at this width — match .work-page end clearance. */
     padding-bottom: var(--page-bottom-inset);
+  }
+  .agents-first-run {
+    align-items: flex-start;
+    flex-wrap: wrap;
   }
   .agents-tab-content {
     overflow: visible;
@@ -14090,6 +14129,7 @@
 }
 .am-list-notice-text {
   min-width: 0;
+  overflow-wrap: anywhere;
 }
 .am-list-notice-retry {
   flex: none;
@@ -14938,6 +14978,29 @@
     background: var(--panel-solid);
     max-height: 50vh;
     overflow-y: auto;
+  }
+}
+/* Tablet and small desktop widths (761-1140px): the integration pill is
+   centred on the bottom row, and the side-by-side dock's 520px pill
+   reservation leaves the toggles 12-364px wide, so they wrapped and sat over
+   the Active column and its controls (#1170). The three chips need about
+   378px on one line, which the side-by-side width only reaches at 1140px.
+   Lift the row above the pill below that; it then needs only the width
+   between the sidebar and the edge. */
+@media (min-width: 761px) and (max-width: 1140px) {
+  .work-page .parked-lists {
+    right: 16px;
+    bottom: 66px;
+    width: auto;
+  }
+}
+/* The 60px icon rail (720-900px) also moves the row to the rail edge. */
+@media (min-width: 761px) and (max-width: 900px) {
+  .work-page .parked-lists {
+    left: calc(60px + 16px);
+  }
+  .work-page::after {
+    left: 60px;
   }
 }
 .archived-rows,
@@ -16970,9 +17033,10 @@
 }
 .secrets-env-control {
   display: grid;
-  justify-items: end;
+  justify-items: stretch;
   gap: 6px;
   flex-shrink: 0;
+  min-width: 0;
 }
 .secrets-label,
 .secrets-view-note {
@@ -16986,10 +17050,14 @@
   position: relative;
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
+  min-width: 0;
+  width: 100%;
 }
 .secrets-picker {
-  width: 220px;
+  width: min(220px, 100%);
+  min-width: 0;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -17514,6 +17582,10 @@
   .drawer-quickbar,
   .drawer-critical {
     padding-inline: 16px;
+  }
+  .drawer-quickbar .task-status-select {
+    flex: 1 1 100%;
+    min-width: 0;
   }
   /* #1147: the preview helper used to share a flex row with the target select
      and Start preview, so it wrapped one or two words per line beside them.

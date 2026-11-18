@@ -7,7 +7,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { Readable } from "node:stream";
 import { getConfigSchema, loadConfig, SUPPORTED_TOML_KEYS } from "../../core/config.js";
+import { patchConfig, safeConfigForBrowser } from "../../server/routes/config.js";
 import type { Agent, RepoOSConfig, Task } from "../../core/types.js";
 import { resolvedUiVerification } from "../../core/ui-verification-config.js";
 import { resolveSettingLocation } from "../src/settings-location.js";
@@ -19,6 +21,92 @@ import {
 import { isEvidenceGapOnlyReview } from "../../core/review-evidence-gaps.js";
 
 describe("uiVerification config (#0680)", () => {
+  it("flattens resolved viewport defaults for the Settings form", () => {
+    const safe = safeConfigForBrowser({} as Record<string, unknown>);
+    expect(safe["uiVerification.enabled"]).toBe(true);
+    expect(safe["uiVerification.autoRefreshStaleOnce"]).toBe(true);
+    expect(safe["uiVerification.viewportWidths"]).toEqual([1024, 375]);
+  });
+
+  it.each([
+    { input: [1280, 390], expected: [1280, 390] },
+    { input: ["1440", "412"], expected: [1440, 412] },
+  ])(
+    "saves numeric viewport widths from the Settings list control",
+    async ({ input, expected }) => {
+      const root = mkdtempSync(join(tmpdir(), "repoos-uiv-patch-"));
+      const cfg = loadConfig(root);
+      const req = Readable.from([
+        Buffer.from(JSON.stringify({ "uiVerification.viewportWidths": input })),
+      ]);
+      const res: {
+        statusCode?: number;
+        payload?: string;
+        writeHead(code: number): unknown;
+        end(payload: string): void;
+      } = {
+        writeHead(code) {
+          res.statusCode = code;
+          return res;
+        },
+        end(payload) {
+          res.payload = payload;
+        },
+      };
+      try {
+        const ctx = {
+          config: { root, cacheDir: cfg.cacheDir, workDir: cfg.workDir },
+          repoos: { config: cfg },
+          index: { refreshAll() {}, async refreshAllAsync() {} },
+          logger: { system() {} },
+        } as never;
+        await patchConfig(ctx, req as never, res as never, {});
+        expect(res.statusCode).toBe(200);
+        expect(loadConfig(root).uiVerification?.viewportWidths).toEqual(expected);
+      } finally {
+        rmSync(root, { recursive: true, force: true });
+      }
+    },
+  );
+
+  it.each([[[]], [[1024, "bad"]], [[0, 375]], [[1.5, 375]]])(
+    "rejects invalid viewport widths with a clear error",
+    async (input) => {
+      const root = mkdtempSync(join(tmpdir(), "repoos-uiv-invalid-"));
+      const cfg = loadConfig(root);
+      const req = Readable.from([
+        Buffer.from(JSON.stringify({ "uiVerification.viewportWidths": input })),
+      ]);
+      const res: {
+        statusCode?: number;
+        payload?: string;
+        writeHead(code: number): unknown;
+        end(payload: string): void;
+      } = {
+        writeHead(code) {
+          res.statusCode = code;
+          return res;
+        },
+        end(payload) {
+          res.payload = payload;
+        },
+      };
+      try {
+        const ctx = {
+          config: { root, cacheDir: cfg.cacheDir, workDir: cfg.workDir },
+          repoos: { config: cfg },
+          index: { refreshAll() {}, async refreshAllAsync() {} },
+          logger: { system() {} },
+        } as never;
+        await patchConfig(ctx, req as never, res as never, {});
+        expect(res.statusCode).toBe(400);
+        expect(JSON.parse(res.payload ?? "{}").error).toContain("positive whole pixel widths");
+      } finally {
+        rmSync(root, { recursive: true, force: true });
+      }
+    },
+  );
+
   it("defaults to enabled with standard viewports", () => {
     const dir = mkdtempSync(join(tmpdir(), "repoos-uiv-cfg-"));
     try {

@@ -235,7 +235,7 @@ async function applyImport(): Promise<void> {
         "Nothing to apply — the file's sections are all empty. No settings were changed.";
     } else {
       // Refresh the Settings form from what the server just saved.
-      await config.load();
+      await config.load({ keepLoaded: true });
       const names = applied
         .map((id) => EXPORT_SECTIONS.find((s) => s.id === id)?.label ?? id)
         .join(", ");
