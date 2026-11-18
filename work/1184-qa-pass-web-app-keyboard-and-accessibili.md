@@ -2,14 +2,14 @@
 id: "1184"
 title: "QA pass: web app keyboard and accessibility – focus order, labels, dialogs, contrast"
 type: bug
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-web-app-keyboard-and-accessibili
 created_at: "2026-11-18T12:17:32Z"
-updated_at: "2026-11-18T15:44:34Z"
+updated_at: "2026-11-18T15:44:35Z"
 review_rounds: 1
 routing_switches: 1
 routing_escalations: 1
@@ -138,3 +138,4 @@ Do not touch repoos.toml.
 - 2026-11-18T15:33:14Z · status review→active
 - 2026-11-18T15:33:17Z · CTO nudge: held — handoff gate is running
 - 2026-11-18T15:44:34Z · note: ui verification passed: 4 of 4 shots captured with clean console
+- 2026-11-18T15:44:35Z · status active→review
