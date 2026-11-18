@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-web-app-first-run-and-empty-stat
 created_at: "2026-11-18T10:17:38Z"
-updated_at: "2026-11-18T12:19:11Z"
+updated_at: "2026-11-18T12:24:13Z"
 last_close_out_gate_ms: 76098
 last_close_out_gate_at: "2026-11-18T12:18:49.505Z"
 review_passes: 3
@@ -99,3 +99,4 @@ Do not touch repoos.toml.
 - 2026-11-18T12:10:58Z · note: review pass 3: good to go
 - 2026-11-18T12:18:49Z · close-out gate completed in 76s
 - 2026-11-18T12:19:11Z · status done→done, release:success
+- 2026-11-18T12:24:13Z · message_dropped: 1 queued message(s) discarded — task is done
