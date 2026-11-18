@@ -305,3 +305,4 @@ Signed-in projects and tasks remain unverified because automated email-code entr
 - 2026-11-18T12:14:26Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code unknown) · last assistant: The remote suite is at 617 of 745 test files and remains green. When it completes, I’ll hand off the checked tree with a fresh report; the human-only sign-in result will remain clearly identified as pending. · stderr: (empty)
 - 2026-11-18T12:14:26Z · status active→review
 - 2026-11-18T12:14:27Z · message_delivered: 1 message(s)
+- 2026-11-18T12:14:27Z · note: handoff requested (cli)
