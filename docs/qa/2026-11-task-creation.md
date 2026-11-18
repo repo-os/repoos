@@ -30,9 +30,11 @@ Added component and TaskDrawer tests for filtering, excluding the current task, 
 ## Verification
 
 - Headless browser run on the actual auth-less preview server at 1280 and 375 px. Only mutating endpoints were intercepted because the preview router correctly rejects writes; this checked UI request payloads and successful response handling, not server persistence.
+- The rendered contrast audit initially found the picker’s small status text below the required contrast in Solarized Dark. The picker now uses the foreground token for status, empty-state, and selected-dependency text so those small labels remain readable across themes.
 - `bun run test -- task-dependency-picker task-dependencies-ui new-task-area-default freeform-submit-ack attachment-upload-ux`: passed.
 - `bun run test -- attachments task-created-by task-dependencies`: passed.
 - `bun run build:ui`: passed.
-- Final changed-path check: `REPOOS_CHECK_CHANGED=main repoos check`.
+- The handoff captures are declared for the new-task picker and editable prerequisite picker so both states are captured from the reviewed tree.
+- Final changed-path check: `REPOOS_CHECK_CHANGED=main repoos check` (including the rendered contrast audit).
 
-Temporary screenshots and the detached scratch worktree were used only for this pass and are not part of the deliverable.
+The detached scratch worktree was used only for this pass and is not part of the deliverable. RepoOS stores the declared handoff captures with the task evidence.

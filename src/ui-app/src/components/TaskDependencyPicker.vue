@@ -147,13 +147,13 @@ function toggle(id: string): void {
 .dependency-status {
   flex: 0 0 auto;
   margin-left: auto;
-  color: var(--muted-foreground);
+  color: var(--foreground);
   font-size: 10px;
 }
 
 .dependency-empty {
   margin: 0;
-  color: var(--muted-foreground);
+  color: var(--foreground);
   font-size: 12px;
 }
 
@@ -163,7 +163,7 @@ function toggle(id: string): void {
   justify-content: space-between;
   gap: 8px;
   min-width: 0;
-  color: var(--muted-foreground);
+  color: var(--foreground);
   font-size: 11px;
 }
 
@@ -177,7 +177,7 @@ function toggle(id: string): void {
   flex: 0 0 auto;
   border: 0;
   background: transparent;
-  color: var(--muted-foreground);
+  color: var(--foreground);
   text-decoration: underline;
   cursor: pointer;
 }
