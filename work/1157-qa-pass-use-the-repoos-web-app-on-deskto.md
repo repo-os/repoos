@@ -12,7 +12,7 @@ branch: feat/qa-pass-use-the-repoos-web-app-on-deskto
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T15:21:15Z"
-updated_at: "2026-11-18T04:37:15Z"
+updated_at: "2026-11-18T04:38:47Z"
 last_close_out_gate_ms: 1179514
 last_close_out_gate_at: "2026-11-18T04:37:15.682Z"
 review_passes: 4
@@ -239,4 +239,4 @@ Start with the Work page at 390px and the bottom dock/heads/pipeline bar overlap
 - 2026-11-17T22:55:45Z · note: ui verification failed: ui verification failed (2 issue(s)): [request] HTTP 401 for http://127.0.0.1:33185/api/project-environments (http://127.0.0.1:33185/api/project-environments); [request] Failed to load resource: the server responded with a status of 401 (Unauthorized) (http://127.0.0.1:33185/api/project-environments)
 - 2026-11-18T04:17:31Z · note: Land anyway accepted by human: Nick approved landing: remaining blocker is a 401 on /api/project-environments in the no-auth preview that automated verification counts as a console error; code findings fixed.
 - 2026-11-18T04:37:15Z · close-out gate completed in 1180s
-
+- 2026-11-18T04:38:47Z · status done→done, release:success
