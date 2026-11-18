@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-18T22:28:15Z"
-review_passes: 1
 id: "1206"
 title: "QA pass: Releases page cut flow with fixtures – notes chooser, blockers, in-progress and failed states at 375px"
 type: bug
@@ -11,6 +9,8 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-releases-page-cut-flow-with-fixt
 created_at: "2026-11-18T22:17:29Z"
+updated_at: "2026-11-18T22:28:16Z"
+review_passes: 1
 ---
 ## Problem
 The Releases cut flow is the most consequential screen and changed a lot (AI notes, publish modes); phone width and failure states need another pass.
@@ -31,4 +31,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T22:27:47Z · message_queued at 2026-11-18T22:27:47.723Z
 - 2026-11-18T22:27:47Z · note: shots: skipped — the diff (4 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-18T22:28:15Z · note: review pass 1: needs some work
-
+- 2026-11-18T22:28:16Z · message_delivered: 1 message(s)
