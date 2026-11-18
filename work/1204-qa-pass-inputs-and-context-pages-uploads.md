@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-inputs-and-context-pages-uploads
 created_at: "2026-11-18T20:47:45Z"
-updated_at: "2026-11-18T21:29:22Z"
+updated_at: "2026-11-18T21:29:51Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-18T21:27:46.766Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 1
@@ -90,3 +90,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T21:27:44Z · status review→active
 - 2026-11-18T21:27:46Z · message_queued at 2026-11-18T21:27:46.665Z
 - 2026-11-18T21:29:22Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-18T21:29:51Z · note: adopted orphaned engineer pid 83274
