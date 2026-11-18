@@ -12,7 +12,7 @@ branch: feat/add-repoos-org-project-updates-signup-an
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-09-21T12:08:58Z"
-updated_at: "2026-11-18T01:35:06Z"
+updated_at: "2026-11-18T01:38:30Z"
 ---
 ## Problem
 
@@ -44,10 +44,10 @@ Run after #0477 (Build Neon Functions double-opt-in updates service).
 ```json
 [
 {
-  "label": "Project updates signup beside the closing CTA",
-  "target": "Landing page",
-  "route": "/",
-  "highlight": "#project-updates"
+"label": "Project updates signup beside the closing CTA",
+"target": "Landing page",
+"route": "/",
+"highlight": "#project-updates"
 }
 ]
 ```
@@ -63,3 +63,4 @@ Run after #0477 (Build Neon Functions double-opt-in updates service).
 - 2026-11-18T01:27:54Z · body
 - 2026-11-18T01:33:23Z · body
 - 2026-11-18T01:35:06Z · body
+- 2026-11-18T01:38:30Z · CTO nudge: held — handoff gate is running
