@@ -11,7 +11,7 @@ branch: feat/qa-pass-web-app-mobile-widths-375-768-ac
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-18T02:19:49Z"
-updated_at: "2026-11-18T05:09:41Z"
+updated_at: "2026-11-18T05:12:44Z"
 review_passes: 4
 review_rounds: 2
 ---
@@ -30,36 +30,36 @@ Do not touch repoos.toml. Pages use full .main width.
 ```json
 [
 {
-  "label": "Work layout at 375px",
-  "target": "default",
-  "route": "/work",
-  "highlight": ".work-page",
-  "viewportWidth": 375,
-  "viewportHeight": 844
+"label": "Work layout at 375px",
+"target": "default",
+"route": "/work",
+"highlight": ".work-page",
+"viewportWidth": 375,
+"viewportHeight": 844
 },
 {
-  "label": "Work parked controls at 768px",
-  "target": "default",
-  "route": "/work",
-  "highlight": ".parked-lists",
-  "viewportWidth": 768,
-  "viewportHeight": 844
+"label": "Work parked controls at 768px",
+"target": "default",
+"route": "/work",
+"highlight": ".parked-lists",
+"viewportWidth": 768,
+"viewportHeight": 844
 },
 {
-  "label": "Settings layout at 375px",
-  "target": "default",
-  "route": "/settings",
-  "highlight": ".settings-tabs",
-  "viewportWidth": 375,
-  "viewportHeight": 844
+"label": "Settings layout at 375px",
+"target": "default",
+"route": "/settings",
+"highlight": ".settings-tabs",
+"viewportWidth": 375,
+"viewportHeight": 844
 },
 {
-  "label": "Settings tab strip at 768px",
-  "target": "default",
-  "route": "/settings",
-  "highlight": ".settings-tabs",
-  "viewportWidth": 768,
-  "viewportHeight": 844
+"label": "Settings tab strip at 768px",
+"target": "default",
+"route": "/settings",
+"highlight": ".settings-tabs",
+"viewportWidth": 768,
+"viewportHeight": 844
 }
 ]
 ```
@@ -111,3 +111,4 @@ Do not touch repoos.toml. Pages use full .main width.
 - 2026-11-18T05:09:02Z · status review→active
 - 2026-11-18T05:09:04Z · message_delivered: 2 message(s)
 - 2026-11-18T05:09:41Z · body
+- 2026-11-18T05:12:44Z · body
