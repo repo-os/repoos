@@ -84,7 +84,9 @@ onMounted(() => {
   const shotFixture = readShotPreviewFixtureFromLocation(window.location);
   if (
     shotFixture === "release:restartPendingLight" ||
-    shotFixture === "release:restartPendingDark"
+    shotFixture === "release:restartPendingDark" ||
+    shotFixture === "release:restartProgress" ||
+    shotFixture === "release:restartError"
   ) {
     digest.value = {
       ok: true,

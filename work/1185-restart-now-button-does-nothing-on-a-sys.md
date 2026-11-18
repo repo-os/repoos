@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-18T19:18:29Z"
-review_passes: 8
 id: "1185"
 title: Restart now button does nothing on a systemd-managed server (misdetected as hand-run)
 type: bug
@@ -11,6 +9,8 @@ assigned_to: ai
 created_by: t@t
 branch: feat/restart-now-button-does-nothing-on-a-sys
 created_at: "2026-11-18T12:27:18Z"
+updated_at: "2026-11-18T18:45:19Z"
+review_passes: 5
 close_out_repair_count: 1
 last_check_failure: "repoos check at 2026-11-18T14:30:25.814Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 2
@@ -161,30 +161,4 @@ Reported by Nick 2026-11-18 20:22 from the phone UI. Related #1154. Do not touch
 - 2026-11-18T17:47:31Z · status review→active
 - 2026-11-18T17:47:32Z · needs_input
 - 2026-11-18T17:47:33Z · message_delivered: 1 message(s)
-- 2026-11-18T18:01:21Z · message_queued at 2026-11-18T18:01:21.746Z
-- 2026-11-18T18:01:41Z · CTO nudge: held — an undelivered message is already queued
-- 2026-11-18T18:04:30Z · watchdog: restarting engineer because a queued message waited 3m with no live process
-- 2026-11-18T18:04:31Z · message_delivered: 1 message(s)
-- 2026-11-18T18:12:41Z · message_queued at 2026-11-18T18:12:41.718Z
-- 2026-11-18T18:13:02Z · CTO nudge: held — an undelivered message is already queued
-- 2026-11-18T18:15:47Z · watchdog: restarting engineer because a queued message waited 3m with no live process
-- 2026-11-18T18:15:48Z · message_delivered: 1 message(s)
-- 2026-11-18T18:31:19Z · body
-- 2026-11-18T18:34:14Z · CTO nudge: held — handoff gate is running
-- 2026-11-18T18:45:18Z · note: ui verification passed: 2 of 2 shots captured with clean console
 - 2026-11-18T18:45:19Z · status active→review
-- 2026-11-18T18:45:19Z · message_queued at 2026-11-18T18:45:19.470Z
-- 2026-11-18T18:46:24Z · note: review pass 6: needs some work
-- 2026-11-18T18:46:24Z · needs_input
-- 2026-11-18T18:47:37Z · status review→active
-- 2026-11-18T18:47:38Z · needs_input
-- 2026-11-18T18:47:39Z · message_delivered: 1 message(s)
-- 2026-11-18T19:03:18Z · body
-- 2026-11-18T19:04:10Z · status active→review
-- 2026-11-18T19:17:03Z · note: ui verification passed: 2 of 2 shots captured with clean console
-- 2026-11-18T19:17:04Z · message_queued at 2026-11-18T19:17:04.749Z
-- 2026-11-18T19:17:04Z · note: review pass 7: needs some work
-- 2026-11-18T19:17:05Z · needs_input
-- 2026-11-18T19:17:33Z · needs_input (review-human-attention) cleared for review again by human
-- 2026-11-18T19:18:29Z · note: review pass 8: good to go
-
