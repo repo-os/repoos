@@ -11,7 +11,7 @@ branch: feat/verify-secrets-page-behavior-with-authen
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-17T17:53:29Z"
-updated_at: "2026-11-18T00:24:50Z"
+updated_at: "2026-11-18T00:27:02Z"
 ---
 ## Problem
 During task #1157 browser QA using the auth-less preview server, GET /api/project-environments returned 401 and the Secrets page displayed a failure state. The endpoint requires sign-in; this run could not verify the normal authenticated product flow or whether the no-auth failure state provides useful guidance.
@@ -31,10 +31,10 @@ The initial evidence is an auth-less 401, not proof of a signed-in regression. Q
 ```json
 [
 {
-  "label": "Secrets inventory in the populated signed-in view",
-  "target": "default",
-  "route": "/secrets?shotState=secrets%3Apopulated",
-  "highlight": ".secrets-ledger"
+"label": "Secrets inventory in the populated signed-in view",
+"target": "default",
+"route": "/secrets?shotState=secrets%3Apopulated",
+"highlight": ".secrets-ledger"
 }
 ]
 ```
@@ -52,3 +52,4 @@ The initial evidence is an auth-less 401, not proof of a signed-in regression. Q
 - 2026-11-18T00:17:41Z · status ready→active, branch
 - 2026-11-18T00:22:57Z · body
 - 2026-11-18T00:24:50Z · body
+- 2026-11-18T00:27:02Z · note: ui verification passed: 1 of 1 shot captured with clean console
