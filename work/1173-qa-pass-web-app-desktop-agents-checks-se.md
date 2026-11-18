@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "1173"
 title: "QA pass: web app desktop – Agents, Checks, Settings, Releases pages end to end"
 type: bug
@@ -29,3 +30,4 @@ Do not touch repoos.toml.
 - 2026-11-18T03:57:32Z · status ready→active, branch
 - 2026-11-18T03:59:58Z · body
 - 2026-11-18T04:00:53Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The live QA pass is blocked: the browser host exposed no tabs, and the runner instructions prohibit starting the long-lived local server the task requires. I did not verify the pages or console, so I made no code changes and did not create… · stderr: Reading additional input from stdin...
+
