@@ -3,9 +3,6 @@ id: "1179"
 title: "QA pass: Settings and Agents pages – every control saves, validates and survives reload"
 type: bug
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "Automatic recovery could not restart the engineer: task is already running or finalizing"
 priority: p2
 area: [web, server]
 assigned_to: ai
@@ -108,3 +105,4 @@ Do not touch repoos.toml.
 - 2026-11-18T09:17:36Z · needs_input
 - 2026-11-18T09:17:37Z · watchdog: restarting engineer because a queued message waited 4m with no live process
 - 2026-11-18T09:17:40Z · watchdog: active-without-engineer recovery failed — task is already running or finalizing
+- 2026-11-18T09:17:40Z · needs_input
