@@ -171,12 +171,17 @@ function formatSampleTime(value: string | undefined): string {
   return Number.isFinite(date.getTime()) ? date.toLocaleTimeString() : value;
 }
 
-/** Health label + class for one host, mirroring the Settings drawer's words. */
-function health(h: { probed: boolean; healthy: boolean; detail?: string }): {
+/** Headline state for a host: reachability first, then recent failure and capacity. */
+function health(h: RemoteHostStatusView): {
   label: string;
   cls: string;
 } {
   if (!h.probed) return { label: "not checked yet", cls: "idle" };
+  if (!h.healthy) return { label: h.detail ? "unavailable" : "unreachable", cls: "bad" };
+  if (h.lastRun && !h.lastRun.ok) return { label: "last run failed", cls: "failing" };
+  if (h.maxConcurrent > 0 && h.inFlight >= h.maxConcurrent) {
+    return { label: "busy", cls: "busy" };
+  }
   if (h.healthy) return { label: "ready", cls: "ok" };
   return { label: h.detail ? "unavailable" : "unreachable", cls: "bad" };
 }
@@ -358,7 +363,7 @@ function fmtAgo(iso: string): string {
           cap
         }}</span>
         <span class="rr-health" :class="health(h).cls"
-          >{{ health(h).cls === "ok" ? "●" : health(h).cls === "bad" ? "✕" : "○" }}
+          >{{ health(h).cls === "ok" || health(h).cls === "busy" ? "●" : health(h).cls === "bad" || health(h).cls === "failing" ? "✕" : "○" }}
           {{ health(h).label }}</span
         >
         <span
@@ -797,6 +802,13 @@ function fmtAgo(iso: string): string {
 }
 .rr-health.bad {
   color: var(--red);
+}
+.rr-health.failing {
+  color: var(--red);
+  font-weight: 650;
+}
+.rr-health.busy {
+  color: var(--amber);
 }
 .rr-health.idle {
   color: var(--txt-dim);
