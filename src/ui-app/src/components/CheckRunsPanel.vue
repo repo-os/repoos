@@ -389,6 +389,9 @@ function outcomeLabel(r: CheckRunRow): string {
               <td class="cr-time" :title="fmtTime(r.startedAt)">
                 {{ fmtTime(r.startedAt) }}
                 <span class="cr-ago">{{ fmtAgo(r.startedAt) }}</span>
+                <span v-if="r.outcome === 'fail' && r.failedStep" class="cr-mobile-failure">
+                  Failed at <span class="mono">{{ r.failedStep }}</span>
+                </span>
               </td>
               <td class="cr-task">
                 <span v-if="r.taskId" class="mono">#{{ r.taskId }}</span>
@@ -640,6 +643,9 @@ function outcomeLabel(r: CheckRunRow): string {
 .cr-time {
   white-space: nowrap;
 }
+.cr-mobile-failure {
+  display: none;
+}
 .cr-ago {
   color: var(--txt-dim);
   margin-left: 6px;
@@ -729,5 +735,14 @@ function outcomeLabel(r: CheckRunRow): string {
 .cr-wrap {
   white-space: normal;
   word-break: break-word;
+}
+@media (max-width: 719.98px) {
+  .cr-mobile-failure {
+    display: block;
+    margin-top: 4px;
+    color: var(--red);
+    font-size: 11px;
+    white-space: normal;
+  }
 }
 </style>

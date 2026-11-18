@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 97673
-last_close_out_gate_at: "2026-11-18T20:46:27.770Z"
 id: "1202"
 title: "QA pass: Checks page run history, logs and failure detail – desktop and 375px"
 type: bug
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: 8e553f17152e06354a437c1e19523f7ec9266ce6
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-checks-page-run-history-logs-and
 created_at: "2026-11-18T20:17:41Z"
 updated_at: "2026-11-18T20:46:27Z"
+last_close_out_gate_ms: 97673
+last_close_out_gate_at: "2026-11-18T20:46:27.770Z"
 review_passes: 1
 ---
 ## Problem
