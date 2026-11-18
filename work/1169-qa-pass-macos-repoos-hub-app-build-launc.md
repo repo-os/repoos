@@ -11,7 +11,7 @@ branch: feat/qa-pass-macos-repoos-hub-app-build-launc
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-18T02:19:44Z"
-updated_at: "2026-11-18T13:31:14Z"
+updated_at: "2026-11-18T13:36:14Z"
 review_rounds: 2
 review_passes: 6
 engineer_stall_resume_log: "[{\"at\":\"2026-11-18T04:39:18.645Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-18T04:49:19.309Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-18T08:53:34.221Z\",\"reason\":\"clean-exit-without-handoff\"}]"
@@ -345,3 +345,4 @@ Signed-in projects and tasks remain unverified because automated email-code entr
 - 2026-11-18T13:27:16Z · note: handoff requested (cli)
 - 2026-11-18T13:29:13Z · CTO nudge: held — handoff gate is running
 - 2026-11-18T13:31:14Z · note: adopted orphaned engineer pid 5741
+- 2026-11-18T13:36:14Z · message_queued at 2026-11-18T13:36:14.554Z
