@@ -2,7 +2,7 @@
 id: "1205"
 title: "QA pass: Control (Mission Control) dashboard – every card, chart and empty state at desktop and 375px"
 type: bug
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -79,3 +79,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T23:05:56Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-18T23:08:46Z · queued message undelivered for 4m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-18T23:08:46Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code unknown) · last assistant: I found the test failure: the header text is rendered as `Runtime` (case preserved by the component test), while the assertion expected uppercase `RUNTIME`. The single component test now passes with a case-insensitive assertion. I’m rerunn… · stderr: Reading additional input from stdin... 2026-11-18T22:44:27.195521Z ERROR codex_core::tools::router: error=exec_command failed: CreateProcess { message: "Rejected(\"Failed to create unified exec process: No such file or directory (os error 2)\")" } 2026-11-18T23:06:27.181253Z ERROR codex_core::tools::router: error=exec…
+- 2026-11-18T23:08:46Z · status active→review
