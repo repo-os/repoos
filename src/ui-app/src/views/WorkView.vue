@@ -637,33 +637,40 @@ function openHeld(task: Task): void {
 
     <PipelineView v-show="effectiveView === 'pipeline'" />
 
+    <section
+      v-if="effectiveView === 'board' && !repo.loading && repo.boardLoadError"
+      class="work-load-error"
+      role="alert"
+      data-testid="work-load-error"
+    >
+      <div>
+        <h2>Couldn't load this project's tasks</h2>
+        <p>{{ repo.boardLoadError }}</p>
+        <p>Check that the RepoOS server is running, then retry.</p>
+      </div>
+      <Button variant="outline" @click="repo.refresh().catch(() => {})">Retry</Button>
+    </section>
+    <section
+      v-else-if="
+        effectiveView === 'board' &&
+        !repo.loading &&
+        !repo.boardLoadError &&
+        repo.total === 0 &&
+        !statusFilter
+      "
+      class="work-empty-state"
+      aria-labelledby="work-empty-title"
+      data-testid="work-empty-state"
+    >
+      <div class="work-empty-mark" aria-hidden="true">＋</div>
+      <div>
+        <h2 id="work-empty-title">Start this project with a task</h2>
+        <p>Add the first task to give your team a clear place to begin.</p>
+      </div>
+      <Button variant="accent" @click="ui.openNewTask()">Create a task</Button>
+    </section>
+
     <div v-show="effectiveView === 'board'" ref="boardEl" class="board">
-      <section
-        v-if="!repo.loading && repo.boardLoadError && !statusFilter"
-        class="work-load-error"
-        role="alert"
-        data-testid="work-load-error"
-      >
-        <div>
-          <h2>Couldn't load this project's tasks</h2>
-          <p>{{ repo.boardLoadError }}</p>
-          <p>Check that the RepoOS server is running, then retry.</p>
-        </div>
-        <Button variant="outline" @click="repo.refresh().catch(() => {})">Retry</Button>
-      </section>
-      <section
-        v-else-if="!repo.loading && !repo.boardLoadError && repo.total === 0 && !statusFilter"
-        class="work-empty-state"
-        aria-labelledby="work-empty-title"
-        data-testid="work-empty-state"
-      >
-        <div class="work-empty-mark" aria-hidden="true">＋</div>
-        <div>
-          <h2 id="work-empty-title">Start this project with a task</h2>
-          <p>Add the first task to give your team a clear place to begin.</p>
-        </div>
-        <Button variant="accent" @click="ui.openNewTask()">Create a task</Button>
-      </section>
       <template v-if="statusFilter">
         <BoardColumn
           :col="filterCol!"
