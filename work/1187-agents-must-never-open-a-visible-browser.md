@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/agents-must-never-open-a-visible-browser
 created_at: "2026-11-18T14:08:00Z"
-updated_at: "2026-11-18T15:04:18Z"
+updated_at: "2026-11-18T15:04:25Z"
 ---
 ## Problem
 Nick reports QA engineers' preview servers (e.g. http://127.0.0.1:7273/agents from #1184's 'just serve-noauth') pop open in his real Chrome and take focus from his laptop. Nothing in serve/justfile opens a browser, so the engineer (codex luna) did it via open/xdg-open, a headed browser, or system Chrome.
@@ -31,3 +31,4 @@ Do not touch repoos.toml (the live engineer instructions there are Nick's to edi
 - 2026-11-18T15:01:14Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-18T15:04:17Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-18T15:04:18Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code unknown) · last assistant: The focused prompt test and surrounding changed-path suite have not reported a failure; the run is still advancing through the broader always-run gate set. The main checkout remains untouched, and `AGENTS.md` is still below the 30 KB ceili… · stderr: Reading additional input from stdin...
+- 2026-11-18T15:04:25Z · message_delivered: 1 message(s)
