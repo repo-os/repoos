@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-releases-page-and-checks-page-ev
 created_at: "2026-11-18T08:17:32Z"
-updated_at: "2026-11-18T08:42:30Z"
+updated_at: "2026-11-18T08:42:31Z"
 ---
 ## Problem
 Releases and Checks pages changed a lot in v0.5.90 and may have state bugs.
@@ -45,3 +45,4 @@ Do not touch repoos.toml; skip what #1168 and #1173 covered.
 - 2026-11-18T08:41:11Z · CTO nudge: held — handoff gate is running
 - 2026-11-18T08:42:29Z · note: ui verification passed: 1 of 1 shot captured with clean console
 - 2026-11-18T08:42:30Z · status active→review
+- 2026-11-18T08:42:31Z · message_queued at 2026-11-18T08:42:31.182Z
