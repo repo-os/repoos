@@ -2,7 +2,7 @@
 id: "1169"
 title: "QA pass: macOS RepoOS Hub app – build, launch, connect, and fix what is broken"
 type: bug
-status: active
+status: review
 priority: p2
 area: macos
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/qa-pass-macos-repoos-hub-app-build-launc
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-18T02:19:44Z"
-updated_at: "2026-11-18T12:29:13Z"
+updated_at: "2026-11-18T12:31:14Z"
 review_rounds: 1
 review_passes: 5
 engineer_stall_resume_log: "[{\"at\":\"2026-11-18T04:39:18.645Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-18T04:49:19.309Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-18T08:53:34.221Z\",\"reason\":\"clean-exit-without-handoff\"}]"
@@ -311,3 +311,4 @@ Signed-in projects and tasks remain unverified because automated email-code entr
 - 2026-11-18T12:24:13Z · message_queued at 2026-11-18T12:24:13.355Z
 - 2026-11-18T12:24:13Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-18T12:29:13Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-18T12:31:14Z · status active→review
