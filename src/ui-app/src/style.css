@@ -947,8 +947,10 @@
   }
   .nav-item .nav-label,
   .side-foot,
-  .theme-switch,
-  .build-widget {
+  /* The base rules for these two come later in the file with the same
+     specificity, so scope the hide to beat them (#1170). */
+  .sidebar .theme-switch,
+  .sidebar .build-widget {
     display: none;
   }
   .nav-item.active::before {
@@ -10466,10 +10468,11 @@
     flex-wrap: wrap;
   }
 }
-@media (max-width: 760px) {
-  /* five tabs don't fit a phone: scroll the strip instead of clipping the
-     last ones. overflow clips at the padding box, so drop the -1px overlap
-     that normally lets the active underline sit on the strip's border. */
+@media (max-width: 900px) {
+  /* the seven tabs need ~700px, and tablet widths (720-900px, next to the
+     60px rail) give the strip less than that: scroll it instead of clipping
+     the last ones (#1170). overflow clips at the padding box, so drop the -1px
+     overlap that normally lets the active underline sit on the strip's border. */
   .settings-tabs {
     overflow-x: auto;
     scrollbar-width: none;
@@ -14890,7 +14893,7 @@
 /* Desktop: dock the toggle row bottom-left on the same row as the pinned
    integration bar (bottom: 14px), with the open lists stacking upward from it
    (column-reverse: the toggle row is first in the DOM, so it sits lowest). */
-@media (min-width: 761px) {
+@media (min-width: 720px) {
   .work-page .parked-lists {
     /* Float above the full-height column scrollports, like .ibar-wrap.
        Their shared end inset lets the last card clear this row. */
@@ -14938,6 +14941,22 @@
     background: var(--panel-solid);
     max-height: 50vh;
     overflow-y: auto;
+  }
+}
+/* Tablet widths (720-900px) run the 60px icon rail, and the integration pill
+   is centred on the bottom row. The desktop dock's 210px sidebar offset and
+   its 520px pill reservation leave the toggles about 12px wide here, so they
+   wrapped and sat over the Active column and its controls (#1170). Start the
+   row at the rail edge and lift it above the pill instead. */
+@media (min-width: 720px) and (max-width: 900px) {
+  .work-page .parked-lists {
+    left: calc(60px + 16px);
+    right: 16px;
+    bottom: 66px;
+    width: auto;
+  }
+  .work-page::after {
+    left: 60px;
   }
 }
 .archived-rows,
