@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-android-hub-web-ui-second-pass-s
 created_at: "2026-11-18T09:17:43Z"
-updated_at: "2026-11-18T10:10:41Z"
+updated_at: "2026-11-18T10:10:47Z"
 last_close_out_gate_ms: 79724
 last_close_out_gate_at: "2026-11-18T10:10:41.332Z"
 review_passes: 3
@@ -57,4 +57,4 @@ Do not touch repoos.toml.
 - 2026-11-18T10:06:50Z · note: shots: skipped — the diff (12 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-18T10:07:17Z · note: review pass 3: good to go
 - 2026-11-18T10:10:41Z · close-out gate completed in 80s
-
+- 2026-11-18T10:10:47Z · status done→done, release:success
