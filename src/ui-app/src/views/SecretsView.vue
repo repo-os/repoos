@@ -418,6 +418,10 @@ async function createEnvironment(): Promise<void> {
     window.dispatchEvent(new CustomEvent("repoos:project-environments-changed"));
     await loadSnapshot();
   } catch (e) {
+    if (e instanceof ApiError && e.status === 401) {
+      mutationError(e);
+      return;
+    }
     createError.value = e instanceof ApiError ? mutationError(e) : safeError(e);
   } finally {
     saving.value = false;
@@ -544,7 +548,10 @@ onBeforeUnmount(() => {
           variant="accent"
           class="new-btn"
           data-testid="new-environment"
-          @click="createOpen = true"
+          @click="
+            createError = '';
+            createOpen = true;
+          "
         >
           <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <path
@@ -580,7 +587,14 @@ onBeforeUnmount(() => {
           Start with an empty, private source file. Expected key names come from
           <code>.env.example</code>; its example values are never imported.
         </p>
-        <Button variant="accent" @click="createOpen = true">Create environment</Button>
+        <Button
+          variant="accent"
+          @click="
+            createError = '';
+            createOpen = true;
+          "
+          >Create environment</Button
+        >
       </section>
       <PageSkeleton :loading="showSecretsSkeleton" kind="table" />
       <section

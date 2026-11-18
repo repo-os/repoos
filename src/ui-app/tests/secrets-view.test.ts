@@ -364,6 +364,17 @@ describe("SecretsView (#0929)", () => {
     expect(document.body.textContent).not.toContain("Authentication required");
     expect(wrapper.find('[data-testid="new-environment"]').exists()).toBe(false);
     expect(wrapper.find(".secrets-empty").exists()).toBe(false);
+
+    await wrapper.get('[role="alert"] button').trigger("click");
+    await flushPromises();
+    expect(wrapper.find('[data-testid="new-environment"]').exists()).toBe(true);
+    await wrapper.get('[data-testid="new-environment"]').trigger("click");
+    await flushPromises();
+    expect(wrapper.find(".secrets-create-panel").exists()).toBe(true);
+    expect(wrapper.find('.secrets-create-panel [role="alert"]').exists()).toBe(false);
+    expect(wrapper.find(".secrets-create-panel").text()).not.toContain(
+      "Sign in to view project environments and keys.",
+    );
     wrapper.unmount();
   });
   it("clears a typed key name and value when adding a key returns 401", async () => {
