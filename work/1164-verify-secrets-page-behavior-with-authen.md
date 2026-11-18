@@ -84,3 +84,4 @@ The initial evidence is an auth-less 401, not proof of a signed-in regression. Q
 - 2026-11-18T02:30:10Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-18T03:41:20Z · status review→active
 - 2026-11-18T03:41:23Z · needs_input
+- 2026-11-18T03:41:23Z · message_delivered: 1 message(s)
