@@ -111,3 +111,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T18:00:00Z · watchdog: check wait ended or recovered — cleared needs_input
 - 2026-11-18T18:00:07Z · status active→review
 - 2026-11-18T18:01:07Z · message_queued at 2026-11-18T18:01:07.342Z
+- 2026-11-18T18:01:07Z · note: shots: failed — browser capture cancelled
