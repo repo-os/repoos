@@ -266,7 +266,18 @@ export async function fetchLatestRelease(
 }
 
 export async function cmdUpgrade(args: string[]): Promise<void> {
-  const channelFlag = args.indexOf("--channel");
+  const channelFlags = args.flatMap((arg, index) => (arg === "--channel" ? [index] : []));
+  if (channelFlags.length > 1) {
+    console.error(c.red("  Use --channel only once."));
+    console.error(
+      c.dim(
+        "  Choose one channel: beta, canary, or rc. Usage: repoos upgrade [--channel beta|canary|rc]",
+      ),
+    );
+    process.exitCode = 1;
+    return;
+  }
+  const channelFlag = channelFlags[0] ?? -1;
   if (channelFlag !== -1) {
     const value = args[channelFlag + 1];
     if (!value || value.startsWith("--") || !["beta", "canary", "rc"].includes(value)) {

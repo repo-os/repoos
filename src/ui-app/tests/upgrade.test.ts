@@ -29,6 +29,15 @@ describe("repoos upgrade argument validation", () => {
       expect(error).toHaveBeenCalledWith(expect.stringContaining("Choose beta, canary, or rc"));
     },
   );
+
+  it("rejects repeated --channel flags instead of silently using the first", async () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    await cmdUpgrade(["--channel", "beta", "--channel", "invalid"]);
+
+    expect(process.exitCode).toBe(1);
+    expect(error).toHaveBeenCalledWith(expect.stringContaining("Use --channel only once"));
+    expect(error).toHaveBeenCalledWith(expect.stringContaining("Choose one channel"));
+  });
 });
 
 describe("upgradeRestartReminder", () => {
