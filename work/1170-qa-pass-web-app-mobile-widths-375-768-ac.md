@@ -14,7 +14,7 @@ branch: feat/qa-pass-web-app-mobile-widths-375-768-ac
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-18T02:19:49Z"
-updated_at: "2026-11-18T05:33:28Z"
+updated_at: "2026-11-18T05:37:55Z"
 last_check_failure: "repoos check at 2026-11-18T05:14:48.037Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_passes: 5
 review_rounds: 2
@@ -165,4 +165,4 @@ Do not touch repoos.toml. Pages use full .main width.
 - 2026-11-18T05:33:27Z · status active→review
 - 2026-11-18T05:33:27Z · note: shots: skipped — 7 shots already captured — an engineer-made capture pre-empts the automatic one
 - 2026-11-18T05:33:28Z · needs_input
-
+- 2026-11-18T05:37:55Z · handoff failed · task-file handoff failed at review · Engineering report draft is missing: .repoos/engineering-report-drafts/1170.md
