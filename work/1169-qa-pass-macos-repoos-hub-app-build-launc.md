@@ -262,3 +262,4 @@ Signed-in projects and tasks remain unverified because automated email-code entr
 - 2026-11-18T10:31:26Z · note: handoff requested (cli)
 - 2026-11-18T10:34:51Z · CTO nudge: held — handoff gate is running
 - 2026-11-18T10:43:25Z · message_queued at 2026-11-18T10:43:25.157Z
+- 2026-11-18T10:43:25Z · handoff failed · task-file handoff failed at review · Engineering report draft is missing: .repoos/engineering-report-drafts/1169.md
