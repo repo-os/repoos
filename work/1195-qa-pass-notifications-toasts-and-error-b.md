@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 80956
-last_close_out_gate_at: "2026-11-18T19:14:20.452Z"
 id: "1195"
 title: "QA pass: notifications, toasts and error banners across the app"
 type: bug
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: d2107aa7dce446edbb315bce7a590fcc802255f1
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-notifications-toasts-and-error-b
 created_at: "2026-11-18T18:47:48Z"
 updated_at: "2026-11-18T19:14:20Z"
+last_close_out_gate_ms: 80956
+last_close_out_gate_at: "2026-11-18T19:14:20.452Z"
 review_passes: 1
 ---
 ## Problem
