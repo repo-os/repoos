@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-11-18T05:10:59Z"
-review_passes: 1
+last_close_out_gate_ms: 560758
+last_close_out_gate_at: "2026-11-18T05:48:43.100Z"
 id: "1175"
 title: Fix 401 on /api/project-environments in the handoff preview so UI verification stops flagging it
 type: bug
@@ -11,6 +11,8 @@ assigned_to: ai
 created_by: t@t
 branch: feat/fix-401-on-api-project-environments-in-t
 created_at: "2026-11-18T04:17:45Z"
+updated_at: "2026-11-18T05:48:43Z"
+review_passes: 1
 ---
 ## Problem
 #1157 was blocked for several review passes (landed via Land anyway) because automated UI verification recorded HTTP 401 for /api/project-environments (Secrets page) in the no-auth handoff preview as a console error.
@@ -49,4 +51,5 @@ Related: #1164. Do not touch repoos.toml.
 - 2026-11-18T05:10:26Z · status active→review
 - 2026-11-18T05:10:26Z · message_queued at 2026-11-18T05:10:26.641Z
 - 2026-11-18T05:10:59Z · note: review pass 1: good to go
+- 2026-11-18T05:48:43Z · close-out gate completed in 561s
 
