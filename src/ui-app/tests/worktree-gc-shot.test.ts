@@ -74,3 +74,32 @@ describe("orphaned run process dashboard shot fixture (#1134)", () => {
     expect(alert.text()).toContain("vitest");
   });
 });
+
+describe("Control dashboard populated process-table shot fixture (#1205)", () => {
+  const originalUrl = window.location.href;
+  let wrapper: ReturnType<typeof mount> | undefined;
+
+  afterEach(() => {
+    wrapper?.unmount();
+    wrapper = undefined;
+    window.history.replaceState({}, "", originalUrl);
+  });
+
+  it("keeps a populated process row available for desktop and narrow captures", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    window.history.replaceState({}, "", "/?shotState=system%3AprocessTable");
+    const repo = useRepoStore();
+    repo.health = { isPreviewBuild: true } as Health;
+    applyShotPreviewFixture(repo, "system:processTable");
+
+    wrapper = mount(SystemResourcePanel, { global: { plugins: [pinia] } });
+    await flushPromises();
+
+    expect(shotFixturePinnedSystemStats()).toBe(repo.systemStats);
+    expect(wrapper.findAll(".process-row")).toHaveLength(1);
+    expect(wrapper.get(".process-table-wrap").text()).toContain("#1205");
+    expect(wrapper.get(".process-table-header").text()).toContain("RUNTIME");
+    expect(wrapper.findAll(".sparkline path")).toHaveLength(2);
+  });
+});

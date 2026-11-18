@@ -136,6 +136,26 @@ watch(systemStats, (s) => {
   memHistory.value = [...memHistory.value, s.totals.memPercent].slice(-HISTORY_MAX);
 });
 
+const processTableShotFixture = computed(
+  () =>
+    typeof window !== "undefined" &&
+    !!repo.health?.isPreviewBuild &&
+    isShotPreviewCaptureActive(window.location) &&
+    new URLSearchParams(window.location.search).get("shotState") === "system:processTable",
+);
+
+watch(
+  processTableShotFixture,
+  (active) => {
+    if (!active || !systemStats.value) return;
+    // Give the deterministic responsive capture a short history so both
+    // sparklines render without waiting for multiple live sampling intervals.
+    cpuHistory.value = [systemStats.value.totals.cpuPercent * 0.8, systemStats.value.totals.cpuPercent];
+    memHistory.value = [systemStats.value.totals.memPercent * 0.9, systemStats.value.totals.memPercent];
+  },
+  { immediate: true },
+);
+
 /** Memory the OS can hand back on demand (free + inactive + cache). The number
  *  worth watching — raw `freeMem` is pinned near zero on macOS at all times. */
 const machineAvail = computed(() => {

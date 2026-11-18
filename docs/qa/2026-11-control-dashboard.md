@@ -1,19 +1,17 @@
 # Control dashboard QA — November 2026
 
-## Scope
+## Scope and method
 
-Reviewed Mission Control at 1280px and 375px in headless WebKit against the auth-less `just serve-noauth` server from this task worktree. Inspected AI usage, system resources and CPU/memory sparklines, status counts, auto-engineering, feature releases, live activity, decisions, and attention. Checked rendered text, browser errors, viewport overflow, and the process table's narrow layout.
+Reviewed Mission Control in headless Playwright against the auth-less `just serve-noauth` server launched from a scratch clone of this task worktree. Checked the populated dashboard and intercepted service failures at 1280×1200 and 375×1200. The populated resource captures use the new `system:processTable` preview fixture so the resource sampler cannot leave the process table in its loading state.
 
 ## Results
 
-- **1280px:** The page stayed within the viewport. All six status cards rendered. The live board showed twelve feature releases, system metrics, machine pressure, top processes, and the process row. After a second resource sample, both CPU and memory sparklines rendered with SVG paths. No console or page errors occurred.
-- **375px:** The page stayed at 375px wide with no document-level horizontal overflow. The resource panel and cards fit the viewport. The six-column process table now remains 560px wide inside its own horizontal scroller, so column labels and values do not collapse together. The table can be scrolled without widening the page.
-- **Empty data:** The live repository returned the intended “No AI usage recorded yet” usage state and “No activity yet” state. The attention panel rendered its empty state on the first pass and populated rows on a later pass as repository state changed. The release timeline rendered populated entries.
-- **Error data:** In headless WebKit at 375px, intercepted the board-usage and decisions requests with HTTP 503 responses. The usage panel displayed its unavailable message and Retry action; the decisions panel displayed the service error. The page remained within the viewport and produced no page errors.
-- **Build and test:** `bun run build` passed. The focused responsive test passed in WebKit at 375px and 1280px, and its source assertion checks the scroll container and preserved row widths.
+- **Desktop and phone width:** At both widths the document remained exactly the viewport width, all six status cards rendered, and no page errors occurred. The 375px resource panel stacks CPU, memory, agents, machine and codebase metrics vertically. The process table keeps its 560px row width within its own horizontal scroller; the page itself does not widen.
+- **Resources and charts:** The populated fixture rendered one process row (`#1205`, CPU, memory and runtime) and both CPU and memory sparklines at 375px. The same panel rendered at 1280px with all process columns visible. The screenshot locator captures the complete resource panel, including content below the viewport fold.
+- **Empty data:** At both widths the usage panel displayed “No AI usage recorded yet.” and Live activity displayed its empty message. The dashboard still rendered the six status cards and populated resource panel.
+- **Error data:** At both widths Playwright intercepted `/api/stats/board` and `/api/decisions` with HTTP 503 responses. Usage showed its unavailable message and Retry button, and the decision panel displayed its service error. Neither state caused document overflow or a browser page error.
+- **Screenshots:** Full-page and resource-panel captures were saved in the ignored `.repoos/` directory as `control-dashboard-real-{1280,375}.png`, `control-dashboard-resource-{1280,375}.png`, and `control-dashboard-error-{1280,375}.png`. Handoff shots are declared separately at both viewport widths.
 
-## Fix
+## Fix and regression coverage
 
-The System Resources process header and rows used six grid columns without a narrow-screen overflow container. At phone widths, the grid could compress the fields until the process details were difficult to scan. The wrapper now scrolls horizontally, and the header and data rows retain a 560px minimum width. The surrounding panel and document remain viewport-sized.
-
-Headless captures from this pass were kept under the ignored `.repoos/` directory and are not part of the committed QA record.
+On narrow screens, the process table previously squeezed its six grid columns into the resource panel. The wrapper now scrolls horizontally and the header and rows retain a 560px minimum width. `system:processTable` supplies deterministic resource metrics and a representative task process for desktop and narrow review captures. The responsive geometry test protects the scroller and minimum row width; a component fixture test verifies that the populated process row renders in the actual `SystemResourcePanel`.

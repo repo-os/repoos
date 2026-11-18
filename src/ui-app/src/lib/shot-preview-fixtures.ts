@@ -1320,6 +1320,42 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
       };
       pinnedSystemStats = repo.systemStats;
       break;
+    case "system:processTable":
+      // #1205 — keep the resource panel populated through its live sampler so
+      // desktop and narrow captures both include a real process table row.
+      repo.systemStats = {
+        machine: {
+          cpuCount: 8,
+          totalMem: 16 * 1024 ** 3,
+          freeMem: 5 * 1024 ** 3,
+          availableMem: 7 * 1024 ** 3,
+          loadavg: [1.1, 1.3, 1.2],
+          platform: "darwin",
+        },
+        totals: { cpuPercent: 14, memBytes: 3 * 1024 ** 3, memPercent: 18.75 },
+        processes: [
+          {
+            pid: 4812,
+            taskId: "1205",
+            cpuPercent: 14,
+            memBytes: 3 * 1024 ** 3,
+            elapsed: "00:42",
+            orphaned: false,
+            unverified: false,
+          },
+        ],
+        serve: null,
+        repo: {
+          worktrees: 12,
+          trackedFiles: 1840,
+          linesOfCode: 263_400,
+          worktreeWarnThreshold: 20,
+        },
+        serverPid: 1000,
+        at: nowIso(),
+      };
+      pinnedSystemStats = repo.systemStats;
+      break;
     case "reminders:due": {
       const reminders = useRemindersStore();
       reminders.fixturePinned = true;
