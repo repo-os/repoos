@@ -30,6 +30,7 @@ import PageSkeleton from "../components/PageSkeleton.vue";
 import {
   getCachedPageData,
   invalidatePageData,
+  invalidatePageDataPrefix,
   refreshPageData,
 } from "../composables/page-data-cache";
 
@@ -57,6 +58,7 @@ const selected = ref("");
 const snapshot = ref<Snapshot | null>(null);
 const loading = ref(!environmentsLoaded.value);
 const error = ref("");
+const authRequired = ref(false);
 const showSecretsSkeleton = computed(
   () => (loading.value || !!selected.value) && !snapshot.value && !error.value,
 );
@@ -74,10 +76,11 @@ const addOpen = ref(false);
 const restartKeys = ref(new Set<string>());
 const shotFixture = readShotPreviewFixtureFromLocation(window.location);
 const fixture = shotFixture === "secrets:populated" || shotFixture === "secrets:removeDialog";
+const unauthorizedFixture = shotFixture === "secrets:unauthorized";
 const auth = useAuthStore();
 const repo = useRepoStore();
 const config = useConfigStore();
-const canManage = computed(() => fixture || auth.role === "admin");
+const canManage = computed(() => fixture || (!authRequired.value && auth.role === "admin"));
 const environmentFile = computed(() => {
   const env = environments.value.find((item) => item.id === selected.value);
   return (
@@ -241,7 +244,7 @@ async function openEnvInEditor(): Promise<void> {
     );
     repo.pushToast(`${source?.path ?? "Environment file"} opened in your editor.`, "success");
   } catch (err) {
-    repo.pushToast(err instanceof Error ? err.message : "Could not open editor", "error");
+    repo.pushToast(mutationError(err, "Could not open editor"), "error");
   }
 }
 
@@ -256,6 +259,7 @@ async function loadEnvironments(): Promise<void> {
       "project-environments",
       () => api<{ environments: Environment[] }>("/api/project-environments"),
       (data) => {
+        authRequired.value = false;
         environmentsLoaded.value = true;
         environments.value = data.environments;
         loading.value = false;
@@ -268,8 +272,10 @@ async function loadEnvironments(): Promise<void> {
       },
       (e) => {
         environmentsLoaded.value = true;
-        if (environments.value.length) snapshotRefreshError.value = safeError(e);
-        else error.value = safeError(e);
+        const message = safeError(e);
+        if (authRequired.value) error.value = message;
+        else if (environments.value.length) snapshotRefreshError.value = message;
+        else error.value = message;
       },
     );
   } catch (e) {
@@ -340,23 +346,56 @@ async function loadSnapshot(): Promise<void> {
       },
       (e) => {
         if (selected.value !== requestedEnv) return;
-        if (snapshot.value) {
-          snapshotRefreshError.value = safeError(e);
+        const message = safeError(e);
+        if (authRequired.value) {
+          error.value = message;
           return;
         }
-        error.value = safeError(e);
+        if (snapshot.value) {
+          snapshotRefreshError.value = message;
+          return;
+        }
+        error.value = message;
       },
     );
   } catch (e) {
     if (selected.value !== requestedEnv) return;
-    if (snapshot.value) snapshotRefreshError.value = safeError(e);
-    else error.value = safeError(e);
+    const message = safeError(e);
+    if (authRequired.value) error.value = message;
+    else if (snapshot.value) snapshotRefreshError.value = message;
+    else error.value = message;
   }
 }
 function safeError(e: unknown): string {
+  if (e instanceof ApiError && e.status === 401) {
+    authRequired.value = true;
+    environments.value = [];
+    selected.value = "";
+    snapshot.value = null;
+    snapshotRefreshError.value = "";
+    confirmKey.value = null;
+    openMenuKey.value = null;
+    editingKey.value = null;
+    addOpen.value = false;
+    keyDraft.value = "";
+    valueDraft.value = "";
+    message.value = "";
+    createOpen.value = false;
+    createError.value = "";
+    newName.value = "";
+    invalidatePageData("project-environments");
+    invalidatePageDataPrefix("secrets:");
+    error.value = "Sign in to view project environments and keys.";
+    return error.value;
+  }
   if (e instanceof ApiError && e.status === 409)
     return "This environment changed since it was loaded. Reload the key list, then retry your change.";
   return "Could not update environment metadata. Check the environment and try again.";
+}
+function mutationError(e: unknown, fallback = "Could not update environment metadata."): string {
+  if (e instanceof ApiError && e.status === 401) return safeError(e);
+  if (e instanceof ApiError) return e.message;
+  return e instanceof Error ? e.message : fallback;
 }
 async function createEnvironment(): Promise<void> {
   const name = newName.value.trim();
@@ -379,7 +418,11 @@ async function createEnvironment(): Promise<void> {
     window.dispatchEvent(new CustomEvent("repoos:project-environments-changed"));
     await loadSnapshot();
   } catch (e) {
-    createError.value = e instanceof ApiError ? e.message : safeError(e);
+    if (e instanceof ApiError && e.status === 401) {
+      mutationError(e);
+      return;
+    }
+    createError.value = e instanceof ApiError ? mutationError(e) : safeError(e);
   } finally {
     saving.value = false;
   }
@@ -442,6 +485,12 @@ async function removeKey(): Promise<void> {
 }
 onMounted(() => {
   document.addEventListener("pointerdown", onDocumentPointerDown);
+  if (unauthorizedFixture) {
+    authRequired.value = true;
+    error.value = "Sign in to view project environments and keys.";
+    loading.value = false;
+    return;
+  }
   if (fixture) {
     const theme = new URLSearchParams(location.search).get("theme");
     if (theme === "light" || theme === "dark") document.documentElement.dataset.theme = theme;
@@ -499,7 +548,10 @@ onBeforeUnmount(() => {
           variant="accent"
           class="new-btn"
           data-testid="new-environment"
-          @click="createOpen = true"
+          @click="
+            createError = '';
+            createOpen = true;
+          "
         >
           <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <path
@@ -525,7 +577,7 @@ onBeforeUnmount(() => {
       </p>
       <p v-if="message" class="secrets-message" role="status">{{ message }}</p>
       <section
-        v-if="!loading && !environments.length"
+        v-if="!loading && !authRequired && !environments.length"
         class="secrets-empty"
         aria-labelledby="secrets-empty-title"
       >
@@ -535,10 +587,21 @@ onBeforeUnmount(() => {
           Start with an empty, private source file. Expected key names come from
           <code>.env.example</code>; its example values are never imported.
         </p>
-        <Button variant="accent" @click="createOpen = true">Create environment</Button>
+        <Button
+          variant="accent"
+          @click="
+            createError = '';
+            createOpen = true;
+          "
+          >Create environment</Button
+        >
       </section>
       <PageSkeleton :loading="showSecretsSkeleton" kind="table" />
-      <section v-if="snapshot" class="secrets-ledger" aria-label="Environment keys">
+      <section
+        v-if="snapshot && !authRequired"
+        class="secrets-ledger"
+        aria-label="Environment keys"
+      >
         <p v-if="environmentFile" class="secrets-file">
           <code>{{ environmentFile }}</code>
           <button
