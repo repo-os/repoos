@@ -43,6 +43,10 @@ export const SHOT_PREVIEW_FIXTURE_IDS = [
   "integration:median15",
   "card:doneError",
   "board:withReviewTask",
+  // #1183 — first-run Work queue with no task cards.
+  "work:empty",
+  // #1183 — initial task-index request failed; show the recoverable error state.
+  "work:failedLoad",
   "card:reviewChecksRunning",
   "card:reviewLandableReady",
   // #1085 — active task with a stale but live handoff record on the checks line.

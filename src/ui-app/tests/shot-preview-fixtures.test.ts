@@ -39,6 +39,19 @@ import { activeEngineerCardHint } from "../src/lib/active-task-card";
 import { makeTask } from "./component-test-helpers";
 
 describe("shot preview board fixtures (#0743)", () => {
+  it.each([
+    ["work:empty", null],
+    ["work:failedLoad", "Can't reach the RepoOS server — it may be down."],
+  ] as const)("seeds the %s first-run Work state", (fixture, error) => {
+    setActivePinia(createPinia());
+    const repo = useRepoStore();
+    repo.tasks.push(makeTask({ id: "existing", status: "inbox" }));
+    applyShotPreviewFixture(repo, fixture);
+    expect(repo.tasks).toHaveLength(0);
+    expect(repo.loading).toBe(false);
+    expect(repo.boardLoadError).toBe(error);
+  });
+
   it("pins a newer-release payload for the release:updateAvailable dialog shot (#1073)", () => {
     setActivePinia(createPinia());
     const repo = useRepoStore();
