@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-web-app-first-run-and-empty-stat
 created_at: "2026-11-18T10:17:38Z"
-updated_at: "2026-11-18T10:54:55Z"
+updated_at: "2026-11-18T10:54:56Z"
 ---
 ## Problem
 First-run, empty and error states are rarely exercised and likely have rough edges.
@@ -53,3 +53,4 @@ Do not touch repoos.toml.
 - 2026-11-18T10:39:51Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-18T10:54:55Z · queued message undelivered for 20m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-18T10:54:55Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code unknown) · last assistant: The required check has checkpointed the final tree and is running its remote build and changed-path test suite now. The browser QA and doc updates are complete; I’m waiting for the gate result before handoff. · stderr: Reading additional input from stdin...
+- 2026-11-18T10:54:56Z · message_delivered: 1 message(s)
