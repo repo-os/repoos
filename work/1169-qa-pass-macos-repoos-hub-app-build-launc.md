@@ -203,3 +203,4 @@ Signed-in projects and tasks remain unverified because automated email-code entr
 - 2026-11-18T08:58:07Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code unknown · last assistant: The scoped check passed, including remote build, formatting and lint, 98 selected tests, the browser gate, and UI smoke. I wrote the current-session report draft to `.repoos/engineering-report-drafts/1169.md`; the branch remains clean. I l… · stderr: Reading additional input from stdin...
 - 2026-11-18T08:58:07Z · status active→review
 - 2026-11-18T08:58:07Z · message_delivered: 1 message(s)
+- 2026-11-18T08:58:07Z · note: handoff requested (cli)
