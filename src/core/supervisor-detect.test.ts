@@ -266,6 +266,22 @@ describe("detectLinuxSupervisor", () => {
     });
   });
 
+  it("recognizes a renamed managed server from its systemd parent when cgroup lookup fails", () => {
+    const execFile = vi.fn().mockImplementation((cmd: string, args: string[]) => {
+      if (cmd === "systemctl") throw new Error("unit lookup unavailable");
+      if (cmd === "cat") throw new Error("cgroup unavailable");
+      if (cmd === "ps" && args.includes("ppid=")) return "1111\n";
+      if (cmd === "ps" && args.includes("command="))
+        return "/lib/systemd/systemd --user com.repoos.serve.tuk-driver-aaa442e5.service\n";
+      throw new Error(`unexpected ${cmd} ${args.join(" ")}`);
+    });
+
+    expect(detectLinuxSupervisor(48210, execFile as never)).toEqual({
+      kind: "managed",
+      job: "com.repoos.serve.tuk-driver-aaa442e5",
+    });
+  });
+
   it("does not mistake a shell-parented hand-run server for a systemd unit", () => {
     const execFile = vi.fn().mockImplementation((cmd: string, args: string[]) => {
       if (cmd === "systemctl") throw new Error("not managed");
