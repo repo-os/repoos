@@ -3,6 +3,9 @@ id: "1185"
 title: Restart now button does nothing on a systemd-managed server (misdetected as hand-run)
 type: bug
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: `needs some work` — the capture does not verify the required restart dialog behavior.
 priority: p1
 area: [web, server]
 assigned_to: ai
@@ -89,3 +92,4 @@ Reported by Nick 2026-11-18 20:22 from the phone UI. Related #1154. Do not touch
 - 2026-11-18T14:43:56Z · status active→review
 - 2026-11-18T14:43:57Z · message_queued at 2026-11-18T14:43:57.069Z
 - 2026-11-18T14:44:48Z · note: review pass 3: needs some work
+- 2026-11-18T14:44:48Z · needs_input
