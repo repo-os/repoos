@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-agents-page-failure-states-and-t
 created_at: "2026-11-18T23:17:32Z"
-updated_at: "2026-11-19T00:28:29Z"
+updated_at: "2026-11-19T00:28:57Z"
 last_close_out_gate_ms: 750743
 last_close_out_gate_at: "2026-11-19T00:28:29.749Z"
 review_passes: 1
@@ -50,4 +50,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-19T00:14:43Z · message_queued at 2026-11-19T00:14:43.148Z
 - 2026-11-19T00:15:16Z · note: review pass 1: good to go
 - 2026-11-19T00:28:29Z · close-out gate completed in 751s
-
+- 2026-11-19T00:28:57Z · status done→done, release:success
