@@ -11,7 +11,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/easter-eggs-bundle-bound-loginview-auth-
 created_at: "2026-11-19T16:18:14Z"
-updated_at: "2026-11-19T17:25:34Z"
+updated_at: "2026-11-19T17:29:35Z"
 ---
 ## Problem
 QA pass #1226 bounded the boot-gating fetches in the web app, but `LoginView.checkStatus` still issues its own unbounded `fetch("/api/auth/status")` and `/api/auth/me` with no `AbortSignal` — a stalled connection leaves the login page's spinner up until the browser's default timeout, the same unbounded-fetch class the pass fixed elsewhere.
@@ -78,3 +78,4 @@ When the server is slow or unreachable, the login page shows a plain-English sta
 - 2026-11-19T17:22:29Z · watchdog: restarting engineer because a queued message waited 3m with no live process
 - 2026-11-19T17:22:30Z · message_delivered: 1 message(s)
 - 2026-11-19T17:25:34Z · body
+- 2026-11-19T17:29:35Z · CTO nudge: held — handoff gate is running
