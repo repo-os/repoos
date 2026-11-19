@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 753031
-last_close_out_gate_at: "2026-11-19T03:12:44.374Z"
 id: "1213"
 title: "QA: automated multi-screen-size layout check for main pages"
 type: chore
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: e974388ebca008f4ce9f20e4e7cc5f6cb2df5217
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-automated-multi-screen-size-layout-ch
 created_at: "2026-11-19T02:18:15Z"
 updated_at: "2026-11-19T03:12:44Z"
+last_close_out_gate_ms: 753031
+last_close_out_gate_at: "2026-11-19T03:12:44.374Z"
 review_passes: 1
 handoff_signal_retry_count: 1
 ---
