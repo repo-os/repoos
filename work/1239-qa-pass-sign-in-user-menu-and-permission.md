@@ -14,7 +14,7 @@ branch: feat/qa-pass-sign-in-user-menu-and-permission
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T18:27:10Z"
-updated_at: "2026-11-19T18:27:18Z"
+updated_at: "2026-11-19T18:40:16Z"
 ---
 ## Problem
 The sign-in flow, user menu and users/permissions settings have not been QA-checked together at phone, tablet and desktop widths since recent changes.
@@ -34,3 +34,4 @@ Do not touch repoos.toml.
 - 2026-11-19T18:27:15Z · status inbox→ready
 - 2026-11-19T18:27:17Z · cli_override, model_override
 - 2026-11-19T18:27:18Z · status ready→active, branch
+- 2026-11-19T18:40:16Z · body
