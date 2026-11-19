@@ -333,6 +333,11 @@ async function runUISmokeTest(): Promise<void> {
     }
     await assertNoHorizontalOverflow("agents", `${server.url}/agents`);
 
+    // The viewport matrix ends on a synthetic drawer fixture. Reload the
+    // ordinary Work route so the interaction smoke below uses server tasks.
+    await page.goto(`${server.url}/work`, { waitUntil: "load", timeout: 20_000 });
+    await waitForWorkBoard(page);
+
     // Navigate to work page and click +New Task
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.evaluate(() => {
