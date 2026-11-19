@@ -2,14 +2,14 @@
 id: "1228"
 title: "QA pass: CLI help and error messages match the docs and read in plain English"
 type: bug
-status: active
+status: review
 priority: p2
 area: core
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-cli-help-and-error-messages-matc
 created_at: "2026-11-19T11:47:39Z"
-updated_at: "2026-11-19T12:42:49Z"
+updated_at: "2026-11-19T12:52:57Z"
 last_check_failure: "repoos check at 2026-11-19T12:23:26.625Z: repoos check failed: ui verification failed (2 issue(s)): [overflow] CLI reference: newly documented checks timings/slots, certify, migrate and rm sections: body scrollWidth 1594 > innerWidth 1024@1024px; [overflow] CLI reference: newly documented checks timings/slots, certify, migrate and rm sections: body scrollWidth 1282 > innerWidth 375@375px"
 ---
 ## Problem
@@ -62,3 +62,4 @@ Do not touch repoos.toml.
 - 2026-11-19T12:41:24Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-19T12:42:46Z · watchdog: restarting engineer because a queued message waited 3m with no live process
 - 2026-11-19T12:42:49Z · message_delivered: 1 message(s)
+- 2026-11-19T12:52:57Z · status active→review
