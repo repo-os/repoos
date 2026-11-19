@@ -2,7 +2,7 @@
 id: "1215"
 title: "QA pass: task create and edit flows at all screen sizes"
 type: bug
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -71,3 +71,4 @@ Do not touch repoos.toml.
 - 2026-11-19T05:46:52Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-19T05:46:52Z · message_queued at 2026-11-19T05:46:52.557Z
 - 2026-11-19T05:46:52Z · ↻ resuming engineer to read queued message
+- 2026-11-19T05:46:52Z · status active→review
