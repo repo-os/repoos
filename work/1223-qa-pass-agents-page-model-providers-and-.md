@@ -3,16 +3,13 @@ id: "1223"
 title: "QA pass: Agents page, model providers and routing tab at all screen sizes"
 type: bug
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "automatic resume could not start the engineer: This worktree already has a recorded live engineer for task #1223 (pid 97162). The task stayed active with its worktree intact."
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-agents-page-model-providers-and-
 created_at: "2026-11-19T07:47:39Z"
-updated_at: "2026-11-19T08:49:16Z"
+updated_at: "2026-11-19T08:59:20Z"
 handoff_signal_retry_count: 2
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\",\"at\":\"2026-11-19T08:22:29.659Z\",\"kind\":\"dev-error\"}]"
@@ -33,22 +30,22 @@ Do not touch repoos.toml.
 ```json
 [
 {
-  "label": "Agents page: switch pill intact and agent list fits",
-  "target": "default",
-  "route": "/agents",
-  "highlight": ".agents-page [role=\"switch\"]"
+"label": "Agents page: switch pill intact and agent list fits",
+"target": "default",
+"route": "/agents",
+"highlight": ".agents-page [role=\"switch\"]"
 },
 {
-  "label": "Model providers: opencode Go usage without the spurious empty-state line",
-  "target": "default",
-  "route": "/agents?tab=model-providers",
-  "highlight": "[data-provider-id=\"opencode-go\"]"
+"label": "Model providers: opencode Go usage without the spurious empty-state line",
+"target": "default",
+"route": "/agents?tab=model-providers",
+"highlight": "[data-provider-id=\"opencode-go\"]"
 },
 {
-  "label": "Model routing: stacked field labels, missing-key notice and masked key form",
-  "target": "default",
-  "route": "/agents?tab=model-routing",
-  "highlight": "[data-testid=\"model-routing-panel\"]"
+"label": "Model routing: stacked field labels, missing-key notice and masked key form",
+"target": "default",
+"route": "/agents?tab=model-routing",
+"highlight": "[data-testid=\"model-routing-panel\"]"
 }
 ]
 ```
@@ -70,3 +67,4 @@ Do not touch repoos.toml.
 - 2026-11-19T08:36:56Z · body
 - 2026-11-19T08:47:09Z · body
 - 2026-11-19T08:49:16Z · body
+- 2026-11-19T08:59:20Z · watchdog: restarting engineer after 10m with no live process
