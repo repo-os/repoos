@@ -11,7 +11,7 @@ branch: feat/qa-pass-docs-site-and-user-docs-navigati
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T20:07:43Z"
-updated_at: "2026-11-19T20:35:44Z"
+updated_at: "2026-11-19T20:45:08Z"
 ---
 ## Problem
 The docs site pages, navigation and search have not been checked on phone widths since the latest docs changes.
@@ -32,3 +32,4 @@ Do not touch repoos.toml.
 - 2026-11-19T20:07:52Z · status ready→active, branch
 - 2026-11-19T20:13:51Z · note: adopted orphaned engineer pid 95543
 - 2026-11-19T20:35:44Z · note: adopted orphaned engineer pid 95543
+- 2026-11-19T20:45:08Z · body
