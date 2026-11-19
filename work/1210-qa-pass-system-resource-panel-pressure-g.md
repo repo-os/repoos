@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-system-resource-panel-pressure-g
 created_at: "2026-11-18T23:47:41Z"
-updated_at: "2026-11-19T01:18:45Z"
+updated_at: "2026-11-19T01:19:31Z"
 handoff_signal_retry_count: 1
 review_rounds: 1
 routing_switches: 1
@@ -29,58 +29,64 @@ Do not touch repoos.toml. Never open a visible browser window.
 ```json
 [
 {
-"label": "Normal pressure at 1280px",
-"target": "default",
-"route": "/",
-"selector": ".resource-panel",
-"state": "system:pressureNormal",
-"viewportWidth": 1280,
-"viewportHeight": 900
+  "label": "Normal pressure at 1280px",
+  "target": "default",
+  "route": "/",
+  "selector": ".resource-panel",
+  "highlight": ".resource-panel",
+  "state": "system:pressureNormal",
+  "viewportWidth": 1280,
+  "viewportHeight": 900
 },
 {
-"label": "Warning pressure at 1280px",
-"target": "default",
-"route": "/",
-"selector": ".resource-panel",
-"state": "system:pressureWarning",
-"viewportWidth": 1280,
-"viewportHeight": 900
+  "label": "Warning pressure at 1280px",
+  "target": "default",
+  "route": "/",
+  "selector": ".resource-panel",
+  "highlight": ".resource-panel",
+  "state": "system:pressureWarning",
+  "viewportWidth": 1280,
+  "viewportHeight": 900
 },
 {
-"label": "Critical pressure at 1280px",
-"target": "default",
-"route": "/",
-"selector": ".resource-panel",
-"state": "system:pressureCritical",
-"viewportWidth": 1280,
-"viewportHeight": 900
+  "label": "Critical pressure at 1280px",
+  "target": "default",
+  "route": "/",
+  "selector": ".resource-panel",
+  "highlight": ".resource-panel",
+  "state": "system:pressureCritical",
+  "viewportWidth": 1280,
+  "viewportHeight": 900
 },
 {
-"label": "Normal pressure panel at 375px",
-"target": "default",
-"route": "/",
-"selector": ".resource-panel",
-"state": "system:pressureNormal",
-"viewportWidth": 375,
-"viewportHeight": 900
+  "label": "Normal pressure panel at 375px",
+  "target": "default",
+  "route": "/",
+  "selector": ".resource-panel",
+  "highlight": ".resource-panel",
+  "state": "system:pressureNormal",
+  "viewportWidth": 375,
+  "viewportHeight": 900
 },
 {
-"label": "Warning pressure panel at 375px",
-"target": "default",
-"route": "/",
-"selector": ".resource-panel",
-"state": "system:pressureWarning",
-"viewportWidth": 375,
-"viewportHeight": 900
+  "label": "Warning pressure panel at 375px",
+  "target": "default",
+  "route": "/",
+  "selector": ".resource-panel",
+  "highlight": ".resource-panel",
+  "state": "system:pressureWarning",
+  "viewportWidth": 375,
+  "viewportHeight": 900
 },
 {
-"label": "Critical pressure panel at 375px",
-"target": "default",
-"route": "/",
-"selector": ".resource-panel",
-"state": "system:pressureCritical",
-"viewportWidth": 375,
-"viewportHeight": 900
+  "label": "Critical pressure panel at 375px",
+  "target": "default",
+  "route": "/",
+  "selector": ".resource-panel",
+  "highlight": ".resource-panel",
+  "state": "system:pressureCritical",
+  "viewportWidth": 375,
+  "viewportHeight": 900
 }
 ]
 ```
@@ -111,3 +117,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-19T01:15:19Z · message_queued at 2026-11-19T01:15:19.319Z
 - 2026-11-19T01:18:31Z · watchdog: restarting engineer because a queued message waited 3m with no live process
 - 2026-11-19T01:18:45Z · message_delivered: 1 message(s)
+- 2026-11-19T01:19:31Z · body
