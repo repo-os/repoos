@@ -125,3 +125,4 @@ Do not touch repoos.toml.
 - 2026-11-19T14:09:51Z · CTO nudge: held — handoff gate is running
 - 2026-11-19T14:29:11Z · note: ui verification failed: ui verification failed (2 issue(s)): [console] Failed to preconnect to https://fonts.googleapis.com/. Error: Error resolving “fonts.googleapis.com”: Name or service not known; [console] Failed to preconnect to https://fonts.gstatic.com/. Error: Error resolving “fonts.gstatic.com”: Name or service not known
 - 2026-11-19T14:29:11Z · message_queued at 2026-11-19T14:29:11.769Z
+- 2026-11-19T14:29:11Z · handoff failed · handoff recovery attempted · finalization failed
