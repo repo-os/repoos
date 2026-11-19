@@ -2,16 +2,16 @@
 id: "1249"
 title: "QA pass: Telegram and notification settings screens and their messages"
 type: bug
-status: ready
+status: active
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
-branch: ""
+branch: feat/qa-pass-telegram-and-notification-settin
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T21:46:55Z"
-updated_at: "2026-11-19T21:47:00Z"
+updated_at: "2026-11-19T21:47:01Z"
 ---
 ## Problem
 The notification and Telegram settings screens and the messages they produce have not been checked for wording, error states and small-screen layout.
@@ -28,3 +28,4 @@ Do not touch repoos.toml.
 - 2026-11-19T21:46:55Z · created · t@t
 - 2026-11-19T21:46:59Z · status inbox→ready
 - 2026-11-19T21:47:00Z · cli_override, model_override
+- 2026-11-19T21:47:01Z · status ready→active, branch
