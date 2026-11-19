@@ -697,10 +697,6 @@ const serveMessage = computed(() => {
   background: color-mix(in srgb, var(--amber) 8%, transparent);
 }
 
-.pressure-alert.normal {
-  background: color-mix(in srgb, var(--green, #36c98f) 5%, transparent);
-}
-
 .pressure-alert.critical {
   border-color: color-mix(in srgb, var(--red) 45%, transparent);
   background: color-mix(in srgb, var(--red) 10%, transparent);
