@@ -1,6 +1,4 @@
 ---
-check_retry_count: 1
-last_check_failure: "repoos check at 2026-11-19T16:36:25.391Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 id: "1231"
 title: "QA pass: keyboard shortcuts and command palette across pages"
 type: bug
@@ -11,7 +9,9 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-keyboard-shortcuts-and-command-p
 created_at: "2026-11-19T13:47:53Z"
-updated_at: "2026-11-19T16:36:25Z"
+updated_at: "2026-11-19T16:41:43Z"
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-19T16:36:25.391Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_passes: 3
 review_rounds: 1
 routing_switches: 1
@@ -162,4 +162,4 @@ Do not touch repoos.toml.
 - 2026-11-19T16:36:22Z · message_queued at 2026-11-19T16:36:22.390Z
 - 2026-11-19T16:36:22Z · note: review pass 3: good to go
 - 2026-11-19T16:36:25Z · message_delivered: 1 message(s)
-
+- 2026-11-19T16:41:43Z · body
