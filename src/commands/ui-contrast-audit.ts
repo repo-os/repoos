@@ -1025,6 +1025,11 @@ function makeScreens(url: string): ScreenState[] {
     },
     { name: "agents", prepare: (p) => gotoApp(p, url, "/agents") },
     { name: "settings", prepare: (p) => gotoApp(p, url, "/settings") },
+    // Keep the release and deployment surfaces in rendered contrast coverage;
+    // both pages gained substantial status and action UI beyond the original
+    // main-page set.
+    { name: "releases", prepare: (p) => gotoApp(p, url, "/releases") },
+    { name: "deployments", prepare: (p) => gotoApp(p, url, "/deployments") },
     // The Dev page (#0802): the declared target's command, real URL and chosen
     // port are text that must meet the floor in every theme scope.
     { name: "dev", prepare: (p) => gotoApp(p, url, "/dev") },
