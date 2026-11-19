@@ -1,19 +1,19 @@
 ---
+updated_at: "2026-11-19T06:18:22Z"
+review_passes: 5
 id: "1211"
 title: "QA pass: remote runner setup docs and runner health screens vs real bee/thinkpad/mini behavior"
 type: bug
 status: review
 needs_input: true
 needs_input_reason: review-rounds-exhausted
-needs_input_detail: `needs some work` — the recorded SSH probe violated the task’s explicit no-SSH requirement.
+needs_input_detail: `needs some work` — the task’s no-SSH requirement was violated by an earlier check.
 priority: p2
 area: [web, docs]
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-remote-runner-setup-docs-and-run
 created_at: "2026-11-19T00:17:32Z"
-updated_at: "2026-11-19T04:30:03Z"
-review_passes: 4
 handoff_signal_retry_count: 1
 review_rounds: 2
 routing_switches: 1
@@ -114,3 +114,8 @@ Do not touch repoos.toml.
 - 2026-11-19T04:30:02Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
 - 2026-11-19T04:30:02Z · message_queued at 2026-11-19T04:30:02.693Z
 - 2026-11-19T04:30:03Z · handoff failed · task-file handoff failed at review · Engineering report draft is missing: .repoos/engineering-report-drafts/1211.md
+- 2026-11-19T05:33:23Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-19T06:17:31Z · needs_input (review-rounds-exhausted) cleared for review again by human
+- 2026-11-19T06:18:22Z · note: review pass 5: needs some work
+- 2026-11-19T06:18:22Z · needs_input
+
