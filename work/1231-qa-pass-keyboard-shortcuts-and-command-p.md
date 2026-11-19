@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-keyboard-shortcuts-and-command-p
 created_at: "2026-11-19T13:47:53Z"
-updated_at: "2026-11-19T14:25:48Z"
+updated_at: "2026-11-19T14:27:16Z"
 handoff_signal_retry_count: 2
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\",\"at\":\"2026-11-19T14:04:52.658Z\",\"kind\":\"dev-error\"}]"
@@ -33,32 +33,18 @@ Do not touch repoos.toml.
 ```json
 [
 {
-"label": "Command palette open over the dashboard",
-"target": "default",
-"route": "/",
-"highlight": ".search-overlay",
-"steps": [
-{
-"click": ".search-input"
-},
-{
-"waitMs": 300
-}
-]
-},
-{
-"label": "Command palette open above the Work board",
-"target": "default",
-"route": "/work",
-"highlight": ".search-overlay",
-"steps": [
-{
-"click": ".search-input"
-},
-{
-"waitMs": 300
-}
-]
+  "label": "Command palette open over the work board (stacks above drawers, consumes Esc)",
+  "target": "default",
+  "route": "/work",
+  "highlight": ".search-overlay",
+  "steps": [
+    {
+      "click": ".search-input"
+    },
+    {
+      "waitMs": 400
+    }
+  ]
 }
 ]
 ```
@@ -78,3 +64,4 @@ Do not touch repoos.toml.
 - 2026-11-19T14:18:11Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 1/3
 - 2026-11-19T14:18:13Z · watchdog: automatic resume failed — This worktree already has a recorded live engineer for task #1231 (pid 12272)
 - 2026-11-19T14:25:48Z · body
+- 2026-11-19T14:27:16Z · body
