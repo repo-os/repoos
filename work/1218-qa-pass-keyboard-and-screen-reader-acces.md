@@ -2,14 +2,14 @@
 id: "1218"
 title: "QA pass: keyboard and screen-reader access on Settings, Agents and Releases"
 type: bug
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
 branch: ""
 created_at: "2026-11-19T04:18:15Z"
-updated_at: "2026-11-19T04:18:15Z"
+updated_at: "2026-11-19T04:18:23Z"
 ---
 ## Problem
 The Settings, Agents and Releases pages have not been checked for keyboard and screen-reader access (focus order, labels, dialogs, contrast).
@@ -25,3 +25,4 @@ Do not touch repoos.toml.
 ## Activity
 
 - 2026-11-19T04:18:15Z · created · t@t
+- 2026-11-19T04:18:23Z · status inbox→ready
