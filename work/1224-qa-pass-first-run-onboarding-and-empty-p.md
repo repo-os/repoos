@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-first-run-onboarding-and-empty-p
 created_at: "2026-11-19T07:48:01Z"
-updated_at: "2026-11-19T08:45:40Z"
+updated_at: "2026-11-19T08:45:44Z"
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\",\"at\":\"2026-11-19T08:22:31.911Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -23,6 +23,24 @@ Empty Work, Agents and Checks pages explain what to do next in plain English and
 - Commit docs/qa/2026-11-first-run-qa.md.
 ## Notes for AI
 Do not touch repoos.toml.
+
+## Shots
+```json
+[
+{
+  "label": "Checks plan tab on a first-run repo: neutral No-plan-configured chip, amber reminder, no red error paragraph",
+  "target": "default",
+  "route": "/checks?shotState=checks%3AemptyPlan&tab=plan",
+  "highlight": ".ncpr"
+},
+{
+  "label": "Work page on an empty project: first-run Create-task card intact (mobile queue count now reads No tasks yet)",
+  "target": "default",
+  "route": "/work?shotState=work%3Aempty",
+  "highlight": "[data-testid=\"work-empty-state\"]"
+}
+]
+```
 
 ## Activity
 
@@ -52,3 +70,4 @@ Do not touch repoos.toml.
 - 2026-11-19T08:36:07Z · orphaned run process stopped · pid 93049 · sleep 60 · cpu 0s · age 25s
 - 2026-11-19T08:43:04Z · body
 - 2026-11-19T08:45:40Z · orphaned run process stopped · pid 80916 · sleep 60 · cpu 0s · age 8s
+- 2026-11-19T08:45:44Z · body
