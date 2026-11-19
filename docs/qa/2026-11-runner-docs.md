@@ -15,9 +15,15 @@ persistent runner configuration change was requested. Subsequent local-tests
 verification avoided another remote dispatch. Current service state, users,
 PATH, and installed versions remain unverified.
 
-The resumed session's final changed-path gate passed with `--local-tests` after
-the runner-screen wording change. It ran the scoped tests and headless UI smoke
-without contacting a configured runner.
+The resumed session's changed-path gate passed with `--local-tests` after the
+runner-screen wording change. On recovery, the required changed-path check was
+run again in local-tests mode: formatting, lint, build, all 130 scoped tests,
+the headless UI smoke, and the user-docs build passed without contacting a
+configured runner. The gate as a whole failed only at rendered contrast, which
+reported 154 low-contrast settings label/description pairs in the unrelated
+`gen-z-dark` theme scope (near-white foreground on white background). No
+contrast failure named the changed runner panel; no styles or `repoos.toml`
+were changed to mask that broader finding.
 
 ## Findings
 
