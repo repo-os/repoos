@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 251181
-last_close_out_gate_at: "2026-11-19T14:51:28.579Z"
 id: "1225"
 title: "QA pass: toasts, banners and dialogs stacking and dismissal at all screen sizes"
 type: bug
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: bbcf06e4e7fa4896fe44075fdc85dd18faf01db1
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-toasts-banners-and-dialogs-stack
 created_at: "2026-11-19T09:17:32Z"
 updated_at: "2026-11-19T14:51:28Z"
+last_close_out_gate_ms: 251181
+last_close_out_gate_at: "2026-11-19T14:51:28.579Z"
 review_passes: 1
 last_check_failure: "repoos check at 2026-11-19T14:29:14.920Z: repoos check failed: ui verification failed (2 issue(s)): [console] Failed to preconnect to https://fonts.googleapis.com/. Error: Error resolving “fonts.googleapis.com”: Name or service not known; [console] Failed to preconnect to https://fonts.gstatic.com/. Error: Error resolving “fonts.gstatic.com”: Name or service not known"
 handoff_signal_retry_count: 2

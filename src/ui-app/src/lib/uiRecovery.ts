@@ -298,3 +298,38 @@ export async function checkUiBuild(): Promise<void> {
 export function uiRecoveryState(): UiRecoveryState {
   return state;
 }
+
+/**
+ * CSS custom properties the toast stack reads for its `top` while a floating
+ * surface covers its corner (#1225). The recovery banner is a top-centered
+ * `z-index: 1000` layer and the notice bell popover is top-right; both sit
+ * over the top-right toast stack and, at phone widths, leave the toasts'
+ * dismiss buttons dead under them. Each surface publishes the y the stack
+ * should move below it (its bottom edge + a gap); the toast panel takes the
+ * larger of the two drops and clears back to its default top when the vars
+ * are removed (surface dismissed/unmounted).
+ */
+export const TOAST_PANEL_DROP_BANNER_VAR = "--toast-panel-drop-banner";
+export const TOAST_PANEL_DROP_POPOVER_VAR = "--toast-panel-drop-notice";
+/** The toast stack's default top: below the topbar (see ToastPanel.vue). */
+const TOAST_PANEL_DEFAULT_TOP = "calc(64px + var(--safe-top))";
+/** Gap between the covering surface's bottom edge and the first toast. */
+const TOAST_PANEL_GAP_PX = 12;
+
+/**
+ * Publish `bottomPx` (viewport y of the covering surface's bottom edge) as an
+ * additional drop for the toast stack, or `null` to clear it. The value is a
+ * calc relative to the stack's default top so both writers compose with the
+ * panel's own `max()` without knowing its baseline.
+ */
+export function setToastPanelDrop(varName: string, bottomPx: number | null): void {
+  if (typeof document === "undefined") return;
+  if (bottomPx === null) {
+    document.documentElement.style.removeProperty(varName);
+  } else {
+    document.documentElement.style.setProperty(
+      varName,
+      `calc(${Math.round(bottomPx)}px + ${TOAST_PANEL_GAP_PX}px - ${TOAST_PANEL_DEFAULT_TOP})`,
+    );
+  }
+}
