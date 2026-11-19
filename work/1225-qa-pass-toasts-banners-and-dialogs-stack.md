@@ -83,3 +83,4 @@ Do not touch repoos.toml.
 - 2026-11-19T12:31:24Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-19T12:52:17Z · queued message undelivered for 26m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-19T12:52:17Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 130) · last assistant: Report draft is at ~1200 words. Now the final scoped check on the post-merge tree: · stderr: (empty)
+- 2026-11-19T12:52:17Z · message_delivered: 1 message(s)
