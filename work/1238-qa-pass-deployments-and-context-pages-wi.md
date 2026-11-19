@@ -11,7 +11,7 @@ branch: feat/qa-pass-deployments-and-context-pages-wi
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T18:26:58Z"
-updated_at: "2026-11-19T18:49:07Z"
+updated_at: "2026-11-19T18:51:13Z"
 ---
 ## Problem
 The Deployments and Context pages have not been checked with failed deployments, long logs and missing data at phone, tablet and desktop widths.
@@ -28,11 +28,11 @@ Do not touch repoos.toml.
 ```json
 [
 {
-  "label": "Refused push: plain-English next step above the git output in a scrolling box",
-  "target": "default",
-  "route": "/deployments",
-  "highlight": ".dep-modal-error",
-  "state": "deployments:deployFailure"
+"label": "Refused push: plain-English next step above the git output in a scrolling box",
+"target": "default",
+"route": "/deployments",
+"highlight": ".dep-modal-error",
+"state": "deployments:deployFailure"
 }
 ]
 ```
@@ -45,3 +45,4 @@ Do not touch repoos.toml.
 - 2026-11-19T18:27:06Z · status ready→active, branch
 - 2026-11-19T18:47:28Z · body
 - 2026-11-19T18:49:07Z · body
+- 2026-11-19T18:51:13Z · CTO nudge: held — handoff gate is running
