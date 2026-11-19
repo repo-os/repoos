@@ -8812,6 +8812,43 @@
     flex-wrap: wrap;
     row-gap: 8px;
   }
+  /* #1223: the 44px touch rule above turns the 40×22 switch pill into a 44px
+     circle, so the on/off track disappears. Keep the 44px hit area and draw
+     the pill track inside it; the thumb keeps its travel within the track. */
+  .agents-page button[role="switch"] {
+    position: relative;
+    border: none;
+    background: none;
+  }
+  .agents-page button[role="switch"]::before {
+    content: "";
+    position: absolute;
+    left: 2px;
+    top: 50%;
+    width: 40px;
+    height: 22px;
+    margin-top: -11px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: transparent;
+  }
+  .agents-page button[role="switch"][data-state="checked"]::before {
+    border-color: var(--cyan);
+    background: var(--cyan-dim);
+  }
+  .agents-page button[role="switch"] > span {
+    position: absolute;
+    left: 3px;
+    top: 50%;
+    margin: -8px 0 0;
+  }
+  /* Tailwind's data-state utility drives position through
+     --tw-translate-x (emitted as `translate: var(--tw-translate-x)`), so the
+     override retargets the custom property rather than the translate
+     shorthand, which the CSS minifier downlevels away. */
+  .agents-page button[role="switch"][data-state="checked"] > span {
+    --tw-translate-x: 22px;
+  }
 }
 .ff-textarea {
   width: 100%;
