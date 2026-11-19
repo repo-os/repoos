@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-19T22:07:40Z"
+review_passes: 3
 id: "1243"
 title: "QA pass: Agents page failure copy after the Jev routing switch and missing key"
 type: bug
@@ -11,8 +13,6 @@ branch: feat/qa-pass-agents-page-failure-copy-after-t
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T20:07:21Z"
-updated_at: "2026-11-19T22:07:40Z"
-review_passes: 2
 review_rounds: 1
 ---
 ## Problem
@@ -69,3 +69,4 @@ Do not touch repoos.toml.
 - 2026-11-19T21:42:00Z · note: review pass 2: good to go
 - 2026-11-19T21:42:29Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (b3940c000) during finalization (#0734)
 - 2026-11-19T22:07:40Z · note: review pass 3: good to go
+
