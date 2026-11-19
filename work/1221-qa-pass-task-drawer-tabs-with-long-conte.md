@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-11-19T07:42:13Z"
-review_passes: 2
+last_close_out_gate_ms: 872180
+last_close_out_gate_at: "2026-11-19T08:21:52.346Z"
 id: "1221"
 title: "QA pass: task drawer tabs with long content at all screen sizes"
 type: bug
@@ -11,6 +11,8 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-task-drawer-tabs-with-long-conte
 created_at: "2026-11-19T06:47:59Z"
+updated_at: "2026-11-19T08:21:52Z"
+review_passes: 2
 review_rounds: 1
 routing_switches: 1
 dev_error_count: 1
@@ -50,4 +52,5 @@ Do not touch repoos.toml.
 - 2026-11-19T07:39:33Z · note: shots: skipped — the diff (8 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-19T07:40:45Z · message_queued at 2026-11-19T07:40:45.040Z
 - 2026-11-19T07:42:13Z · note: review pass 2: good to go
+- 2026-11-19T08:21:52Z · close-out gate completed in 872s
 
