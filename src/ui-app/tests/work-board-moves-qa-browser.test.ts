@@ -446,13 +446,12 @@ interface MountOpts {
 /** Mount one column (cards stubbed by default: the QA assertions here are the
  *  store-level outcome and the dialogs, which the cards don't own). */
 function mountColumn(pinia: ReturnType<typeof createPinia>, opts: MountOpts): VueWrapper {
+  const stubs: Record<string, boolean> = { RestartTaskDialog: true };
+  if (opts.stubTaskCard !== false) stubs.TaskCard = true;
   return mount(BoardColumn, {
     attachTo: document.body,
     props: { col: opts.col },
-    global: {
-      plugins: [pinia],
-      stubs: { TaskCard: opts.stubTaskCard === false ? undefined : true, RestartTaskDialog: true },
-    },
+    global: { plugins: [pinia], stubs },
   });
 }
 
