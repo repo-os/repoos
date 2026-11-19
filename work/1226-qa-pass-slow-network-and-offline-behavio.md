@@ -13,7 +13,6 @@ updated_at: "2026-11-19T15:02:37Z"
 handoff_signal_retry_count: 2
 dev_error_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-11-19T10:00:44.011Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-19T12:54:47.309Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-19T14:15:26.925Z\",\"reason\":\"clean-exit-without-handoff\"}]"
-engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\",\"at\":\"2026-11-19T14:04:52.169Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 The web app and Hub have not been checked for slow, failing or dropped connections.
