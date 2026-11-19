@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-automated-multi-screen-size-layout-ch
 created_at: "2026-11-19T02:18:15Z"
-updated_at: "2026-11-19T03:13:09Z"
+updated_at: "2026-11-19T03:17:41Z"
 last_close_out_gate_ms: 753031
 last_close_out_gate_at: "2026-11-19T03:12:44.374Z"
 review_passes: 1
@@ -52,3 +52,4 @@ Do not touch repoos.toml. Keep the test fast (<60s).
 - 2026-11-19T02:56:41Z · note: review pass 1: good to go
 - 2026-11-19T03:12:44Z · close-out gate completed in 753s
 - 2026-11-19T03:13:09Z · status done→done, release:success
+- 2026-11-19T03:17:41Z · message_dropped: 1 queued message(s) discarded — task is done
