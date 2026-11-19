@@ -1,5 +1,4 @@
 ---
-handoff_signal_retry_count: 1
 id: "1224"
 title: "QA pass: first-run onboarding and empty-project states at all screen sizes"
 type: bug
@@ -11,8 +10,8 @@ created_by: t@t
 branch: feat/qa-pass-first-run-onboarding-and-empty-p
 created_at: "2026-11-19T07:48:01Z"
 updated_at: "2026-11-19T08:50:33Z"
+handoff_signal_retry_count: 1
 dev_error_count: 1
-engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\",\"at\":\"2026-11-19T08:22:31.911Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 A brand-new project (no tasks, no agents configured, no runners) has not been QA-checked for what a new user sees.
@@ -29,10 +28,10 @@ Do not touch repoos.toml.
 ```json
 [
 {
-  "label": "Checks first-run: no plan — neutral chip, amber reminder, no red error line",
-  "target": "default",
-  "route": "/checks?shotState=checks%3AemptyPlan&tab=plan",
-  "highlight": ".ncpr"
+"label": "Checks first-run: no plan — neutral chip, amber reminder, no red error line",
+"target": "default",
+"route": "/checks?shotState=checks%3AemptyPlan&tab=plan",
+"highlight": ".ncpr"
 }
 ]
 ```
