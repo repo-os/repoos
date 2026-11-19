@@ -2,7 +2,7 @@
 id: "1234"
 title: "QA pass: Stats, Dev and activity-log pages at all screen sizes"
 type: bug
-status: review
+status: active
 priority: p2
 area: web
 assigned_to: ai
