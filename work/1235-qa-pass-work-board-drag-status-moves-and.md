@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-work-board-drag-status-moves-and
 created_at: "2026-11-19T16:17:45Z"
-updated_at: "2026-11-19T18:51:10Z"
+updated_at: "2026-11-19T18:51:26Z"
 last_close_out_gate_ms: 796412
 last_close_out_gate_at: "2026-11-19T18:51:10.577Z"
 review_passes: 2
@@ -68,4 +68,4 @@ Do not touch repoos.toml.
 - 2026-11-19T18:13:33Z · note: review pass 2: good to go
 - 2026-11-19T18:13:33Z · message_queued at 2026-11-19T18:13:33.945Z
 - 2026-11-19T18:51:10Z · close-out gate completed in 796s
-
+- 2026-11-19T18:51:26Z · status done→done, release:success
