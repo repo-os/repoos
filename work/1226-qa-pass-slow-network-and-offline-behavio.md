@@ -1,5 +1,5 @@
 ---
-handoff_signal_retry_count: 1
+handoff_signal_retry_count: 2
 id: "1226"
 title: "QA pass: slow network and offline behavior in the web app and Hub"
 type: bug
@@ -35,4 +35,5 @@ Do not touch repoos.toml.
 - 2026-11-19T09:51:25Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
 - 2026-11-19T09:51:25Z · engineer crash recovery: resuming opencode + opencode-go/glm-5.3-flash (1/3 crashes in 30m) · the agent process exited with an error — open the task to see the full output. Open Raw CLI error for details. (CLI: the agent process exited with an error — open the task to see the full output)
 - 2026-11-19T09:51:28Z · needs_input
+
 
