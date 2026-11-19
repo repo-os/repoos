@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-keyboard-shortcuts-and-command-p
 created_at: "2026-11-19T13:47:53Z"
-updated_at: "2026-11-19T14:51:23Z"
+updated_at: "2026-11-19T14:51:58Z"
 handoff_signal_retry_count: 2
 dev_error_count: 1
 engineer_stall_resume_log: "[{\"at\":\"2026-11-19T14:18:11.944Z\",\"reason\":\"clean-exit-without-handoff\"}]"
@@ -70,3 +70,4 @@ Do not touch repoos.toml.
 - 2026-11-19T14:47:57Z · watchdog: restarting engineer because a queued message waited 3m with no live process
 - 2026-11-19T14:47:59Z · message_delivered: 1 message(s)
 - 2026-11-19T14:51:23Z · body
+- 2026-11-19T14:51:58Z · note: stopped orphaned engineer pid 35882
