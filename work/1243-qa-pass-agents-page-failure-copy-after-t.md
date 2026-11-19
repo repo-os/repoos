@@ -11,7 +11,7 @@ branch: feat/qa-pass-agents-page-failure-copy-after-t
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T20:07:21Z"
-updated_at: "2026-11-19T20:56:59Z"
+updated_at: "2026-11-19T20:57:01Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -54,3 +54,4 @@ Do not touch repoos.toml.
 - 2026-11-19T20:56:58Z · note: review pass 1: needs some work
 - 2026-11-19T20:56:58Z · message_delivered: 1 message(s)
 - 2026-11-19T20:56:59Z · status review→active
+- 2026-11-19T20:57:01Z · CTO nudge: held — remote validation is running
