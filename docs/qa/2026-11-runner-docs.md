@@ -52,7 +52,7 @@ interactive user's environment is available to the server process.
 
 Expanded the runner setup material in `docs/remote-validation.md` with the
 account boundary, recipe-specific destinations and permissions, and the
-non-login PATH constraint. Added a concise end-user note to `user-docs/check.md`
+native non-interactive login-shell PATH behavior. Added a concise end-user note to `user-docs/check.md`
 so the `user@host` field is interpreted as the remote SSH login and service-only
 authentication failures have a clear cause. Added regression coverage that
 checks these explanations alongside the actual recipe markers in `justfile`.

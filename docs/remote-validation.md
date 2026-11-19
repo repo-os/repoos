@@ -623,7 +623,8 @@ since the result is identical either way):
   container. Requires Docker (Docker Desktop on macOS).
 - **`runner = "native"`.** Linux or macOS, no Docker. The stock gate runs
   directly on the host; a configured `remoteValidation.command` runs the
-  project's command with the declared toolchain in the SSH user's login environment.
+  project's command with the declared toolchain in the SSH user's
+  non-interactive login shell (`bash -lc`).
 
 **One-time setup per host.** The `just` recipes are the maintained path for
 both:
@@ -660,9 +661,10 @@ The maintained recipes have different privilege and PATH behavior:
   installs `/opt/repoos/validate.sh` with `sudo`.
 - `setup-mini-native` and `setup-linux-native` need no `sudo`: they install
   `validate-macos.sh` as `~/.local/bin/repoos-validate` for the SSH account.
-  Native prerequisites and project tools must be available in the non-login
-  SSH environment used by RepoOS; interactive shell startup files are not a
-  reliable PATH source.
+  The native prerequisite probe and configured project command use
+  `bash -lc`, so native prerequisites and project tools must be available in
+  the SSH user's non-interactive login shell. Configure that account's login
+  PATH; interactive-only startup files are not read by this shell.
 
 The setup recipes also run `repoos runners setup <host>` on the machine where
 `just` is invoked. This installs declared engineer CLIs remotely where
@@ -807,8 +809,9 @@ RepoOS invokes `~/.local/bin/repoos-validate` when present, then falls back to
 project caches can be installed user-level (for example SDKMAN for JDK, `nvm`
 for Node, and the Gradle wrapper shipped with the project). The Android SDK can live under
 `$HOME/Android/Sdk`; add its `platform-tools` and `cmdline-tools/latest/bin`
-directories to the SSH user's login `PATH`. Native execution runs the declared command from the
-checked-out project and keeps the same verified SHA, logs, artifacts, queue,
+directories to the SSH user's login `PATH`. Native execution runs the declared
+command through `bash -lc` from the checked-out project and keeps the same
+verified SHA, logs, artifacts, queue,
 retry and local-fallback behavior as the stock gate. Configure the host's
 `os`/`labels` according to the toolchain it actually has. Docker hosts run the
 same project command inside their configured image; the probe checks that

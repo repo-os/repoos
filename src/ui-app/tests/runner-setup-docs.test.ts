@@ -8,6 +8,10 @@ const setupDocs = readFileSync(
 );
 const checkDocs = readFileSync(new URL("../../../user-docs/check.md", import.meta.url), "utf8");
 const justfile = readFileSync(new URL("../../../justfile", import.meta.url), "utf8");
+const nativeRunner = readFileSync(
+  new URL("../../../scripts/remote-runner/validate-macos.sh", import.meta.url),
+  "utf8",
+);
 
 describe("remote runner setup documentation", () => {
   it("distinguishes the RepoOS service account from the remote SSH account", () => {
@@ -24,6 +28,8 @@ describe("remote runner setup documentation", () => {
     expect(justfile).toContain("cp ~/.repoos-build/validate-macos.sh ~/.local/bin/repoos-validate");
     expect(setupDocs).toContain("install `/opt/repoos/validate.sh` with `sudo`");
     expect(setupDocs).toContain("`validate-macos.sh` as `~/.local/bin/repoos-validate`");
-    expect(setupDocs).toMatch(/non-login\s+SSH environment/);
+    expect(setupDocs).toContain("non-interactive login shell (`bash -lc`)");
+    expect(setupDocs).toMatch(/Native execution runs the declared\s+command through `bash -lc`/);
+    expect(nativeRunner).toContain('bash -lc \'export PATH="/opt/homebrew/bin:$PATH"');
   });
 });
