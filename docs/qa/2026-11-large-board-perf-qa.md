@@ -7,7 +7,7 @@ Task #1251. Scope: the Work board and its Done column at 375, 768 and 1280 px, w
 - **Fixture.** `makeLargeBoard(1200)` in `src/ui-app/tests/large-board-fixture.ts` builds a `/api/board` payload in the server's shape: 980 done, 20 review, 20 active, 60 ready, 80 inbox and 40 draft. One task in 25 is human-assigned and one in 40 is held. Titles vary in length. Bodies are the 500-character preview the store uses.
 - **Harness.** Headless WebKit only. Playwright routes serve the built UI from `dist/ui` and answer `/api/*` from the fixture in memory. No repository, no `repoos serve`, no visible browser, and no real task data changed.
 - **Timing.** Every number is read inside the page with `performance.now()`, measured to the next painted frame (two `requestAnimationFrame` calls) after an input. Open time runs from navigation start to the first painted card.
-- **Baseline.** The baseline is `HEAD` for `repo.ts` and `WorkView.vue`, built the same way, with three runs. The fixed build is the working tree, also three runs. Table values are medians. Ranges in brackets are the min and max of the three runs.
+- **Baseline.** The baseline is the parent of the fix commit (`fbb3b0f3c`, which has the original `repo.ts` and `WorkView.vue`), built the same way, with three runs. The fixed build is the fix commit, also three runs. Table values are medians. Ranges are the min and max of the three runs.
 - **Reproduce.** `bun run build:ui && bun docs/qa/measure-large-board-perf.mjs 1200`. The regression test is `bun run test -- work-board-large-perf`.
 
 ## Results
@@ -32,6 +32,8 @@ Task #1251. Scope: the Work board and its Done column at 375, 768 and 1280 px, w
 | 1280 | Done column scroll, frame gap (60 steps) | 122 ms | 125 ms | 107–193 / 107–143 |
 | 1280 | Idle, longest frame gap in 4 s | 113 ms | 99 ms | 106–130 / 96–142 |
 
+**Re-run on the fix commit (one run, same harness, 1200 tasks).** Open to first card: 341 ms at 375, 646 ms at 768, 667 ms at 1280. Phone search paints in 24 ms. Phone Done paging: median 33 ms per press, max 62 ms, all 980 cards mounted after 81 presses. Human and held toggles paint in 89–120 ms at 768 and 1280. Done expand is 94 ms at 768 and 106 ms at 1280, with at most 40 Done cards mounted and zero card jump. The longest idle frame in 4 s is 46, 92 and 79 ms. These are single-run values and agree with the table ranges except the 768 first-card time, which was faster here.
+
 Layout checks held on both builds at 768 and 1280 px. A card that stayed mounted across a Done window shift moved 0 px in content space. Scroll steps were never clamped. At most 40 Done cards were mounted at once.
 
 ## What changed
@@ -46,7 +48,7 @@ Layout checks held on both builds at 768 and 1280 px. A card that stayed mounted
 - **The fixes reduce script work, but desktop wall-clock time did not change beyond run-to-run noise.** A Chromium CPU profile of the 4 s idle window showed the board's JavaScript dominated by Vue dependency tracking and WorkView render. Per-run figures from that profile are not comparable across the two builds, so no before-and-after number is claimed for script time. In WebKit, the remaining desktop cost is native layout and paint of about 260 mounted cards. Filter toggles take 75–110 ms to paint and Done expand takes 110–200 ms. Scroll gaps reach 100–190 ms, with 4–6 frames over 50 ms in 60 steps.
 - **Done expand may be slightly slower on the fixed build** (median 149 → 161 ms at 1280 px, 89 → 111 ms at 768 px). The ranges overlap at 1280 px but not at 768 px. I did not isolate the cause. Treat it as an open question rather than a regression I have confirmed.
 - **CSS containment does not help.** `contain: layout style` on the cards or on the column children made no difference to toggle or scroll time, so I did not ship it.
-- **Phone Done list is not windowed.** It pages 12 cards per "Show more", but once the whole list is paged in, all 980 cards stay mounted. The DOM and scroll cost grow with paging. Windowing it, as the desktop Done column does, is the next step if phone scroll is still judged slow on a real device.
+- **Phone Done list is not windowed.** `src/ui-app/src/components/MobileWorkQueue.vue` pages 12 cards per "Show more" (`PAGE_SIZE`), but once the whole list is paged in, all 980 cards stay mounted. Paging all 980 took 81 presses in the run below. The DOM and scroll cost grow with paging. Windowing it, as the desktop Done column does, is the next step if phone scroll is still judged slow on a real device.
 - **Idle frames are still long on desktop** (8–10 frames over 50 ms in 4 s at 768 and 1280 px) with only 8–12 DOM mutations. The cost is not in DOM churn. The source has not been isolated.
 - **Open time is about 0.4 s at 375 px and 0.8–0.9 s at 768 and 1280 px** to the first painted card, with the UI bundle served from disk.
 
