@@ -2,14 +2,14 @@
 id: "1220"
 title: "QA pass: dark and light theme contrast on every main page"
 type: bug
-status: ready
+status: active
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
-branch: ""
+branch: feat/qa-pass-dark-and-light-theme-contrast-on
 created_at: "2026-11-19T06:17:41Z"
-updated_at: "2026-11-19T06:17:44Z"
+updated_at: "2026-11-19T06:17:46Z"
 ---
 ## Problem
 Theme contrast on newer pages and dialogs has not been re-checked since recent UI changes.
@@ -26,3 +26,4 @@ Do not touch repoos.toml.
 
 - 2026-11-19T06:17:41Z · created · t@t
 - 2026-11-19T06:17:44Z · status inbox→ready
+- 2026-11-19T06:17:46Z · status ready→active, branch
