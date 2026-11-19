@@ -1,15 +1,11 @@
 ---
-last_close_out_gate_ms: 737850
-last_close_out_gate_at: "2026-11-19T19:59:09.211Z"
 id: "1239"
 title: "QA pass: sign-in, user menu and permissions screens at all screen sizes"
 type: bug
-status: review
-needs_input: true
-needs_input_reason: needs-human-step
-needs_input_detail: "Acceptance criteria mention a real device, physical hardware, accounts, credentials, or third-party registration — split that verification into a separate human-only task. (matched: credentials or keys — \"never use or print real credentials.\")"
+status: done
 priority: p2
 area: web
+merged_commit: 490aa926192954dada1f7338676cfeb59682152b
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-sign-in-user-menu-and-permission
@@ -17,6 +13,8 @@ cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T18:27:10Z"
 updated_at: "2026-11-19T19:59:09Z"
+last_close_out_gate_ms: 737850
+last_close_out_gate_at: "2026-11-19T19:59:09.211Z"
 review_passes: 2
 review_rounds: 1
 ---

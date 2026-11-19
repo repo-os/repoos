@@ -4,6 +4,7 @@ import { useRouter } from "vue-router";
 import { api, JSON_OPTS } from "../api";
 import { useAuthStore } from "../stores/auth";
 import { useDocsStore } from "../stores/docs";
+import ConfirmDialog from "./ConfirmDialog.vue";
 import Button from "./ui/button.vue";
 import Card from "./ui/card.vue";
 import Input from "./ui/input.vue";
@@ -77,14 +78,30 @@ const loadingLinks = ref(false);
 const pendingInvite = ref<TelegramInvite | null>(null);
 const reassignEmail = ref<Record<number, string>>({});
 const disconnectingTelegram = ref(false);
+/** Email waiting on the shared removal dialog (replaces native confirm()). */
+const pendingRemoval = ref<string | null>(null);
+/** Email offered an invite right after it was added. */
+const pendingInviteOffer = ref<string | null>(null);
+/** Set when the list cannot load, so offline never reads as "No users added yet." */
+const usersError = ref("");
+/** Telegram account waiting on the unbind dialog. */
+const pendingUnbind = ref<TelegramLink | null>(null);
+/** Whether the disconnect dialog is open. */
+const pendingDisconnect = ref(false);
+/** Telegram reassignment waiting on its dialog, with the target fixed at open time. */
+const pendingReassign = ref<{ link: TelegramLink; email: string } | null>(null);
+/** Same rule for the Telegram links and audit panes: an error is never an empty list. */
+const linksError = ref("");
+const auditError = ref("");
 
 async function loadUsers(): Promise<void> {
   loadingUsers.value = true;
+  usersError.value = "";
   try {
     const data = await api<{ users: AuthUser[] }>("/api/auth/users");
     users.value = data.users;
   } catch {
-    /* ignore */
+    usersError.value = "Couldn’t load users. Check the connection, then try again.";
   } finally {
     loadingUsers.value = false;
   }
@@ -92,6 +109,7 @@ async function loadUsers(): Promise<void> {
 
 async function loadTelegramLinks(): Promise<void> {
   loadingLinks.value = true;
+  linksError.value = "";
   try {
     const data = await api<{ links: TelegramLink[] }>("/api/auth/telegram/links");
     telegramLinks.value = data.links;
@@ -99,7 +117,8 @@ async function loadTelegramLinks(): Promise<void> {
     for (const link of data.links) next[link.telegramUserId] = link.email;
     reassignEmail.value = next;
   } catch {
-    /* ignore */
+    // Shown as an error, never as an empty list (#1239 review).
+    linksError.value = "Couldn’t load Telegram accounts. Check the connection, then try again.";
   } finally {
     loadingLinks.value = false;
   }
@@ -107,18 +126,20 @@ async function loadTelegramLinks(): Promise<void> {
 
 async function loadAudit(): Promise<void> {
   loadingAudit.value = true;
+  auditError.value = "";
   try {
     const data = await api<{ entries: AuditEntry[] }>("/api/auth/audit?limit=30");
     auditLog.value = data.entries;
   } catch {
-    /* ignore */
+    auditError.value = "Couldn’t load the audit log. Check the connection, then try again.";
   } finally {
     loadingAudit.value = false;
   }
 }
 
 async function addUser(): Promise<void> {
-  if (!newEmail.value.trim()) return;
+  // Enter repeats while the first add is in flight must not re-POST (#1239 review).
+  if (!newEmail.value.trim() || adding.value) return;
   const email = newEmail.value.trim().toLowerCase();
   adding.value = true;
   errorMsg.value = "";
@@ -135,9 +156,7 @@ async function addUser(): Promise<void> {
     newEmail.value = "";
     newRole.value = "member";
     await loadUsers();
-    if (confirm(`Send an invite email to ${email} now?`)) {
-      await sendInvite(email);
-    }
+    pendingInviteOffer.value = email;
   } catch (err) {
     errorMsg.value = err instanceof Error ? err.message : "Failed to add user";
   } finally {
@@ -189,14 +208,40 @@ async function copyStartPayload(): Promise<void> {
   }
 }
 
+/** The Telegram account the unbind dialog is asking about. */
+function askUnbindTelegram(link: TelegramLink): void {
+  pendingUnbind.value = link;
+}
+
+async function confirmUnbind(): Promise<void> {
+  const link = pendingUnbind.value;
+  pendingUnbind.value = null;
+  if (link) await unbindTelegram(link);
+}
+
+function askDisconnectTelegram(): void {
+  pendingDisconnect.value = true;
+}
+
+async function confirmDisconnect(): Promise<void> {
+  pendingDisconnect.value = false;
+  await disconnectTelegramIntegration();
+}
+
+/** The reassign dialog keeps the target chosen when it opened (#1239 review). */
+function askReassignTelegram(link: TelegramLink): void {
+  const email = reassignEmail.value[link.telegramUserId] ?? "";
+  if (!email || email === link.email) return;
+  pendingReassign.value = { link, email };
+}
+
+async function confirmReassign(): Promise<void> {
+  const pending = pendingReassign.value;
+  pendingReassign.value = null;
+  if (pending) await reassignTelegram(pending.link, pending.email);
+}
+
 async function unbindTelegram(link: TelegramLink): Promise<void> {
-  if (
-    !confirm(
-      `Unbind Telegram ${link.telegramUsername ? `@${link.telegramUsername}` : link.telegramUserId} from ${link.email}?`,
-    )
-  ) {
-    return;
-  }
   errorMsg.value = "";
   try {
     await api(`/api/auth/telegram/links/${link.telegramUserId}`, { method: "DELETE" });
@@ -207,13 +252,6 @@ async function unbindTelegram(link: TelegramLink): Promise<void> {
 }
 
 async function disconnectTelegramIntegration(): Promise<void> {
-  if (
-    !confirm(
-      "Disconnect Telegram for this repository? This revokes the project bot, removes every chat binding and user link, and cannot be undone for a bring-your-own token — you will need a new token from BotFather to reconnect.",
-    )
-  ) {
-    return;
-  }
   disconnectingTelegram.value = true;
   errorMsg.value = "";
   successMsg.value = "";
@@ -232,10 +270,7 @@ async function disconnectTelegramIntegration(): Promise<void> {
   }
 }
 
-async function reassignTelegram(link: TelegramLink): Promise<void> {
-  const email = reassignEmail.value[link.telegramUserId] ?? "";
-  if (!email || email === link.email) return;
-  if (!confirm(`Reassign this Telegram account from ${link.email} to ${email}?`)) return;
+async function reassignTelegram(link: TelegramLink, email: string): Promise<void> {
   errorMsg.value = "";
   try {
     await api(
@@ -249,8 +284,23 @@ async function reassignTelegram(link: TelegramLink): Promise<void> {
   }
 }
 
+function askRemoveUser(email: string): void {
+  pendingRemoval.value = email;
+}
+
+async function confirmRemoval(): Promise<void> {
+  const email = pendingRemoval.value;
+  pendingRemoval.value = null;
+  if (email) await removeUser(email);
+}
+
+async function confirmInviteOffer(): Promise<void> {
+  const email = pendingInviteOffer.value;
+  pendingInviteOffer.value = null;
+  if (email) await sendInvite(email);
+}
+
 async function removeUser(email: string): Promise<void> {
-  if (!confirm(`Remove ${email}? Their sessions will be revoked.`)) return;
   errorMsg.value = "";
   try {
     await api(`/api/auth/users/${encodeURIComponent(email)}`, { method: "DELETE" });
@@ -326,10 +376,23 @@ function formatDate(iso: string): string {
           style="flex: 1; max-width: 280px"
           @keyup.enter="addUser"
         />
-        <select v-model="newRole" class="auth-role-select">
-          <option value="member">Member</option>
-          <option value="admin">Admin</option>
-        </select>
+        <Select
+          :model-value="newRole"
+          @update:model-value="(v) => (newRole = v === 'admin' ? 'admin' : 'member')"
+        >
+          <SelectTrigger
+            class="h-[36px] w-[130px] rounded-[9px] px-[11px]"
+            aria-label="New user's role"
+          >
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent position="popper">
+            <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
+              <SelectItem value="member">Member</SelectItem>
+              <SelectItem value="admin">Admin</SelectItem>
+            </SelectViewport>
+          </SelectContent>
+        </Select>
         <Button size="sm" :disabled="adding || !newEmail.trim()" @click="addUser">
           {{ adding ? "Adding..." : "Add user" }}
         </Button>
@@ -339,6 +402,10 @@ function formatDate(iso: string): string {
 
       <!-- User list -->
       <div v-if="loadingUsers" class="auth-loading">Loading users...</div>
+      <div v-else-if="usersError" class="auth-error" role="alert">
+        {{ usersError }}
+        <button class="auth-action" @click="loadUsers">Try again</button>
+      </div>
       <div v-else-if="users.length === 0" class="auth-empty">No users added yet.</div>
       <div v-else class="auth-user-list">
         <div v-for="user in users" :key="user.email" class="auth-user-row">
@@ -364,10 +431,37 @@ function formatDate(iso: string): string {
             <button class="auth-action" @click="toggleRole(user)">
               {{ user.role === "admin" ? "Demote" : "Promote" }}
             </button>
-            <button class="auth-action danger" @click="removeUser(user.email)">Remove</button>
+            <button class="auth-action danger" @click="askRemoveUser(user.email)">Remove</button>
           </div>
         </div>
       </div>
+
+      <ConfirmDialog
+        :open="pendingRemoval !== null"
+        :title="`Remove ${pendingRemoval ?? ''}?`"
+        confirm-label="Remove user"
+        @update:open="
+          (v) => {
+            if (!v) pendingRemoval = null;
+          }
+        "
+        @confirm="confirmRemoval"
+      >
+        Their sessions will be revoked right away.
+      </ConfirmDialog>
+      <ConfirmDialog
+        :open="pendingInviteOffer !== null"
+        :title="`Send an invite email to ${pendingInviteOffer ?? ''} now?`"
+        confirm-label="Send invite"
+        @update:open="
+          (v) => {
+            if (!v) pendingInviteOffer = null;
+          }
+        "
+        @confirm="confirmInviteOffer"
+      >
+        They get an email with a link to sign in.
+      </ConfirmDialog>
 
       <div v-if="pendingInvite" class="tg-invite">
         <div class="tg-invite-label">Telegram bind invite for {{ pendingInvite.email }}</div>
@@ -391,7 +485,7 @@ function formatDate(iso: string): string {
         <button
           class="auth-action danger"
           :disabled="disconnectingTelegram"
-          @click="disconnectTelegramIntegration"
+          @click="askDisconnectTelegram"
         >
           {{ disconnectingTelegram ? "Disconnecting…" : "Disconnect Telegram" }}
         </button>
@@ -400,6 +494,10 @@ function formatDate(iso: string): string {
         </span>
       </div>
       <div v-if="loadingLinks" class="auth-loading">Loading Telegram links...</div>
+      <div v-else-if="linksError" class="auth-error" role="alert">
+        {{ linksError }}
+        <button class="auth-action" @click="loadTelegramLinks">Try again</button>
+      </div>
       <div v-else-if="telegramLinks.length === 0" class="auth-empty">
         No Telegram accounts bound yet.
       </div>
@@ -431,11 +529,11 @@ function formatDate(iso: string): string {
             <button
               class="auth-action"
               :disabled="(reassignEmail[link.telegramUserId] ?? link.email) === link.email"
-              @click="reassignTelegram(link)"
+              @click="askReassignTelegram(link)"
             >
               Reassign
             </button>
-            <button class="auth-action danger" @click="unbindTelegram(link)">Unbind</button>
+            <button class="auth-action danger" @click="askUnbindTelegram(link)">Unbind</button>
           </div>
         </div>
       </div>
@@ -448,6 +546,10 @@ function formatDate(iso: string): string {
       </div>
       <div v-if="showAudit" class="auth-audit">
         <div v-if="loadingAudit" class="auth-loading">Loading...</div>
+        <div v-else-if="auditError" class="auth-error" role="alert">
+          {{ auditError }}
+          <button class="auth-action" @click="loadAudit">Try again</button>
+        </div>
         <div v-else-if="auditLog.length === 0" class="auth-empty">No audit entries yet.</div>
         <div v-else class="auth-audit-list">
           <div v-for="entry in auditLog" :key="entry.id" class="auth-audit-entry">
@@ -458,6 +560,47 @@ function formatDate(iso: string): string {
           </div>
         </div>
       </div>
+
+      <ConfirmDialog
+        :open="pendingUnbind !== null"
+        :title="`Unbind Telegram ${pendingUnbind?.telegramUsername ? `@${pendingUnbind.telegramUsername}` : (pendingUnbind?.telegramUserId ?? '')} from ${pendingUnbind?.email ?? ''}?`"
+        confirm-label="Unbind"
+        @update:open="
+          (v) => {
+            if (!v) pendingUnbind = null;
+          }
+        "
+        @confirm="confirmUnbind"
+      >
+        This Telegram account stops acting for that email until it is bound again.
+      </ConfirmDialog>
+      <ConfirmDialog
+        :open="pendingDisconnect"
+        title="Disconnect Telegram for this repository?"
+        confirm-label="Disconnect"
+        @update:open="
+          (v) => {
+            if (!v) pendingDisconnect = false;
+          }
+        "
+        @confirm="confirmDisconnect"
+      >
+        This revokes the project bot, removes every chat binding and user link, and cannot be undone
+        for a bring-your-own token. You will need a new token from BotFather to reconnect.
+      </ConfirmDialog>
+      <ConfirmDialog
+        :open="pendingReassign !== null"
+        :title="`Reassign this Telegram account from ${pendingReassign?.link.email ?? ''} to ${pendingReassign?.email ?? ''}?`"
+        confirm-label="Reassign"
+        @update:open="
+          (v) => {
+            if (!v) pendingReassign = null;
+          }
+        "
+        @confirm="confirmReassign"
+      >
+        This Telegram account will act for the new email instead of the current one.
+      </ConfirmDialog>
     </div>
   </Card>
 </template>
@@ -476,14 +619,6 @@ function formatDate(iso: string): string {
   align-items: center;
   gap: 8px;
   padding: 8px 0;
-}
-.auth-role-select {
-  padding: 6px 10px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  font-size: 13px;
-  background: var(--panel-solid);
-  color: var(--txt);
 }
 .auth-error {
   color: var(--red);
@@ -552,6 +687,13 @@ function formatDate(iso: string): string {
 }
 .auth-action.danger {
   color: var(--red);
+}
+/* Phones get finger-sized row actions (#1239); desktop keeps the compact text buttons. */
+@media (max-width: 759px) {
+  .auth-action {
+    min-height: 44px;
+    padding: 0 10px;
+  }
 }
 .auth-audit-toggle {
   padding: 8px 0 0 0;
