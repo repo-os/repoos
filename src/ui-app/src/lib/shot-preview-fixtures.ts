@@ -1312,7 +1312,11 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
       repo.toasts.splice(
         0,
         repo.toasts.length,
-        { id: 91005, message: "Close-out for #1225 failed validation: branch not merged into main", type: "error" },
+        {
+          id: 91005,
+          message: "Close-out for #1225 failed validation: branch not merged into main",
+          type: "error",
+        },
         { id: 91004, message: "Recovered and committed 2 files after a reload", type: "success" },
         {
           id: 91003,

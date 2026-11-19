@@ -109,7 +109,13 @@ const detail = computed(() => {
 
 <template>
   <Teleport to="body">
-    <div v-if="recovery.kind" ref="bannerEl" class="ui-recovery-banner" data-overlay-layer="floating" role="alert">
+    <div
+      v-if="recovery.kind"
+      ref="bannerEl"
+      class="ui-recovery-banner"
+      data-overlay-layer="floating"
+      role="alert"
+    >
       <LoaderCircle v-if="recovery.reloading" class="ui-recovery-icon ui-recovery-spinner" />
       <WifiOff v-else-if="recovery.kind === 'offline'" class="ui-recovery-icon" />
       <RotateCcw v-else class="ui-recovery-icon" />

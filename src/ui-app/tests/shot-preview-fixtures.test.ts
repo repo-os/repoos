@@ -75,13 +75,7 @@ describe("shot preview board fixtures (#0743)", () => {
       applyShotPreviewFixture(repo, "toast:stack");
       expect(repo.toasts).toHaveLength(5);
       expect(new Set(repo.toasts.map((t) => t.id)).size).toBe(5);
-      expect(repo.toasts.map((t) => t.type)).toEqual([
-        "error",
-        "success",
-        "info",
-        "info",
-        "error",
-      ]);
+      expect(repo.toasts.map((t) => t.type)).toEqual(["error", "success", "info", "info", "error"]);
       // One message must wrap across lines — the multi-line case QA measures.
       expect(repo.toasts.some((t) => t.message.includes("\n"))).toBe(true);
       // No 6s auto-expiry was armed: the stack survives timer advance, so a

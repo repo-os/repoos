@@ -180,15 +180,15 @@ const findings = [];
 
 function record(scenario, width, ok, detail) {
   findings.push({ scenario, width, ok, detail });
-  console.log(`  ${ok ? "PASS" : "FAIL"}  ${scenario} @${width}${detail ? " — " + JSON.stringify(detail) : ""}`);
+  console.log(
+    `  ${ok ? "PASS" : "FAIL"}  ${scenario} @${width}${detail ? " — " + JSON.stringify(detail) : ""}`,
+  );
 }
 
 async function waitToasts(page, count) {
-  await page.waitForFunction(
-    (n) => document.querySelectorAll(".toast-item").length >= n,
-    count,
-    { timeout: 10_000 },
-  );
+  await page.waitForFunction((n) => document.querySelectorAll(".toast-item").length >= n, count, {
+    timeout: 10_000,
+  });
 }
 
 async function waitDrawer(page) {
@@ -251,7 +251,9 @@ async function toastStackScenario() {
         timeout: 5_000,
       });
       const remaining = await page.evaluate(() =>
-        [...document.querySelectorAll(".toast-item")].map((el) => el.textContent.trim().slice(0, 40)),
+        [...document.querySelectorAll(".toast-item")].map((el) =>
+          el.textContent.trim().slice(0, 40),
+        ),
       );
       record(
         "toast-stack:click-dismiss",
@@ -271,7 +273,9 @@ async function toastStackScenario() {
         timeout: 5_000,
       });
       const after = await page.evaluate(() =>
-        [...document.querySelectorAll(".toast-item")].map((el) => el.textContent.trim().slice(0, 40)),
+        [...document.querySelectorAll(".toast-item")].map((el) =>
+          el.textContent.trim().slice(0, 40),
+        ),
       );
       record(
         "toast-stack:keyboard-dismiss",
@@ -310,43 +314,36 @@ async function boardBannerScenario() {
       // page boots healthy otherwise.
       await page.route("**/api/board", (route) => route.abort());
       await page.goto(`${base}/work`, { waitUntil: "load", timeout: 15_000 });
-      await page.waitForFunction(
-        (sel) => document.querySelector(sel) !== null,
-        bannerSel,
-        { timeout: 15_000 },
-      );
+      await page.waitForFunction((sel) => document.querySelector(sel) !== null, bannerSel, {
+        timeout: 15_000,
+      });
       await page.evaluate(PAGE_HELPERS);
 
       if (shotsDir) {
         await page.screenshot({ path: join(shotsDir, `board-banner-${width}.png`) });
       }
 
-      const probe = await page.evaluate(
-        (sel) => {
-          const banner = document.querySelector(sel);
-          const { vw, vh } = window.__qa.viewport();
-          const r = window.__qa.rect(banner);
-          const retry = [...banner.querySelectorAll("button")].find((b) => window.__qa.visible(b));
-          const dead = window.__qa.deadButtons(sel + " button");
-          return {
-            surface: banner.getAttribute("data-testid"),
-            inViewport: r.left >= -1 && r.right <= vw + 1 && r.top >= -1 && r.bottom <= vh + 1,
-            rect: r,
-            hasRetry: !!retry,
-            retryLabel: retry ? retry.textContent.trim() : null,
-            dead,
-          };
-        },
-        bannerSel,
-      );
+      const probe = await page.evaluate((sel) => {
+        const banner = document.querySelector(sel);
+        const { vw, vh } = window.__qa.viewport();
+        const r = window.__qa.rect(banner);
+        const retry = [...banner.querySelectorAll("button")].find((b) => window.__qa.visible(b));
+        const dead = window.__qa.deadButtons(sel + " button");
+        return {
+          surface: banner.getAttribute("data-testid"),
+          inViewport: r.left >= -1 && r.right <= vw + 1 && r.top >= -1 && r.bottom <= vh + 1,
+          rect: r,
+          hasRetry: !!retry,
+          retryLabel: retry ? retry.textContent.trim() : null,
+          dead,
+        };
+      }, bannerSel);
       record("board-banner:surface", width, true, probe.surface);
       record("board-banner:in-viewport", width, probe.inViewport, probe.rect);
-      record(
-        "board-banner:retry-present",
-        width,
-        probe.hasRetry && probe.dead.length === 0,
-        { label: probe.retryLabel, dead: probe.dead },
-      );
+      record("board-banner:retry-present", width, probe.hasRetry && probe.dead.length === 0, {
+        label: probe.retryLabel,
+        dead: probe.dead,
+      });
 
       // Not stuck: with the failure lifted, Retry reloads the board and the
       // banner clears itself.
@@ -356,11 +353,9 @@ async function boardBannerScenario() {
         const retry = [...banner.querySelectorAll("button")].find((b) => window.__qa.visible(b));
         retry.click();
       }, bannerSel);
-      await page.waitForFunction(
-        (sel) => document.querySelector(sel) === null,
-        bannerSel,
-        { timeout: 15_000 },
-      );
+      await page.waitForFunction((sel) => document.querySelector(sel) === null, bannerSel, {
+        timeout: 15_000,
+      });
       record("board-banner:retry-clears", width, true, null);
 
       if (errors.length) record("board-banner:page-errors", width, false, errors);
@@ -381,7 +376,10 @@ async function dialogScenario() {
           timeout: 15_000,
         });
         await page.waitForFunction(
-          () => document.querySelector('[data-test-id="installed-restart-notice"], .release-update-modal') !== null,
+          () =>
+            document.querySelector(
+              '[data-test-id="installed-restart-notice"], .release-update-modal',
+            ) !== null,
           { timeout: 10_000 },
         );
         await page.evaluate(PAGE_HELPERS);
@@ -396,16 +394,18 @@ async function dialogScenario() {
         const dlg = document.querySelector(".release-update-modal");
         const { vw, vh } = window.__qa.viewport();
         const r = window.__qa.rect(dlg);
-        return { inViewport: r.left >= -1 && r.right <= vw + 1 && r.top >= -1 && r.bottom <= vh + 1, rect: r };
+        return {
+          inViewport: r.left >= -1 && r.right <= vw + 1 && r.top >= -1 && r.bottom <= vh + 1,
+          rect: r,
+        };
       });
       record("dialog:fits-viewport", width, fit.inViewport, fit.rect);
 
       // Escape dismisses.
       await page.keyboard.press("Escape");
-      await page.waitForFunction(
-        () => document.querySelector(".release-update-modal") === null,
-        { timeout: 5_000 },
-      );
+      await page.waitForFunction(() => document.querySelector(".release-update-modal") === null, {
+        timeout: 5_000,
+      });
       record("dialog:escape-dismiss", width, true, null);
 
       // The X button dismisses too (re-open via fixture reload).
@@ -414,10 +414,9 @@ async function dialogScenario() {
         const btn = document.querySelector('.release-update-modal [aria-label="Close"]');
         btn.click();
       });
-      await page.waitForFunction(
-        () => document.querySelector(".release-update-modal") === null,
-        { timeout: 5_000 },
-      );
+      await page.waitForFunction(() => document.querySelector(".release-update-modal") === null, {
+        timeout: 5_000,
+      });
       record("dialog:close-button", width, true, null);
 
       if (errors.length) record("dialog:page-errors", width, false, errors);
@@ -512,14 +511,18 @@ async function recoveryBannerScenario() {
         const dismiss = [...banner.querySelectorAll("button")].find((b) =>
           (b.textContent || "").includes("Dismiss"),
         );
-        return { banner: bRect, toastCount: toasts.length, hiddenToasts: hiddenToasts.length, dead, hasDismiss: !!dismiss };
+        return {
+          banner: bRect,
+          toastCount: toasts.length,
+          hiddenToasts: hiddenToasts.length,
+          dead,
+          hasDismiss: !!dismiss,
+        };
       });
-      record(
-        "recovery-banner:toast-close-live",
-        width,
-        probe.dead.length === 0,
-        { hiddenToasts: probe.hiddenToasts, dead: probe.dead },
-      );
+      record("recovery-banner:toast-close-live", width, probe.dead.length === 0, {
+        hiddenToasts: probe.hiddenToasts,
+        dead: probe.dead,
+      });
       record("recovery-banner:dismiss-present", width, probe.hasDismiss, null);
 
       // Dismiss clears the banner (not stuck).
@@ -572,7 +575,9 @@ async function noticePopoverScenario() {
         const pop = document.querySelector('[data-test-id="notice-bell-popover"]');
         const popRect = window.__qa.rect(pop);
         const toasts = window.__qa.toastRects();
-        const dead = window.__qa.deadButtons('[data-test-id="notice-bell-popover"] button, [data-test-id="notice-bell-popover"] a[href]');
+        const dead = window.__qa.deadButtons(
+          '[data-test-id="notice-bell-popover"] button, [data-test-id="notice-bell-popover"] a[href]',
+        );
         // After the fix the stack must sit below the popover (no overlap).
         const overlapping = toasts.filter((t) => window.__qa.intersect(t, popRect));
         return {

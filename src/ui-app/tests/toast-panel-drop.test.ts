@@ -24,7 +24,10 @@ import {
 
 const dropVars = () => {
   const style = document.documentElement.style;
-  return [style.getPropertyValue(TOAST_PANEL_DROP_BANNER_VAR), style.getPropertyValue(TOAST_PANEL_DROP_POPOVER_VAR)];
+  return [
+    style.getPropertyValue(TOAST_PANEL_DROP_BANNER_VAR),
+    style.getPropertyValue(TOAST_PANEL_DROP_POPOVER_VAR),
+  ];
 };
 
 afterEach(() => {
@@ -53,7 +56,9 @@ describe("setToastPanelDrop", () => {
     expect(pop).toContain("300px");
     setToastPanelDrop(TOAST_PANEL_DROP_BANNER_VAR, null);
     // Clearing one surface's drop leaves the other's untouched.
-    expect(document.documentElement.style.getPropertyValue(TOAST_PANEL_DROP_POPOVER_VAR)).toContain("300px");
+    expect(document.documentElement.style.getPropertyValue(TOAST_PANEL_DROP_POPOVER_VAR)).toContain(
+      "300px",
+    );
   });
 });
 

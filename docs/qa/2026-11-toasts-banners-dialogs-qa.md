@@ -1,89 +1,86 @@
-# QA pass: toasts, banners and dialogs — stacking and dismissal at all screen sizes
-
-Date: 2026-11-19 · Task #1225 · Area: web
+# Toasts, banners and dialogs stacking and dismissal — November 2026 (#1225)
 
 ## Scope and method
 
-This pass checked the web app's three floating surfaces **together** for the
-first time: the toast stack (`ToastPanel.vue`), the recovery banner
-(`UiRecoveryBanner.vue`), the notice-bell popover (`NoticeBell.vue`), the board
-load-error banners, the release-update dialog and the task drawer. The question
-was not whether each works alone, but whether they stack, dismiss and read
-correctly when several are up at once, at phone (375 px), tablet (768 px) and
-desktop (1280 px) widths.
+This pass checked the app's three transient surfaces *together* — the shared toast
+stack (`ToastPanel`), page-level error/recovery banners, and modal dialogs — for
+stacking overlaps, dismissal and keyboard use at 375, 768 and 1280 px. It extends
+the earlier toast-only pass (`2026-11-notifications-banners.md`) from a11y
+semantics to layout, z-order and dismissal behaviour across screen sizes.
 
-Method: headless WebKit (Playwright) only, against a throwaway fixture server
-started by `docs/qa/measure-toasts-banners-dialogs.mjs`. No visible browser was
-opened and no desktop focus was taken. State comes from preview-board fixtures
-(primarily the new `toast:stack` fixture, which pins a five-deep stack of
-error/success/info toasts without auto-expiry timers, so probes and captures
-always see the same stack) plus real pointer and keyboard events.
+Everything ran headless Playwright WebKit; no visible browser was opened and no
+focus was stolen. The app under test is the freshly built `dist/ui` served from a
+throwaway empty fixture root through the shared UI harness
+(`src/commands/ui-harness.ts` — the same server path `repoos check`'s smoke gate
+uses), so the QA never touches the live board. `REPOOS_PREVIEW_CHILD=1` makes
+`/api/health` report a preview build, which is what lets `?shotState=` preview
+fixtures apply.
 
-Re-run with:
+A new registered fixture, `toast:stack`, pins the maximum five-toast stack
+(error, success and info, one multi-line) *without* `pushToast`'s 6 s auto-expiry
+timers, so probes and captures always see the same stack. State that fixtures
+cannot model was produced with route interception: failing `/api/board` before
+page load creates a real board load-error banner (the fixture-pinned
+`work:failedLoad` state cannot model "retry works", because `refresh()`
+re-applies the capture fixture at the end of every successful reload by design,
+#0782), and aborting `/api/*` after load plus a focus event drives the
+`UiRecoveryBanner` offline state over a seeded toast stack.
 
-```sh
-bun run build            # the script serves the built SPA from dist/ui
-bun docs/qa/measure-toasts-banners-dialogs.mjs
-```
+The scripted pass is `docs/qa/measure-toasts-banners-dialogs.mjs`
+(`bun docs/qa/measure-toasts-banners-dialogs.mjs [--shots dir]`); it prints one
+JSON finding per check and exits non-zero on failure. Its 63 checks cover:
 
-Output is JSON findings on stdout; it exits 1 when any check fails.
-
-## What the checks measure
-
-Every scenario runs at all three widths and asserts:
-
-- **Overlap** — toast-to-toast overlap, toasts covering topbar/nav controls,
-  toasts running off-viewport, and hit-testing (`elementFromPoint`) on every
-  dismiss control to prove nothing floats over it.
-- **Dismissal** — real clicks and keyboard (focus + Enter on a close button,
-  Escape) actually remove the right surface; Retry/Dismiss controls clear their
-  banner instead of leaving it stuck.
-- **Fit** — banners and dialogs stay inside the viewport at each width.
+| Scenario | Checks |
+| --- | --- |
+| Full `toast:stack` on `/work` at each width | every toast fully in the viewport, no toast-to-toast overlap, no overlap with topbar or mobile tab-bar controls, stack starts below the topbar, bottom-most toast dismisses by real click, a close button dismisses by keyboard (focus + Enter), and every remaining close button is the hit-test target at its own center |
+| Board load-error banner (real failed fetch) | the desktop `work-load-error` banner at 768/1280 and the mobile queue's `mobile-work-load-error` state at 375 both fit their viewport, expose a live Retry control, and Retry clears the banner once the failure is lifted |
+| `release:updateAvailable` dialog | the update modal fits the viewport at 375 px (it is 370 px wide there), Escape dismisses it, and the Close × dismisses it |
+| Task drawer over the seeded toast stack (`/work?task=9001&shotState=toast:stack`) | the drawer's "Close task detail" control is the hit-test target at its center and Escape closes the drawer |
+| `UiRecoveryBanner` offline state over the seeded stack | the banner's Dismiss is live and clears it, and no toast close button is dead underneath |
+| Notice-bell popover over the seeded stack | with the popover deliberately opened, no toast overlaps it and its controls are live, and closing it (Escape) returns the corner to the stack's default top |
 
 ## Findings and fixes
 
-1. **Recovery banner covered the toast stack (fixed).** The banner floats
-   top-centered at `z-index: 1000` while the toasts sit at `z-index: 100`; at
-   phone widths the banner could sit over the stack and leave the toasts'
-   close buttons dead underneath. Fix: the banner publishes its bottom edge as
-   a CSS custom property (`--toast-panel-drop-banner`, via
-   `setToastPanelDrop` in `uiRecovery.ts`) kept current by a
-   `ResizeObserver`, and `ToastPanel.vue` takes the largest published drop as
-   extra `top`. Dismissing or unmounting the banner clears the var and the
-   stack returns to its default position below the topbar.
-2. **Notice-bell popover covered the toast stack (fixed).** Same corner, same
-   problem, including popover content that grows after the first measure
-   (async notice fetches). Fix: the popover publishes its bottom edge as
-   `--toast-panel-drop-notice` and re-measures through a `ResizeObserver`;
-   every close path (toggle, outside mousedown, Escape, following a notice)
-   clears the var via a `watch` on the open state and on unmount.
-3. **No pinning fixture for a full stack (added).** `toast:stack` seeds five
-   toasts (mixed severities, one multi-line) directly into the store without
-   arming `pushToast`'s 6-second expiry, so QA and screenshots are
-   deterministic. Covered by `shot-preview-fixtures.test.ts`.
-4. **Board load-error banners** (desktop banner and mobile queue error) fit
-   their viewports, their Retry control is live, and Retry clears the banner
-   once the failure is lifted (tested by intercepting `/api/board`, since the
-   pinned `work:failedLoad` state cannot model recovery by design).
-5. **Release-update dialog** fits the viewport at all widths and both Escape
-   and the X button dismiss it.
-6. **Task drawer over a full toast stack** — the drawer's close button is the
-   hit-test target at its own center and Escape closes the drawer.
+| Finding | Impact | Fix |
+| --- | --- | --- |
+| The `UiRecoveryBanner` (fixed, top-centered, `z-index: 1000`, width `min(560px, 100vw - 32px)`) covered the entire toast stack at 375 px. All five toasts sat underneath it and every dismiss button failed the hit-test probe — a dead dismiss control behind a banner that can stay up until the server recovers. At 768/1280 the buttons escaped only because the banner is narrower than the stack. | The toasts were unreadable and undismissible for as long as the offline/stale banner stayed up. | `UiRecoveryBanner` now publishes its bottom edge as `--toast-panel-drop-banner` (via `uiRecovery.setToastPanelDrop`, tracked with a `ResizeObserver` so reflow keeps it honest) and clears the var on dismiss and unmount. `ToastPanel`'s top becomes its default plus the larger published drop, so the stack moves below whichever surface is covering it. |
+| The notice-bell popover (`.notice-pop`, deliberately opened, top-right) was overlapped by toasts at every width — toasts painted over the popover's header controls. | A user-opened panel was partially covered by transient toasts. | `NoticeBell` publishes the open popover's bottom edge as `--toast-panel-drop-notice` (republished by a `ResizeObserver` because async notice content can grow the popover after the first measure) and clears it on every close path (toggle, outside mousedown, Escape, following a notice) and on unmount. The toast panel takes the `max()` of the two drops, so the banner and popover compose. |
+| New fixture `toast:stack` did not exist, so the stacked-toasts case could only be produced one toast at a time. | Stacking could not be reviewed or QA'd. | Registered `toast:stack` in `SHOT_PREVIEW_FIXTURE_IDS` and applied it in `shot-preview-fixtures.ts`, seeding five pinned toasts (no auto-expiry), with a fixture regression test. |
 
-## Results
+## Accepted behaviour (checked, not changed)
 
-Final run: **63 checks, 0 failed** across 6 scenarios × 3 widths
-(toast stack layout/dismiss, board banner, release dialog, drawer-over-toasts,
-recovery banner over toasts, notice popover over toasts). Notable measured
-values: toast panel top gap below the topbar is 10 px at every width; with the
-notice popover open the first toast drops to y≈342 at 375 px and returns to
-y=64 when the popover closes, confirming the drop var both applies and clears.
-No page errors were recorded in any scenario.
+- **Toast stack under an open task drawer or modal dialog.** The drawer and
+  shared dialogs are body-teleported layers painted above the toast stack; with
+  the drawer open the toasts are covered, and the drawer's own close control
+  stays live (verified). A modal owning the interaction is the intended layering;
+  a toast should not paint over a modal.
+- **Board banner Retry against a fixture-pinned error.** With `work:failedLoad`
+  in the URL, Retry cannot clear the banner because `refresh()` re-applies the
+  capture fixture on success (#0782). That is capture-bookkeeping, not app
+  behaviour; against a *real* failed fetch (route interception), Retry clears the
+  banner on both the desktop and mobile surfaces.
+- **Toast dismiss buttons are always reachable otherwise.** The stack never
+  covers topbar or mobile tab-bar controls, sits 10 px below the topbar at all
+  three widths, and toasts never overlap each other.
 
-## Follow-up notes
+## Component-level regression tests
 
-The native-app (Hub) surfaces were out of scope for this pass — this task's
-area is web. The `setToastPanelDrop` mechanism is generic: any future floating
-surface that shares the top-right corner can reuse it instead of hard-coding
-z-index workarounds. Auto-expiry timing of toasts was intentionally not
-asserted here beyond the fixture's no-expiry behavior.
+`src/ui-app/tests/toast-panel-drop.test.ts` pins the CSS-var contract at the
+component level: `setToastPanelDrop` publishes the drop relative to the stack's
+default top and clears on `null`, the two vars are independent (clearing one
+leaves the other), `UiRecoveryBanner` publishes while visible and clears on
+dismiss and unmount, and `NoticeBell` publishes while its popover is open and
+clears it when the popover closes through any path and on unmount. The fixture
+test in `shot-preview-fixtures.test.ts` asserts the seeded stack survives timer
+advance (no auto-expiry was armed).
+
+## Verification
+
+- `bun run build` (including `vue-tsc` and the UI build) — passed.
+- `bun docs/qa/measure-toasts-banners-dialogs.mjs` — 63 checks, 0 failed across
+  375 / 768 / 1280 px.
+- `bun run test -- src/ui-app/tests/toast-panel-drop.test.ts
+  src/ui-app/tests/toast-panel-a11y.test.ts src/ui-app/tests/shot-preview-fixtures.test.ts
+  src/ui-app/tests/ui-recovery-banner.test.ts` — 97 tests passed.
+- `REPOOS_CHECK_CHANGED=main repoos check` — passed (format, lint, build, CSS
+  and contrast guards, branch tests, UI smoke).

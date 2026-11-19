@@ -27,10 +27,7 @@ import {
 import { useRepoStore } from "../stores/repo";
 import { useUiStore } from "../stores/ui";
 import { relTime } from "../lib/time";
-import {
-  setToastPanelDrop,
-  TOAST_PANEL_DROP_POPOVER_VAR,
-} from "../lib/uiRecovery";
+import { setToastPanelDrop, TOAST_PANEL_DROP_POPOVER_VAR } from "../lib/uiRecovery";
 
 const router = useRouter();
 const notices = useNoticesStore();
