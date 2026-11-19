@@ -790,17 +790,14 @@ function openTask(task: Task): void {
   color: var(--txt-faint);
   opacity: 0.55;
 }
+/* Wraps rather than scrolls: a horizontal scroller hid the Area and Story
+ * filters off the right edge at 375px with no cue that they existed. */
 .mobile-chip-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 6px;
-  overflow-x: auto;
   padding-bottom: 2px;
-  scrollbar-width: none;
-  -webkit-overflow-scrolling: touch;
-}
-.mobile-chip-row::-webkit-scrollbar {
-  display: none;
 }
 .mobile-chip-label {
   flex: 0 0 auto;
