@@ -1,0 +1,27 @@
+---
+id: "1250"
+title: "QA pass: Hub macOS and web shared strings, tooltips and empty labels audit"
+type: bug
+status: inbox
+priority: p2
+area: web
+assigned_to: ai
+created_by: t@t
+branch: ""
+created_at: "2026-11-19T21:47:05Z"
+updated_at: "2026-11-19T21:47:05Z"
+---
+## Problem
+Tooltips, aria-labels, placeholders and empty-state labels across the app may be missing, duplicated or inconsistent (for example native title tooltips, which are banned in new UI).
+## Desired UX
+Every icon-only control has a styled, keyboard-and-touch-usable label, and wording for the same thing is identical everywhere.
+## Acceptance criteria
+- Scan the UI source for native title attributes, missing aria-labels and inconsistent terms; fix the real ones with tests.
+- Headless Playwright only if verifying visually; never open a visible browser.
+- Commit docs/qa/2026-11-labels-tooltips-audit-qa.md.
+## Notes for AI
+Do not touch repoos.toml.
+
+## Activity
+
+- 2026-11-19T21:47:05Z · created · t@t
