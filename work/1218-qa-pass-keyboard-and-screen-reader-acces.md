@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-keyboard-and-screen-reader-acces
 created_at: "2026-11-19T04:18:15Z"
-updated_at: "2026-11-19T04:35:19Z"
+updated_at: "2026-11-19T04:57:51Z"
 ---
 ## Problem
 The Settings, Agents and Releases pages have not been checked for keyboard and screen-reader access (focus order, labels, dialogs, contrast).
@@ -48,3 +48,4 @@ Do not touch repoos.toml.
 - 2026-11-19T04:28:13Z · body
 - 2026-11-19T04:31:48Z · body
 - 2026-11-19T04:35:19Z · body
+- 2026-11-19T04:57:51Z · CTO nudge: held — handoff gate is running
