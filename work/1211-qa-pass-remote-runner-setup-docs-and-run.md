@@ -3,6 +3,9 @@ id: "1211"
 title: "QA pass: remote runner setup docs and runner health screens vs real bee/thinkpad/mini behavior"
 type: bug
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: "`needs some work` — the earlier check violated the no-SSH requirement, and the docs contradict themselves about native command PATH."
 priority: p2
 area: [web, docs]
 assigned_to: ai
@@ -80,3 +83,4 @@ Do not touch repoos.toml.
 - 2026-11-19T02:15:46Z · status active→review
 - 2026-11-19T02:15:47Z · message_queued at 2026-11-19T02:15:47.206Z
 - 2026-11-19T02:16:52Z · note: review pass 3: needs some work
+- 2026-11-19T02:16:52Z · needs_input
