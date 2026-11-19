@@ -11,7 +11,7 @@ branch: feat/qa-pass-hub-server-picker-and-add-server
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T19:07:19Z"
-updated_at: "2026-11-19T19:30:47Z"
+updated_at: "2026-11-19T19:33:03Z"
 ---
 ## Problem
 The Hub server picker and add-server flow need a final check of wording and error states (bad URL, unreachable server, duplicate name, unsafe scheme) in the web preview of the shell.
@@ -35,3 +35,4 @@ Do not touch repoos.toml.
 - 2026-11-19T19:30:47Z · status active→review
 - 2026-11-19T19:30:47Z · message_queued at 2026-11-19T19:30:47.379Z
 - 2026-11-19T19:30:47Z · note: shots: skipped — Docs site skipped: no docs shot declared
+- 2026-11-19T19:33:03Z · note: review pass 1: needs some work
