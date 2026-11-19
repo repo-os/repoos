@@ -3,16 +3,13 @@ id: "1226"
 title: "QA pass: slow network and offline behavior in the web app and Hub"
 type: bug
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "automatic resume could not start the engineer: This worktree already has a recorded live engineer for task #1226 (pid 11988). The task stayed active with its worktree intact."
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-slow-network-and-offline-behavio
 created_at: "2026-11-19T09:47:34Z"
-updated_at: "2026-11-19T14:15:28Z"
+updated_at: "2026-11-19T14:17:28Z"
 handoff_signal_retry_count: 2
 dev_error_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-11-19T10:00:44.011Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-19T12:54:47.309Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-19T14:15:26.925Z\",\"reason\":\"clean-exit-without-handoff\"}]"
@@ -135,3 +132,4 @@ Do not touch repoos.toml.
 - 2026-11-19T14:09:42Z · body
 - 2026-11-19T14:15:26Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 3/3
 - 2026-11-19T14:15:28Z · watchdog: automatic resume failed — This worktree already has a recorded live engineer for task #1226 (pid 11988)
+- 2026-11-19T14:17:28Z · needs_input
