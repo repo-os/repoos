@@ -2,14 +2,14 @@
 id: "1247"
 title: "QA pass: Checks page live run view and cancel/retry controls"
 type: bug
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
 branch: ""
 created_at: "2026-11-19T21:07:03Z"
-updated_at: "2026-11-19T21:07:03Z"
+updated_at: "2026-11-19T21:07:08Z"
 ---
 ## Problem
 The live check run view, cancel and retry controls have not been checked for running, queued, stalled and failed runs at phone widths.
@@ -24,3 +24,4 @@ Do not touch repoos.toml.
 ## Activity
 
 - 2026-11-19T21:07:03Z · created · t@t
+- 2026-11-19T21:07:08Z · status inbox→ready
