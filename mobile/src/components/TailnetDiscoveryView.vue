@@ -67,7 +67,9 @@ function isSelected(key: string): boolean {
         <p v-if="message" class="discovery-message" data-testid="hub-discovery-message">
           {{ message }}
         </p>
-        <p v-if="error" class="warn" data-testid="hub-discovery-error">{{ error }}</p>
+        <p v-if="error" class="warn" role="alert" data-testid="hub-discovery-error">
+          {{ error }}
+        </p>
 
         <ul v-if="projectServers.length" class="discovery-list">
           <li v-for="server in projectServers" :key="server.key">
