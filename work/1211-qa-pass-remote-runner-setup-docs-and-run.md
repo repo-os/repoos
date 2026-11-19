@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-remote-runner-setup-docs-and-run
 created_at: "2026-11-19T00:17:32Z"
-updated_at: "2026-11-19T04:22:51Z"
+updated_at: "2026-11-19T04:24:12Z"
 review_passes: 4
 handoff_signal_retry_count: 1
 review_rounds: 2
@@ -104,3 +104,4 @@ Do not touch repoos.toml.
 - 2026-11-19T04:22:00Z · note: handoff requested (cli)
 - 2026-11-19T04:22:01Z · orphaned run process stopped · pid 44992 · /opt/homebrew/Cellar/bun/1.4.2/bin/bun /Users/nick/code/nick/repoos-worktrees/feat/qa-pass-remote-ru · cpu 2s · age 6s
 - 2026-11-19T04:22:51Z · CTO nudge: held — handoff gate is running
+- 2026-11-19T04:24:12Z · message_delivered: 1 message(s)
