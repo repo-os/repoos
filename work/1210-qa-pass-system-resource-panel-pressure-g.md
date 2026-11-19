@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-19T06:48:22Z"
+review_passes: 4
 id: "1210"
 title: "QA pass: system resource panel, pressure guard banners and Control stats under high load fixtures"
 type: bug
@@ -12,8 +14,6 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-system-resource-panel-pressure-g
 created_at: "2026-11-18T23:47:41Z"
-updated_at: "2026-11-19T06:48:22Z"
-review_passes: 3
 review_rounds: 2
 routing_switches: 1
 routing_escalations: 1
@@ -187,3 +187,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-19T06:47:48Z · needs_input (review-rounds-exhausted) cleared for review again by human
 - 2026-11-19T06:48:21Z · note: review pass 7: needs some work
 - 2026-11-19T06:48:22Z · needs_input
+
