@@ -2,14 +2,14 @@
 id: "1211"
 title: "QA pass: remote runner setup docs and runner health screens vs real bee/thinkpad/mini behavior"
 type: bug
-status: active
+status: review
 priority: p2
 area: [web, docs]
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-remote-runner-setup-docs-and-run
 created_at: "2026-11-19T00:17:32Z"
-updated_at: "2026-11-19T00:54:25Z"
+updated_at: "2026-11-19T00:59:24Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -28,11 +28,11 @@ Do not touch repoos.toml.
 ```json
 [
 {
-  "label": "Remote runner identity note",
-  "target": "default",
-  "route": "/checks?tab=now",
-  "highlight": "[data-test-id=\"runner-identity-note\"]",
-  "state": "runners:queued"
+"label": "Remote runner identity note",
+"target": "default",
+"route": "/checks?tab=now",
+"highlight": "[data-test-id=\"runner-identity-note\"]",
+"state": "runners:queued"
 }
 ]
 ```
@@ -52,3 +52,4 @@ Do not touch repoos.toml.
 - 2026-11-19T00:42:03Z · status review→active
 - 2026-11-19T00:49:12Z · CTO action: restart-stalled-agent (fresh) · agent exited without emitting the handoff signal
 - 2026-11-19T00:54:25Z · body
+- 2026-11-19T00:59:24Z · status active→review
