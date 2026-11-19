@@ -2,14 +2,14 @@
 id: "1231"
 title: "QA pass: keyboard shortcuts and command palette across pages"
 type: bug
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
 branch: ""
 created_at: "2026-11-19T13:47:53Z"
-updated_at: "2026-11-19T13:47:53Z"
+updated_at: "2026-11-19T13:47:56Z"
 ---
 ## Problem
 Keyboard shortcuts and any command palette or search shortcut have not been checked for conflicts, discoverability or touch/small-screen behavior.
@@ -25,3 +25,4 @@ Do not touch repoos.toml.
 ## Activity
 
 - 2026-11-19T13:47:53Z · created · t@t
+- 2026-11-19T13:47:56Z · status inbox→ready
