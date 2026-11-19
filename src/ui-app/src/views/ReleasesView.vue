@@ -2365,6 +2365,7 @@ Subject: {{ releaseEmailPreview.subject }}
   font-family: var(--mono);
   font-size: 12px;
   margin-top: 2px;
+  overflow-wrap: anywhere;
 }
 .rel-cut-open {
   display: inline-flex;
@@ -2706,6 +2707,7 @@ Subject: {{ releaseEmailPreview.subject }}
   color: var(--txt-faint);
   font-size: 12px;
   margin: 4px 0 0;
+  overflow-wrap: anywhere;
 }
 .rel-dist-sub code {
   font-family: var(--mono);

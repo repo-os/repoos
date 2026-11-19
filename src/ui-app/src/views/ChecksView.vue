@@ -1044,6 +1044,8 @@ const RESULT_ICON: Record<string, string> = {
 .ck-step-name {
   font-weight: 700;
   font-size: 14px;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 .ck-badge {
   font-size: 10.5px;
@@ -1072,6 +1074,7 @@ const RESULT_ICON: Record<string, string> = {
   border-radius: 8px;
   padding: 7px 10px;
   overflow-x: auto;
+  max-width: 100%;
   white-space: pre;
 }
 .ck-step-meta {
