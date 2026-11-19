@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-first-run-onboarding-and-empty-p
 created_at: "2026-11-19T07:48:01Z"
-updated_at: "2026-11-19T08:22:29Z"
+updated_at: "2026-11-19T08:22:30Z"
 ---
 ## Problem
 A brand-new project (no tasks, no agents configured, no runners) has not been QA-checked for what a new user sees.
@@ -30,3 +30,4 @@ Do not touch repoos.toml.
 - 2026-11-19T07:48:23Z · note: agent fallback: codex + gpt-6-luna is paused (out of usage since 2026-11-19T07:09:32.657Z: Codex hit a provider quota or rate limit. Wait for the provider limit to reset, then retry. (CLI: error: You’ve hit your usage limit. Upgrade to Pro (https://chatgpt.com/explore/pro), visit https://chatgpt.com/codex/settings/usage to purcha) — using opencode + opencode-go/glm-5.3-flash
 - 2026-11-19T08:12:30Z · body
 - 2026-11-19T08:22:29Z · note: stopped orphaned engineer pid 81043
+- 2026-11-19T08:22:30Z · note: stopped orphaned engineer pid 81043
