@@ -2,14 +2,14 @@
 id: "1237"
 title: "QA pass: Stories, Inbox and Search pages with many items at all screen sizes"
 type: bug
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
 branch: ""
 created_at: "2026-11-19T17:46:51Z"
-updated_at: "2026-11-19T17:46:51Z"
+updated_at: "2026-11-19T17:46:54Z"
 ---
 ## Problem
 Stories, Inbox and Search have not been checked with many items, long titles and zero results at phone, tablet and desktop widths.
@@ -25,3 +25,4 @@ Do not touch repoos.toml.
 ## Activity
 
 - 2026-11-19T17:46:51Z · created · t@t
+- 2026-11-19T17:46:54Z · status inbox→ready
