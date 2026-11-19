@@ -189,10 +189,10 @@ describe.each(VIEWPORTS)("task create/edit interactions at %i px", (width) => {
     const wrapper = mount(TaskDependencyPicker, { props });
     try {
       await wrapper.get(".dependency-option").trigger("click");
-      expect(wrapper.emitted("update:modelValue")?.at(-1)?.[0]).toEqual(["0001"]);
-      props.modelValue = ["0001"];
+      expect(wrapper.emitted("update:modelValue")?.at(-1)?.[0]).toEqual(["0002"]);
+      props.modelValue = ["0002"];
       await flush();
-      await wrapper.get('[aria-label="Remove dependency 0001"]').trigger("click");
+      await wrapper.get('[aria-label="Remove dependency 0002"]').trigger("click");
       expect(wrapper.emitted("update:modelValue")?.at(-1)?.[0]).toEqual([]);
     } finally {
       wrapper.unmount();
