@@ -11,7 +11,7 @@ branch: feat/qa-pass-work-board-in-a-project-with-hun
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T22:26:56Z"
-updated_at: "2026-11-19T23:22:09Z"
+updated_at: "2026-11-19T23:23:59Z"
 ---
 ## Problem
 The Work board and Done column with 1000+ tasks have not been checked for scroll, filter and render speed, especially on phones.
@@ -36,3 +36,4 @@ Do not touch repoos.toml.
 - 2026-11-19T23:22:07Z · note: ui verification passed: 1 shot captured with clean console
 - 2026-11-19T23:22:09Z · status active→review
 - 2026-11-19T23:22:09Z · message_queued at 2026-11-19T23:22:09.425Z
+- 2026-11-19T23:23:59Z · note: review pass 1: good to go
