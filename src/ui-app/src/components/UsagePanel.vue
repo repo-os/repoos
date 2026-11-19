@@ -436,7 +436,11 @@ const recentFailures = computed(() => stats.value?.recentFailures ?? []);
   color: var(--txt-faint);
   white-space: nowrap;
 }
-@media (max-width: 720px) {
+/* The fixed-width failure columns total ~590px; below 860px the panel is
+   narrower than that, so the reason cell was squeezed to a few pixels and
+   the row read as blank. Stack the cells below the same 860px breakpoint
+   the breakdown tables use (#1234). */
+@media (max-width: 860px) {
   .usage-failure {
     grid-template-columns: 1fr;
     gap: 1px;
