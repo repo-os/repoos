@@ -10,7 +10,6 @@ created_by: t@t
 branch: feat/easter-eggs-bundle-task-action-button-la
 created_at: "2026-11-19T13:54:07Z"
 updated_at: "2026-11-19T15:28:21Z"
-check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-19T15:14:43.458Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Task drawer footer actions with shortened labels (Delete, Archive, Hold) (target \"default\"): highlight .delete-zone matched nothing on /work?task=0001&tab=details (http://127.0.0.1:40237/work?task=0001&tab=details&shotState=drawer%3AstatusDetails)"
 dev_error_count: 1
 ---
@@ -63,3 +62,4 @@ Do not touch repoos.toml. Keep aria-labels descriptive (e.g. aria-label "Delete 
 - 2026-11-19T15:22:33Z · body
 - 2026-11-19T15:26:45Z · body
 - 2026-11-19T15:28:21Z · CTO nudge: held — handoff gate is running
+
