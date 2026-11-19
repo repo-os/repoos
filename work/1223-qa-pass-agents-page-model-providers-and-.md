@@ -1,5 +1,5 @@
 ---
-handoff_signal_retry_count: 1
+handoff_signal_retry_count: 2
 id: "1223"
 title: "QA pass: Agents page, model providers and routing tab at all screen sizes"
 type: bug
@@ -37,4 +37,5 @@ Do not touch repoos.toml.
 - 2026-11-19T08:22:36Z · needs_input
 - 2026-11-19T08:24:05Z · body
 - 2026-11-19T08:26:09Z · body
+
 
