@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-dark-and-light-theme-contrast-on
 created_at: "2026-11-19T06:17:41Z"
-updated_at: "2026-11-19T06:21:56Z"
+updated_at: "2026-11-19T06:21:57Z"
 ---
 ## Problem
 Theme contrast on newer pages and dialogs has not been re-checked since recent UI changes.
@@ -29,3 +29,4 @@ Do not touch repoos.toml.
 - 2026-11-19T06:17:46Z · status ready→active, branch
 - 2026-11-19T06:21:56Z · status active→review
 - 2026-11-19T06:21:56Z · message_queued at 2026-11-19T06:21:56.417Z
+- 2026-11-19T06:21:57Z · note: shots: skipped — the diff (3 changed paths) touches no capture target's globs — no UI change to capture
