@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-19T12:48:16Z"
+review_passes: 5
 id: "1227"
 title: "QA pass: user-docs accuracy against the current UI and CLI"
 type: bug
@@ -9,8 +11,6 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-user-docs-accuracy-against-the-c
 created_at: "2026-11-19T09:47:43Z"
-updated_at: "2026-11-19T12:48:16Z"
-review_passes: 4
 handoff_signal_retry_count: 2
 dev_error_count: 1
 engineer_stall_resume_log: "[{\"at\":\"2026-11-19T09:58:29.630Z\",\"reason\":\"clean-exit-without-handoff\"}]"
@@ -65,3 +65,4 @@ Do not touch repoos.toml.
 - 2026-11-19T11:57:32Z · note: review pass 3: good to go
 - 2026-11-19T12:18:17Z · note: review pass 4: good to go
 - 2026-11-19T12:48:16Z · note: review pass 5: good to go
+
