@@ -180,8 +180,10 @@ async function mountInspectorWithPopup() {
     requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
   });
   await nextTick();
-  expect(document.body.querySelector(".copy-inspector-affordance"), "affordance pill shows")
-    .not.toBeNull();
+  expect(
+    document.body.querySelector(".copy-inspector-affordance"),
+    "affordance pill shows",
+  ).not.toBeNull();
   window.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
   await nextTick();
   const pane = () => document.body.querySelector(".copy-inspector-pane");
