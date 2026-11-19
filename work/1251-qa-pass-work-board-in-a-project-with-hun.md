@@ -2,14 +2,14 @@
 id: "1251"
 title: "QA pass: Work board in a project with hundreds of tasks (performance and scroll)"
 type: bug
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
 branch: ""
 created_at: "2026-11-19T22:26:56Z"
-updated_at: "2026-11-19T22:26:56Z"
+updated_at: "2026-11-19T22:27:01Z"
 ---
 ## Problem
 The Work board and Done column with 1000+ tasks have not been checked for scroll, filter and render speed, especially on phones.
@@ -25,3 +25,4 @@ Do not touch repoos.toml.
 ## Activity
 
 - 2026-11-19T22:26:56Z · created · t@t
+- 2026-11-19T22:27:01Z · status inbox→ready
