@@ -2,7 +2,7 @@
 id: "1219"
 title: "QA pass: Checks and Releases pages with real data at all screen sizes"
 type: bug
-status: review
+status: done
 priority: p2
 area: web
 merged_commit: a6f19eba60d81cf76325fca1d5fc39ebdc791d9e
@@ -12,7 +12,7 @@ branch: feat/qa-pass-checks-and-releases-pages-with-r
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-11-19T06:17:33Z"
-updated_at: "2026-11-19T07:53:24Z"
+updated_at: "2026-11-19T07:54:41Z"
 review_passes: 2
 last_close_out_gate_ms: 491751
 last_close_out_gate_at: "2026-11-19T07:53:21.215Z"
@@ -89,3 +89,4 @@ Do not touch repoos.toml.
 - 2026-11-19T07:53:23Z · note: review pass 2: good to go
 - 2026-11-19T07:53:23Z · status done→review
 - 2026-11-19T07:53:24Z · message_queued at 2026-11-19T07:53:24.965Z
+- 2026-11-19T07:54:41Z · status review→done, release:success
