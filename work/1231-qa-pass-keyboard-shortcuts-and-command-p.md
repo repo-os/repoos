@@ -17,7 +17,6 @@ review_passes: 1
 handoff_signal_retry_count: 2
 dev_error_count: 3
 engineer_stall_resume_log: "[{\"at\":\"2026-11-19T14:18:11.944Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-19T15:02:12.103Z\",\"reason\":\"clean-exit-without-handoff\"}]"
-engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\",\"at\":\"2026-11-19T15:49:38.888Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 Keyboard shortcuts and any command palette or search shortcut have not been checked for conflicts, discoverability or touch/small-screen behavior.
@@ -40,13 +39,13 @@ Do not touch repoos.toml.
 "highlight": ".search-overlay",
 "steps": [
 {
-  "waitFor": ".stat-link"
+"waitFor": ".stat-link"
 },
 {
-  "click": ".search-input"
+"click": ".search-input"
 },
 {
-  "waitMs": 300
+"waitMs": 300
 }
 ]
 },
@@ -57,13 +56,13 @@ Do not touch repoos.toml.
 "highlight": ".search-overlay",
 "steps": [
 {
-  "waitFor": ".task-card"
+"waitFor": ".task-card"
 },
 {
-  "click": ".search-input"
+"click": ".search-input"
 },
 {
-  "waitMs": 300
+"waitMs": 300
 }
 ],
 "state": "board:withReviewTask"
