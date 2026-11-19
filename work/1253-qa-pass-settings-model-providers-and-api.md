@@ -11,7 +11,7 @@ branch: feat/qa-pass-settings-model-providers-and-api
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T23:27:11Z"
-updated_at: "2026-11-19T23:43:49Z"
+updated_at: "2026-11-19T23:47:01Z"
 ---
 ## Problem
 The model providers and API key screens have not had a recent check for masked values, saving, wrong keys and offline errors.
@@ -27,9 +27,9 @@ Do not touch repoos.toml. Follow docs/api-keys.md.
 ```json
 [
 {
-  "label": "Model providers tab: live key rows show Saved or Not set beside the title",
-  "target": "default",
-  "route": "/agents?tab=providers"
+"label": "Model providers tab: live key rows show Saved or Not set beside the title",
+"target": "default",
+"route": "/agents?tab=providers"
 }
 ]
 ```
@@ -42,3 +42,4 @@ Do not touch repoos.toml. Follow docs/api-keys.md.
 - 2026-11-19T23:27:22Z · status ready→active, branch
 - 2026-11-19T23:41:43Z · body
 - 2026-11-19T23:43:49Z · body
+- 2026-11-19T23:47:01Z · CTO nudge: held — handoff gate is running
