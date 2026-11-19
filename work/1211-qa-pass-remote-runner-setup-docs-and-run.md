@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-remote-runner-setup-docs-and-run
 created_at: "2026-11-19T00:17:32Z"
-updated_at: "2026-11-19T02:01:12Z"
+updated_at: "2026-11-19T02:15:45Z"
 handoff_signal_retry_count: 1
 review_rounds: 2
 routing_switches: 1
@@ -76,3 +76,4 @@ Do not touch repoos.toml.
 - 2026-11-19T01:56:23Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The runner setup documentation and health screen changes are in place, with regression tests. I added the missing 1,134-word engineering report draft at `.repoos/engineering-report-drafts/1211.md` and updated the QA record to accurately de… · stderr: Reading additional input from stdin... 2026-11-19T01:55:51.095137Z ERROR codex_core::tools::router: error=apply_patch verification failed: Failed to find expected lines in /Users/nick/code/nick/repoos-worktrees/feat/qa-pass-remote-runner-setup-docs-and-run/.repoos/engineering-report-drafts/1211.md: There is no technic…
 - 2026-11-19T01:56:26Z · note: handoff requested (cli)
 - 2026-11-19T02:01:12Z · CTO nudge: held — handoff gate is running
+- 2026-11-19T02:15:45Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
