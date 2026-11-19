@@ -10,7 +10,6 @@ created_by: t@t
 branch: feat/qa-pass-hub-and-web-app-copy-review-word
 created_at: "2026-11-19T00:47:39Z"
 updated_at: "2026-11-19T01:50:18Z"
-check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-19T01:25:43.917Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_passes: 2
 review_rounds: 1
@@ -76,3 +75,4 @@ Do not touch repoos.toml.
 - 2026-11-19T01:40:46Z · note: handoff requested (cli)
 - 2026-11-19T01:41:12Z · CTO nudge: held — handoff gate is running
 - 2026-11-19T01:50:18Z · body
+
