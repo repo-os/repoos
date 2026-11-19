@@ -1,16 +1,19 @@
 ---
-updated_at: "2026-11-19T00:15:16Z"
-review_passes: 1
 id: "1209"
 title: "QA pass: Agents page failure states and Test button – missing CLI, signed-out agent, rate limit"
 type: bug
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: fbcd3d0fb7b40cdc7b2d0ec14e960018ef29018e
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-agents-page-failure-states-and-t
 created_at: "2026-11-18T23:17:32Z"
+updated_at: "2026-11-19T00:28:57Z"
+last_close_out_gate_ms: 750743
+last_close_out_gate_at: "2026-11-19T00:28:29.749Z"
+review_passes: 1
 ---
 ## Problem
 Agent failure states (signed out, missing CLI, rate limited) are common in practice and need verification.
@@ -46,4 +49,5 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-19T00:14:43Z · status active→review
 - 2026-11-19T00:14:43Z · message_queued at 2026-11-19T00:14:43.148Z
 - 2026-11-19T00:15:16Z · note: review pass 1: good to go
-
+- 2026-11-19T00:28:29Z · close-out gate completed in 751s
+- 2026-11-19T00:28:57Z · status done→done, release:success
