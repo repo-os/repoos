@@ -74,6 +74,13 @@ applies only to the standalone curl install.
 
 See [Updating RepoOS](/getting-started#updating-repoos) for every install method.
 
+### `repoos release email --preview <version> [--json] [--port N]`
+
+Renders the release email for a version **without sending it** — a dry look at
+what the Release page would mail. `--json` prints the rendered data instead of
+the plain text. Sending and the rest of the release flow live in the web UI's
+Release page.
+
 ### Passive update notice
 
 On interactive runs (both stdout and stderr are a TTY, no `--json`, not in CI),
@@ -262,6 +269,10 @@ done wait by default in human mode).
 | `repoos stats` | `GET /api/stats/board` + `GET /api/system` — board spend, pressure, and top CPU/memory processes labeled RepoOS vs other (`--json` includes both under `system`) |
 | `repoos decisions` | `GET /api/decisions` — CTO escalation digest with cause, evidence, and actions |
 | `repoos driver brief` | `GET /api/driver/brief` — the CTO board brief from live state (#0731) |
+| `repoos summary <id>` | `POST /api/tasks/:id/summary` — generate or retry the post-merge PM summary report |
+| `repoos review followup <id>` | `POST /api/tasks/:id/review/followup` — file a follow-up task from the latest review's non-blocking suggestions |
+| `repoos watch [--json] [--task <id>]` | `GET /api/events` — stream board events for an external driver session |
+| `repoos allowlist [show] · allowlist pause\|resume <cli> [model] [--until <date>] [--reason "…"] [--no-propagate] [--json]` | budget allowlist group — show it, or pause/resume an entry and propagate the pause to every group member |
 
 Pass `--port N` when the server is not on the default port. If the server is
 down, the CLI exits with a clear message instead of a generic fetch error.
@@ -419,6 +430,11 @@ that is **not** active sends no engineer notice.
 
 Appends a free-form note to the task's activity log. Useful for leaving context
 an agent should read before picking the task up.
+
+### `repoos rm <id> --yes`
+
+Deletes the task's file from the repo — the same thing the UI's Delete button
+does. Refuses without `--yes`; there is no undo beyond git history.
 
 ### `repoos new-doc "<description>"`
 
@@ -751,6 +767,14 @@ content. `--model <id>` optionally pins the model used for the probe's runs (e.g
 whose default model depends on your environment; it is ignored by harnesses
 that have no model flag. See [Coding harness compatibility](./coding-harness-compatibility.md).
 
+### `repoos certify <cli> [--yes] [--json] [--force] [--binary <path>]`
+
+Runs one installed coding harness's adapter-contract suite and records the
+certification evidence RepoOS uses to decide compatibility status. `--binary
+<path>` certifies a specific binary instead of the one on `PATH`, `--yes` skips
+the confirmation prompt, and `--force` re-records evidence for a version that is
+already certified.
+
 ### `repoos support bundle` / `repoos support inspect`
 
 Creates a small, inspectable, **redacted** diagnostic archive to attach to an
@@ -807,6 +831,15 @@ repoos check --step tests        # run only the named step(s), to re-check one
 Every run ends with a short failed-steps summary naming each failed step and the
 `repoos check --step <name>` command that reruns it. `--fix` never applies at
 close-out, so an unformatted committed tree still fails the merge gate.
+
+### `repoos checks timings` / `repoos checks slots`
+
+`timings` shows recent check durations, the slowest test files, and the slow
+individual test cases — `--tests` drills into test cases, `--run-id ID` pins one
+run, and `--recent-runs N` / `--limit N` / `--offset N` page through the data.
+`slots` inspects this machine's local check slot holders and queue, and can
+explicitly release a wedged holder with `--release SLOT --confirm PID`. Both
+accept `--json`.
 
 ### `repoos outline <file>`
 
@@ -1021,6 +1054,14 @@ for UI-visible changes — see [Review and close-out](/review-and-close-out).
 
 Rebuilds the derived index cache. The cache is disposable — the markdown files
 are the source of truth — so this is safe to run any time.
+
+### `repoos migrate [--dry-run]`
+
+Moves attachment bytes stored locally under `work/.attachments/` to the
+configured cloud storage provider, so existing screenshots keep serving after
+you switch providers. `--dry-run` prints what would move and writes nothing.
+Configure the provider under
+[Attachment storage](/configuration#attachment-storage).
 
 ### `repoos gc [--yes|--dry-run]`
 

@@ -47,6 +47,24 @@ function readApiError(body: unknown, status: number): string {
   return `HTTP ${status}`;
 }
 
+/** The JSON body used when the server answers with something that is not JSON. */
+export function nonJsonResponse(path: string, text: string): ApiJson {
+  // A web page (not JSON) means the request missed every /api/ route and fell
+  // through to the single-page app, which answers 200 with its own HTML — the
+  // common case is a typo'd path. Handing the page back as an "error" string
+  // would dump the whole app shell into the terminal; say what happened instead.
+  const head = text.trimStart().slice(0, 512).toLowerCase();
+  if (head.startsWith("<!doctype html") || head.startsWith("<html")) {
+    return {
+      error:
+        `The server returned a web page instead of JSON, so ${path} is not a RepoOS API route. ` +
+        "Check the path for typos — API routes start with /api/ (repoos api GET /api/stats/board is a good test).",
+      htmlResponse: true,
+    };
+  }
+  return { error: text };
+}
+
 export function resolveControlPlaneBase(opts: RepoOsApiOptions = {}): {
   root: string;
   baseUrl: string;
@@ -189,7 +207,7 @@ export class RepoOsApi {
       try {
         parsed = JSON.parse(text) as ApiJson;
       } catch {
-        parsed = { error: text };
+        parsed = nonJsonResponse(path, text);
       }
     }
 
