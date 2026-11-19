@@ -8,8 +8,10 @@ area: web
 assigned_to: ai
 created_by: t@t
 branch: ""
+cli_override: claude code
+model_override: haiku
 created_at: "2026-11-19T21:06:54Z"
-updated_at: "2026-11-19T21:06:57Z"
+updated_at: "2026-11-19T21:06:58Z"
 ---
 ## Problem
 Task cards and board columns have not been checked with very long titles, many labels, unusual statuses (held, paused, needs-input, archived) and missing fields.
@@ -26,3 +28,4 @@ Do not touch repoos.toml.
 
 - 2026-11-19T21:06:54Z · created · t@t
 - 2026-11-19T21:06:57Z · status inbox→ready
+- 2026-11-19T21:06:58Z · cli_override, model_override
