@@ -1,0 +1,337 @@
+// @vitest-environment jsdom
+/**
+ * #1246 — QA pass: task cards in every state with extreme content.
+ *
+ * Mounts the real `TaskCard` in jsdom for each fixture (every card state the
+ * board can show, plus long titles, unbroken titles, many labels and missing
+ * fields), serializes it, and renders it in headless WebKit at 375 / 768 /
+ * 1280 px. Every descendant of a card must stay inside the card (the card is
+ * `overflow-hidden`, so a child that spills is silently clipped), the card must
+ * stay inside the viewport, and no placeholder text such as `undefined` may
+ * leak into a card. Archived tasks never reach a card: the store parks them,
+ * which is asserted directly in jsdom.
+ *
+ * Only fixtures and headless WebKit are used; no visible browser is opened.
+ * Set `QA_SHOTS=<dir>` to save a full-page screenshot per fixture and width.
+ */
+import { resolve } from "node:path";
+import { mkdirSync, readFileSync } from "node:fs";
+import { readdir, readFile } from "node:fs/promises";
+import { webkit, type Browser, type Page } from "@playwright/test";
+import { compileStyle, parse } from "@vue/compiler-sfc";
+import { mount } from "@vue/test-utils";
+import { createPinia, setActivePinia, type Pinia } from "pinia";
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import TaskCard from "../src/components/TaskCard.vue";
+import { useRepoStore } from "../src/stores/repo";
+import { makeTask, FakeEventSource } from "./component-test-helpers";
+import type { Task } from "../src/types";
+
+const VIEWPORTS = [375, 768, 1280] as const;
+const uiRoot = resolve(__dirname, "..");
+
+// The board shares the viewport between its columns, so the card's width
+// depends on how many columns are visible. These are representative widths:
+// one full-width card on a phone, two columns on a tablet, and five columns on
+// a laptop, where the narrow card is the stress case.
+const CARD_WIDTH: Record<(typeof VIEWPORTS)[number], number> = {
+  375: 351,
+  768: 336,
+  1280: 220,
+};
+
+const FUTURE = new Date(Date.now() + 7 * 24 * 3600 * 1000).toISOString();
+const LONG_TITLE =
+  "Reconcile the nightly board refresh with the review-round audit trail so every reviewer verdict, check rerun and handoff retry keeps its original context across restarts and reloads of the server";
+const UNBROKEN_TITLE = "unbroken_" + "segment".repeat(30);
+const MANY_AREAS = [
+  "web",
+  "core",
+  "server",
+  "cli",
+  "ui",
+  "docs",
+  "release",
+  "integrations",
+  "storage",
+  "billing",
+];
+const MANY_TAGS = Array.from({ length: 14 }, (_, i) => `label-${i}-with-a-long-name`);
+const MANY_BLOCKERS = ["1402", "1403", "1404", "1405"].map((id) => ({
+  id,
+  state: "waiting" as const,
+}));
+
+/** Every card state and extreme-content fixture, keyed by a legible name. */
+const FIXTURES: Record<string, { over: Partial<Task>; paused?: boolean }> = {
+  baseline: { over: { id: "1401", title: "Short ready task", status: "ready" } },
+  "long-title": { over: { id: "1411", title: LONG_TITLE, status: "active" } },
+  "unbroken-title": { over: { id: "1412", title: UNBROKEN_TITLE, status: "ready" } },
+  "many-labels": {
+    over: {
+      id: "1413",
+      title: "Many labels and blockers",
+      status: "ready",
+      area: MANY_AREAS.join(","),
+      areas: MANY_AREAS,
+      tags: MANY_TAGS,
+      blockedBy: MANY_BLOCKERS,
+      type: "architecture-refactor-with-a-very-long-type-name",
+    },
+  },
+  held: {
+    over: {
+      id: "1414",
+      title: "Held until design sign-off",
+      status: "ready",
+      isHeld: true,
+      holdReason:
+        "waiting on the design review for the whole onboarding flow, including the mobile variants and the empty states",
+      holdBy: "t@t",
+      holdUntil: FUTURE,
+    },
+  },
+  paused: { over: { id: "1415", title: "Paused engineer", status: "active" }, paused: true },
+  "needs-input": {
+    over: {
+      id: "1416",
+      title: "Agent asked a question",
+      status: "active",
+      needsInput: true,
+      needsInputReason: "cto-escalation",
+      needsInputDetail:
+        "The agent needs a decision on whether archived tasks keep their checks, their review history and their attached screenshots, or whether those are dropped when a task is archived.",
+    },
+  },
+  "human-assigned": {
+    over: {
+      id: "1417",
+      title: "Human step: sign the release note",
+      status: "ready",
+      assignee: "human",
+      assignedTo: "a-reviewer-with-a-long-handle@example.test",
+    },
+  },
+  "review-needs-merge": {
+    over: {
+      id: "1418",
+      title: "Review branch drifted from main",
+      status: "review",
+      needsMerge: true,
+      area: "web,core,server",
+      areas: ["web", "core", "server"],
+    },
+  },
+  "missing-fields": {
+    over: {
+      id: "1419",
+      title: "",
+      status: "ready",
+      type: "" as Task["type"],
+      priority: "" as Task["priority"],
+      area: "",
+      areas: [],
+      branch: "",
+      body: "",
+      created_at: null,
+      updated_at: null,
+    },
+  },
+};
+
+const json = async (data: unknown) => ({ ok: true, status: 200, json: async () => data });
+
+function stubFetch(task: Task) {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async (url: string) => {
+      if (url.includes("/api/health"))
+        return json({ ok: true, root: "/tmp/repo", taskCount: 1, workDir: "work" });
+      if (url.includes("/api/index")) return json({ tasks: [task], counts: {}, taskCount: 1 });
+      if (url.includes("/diff-stats"))
+        return json({ ok: true, stats: { filesChanged: 0, additions: 0, deletions: 0 } });
+      return json({});
+    }),
+  );
+}
+
+/** Mount the real TaskCard for one fixture and return its serialized markup. */
+async function cardMarkup(name: string): Promise<string> {
+  const { over, paused } = FIXTURES[name]!;
+  const task = makeTask({ title: "Test task", status: "ready", ...over });
+  const pinia: Pinia = createPinia();
+  setActivePinia(pinia);
+  vi.stubGlobal("EventSource", FakeEventSource);
+  stubFetch(task);
+  const repo = useRepoStore();
+  await repo.init();
+  if (paused) repo.pausedIds = [task.id];
+  const wrapper = mount(TaskCard, {
+    props: { task, dragEnabled: false },
+    global: { plugins: [pinia] },
+    attachTo: document.body,
+  });
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  const markup = wrapper.html();
+  wrapper.unmount();
+  document.body.innerHTML = "";
+  return markup;
+}
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+  vi.restoreAllMocks();
+  document.body.innerHTML = "";
+});
+
+describe("Task card states at 375/768/1280 (WebKit, fixtures)", () => {
+  let browser: Browser;
+  let globalCss: string;
+  let cardCss: string;
+  const markups = new Map<string, string>();
+
+  beforeAll(async () => {
+    for (const name of Object.keys(FIXTURES)) markups.set(name, await cardMarkup(name));
+    browser = await webkit.launch();
+    const assetDir = resolve(uiRoot, "../../dist/ui/assets");
+    const cssAsset = (await readdir(assetDir)).find((name) => /^index-.*\.css$/.test(name));
+    if (!cssAsset) throw new Error("Built global UI stylesheet was not found");
+    globalCss = await readFile(resolve(assetDir, cssAsset), "utf8");
+    cardCss = scopedCss(markups.get("baseline")!, "copyable-number", "CopyableNumber");
+  });
+  afterAll(async () => {
+    await browser?.close();
+  });
+
+  /** Compiled scoped CSS for one child component, keyed off a marker class. */
+  function scopedCss(markup: string, markerClass: string, component: string): string {
+    const source = readFileSync(resolve(uiRoot, `src/components/${component}.vue`), "utf8");
+    const style = parse(source, { filename: component }).descriptor.styles[0]?.content ?? "";
+    const marker = markup.indexOf(markerClass);
+    if (marker < 0) return "";
+    const tagStart = markup.lastIndexOf("<", marker);
+    const tag = markup.slice(tagStart, markup.indexOf(">", marker));
+    const scopeId = tag.match(/data-v-[a-f0-9]+/)?.[0];
+    if (!scopeId) throw new Error(`${component} scope ID was not present on .${markerClass}`);
+    const compiled = compileStyle({ filename: component, id: scopeId, source: style });
+    if (compiled.errors.length) throw compiled.errors[0]!;
+    return compiled.code;
+  }
+
+  /** One card in a column of the width the board gives it at this viewport. */
+  async function openCard(name: string, width: number): Promise<Page> {
+    const page = await browser.newPage({ viewport: { width, height: 900 } });
+    await page.setViewportSize({ width, height: 900 });
+    await page.setContent(
+      `<meta name="viewport" content="width=device-width, initial-scale=1.0">` +
+        `<style>${globalCss}</style><style>${cardCss}</style>` +
+        `<style>html, body { width: 100%; margin: 0; } *, *::before, *::after { animation: none !important; transition: none !important; }</style>` +
+        `<main style="padding:12px"><div style="width:${CARD_WIDTH[width as (typeof VIEWPORTS)[number]]}px">${markups.get(name)}</div></main>`,
+    );
+    const shots = process.env.QA_SHOTS;
+    if (shots) {
+      mkdirSync(shots, { recursive: true });
+      // JPEG keeps the 1280px capture under the staged-artifact scan limit.
+      await page.screenshot({ path: resolve(shots, `card-${name}-${width}.jpg`), fullPage: true });
+    }
+    return page;
+  }
+
+  /** Descendants of each card that spill past the card edge (the card clips
+   *  overflow, so a spill is invisible to the reader) or past the viewport. */
+  async function clipping(
+    page: Page,
+  ): Promise<{ cards: number; spills: string[]; offscreen: boolean }> {
+    return page.evaluate(() => {
+      const vw = window.innerWidth;
+      const inHorizontalScroller = (start: Element): boolean => {
+        for (let el: HTMLElement | null = start as HTMLElement; el; el = el.parentElement) {
+          const s = getComputedStyle(el);
+          if (
+            (s.overflowX === "auto" || s.overflowX === "scroll") &&
+            el.scrollWidth > el.clientWidth + 1
+          )
+            return true;
+        }
+        return false;
+      };
+      const spills: string[] = [];
+      const cards = [...document.querySelectorAll<HTMLElement>(".task-card")];
+      for (const card of cards) {
+        const box = card.getBoundingClientRect();
+        if (box.right > vw + 1 || box.left < -1)
+          spills.push(`card #${card.dataset.taskId} off viewport`);
+        for (const el of card.querySelectorAll<HTMLElement>("*")) {
+          const style = getComputedStyle(el);
+          if (style.display === "none" || style.visibility === "hidden") continue;
+          if (el.closest("details:not([open])")) continue;
+          if (inHorizontalScroller(el)) continue;
+          const rect = el.getBoundingClientRect();
+          if (rect.width === 0 || rect.height === 0) continue;
+          if (rect.right > box.right + 1 || rect.left < box.left - 1) {
+            spills.push(
+              `${el.tagName.toLowerCase()}.${String(el.className).split(" ").filter(Boolean).join(".")} at ${Math.round(rect.left)}..${Math.round(rect.right)} (card ${Math.round(box.left)}..${Math.round(box.right)})`,
+            );
+          }
+        }
+      }
+      const offscreen = document.documentElement.scrollWidth > vw + 1;
+      return { cards: cards.length, spills, offscreen };
+    });
+  }
+
+  it.each(
+    VIEWPORTS.flatMap((width) => Object.keys(FIXTURES).map((name) => [name, width] as const)),
+  )("%s card renders without clipping or overflow at %spx", async (name, width) => {
+    const page = await openCard(name, width);
+    try {
+      const result = await clipping(page);
+      expect(result.cards, `${name} renders exactly one card`).toBe(1);
+      expect(result.spills, `${name} at ${width}px spills outside its card`).toEqual([]);
+      expect(result.offscreen, `${name} at ${width}px widens the document`).toBe(false);
+      // Placeholder text must never leak into a card when a field is missing.
+      const text = (await page.locator(".task-card").first().innerText()).trim();
+      expect(text).not.toMatch(/\b(undefined|null|NaN)\b|\[object Object\]/);
+    } finally {
+      await page.close();
+    }
+  });
+
+  it.each(VIEWPORTS)("each state shows its own badge or status at %spx", async (width) => {
+    const expectations: Array<[string, string]> = [
+      ["held", ".tc-held"],
+      [
+        "needs-input",
+        ".tc-needs-input, .tc-needs-input-icon, [data-test-id='task-card-needs-input-detail']",
+      ],
+      ["human-assigned", ".tc-human-chip"],
+      ["review-needs-merge", ".tc-merge"],
+    ];
+    for (const [name, selector] of expectations) {
+      const page = await openCard(name, width);
+      try {
+        expect(await page.locator(selector).count(), `${name} shows ${selector}`).toBeGreaterThan(
+          0,
+        );
+      } finally {
+        await page.close();
+      }
+    }
+  });
+});
+
+describe("Task card states (jsdom, store and markup rules)", () => {
+  it("archived tasks never render as board cards and sit in archivedTasks", () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const repo = useRepoStore();
+    repo.tasks = [makeTask({ id: "1420", status: "ready", isArchived: true })];
+    expect(repo.byStatus("ready")).toEqual([]);
+    expect(repo.archivedTasks.map((t) => t.id)).toEqual(["1420"]);
+  });
+
+  it("a paused card shows the stalled paused badge, not a running one", async () => {
+    const markup = await cardMarkup("paused");
+    expect(markup).toContain("tc-stalled");
+  });
+});

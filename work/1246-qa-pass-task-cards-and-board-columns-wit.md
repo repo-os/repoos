@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 809300
-last_close_out_gate_at: "2026-11-19T21:42:17.760Z"
 id: "1246"
 title: "QA pass: task cards and board columns with long titles, many labels and odd states"
 type: bug
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: ca0077b83096df440142480c7403a799b76c8676
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-task-cards-and-board-columns-wit
@@ -14,6 +13,8 @@ cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T21:06:54Z"
 updated_at: "2026-11-19T21:42:17Z"
+last_close_out_gate_ms: 809300
+last_close_out_gate_at: "2026-11-19T21:42:17.760Z"
 review_passes: 1
 ---
 ## Problem
