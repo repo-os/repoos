@@ -356,6 +356,13 @@ function onKey(e: KeyboardEvent): void {
     if (item) handleRowClick(item as { kind: string; title: string });
   } else if (e.key === "Escape") {
     e.preventDefault();
+    // The palette is the topmost floating layer while open, so this Escape is
+    // the palette's: consume it completely (stopPropagation) so the
+    // window/document Escape handlers behind it — the board's two-stage
+    // nav closePanel, header popovers, confirm dialogs — do not also fire on
+    // an Escape the palette already handled (#1231). Closing the palette is
+    // one stage; a second Esc then reaches the layer beneath.
+    e.stopPropagation();
     closeOverlay();
   }
 }
