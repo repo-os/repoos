@@ -2,7 +2,7 @@
 id: "1241"
 title: "QA pass: Agents page Build Your Team and scheduled tasks with long lists"
 type: bug
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -33,3 +33,4 @@ Do not touch repoos.toml.
 - 2026-11-19T19:23:44Z · body
 - 2026-11-19T19:29:09Z · CTO nudge: held — handoff gate is running
 - 2026-11-19T19:41:19Z · note: ui verification passed: 1 shot captured with clean console
+- 2026-11-19T19:41:19Z · status active→review
