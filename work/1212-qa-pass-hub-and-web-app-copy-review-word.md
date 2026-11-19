@@ -2,14 +2,14 @@
 id: "1212"
 title: "QA pass: Hub and web app copy review – wording, plain-English errors and consistent terminology"
 type: chore
-status: active
+status: review
 priority: p3
 area: [web, mobile, macos]
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-hub-and-web-app-copy-review-word
 created_at: "2026-11-19T00:47:39Z"
-updated_at: "2026-11-19T01:23:39Z"
+updated_at: "2026-11-19T01:24:50Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -46,3 +46,4 @@ Do not touch repoos.toml.
 - 2026-11-19T01:16:01Z · watchdog: restarting engineer because a queued message waited 3m with no live process
 - 2026-11-19T01:16:02Z · message_delivered: 1 message(s)
 - 2026-11-19T01:23:39Z · body
+- 2026-11-19T01:24:50Z · status active→review
