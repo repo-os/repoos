@@ -8,8 +8,10 @@ area: web
 assigned_to: ai
 created_by: t@t
 branch: ""
+cli_override: claude code
+model_override: haiku
 created_at: "2026-11-19T23:27:29Z"
-updated_at: "2026-11-19T23:27:36Z"
+updated_at: "2026-11-19T23:27:39Z"
 ---
 ## Problem
 Creating a story, linking tasks to it and reading its progress have not been exercised end to end with edge cases.
@@ -26,3 +28,4 @@ Do not touch repoos.toml.
 
 - 2026-11-19T23:27:29Z · created · t@t
 - 2026-11-19T23:27:36Z · status inbox→ready
+- 2026-11-19T23:27:39Z · cli_override, model_override
