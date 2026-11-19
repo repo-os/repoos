@@ -186,8 +186,8 @@ describe("Settings — resource-control rows (#0836, #0961)", () => {
     const badge = row.get(".restart-badge");
     const control = row.get(".setting-input");
     expect(badge.text()).toBe("restart required");
-    expect(badge.attributes("title")).toBe("Changes require restarting RepoOS");
     expect(badge.attributes("aria-label")).toBe("Restart required");
+    expect(badge.attributes("title")).toBeUndefined();
     expect(Array.from(row.element.children).indexOf(badge.element)).toBeLessThan(
       Array.from(row.element.children).indexOf(control.element),
     );

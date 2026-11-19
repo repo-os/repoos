@@ -1,0 +1,51 @@
+---
+id: "1217"
+title: "QA pass: Work board, filters and search at all screen sizes"
+type: bug
+status: done
+priority: p2
+area: web
+merged_commit: 5ad33b3438be42a680a9dc569995d7bdc4dd8b0b
+assigned_to: ai
+created_by: t@t
+branch: feat/qa-pass-work-board-filters-and-search-at
+created_at: "2026-11-19T03:47:37Z"
+updated_at: "2026-11-19T04:17:54Z"
+last_close_out_gate_ms: 621328
+last_close_out_gate_at: "2026-11-19T04:12:23.772Z"
+review_passes: 2
+review_rounds: 1
+routing_switches: 1
+---
+## Problem
+The Work board, search, filters and bulk actions have not had a QA pass at phone, tablet and desktop widths since the latest releases.
+## Desired UX
+Board columns, filters, search and the task cards work and are reachable at 375, 768 and 1280 px, with clear empty states.
+## Acceptance criteria
+- Headless Playwright only; never open a visible browser or steal focus.
+- Exercise filters, search, drag/status controls and card menus using fixtures; fix layout, wording and dead controls with tests.
+- Commit docs/qa/2026-11-work-board-qa.md listing what was checked.
+## Notes for AI
+Do not touch repoos.toml.
+
+## Activity
+
+- 2026-11-19T03:47:37Z · created · t@t
+- 2026-11-19T03:47:41Z · status inbox→ready
+- 2026-11-19T03:47:43Z · status ready→active, branch
+- 2026-11-19T03:51:08Z · body
+- 2026-11-19T03:53:56Z · body
+- 2026-11-19T03:55:49Z · status active→review
+- 2026-11-19T03:55:49Z · message_queued at 2026-11-19T03:55:49.873Z
+- 2026-11-19T03:55:50Z · note: shots: skipped — the diff (4 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-11-19T03:56:34Z · note: review pass 1: needs some work
+- 2026-11-19T03:56:35Z · message_delivered: 1 message(s)
+- 2026-11-19T03:56:35Z · status review→active
+- 2026-11-19T03:59:27Z · body
+- 2026-11-19T04:01:04Z · status active→review
+- 2026-11-19T04:01:04Z · message_queued at 2026-11-19T04:01:04.529Z
+- 2026-11-19T04:01:04Z · note: shots: skipped — the diff (6 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-11-19T04:01:35Z · note: review pass 2: good to go
+- 2026-11-19T04:12:23Z · close-out gate completed in 621s
+- 2026-11-19T04:12:49Z · status done→done, release:success
+- 2026-11-19T04:17:54Z · message_dropped: 1 queued message(s) discarded — task is done

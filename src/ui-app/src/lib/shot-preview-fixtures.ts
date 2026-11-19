@@ -2,6 +2,7 @@
  * Preview-only board fixtures driven by `?shotState=` on the capture URL (#0743).
  */
 import { ref } from "vue";
+import { SERVER_UNREACHABLE_MESSAGE } from "../api";
 import {
   SHOT_PREVIEW_FIXTURE_QUERY,
   SHOT_PREVIEW_FIXTURE_TASK_ID,
@@ -1216,7 +1217,7 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
       break;
     case "work:failedLoad":
       repo.tasks.splice(0);
-      repo.boardLoadError = "Can't reach the RepoOS server — it may be down.";
+      repo.boardLoadError = SERVER_UNREACHABLE_MESSAGE;
       repo.loading = false;
       break;
     case "agents:empty":

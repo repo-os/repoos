@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { mount } from "@vue/test-utils";
 import UiRecoveryBanner from "../src/components/UiRecoveryBanner.vue";
+import { SERVER_UNREACHABLE_MESSAGE } from "../src/api";
 import {
   configureUiRecovery,
   dismissRecovery,
@@ -47,8 +48,7 @@ describe("UiRecoveryBanner", () => {
 });
 
 describe("server down vs not responding (#0959)", () => {
-  const refused =
-    "Can't reach the RepoOS server — it may be down. Restart it (`repoos serve`), then reload.";
+  const refused = SERVER_UNREACHABLE_MESSAGE;
   const timedOut =
     "The RepoOS server did not respond in time — retry the request or reload when the server is ready.";
 
@@ -56,6 +56,12 @@ describe("server down vs not responding (#0959)", () => {
     expect(offlineReasonFor(refused)).toBe("down");
     expect(offlineReasonFor(timedOut)).toBe("slow");
     expect(offlineReasonFor("something else")).toBeNull();
+  });
+
+  it("uses plain language for an unreachable server", () => {
+    expect(refused).toContain("RepoOS server");
+    expect(refused).toContain("Start the server");
+    expect(refused).not.toContain("repoos serve");
   });
 
   it("names the project and shows a copyable restart command when the server is down", async () => {

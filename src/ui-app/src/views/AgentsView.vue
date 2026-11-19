@@ -116,6 +116,17 @@ const AGENT_TABS: AgentTab[] = [
 ];
 
 const activeTab = ref<AgentTab>("default");
+function onAgentTabKeydown(event: KeyboardEvent, index: number): void {
+  let next = index;
+  if (event.key === "ArrowRight") next = (index + 1) % AGENT_TABS.length;
+  else if (event.key === "ArrowLeft") next = (index - 1 + AGENT_TABS.length) % AGENT_TABS.length;
+  else if (event.key === "Home") next = 0;
+  else if (event.key === "End") next = AGENT_TABS.length - 1;
+  else return;
+  event.preventDefault();
+  activeTab.value = AGENT_TABS[next]!;
+  document.getElementById(`agents-tab-${AGENT_TABS[next]}`)?.focus();
+}
 // The playground fetches from external APIs on first view — lazy-mount it
 // only once the user actually opens the tab, but keep it mounted afterward
 // so switching tabs doesn't lose the in-progress chat. Same for the model
@@ -740,7 +751,9 @@ onUnmounted(() => {
         <div class="page-desc">
           The AI agents that work this repo
           <span v-if="config.saving"> · Saving…</span>
-          <span v-else-if="config.error" class="save-msg err"> · {{ config.error }}</span>
+          <span v-else-if="config.loaded && config.error" class="save-msg err">
+            · {{ config.error }}</span
+          >
           <span v-else-if="config.msg" class="save-msg ok"> · Saved</span>
         </div>
       </div>
@@ -767,14 +780,28 @@ onUnmounted(() => {
       <Button variant="outline" @click="activeTab = 'team'">Choose a built-in agent</Button>
     </section>
 
-    <div class="agent-tabs">
+    <section v-if="!config.loaded && config.error" class="agents-load-error" role="alert">
+      <div>
+        <h2>Couldn’t load agents</h2>
+        <p>Check your connection to the RepoOS server, then try again.</p>
+      </div>
+      <Button variant="outline" @click="config.load()">Retry</Button>
+    </section>
+
+    <div class="agent-tabs" role="tablist" aria-label="Agent settings">
       <button
-        v-for="t in AGENT_TABS"
+        v-for="(t, index) in AGENT_TABS"
+        :id="`agents-tab-${t}`"
         :key="t"
         type="button"
+        role="tab"
+        :aria-selected="activeTab === t"
+        :aria-controls="`agents-panel-${t}`"
+        :tabindex="activeTab === t ? 0 : -1"
         class="tab-btn"
         :class="{ active: activeTab === t }"
         @click="activeTab = t"
+        @keydown="onAgentTabKeydown($event, index)"
       >
         {{ AGENT_TAB_LABELS[t] }}
         <span
@@ -786,10 +813,14 @@ onUnmounted(() => {
       </button>
     </div>
 
-    <PageSkeleton :loading="!config.loaded" kind="cards" />
+    <PageSkeleton :loading="!config.loaded && !config.error" kind="cards" />
 
     <template v-if="config.loaded">
       <div
+        :id="`agents-panel-${activeTab}`"
+        role="tabpanel"
+        :aria-labelledby="`agents-tab-${activeTab}`"
+        tabindex="0"
         class="agents-tab-content"
         :class="{ 'agents-tab-content--playground': activeTab === 'playground' }"
       >
@@ -815,7 +846,6 @@ onUnmounted(() => {
               size="sm"
               style="margin-left: auto"
               :disabled="modelsLoading"
-              title="Re-probe every CLI's live model list (bypasses the cache)"
               @click="loadModels(true)"
             >
               {{ modelsLoading ? "Refreshing…" : "Refresh models" }}
@@ -1058,7 +1088,7 @@ onUnmounted(() => {
                   >
                     <SelectTrigger
                       class="detect-binary-select"
-                      :title="`${r.agent.allBinaries.length} copies found on PATH`"
+                      :aria-label="`Choose ${r.agent.name} binary, ${r.agent.allBinaries.length} copies found on PATH`"
                     >
                       <SelectValue />
                     </SelectTrigger>
@@ -1081,7 +1111,8 @@ onUnmounted(() => {
                   <span
                     v-if="detectPending.has(r.agent.id)"
                     class="detect-row-spinner"
-                    title="Probing…"
+                    role="status"
+                    aria-label="Probing…"
                   ></span>
                   <details v-if="r.agent.installed && r.agent.update" class="detect-update-detail">
                     <summary :style="{ color: updateColor(r.agent.update) }">
@@ -1109,11 +1140,9 @@ onUnmounted(() => {
                     </span>
                   </details>
                   <span v-if="r.status === 'auth'" class="detect-hint-inline">
-                    <code
-                      class="detect-hint-code"
-                      :title="r.agent.authHint || 'sign in with the CLI'"
-                      >{{ r.agent.authHint || "sign in with the CLI" }}</code
-                    >
+                    <code class="detect-hint-code">{{
+                      r.agent.authHint || "sign in with the CLI"
+                    }}</code>
                     <button
                       v-if="r.agent.authHint"
                       class="detect-copy"
@@ -1123,17 +1152,13 @@ onUnmounted(() => {
                     </button>
                   </span>
                   <span v-else-if="r.status === 'desktop'" class="detect-hint-inline">
-                    <code class="detect-hint-code" :title="r.agent.installHint">{{
-                      r.agent.installHint
-                    }}</code>
+                    <code class="detect-hint-code">{{ r.agent.installHint }}</code>
                     <button class="detect-copy" @click="copyHint(r.agent.installHint)">
                       {{ detectHintCopied === r.agent.installHint ? "copied" : "copy" }}
                     </button>
                   </span>
                   <span v-else-if="r.status === 'missing'" class="detect-hint-inline">
-                    <code class="detect-hint-code" :title="r.agent.installHint">{{
-                      r.agent.installHint
-                    }}</code>
+                    <code class="detect-hint-code">{{ r.agent.installHint }}</code>
                     <button class="detect-copy" @click="copyHint(r.agent.installHint)">
                       {{ detectHintCopied === r.agent.installHint ? "copied" : "copy" }}
                     </button>
@@ -1147,11 +1172,6 @@ onUnmounted(() => {
                       isAgentFavorite(favoriteKey(r.agent))
                         ? `Remove ${r.agent.name} from favorites`
                         : `Add ${r.agent.name} to favorites`
-                    "
-                    :title="
-                      isAgentFavorite(favoriteKey(r.agent))
-                        ? 'Remove from favorites'
-                        : 'Add to favorites'
                     "
                     @click="toggleAgentFavorite(favoriteKey(r.agent))"
                   >

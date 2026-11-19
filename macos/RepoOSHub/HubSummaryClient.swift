@@ -45,7 +45,7 @@ struct HubSummaryClient: HubSummaryFetching {
                 let retry = parseRetryAfter(http)
                 return .failure(.rateLimited(retryAfter: retry))
             default:
-                return .failure(.transport("HTTP \(http.statusCode)"))
+                return .failure(.transport("The server returned an error (\(http.statusCode))."))
             }
         } catch {
             return .failure(.transport(error.localizedDescription))

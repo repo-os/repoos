@@ -6,6 +6,7 @@ import WorkView from "../src/views/WorkView.vue";
 import { useRepoStore } from "../src/stores/repo";
 import { useUiStore } from "../src/stores/ui";
 import * as apiMod from "../src/api";
+import { SERVER_UNREACHABLE_MESSAGE } from "../src/api";
 import type { Task } from "../src/types";
 
 const routeState = vi.hoisted(() => ({
@@ -385,7 +386,7 @@ describe("mobile Work queue", () => {
   it("shows initial board-load failures and clears them after a successful retry", async () => {
     const repo = useRepoStore();
     repo.loading = false;
-    repo.boardLoadError = "Can't reach the RepoOS server — it may be down.";
+    repo.boardLoadError = SERVER_UNREACHABLE_MESSAGE;
     const wrapper = mountQueue();
     expect(wrapper.get("[data-testid='mobile-work-load-error']").text()).toContain(
       "Check that the RepoOS server is running, then retry.",
@@ -412,7 +413,7 @@ describe("mobile Work queue", () => {
   // #1130: the mobile queue and the desktop board used to be painted on top of
   // each other because `v-else` was chained to MobileTaskDetail rather than to
   // the narrow layout. These widths are the phone sizes from the report.
-  it.each([360, 390, 412])("renders exactly one queue at %spx", async (width) => {
+  it.each([360, 375, 390, 412])("renders exactly one queue at %spx", async (width) => {
     stubViewport(width, true);
     const repo = useRepoStore();
     repo.loading = false;
@@ -427,6 +428,20 @@ describe("mobile Work queue", () => {
     // The integration bar belongs to Work, not to the desktop board: it stays
     // mounted (and floats clear of the tab bar) on a phone.
     expect(wrapper.find(".integration-status-bar").exists()).toBe(true);
+  });
+
+  it("keeps the board composition at the 768px tablet breakpoint", async () => {
+    stubViewport(768, false);
+    const repo = useRepoStore();
+    repo.loading = false;
+    repo.tasks = [task("0768", "ready")];
+    const wrapper = mount(WorkView, { global: { stubs: workViewStubs() } });
+    await flushPromises();
+
+    expect(wrapper.find(".work-page").exists()).toBe(true);
+    expect(wrapper.find(".board").exists()).toBe(true);
+    expect(wrapper.find(".desktop-board-column").exists()).toBe(true);
+    expect(wrapper.find("[data-testid='mobile-work-queue']").exists()).toBe(false);
   });
 
   it("marks the fixed integration bar as a fixed overlay, not a page shell (#1136)", async () => {

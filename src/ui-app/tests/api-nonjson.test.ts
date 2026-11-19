@@ -6,7 +6,7 @@
  * verbatim. It must surface a friendly, actionable error instead.
  */
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { API_TIMEOUT_MS, api } from "../src/api";
+import { API_TIMEOUT_MS, api, SERVER_UNREACHABLE_MESSAGE } from "../src/api";
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -43,6 +43,16 @@ describe("api()", () => {
     const err = (await api("/api/health").catch((e: Error) => e)) as Error;
     expect(err.message).toMatch(/can't reach the repoos server/i);
     expect(err.message).not.toContain("Failed to fetch");
+  });
+
+  it("gives a plain-language next step when the RepoOS server is unreachable", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        throw new TypeError("Failed to fetch");
+      }),
+    );
+    await expect(api("/api/health")).rejects.toThrow(SERVER_UNREACHABLE_MESSAGE);
   });
 
   it("lets a deliberate AbortError pass through untouched", async () => {

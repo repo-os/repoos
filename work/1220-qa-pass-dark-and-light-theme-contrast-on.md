@@ -1,0 +1,58 @@
+---
+id: "1220"
+title: "QA pass: dark and light theme contrast on every main page"
+type: bug
+status: done
+priority: p2
+area: web
+merged_commit: fbe5e6a692d1721961f36d0d94759768ef67dda3
+assigned_to: ai
+created_by: t@t
+branch: feat/qa-pass-dark-and-light-theme-contrast-on
+created_at: "2026-11-19T06:17:41Z"
+updated_at: "2026-11-19T06:57:36Z"
+last_close_out_gate_ms: 817752
+last_close_out_gate_at: "2026-11-19T06:55:23.295Z"
+review_passes: 3
+review_rounds: 2
+routing_switches: 1
+routing_escalations: 1
+handoff_signal_retry_count: 1
+---
+## Problem
+Theme contrast on newer pages and dialogs has not been re-checked since recent UI changes.
+## Desired UX
+Text, borders, focus rings and status colors are readable in both light and dark themes on every main page and dialog.
+## Acceptance criteria
+- Headless Playwright only; never open a visible browser or steal focus.
+- Run the rendered contrast audit across main pages and dialogs in both themes; fix real failures with tests, using theme tokens not hard-coded colors.
+- Commit docs/qa/2026-11-theme-contrast-qa.md.
+## Notes for AI
+Do not touch repoos.toml.
+
+## Activity
+
+- 2026-11-19T06:17:41Z · created · t@t
+- 2026-11-19T06:17:44Z · status inbox→ready
+- 2026-11-19T06:17:46Z · status ready→active, branch
+- 2026-11-19T06:21:56Z · status active→review
+- 2026-11-19T06:21:56Z · message_queued at 2026-11-19T06:21:56.417Z
+- 2026-11-19T06:21:57Z · note: shots: skipped — the diff (3 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-11-19T06:22:33Z · note: review pass 1: needs some work
+- 2026-11-19T06:22:34Z · message_delivered: 1 message(s)
+- 2026-11-19T06:22:34Z · status review→active
+- 2026-11-19T06:33:01Z · body
+- 2026-11-19T06:34:08Z · status active→review
+- 2026-11-19T06:34:08Z · message_queued at 2026-11-19T06:34:08.761Z
+- 2026-11-19T06:34:09Z · note: shots: skipped — the diff (6 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-11-19T06:34:41Z · note: review pass 2: needs some work
+- 2026-11-19T06:34:41Z · message_delivered: 1 message(s)
+- 2026-11-19T06:34:42Z · status review→active
+- 2026-11-19T06:39:19Z · body
+- 2026-11-19T06:40:29Z · status active→review
+- 2026-11-19T06:40:29Z · message_queued at 2026-11-19T06:40:29.485Z
+- 2026-11-19T06:40:30Z · note: shots: skipped — the diff (8 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-11-19T06:41:08Z · note: review pass 3: good to go
+- 2026-11-19T06:55:23Z · close-out gate completed in 818s
+- 2026-11-19T06:55:59Z · message_dropped: 1 queued message(s) discarded — task is done
+- 2026-11-19T06:57:36Z · status done→done, release:success
