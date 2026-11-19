@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-toasts-banners-and-dialogs-stack
 created_at: "2026-11-19T09:17:32Z"
-updated_at: "2026-11-19T14:44:04Z"
+updated_at: "2026-11-19T14:46:32Z"
 last_check_failure: "repoos check at 2026-11-19T14:29:14.920Z: repoos check failed: ui verification failed (2 issue(s)): [console] Failed to preconnect to https://fonts.googleapis.com/. Error: Error resolving “fonts.googleapis.com”: Name or service not known; [console] Failed to preconnect to https://fonts.gstatic.com/. Error: Error resolving “fonts.gstatic.com”: Name or service not known"
 handoff_signal_retry_count: 2
 dev_error_count: 1
@@ -134,3 +134,4 @@ Do not touch repoos.toml.
 - 2026-11-19T14:44:03Z · note: ui verification passed: 2 of 2 shots captured with clean console
 - 2026-11-19T14:44:04Z · status active→review
 - 2026-11-19T14:44:04Z · message_queued at 2026-11-19T14:44:04.871Z
+- 2026-11-19T14:46:32Z · note: review pass 1: good to go
