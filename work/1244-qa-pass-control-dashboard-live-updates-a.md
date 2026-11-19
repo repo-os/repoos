@@ -11,7 +11,7 @@ branch: feat/qa-pass-control-dashboard-live-updates-a
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T20:07:32Z"
-updated_at: "2026-11-19T20:27:06Z"
+updated_at: "2026-11-19T20:28:49Z"
 ---
 ## Problem
 The Control dashboard and Work board use live updates; behavior after a dropped connection, a server restart or a long idle tab has not been checked.
@@ -34,3 +34,4 @@ Do not touch repoos.toml.
 - 2026-11-19T20:26:51Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-19T20:27:06Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code unknown) · last assistant: The scoped `repoos check` is still running on the remote runner, so I'm waiting on the monitor. Nothing is ready to hand off until it reports a pass. Where things stand: - **Fixed:** a failed board refresh after an SSE reconnect is now ret… · stderr: (empty)
 - 2026-11-19T20:27:06Z · message_delivered: 1 message(s)
+- 2026-11-19T20:28:49Z · message_queued at 2026-11-19T20:28:49.934Z
