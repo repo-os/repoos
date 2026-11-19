@@ -634,7 +634,11 @@
   inset: 0;
   background: var(--overlay-bg);
   backdrop-filter: blur(4px);
-  z-index: 100;
+  /* #1231: the command palette must stack ABOVE the layers it can be opened
+     over — drawers/dialogs (100), chat jump-to-latest (130), the screenshot
+     viewer (140/150) — so ⌘K keeps working with a drawer or viewer open.
+     Still below the global tooltip (200) and the card agent preview (300). */
+  z-index: 160;
   display: flex;
   align-items: flex-start;
   justify-content: center;
@@ -704,6 +708,12 @@
   background: var(--panel);
   border-color: var(--border-bright);
   color: var(--txt);
+}
+/* Keyboard users trapped inside the palette must see where focus sits on the
+   close button too (#1231): same visible ring family the input uses. */
+.search-overlay-close:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
 }
 @media (max-width: 900px) {
   .search-overlay-input {
@@ -7016,7 +7026,7 @@
   background: var(--violet-dim);
 }
 .review-history-latest:focus-visible {
-  outline: 2px solid var(--focus-ring);
+  outline: 2px solid var(--ring);
   outline-offset: 2px;
 }
 .review-history-loading {
@@ -7032,7 +7042,7 @@
   box-shadow: inset 3px 0 var(--violet);
 }
 .review-history-row:focus-visible {
-  outline: 2px solid var(--focus-ring);
+  outline: 2px solid var(--ring);
   outline-offset: -2px;
 }
 .review-history-table {
@@ -7076,7 +7086,7 @@
   display: none;
 }
 .report-time summary:focus-visible {
-  outline: 2px solid var(--focus-ring);
+  outline: 2px solid var(--ring);
   outline-offset: 2px;
   border-radius: 2px;
 }
