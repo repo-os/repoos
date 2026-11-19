@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "1211"
 title: "QA pass: remote runner setup docs and runner health screens vs real bee/thinkpad/mini behavior"
 type: bug
@@ -64,3 +65,4 @@ Do not touch repoos.toml.
 - 2026-11-19T01:13:09Z · message_delivered: 2 message(s)
 - 2026-11-19T01:13:09Z · status review→active
 - 2026-11-19T01:13:12Z · CTO nudge: held — remote validation is running
+
