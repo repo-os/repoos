@@ -1,6 +1,4 @@
 ---
-check_retry_count: 1
-last_check_failure: "repoos check at 2026-11-19T06:56:03.096Z: repoos check failed: rendered-contrast — · div#setting-model_routing.timeoutMs.setting-row > div.setting-info > div.setting-desc — #958ab0 on #ffffff = 3.21 (need ≥4.5, 11px) [settings] \"How long one routing decision may take before the configured\""
 id: "1219"
 title: "QA pass: Checks and Releases pages with real data at all screen sizes"
 type: bug
@@ -11,7 +9,9 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-checks-and-releases-pages-with-r
 created_at: "2026-11-19T06:17:33Z"
-updated_at: "2026-11-19T06:56:02Z"
+updated_at: "2026-11-19T07:07:54Z"
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-19T06:56:03.096Z: repoos check failed: rendered-contrast — · div#setting-model_routing.timeoutMs.setting-row > div.setting-info > div.setting-desc — #958ab0 on #ffffff = 3.21 (need ≥4.5, 11px) [settings] \"How long one routing decision may take before the configured\""
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -66,4 +66,4 @@ Do not touch repoos.toml.
 - 2026-11-19T06:55:29Z · CTO nudge: held — handoff gate is running
 - 2026-11-19T06:56:00Z · message_queued at 2026-11-19T06:56:00.253Z
 - 2026-11-19T06:56:02Z · message_delivered: 1 message(s)
-
+- 2026-11-19T07:07:54Z · message_queued at 2026-11-19T07:07:54.361Z
