@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 621328
-last_close_out_gate_at: "2026-11-19T04:12:23.772Z"
 id: "1217"
 title: "QA pass: Work board, filters and search at all screen sizes"
 type: bug
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: 5ad33b3438be42a680a9dc569995d7bdc4dd8b0b
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-work-board-filters-and-search-at
 created_at: "2026-11-19T03:47:37Z"
 updated_at: "2026-11-19T04:12:23Z"
+last_close_out_gate_ms: 621328
+last_close_out_gate_at: "2026-11-19T04:12:23.772Z"
 review_passes: 2
 review_rounds: 1
 routing_switches: 1
