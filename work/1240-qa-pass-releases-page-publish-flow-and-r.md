@@ -2,14 +2,14 @@
 id: "1240"
 title: "QA pass: Releases page publish flow and release notes editor with failures"
 type: bug
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
 branch: ""
 created_at: "2026-11-19T18:27:27Z"
-updated_at: "2026-11-19T18:27:27Z"
+updated_at: "2026-11-19T18:27:32Z"
 ---
 ## Problem
 The Releases page publish flow and notes editor have not been tested for failures (CI failing, tag exists, long notes, offline).
@@ -25,3 +25,4 @@ Do not touch repoos.toml. Do not call the real release API.
 ## Activity
 
 - 2026-11-19T18:27:27Z · created · t@t
+- 2026-11-19T18:27:32Z · status inbox→ready
