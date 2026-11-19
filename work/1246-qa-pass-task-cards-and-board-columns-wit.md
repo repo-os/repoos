@@ -11,7 +11,7 @@ branch: feat/qa-pass-task-cards-and-board-columns-wit
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T21:06:54Z"
-updated_at: "2026-11-19T21:19:11Z"
+updated_at: "2026-11-19T21:20:38Z"
 ---
 ## Problem
 Task cards and board columns have not been checked with very long titles, many labels, unusual statuses (held, paused, needs-input, archived) and missing fields.
@@ -48,3 +48,4 @@ Do not touch repoos.toml.
 - 2026-11-19T21:19:10Z · note: ui verification passed: 1 of 1 shot captured with clean console
 - 2026-11-19T21:19:11Z · status active→review
 - 2026-11-19T21:19:11Z · message_queued at 2026-11-19T21:19:11.388Z
+- 2026-11-19T21:20:38Z · note: review pass 1: good to go
