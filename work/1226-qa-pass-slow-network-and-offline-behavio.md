@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-slow-network-and-offline-behavio
 created_at: "2026-11-19T09:47:34Z"
-updated_at: "2026-11-19T14:17:28Z"
+updated_at: "2026-11-19T14:17:29Z"
 handoff_signal_retry_count: 2
 dev_error_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-11-19T10:00:44.011Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-19T12:54:47.309Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-19T14:15:26.925Z\",\"reason\":\"clean-exit-without-handoff\"}]"
@@ -133,3 +133,4 @@ Do not touch repoos.toml.
 - 2026-11-19T14:15:26Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 3/3
 - 2026-11-19T14:15:28Z · watchdog: automatic resume failed — This worktree already has a recorded live engineer for task #1226 (pid 11988)
 - 2026-11-19T14:17:28Z · needs_input
+- 2026-11-19T14:17:29Z · note: agent fallback: codex + gpt-6-luna is paused (out of usage since 2026-11-19T07:09:32.657Z: Codex hit a provider quota or rate limit. Wait for the provider limit to reset, then retry. (CLI: error: You’ve hit your usage limit. Upgrade to Pro (https://chatgpt.com/explore/pro), visit https://chatgpt.com/codex/settings/usage to purcha) — using opencode + opencode-go/glm-5.3-flash
