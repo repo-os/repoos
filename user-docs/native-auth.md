@@ -7,4 +7,4 @@ accounts; it does not create a separate allowlist or role system.
 For setup, login methods, sessions, roles, and managing the allowlist, see the
 [Authentication guide](/authentication). For the identity and authorization
 decision behind Telegram, see [Telegram](/telegram) and the
-[native authentication architecture notes](../docs/native-auth.md).
+[native authentication architecture notes](https://github.com/repo-os/repoos/blob/main/docs/native-auth.md).

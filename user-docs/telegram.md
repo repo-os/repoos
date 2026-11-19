@@ -269,11 +269,11 @@ with you:
 Deploying and operating the service itself (creating the manager bot,
 provisioning the Neon project, running migrations, setting secrets, going
 live) is documented for the operator in
-[`docs/telegram-manager-service.md`](../docs/telegram-manager-service.md); it
+[`docs/telegram-manager-service.md`](https://github.com/repo-os/repoos/blob/main/docs/telegram-manager-service.md); it
 is out of scope for a repository instance's own setup.
 
 For how RepoOS login, the email allowlist, and admin/member roles work, read
 [Native authentication](/native-auth). The implementation decision is recorded
-in [ADR 0007](../docs/adr/0007-telegram-identity-and-authorization.md), and the
+in [ADR 0007](https://github.com/repo-os/repoos/blob/main/docs/adr/0007-telegram-identity-and-authorization.md), and the
 adapter's implementation notes (including the full provisioning contract) are
-in [docs/telegram-adapter.md](../docs/telegram-adapter.md).
+in [docs/telegram-adapter.md](https://github.com/repo-os/repoos/blob/main/docs/telegram-adapter.md).

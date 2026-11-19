@@ -516,7 +516,7 @@ closeOut.postPublishCommand = ""      # optional shell install in main after loc
 Edit it in **Settings → General → "Close-out timeout"** (presets plus *Off (no
 limit)*), or set any value directly in `repoos.toml`. A timeout is a failure
 with an error card; **Stop MTD** on the task drawer is a user cancel and stays
-badge-free — see [docs/close-out-pipeline.md](../docs/close-out-pipeline.md)
+badge-free — see [docs/close-out-pipeline.md](https://github.com/repo-os/repoos/blob/main/docs/close-out-pipeline.md)
 for how the three outcomes differ.
 
 | `closeOut.candidate` | string | `symlink-main` | yes | How the throwaway **candidate** worktree gets dependencies. `symlink-main` reuses the primary checkout's `node_modules` (fast). `own-install` runs a frozen install in the candidate — use for monorepos or when Vite reports `Denied ID` on symlinked paths. `[worktrees] candidate` is an alias when `closeOut.candidate` is unset. |
@@ -883,7 +883,7 @@ reviewVerification.testGlobs = ["**/*.test.ts", "**/*.test.tsx", "**/*.test.js",
 | `reviewVerification.guardTestCheck` | boolean | `true` | yes | Kill switch for the guard negative-test check. When a check *guard* a project declares in `[[check.steps]]` changed, a test must prove bad input is rejected. The check only ever fires for guards a project actually declares, so it never blocks a repo whose plan has no built-in RepoOS guard; set `false` to silence it entirely. |
 | `reviewVerification.testGlobs` | string[] | `["**/*.test.ts", "**/*.test.tsx", "**/*.test.js", "**/*.test.mjs"]` | yes | Globs identifying the test files counted as negative-test evidence. Set these for a Swift, Python, Go or other non-JS project (e.g. `["**/*Tests.swift"]`, `["**/test_*.py"]`, `["**/*_test.go"]`). |
 
-Edit both keys in **Settings → General**. The check appends a `## Automated verification` section to the review report and clamps a reviewer's `` `good to go` `` to `needs some work` on failure; the reason is recorded in the task activity note and the follow-up message to the engineer. See [Review and close-out → Automated verification](/review-and-close-out#automated-verification-when-repoos-clamps-a-clean-verdict) and [docs/review-verification.md](../docs/review-verification.md).
+Edit both keys in **Settings → General**. The check appends a `## Automated verification` section to the review report and clamps a reviewer's `` `good to go` `` to `needs some work` on failure; the reason is recorded in the task activity note and the follow-up message to the engineer. See [Review and close-out → Automated verification](/review-and-close-out#automated-verification-when-repoos-clamps-a-clean-verdict) and [docs/review-verification.md](https://github.com/repo-os/repoos/blob/main/docs/review-verification.md).
 
 A **command capture target** (`[[shot.targets]]`, below) has no browser page or console, so its evidence in the same file is a `commandCaptures` record instead: the target, command, cwd, exit status, stdout/stderr tail and the images it produced (with sizes), plus the same tested-tree identity and plan fingerprint. The handoff gate writes it for command-only tasks exactly as it writes the browser record for web ones, stale-capture detection applies the same way, and the reviewer prompt says browser verification does not apply (the console-error check is `skipped`, never blocking). See [Command capture targets](#command-capture-targets-non-web-apps).
 
@@ -1363,7 +1363,7 @@ fields (`route`, `selector`, `highlight`, `steps`) are ignored for a command
 target. `repoos shot --target "macOS app"` works from the CLI too.
 
 A short recipe for the common platforms, and how declarations and skip messages
-behave, are in [Previews and shots](../docs/previews.md#evidence-shots-for-non-web-targets).
+behave, are in [Previews and shots](https://github.com/repo-os/repoos/blob/main/docs/previews.md#evidence-shots-for-non-web-targets-0761).
 
 > **`[[shot.targets]]` is deliberately TOML-only**, for the same reason as
 > `[[preview.targets]]`: an array of tables cannot be expressed by the flat
@@ -1723,7 +1723,7 @@ do the same over HTTP, and `POST /api/stories/freeform { …, pm: false }` is th
 freeform route with the flesh-out — and the task tagging — switched off. All of
 these write and commit the definition exactly as given, keep the story's number
 across a rename, and start no agent. The UI's **New story** keeps the PM
-flesh-out by default. See [`repoos story`](/cli#repoos-story-newlistshowupdate).
+flesh-out by default. See [`repoos story`](/cli#repoos-story-new-list-show-update).
 
 A story counts as complete only when every one of its tasks is done, and there
 is no manual completion control. The Stories page header has a **Hide Completed
@@ -2063,7 +2063,7 @@ TOML-only; the Settings UI only edits the plain host-name list (see
 
 The existing single-host shorthand `tailscaleHost = "mini"` still works and
 is folded into the pool as a plain entry. See
-[docs/remote-validation.md](../docs/remote-validation.md) for full
+[docs/remote-validation.md](https://github.com/repo-os/repoos/blob/main/docs/remote-validation.md) for full
 dispatch, routing and cross-process-limit details.
 
 ## Dev targets

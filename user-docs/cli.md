@@ -94,7 +94,7 @@ fails silently when offline.
 Turn it off with `updates.check = false` in Settings or `repoos.toml`, or with
 `REPOOS_NO_UPDATE_CHECK=1`. Source checkouts are not nagged. The dashboard
 banner uses the same check and the same toggle. Design details:
-[`docs/update-check.md`](../docs/update-check.md).
+[`docs/update-check.md`](https://github.com/repo-os/repoos/blob/main/docs/update-check.md).
 
 ## The board
 
@@ -354,7 +354,7 @@ These write the same fields as `PATCH /api/tasks/<id>` and are what
 engineer/reviewer runs read.
 `POST /api/tasks/<id>/start` and `/message` reject override fields in the
 request body (HTTP 400); PM chat routes still accept `cliOverride` /
-`modelOverride` for a single turn. See [Running with agents](/running-with-agents#2-choose-agents-per-role).
+`modelOverride` for a single turn. See [Running with agents](/running-with-agents#_2-choose-agents-per-role).
 
 ```bash
 repoos update 0615 --depends-on 0542,0538
@@ -960,7 +960,7 @@ declares a **command capture target** instead of (or as well as) a dev-server
 files offscreen. `repoos shot --target "<name>"` runs that command and stores
 the images it writes into `REPOOS_SHOT_DIR`, and the automatic handoff capture
 runs it too. See
-[Previews and shots](../docs/previews.md#evidence-shots-for-non-web-targets) for
+[Previews and shots](https://github.com/repo-os/repoos/blob/main/docs/previews.md#evidence-shots-for-non-web-targets-0761) for
 the config shape and platform recipes.
 
 After the page loads, `repoos shot` waits for network quiet (best-effort) and a

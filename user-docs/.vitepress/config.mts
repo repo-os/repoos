@@ -38,8 +38,10 @@ export default defineConfig({
   lastUpdated: true,
   // README.md here is the build/deploy runbook for this directory, not a page.
   srcExclude: ["README.md"],
-  // Links reaching outside the site (../docs/, ../src/) are repo-relative by
-  // design; they resolve on a checkout, not on the published site.
+  // VitePress skips relative dead-link checks here. `scripts/check-links.ts`
+  // runs after the build and resolves every internal link in the rendered
+  // site, so a `../docs/` path that does not exist on the published site
+  // still fails `bun run build`.
   ignoreDeadLinks: [/^\.{1,2}\//],
   vite: {
     server: {

@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 335195
-last_close_out_gate_at: "2026-11-19T21:27:38.200Z"
 id: "1245"
 title: "QA pass: docs site and user-docs navigation, search and links at all screen sizes"
 type: bug
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: 250f657510fc91208300128bf291dc01397729d6
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-docs-site-and-user-docs-navigati
@@ -14,6 +13,8 @@ cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T20:07:43Z"
 updated_at: "2026-11-19T21:27:38Z"
+last_close_out_gate_ms: 335195
+last_close_out_gate_at: "2026-11-19T21:27:38.200Z"
 review_passes: 1
 ---
 ## Problem

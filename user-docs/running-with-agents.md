@@ -23,7 +23,7 @@ first, then come back here.
   it to about 3–6 items (they may mix areas) and add new small fixes to that open
   bundle rather than filing another; never fold them into a release-critical
   task. See
-  [Easter-eggs bundles](../docs/easter-eggs-bundles.md) for the reasoning and
+  [Easter-eggs bundles](https://github.com/repo-os/repoos/blob/main/docs/easter-eggs-bundles.md) for the reasoning and
   the task template.
 - Encode the order with `dependsOn`. The sequencing judgment belongs **here**,
   at planning time. Once the graph is right, auto-engineering picks the next
@@ -89,7 +89,7 @@ first, then come back here.
     the pool actually being used, and why not?"
   - Prefer **`GET /api/attention`** (or the `attention.updated` SSE event) to
     polling job files by hand. Its contract is in
-    [Remote validation](../docs/remote-validation.md).
+    [Remote validation](https://github.com/repo-os/repoos/blob/main/docs/remote-validation.md).
 - Keep the primary checkout **clean**. Commit configuration and bookkeeping
   writes straight away, or **Move to done** will refuse.
 - Close-out candidates reuse the primary checkout's `node_modules` by default.
@@ -108,7 +108,7 @@ missed timers are how overnight runs lose hours.
   Exit code is non-zero when the server is unreachable.
 - Each watch line carries **`taskId`**, **`cause`**, and **`evidence`** links
   (task drawer route, attention feed, close-out outcomes). See
-  [Board events contract](../docs/board-events-contract.md).
+  [Board events contract](https://github.com/repo-os/repoos/blob/main/docs/board-events-contract.md).
 - **`POST /api/cto/heartbeat`** (or the monitor's own wake-ups) records CTO
   liveness. When routine work is waiting and no heartbeat arrives, the bell shows
   **CTO silent N min** via `GET /api/attention`.
