@@ -106,7 +106,7 @@ describe("Control dashboard pressure state fixtures (#1210)", () => {
       expect(alert.text()).toContain(`swap ${swap}`);
       expect(alert.text()).toContain(`compressor ${compressor}`);
       if (level === "warning") {
-        expect(alert.text()).toContain("occupancy alone do not hold starts");
+        expect(alert.text()).toContain("occupancy alone does not hold new work");
       }
       if (level === "critical") {
         expect(alert.text()).toContain("running agents are not stopped");
