@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "1225"
 title: "QA pass: toasts, banners and dialogs stacking and dismissal at all screen sizes"
 type: bug
@@ -63,3 +64,4 @@ Do not touch repoos.toml.
 - 2026-11-19T09:51:26Z · needs_input
 - 2026-11-19T10:01:32Z · body
 - 2026-11-19T10:01:59Z · body
+
