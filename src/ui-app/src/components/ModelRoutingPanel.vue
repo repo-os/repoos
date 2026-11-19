@@ -65,6 +65,8 @@ const status = ref<ModelRoutingStatusResponse | null>(null);
 const statusLoading = ref(false);
 const decisions = ref<RoutingDecisionView[]>([]);
 const decisionsLoading = ref(false);
+/** True when the last decisions request failed; an empty list then means "unknown", not "none". */
+const decisionsError = ref(false);
 const probeMessage = ref("");
 /** Which probe is running: the config check, the live call, or none. */
 const probeRunning = ref<"config" | "live" | null>(null);
@@ -92,11 +94,14 @@ async function refreshStatus(): Promise<void> {
 
 async function refreshDecisions(): Promise<void> {
   decisionsLoading.value = true;
+  decisionsError.value = false;
   try {
     const res = await api<ModelRoutingDecisionsResponse>("/api/model-routing/decisions?limit=10");
     decisions.value = res.decisions ?? [];
   } catch {
+    // A failed load is not an empty history: say so instead of "Nothing recorded yet".
     decisions.value = [];
+    decisionsError.value = true;
   } finally {
     decisionsLoading.value = false;
   }
@@ -753,6 +758,22 @@ onMounted(() => {
     <div class="mr-decisions">
       <div class="field-label">Recent decisions</div>
       <p v-if="decisionsLoading" class="agent-desc">Loading…</p>
+      <div
+        v-else-if="decisionsError"
+        class="ff-notice"
+        role="status"
+        data-testid="routing-decisions-error"
+      >
+        <p>Recent decisions could not be loaded. That is not the same as no decisions yet.</p>
+        <button
+          type="button"
+          class="btn btn-sm"
+          data-testid="routing-decisions-retry"
+          @click="refreshDecisions()"
+        >
+          Try again
+        </button>
+      </div>
       <p v-else-if="!decisions.length" class="agent-desc">
         Nothing recorded yet. Decisions appear here once a run is routed in shadow or automatic
         mode.
