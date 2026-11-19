@@ -41,3 +41,4 @@ Do not touch repoos.toml.
 - 2026-11-19T08:24:35Z · orphaned run process stopped · pid 2869 · just serve-noauth 7279 · cpu 0s · age 20s
 - 2026-11-19T08:24:47Z · orphaned run process stopped · pid 3031 · repoos-qa-pass-first-run-onboarding-and-empty-p /Users/nick/code/nick/repoos-worktrees/feat/qa-pass- · cpu 5s · age 33s
 - 2026-11-19T08:24:48Z · orphaned run process stopped · pid 5290 · sleep 60 · cpu 0s · age 18s
+- 2026-11-19T08:24:48Z · orphaned run process stopped · pid 5750 · sleep 60 · cpu 0s · age 13s
