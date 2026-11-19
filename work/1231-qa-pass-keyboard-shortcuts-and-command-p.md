@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-keyboard-shortcuts-and-command-p
 created_at: "2026-11-19T13:47:53Z"
-updated_at: "2026-11-19T16:01:13Z"
+updated_at: "2026-11-19T16:07:29Z"
 last_check_failure: "repoos check at 2026-11-19T15:37:14.041Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Command palette open over the work board (stacks above drawers, consumes Esc) (target \"default\"): loading state detected: loading indicator [aria-busy=\"true\"] on /work (http://127.0.0.1:43037/work)"
 review_rounds: 1
 routing_switches: 1
@@ -34,39 +34,39 @@ Do not touch repoos.toml.
 ```json
 [
 {
-  "label": "Command palette open over the dashboard",
-  "target": "default",
-  "route": "/",
-  "highlight": ".search-overlay",
-  "steps": [
-    {
-      "waitFor": ".stat-link"
-    },
-    {
-      "click": ".search-input"
-    },
-    {
-      "waitMs": 300
-    }
-  ]
+"label": "Command palette open over the dashboard",
+"target": "default",
+"route": "/",
+"highlight": ".search-overlay",
+"steps": [
+  {
+    "waitFor": ".stat-link"
+  },
+  {
+    "click": ".search-input"
+  },
+  {
+    "waitMs": 300
+  }
+]
 },
 {
-  "label": "Command palette open above the Work board",
-  "target": "default",
-  "route": "/work",
-  "highlight": ".search-overlay",
-  "steps": [
-    {
-      "waitFor": ".task-card"
-    },
-    {
-      "click": ".search-input"
-    },
-    {
-      "waitMs": 300
-    }
-  ],
-  "state": "board:withReviewTask"
+"label": "Command palette open above the Work board",
+"target": "default",
+"route": "/work",
+"highlight": ".search-overlay",
+"steps": [
+  {
+    "waitFor": ".task-card"
+  },
+  {
+    "click": ".search-input"
+  },
+  {
+    "waitMs": 300
+  }
+],
+"state": "board:withReviewTask"
 }
 ]
 ```
@@ -137,3 +137,4 @@ Do not touch repoos.toml.
 - 2026-11-19T16:01:00Z · handoff failed · task-file handoff failed at verify · ui verification failed (1 issue(s)): [missing-target] Command palette open over the dashboard (target "default"): loading state detected: loading indicator [aria-busy="true"] on / (http://127.0.0.1:34129/)
 - 2026-11-19T16:01:00Z · message_delivered: 1 message(s)
 - 2026-11-19T16:01:13Z · body
+- 2026-11-19T16:07:29Z · body
