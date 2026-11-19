@@ -29,64 +29,64 @@ Do not touch repoos.toml. Never open a visible browser window.
 ```json
 [
 {
-  "label": "Normal pressure at 1280px",
-  "target": "default",
-  "route": "/",
-  "selector": ".resource-panel",
-  "highlight": ".resource-panel",
-  "state": "system:pressureNormal",
-  "viewportWidth": 1280,
-  "viewportHeight": 900
+"label": "Normal pressure at 1280px",
+"target": "default",
+"route": "/",
+"selector": ".resource-panel",
+"highlight": ".resource-panel",
+"state": "system:pressureNormal",
+"viewportWidth": 1280,
+"viewportHeight": 900
 },
 {
-  "label": "Warning pressure at 1280px",
-  "target": "default",
-  "route": "/",
-  "selector": ".resource-panel",
-  "highlight": ".resource-panel",
-  "state": "system:pressureWarning",
-  "viewportWidth": 1280,
-  "viewportHeight": 900
+"label": "Warning pressure at 1280px",
+"target": "default",
+"route": "/",
+"selector": ".resource-panel",
+"highlight": ".resource-panel",
+"state": "system:pressureWarning",
+"viewportWidth": 1280,
+"viewportHeight": 900
 },
 {
-  "label": "Critical pressure at 1280px",
-  "target": "default",
-  "route": "/",
-  "selector": ".resource-panel",
-  "highlight": ".resource-panel",
-  "state": "system:pressureCritical",
-  "viewportWidth": 1280,
-  "viewportHeight": 900
+"label": "Critical pressure at 1280px",
+"target": "default",
+"route": "/",
+"selector": ".resource-panel",
+"highlight": ".resource-panel",
+"state": "system:pressureCritical",
+"viewportWidth": 1280,
+"viewportHeight": 900
 },
 {
-  "label": "Normal pressure panel at 375px",
-  "target": "default",
-  "route": "/",
-  "selector": ".resource-panel",
-  "highlight": ".resource-panel",
-  "state": "system:pressureNormal",
-  "viewportWidth": 375,
-  "viewportHeight": 900
+"label": "Normal pressure panel at 375px",
+"target": "default",
+"route": "/",
+"selector": ".resource-panel",
+"highlight": ".resource-panel",
+"state": "system:pressureNormal",
+"viewportWidth": 375,
+"viewportHeight": 900
 },
 {
-  "label": "Warning pressure panel at 375px",
-  "target": "default",
-  "route": "/",
-  "selector": ".resource-panel",
-  "highlight": ".resource-panel",
-  "state": "system:pressureWarning",
-  "viewportWidth": 375,
-  "viewportHeight": 900
+"label": "Warning pressure panel at 375px",
+"target": "default",
+"route": "/",
+"selector": ".resource-panel",
+"highlight": ".resource-panel",
+"state": "system:pressureWarning",
+"viewportWidth": 375,
+"viewportHeight": 900
 },
 {
-  "label": "Critical pressure panel at 375px",
-  "target": "default",
-  "route": "/",
-  "selector": ".resource-panel",
-  "highlight": ".resource-panel",
-  "state": "system:pressureCritical",
-  "viewportWidth": 375,
-  "viewportHeight": 900
+"label": "Critical pressure panel at 375px",
+"target": "default",
+"route": "/",
+"selector": ".resource-panel",
+"highlight": ".resource-panel",
+"state": "system:pressureCritical",
+"viewportWidth": 375,
+"viewportHeight": 900
 }
 ]
 ```
