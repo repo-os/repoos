@@ -3,16 +3,13 @@ id: "1211"
 title: "QA pass: remote runner setup docs and runner health screens vs real bee/thinkpad/mini behavior"
 type: bug
 status: active
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: `needs some work` — the task’s no-SSH requirement was violated by an earlier check.
 priority: p2
 area: [web, docs]
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-remote-runner-setup-docs-and-run
 created_at: "2026-11-19T00:17:32Z"
-updated_at: "2026-11-19T08:08:41Z"
+updated_at: "2026-11-19T08:08:43Z"
 review_passes: 5
 handoff_signal_retry_count: 1
 review_rounds: 2
@@ -120,3 +117,4 @@ Do not touch repoos.toml.
 - 2026-11-19T06:18:22Z · needs_input
 - 2026-11-19T08:08:39Z · status review→active
 - 2026-11-19T08:08:41Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-19T08:08:43Z · needs_input
