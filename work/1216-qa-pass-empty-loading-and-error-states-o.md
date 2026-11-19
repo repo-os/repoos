@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-empty-loading-and-error-states-o
 created_at: "2026-11-19T03:17:43Z"
-updated_at: "2026-11-19T04:16:46Z"
+updated_at: "2026-11-19T04:17:15Z"
 last_close_out_gate_ms: 167936
 last_close_out_gate_at: "2026-11-19T04:16:46.423Z"
 review_passes: 2
@@ -77,4 +77,4 @@ Do not touch repoos.toml.
 - 2026-11-19T04:12:57Z · orphaned run process stopped · pid 35762 · /bin/sh -c bun run build && bun dist/cli/index.js serve --port 50602 --host 127.0.0.1 · cpu 0s · age 16m
 - 2026-11-19T04:13:12Z · orphaned run process stopped · pid 37209 · repoos-qa-pass-empty-loading-and-error-states-o /Users/nick/code/nick/repoos-worktrees/feat/qa-pass- · cpu 11s · age 16m
 - 2026-11-19T04:16:46Z · close-out gate completed in 168s
-
+- 2026-11-19T04:17:15Z · status done→done, release:success
