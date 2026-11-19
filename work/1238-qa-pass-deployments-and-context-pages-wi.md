@@ -2,16 +2,16 @@
 id: "1238"
 title: "QA pass: Deployments and Context pages with failures and long data at all screen sizes"
 type: bug
-status: ready
+status: active
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
-branch: ""
+branch: feat/qa-pass-deployments-and-context-pages-wi
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T18:26:58Z"
-updated_at: "2026-11-19T18:27:04Z"
+updated_at: "2026-11-19T18:27:06Z"
 ---
 ## Problem
 The Deployments and Context pages have not been checked with failed deployments, long logs and missing data at phone, tablet and desktop widths.
@@ -29,3 +29,4 @@ Do not touch repoos.toml.
 - 2026-11-19T18:26:58Z · created · t@t
 - 2026-11-19T18:27:03Z · status inbox→ready
 - 2026-11-19T18:27:04Z · cli_override, model_override
+- 2026-11-19T18:27:06Z · status ready→active, branch
