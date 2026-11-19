@@ -2,7 +2,7 @@
 id: "1211"
 title: "QA pass: remote runner setup docs and runner health screens vs real bee/thinkpad/mini behavior"
 type: bug
-status: active
+status: review
 priority: p2
 area: [web, docs]
 assigned_to: ai
@@ -74,3 +74,4 @@ Do not touch repoos.toml.
 - 2026-11-19T01:49:16Z · watchdog: restarting engineer because a queued message waited 3m with no live process
 - 2026-11-19T01:49:18Z · message_delivered: 1 message(s)
 - 2026-11-19T01:56:23Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The runner setup documentation and health screen changes are in place, with regression tests. I added the missing 1,134-word engineering report draft at `.repoos/engineering-report-drafts/1211.md` and updated the QA record to accurately de… · stderr: Reading additional input from stdin... 2026-11-19T01:55:51.095137Z ERROR codex_core::tools::router: error=apply_patch verification failed: Failed to find expected lines in /Users/nick/code/nick/repoos-worktrees/feat/qa-pass-remote-runner-setup-docs-and-run/.repoos/engineering-report-drafts/1211.md: There is no technic…
+- 2026-11-19T01:56:23Z · status active→review
