@@ -99,6 +99,11 @@ describe("RemoteRunnersPanel", () => {
     ]);
     expect(wrapper.get(".rr-host[data-health='busy']").text()).toContain("1/1 in flight");
     expect(wrapper.get(".rr-host[data-health='failing']").text()).toContain("failed");
+    const identityNote = wrapper.get('[data-test-id="runner-identity-note"]');
+    expect(identityNote.text()).toContain(
+      "user@host is the remote SSH login used for probes and jobs",
+    );
+    expect(identityNote.text()).toContain("that account needs its own SSH key and host-key trust");
     wrapper.unmount();
   });
 

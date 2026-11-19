@@ -300,6 +300,11 @@ function fmtAgo(iso: string): string {
       (LRU), so sequential checks rotate across the pool. Config order is the final tie-break —
       before any host has run, the top host goes first.
     </p>
+    <p v-if="hosts.length" class="rr-config-note" data-test-id="runner-identity-note">
+      <code>user@host</code> is the remote SSH login used for probes and jobs. The RepoOS server
+      account is separate; if it runs as a systemd service, that account needs its own SSH key and
+      host-key trust. Ready status reflects checks as the configured SSH user.
+    </p>
     <p v-if="status?.tailscaleHostPinsTop" class="rr-config-note">
       <code>remoteValidation.tailscaleHost</code> pins {{ status.tailscaleHost }} to the top. Remove
       that shorthand from <code>repoos.toml</code> to control its position with this list.

@@ -8,10 +8,16 @@ runners implementation and health DTO. No setup or provisioning recipe was run.
 The first required `repoos check` unexpectedly started Tailscale remote
 validation and emitted a link-probe result for `nick@thinkpad` (94 ms RTT,
 10,779 KB/s). I interrupted it immediately after that output. A transient link
-probe write may have occurred; cleanup was not independently verified. No
-persistent runner configuration change was requested. The subsequent scoped
-check used `--local-tests` to avoid another remote dispatch. Current service
-state, users, PATH, and installed versions remain unverified.
+SSH interaction did occur, contrary to the task's no-SSH constraint. I checked
+the implementation after the fact: the probe runs remote `true`, then sends its
+payload to `cat > /dev/null`; it does not create a remote file. No setup or
+persistent runner configuration change was requested. Subsequent local-tests
+verification avoided another remote dispatch. Current service state, users,
+PATH, and installed versions remain unverified.
+
+The resumed session's final changed-path gate passed with `--local-tests` after
+the runner-screen wording change. It ran the scoped tests and headless UI smoke
+without contacting a configured runner.
 
 ## Findings
 
@@ -44,8 +50,11 @@ non-login PATH constraint. Added a concise end-user note to `user-docs/check.md`
 so the `user@host` field is interpreted as the remote SSH login and service-only
 authentication failures have a clear cause. Added regression coverage that
 checks these explanations alongside the actual recipe markers in `justfile`.
-No UI code changed; the existing display is consistent with configured SSH
-identity and current health semantics.
+The Remote runners screen now states that `user@host` is the remote SSH login,
+that a systemd server account needs its own SSH credentials and trust, and that
+ready status reflects checks as the configured SSH user. A component test
+covers this wording. The underlying health labels remain consistent with the
+configured SSH identity and existing health semantics.
 
 ## Evidence limits
 
