@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-hub-and-web-app-copy-review-word
 created_at: "2026-11-19T00:47:39Z"
-updated_at: "2026-11-19T01:12:47Z"
+updated_at: "2026-11-19T01:12:48Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -41,3 +41,4 @@ Do not touch repoos.toml.
 - 2026-11-19T01:08:13Z · body
 - 2026-11-19T01:08:58Z · CTO nudge: held — handoff gate is running
 - 2026-11-19T01:12:47Z · note: ui verification passed: 1 shot captured with clean console (1 shot warning)
+- 2026-11-19T01:12:48Z · message_queued at 2026-11-19T01:12:48.503Z
