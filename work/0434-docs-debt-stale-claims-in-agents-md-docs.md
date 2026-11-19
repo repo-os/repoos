@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-19T01:43:05Z"
+review_passes: 1
 id: "0434"
 title: "Docs debt: stale claims in AGENTS.md, docs/, and user-docs/"
 type: chore
@@ -10,7 +12,6 @@ assigned_to: unassigned
 created_by: docs-debt-agent
 branch: feat/docs-debt-stale-claims-in-agents-md-docs
 created_at: "2026-09-19T02:09:23.307Z"
-updated_at: "2026-11-19T01:43:04Z"
 ---
 ## Docs Debt Findings
 
@@ -42,3 +43,4 @@ The Docs Debt Agent verified concrete claims in `AGENTS.md`/`docs/`/`user-docs/`
 - 2026-11-19T01:42:43Z · message_queued at 2026-11-19T01:42:43.488Z
 - 2026-11-19T01:42:43Z · note: shots: skipped — the diff (3 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-19T01:43:04Z · note: review pass 1: good to go
+
