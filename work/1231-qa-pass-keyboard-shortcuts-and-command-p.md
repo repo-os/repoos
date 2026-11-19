@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-19T16:36:23Z"
+review_passes: 3
 id: "1231"
 title: "QA pass: keyboard shortcuts and command palette across pages"
 type: bug
@@ -9,8 +11,6 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-keyboard-shortcuts-and-command-p
 created_at: "2026-11-19T13:47:53Z"
-updated_at: "2026-11-19T16:36:22Z"
-review_passes: 2
 last_check_failure: "repoos check at 2026-11-19T15:37:14.041Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Command palette open over the work board (stacks above drawers, consumes Esc) (target \"default\"): loading state detected: loading indicator [aria-busy=\"true\"] on /work (http://127.0.0.1:43037/work)"
 review_rounds: 1
 routing_switches: 1
@@ -160,3 +160,4 @@ Do not touch repoos.toml.
 - 2026-11-19T16:35:36Z · handoff failed · task-file handoff failed at verify · ui verification failed: timed out waiting for the task's browser capture
 - 2026-11-19T16:36:22Z · message_queued at 2026-11-19T16:36:22.390Z
 - 2026-11-19T16:36:22Z · note: review pass 3: good to go
+
