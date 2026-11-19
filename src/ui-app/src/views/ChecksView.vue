@@ -23,6 +23,7 @@ import type {
 import NoCheckPlanReminder from "../components/NoCheckPlanReminder.vue";
 import ConfirmDialog from "../components/ConfirmDialog.vue";
 import { isGenuinelyEmptyPlan } from "../lib/check-setup";
+import { shotFixturePinnedCheckPlan } from "../lib/shot-preview-fixtures";
 import {
   type ChecksTab,
   checksActivityLive,
@@ -198,6 +199,14 @@ async function load(): Promise<void> {
   if (changedRef.value) params.set("changed", changedRef.value);
   const qs = params.toString();
   try {
+    // #1224: a preview fixture pins the whole plan payload (the genuinely
+    // empty first-run plan), so captures don't read this repo's real plan.
+    const pinned = shotFixturePinnedCheckPlan();
+    if (pinned) {
+      plan.value = pinned;
+      if (!profile.value) profile.value = pinned.profile;
+      return;
+    }
     const key = `check-plan:${profile.value}:${changedRef.value}`;
     await refreshPageData(
       key,
@@ -646,8 +655,18 @@ const RESULT_ICON: Record<string, string> = {
             </li>
           </ol>
 
-          <p v-if="steps.length === 0" class="ck-err">
-            This repo has no check plan. Declare <code>[[check.steps]]</code> in
+          <!-- #1224: when the plan is genuinely empty the amber reminder in
+               the banner already explains the two setup paths — repeating it
+               here in red read like a failure, which #0592 explicitly rules
+               out for an error-free empty plan. Keep a line only for the odd
+               case where steps resolved to zero without errors but the plan
+               source is not "empty" (e.g. an inferred plan over an unknown
+               repo layout). -->
+          <p
+            v-if="steps.length === 0 && !plan.errors.length && !isGenuinelyEmptyPlan(plan)"
+            class="ck-err"
+          >
+            No check steps resolved for this repo. Declare <code>[[check.steps]]</code> in
             <code>repoos.toml</code> — run <code>repoos init</code> for a proposal, or
             <code>repoos check --print-plan</code> for a starting point.
           </p>
@@ -942,8 +961,10 @@ const RESULT_ICON: Record<string, string> = {
 .ck-fact[data-source="legacy"] {
   color: var(--amber);
 }
+/* #0592/#1224: a genuinely empty plan is not a failure — the source chip and
+   the reminder use neutral/amber styling, never the red failure tint. */
 .ck-fact[data-source="empty"] {
-  color: var(--red);
+  color: var(--txt-muted);
 }
 .ck-warn {
   margin: 10px 0 0;

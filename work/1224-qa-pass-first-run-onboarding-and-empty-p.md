@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 488576
-last_close_out_gate_at: "2026-11-19T09:42:12.669Z"
 id: "1224"
 title: "QA pass: first-run onboarding and empty-project states at all screen sizes"
 type: bug
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: 1c971acbe30dd8c0f2d513a268611810e6d80b47
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-first-run-onboarding-and-empty-p
 created_at: "2026-11-19T07:48:01Z"
 updated_at: "2026-11-19T09:42:12Z"
+last_close_out_gate_ms: 488576
+last_close_out_gate_at: "2026-11-19T09:42:12.669Z"
 review_passes: 1
 handoff_signal_retry_count: 1
 dev_error_count: 1
