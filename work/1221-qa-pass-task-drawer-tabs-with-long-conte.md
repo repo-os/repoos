@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-task-drawer-tabs-with-long-conte
 created_at: "2026-11-19T06:47:59Z"
-updated_at: "2026-11-19T08:21:55Z"
+updated_at: "2026-11-19T08:22:23Z"
 last_close_out_gate_ms: 872180
 last_close_out_gate_at: "2026-11-19T08:21:52.346Z"
 review_passes: 2
@@ -55,3 +55,4 @@ Do not touch repoos.toml.
 - 2026-11-19T07:42:13Z · note: review pass 2: good to go
 - 2026-11-19T08:21:52Z · close-out gate completed in 872s
 - 2026-11-19T08:21:55Z · message_dropped: 1 queued message(s) discarded — task is done
+- 2026-11-19T08:22:23Z · status done→done, release:success
