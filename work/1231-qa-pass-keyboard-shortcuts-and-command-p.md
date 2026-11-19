@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-keyboard-shortcuts-and-command-p
 created_at: "2026-11-19T13:47:53Z"
-updated_at: "2026-11-19T14:44:47Z"
+updated_at: "2026-11-19T14:44:48Z"
 handoff_signal_retry_count: 2
 dev_error_count: 1
 engineer_stall_resume_log: "[{\"at\":\"2026-11-19T14:18:11.944Z\",\"reason\":\"clean-exit-without-handoff\"}]"
@@ -65,3 +65,4 @@ Do not touch repoos.toml.
 - 2026-11-19T14:41:35Z · body
 - 2026-11-19T14:44:06Z · CTO nudge: held — handoff gate is running
 - 2026-11-19T14:44:47Z · note: ui verification passed: 1 of 1 shot captured with clean console
+- 2026-11-19T14:44:48Z · message_queued at 2026-11-19T14:44:48.309Z
