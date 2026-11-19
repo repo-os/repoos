@@ -2,7 +2,7 @@
 id: "1231"
 title: "QA pass: keyboard shortcuts and command palette across pages"
 type: bug
-status: review
+status: active
 priority: p2
 area: web
 assigned_to: ai
@@ -10,6 +10,8 @@ created_by: t@t
 branch: feat/qa-pass-keyboard-shortcuts-and-command-p
 created_at: "2026-11-19T13:47:53Z"
 updated_at: "2026-11-19T15:14:58Z"
+review_rounds: 1
+routing_switches: 1
 review_passes: 1
 handoff_signal_retry_count: 2
 dev_error_count: 2
@@ -83,3 +85,4 @@ Do not touch repoos.toml.
 - 2026-11-19T15:11:28Z · message_queued at 2026-11-19T15:11:28.037Z
 - 2026-11-19T15:14:57Z · note: review pass 1: needs some work
 - 2026-11-19T15:14:58Z · message_delivered: 1 message(s)
+- 2026-11-19T15:14:58Z · status review→active
