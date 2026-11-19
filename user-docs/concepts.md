@@ -134,7 +134,7 @@ just stops appearing in the board columns, and unarchiving drops it back into
 that same column. Nothing else changes: the branch and worktree are kept, so an
 archived task resumes exactly where it left off.
 
-Use **Archive task** at the bottom of the task panel and optionally give a
+Use **Archive** at the bottom of the task panel and optionally give a
 reason. Archiving is refused while a run, review, or close-out is still live,
 because hiding a half-stopped run from the automatic scanners would orphan it —
 stop the work first. A running preview is not a refusal: archiving stops it

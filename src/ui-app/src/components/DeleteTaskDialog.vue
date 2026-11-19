@@ -38,7 +38,7 @@ const emit = defineEmits<{
             <Button variant="outline" :disabled="busy">Cancel</Button>
           </DialogClose>
           <Button variant="destructive" :disabled="busy" @click="emit('confirm')">
-            {{ busy ? "Deleting…" : "Delete task" }}
+            {{ busy ? "Deleting…" : "Delete" }}
           </Button>
         </div>
       </DialogContent>

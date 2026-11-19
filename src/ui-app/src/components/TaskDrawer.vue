@@ -6769,21 +6769,23 @@ watch(
             <Button
               variant="destructive"
               size="sm"
+              aria-label="Delete task"
               :disabled="ui.saving"
               @click="openDeleteConfirm"
             >
-              Delete task
+              Delete
             </Button>
             <Button
               v-if="!ui.active?.isArchived"
               variant="outline"
               size="sm"
               data-test-id="archive-task"
+              aria-label="Archive task"
               :disabled="ui.saving"
               title="Park this task without changing its status, branch or worktree"
               @click="openArchiveConfirm"
             >
-              Archive task
+              Archive
             </Button>
             <Button
               v-if="holdActive"

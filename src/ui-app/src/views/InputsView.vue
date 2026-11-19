@@ -223,7 +223,7 @@ async function doNothing(): Promise<void> {
 }
 
 // ── Delete input (#0634): bottom-left destructive control in the detail
-// drawer, matching the task panel's Delete task. The confirm dialog is the
+// drawer, matching the task panel's Delete button. The confirm dialog is the
 // shared DeleteConfirmDialog shell; on success the drawer closes and the
 // store refresh (repo.deleteInput) drops the row without a reload.
 const deleteConfirmOpen = ref(false);

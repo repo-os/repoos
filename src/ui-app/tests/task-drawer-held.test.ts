@@ -144,7 +144,7 @@ describe("task drawer Held reason (#0960)", () => {
       .find(".delete-zone")
       .findAll("button")
       .map((button) => button.text());
-    expect(actions.slice(0, 3)).toEqual(["Delete task", "Archive task", "Hold"]);
+    expect(actions.slice(0, 3)).toEqual(["Delete", "Archive", "Hold"]);
 
     const fetchMock = vi.fn(async () => json({ ok: true, task: heldTask() }));
     vi.stubGlobal("fetch", fetchMock);
@@ -155,7 +155,7 @@ describe("task drawer Held reason (#0960)", () => {
     const reason = dialog.find("textarea.ff-textarea");
     expect(reason.exists()).toBe(true);
     expect(dialog.find(".field input[type='date']").exists()).toBe(true);
-    const submit = dialog.findAll("button").find((button) => button.text().includes("Hold task"))!;
+    const submit = dialog.findAll("button").find((button) => button.text().trim() === "Hold")!;
     expect(submit.attributes("disabled")).toBeUndefined();
     await submit.trigger("click");
     await flush();

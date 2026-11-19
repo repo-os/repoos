@@ -257,7 +257,7 @@ unmerged feature branch; do not clear its branch metadata to use this path.
 
 A `review` task that has exhausted its review rounds, or that you simply do not
 want to merge yet, does not have to stay in the Review column demanding
-action. **Archive task** at the bottom of the task panel parks it without
+action. **Archive** at the bottom of the task panel parks it without
 merging, stopping, or deleting anything: the status stays `review` underneath,
 the branch and worktree are kept, and the task moves to the **Archived** list
 below the board. Add an optional reason, and unarchive it later to drop it

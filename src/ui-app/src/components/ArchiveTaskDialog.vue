@@ -65,7 +65,7 @@ function confirm(): void {
             <Button variant="outline" :disabled="busy">Cancel</Button>
           </DialogClose>
           <Button variant="default" :disabled="busy" @click="confirm">
-            {{ busy ? "Archiving…" : "Archive task" }}
+            {{ busy ? "Archiving…" : "Archive" }}
           </Button>
         </div>
       </DialogContent>
