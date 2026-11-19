@@ -2,7 +2,7 @@
 id: "1215"
 title: "QA pass: task create and edit flows at all screen sizes"
 type: bug
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -54,3 +54,4 @@ Do not touch repoos.toml.
 - 2026-11-19T04:37:51Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-19T04:41:41Z · queued message undelivered for 4m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-19T04:41:41Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code unknown) · last assistant: The responsive fixture suite now passes at 375, 768 and 1280 px. It mounts the real task drawer, verifies create and edit saves, area and priority model updates, and screenshot upload from a queued fixture; a real dependency-picker fixture… · stderr: 2026-11-19T04:40:14.064605Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
+- 2026-11-19T04:41:41Z · status active→review
