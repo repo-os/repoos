@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/easter-eggs-bundle-task-action-button-la
 created_at: "2026-11-19T13:54:07Z"
-updated_at: "2026-11-19T15:49:34Z"
+updated_at: "2026-11-19T15:49:38Z"
 last_close_out_gate_ms: 525161
 last_close_out_gate_at: "2026-11-19T15:49:14.642Z"
 review_passes: 1
@@ -77,3 +77,4 @@ Do not touch repoos.toml. Keep aria-labels descriptive (e.g. aria-label "Delete 
 - 2026-11-19T15:39:46Z · note: review pass 1: good to go
 - 2026-11-19T15:49:14Z · close-out gate completed in 525s
 - 2026-11-19T15:49:34Z · status done→done, release:success
+- 2026-11-19T15:49:38Z · message_dropped: 1 queued message(s) discarded — task is done
