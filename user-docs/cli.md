@@ -770,9 +770,9 @@ that have no model flag. See [Coding harness compatibility](./coding-harness-com
 ### `repoos certify <cli> [--yes] [--json] [--force] [--binary <path>]`
 
 Runs one installed coding harness's adapter-contract suite and records the
-certification evidence RepoOS uses to decide compatibility status. `--binary
-<path>` certifies a specific binary instead of the one on `PATH`, `--yes` skips
-the confirmation prompt, and `--force` re-records evidence for a version that is
+certification evidence RepoOS uses to decide compatibility status. `--binary <path>`
+certifies a specific binary instead of the one on `PATH`, `--yes` skips the
+confirmation prompt, and `--force` re-records evidence for a version that is
 already certified.
 
 ### `repoos support bundle` / `repoos support inspect`
