@@ -16,6 +16,7 @@ updated_at: "2026-11-19T14:04:52Z"
 handoff_signal_retry_count: 2
 dev_error_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-11-19T10:00:44.011Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-19T12:54:47.309Z\",\"reason\":\"clean-exit-without-handoff\"}]"
+engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\",\"at\":\"2026-11-19T14:04:52.169Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 The web app and Hub have not been checked for slow, failing or dropped connections.
@@ -128,3 +129,4 @@ Do not touch repoos.toml.
 - 2026-11-19T13:56:15Z · body
 - 2026-11-19T14:04:52Z · note: stopped orphaned engineer pid 89979
 - 2026-11-19T14:04:52Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
+- 2026-11-19T14:04:52Z · engineer crash recovery: resuming opencode + opencode-go/glm-5.3-flash (1/3 crashes in 30m) · the agent process exited with an error — open the task to see the full output. Open Raw CLI error for details. (CLI: the agent process exited with an error — open the task to see the full output)
