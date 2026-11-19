@@ -383,6 +383,17 @@ html[data-ui-theme="gruvbox"] .release-notice {
   font-size: 13.5px;
 }
 
+/* VitePress puts the language label (`bash`) at the top-right corner, where the
+ * copy button also sits, so the copy button painted over the label on every
+ * block at every width. Move the label to the top-left, in the padding above
+ * the first code line, so it paints over neither the copy button nor code. */
+.vp-doc [class*="language-"] > span.lang {
+  top: 4px;
+  left: 24px;
+  right: auto;
+  line-height: 1;
+}
+
 /* Install commands are intentionally one line. The command scrolls horizontally
  * on narrow screens while VitePress's copy action stays visible on the right. */
 .vp-doc .install-command [class*="language-"] {

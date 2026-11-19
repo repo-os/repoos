@@ -125,7 +125,7 @@ as independent flakiness.
 ## Logging into a local preview
 
 [Auth](/configuration#authentication) is off by default, and most repos never
-turn it on — if that's you, a [task preview](/review-and-close-out#previewing-a-tasks-changes)
+turn it on — if that's you, a [task preview](/review-and-close-out#previewing-a-task-s-changes)
 opens straight to the app, no login screen.
 
 If you *have* enabled auth, a preview runs behind it like the rest of the

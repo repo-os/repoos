@@ -7,9 +7,11 @@
   "scripts": {
     "predev": "bun install --frozen-lockfile",
     "dev": "vitepress dev",
-    "build": "vitepress build && bun scripts/check-llms.ts && bun scripts/check-ai-agents.ts",
+    "build": "vitepress build && bun scripts/check-llms.ts && bun scripts/check-ai-agents.ts && bun scripts/check-links.ts",
     "check:llms": "bun scripts/check-llms.ts",
     "check:ai-agents": "bun scripts/check-ai-agents.ts",
+    "check:links": "bun scripts/check-links.ts",
+    "test": "bun test scripts",
     "preview": "vitepress preview"
   },
   "devDependencies": {

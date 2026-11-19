@@ -1,5 +1,6 @@
 import { createMarkdownRenderer, defineLoader, type MarkdownRenderer } from "vitepress";
 import history from "../release-history.json";
+import { scopeHeadingIds } from "./.vitepress/release-heading-ids";
 
 // Build-time read of RepoOS's own release history for the /changelog page.
 //
@@ -74,11 +75,6 @@ function humanDate(iso: string): string {
   return dateFormat.format(new Date(Date.UTC(year, month - 1, day)));
 }
 
-function headingIds(html: string, tag: string): string {
-  const prefix = tag.toLowerCase().replace(/[^a-z0-9]+/g, "-");
-  return html.replace(/<h([1-6]) id="([^"]*)"/g, `<h$1 id="${prefix}--$2"`);
-}
-
 async function load(): Promise<Data> {
   const entries = (history as { releases: HistoryEntry[] }).releases;
   const md = await getMarkdown();
@@ -89,7 +85,7 @@ async function load(): Promise<Data> {
     iso: entry.date,
     url: `${RELEASES_URL}/tag/${entry.tag}`,
     prerelease: entry.version.includes("-"),
-    html: headingIds(md.render(entry.notes), entry.tag),
+    html: scopeHeadingIds(md.render(entry.notes), entry.tag),
   }));
   const current = releases[0];
   return {
