@@ -2,7 +2,7 @@
 id: "1226"
 title: "QA pass: slow network and offline behavior in the web app and Hub"
 type: bug
-status: review
+status: active
 priority: p2
 area: web
 assigned_to: ai
