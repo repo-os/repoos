@@ -136,6 +136,32 @@ watch(systemStats, (s) => {
   memHistory.value = [...memHistory.value, s.totals.memPercent].slice(-HISTORY_MAX);
 });
 
+const processTableShotFixture = computed(
+  () =>
+    typeof window !== "undefined" &&
+    !!repo.health?.isPreviewBuild &&
+    isShotPreviewCaptureActive(window.location) &&
+    new URLSearchParams(window.location.search).get("shotState") === "system:processTable",
+);
+
+watch(
+  processTableShotFixture,
+  (active) => {
+    if (!active || !systemStats.value) return;
+    // Give the deterministic responsive capture a short history so both
+    // sparklines render without waiting for multiple live sampling intervals.
+    cpuHistory.value = [
+      systemStats.value.totals.cpuPercent * 0.8,
+      systemStats.value.totals.cpuPercent,
+    ];
+    memHistory.value = [
+      systemStats.value.totals.memPercent * 0.9,
+      systemStats.value.totals.memPercent,
+    ];
+  },
+  { immediate: true },
+);
+
 /** Memory the OS can hand back on demand (free + inactive + cache). The number
  *  worth watching — raw `freeMem` is pinned near zero on macOS at all times. */
 const machineAvail = computed(() => {
@@ -1012,11 +1038,15 @@ const serveMessage = computed(() => {
 .process-table-wrap {
   border-top: 1px solid var(--border);
   padding-top: 10px;
+  min-width: 0;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
 }
 
 .process-table-header {
   display: grid;
   grid-template-columns: 1fr 2fr 1fr 1.5fr 1.5fr 0.6fr;
+  min-width: 560px;
   gap: 6px;
   padding: 4px 4px 6px;
   font-size: 10px;
@@ -1029,6 +1059,7 @@ const serveMessage = computed(() => {
 .process-row {
   display: grid;
   grid-template-columns: 1fr 2fr 1fr 1.5fr 1.5fr 0.6fr;
+  min-width: 560px;
   gap: 6px;
   padding: 6px 4px;
   font-size: 12px;

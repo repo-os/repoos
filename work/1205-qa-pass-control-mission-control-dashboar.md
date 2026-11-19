@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 106218
-last_close_out_gate_at: "2026-11-19T01:25:25.710Z"
 id: "1205"
 title: "QA pass: Control (Mission Control) dashboard – every card, chart and empty state at desktop and 375px"
 type: bug
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: 2b9d27059dc2a26b782446399ab5fcbbb7927a6a
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-control-mission-control-dashboar
 created_at: "2026-11-18T21:47:29Z"
 updated_at: "2026-11-19T01:25:25Z"
+last_close_out_gate_ms: 106218
+last_close_out_gate_at: "2026-11-19T01:25:25.710Z"
 review_passes: 4
 close_out_repair_count: 1
 handoff_signal_retry_count: 1
