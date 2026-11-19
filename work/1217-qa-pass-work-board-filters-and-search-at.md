@@ -2,14 +2,14 @@
 id: "1217"
 title: "QA pass: Work board, filters and search at all screen sizes"
 type: bug
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-work-board-filters-and-search-at
 created_at: "2026-11-19T03:47:37Z"
-updated_at: "2026-11-19T03:53:56Z"
+updated_at: "2026-11-19T03:55:49Z"
 ---
 ## Problem
 The Work board, search, filters and bulk actions have not had a QA pass at phone, tablet and desktop widths since the latest releases.
@@ -29,3 +29,4 @@ Do not touch repoos.toml.
 - 2026-11-19T03:47:43Z · status ready→active, branch
 - 2026-11-19T03:51:08Z · body
 - 2026-11-19T03:53:56Z · body
+- 2026-11-19T03:55:49Z · status active→review
