@@ -2,14 +2,17 @@
 id: "1208"
 title: "QA pass: pairing, login and session screens – OTP, expired sessions, sign-out, mobile widths"
 type: bug
-status: review
+status: done
 priority: p2
 area: [web, server]
+merged_commit: a30fee19602972cf25b21db0e489f77e235dcaf7
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-pairing-login-and-session-screen
 created_at: "2026-11-18T22:47:38Z"
-updated_at: "2026-11-18T23:46:40Z"
+updated_at: "2026-11-19T00:02:46Z"
+last_close_out_gate_ms: 559894
+last_close_out_gate_at: "2026-11-18T23:57:24.693Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-18T23:35:18.223Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 1
@@ -84,3 +87,6 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T23:35:18Z · message_delivered: 1 message(s)
 - 2026-11-18T23:46:00Z · body
 - 2026-11-18T23:46:40Z · message_queued at 2026-11-18T23:46:40.283Z
+- 2026-11-18T23:57:24Z · close-out gate completed in 560s
+- 2026-11-18T23:57:44Z · status done→done, release:success
+- 2026-11-19T00:02:46Z · message_dropped: 1 queued message(s) discarded — task is done

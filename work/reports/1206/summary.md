@@ -1,3 +1,14 @@
+---
+id: summary
+title: summary
+type: feature
+status: inbox
+priority: p2
+area: general
+assigned_to: ai
+created_by: ""
+branch: ""
+---
 ## TL;DR
 
 A QA pass over the Releases cut flow (notes chooser, blocked, running, failed and success states) at 1280×900 and 375×812 found no product bug; the mobile drawer already scrolls long content while keeping the Publish/Cancel footer visible. What shipped is a repeatable headless Playwright harness (`docs/qa/measure-releases-cut-flow.mjs`) that intercepts all release APIs and fails on any release POST or uncaught page error, plus the QA record `docs/qa/2026-11-releases-cut-flow.md`. Review pass 1 flagged a real gap (collected browser errors didn't fail the run); round 2 fixed it, pass 2 returned "good to go", and the task closed cleanly.
@@ -21,9 +32,9 @@ Final verdict: review pass 2 "good to go"; the close-out gate completed successf
 - Review passes: 2 — pass 1 "needs some work", pass 2 "good to go".
 - Wall-clock start to done: 23 minutes 40 seconds (created 2026-11-18T22:17:29Z → done 2026-11-18T22:41:09Z).
 - Agents/models:
-  - Engineer: `engineer` · codex · gpt-6-luna — 1 session, 734s, 12,388,011 tokens, cost not recorded. No engineer restarts or model swaps; both rounds ran in the same session.
-  - Reviewer: `reviewer` · gpt-6-luna — 2 sessions: pass 1 26s / 100,610 tokens; pass 2 22s / 145,501 tokens; costs not recorded.
-  - Routing: 3 Model router (openrouter) sessions, 0–1s each, model unknown, no token/cost data.
+- Engineer: `engineer` · codex · gpt-6-luna — 1 session, 734s, 12,388,011 tokens, cost not recorded. No engineer restarts or model swaps; both rounds ran in the same session.
+- Reviewer: `reviewer` · gpt-6-luna — 2 sessions: pass 1 26s / 100,610 tokens; pass 2 22s / 145,501 tokens; costs not recorded.
+- Routing: 3 Model router (openrouter) sessions, 0–1s each, model unknown, no token/cost data.
 - Close-out gate: completed in 66s.
 
 ## What went wrong
