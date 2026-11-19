@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-19T01:43:05Z"
-review_passes: 1
 id: "0434"
 title: "Docs debt: stale claims in AGENTS.md, docs/, and user-docs/"
 type: chore
@@ -12,6 +10,7 @@ assigned_to: unassigned
 created_by: docs-debt-agent
 branch: feat/docs-debt-stale-claims-in-agents-md-docs
 created_at: "2026-09-19T02:09:23.307Z"
+updated_at: "2026-11-19T01:42:42Z"
 ---
 ## Docs Debt Findings
 
@@ -37,10 +36,4 @@ The Docs Debt Agent verified concrete claims in `AGENTS.md`/`docs/`/`user-docs/`
 - 2026-10-05T11:15:29Z · needs_input
 - 2026-11-19T01:39:09Z · status inbox→ready
 - 2026-11-19T01:39:12Z · status ready→active, needs_input, branch
-- 2026-11-19T01:41:12Z · CTO nudge: held — handoff gate is running
-- 2026-11-19T01:42:43Z · status active→review
-- 2026-11-19T01:42:43Z · note: Task body is underspecified: missing sections: Problem, Acceptance criteria, Notes for AI
-- 2026-11-19T01:42:43Z · message_queued at 2026-11-19T01:42:43.488Z
-- 2026-11-19T01:42:43Z · note: shots: skipped — the diff (3 changed paths) touches no capture target's globs — no UI change to capture
-- 2026-11-19T01:43:04Z · note: review pass 1: good to go
-
+- 2026-11-19T01:42:42Z · status active→review
