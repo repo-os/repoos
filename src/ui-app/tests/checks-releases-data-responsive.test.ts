@@ -1,49 +1,169 @@
 // @vitest-environment node
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { webkit, type Browser } from "@playwright/test";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-
-const checks = readFileSync(resolve(__dirname, "../src/views/ChecksView.vue"), "utf8");
-const releases = readFileSync(resolve(__dirname, "../src/views/ReleasesView.vue"), "utf8");
-const style = (source: string) => source.split("<style scoped>")[1]!.split("</style>")[0]!;
+import { createServer, type ViteDevServer } from "vite";
 
 describe.skipIf(!existsSync(webkit.executablePath()))(
   "Checks and Releases long data (WebKit)",
   () => {
     let browser: Browser;
+    let server: ViteDevServer;
+    let baseUrl: string;
+
     beforeAll(async () => {
+      server = await createServer({
+        configFile: resolve(__dirname, "../vite.config.ts"),
+        server: { host: "127.0.0.1", port: 0, strictPort: false },
+        plugins: [
+          {
+            name: "responsive-fixture-repo-store",
+            enforce: "pre",
+            resolveId(source) {
+              if (source === "../stores/repo")
+                return resolve(__dirname, "fixtures/repo-store-browser-stub.ts");
+            },
+          },
+        ],
+      });
+      await server.listen();
+      const address = server.httpServer!.address();
+      if (!address || typeof address === "string") throw new Error("Vite test server did not bind");
+      baseUrl = `http://127.0.0.1:${address.port}`;
       browser = await webkit.launch({ headless: true });
     });
+
     afterAll(async () => {
       await browser?.close();
+      await server?.close();
     });
 
     it.each([375, 768, 1280])(
-      "keeps long check rows and release channel data usable at %i px",
+      "renders real page components with long data at %i px",
       async (width) => {
         const page = await browser.newPage({ viewport: { width, height: 900 } });
+        page.setDefaultTimeout(5000);
+        const checkRows = Array.from({ length: 24 }, (_, i) => ({
+          name: `${"integration-verification-long-step-name-".repeat(4)}${i}`,
+          command: `bun run test -- ${"very-long-directory-name/".repeat(5)}case-${i}`,
+          timeoutMs: 600_000,
+          required: true,
+          profiles: [],
+          whenChanged: [],
+          dependsOn: [],
+          requires: [],
+          crossCutting: true,
+          selected: true,
+          missing: [],
+        }));
+        const channels = Array.from({ length: 24 }, (_, i) => ({
+          name: `registry-${i}-${"long-channel-name-".repeat(3)}`,
+          kind: "npm",
+          url: `https://packages.example.org/${"long-package-path/".repeat(5)}${i}`,
+          install: [`npm install -g ${"@repo-os/long-package-name-".repeat(3)}${i}`],
+          version: "1.2.3",
+          state: "matching",
+          detail: null,
+        }));
+        let distributionRequests = 0;
+
+        await page.route("**/api/**", async (route) => {
+          const path = new URL(route.request().url()).pathname;
+          let body: unknown = {};
+          if (path === "/api/check-plan") {
+            body = {
+              ok: true,
+              checkPlan: {
+                source: "declared",
+                defaultProfile: "default",
+                profile: "default",
+                profiles: ["default"],
+                warnings: [],
+                errors: [],
+                steps: checkRows,
+                lastRun: null,
+              },
+            };
+          } else if (path === "/api/check-runs") body = { activeRuns: [] };
+          else if (path === "/api/local-check-slots") body = { holders: [], queue: [] };
+          else if (path === "/api/integration/pipeline")
+            body = { ok: true, pipeline: { empty: true, active: null, queue: [], at: "" } };
+          else if (path === "/api/remote-validation/status")
+            body = { enabled: false, running: false, hosts: [], tailscaleHosts: [] };
+          else if (path === "/api/release")
+            body = {
+              enabled: true,
+              supported: true,
+              name: "Publish RepoOS",
+              provider: "git-tag",
+              branch: "main",
+              version: "1.2.3",
+              tag: "v1.2.3",
+              latestTag: "v1.2.3",
+              latestTagAt: "2026-09-01T00:00:00Z",
+              latestTagSha: "abc1234",
+              commitsBehindMain: 0,
+              latestStableTag: "v1.2.3",
+              head: "abc1234",
+              clean: true,
+              onReleaseBranch: true,
+              tagExists: true,
+              released: true,
+              ready: false,
+              blockers: [],
+              releaseUrl: null,
+              workflowUrl: null,
+            };
+          else if (path === "/api/release/distribution") {
+            distributionRequests++;
+            body = { releaseVersion: "1.2.3", releaseTag: "v1.2.3", channels };
+          } else if (path === "/api/release/run")
+            body = { state: "idle", phase: null, message: "", startedAt: null, updatedAt: null };
+          else if (path === "/api/release/email") body = null;
+          else if (path === "/api/release/notes/unpushed") body = null;
+          else if (path === "/api/release/notes/run")
+            body = { state: "idle", startedAt: null, updatedAt: null };
+          else if (path === "/api/release/notes/auto-publish") body = { state: "idle" };
+          await new Promise((done) => setTimeout(done, 100));
+          await route.fulfill({
+            status: 200,
+            contentType: "application/json",
+            body: JSON.stringify(body),
+          });
+        });
+
         try {
-          await page.setContent(`<style>*{box-sizing:border-box}body{margin:0;padding:16px;font:14px sans-serif}.fixture{max-width:100%;border:1px solid #888;padding:14px}.ck-steps{list-style:none;padding:0;margin:0;display:grid;gap:10px}.ck-step{display:flex;gap:12px;border:1px solid #888;padding:14px 16px 14px 12px}.ck-step-body{flex:1;min-width:0}.ck-step-top{display:flex;flex-wrap:wrap;gap:8px}.rel-card{margin-top:16px;padding:16px;border:1px solid #888}.rel-dist-sub{color:#555;font-size:12px;overflow-wrap:anywhere}.rel-dist-title-row{display:flex;justify-content:space-between;gap:12px}.rel-dist-title{min-width:0;overflow-wrap:anywhere} ${style(checks)} ${style(releases)}</style>
-        <main class="fixture"><h1>Checks</h1><ol class="ck-steps">${Array.from({ length: 24 }, (_, i) => `<li class="ck-step"><span>${i + 1}</span><div class="ck-step-body"><div class="ck-step-top"><span class="ck-step-name">${"integration-verification-".repeat(8)} ${i}</span></div><code class="ck-step-cmd">bun run test -- --changed ${"very-long-directory-name/".repeat(5)}</code></div></li>`).join("")}</ol><section class="rel-card"><div class="rel-dist-title-row"><h2 class="rel-dist-title">Published to</h2><button>Check again</button></div><p class="rel-dist-sub">${"registry.example.org/packages/repoos-with-an-extremely-long-channel-description/ ".repeat(8)}</p>${Array.from({ length: 24 }, (_, i) => `<p class="rel-provider-meta">channel-${i} · ${"https://packages.example.org/".repeat(5)}</p>`).join("")}</section></main>`);
-          // A delayed data arrival models the empty/loading interval before a large result set.
-          await page.waitForTimeout(40);
-          const result = await page.evaluate(() => ({
+          await page.goto(
+            `${baseUrl}/tests/fixtures/checks-releases-responsive.html?screen=checks`,
+          );
+          await page.locator(".ck-step").first().waitFor();
+          const checks = await page.evaluate(() => ({
+            rows: document.querySelectorAll(".ck-step").length,
             bodyWidth: document.body.scrollWidth,
             viewport: innerWidth,
-            rows: document.querySelectorAll(".ck-step").length,
-            releases: document.querySelectorAll(".rel-provider-meta").length,
-            buttonVisible: (() => {
-              const r = document.querySelector("button")!.getBoundingClientRect();
-              return r.width > 0 && r.right <= innerWidth;
-            })(),
-            longTitleWraps: getComputedStyle(document.querySelector(".ck-step-name")!).overflowWrap,
           }));
-          expect(result.rows).toBe(24);
-          expect(result.releases).toBe(24);
-          expect(result.bodyWidth).toBeLessThanOrEqual(result.viewport);
-          expect(result.buttonVisible).toBe(true);
-          expect(result.longTitleWraps).toBe("anywhere");
+          expect(checks.rows).toBe(24);
+          expect(checks.bodyWidth).toBeLessThanOrEqual(checks.viewport);
+
+          await page.goto(
+            `${baseUrl}/tests/fixtures/checks-releases-responsive.html?screen=releases`,
+          );
+          await page.locator(".rel-channel").first().waitFor();
+          const releases = await page.evaluate(() => {
+            const action = document.querySelector<HTMLElement>(".rel-dist-title-row button")!;
+            return {
+              rows: document.querySelectorAll(".rel-channel").length,
+              bodyWidth: document.body.scrollWidth,
+              viewport: innerWidth,
+              actionRight: action.getBoundingClientRect().right,
+            };
+          });
+          expect(releases.rows).toBe(24);
+          expect(releases.bodyWidth).toBeLessThanOrEqual(releases.viewport);
+          expect(releases.actionRight).toBeLessThanOrEqual(releases.viewport);
+          await page.getByRole("button", { name: "Check again" }).click();
+          await expect.poll(() => distributionRequests).toBe(2);
         } finally {
           await page.close();
         }

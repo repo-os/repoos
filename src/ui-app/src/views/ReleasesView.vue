@@ -2730,10 +2730,12 @@ Subject: {{ releaseEmailPreview.subject }}
   gap: 12px;
 }
 .rel-channel-name {
+  min-width: 0;
   font-size: 13.5px;
   font-weight: 700;
   color: var(--txt);
   text-decoration: none;
+  overflow-wrap: anywhere;
 }
 a.rel-channel-name:hover {
   color: var(--cyan);
