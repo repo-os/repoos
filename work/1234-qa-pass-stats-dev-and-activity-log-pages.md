@@ -2,14 +2,14 @@
 id: "1234"
 title: "QA pass: Stats, Dev and activity-log pages at all screen sizes"
 type: bug
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-stats-dev-and-activity-log-pages
 created_at: "2026-11-19T15:47:33Z"
-updated_at: "2026-11-19T17:49:29Z"
+updated_at: "2026-11-19T17:54:30Z"
 handoff_signal_retry_count: 2
 dev_error_count: 1
 engineer_stall_resume_log: "[{\"at\":\"2026-11-19T15:55:13.079Z\",\"reason\":\"clean-exit-without-handoff\"}]"
@@ -81,3 +81,4 @@ Do not touch repoos.toml.
 - 2026-11-19T17:39:27Z · CTO nudge: held — handoff gate is running
 - 2026-11-19T17:49:28Z · note: ui verification passed: 3 of 3 shots captured with clean console
 - 2026-11-19T17:49:29Z · handoff failed · handoff recovery attempted · finalization failed
+- 2026-11-19T17:54:30Z · watchdog: auto-surfaced stuck task · status active→review · handoff recovery was attempted after an interrupted turn but finalization failed — manual intervention needed · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
