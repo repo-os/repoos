@@ -1469,9 +1469,6 @@ onUnmounted(() => {
                           ? `Remove ${t.label} from favorites`
                           : `Add ${t.label} to favorites`
                       "
-                      :title="
-                        config.isThemeFavorite(t.id) ? 'Remove from favorites' : 'Add to favorites'
-                      "
                       @click.stop="toggleThemeFavorite(t.id)"
                     >
                       {{ config.isThemeFavorite(t.id) ? "★" : "☆" }}
@@ -1722,7 +1719,6 @@ onUnmounted(() => {
                     <span
                       v-if="f.restartRequired"
                       class="restart-badge"
-                      title="Changes require restarting RepoOS"
                       aria-label="Restart required"
                       >restart required</span
                     >
@@ -1859,7 +1855,6 @@ onUnmounted(() => {
                   </div>
                   <span
                     class="restart-badge"
-                    title="Changes require restarting RepoOS"
                     aria-label="Restart required"
                     >restart required</span
                   >
@@ -1967,7 +1962,6 @@ onUnmounted(() => {
                     <span
                       v-if="f.restartRequired"
                       class="restart-badge"
-                      title="Changes require restarting RepoOS"
                       aria-label="Restart required"
                       >restart required</span
                     >
@@ -2336,7 +2330,6 @@ onUnmounted(() => {
                 </div>
                 <span
                   class="restart-badge"
-                  title="Changes require restarting RepoOS"
                   aria-label="Restart required"
                   >restart required</span
                 >
@@ -2357,7 +2350,6 @@ onUnmounted(() => {
                 </div>
                 <span
                   class="restart-badge"
-                  title="Changes require restarting RepoOS"
                   aria-label="Restart required"
                   >restart required</span
                 >
@@ -2395,7 +2387,6 @@ onUnmounted(() => {
                 <span
                   v-if="f.restartRequired"
                   class="restart-badge"
-                  title="Changes require restarting RepoOS"
                   aria-label="Restart required"
                   >restart required</span
                 >
@@ -2464,7 +2455,6 @@ onUnmounted(() => {
                 <span
                   v-if="f.restartRequired"
                   class="restart-badge"
-                  title="Changes require restarting RepoOS"
                   aria-label="Restart required"
                   >restart required</span
                 >
@@ -2742,7 +2732,7 @@ onUnmounted(() => {
                       :name="screenshot.name"
                       @click="openBugReportViewer(index)"
                     />
-                    <figcaption :title="screenshot.name">{{ screenshot.name }}</figcaption>
+                    <figcaption>{{ screenshot.name }}</figcaption>
                     <button
                       type="button"
                       class="bug-report-remove-screenshot"
