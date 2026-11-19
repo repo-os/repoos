@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-hub-and-web-app-copy-review-word
 created_at: "2026-11-19T00:47:39Z"
-updated_at: "2026-11-19T01:40:45Z"
+updated_at: "2026-11-19T01:40:46Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-19T01:25:43.917Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_passes: 2
@@ -61,3 +61,4 @@ Do not touch repoos.toml.
 - 2026-11-19T01:40:44Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code unknown) · last assistant: The check slot opened and the build and tests are now running remotely. This is the full check, so it’s taking longer than the earlier changed-path pass; no failures have appeared in the output so far. · stderr: (empty)
 - 2026-11-19T01:40:44Z · status active→review
 - 2026-11-19T01:40:45Z · message_delivered: 1 message(s)
+- 2026-11-19T01:40:46Z · note: handoff requested (cli)
