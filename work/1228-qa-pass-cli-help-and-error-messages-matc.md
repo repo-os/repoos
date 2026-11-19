@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-cli-help-and-error-messages-matc
 created_at: "2026-11-19T11:47:39Z"
-updated_at: "2026-11-19T14:04:50Z"
+updated_at: "2026-11-19T14:04:55Z"
 last_close_out_gate_ms: 323407
 last_close_out_gate_at: "2026-11-19T14:04:33.945Z"
 review_passes: 2
@@ -83,3 +83,4 @@ Do not touch repoos.toml.
 - 2026-11-19T13:18:09Z · message_queued at 2026-11-19T13:18:09.980Z
 - 2026-11-19T14:04:33Z · close-out gate completed in 323s
 - 2026-11-19T14:04:50Z · status done→done, release:success
+- 2026-11-19T14:04:55Z · message_dropped: 1 queued message(s) discarded — task is done
