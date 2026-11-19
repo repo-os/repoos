@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-agents-page-model-providers-and-
 created_at: "2026-11-19T07:47:39Z"
-updated_at: "2026-11-19T08:59:20Z"
+updated_at: "2026-11-19T09:05:04Z"
 handoff_signal_retry_count: 2
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\",\"at\":\"2026-11-19T08:22:29.659Z\",\"kind\":\"dev-error\"}]"
@@ -68,3 +68,4 @@ Do not touch repoos.toml.
 - 2026-11-19T08:47:09Z · body
 - 2026-11-19T08:49:16Z · body
 - 2026-11-19T08:59:20Z · watchdog: restarting engineer after 10m with no live process
+- 2026-11-19T09:05:04Z · body
