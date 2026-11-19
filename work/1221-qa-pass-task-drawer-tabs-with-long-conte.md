@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-task-drawer-tabs-with-long-conte
 created_at: "2026-11-19T06:47:59Z"
-updated_at: "2026-11-19T07:39:30Z"
+updated_at: "2026-11-19T07:39:33Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -47,3 +47,4 @@ Do not touch repoos.toml.
 - 2026-11-19T07:09:34Z · needs_input
 - 2026-11-19T07:36:54Z · body
 - 2026-11-19T07:39:30Z · status active→review
+- 2026-11-19T07:39:33Z · note: shots: skipped — the diff (8 changed paths) touches no capture target's globs — no UI change to capture
