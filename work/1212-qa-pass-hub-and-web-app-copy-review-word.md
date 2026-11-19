@@ -2,7 +2,7 @@
 id: "1212"
 title: "QA pass: Hub and web app copy review – wording, plain-English errors and consistent terminology"
 type: chore
-status: active
+status: review
 priority: p3
 area: [web, mobile, macos]
 assigned_to: ai
@@ -59,3 +59,4 @@ Do not touch repoos.toml.
 - 2026-11-19T01:39:11Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-19T01:40:44Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-19T01:40:44Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code unknown) · last assistant: The check slot opened and the build and tests are now running remotely. This is the full check, so it’s taking longer than the earlier changed-path pass; no failures have appeared in the output so far. · stderr: (empty)
+- 2026-11-19T01:40:44Z · status active→review
