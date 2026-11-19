@@ -2,14 +2,14 @@
 id: "1211"
 title: "QA pass: remote runner setup docs and runner health screens vs real bee/thinkpad/mini behavior"
 type: bug
-status: review
+status: active
 priority: p2
 area: [web, docs]
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-remote-runner-setup-docs-and-run
 created_at: "2026-11-19T00:17:32Z"
-updated_at: "2026-11-19T04:21:55Z"
+updated_at: "2026-11-19T04:21:56Z"
 review_passes: 4
 handoff_signal_retry_count: 1
 review_rounds: 2
@@ -101,4 +101,3 @@ Do not touch repoos.toml.
 - 2026-11-19T04:18:25Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-19T04:21:52Z · queued message undelivered for 4m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-19T04:21:54Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code unknown) · last assistant: The safe scoped check is running with `--local-tests`, so it will not dispatch to the configured remote runner. Formatting, lint, build, and structural UI checks have passed; the rendered contrast audit has reproduced the known unrelated s… · stderr: Reading additional input from stdin... 2026-11-19T04:18:10.218349Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
-- 2026-11-19T04:21:55Z · status active→review
