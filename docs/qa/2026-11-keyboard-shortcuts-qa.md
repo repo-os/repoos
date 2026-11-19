@@ -58,9 +58,35 @@ place, regression-tested in `mobile-touch-affordances.test.ts`).
    the real `--ring` token.
 4. **Close button had no focus indicator** (`style.css`). Inside the palette,
    the input shows a ring on focus but the close button — a focus-trap stop —
-   showed nothing. It now gets the same `--ring` outline, and a table-driven
-   guard in `keyboard-shortcuts-qa.test.ts` fails if any outline declaration
-   references an undefined custom property again.
+   showed nothing. It now gets the same `--ring` outline.
+5. **Capture-phase Escape leak** (`CopyInspectorOverlay.vue`, review round 2).
+   The overlay's window `keydown` listener runs in the capture phase, ahead of
+   every bubble handler, so no layer behind it could consume an Escape first:
+   with the copy-inspector popup open, one Esc closed the popup *and* the
+   palette or task drawer behind it. The handler now consumes the Escape it
+   acts on (`preventDefault` + `stopPropagation`) and leaves Escapes alone
+   while no popup is open. Regression-tested with a window-listener spy, both
+   directions.
+6. **Nine more undeclared custom properties** (`style.css`, review round 2).
+   The same silent-failure family as the dead focus rings, beyond `outline`:
+   `--txt-muted`, `--txt-secondary`, `--txt-primary`, `--bg-secondary`,
+   `--border-focus`, `--cyan-border-tint`, `--cyan-tint`, `--shadow-lg`,
+   `--mono` and bare `var(--font-mono)` were referenced but defined nowhere,
+   so affected text fell back to the inherited sans face, focus borders and
+   shadows vanished. They are now aliased at `:root` to the real theme tokens
+   (`--txt-muted`/`--txt-secondary`/`--txt-primary` to `--txt-dim`/`--txt`,
+   `--bg-secondary` to `--panel`, `--border-focus` to `--border-bright`,
+   `--font-mono`/`--mono` to the canonical JetBrains Mono stack, `--shadow-lg`
+   defined per appearance, and the cyan washes derived per theme from `--cyan`
+   via `color-mix`, so named themes track automatically). The test guard now
+   covers *every* fallback-less `var()` in the stylesheet, resolving against
+   declarations anywhere in `src/ui-app` (CSS or runtime style bindings) with
+   a documented exception for Radix's own `--radix-*` popper variables.
+7. **Modality documented** (review round 2). The confirm overlays (dirty
+   close-out, hotfix, deploy — z-index 1000) and the chat queued popover
+   (12000) intentionally sit above the palette: ⌘K under a confirmation stays
+   hidden. The ladder comment in `style.css` and a new test pin that, so a
+   future palette raise has to argue with the comment rather than drift.
 
 ## Verified-good (no change needed)
 
@@ -87,10 +113,11 @@ place, regression-tested in `mobile-touch-affordances.test.ts`).
 
 ## Verification
 
-`src/ui-app/tests/keyboard-shortcuts-qa.test.ts` (jsdom, 26 tests): the route
+`src/ui-app/tests/keyboard-shortcuts-qa.test.ts` (jsdom, 29 tests): the route
 coverage table, ⌘K-with-focus-in-input, Esc consumption with a window listener
 spy, the palette-over-drawer Esc sequence against the real board-nav composable,
-the two-stage Esc, the Tab trap, the z-index ladder and the outline-variable
-guard. `keyboard-shortcuts-qa-browser.test.ts` (headless WebKit, fixtures):
-no-overflow audits and touch-target assertions at 375/768/1280, plus the close
-button's visible focus ring.
+the copy-inspector capture-phase Esc in both directions, the two-stage Esc, the
+Tab trap, the z-index ladder including the documented modal modality, and the
+stylesheet-wide undeclared-variable guard. `keyboard-shortcuts-qa-browser.test.ts`
+(headless WebKit, fixtures): no-overflow audits and touch-target assertions at
+375/768/1280, plus the close button's visible focus ring.

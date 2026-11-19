@@ -27,6 +27,7 @@ import { flushPromises, mount } from "@vue/test-utils";
 import { createPinia, setActivePinia } from "pinia";
 import SearchBar from "../src/components/SearchBar.vue";
 import SearchOverlay from "../src/components/SearchOverlay.vue";
+import CopyInspectorOverlay from "../src/components/CopyInspectorOverlay.vue";
 import { useBoardKeyboardNav } from "../src/composables/useBoardKeyboardNav.js";
 import { makeTask } from "./component-test-helpers";
 import type { Task } from "../src/types.js";
@@ -151,6 +152,43 @@ describe("⌘K opens the command palette on every main page", () => {
 
 /* ── 2. Escape is consumed by the topmost layer (the palette) ────────────── */
 
+/** Copy-inspector harness: the popup opens from the affordance pill, exactly
+ *  as copy-inspector-overlay.test.ts drives it. Its window keydown listener
+ *  runs in the CAPTURE phase, ahead of every bubble handler, so it is the one
+ *  layer whose Escape handling `stopPropagation` in a bubble handler cannot
+ *  reach — it must consume its own Escapes (#1231 review round 2). */
+async function mountInspectorWithPopup() {
+  const { useRepoStore } = await import("../src/stores/repo");
+  const { useConfigStore } = await import("../src/stores/config");
+  const repo = useRepoStore();
+  repo.health = { ok: true, copyInspectorAvailable: true } as typeof repo.health;
+  const config = useConfigStore();
+  config.data = { dev: { inspector: { enabled: true } } } as typeof config.data;
+
+  const labeled = document.createElement("p");
+  labeled.setAttribute("data-repoos-file", "src/ui-app/Foo.vue");
+  labeled.setAttribute("data-repoos-line", "12");
+  labeled.textContent = "Hello inspector";
+  document.body.appendChild(labeled);
+  document.elementFromPoint = vi.fn(() => labeled) as typeof document.elementFromPoint;
+
+  const wrapper = mount(CopyInspectorOverlay, { attachTo: document.body });
+  window.dispatchEvent(
+    new PointerEvent("pointermove", { bubbles: true, clientX: 40, clientY: 40, altKey: true }),
+  );
+  await new Promise<void>((resolve) => {
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+  });
+  await nextTick();
+  expect(document.body.querySelector(".copy-inspector-affordance"), "affordance pill shows")
+    .not.toBeNull();
+  window.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+  await nextTick();
+  const pane = () => document.body.querySelector(".copy-inspector-pane");
+  expect(pane(), "inspector popup should be open").not.toBeNull();
+  return { wrapper, pane };
+}
+
 /** Board harness around the real useBoardKeyboardNav composable, so the
  *  Esc interplay with the palette is tested against the production wiring
  *  (WorkView uses panelOpen = !!ui.active, closePanel = ui.close). */
@@ -268,6 +306,43 @@ describe("Escape reaches only the topmost layer", () => {
     wrapper.unmount();
   });
 
+  it("the copy-inspector popup (capture-phase listener) consumes its own Escape", async () => {
+    const { wrapper, pane } = await mountInspectorWithPopup();
+    const windowEscape = vi.fn();
+    window.addEventListener("keydown", windowEscape);
+
+    window.dispatchEvent(
+      new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }),
+    );
+    await nextTick();
+    expect(pane(), "one Esc closes only the inspector popup").toBeNull();
+    expect(
+      windowEscape,
+      "the consumed Escape must not reach window-level handlers",
+    ).not.toHaveBeenCalled();
+    window.removeEventListener("keydown", windowEscape);
+    wrapper.unmount();
+  });
+
+  it("with no popup open, the inspector leaves Escape to the layer beneath", async () => {
+    const { useRepoStore } = await import("../src/stores/repo");
+    const { useConfigStore } = await import("../src/stores/config");
+    const repo = useRepoStore();
+    repo.health = { ok: true, copyInspectorAvailable: true } as typeof repo.health;
+    const config = useConfigStore();
+    config.data = { dev: { inspector: { enabled: true } } } as typeof config.data;
+    const wrapper = mount(CopyInspectorOverlay, { attachTo: document.body });
+    const windowEscape = vi.fn();
+    window.addEventListener("keydown", windowEscape);
+
+    window.dispatchEvent(
+      new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }),
+    );
+    expect(windowEscape, "an unhandled Escape must still propagate").toHaveBeenCalledTimes(1);
+    window.removeEventListener("keydown", windowEscape);
+    wrapper.unmount();
+  });
+
   it("keeps the board nav's two-stage Esc intact with the palette closed", async () => {
     const panelOpen = ref(true);
     const board = mountBoardHarness({ panelOpen });
@@ -341,6 +416,25 @@ describe("palette stacking above drawers and below tooltips", () => {
       expect(palette! < z!, `palette must stack below ${above}`).toBe(true);
     }
   });
+
+  /** Deliberate modality (#1231 review round 2): the confirm overlays (dirty
+   *  close-out, hotfix, deploy) and the chat queued popover stay ABOVE the
+   *  palette, so ⌘K opened under them cannot draw the user into navigating
+   *  away from a confirmation. Pinned here so a future palette raise has to
+   *  argue with this comment, not silently drift above them. */
+  it("stays below the modal confirmations (deliberate modality)", () => {
+    const palette = zIndexOf(".search-overlay-backdrop");
+    for (const [modal, what] of [
+      [".dirty-overlay", "dirty close-out overlay"],
+      [".hotfix-overlay", "hotfix confirm overlay"],
+      [".dep-overlay", "deploy confirm overlay"],
+      [".chat-queued-pop", "chat queued popover"],
+    ] as const) {
+      const z = zIndexOf(modal);
+      expect(z, `${what} must declare a z-index`).not.toBeNull();
+      expect(palette! < z!, `palette must stack below the ${what}`).toBe(true);
+    }
+  });
 });
 
 /* ── 4. Focus indicators: every outline variable must exist ──────────────── */
@@ -357,14 +451,48 @@ describe("visible focus rings in the global stylesheet", () => {
 
   /** #1231: `outline: … var(--focus-ring)` referenced a custom property that
    *  was never defined anywhere, so invalid-at-computed-value time silently
-   *  painted `outline: none` — three :focus-visible rules were dead. This
-   *  guard covers the whole class: every variable an outline declaration
-   *  references must exist (component-scoped declarations are out of scope). */
-  it("never references an undefined custom property inside an outline declaration", () => {
-    const offenders: string[] = [];
-    for (const match of css.matchAll(/outline[^;{}]*var\((--[\w-]+)\)/g)) {
-      if (!defined.has(match[1])) offenders.push(match[1]);
+   *  painted `outline: none` — three :focus-visible rules were dead. The same
+   *  silent-failure family hid nine more undeclared tokens (muted text
+   *  rendered in the sans face, missing focus borders, no shadows); they are
+   *  now aliased to the real theme tokens at :root. This guard covers the
+   *  whole class: every fallback-less `var()` in style.css must resolve —
+   *  either to a declaration anywhere in src/ui-app (CSS or a component's
+   *  runtime style binding) or to a documented library exception. */
+  it("never references an undeclared custom property without a fallback", async () => {
+    const { readdirSync, statSync } = await import("node:fs");
+    const srcRoot = resolve(__dirname, "../src");
+    const files: string[] = [];
+    const walk = (dir: string): void => {
+      for (const entry of readdirSync(dir, { withFileTypes: true })) {
+        const p = resolve(dir, entry.name);
+        if (entry.isDirectory()) walk(p);
+        else if (/\.(css|vue|ts)$/.test(entry.name)) files.push(p);
+      }
+    };
+    walk(srcRoot);
+
+    const declared = new Set<string>();
+    for (const file of files) {
+      const source = readFileSync(file, "utf8");
+      // CSS declarations (`--name:`) and runtime style bindings, both quote
+      // styles (`"--x"` and `'--x'` in template object literals).
+      for (const m of source.matchAll(/--[\w-]+\s*:/g)) declared.add(m[0].replace(/\s*:$/, ""));
+      for (const m of source.matchAll(/['"](--[\w-]+)['"]\s*:/g)) declared.add(m[1]);
+      for (const m of source.matchAll(/setProperty\(\s*['"](--[\w-]+)['"]/g)) declared.add(m[1]);
     }
-    expect(offenders, "outline rules referencing undefined custom properties").toEqual([]);
+    // radix-vue positions its own poppers with these at runtime (standard
+    // Radix convention, not ours to declare).
+    const libraryExceptions = /^--radix-/;
+
+    const offenders = new Map<string, number>();
+    for (const m of css.matchAll(/var\(\s*(--[\w-]+)\s*(,)?/g)) {
+      if (m[2]) continue; // fallback present: degrades on purpose
+      if (libraryExceptions.test(m[1])) continue;
+      if (!declared.has(m[1])) offenders.set(m[1], (offenders.get(m[1]) ?? 0) + 1);
+    }
+    expect(
+      [...offenders.entries()].map(([name, uses]) => `${name} x${uses}`),
+      "fallback-less var() references to undeclared custom properties",
+    ).toEqual([]);
   });
 });

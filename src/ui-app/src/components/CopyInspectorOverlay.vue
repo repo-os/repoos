@@ -259,6 +259,15 @@ async function openInEditor(): Promise<void> {
 
 function onKeydown(e: KeyboardEvent): void {
   if (e.key === "Escape") {
+    // This listener runs in the capture phase, ahead of every target and
+    // bubble handler. When the popup is open the popup owns this Escape:
+    // consume it (preventDefault + stopPropagation) so layers behind it —
+    // the command palette, the task drawer, confirm dialogs — do not also
+    // fire on an Escape the popup already handled (#1231 review round 2).
+    // With no popup open the Escape belongs to whatever is beneath.
+    if (!popup.value) return;
+    e.preventDefault();
+    e.stopPropagation();
     closePopup();
     return;
   }

@@ -58,6 +58,22 @@
   --txt-faint: #79809b;
   --cyan: #39e0ff;
   --cyan-dim: rgba(57, 224, 255, 0.12);
+  /* #1231 (review round 2): several rules were written against token names
+     that were never declared, so those declarations silently computed to
+     inherit/initial (muted text rendering in the sans face, missing focus
+     borders, no shadow). Alias them to the real theme tokens here — because
+     every theme redefines the aliased tokens on :root, these track each
+     theme automatically; the cyan washes derive from --cyan via color-mix. */
+  --txt-muted: var(--txt-dim);
+  --txt-secondary: var(--txt-dim);
+  --txt-primary: var(--txt);
+  --bg-secondary: var(--panel);
+  --border-focus: var(--border-bright);
+  --cyan-tint: color-mix(in srgb, var(--cyan) 12%, transparent);
+  --cyan-border-tint: color-mix(in srgb, var(--cyan) 25%, transparent);
+  --shadow-lg: 0 18px 40px rgba(0, 0, 0, 0.45);
+  --font-mono: "JetBrains Mono", monospace;
+  --mono: var(--font-mono);
   --violet: #9d7bff;
   --violet-dim: rgba(157, 123, 255, 0.12);
   --green: #4ef0a8;
@@ -174,6 +190,7 @@
   --txt-faint: #626c7f;
   --cyan: #066ca0;
   --cyan-dim: rgba(6, 120, 179, 0.08);
+  --shadow-lg: 0 18px 40px rgba(0, 0, 0, 0.16);
   --violet: #6b3fc0;
   --violet-dim: rgba(107, 63, 192, 0.08);
   --green: #147e54;
@@ -637,7 +654,10 @@
   /* #1231: the command palette must stack ABOVE the layers it can be opened
      over — drawers/dialogs (100), chat jump-to-latest (130), the screenshot
      viewer (140/150) — so ⌘K keeps working with a drawer or viewer open.
-     Still below the global tooltip (200) and the card agent preview (300). */
+     Below the always-on-top chrome: global tooltip (200) and card agent
+     preview (300), and below the modal confirmations — dirty close-out,
+     hotfix, deploy overlays (1000) and the chat queued popover (12000) —
+     which deliberately stay modal over ⌘K. */
   z-index: 160;
   display: flex;
   align-items: flex-start;
