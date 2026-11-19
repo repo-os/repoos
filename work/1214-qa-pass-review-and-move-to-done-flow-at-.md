@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 305147
-last_close_out_gate_at: "2026-11-19T02:58:40.726Z"
 id: "1214"
 title: "QA pass: review and Move to done flow at phone, tablet and desktop widths"
 type: bug
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: ae5a26f5891626aff0b294e0b10349f29ed37875
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-review-and-move-to-done-flow-at-
 created_at: "2026-11-19T02:18:22Z"
 updated_at: "2026-11-19T02:58:40Z"
+last_close_out_gate_ms: 305147
+last_close_out_gate_at: "2026-11-19T02:58:40.726Z"
 review_passes: 1
 handoff_signal_retry_count: 1
 ---
