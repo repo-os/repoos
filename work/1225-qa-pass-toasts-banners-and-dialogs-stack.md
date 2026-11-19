@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-toasts-banners-and-dialogs-stack
 created_at: "2026-11-19T09:17:32Z"
-updated_at: "2026-11-19T13:41:38Z"
+updated_at: "2026-11-19T13:45:27Z"
 last_check_failure: "repoos check at 2026-11-19T13:05:06.200Z: repoos check failed: check-fmt:check — Formatting failed — run `bun run fmt` to fix:"
 handoff_signal_retry_count: 2
 dev_error_count: 1
@@ -115,4 +115,4 @@ Do not touch repoos.toml.
 - 2026-11-19T13:31:24Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-19T13:36:24Z · CTO nudge: held — handoff gate is running
 - 2026-11-19T13:41:38Z · body
-
+- 2026-11-19T13:45:27Z · note: ui verification passed: 2 of 2 shots captured with clean console
