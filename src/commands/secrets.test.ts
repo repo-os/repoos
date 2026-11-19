@@ -26,4 +26,3 @@ describe("repoos secrets usage strings cover every implemented action", () => {
     expect(SECRETS_USAGE).toContain(action);
   });
 });
-
