@@ -1802,6 +1802,14 @@ export const useRepoStore = defineStore("repo", () => {
       // once it leaves review (done, moved back, etc.) the stale card would
       // mislead, so drop it.
       if (e.task.status !== "review") setDoneError(e.task.id, null);
+      // The close-out confirmation records (dirty checkout 0204/#0512, handoff
+      // conflict #0598/#0834) only make sense while the task sits in review.
+      // Drop them when it leaves, so a stale record can't open the app-level
+      // dialog for a task that already moved on.
+      if (e.task.status !== "review") {
+        if (dirtyCheckouts.value[e.task.id]) clearDirtyCheckout(e.task.id);
+        if (worktreeHandoffConflicts.value[e.task.id]) clearWorktreeHandoffConflict(e.task.id);
+      }
       const changed = Object.keys(e.prev ?? {});
       const statusBit =
         e.prev && e.prev.status !== undefined
@@ -3291,6 +3299,9 @@ export const useRepoStore = defineStore("repo", () => {
           filesUnavailable: body.filesUnavailable,
         },
       };
+      // The rejection type changed: the pending dirty-file decision is
+      // superseded, so drop it and leave one pending decision for the task.
+      clearDirtyCheckout(t.id);
       throw new WorktreeHandoffConflictError(t.id, message);
     }
     // Dirty-checkout guard (0204/#0512): the server returns 409 + needsCommit
@@ -3315,6 +3326,9 @@ export const useRepoStore = defineStore("repo", () => {
         ...dirtyCheckouts.value,
         [t.id]: { files: body.dirtyFiles, scope },
       };
+      // One pending decision per task: a fresh dirty record supersedes any
+      // earlier conflict record for the same close-out.
+      clearWorktreeHandoffConflict(t.id);
       throw new DirtyCheckoutError(t.id, body.dirtyFiles, scope);
     }
     const r = body as DoneResult;
@@ -3330,7 +3344,10 @@ export const useRepoStore = defineStore("repo", () => {
     }
     acknowledgeHumanTaskAction(t.id);
     setDoneError(t.id, null);
-    dirtyCheckouts.value = { ...dirtyCheckouts.value, [t.id]: { files: [], scope: "main" } };
+    // Success: the pending decision is resolved. Drop the record instead of
+    // leaving an empty one so it stays a pure "dialog needed" signal for the
+    // close-out confirmation dialogs.
+    clearDirtyCheckout(t.id);
     return r;
   }
 
@@ -4590,6 +4607,8 @@ export const useRepoStore = defineStore("repo", () => {
     requestReview,
     dirtyFilesFor,
     dirtyScopeFor,
+    dirtyCheckouts,
+    worktreeHandoffConflicts,
     clearDirtyCheckout,
     worktreeHandoffConflictFor,
     clearWorktreeHandoffConflict,

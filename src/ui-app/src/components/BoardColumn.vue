@@ -216,36 +216,44 @@ const leavingTaskName = computed(() => {
 const dragOver = ref(false);
 let dragDepth = 0;
 
-/** Whether the task currently being dragged (if any) could actually land in
- *  this column, and why not — mirrors onDrop's own checks so the cue never
- *  promises a drop that would then fail. Null (no drag in progress, or a
- *  no-op drag back onto its own column) means "not applicable", not
- *  "invalid". The done column's checks need live agent/review state
- *  taskTransitions.ts has no way to know, so they're inlined here rather
- *  than folded into boardMoveRejectionReason. */
+/**
+ * Why dragging `task` onto the column for `toColId` can't land there, or null
+ * when the move is allowed. Shared by the hover cue (dropCheck) and the drop
+ * itself (onDrop), so the cue never promises a drop that would then fail and
+ * no drag source can bypass the check. The done column's checks need live
+ * agent/review state taskTransitions.ts has no way to know, so they're
+ * inlined here rather than folded into boardMoveRejectionReason.
+ */
+function moveRejection(task: Task, toColId: string): string | null {
+  if (task.status === toColId) return null;
+  if (toColId === "done") {
+    if (task.status !== "review") return "Only review tasks can be moved to done.";
+    if (repo.reviewFor(task.id)?.running) return "Waiting for automatic review to finish.";
+    return null;
+  }
+  // Mirrors the drawer's Review button, which disables itself while the
+  // agent is running: the commit-and-validate gate would otherwise run
+  // against a worktree the agent might still be writing to.
+  if (task.status === "active" && toColId === "review" && repo.isRunning(task.id)) {
+    return "The agent is still coding — Review becomes available when the turn ends.";
+  }
+  if (!isValidBoardMove(task.status, toColId)) {
+    return boardMoveRejectionReason(task.status, toColId);
+  }
+  return null;
+}
+
+/** Hover cue for the column: null (no drag in progress, or a no-op drag back
+ *  onto its own column) means "not applicable", not "invalid". A human task's
+ *  move validity is checked without a reason string — the plain-English cue is
+ *  for agent-owned tasks. */
 const dropCheck = computed<{ valid: boolean; reason: string | null } | null>(() => {
   const t = repo.draggingTask;
   if (!t || t.status === props.col.id) return null;
   if (t.assignee === "human")
     return { valid: isValidHumanBoardMove(t.status, props.col.id), reason: null };
-  if (props.col.id === "done") {
-    if (t.status !== "review")
-      return { valid: false, reason: "Only review tasks can be moved to done." };
-    if (repo.reviewFor(t.id)?.running)
-      return { valid: false, reason: "Waiting for automatic review to finish." };
-    return { valid: true, reason: null };
-  }
-  // Mirrors the drawer's Review button, which disables itself while the
-  // agent is running: the commit-and-validate gate would otherwise run
-  // against a worktree the agent might still be writing to.
-  if (t.status === "active" && props.col.id === "review" && repo.isRunning(t.id)) {
-    return {
-      valid: false,
-      reason: "The agent is still coding — Review becomes available when the turn ends.",
-    };
-  }
-  const valid = isValidBoardMove(t.status, props.col.id);
-  return { valid, reason: valid ? null : boardMoveRejectionReason(t.status, props.col.id) };
+  const reason = moveRejection(t, props.col.id);
+  return reason ? { valid: false, reason } : { valid: true, reason: null };
 });
 const dropIsValid = computed(() => (dropCheck.value === null ? null : dropCheck.value.valid));
 
@@ -325,17 +333,17 @@ async function onDrop(e: DragEvent): Promise<void> {
       if (isColumnCollapsed(props.col.id)) toggle();
       return;
     }
+    // Re-check the move with the same function the hover cue used. A drag
+    // source that bypasses dragover (a programmatic drop, another browser's
+    // quirks) still cannot land an invalid move silently: it throws the same
+    // plain-English reason and toasts it below.
+    const rejection = moveRejection(task, props.col.id);
+    if (rejection) throw new Error(rejection);
     if (props.col.id === "done") {
       // Done is never an ordinary board status transition: its endpoint owns
       // the review-running 409, merge, check, and worktree cleanup. This also
       // prevents a drag from bypassing the disabled drawer/card action.
-      if (task.status !== "review") {
-        throw new Error("Only review tasks can be moved to done");
-      }
-      if (repo.reviewFor(task.id)?.running) {
-        throw new Error("Waiting for automatic review to finish.");
-      }
-      await repo.completeTask(task);
+      await moveDraggedToDone(task);
     } else if (props.col.id === "active" && task.status === "ready") {
       // Same as clicking Start work — provisions the worktree/branch and
       // spawns the agent, not a bare status write, so it needs the real
@@ -348,8 +356,6 @@ async function onDrop(e: DragEvent): Promise<void> {
       } else {
         await repo.startWork(task, "resume", undefined, overrideDependencies);
       }
-    } else if (props.col.id === "review" && task.status === "active" && repo.isRunning(task.id)) {
-      throw new Error("The agent is still coding — Review becomes available when the turn ends.");
     } else if (props.col.id === "review") {
       // Ask before starting a check, exactly like the drawer's Review button.
       reviewTask.value = task;
@@ -358,8 +364,42 @@ async function onDrop(e: DragEvent): Promise<void> {
     }
     if (isColumnCollapsed(props.col.id)) toggle();
   } catch (err) {
-    repo.onError(err);
+    onDraggedMoveError(err);
   }
+}
+
+/** True while a board-initiated close-out request is in flight — the same
+ *  guard TaskCard's busy flag provides on the button path, so a double drop
+ *  cannot start two close-outs for the same task. */
+const closeOutBusy = ref(false);
+
+/**
+ * A drop onto Done runs the close-out endpoint, whose two confirmation
+ * rejections (0204/#0512 dirty checkout, #0598/#0834 worktree changed after
+ * handoff) are answered through dialogs, not toasts. The endpoint writes the
+ * store record before throwing, and the app-level `CloseOutDialogs` owner
+ * renders it — so this path opens nothing itself and never stacks a second
+ * overlay over the card's or drawer's. A generic close-out failure stays with
+ * `repo.onError`: the endpoint records it as the task's inline DoneErrorCard,
+ * which already carries the plain-English reason and next step.
+ */
+async function moveDraggedToDone(task: Task): Promise<void> {
+  if (closeOutBusy.value) return;
+  closeOutBusy.value = true;
+  try {
+    await repo.completeTask(task);
+  } finally {
+    closeOutBusy.value = false;
+  }
+}
+
+function onDraggedMoveError(err: unknown): void {
+  // The two dialog-answered types are presented by CloseOutDialogs from the
+  // store record the endpoint wrote — including when the task has already
+  // left the board (a refresh raced the drop), where the presenter renders
+  // the dialog from a minimal id-only stand-in, so toasting here would
+  // duplicate it. Everything else reports normally.
+  repo.onError(err);
 }
 
 function clearDragOver(): void {
