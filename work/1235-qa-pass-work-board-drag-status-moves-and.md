@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-19T17:14:30Z"
-review_passes: 1
 id: "1235"
 title: "QA pass: Work board drag, status moves and bulk actions with failures"
 type: bug
@@ -11,6 +9,8 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-work-board-drag-status-moves-and
 created_at: "2026-11-19T16:17:45Z"
+updated_at: "2026-11-19T17:14:30Z"
+review_passes: 1
 ---
 ## Problem
 Status changes, drag/drop and bulk actions on the Work board have not been tested when the server rejects them (blocked move, dirty main, conflict).
@@ -42,4 +42,4 @@ Do not touch repoos.toml.
 - 2026-11-19T17:10:47Z · status active→review
 - 2026-11-19T17:10:48Z · message_queued at 2026-11-19T17:10:48.070Z
 - 2026-11-19T17:14:29Z · note: review pass 1: needs some work
-
+- 2026-11-19T17:14:30Z · message_delivered: 1 message(s)
