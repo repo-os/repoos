@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-19T04:07:53Z"
-review_passes: 2
 id: "1216"
 title: "QA pass: empty, loading and error states on Agents, Checks and Releases"
 type: bug
@@ -11,6 +9,8 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-empty-loading-and-error-states-o
 created_at: "2026-11-19T03:17:43Z"
+updated_at: "2026-11-19T04:12:57Z"
+review_passes: 2
 review_rounds: 1
 routing_switches: 1
 ---
@@ -71,4 +71,4 @@ Do not touch repoos.toml.
 - 2026-11-19T04:07:05Z · message_queued at 2026-11-19T04:07:05.279Z
 - 2026-11-19T04:07:05Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
 - 2026-11-19T04:07:53Z · note: review pass 2: good to go
-
+- 2026-11-19T04:12:57Z · orphaned run process stopped · pid 35762 · /bin/sh -c bun run build && bun dist/cli/index.js serve --port 50602 --host 127.0.0.1 · cpu 0s · age 16m
