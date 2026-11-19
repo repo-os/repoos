@@ -5,6 +5,21 @@ import { webkit, type Browser } from "@playwright/test";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createServer, type ViteDevServer } from "vite";
 
+// Long-data QA for the real Checks and Releases pages (#1219). The fixture
+// mounts ChecksView/ReleasesView with their actual templates and scoped
+// styles; only the repo store is stubbed so the test does not need a server
+// board. Every row uses unbroken tokens as well as long hyphenated paths so a
+// missing `min-width: 0` / `overflow-wrap: anywhere` widens the document.
+const CHECK_PLAN_DELAY_MS = 350;
+const OTHER_API_DELAY_MS = 100;
+
+interface HorizontalOverflow {
+  selector: string;
+  text: string;
+  left: number;
+  right: number;
+}
+
 describe.skipIf(!existsSync(webkit.executablePath()))(
   "Checks and Releases long data (WebKit)",
   () => {
@@ -45,8 +60,8 @@ describe.skipIf(!existsSync(webkit.executablePath()))(
         const page = await browser.newPage({ viewport: { width, height: 900 } });
         page.setDefaultTimeout(5000);
         const checkRows = Array.from({ length: 24 }, (_, i) => ({
-          name: `${"integration-verification-long-step-name-".repeat(4)}${i}`,
-          command: `bun run test -- ${"very-long-directory-name/".repeat(5)}case-${i}`,
+          name: `integration-verification-${"x".repeat(120)}-${i}`,
+          command: `bun run test -- ${"very-long-directory-name/".repeat(5)}${"y".repeat(80)}-${i}`,
           timeoutMs: 600_000,
           required: true,
           profiles: [],
@@ -58,10 +73,12 @@ describe.skipIf(!existsSync(webkit.executablePath()))(
           missing: [],
         }));
         const channels = Array.from({ length: 24 }, (_, i) => ({
-          name: `registry-${i}-${"long-channel-name-".repeat(3)}`,
+          name: `registry-${i}-${"z".repeat(120)}`,
           kind: "npm",
-          url: `https://packages.example.org/${"long-package-path/".repeat(5)}${i}`,
-          install: [`npm install -g ${"@repo-os/long-package-name-".repeat(3)}${i}`],
+          url: `https://packages.example.org/${"long-package-path/".repeat(5)}${"q".repeat(80)}-${i}`,
+          install: [
+            `npm install -g ${"@repo-os/long-package-name-".repeat(3)}${"w".repeat(80)}-${i}`,
+          ],
           version: "1.2.3",
           state: "matching",
           detail: null,
@@ -125,7 +142,8 @@ describe.skipIf(!existsSync(webkit.executablePath()))(
           else if (path === "/api/release/notes/run")
             body = { state: "idle", startedAt: null, updatedAt: null };
           else if (path === "/api/release/notes/auto-publish") body = { state: "idle" };
-          await new Promise((done) => setTimeout(done, 100));
+          const delay = path === "/api/check-plan" ? CHECK_PLAN_DELAY_MS : OTHER_API_DELAY_MS;
+          await new Promise((done) => setTimeout(done, delay));
           await route.fulfill({
             status: 200,
             contentType: "application/json",
@@ -137,33 +155,126 @@ describe.skipIf(!existsSync(webkit.executablePath()))(
           await page.goto(
             `${baseUrl}/tests/fixtures/checks-releases-responsive.html?screen=checks`,
           );
+          // Slow data must show the loading skeleton, then the full list — not
+          // an empty page or a half-rendered list.
+          expect(await page.locator(".ck-step").count()).toBe(0);
           await page.locator(".ck-step").first().waitFor();
-          const checks = await page.evaluate(() => ({
-            rows: document.querySelectorAll(".ck-step").length,
-            bodyWidth: document.body.scrollWidth,
-            viewport: innerWidth,
-          }));
+          const checks = await page.evaluate(() => {
+            const overflowing: HorizontalOverflow[] = [];
+            for (const selector of [
+              ".ck-step",
+              ".ck-step-name",
+              ".ck-badge",
+              ".ck-step-cmd",
+              ".ck-step-meta",
+            ]) {
+              for (const el of document.querySelectorAll<HTMLElement>(selector)) {
+                const rect = el.getBoundingClientRect();
+                if (rect.left < -1 || rect.right > innerWidth + 1) {
+                  overflowing.push({
+                    selector,
+                    text: (el.textContent ?? "").slice(0, 40),
+                    left: rect.left,
+                    right: rect.right,
+                  });
+                }
+              }
+            }
+            const names = [...document.querySelectorAll<HTMLElement>(".ck-step-name")];
+            return {
+              rows: document.querySelectorAll(".ck-step").length,
+              bodyWidth: document.body.scrollWidth,
+              viewport: innerWidth,
+              overflowing,
+              // A wrapped name fits its box; a clipped name would be wider.
+              clippedNames: names.filter((el) => el.scrollWidth > el.clientWidth + 1).length,
+              longestName: Math.max(...names.map((el) => (el.textContent ?? "").length)),
+            };
+          });
           expect(checks.rows).toBe(24);
           expect(checks.bodyWidth).toBeLessThanOrEqual(checks.viewport);
+          expect(checks.overflowing).toEqual([]);
+          expect(checks.clippedNames).toBe(0);
+          expect(checks.longestName).toBeGreaterThan(100);
 
           await page.goto(
             `${baseUrl}/tests/fixtures/checks-releases-responsive.html?screen=releases`,
           );
           await page.locator(".rel-channel").first().waitFor();
           const releases = await page.evaluate(() => {
-            const action = document.querySelector<HTMLElement>(".rel-dist-title-row button")!;
+            const overflowing: HorizontalOverflow[] = [];
+            for (const selector of [
+              ".rel-dist",
+              ".rel-dist-title-row",
+              ".rel-channel",
+              ".rel-channel-name",
+              ".rel-channel-state",
+              ".rel-install",
+              ".rel-copy",
+            ]) {
+              for (const el of document.querySelectorAll<HTMLElement>(selector)) {
+                const rect = el.getBoundingClientRect();
+                if (rect.left < -1 || rect.right > innerWidth + 1) {
+                  overflowing.push({
+                    selector,
+                    text: (el.textContent ?? "").slice(0, 40),
+                    left: rect.left,
+                    right: rect.right,
+                  });
+                }
+              }
+            }
+            const names = [...document.querySelectorAll<HTMLElement>(".rel-channel-name")];
+            const copy = [...document.querySelectorAll<HTMLButtonElement>(".rel-copy")];
             return {
               rows: document.querySelectorAll(".rel-channel").length,
               bodyWidth: document.body.scrollWidth,
               viewport: innerWidth,
-              actionRight: action.getBoundingClientRect().right,
+              overflowing,
+              clippedNames: names.filter((el) => el.scrollWidth > el.clientWidth + 1).length,
+              // A control that is hidden, zero-sized, or pushed off-screen is
+              // dead even though it is in the DOM.
+              deadCopyButtons: copy.filter((button) => {
+                const rect = button.getBoundingClientRect();
+                return rect.width === 0 || rect.height === 0 || button.disabled;
+              }).length,
+              copyButtons: copy.length,
             };
           });
           expect(releases.rows).toBe(24);
           expect(releases.bodyWidth).toBeLessThanOrEqual(releases.viewport);
-          expect(releases.actionRight).toBeLessThanOrEqual(releases.viewport);
-          await page.getByRole("button", { name: "Check again" }).click();
+          expect(releases.overflowing).toEqual([]);
+          expect(releases.clippedNames).toBe(0);
+          expect(releases.copyButtons).toBe(24);
+          expect(releases.deadCopyButtons).toBe(0);
+
+          const refresh = page.getByRole("button", { name: "Check again" });
+          await expect.poll(() => refresh.isVisible()).toBe(true);
+          await refresh.click();
           await expect.poll(() => distributionRequests).toBe(2);
+          await expect.poll(() => refresh.isEnabled()).toBe(true);
+
+          // The declared shots rely on these two fixtures; render them through
+          // the real views so a broken seed fails here, not at handoff.
+          await page.goto(
+            `${baseUrl}/tests/fixtures/checks-releases-responsive.html?screen=checks&shotState=checks:longData`,
+          );
+          await page.locator(".ck-step").first().waitFor();
+          expect(await page.locator(".ck-step").count()).toBe(24);
+          expect(await page.locator(".ck-step-name").first().textContent()).toMatch(
+            /^fixture-check-x{100,}/,
+          );
+          expect(await page.evaluate(() => document.body.scrollWidth <= innerWidth)).toBe(true);
+
+          await page.goto(
+            `${baseUrl}/tests/fixtures/checks-releases-responsive.html?screen=releases&shotState=release:longDistribution`,
+          );
+          await page.locator(".rel-channel").first().waitFor();
+          expect(await page.locator(".rel-channel").count()).toBe(24);
+          expect(await page.locator(".rel-channel-name").first().textContent()).toMatch(
+            /^fixture-channel-0-z{100,}/,
+          );
+          expect(await page.evaluate(() => document.body.scrollWidth <= innerWidth)).toBe(true);
         } finally {
           await page.close();
         }

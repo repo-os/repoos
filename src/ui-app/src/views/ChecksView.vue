@@ -34,6 +34,10 @@ import { useRepoStore } from "../stores/repo";
 import { checkProgressLabel, checkProgressPercent } from "../lib/check-progress";
 import PageSkeleton from "../components/PageSkeleton.vue";
 import { invalidatePageDataPrefix, refreshPageData } from "../composables/page-data-cache";
+import {
+  readShotPreviewFixtureFromLocation,
+  shotFixtureCheckPlan,
+} from "../lib/shot-preview-fixtures";
 
 const route = useRoute();
 const router = useRouter();
@@ -182,6 +186,13 @@ onMounted(() => {
 async function load(): Promise<void> {
   loading.value = true;
   error.value = "";
+  const pinned = shotFixtureCheckPlan(readShotPreviewFixtureFromLocation(window.location));
+  if (pinned) {
+    plan.value = pinned;
+    profile.value = pinned.profile;
+    loading.value = false;
+    return;
+  }
   const params = new URLSearchParams();
   if (profile.value) params.set("profile", profile.value);
   if (changedRef.value) params.set("changed", changedRef.value);

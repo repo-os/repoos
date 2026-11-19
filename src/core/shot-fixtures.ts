@@ -20,6 +20,9 @@ export const SHOT_PREVIEW_FIXTURE_IDS = [
   "checks:progress",
   "checks:timings",
   "checks:reuse",
+  // #1219 — long, unbroken check-plan rows so a Checks-page capture shows real
+  // wrapping behaviour at 375/768/1280 px instead of the tidy live plan.
+  "checks:longData",
   // Populated Work and Stories pages for full-height layout captures (#0951).
   "pages:scroll",
   // #1030 — a dirty repo-root checkout, for the sidebar's full-width amber
@@ -244,6 +247,9 @@ export const SHOT_PREVIEW_FIXTURE_IDS = [
   // #1126 — Releases page showing the server-owned "publish when the notes are
   // ready" promise and its Cancel, which the preview board cannot have pending.
   "release:autoPublishWaiting",
+  // #1219 — 24 long, unbroken distribution channels so a Releases-page capture
+  // shows the channel/install wrapping the page must survive.
+  "release:longDistribution",
 ] as const;
 
 export type ShotPreviewFixtureId = (typeof SHOT_PREVIEW_FIXTURE_IDS)[number];
