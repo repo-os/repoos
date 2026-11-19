@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-remote-runner-setup-docs-and-run
 created_at: "2026-11-19T00:17:32Z"
-updated_at: "2026-11-19T00:42:03Z"
+updated_at: "2026-11-19T00:49:12Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -37,3 +37,4 @@ Do not touch repoos.toml.
 - 2026-11-19T00:42:03Z · note: review pass 1: needs some work
 - 2026-11-19T00:42:03Z · message_delivered: 1 message(s)
 - 2026-11-19T00:42:03Z · status review→active
+- 2026-11-19T00:49:12Z · CTO action: restart-stalled-agent (fresh) · agent exited without emitting the handoff signal
