@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-slow-network-and-offline-behavio
 created_at: "2026-11-19T09:47:34Z"
-updated_at: "2026-11-19T11:41:42Z"
+updated_at: "2026-11-19T11:51:31Z"
 handoff_signal_retry_count: 2
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\",\"at\":\"2026-11-19T09:51:25.262Z\",\"kind\":\"dev-error\"}]"
@@ -30,18 +30,18 @@ Do not touch repoos.toml.
 ```json
 [
 {
-  "label": "Settings recoverable load-error panel (#1226)",
-  "target": "default",
-  "route": "/settings?tab=general",
-  "highlight": ".page-load-error",
-  "state": "settings:loadFailed"
+"label": "Settings recoverable load-error panel (#1226)",
+"target": "default",
+"route": "/settings?tab=general",
+"highlight": ".page-load-error",
+"state": "settings:loadFailed"
 },
 {
-  "label": "Agents recoverable load-error panel (#1226)",
-  "target": "default",
-  "route": "/agents",
-  "highlight": ".page-load-error",
-  "state": "agents:loadFailed"
+"label": "Agents recoverable load-error panel (#1226)",
+"target": "default",
+"route": "/agents",
+"highlight": ".page-load-error",
+"state": "agents:loadFailed"
 }
 ]
 ```
@@ -72,3 +72,4 @@ Do not touch repoos.toml.
 - 2026-11-19T11:29:41Z · body
 - 2026-11-19T11:38:27Z · body
 - 2026-11-19T11:41:42Z · body
+- 2026-11-19T11:51:31Z · body
