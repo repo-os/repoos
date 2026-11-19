@@ -3,9 +3,6 @@ id: "1233"
 title: "Login screens: bound the unbounded auth fetches so a stalled server cannot hang the login spinner"
 type: feature
 status: inbox
-needs_input: true
-needs_input_reason: underspecified
-needs_input_detail: "missing sections: Desired UX"
 priority: p3
 area: web
 assigned_to: ai
@@ -32,3 +29,4 @@ When the RepoOS server is slow or stalled, the login screen explains what happen
 - 2026-11-19T15:31:05Z · created · t@t
 - 2026-11-19T15:31:06Z · needs_input
 - 2026-11-19T15:31:23Z · body: Desired UX (added)
+- 2026-11-19T15:31:23Z · needs_input
