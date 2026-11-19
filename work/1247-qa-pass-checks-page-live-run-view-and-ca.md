@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 1070526
-last_close_out_gate_at: "2026-11-19T22:01:40.594Z"
 id: "1247"
 title: "QA pass: Checks page live run view and cancel/retry controls"
 type: bug
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: 4ebcbb3a2cb763c84e7417b207fd2da41a915438
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-checks-page-live-run-view-and-ca
@@ -14,6 +13,8 @@ cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T21:07:03Z"
 updated_at: "2026-11-19T22:01:40Z"
+last_close_out_gate_ms: 1070526
+last_close_out_gate_at: "2026-11-19T22:01:40.594Z"
 review_passes: 1
 ---
 ## Problem
