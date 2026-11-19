@@ -399,9 +399,7 @@ describeBrowser("slow network and offline QA (#1226)", () => {
       );
       expect(text).toContain("Can't reach the RepoOS server");
       expect(
-        await page.evaluate(
-          () => document.querySelector('[data-testid="login-retry"]') !== null,
-        ),
+        await page.evaluate(() => document.querySelector('[data-testid="login-retry"]') !== null),
       ).toBe(true);
 
       for (const width of VIEWPORTS) await expectNoHorizontalOverflow(page, width);

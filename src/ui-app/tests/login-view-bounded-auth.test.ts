@@ -154,15 +154,18 @@ describe("LoginView under a slow / 500 / offline auth server (#1236)", () => {
   });
 
   it("a stalled /api/auth/me falls back to the usable sign-in form, not an error or a spinner", async () => {
-    vi.stubGlobal("fetch", vi.fn(async (url: string, init?: RequestInit) => {
-      if (url === "/api/auth/status") return Response.json(STATUS_ENABLED);
-      // Stalls forever, but honours the abort signal like a real fetch.
-      return new Promise<Response>((_resolve, reject) => {
-        init?.signal?.addEventListener("abort", () =>
-          reject(new DOMException("The operation was aborted.", "AbortError")),
-        );
-      });
-    }));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string, init?: RequestInit) => {
+        if (url === "/api/auth/status") return Response.json(STATUS_ENABLED);
+        // Stalls forever, but honours the abort signal like a real fetch.
+        return new Promise<Response>((_resolve, reject) => {
+          init?.signal?.addEventListener("abort", () =>
+            reject(new DOMException("The operation was aborted.", "AbortError")),
+          );
+        });
+      }),
+    );
     vi.useFakeTimers();
     const wrapper = mountLogin();
     await vi.advanceTimersByTimeAsync(6_000);
