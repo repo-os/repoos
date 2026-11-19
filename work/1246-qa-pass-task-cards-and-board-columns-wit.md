@@ -11,7 +11,7 @@ branch: feat/qa-pass-task-cards-and-board-columns-wit
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T21:06:54Z"
-updated_at: "2026-11-19T21:14:53Z"
+updated_at: "2026-11-19T21:16:03Z"
 ---
 ## Problem
 Task cards and board columns have not been checked with very long titles, many labels, unusual statuses (held, paused, needs-input, archived) and missing fields.
@@ -24,6 +24,19 @@ Every card state renders cleanly and consistently with no overlap or clipping at
 ## Notes for AI
 Do not touch repoos.toml.
 
+## Shots
+```json
+[
+{
+  "label": "Human-assigned card with a long handle wraps inside the card",
+  "target": "default",
+  "route": "/work",
+  "highlight": ".task-card",
+  "state": "card:humanStep"
+}
+]
+```
+
 ## Activity
 
 - 2026-11-19T21:06:54Z · created · t@t
@@ -31,3 +44,4 @@ Do not touch repoos.toml.
 - 2026-11-19T21:06:58Z · cli_override, model_override
 - 2026-11-19T21:06:59Z · status ready→active, branch
 - 2026-11-19T21:14:53Z · body
+- 2026-11-19T21:16:03Z · body
