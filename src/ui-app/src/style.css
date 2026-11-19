@@ -1841,6 +1841,11 @@
 .feed-msg {
   font-size: 13px;
   line-height: 1.4;
+  /* Wrap long unbroken tokens at every width (#1234): a pasted error line —
+     a session token, a checksum — used to push the feed and the dashboard
+     page wider than the viewport between 720px and desktop. */
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 .feed-msg b {
   font-weight: 600;
@@ -1854,10 +1859,6 @@
   font-family: "JetBrains Mono", monospace;
 }
 @media (max-width: 719.98px) {
-  .feed-msg {
-    min-width: 0;
-    overflow-wrap: anywhere;
-  }
   .feed-meta {
     flex-wrap: wrap;
     line-height: 1.5;
