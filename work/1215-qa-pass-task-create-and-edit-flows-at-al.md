@@ -2,14 +2,14 @@
 id: "1215"
 title: "QA pass: task create and edit flows at all screen sizes"
 type: bug
-status: review
+status: active
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-task-create-and-edit-flows-at-al
 created_at: "2026-11-19T03:17:33Z"
-updated_at: "2026-11-19T05:16:21Z"
+updated_at: "2026-11-19T05:16:22Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: staleness — src/ui-app/tests/task-create-edit-responsive.test.ts(80,38): error TS2339: Property 'exists' does not exist on type 'Omit<DOMWrapper<Element>, \"exists\">'."
 last_handoff_failure_sha: 46a73bf59b37b1521b7b2c239a62594a7f55ff46
 review_passes: 1
