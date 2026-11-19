@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 68924
-last_close_out_gate_at: "2026-11-19T09:33:54.356Z"
 id: "1222"
 title: "QA pass: every Settings tab saves, validates and fits small screens (round 2)"
 type: bug
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: e8472b9d03513cec84b17c75057b4188c10b1704
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-every-settings-tab-saves-validat
 created_at: "2026-11-19T07:17:47Z"
 updated_at: "2026-11-19T09:33:54Z"
+last_close_out_gate_ms: 68924
+last_close_out_gate_at: "2026-11-19T09:33:54.356Z"
 review_passes: 1
 handoff_signal_retry_count: 1
 dev_error_count: 1
