@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-11-19T18:20:42Z"
-review_passes: 1
+last_close_out_gate_ms: 574625
+last_close_out_gate_at: "2026-11-19T18:36:25.916Z"
 id: "1234"
 title: "QA pass: Stats, Dev and activity-log pages at all screen sizes"
 type: bug
@@ -11,6 +11,8 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-stats-dev-and-activity-log-pages
 created_at: "2026-11-19T15:47:33Z"
+updated_at: "2026-11-19T18:36:25Z"
+review_passes: 1
 handoff_signal_retry_count: 2
 dev_error_count: 1
 engineer_stall_resume_log: "[{\"at\":\"2026-11-19T15:55:13.079Z\",\"reason\":\"clean-exit-without-handoff\"}]"
@@ -94,4 +96,5 @@ Do not touch repoos.toml.
 - 2026-11-19T18:18:11Z · status active→review
 - 2026-11-19T18:18:11Z · message_queued at 2026-11-19T18:18:11.765Z
 - 2026-11-19T18:20:42Z · note: review pass 1: good to go
+- 2026-11-19T18:36:25Z · close-out gate completed in 575s
 
