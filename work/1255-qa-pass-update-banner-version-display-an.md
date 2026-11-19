@@ -8,8 +8,10 @@ area: web
 assigned_to: ai
 created_by: t@t
 branch: ""
+cli_override: claude code
+model_override: haiku
 created_at: "2026-11-19T23:27:47Z"
-updated_at: "2026-11-19T23:27:55Z"
+updated_at: "2026-11-19T23:27:59Z"
 ---
 ## Problem
 The update-available banner, version display and release notes modal have not been checked since the restart fix.
@@ -26,3 +28,4 @@ Do not touch repoos.toml.
 
 - 2026-11-19T23:27:47Z · created · t@t
 - 2026-11-19T23:27:55Z · status inbox→ready
+- 2026-11-19T23:27:59Z · cli_override, model_override
