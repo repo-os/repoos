@@ -4,6 +4,12 @@ import { api } from "../api";
 import { useSearchBodyCache } from "../composables/use-search-body-cache";
 import type { DocMeta, SkillMeta } from "../types";
 
+/** Shown in place of a doc or skill body that could not be read (#1238). */
+const DOC_LOAD_FAILED =
+  "This doc could not be loaded. Pick another doc from the list, or select refresh to reload the list.";
+const SKILL_LOAD_FAILED =
+  "This skill could not be loaded. Pick another skill from the list, then try this one again.";
+
 export const useDocsStore = defineStore("docs", () => {
   const docs = ref<DocMeta[]>([]);
   const docsLoading = ref(false);
@@ -86,14 +92,14 @@ export const useDocsStore = defineStore("docs", () => {
     selDoc.value = path;
     try {
       const r = await fetch(path);
-      const text = r.ok ? await r.text() : "(could not load)";
+      const text = r.ok ? await r.text() : DOC_LOAD_FAILED;
       if (version !== docContentLoadVersion || selDoc.value !== path) return;
       docContent.value = text.replace(/^---\s*\n[\s\S]*?\n---\s*\n?/, "");
       const d = docs.value.find((x) => x.path === path);
       docTitle.value = d ? d.title : path;
     } catch {
       if (version !== docContentLoadVersion || selDoc.value !== path) return;
-      docContent.value = "(error loading)";
+      docContent.value = DOC_LOAD_FAILED;
     }
   }
 
@@ -112,10 +118,10 @@ export const useDocsStore = defineStore("docs", () => {
     skillDesc.value = s?.description ?? "";
     try {
       const r = await fetch(path);
-      const text = r.ok ? await r.text() : "(could not load)";
+      const text = r.ok ? await r.text() : SKILL_LOAD_FAILED;
       skillContent.value = text.replace(/^---\s*\n[\s\S]*?\n---\s*\n?/, "");
     } catch {
-      skillContent.value = "(error loading)";
+      skillContent.value = SKILL_LOAD_FAILED;
     }
   }
 

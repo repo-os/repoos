@@ -5487,18 +5487,50 @@
   margin: 0;
 }
 .dep-modal-error {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
   border-left: 2px solid var(--red);
   padding-left: 10px;
   color: var(--red);
   font-size: 13px;
+}
+.dep-fail-hint {
+  margin: 0;
+  color: var(--txt);
+  font-size: 13px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+/* Raw git output: long lines wrap, a long log scrolls inside its own box. */
+.dep-fail-output {
+  margin: 0;
+  max-height: 220px;
+  overflow: auto;
   white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--txt-dim);
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
 }
 .dep-modal-actions {
   flex: 0 0 auto;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 12px;
   margin-top: 18px;
+}
+.dep-modal-actions button {
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-align: left;
 }
 
 /* docs */
@@ -5531,6 +5563,8 @@
 }
 .ctx-tabs {
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   gap: 8px;
   margin: -6px 0 16px;
 }
@@ -5612,8 +5646,10 @@
   display: flex;
   align-items: center;
   gap: 7px;
+  min-width: 0;
   font-weight: 600;
   font-family: "JetBrains Mono", monospace;
+  overflow-wrap: anywhere;
 }
 .skill-name svg {
   width: 12px;
@@ -5628,6 +5664,7 @@
   font-size: 11px;
   color: var(--txt-faint);
   line-height: 1.45;
+  overflow-wrap: anywhere;
 }
 .skill-row.sel .skill-desc {
   opacity: 0.8;
@@ -5740,6 +5777,7 @@
   overflow-y: auto;
   min-height: 0;
   white-space: pre-wrap;
+  overflow-wrap: anywhere;
   font-size: 13.5px;
   line-height: 1.7;
   color: var(--txt-dim);
@@ -5763,11 +5801,13 @@
   color: var(--txt);
   margin-bottom: 4px;
   white-space: normal;
+  overflow-wrap: anywhere;
 }
 .doc-view .doc-path {
   font-size: 11px;
   color: var(--txt-faint);
   margin-bottom: 20px;
+  overflow-wrap: anywhere;
 }
 
 /* Floating overlay layers (#0575).
