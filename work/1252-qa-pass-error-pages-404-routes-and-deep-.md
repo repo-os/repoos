@@ -11,7 +11,7 @@ branch: feat/qa-pass-error-pages-404-routes-and-deep-
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T22:27:09Z"
-updated_at: "2026-11-19T23:19:22Z"
+updated_at: "2026-11-19T23:19:23Z"
 ---
 ## Problem
 Unknown routes, deleted or archived task links and deep links to tabs and settings sections have not been checked.
@@ -34,3 +34,4 @@ Do not touch repoos.toml.
 - 2026-11-19T23:07:46Z · CTO nudge: held — handoff gate is running
 - 2026-11-19T23:19:20Z · note: ui verification passed: 1 shot captured with clean console
 - 2026-11-19T23:19:22Z · status active→review
+- 2026-11-19T23:19:23Z · message_queued at 2026-11-19T23:19:23.047Z
