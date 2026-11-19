@@ -2,14 +2,14 @@
 id: "1241"
 title: "QA pass: Agents page Build Your Team and scheduled tasks with long lists"
 type: bug
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
 branch: ""
 created_at: "2026-11-19T19:07:09Z"
-updated_at: "2026-11-19T19:07:09Z"
+updated_at: "2026-11-19T19:07:12Z"
 ---
 ## Problem
 Build Your Team, Scheduled Tasks and Reminders have not been checked with many entries and long names.
@@ -25,3 +25,4 @@ Do not touch repoos.toml.
 ## Activity
 
 - 2026-11-19T19:07:09Z · created · t@t
+- 2026-11-19T19:07:12Z · status inbox→ready
