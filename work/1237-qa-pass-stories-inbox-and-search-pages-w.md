@@ -11,7 +11,7 @@ branch: feat/qa-pass-stories-inbox-and-search-pages-w
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T17:46:51Z"
-updated_at: "2026-11-19T18:07:13Z"
+updated_at: "2026-11-19T18:11:16Z"
 ---
 ## Problem
 Stories, Inbox and Search have not been checked with many items, long titles and zero results at phone, tablet and desktop widths.
@@ -34,3 +34,4 @@ Do not touch repoos.toml.
 - 2026-11-19T18:06:52Z · note: agent fallback: codex + gpt-6-luna is paused (out of usage since 2026-11-19T07:09:32.657Z: Codex hit a provider quota or rate limit. Wait for the provider limit to reset, then retry. (CLI: error: You’ve hit your usage limit. Upgrade to Pro (https://chatgpt.com/explore/pro), visit https://chatgpt.com/codex/settings/usage to purcha) — using opencode + opencode-go/glm-5.3-flash
 - 2026-11-19T18:07:12Z · cli_override, model_override
 - 2026-11-19T18:07:12Z · engineer stopped by request
+- 2026-11-19T18:11:16Z · body
