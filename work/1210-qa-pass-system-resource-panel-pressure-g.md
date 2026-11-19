@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "1210"
 title: "QA pass: system resource panel, pressure guard banners and Control stats under high load fixtures"
 type: bug
@@ -40,3 +41,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-19T00:49:50Z · status review→active
 - 2026-11-19T00:49:52Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-19T00:55:03Z · message_queued at 2026-11-19T00:55:03.497Z
+
