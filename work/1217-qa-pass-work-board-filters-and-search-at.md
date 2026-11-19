@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-work-board-filters-and-search-at
 created_at: "2026-11-19T03:47:37Z"
-updated_at: "2026-11-19T04:12:23Z"
+updated_at: "2026-11-19T04:12:49Z"
 last_close_out_gate_ms: 621328
 last_close_out_gate_at: "2026-11-19T04:12:23.772Z"
 review_passes: 2
@@ -47,4 +47,4 @@ Do not touch repoos.toml.
 - 2026-11-19T04:01:04Z · note: shots: skipped — the diff (6 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-19T04:01:35Z · note: review pass 2: good to go
 - 2026-11-19T04:12:23Z · close-out gate completed in 621s
-
+- 2026-11-19T04:12:49Z · status done→done, release:success
