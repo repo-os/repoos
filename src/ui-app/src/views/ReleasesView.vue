@@ -1260,8 +1260,11 @@ async function runGenerateNotes(
 }
 
 async function release(): Promise<void> {
+  // Enter in the version field reaches here too, so a named blocker must stop
+  // it as well as the disabled Publish button (#1240).
   if (
     !canOpen.value ||
+    blockers.value.length > 0 ||
     !newVersionValid.value ||
     running.value ||
     generatingNotes.value ||
@@ -1824,7 +1827,12 @@ Subject: {{ releaseEmailPreview.subject }}
           <!-- Keep lookup failures visible even when the cached channel list is
                empty, so the user can retry. Successful empty results hide this panel. -->
           <section
-            v-if="distribution.length || distributionLoading || distributionRefreshError"
+            v-if="
+              distribution.length ||
+              distributionLoading ||
+              distributionRefreshError ||
+              distributionCiFailure
+            "
             class="rel-card rel-dist"
           >
             <div class="rel-dist-head">
@@ -1861,7 +1869,9 @@ Subject: {{ releaseEmailPreview.subject }}
             <p v-if="distributionCiFailure" class="ff-error" role="alert">
               The release workflow failed<template v-if="distributionCiFailure.failedStep">
                 at “{{ distributionCiFailure.failedStep }}”</template
-              >, so some channels below may not update on their own.
+              >, so some channels may not update on their own. Open the failed run to see the error,
+              fix the cause, then re-run the failed jobs. If the fix needs new code, cut a new
+              version instead.
               <a :href="distributionCiFailure.runUrl" target="_blank" rel="noreferrer"
                 >View the failed run ↗</a
               >
@@ -1936,6 +1946,17 @@ Subject: {{ releaseEmailPreview.subject }}
                   <code>{{ status.branch }}</code
                   >.
                 </p>
+                <!-- The panel's Publish stays off while any blocker is named, so say
+                   which one. The page-level banner can be covered by this panel. -->
+                <div
+                  v-if="blockers.length && !running"
+                  class="ff-notice"
+                  role="status"
+                  data-test-id="release-drawer-blockers"
+                >
+                  <strong>Publishing is blocked until these are fixed:</strong>
+                  <div v-for="b in blockers" :key="b">{{ b }}</div>
+                </div>
 
                 <!-- The promise is page-level, but the panel can cover the
                    banner that shows it (#1126). Repeat it here so Publish
@@ -2224,8 +2245,14 @@ Subject: {{ releaseEmailPreview.subject }}
                 <Button
                   variant="accent"
                   :disabled="
-                    !canOpen || !newVersionValid || running || generatingNotes || autoPublishActive
+                    !canOpen ||
+                    blockers.length > 0 ||
+                    !newVersionValid ||
+                    running ||
+                    generatingNotes ||
+                    autoPublishActive
                   "
+                  data-test-id="release-publish"
                   @click="release"
                 >
                   {{ running ? "Publishing…" : newTag ? `Publish ${newTag}` : "Publish" }}

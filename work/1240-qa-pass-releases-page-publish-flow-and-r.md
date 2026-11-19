@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 284037
-last_close_out_gate_at: "2026-11-19T19:03:52.807Z"
 id: "1240"
 title: "QA pass: Releases page publish flow and release notes editor with failures"
 type: bug
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: d4e3e1291e283ab5db8d772fbf981db8669ee8d3
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-releases-page-publish-flow-and-r
@@ -14,6 +13,8 @@ cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T18:27:27Z"
 updated_at: "2026-11-19T19:03:52Z"
+last_close_out_gate_ms: 284037
+last_close_out_gate_at: "2026-11-19T19:03:52.807Z"
 review_passes: 1
 ---
 ## Problem
