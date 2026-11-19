@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-slow-network-and-offline-behavio
 created_at: "2026-11-19T09:47:34Z"
-updated_at: "2026-11-19T13:31:24Z"
+updated_at: "2026-11-19T13:34:33Z"
 handoff_signal_retry_count: 2
 dev_error_count: 1
 engineer_stall_resume_log: "[{\"at\":\"2026-11-19T10:00:44.011Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-19T12:54:47.309Z\",\"reason\":\"clean-exit-without-handoff\"}]"
@@ -109,3 +109,4 @@ Do not touch repoos.toml.
 - 2026-11-19T13:28:18Z · message_delivered: 1 message(s)
 - 2026-11-19T13:31:24Z · message_queued at 2026-11-19T13:31:24.463Z
 - 2026-11-19T13:31:24Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-19T13:34:33Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
