@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-19T23:30:46Z"
-review_passes: 2
 id: "1249"
 title: "QA pass: Telegram and notification settings screens and their messages"
 type: bug
@@ -13,6 +11,8 @@ branch: feat/qa-pass-telegram-and-notification-settin
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T21:46:55Z"
+updated_at: "2026-11-19T23:30:47Z"
+review_passes: 2
 review_rounds: 1
 ---
 ## Problem
