@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 266660
-last_close_out_gate_at: "2026-11-19T07:14:08.661Z"
 id: "1215"
 title: "QA pass: task create and edit flows at all screen sizes"
 type: bug
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: 09a2bb3a0bf1ba9344205c465ac275cff8f661f7
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-task-create-and-edit-flows-at-al
 created_at: "2026-11-19T03:17:33Z"
 updated_at: "2026-11-19T07:14:08Z"
+last_close_out_gate_ms: 266660
+last_close_out_gate_at: "2026-11-19T07:14:08.661Z"
 review_passes: 4
 review_rounds: 2
 routing_switches: 1
