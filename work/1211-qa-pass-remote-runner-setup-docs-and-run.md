@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-remote-runner-setup-docs-and-run
 created_at: "2026-11-19T00:17:32Z"
-updated_at: "2026-11-19T00:27:45Z"
+updated_at: "2026-11-19T00:33:58Z"
 ---
 ## Problem
 Docs and UI for adding and checking remote runners may not match how bee, thinkpad and mini are actually run (systemd, user accounts, PATH).
@@ -27,3 +27,4 @@ Do not touch repoos.toml.
 - 2026-11-19T00:17:37Z · status inbox→ready
 - 2026-11-19T00:17:39Z · status ready→active, branch
 - 2026-11-19T00:27:45Z · CTO nudge: held — handoff gate is running
+- 2026-11-19T00:33:58Z · CTO nudge: held — handoff gate is running
