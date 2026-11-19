@@ -219,7 +219,7 @@ function startNewTask(): void {
 
 /**
  * Delete story (#0634): bottom-left destructive control on the Details tab,
- * matching the task panel's Delete task. Only a *registered* story can be
+ * matching the task panel's Delete button. Only a *registered* story can be
  * deleted — the action removes its `stories/*.md` definition file, and a
  * tag-only story has no file, so it gets no button (there is nothing to
  * delete; its tasks are never touched either way). The shared

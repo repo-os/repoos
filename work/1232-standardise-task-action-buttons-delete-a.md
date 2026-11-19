@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 525161
-last_close_out_gate_at: "2026-11-19T15:49:14.642Z"
 id: "1232"
 title: "Easter eggs bundle: task action button labels (Delete, Archive, Hold)"
 type: chore
-status: review
+status: done
 priority: p3
 area: web
+merged_commit: ed79081e07f50959bab7187581119f22431c0dd8
 assigned_to: ai
 created_by: t@t
 branch: feat/easter-eggs-bundle-task-action-button-la
 created_at: "2026-11-19T13:54:07Z"
 updated_at: "2026-11-19T15:49:14Z"
+last_close_out_gate_ms: 525161
+last_close_out_gate_at: "2026-11-19T15:49:14.642Z"
 review_passes: 1
 last_check_failure: "repoos check at 2026-11-19T15:14:43.458Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Task drawer footer actions with shortened labels (Delete, Archive, Hold) (target \"default\"): highlight .delete-zone matched nothing on /work?task=0001&tab=details (http://127.0.0.1:40237/work?task=0001&tab=details&shotState=drawer%3AstatusDetails)"
 dev_error_count: 1
