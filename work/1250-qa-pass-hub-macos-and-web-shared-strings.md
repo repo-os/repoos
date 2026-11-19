@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 659183
-last_close_out_gate_at: "2026-11-19T22:50:05.313Z"
 id: "1250"
 title: "QA pass: Hub macOS and web shared strings, tooltips and empty labels audit"
 type: bug
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: af199781bc14a95c1ce2df9e6c80eb31778b1791
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-hub-macos-and-web-shared-strings
@@ -14,6 +13,8 @@ cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T21:47:05Z"
 updated_at: "2026-11-19T22:50:05Z"
+last_close_out_gate_ms: 659183
+last_close_out_gate_at: "2026-11-19T22:50:05.313Z"
 review_passes: 3
 review_rounds: 2
 ---

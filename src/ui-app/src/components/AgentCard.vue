@@ -128,6 +128,7 @@ function badgeLabel(): string | null {
               class="agent-instr-toggle"
               :aria-expanded="instrExpanded"
               :title="instrExpanded ? 'Collapse instructions' : 'Expand instructions'"
+              :aria-label="instrExpanded ? 'Collapse instructions' : 'Expand instructions'"
               @click="instrExpanded = !instrExpanded"
             >
               <ChevronDown v-if="instrExpanded" class="size-4" aria-hidden="true" />

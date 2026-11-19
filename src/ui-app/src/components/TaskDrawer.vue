@@ -7650,7 +7650,7 @@ watch(
                   size="sm"
                   class="diff-dirty-btn"
                   data-test-id="changes-view-diff"
-                  title="Open the full-screen diff view"
+                  title="Open full-screen diff"
                   @click="openFullDiff()"
                 >
                   <Expand class="size-3.5" />

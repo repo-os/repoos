@@ -637,6 +637,7 @@ function nextFile(): void {
         type="button"
         :disabled="currentIndex <= 0"
         title="Previous file"
+        aria-label="Previous file"
         @click="prevFile"
       >
         <ChevronLeft class="size-4" />
@@ -646,6 +647,7 @@ function nextFile(): void {
         type="button"
         :disabled="currentIndex >= diffFiles.length - 1"
         title="Next file"
+        aria-label="Next file"
         @click="nextFile"
       >
         <ChevronRight class="size-4" />
