@@ -2,14 +2,14 @@
 id: "1232"
 title: "Easter eggs bundle: task action button labels (Delete, Archive, Hold)"
 type: chore
-status: ready
+status: active
 priority: p3
 area: web
 assigned_to: ai
 created_by: t@t
-branch: ""
+branch: feat/easter-eggs-bundle-task-action-button-la
 created_at: "2026-11-19T13:54:07Z"
-updated_at: "2026-11-19T14:47:34Z"
+updated_at: "2026-11-19T14:47:36Z"
 ---
 ## Problem
 The task drawer footer buttons read "Delete task", "Archive task" and "Hold". The word "task" is redundant (the drawer is already a task) and the three are inconsistent.
@@ -27,3 +27,5 @@ Do not touch repoos.toml. Keep aria-labels descriptive (e.g. aria-label "Delete 
 - 2026-11-19T13:54:07Z · created · t@t
 - 2026-11-19T13:54:25Z · title
 - 2026-11-19T14:47:34Z · status inbox→ready
+- 2026-11-19T14:47:36Z · status ready→active, branch
+- 2026-11-19T14:47:36Z · note: agent fallback: codex + gpt-6-luna is paused (out of usage since 2026-11-19T07:09:32.657Z: Codex hit a provider quota or rate limit. Wait for the provider limit to reset, then retry. (CLI: error: You’ve hit your usage limit. Upgrade to Pro (https://chatgpt.com/explore/pro), visit https://chatgpt.com/codex/settings/usage to purcha) — using opencode + opencode-go/glm-5.3-flash
