@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-keyboard-and-screen-reader-acces
 created_at: "2026-11-19T04:18:15Z"
-updated_at: "2026-11-19T04:28:13Z"
+updated_at: "2026-11-19T04:31:48Z"
 ---
 ## Problem
 The Settings, Agents and Releases pages have not been checked for keyboard and screen-reader access (focus order, labels, dialogs, contrast).
@@ -26,16 +26,16 @@ Do not touch repoos.toml.
 ```json
 [
 {
-  "label": "Agents semantic tab navigation",
-  "target": "default",
-  "route": "/agents?tab=default",
-  "highlight": ".agent-tabs"
+"label": "Agents semantic tab navigation",
+"target": "default",
+"route": "/agents?tab=default",
+"highlight": ".agent-tabs"
 },
 {
-  "label": "Settings keyboard navigation",
-  "target": "default",
-  "route": "/settings?tab=general",
-  "highlight": "[role=tablist]"
+"label": "Settings keyboard navigation",
+"target": "default",
+"route": "/settings?tab=general",
+"highlight": "[role=tablist]"
 }
 ]
 ```
@@ -46,3 +46,4 @@ Do not touch repoos.toml.
 - 2026-11-19T04:18:23Z · status inbox→ready
 - 2026-11-19T04:18:28Z · status ready→active, branch
 - 2026-11-19T04:28:13Z · body
+- 2026-11-19T04:31:48Z · body
