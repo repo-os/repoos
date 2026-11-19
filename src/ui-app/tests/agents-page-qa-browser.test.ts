@@ -20,9 +20,12 @@ import { flushPromises, mount, type VueWrapper } from "@vue/test-utils";
 import { createPinia, setActivePinia } from "pinia";
 import { createMemoryHistory, createRouter } from "vue-router";
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import { type Component } from "vue";
 import AgentsView from "../src/views/AgentsView.vue";
 import ModelProvidersPanel from "../src/components/ModelProvidersPanel.vue";
 import ModelRoutingPanel from "../src/components/ModelRoutingPanel.vue";
+import RemindersPanel from "../src/components/RemindersPanel.vue";
+import ScheduledTasksPanel from "../src/components/ScheduledTasksPanel.vue";
 import { useConfigStore } from "../src/stores/config";
 import { FakeEventSource, json } from "./component-test-helpers";
 import type {
@@ -30,6 +33,8 @@ import type {
   ModelRoutingStatusResponse,
   RoutingDecisionView,
 } from "../src/types.js";
+import type { TaskSchedule } from "../../core/schedule.js";
+import type { Reminder } from "../../core/reminders.js";
 
 const VIEWPORTS = [375, 768, 1280] as const;
 const uiRoot = resolve(__dirname, "..");
@@ -151,6 +156,34 @@ describe("Agents page QA at 375/768/1280 (WebKit, fixtures)", () => {
     expect(result.documentWidth, `${what} at ${width}px widens the document`).toBeLessThanOrEqual(
       width + 1,
     );
+  }
+
+  /** Text inside each card must stay within that card's border, not just the
+   *  viewport: a long unbroken name can run past its card and still be on screen. */
+  async function expectInsideCards(
+    page: Page,
+    cardSelector: string,
+    innerSelector: string,
+    what: string,
+    width: number,
+  ): Promise<void> {
+    const escaped = await page.evaluate(
+      ({ cardSelector, innerSelector }) => {
+        const out: string[] = [];
+        for (const card of document.querySelectorAll<HTMLElement>(cardSelector)) {
+          const box = card.getBoundingClientRect();
+          for (const el of card.querySelectorAll<HTMLElement>(innerSelector)) {
+            const r = el.getBoundingClientRect();
+            if (r.width === 0) continue;
+            if (r.right > box.right + 0.5 || r.left < box.left - 0.5)
+              out.push((el.textContent ?? "").trim().slice(0, 40));
+          }
+        }
+        return out;
+      },
+      { cardSelector, innerSelector },
+    );
+    expect(escaped, `${what} runs past its card edge at ${width}px`).toEqual([]);
   }
 
   /* ── 1. Agent list (default tab) ───────────────────────────────────────── */
@@ -754,6 +787,323 @@ describe("Agents page QA at 375/768/1280 (WebKit, fixtures)", () => {
         // Recent decisions render with their chosen/recommended pairs.
         expect(await page.locator(".mr-decision").count()).toBe(4);
         expect(await textOf(page, ".mr-decision")).toContain("codex · gpt-5");
+      } finally {
+        await page.close();
+      }
+    },
+  );
+
+  /* ── 4. Long lists (#1241): 60 entries with long names ─────────────────── */
+
+  const LONG_LIST_SIZE = 60;
+  const LONG_NAME =
+    "Weekly compliance evidence export for every regional production cluster including the legacy EU-West-2 audit archive";
+  const UNBROKEN_NAME = "Supercalifragilisticexpialidocious".repeat(3);
+
+  function longListSchedule(i: number): TaskSchedule {
+    const n = i + 1;
+    return {
+      id: String(n),
+      title: i % 5 === 0 ? `${UNBROKEN_NAME}-${n}` : `Schedule ${n}: ${LONG_NAME}`,
+      enabled: i % 4 !== 0,
+      cadence: i % 2 ? "weekly" : "daily",
+      timezone: "Asia/Singapore",
+      timeOfDay: "09:00",
+      runAt: "",
+      dayOfWeek: i % 2 ? 1 : null,
+      taskTitle: `Export ${n}: ${LONG_NAME}`,
+      taskType: "task",
+      taskArea: "web",
+      taskPriority: "p2",
+      taskAssignedTo: "ai",
+      taskStatus: "inbox",
+      autoStartAgent: false,
+      lastRunAt: i % 3 === 0 ? iso(60 * 26) : "",
+      lastResult: i % 3 === 0 ? "failure" : "",
+      lastTaskId: i % 2 ? String(1000 + n) : "",
+      lastError: "",
+      lastOccurrenceKey: "",
+      createdAt: iso(60 * 24 * 30),
+      updatedAt: iso(60),
+      path: `schedules/${n}.md`,
+      body: "",
+      nextRunAt: iso(-60 * 9),
+      nextRunPreview: "Mon 20 Nov, 9:00 AM (Asia/Singapore)",
+      templateUnderspecified: i % 7 === 0,
+      templateUnderspecifiedDetail:
+        i % 7 === 0 ? "Add the steps the agent should follow before it can start." : "",
+    };
+  }
+
+  function longListReminder(i: number): Reminder {
+    const n = i + 1;
+    // Cycle upcoming / due / overdue so every state badge appears in the list.
+    const fireAt = i % 3 === 0 ? iso(-120) : i % 3 === 1 ? iso(30) : iso(60 * 24 * 2);
+    const state: Reminder["state"] =
+      i % 6 === 5 ? "done" : i % 3 === 0 ? "upcoming" : i % 3 === 1 ? "due" : "overdue";
+    return {
+      id: String(n),
+      text: i % 5 === 0 ? `${UNBROKEN_NAME}-${n}` : `Reminder ${n}: ${LONG_NAME}`,
+      fireAt,
+      link: i % 2 ? "agent:engineer" : "model:codex/gpt-5-regional-deployment-extended",
+      doneAt: state === "done" ? iso(10) : "",
+      snoozedAt: "",
+      notifiedFireAt: "",
+      createdAt: iso(60 * 24),
+      updatedAt: iso(5),
+      state,
+    };
+  }
+
+  const LONG_LINKS = [
+    { value: "agent:engineer", label: "Agent · engineer" },
+    {
+      value: "model:codex/gpt-5-regional-deployment-extended",
+      label: "Model · codex / gpt-5-regional-deployment-extended-with-a-very-long-name",
+    },
+  ];
+
+  /** Mounts a real panel against a Pinia store and returns its rendered markup. */
+  async function snapshotPanel(
+    component: Component,
+    pinia: ReturnType<typeof createPinia>,
+  ): Promise<{ wrapper: VueWrapper; markup: string }> {
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [{ path: "/:pathMatch(.*)*", component: { template: "<div />" } }],
+    });
+    await router.push("/");
+    await router.isReady();
+    const wrapper = mount(component, {
+      attachTo: document.body,
+      global: {
+        plugins: [pinia, router],
+        stubs: { teleport: true, Transition: true, PageSkeleton: true },
+      },
+    });
+    await flushPromises();
+    await new Promise((r) => setTimeout(r, 0));
+    await flushPromises();
+    return { wrapper, markup: document.body.innerHTML };
+  }
+
+  it.each(VIEWPORTS)(
+    "Scheduled Tasks with %s long schedules fits and keeps every card readable",
+    async (width) => {
+      const schedules = Array.from({ length: LONG_LIST_SIZE }, (_, i) => longListSchedule(i));
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(async (input: RequestInfo | URL) => {
+          if (String(input).includes("/api/schedules")) return json(schedules);
+          return json({});
+        }),
+      );
+      const pinia = createPinia();
+      setActivePinia(pinia);
+      const { wrapper, markup } = await snapshotPanel(ScheduledTasksPanel, pinia);
+      wrapper.unmount();
+      document.body.innerHTML = "";
+
+      const page = await openFixturePage(
+        "scheduled-tasks-long",
+        markup,
+        scopedCss(markup, "scheduled-tasks-panel", "ScheduledTasksPanel"),
+        width,
+      );
+      try {
+        await expectFits(page, `scheduled tasks list (${LONG_LIST_SIZE} entries)`, width);
+        await expectInsideCards(page, ".schedule-card", "strong", "schedule names", width);
+        expect(await page.locator('[data-testid^="schedule-card-"]').count()).toBe(LONG_LIST_SIZE);
+        expect(
+          await page.locator('[data-testid="schedule-template-warn"]').count(),
+        ).toBeGreaterThan(0);
+      } finally {
+        await page.close();
+      }
+    },
+  );
+
+  it.each(VIEWPORTS)(
+    "Reminders with %s long entries fits and labels every state",
+    async (width) => {
+      const reminders = Array.from({ length: LONG_LIST_SIZE }, (_, i) => longListReminder(i));
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(async (input: RequestInfo | URL) => {
+          if (String(input).includes("/api/reminders"))
+            return json({ reminders, links: LONG_LINKS });
+          return json({});
+        }),
+      );
+      const pinia = createPinia();
+      setActivePinia(pinia);
+      const { wrapper, markup } = await snapshotPanel(RemindersPanel, pinia);
+      wrapper.unmount();
+      document.body.innerHTML = "";
+
+      const page = await openFixturePage(
+        "reminders-long",
+        markup,
+        scopedCss(markup, "reminders-panel", "RemindersPanel"),
+        width,
+      );
+      try {
+        await expectFits(page, `reminders list (${LONG_LIST_SIZE} entries)`, width);
+        await expectInsideCards(page, ".reminder-row", ".reminder-note", "reminder text", width);
+        expect(await page.locator(".reminder-row").count()).toBe(LONG_LIST_SIZE);
+      } finally {
+        await page.close();
+      }
+    },
+  );
+
+  it.each(VIEWPORTS)(
+    "Build Your Team with 55 long custom agent names fits at %spx",
+    async (width) => {
+      vi.stubGlobal("EventSource", FakeEventSource);
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(async (input: RequestInfo | URL) => {
+          const url = String(input);
+          if (url.includes("/api/agents/last-runs")) return json({ agents: [] });
+          if (url.includes("/api/models"))
+            return json({
+              byCli: { codex: { supported: true, models: ["gpt-5"], refreshable: false } },
+            });
+          if (url.includes("/api/agents/detect")) return json({ agents: [], cachedAt: null });
+          return json({});
+        }),
+      );
+      const pinia = createPinia();
+      setActivePinia(pinia);
+      const config = useConfigStore();
+      const customAgents = Array.from({ length: 55 }, (_, i) => ({
+        name:
+          i % 5 === 0
+            ? `${UNBROKEN_NAME}-agent-${i}`
+            : `custom-reviewer-${i}-payments-identity-platform-release-readiness-audit`,
+        cli: "codex",
+        model: "gpt-5",
+        enabled: i % 3 !== 0,
+      }));
+      config.agents = customAgents;
+      config.agentsMeta = {
+        clis: ["codex"],
+        models: ["gpt-5"],
+        defaults: customAgents,
+        skills: [],
+      };
+      config.loaded = true;
+      const router = createRouter({
+        history: createMemoryHistory(),
+        routes: [{ path: "/:pathMatch(.*)*", component: { template: "<div />" } }],
+      });
+      await router.push("/agents");
+      await router.isReady();
+      const wrapper = mount(AgentsView, {
+        attachTo: document.body,
+        global: {
+          plugins: [pinia, router],
+          stubs: {
+            teleport: true,
+            Transition: true,
+            VoiceDictate: true,
+            PageSkeleton: true,
+            BudgetControlsPanel: true,
+            ScheduledTasksPanel: true,
+            RemindersPanel: true,
+            BuiltInAgentCard: true,
+          },
+        },
+      });
+      await flushPromises();
+      await new Promise((r) => setTimeout(r, 0));
+      const markup = document.body.innerHTML;
+      wrapper.unmount();
+      document.body.innerHTML = "";
+
+      // AgentsView and AgentCard ship no scoped <style>; the global stylesheet is enough.
+      const page = await openFixturePage("build-your-team-long", markup, "", width);
+      try {
+        await expectFits(page, "Build Your Team with 55 custom agents", width);
+        expect(await page.locator(".agent-card").count()).toBeGreaterThanOrEqual(55);
+      } finally {
+        await page.close();
+      }
+    },
+  );
+
+  it.each(VIEWPORTS)(
+    "schedule editor explains an invalid timezone in plain English at %spx",
+    async (width) => {
+      const schedules = Array.from({ length: LONG_LIST_SIZE }, (_, i) => longListSchedule(i));
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(async (input: RequestInfo | URL) =>
+          String(input).includes("/api/schedules") ? json(schedules) : json({}),
+        ),
+      );
+      const pinia = createPinia();
+      setActivePinia(pinia);
+      const { wrapper } = await snapshotPanel(ScheduledTasksPanel, pinia);
+      await wrapper.find('[data-testid="new-schedule"]').trigger("click");
+      await flushPromises();
+      await wrapper.find("#sched-timezone").setValue("Mars/Olympus-Base");
+      await flushPromises();
+      expect(wrapper.text()).toContain("Timezone must be a valid IANA name (e.g. Asia/Singapore)");
+      const markup = document.body.innerHTML;
+      wrapper.unmount();
+      document.body.innerHTML = "";
+
+      const page = await openFixturePage(
+        "schedule-editor-invalid-timezone",
+        markup,
+        scopedCss(markup, "scheduled-tasks-panel", "ScheduledTasksPanel"),
+        width,
+      );
+      try {
+        await expectFits(page, "schedule editor with an invalid timezone", width);
+        expect(await textOf(page, ".ff-error")).toContain("Timezone must be a valid IANA name");
+      } finally {
+        await page.close();
+      }
+    },
+  );
+
+  it.each(VIEWPORTS)(
+    "reminder editor explains a missing date in plain English at %spx",
+    async (width) => {
+      const reminders = Array.from({ length: LONG_LIST_SIZE }, (_, i) => longListReminder(i));
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(async (input: RequestInfo | URL) =>
+          String(input).includes("/api/reminders")
+            ? json({ reminders, links: LONG_LINKS })
+            : json({}),
+        ),
+      );
+      const pinia = createPinia();
+      setActivePinia(pinia);
+      const { wrapper } = await snapshotPanel(RemindersPanel, pinia);
+      await wrapper.find('[data-testid="new-reminder"]').trigger("click");
+      await flushPromises();
+      await wrapper.find("#reminder-date").setValue("");
+      await wrapper.find("form").trigger("submit");
+      await flushPromises();
+      expect(wrapper.text()).toContain("Choose a valid date and time");
+      const markup = document.body.innerHTML;
+      wrapper.unmount();
+      document.body.innerHTML = "";
+
+      const page = await openFixturePage(
+        "reminder-editor-missing-date",
+        markup,
+        scopedCss(markup, "reminders-panel", "RemindersPanel"),
+        width,
+      );
+      try {
+        await expectFits(page, "reminder editor with a missing date", width);
+        expect(await textOf(page, ".ff-error")).toContain("Choose a valid date and time");
       } finally {
         await page.close();
       }

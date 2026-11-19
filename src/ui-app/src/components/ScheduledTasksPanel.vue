@@ -612,7 +612,15 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 12px;
   margin-bottom: 12px;
+}
+/* Long or unbroken schedule names wrap inside the card instead of running past its edge. */
+.schedule-card-head > div {
+  min-width: 0;
+}
+.schedule-card-head strong {
+  overflow-wrap: anywhere;
 }
 .schedule-card-details {
   display: flex;
