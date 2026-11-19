@@ -2,7 +2,7 @@
 id: "1235"
 title: "QA pass: Work board drag, status moves and bulk actions with failures"
 type: bug
-status: review
+status: active
 priority: p2
 area: web
 assigned_to: ai
@@ -12,6 +12,7 @@ created_at: "2026-11-19T16:17:45Z"
 updated_at: "2026-11-19T17:45:34Z"
 review_rounds: 1
 routing_switches: 1
+routing_escalations: 1
 review_passes: 1
 ---
 ## Problem
@@ -52,3 +53,4 @@ Do not touch repoos.toml.
 - 2026-11-19T17:35:45Z · message_delivered: 1 message(s)
 - 2026-11-19T17:45:32Z · status active→review
 - 2026-11-19T17:45:34Z · message_queued at 2026-11-19T17:45:34.116Z
+- 2026-11-19T17:45:34Z · status review→active
