@@ -1,6 +1,4 @@
 ---
-last_handoff_failure_fingerprint: "check|repoos check failed: staleness — src/ui-app/tests/task-create-edit-responsive.test.ts(80,38): error TS2339: Property 'exists' does not exist on type 'Omit<DOMWrapper<Element>, \"exists\">'."
-last_handoff_failure_sha: 46a73bf59b37b1521b7b2c239a62594a7f55ff46
 id: "1215"
 title: "QA pass: task create and edit flows at all screen sizes"
 type: bug
@@ -11,7 +9,9 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-task-create-and-edit-flows-at-al
 created_at: "2026-11-19T03:17:33Z"
-updated_at: "2026-11-19T04:37:21Z"
+updated_at: "2026-11-19T04:37:51Z"
+last_handoff_failure_fingerprint: "check|repoos check failed: staleness — src/ui-app/tests/task-create-edit-responsive.test.ts(80,38): error TS2339: Property 'exists' does not exist on type 'Omit<DOMWrapper<Element>, \"exists\">'."
+last_handoff_failure_sha: 46a73bf59b37b1521b7b2c239a62594a7f55ff46
 review_passes: 1
 handoff_signal_retry_count: 1
 ---
@@ -51,4 +51,4 @@ Do not touch repoos.toml.
 - 2026-11-19T04:26:42Z · CTO nudge: held — handoff gate is running
 - 2026-11-19T04:37:20Z · message_queued at 2026-11-19T04:37:20.535Z
 - 2026-11-19T04:37:21Z · handoff failed · task-file handoff failed at check · repoos check failed: staleness — src/ui-app/tests/task-create-edit-responsive.test.ts(80,38): error TS2339: Property 'exists' does not exist on type 'Omit<DOMWrapper<Element>, "exists">'.
-
+- 2026-11-19T04:37:51Z · CTO nudge: held — an undelivered message is already queued
