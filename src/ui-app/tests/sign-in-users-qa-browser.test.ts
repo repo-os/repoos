@@ -86,8 +86,21 @@ const USERS = {
   ],
 };
 
+const TELEGRAM_LINK = {
+  telegramUserId: 42,
+  email: QA_MEMBER,
+  telegramUsername: "qa_member",
+  boundAt: "2026-11-01T00:00:00Z",
+  boundBy: QA_ADMIN,
+  lastSeenAt: null,
+  role: "member",
+  allowlisted: true,
+};
+
 /** An answer for one request: a JSON body, a raw body, or a dropped connection. */
-type Reply = "abort" | { status: number; body?: unknown; raw?: string; contentType?: string };
+type Reply =
+  | "abort"
+  | { status: number; body?: unknown; raw?: string; contentType?: string; delayMs?: number };
 /** Keyed by `METHOD /api/path` (the path keeps its percent-encoding). */
 type Replies = Record<string, Reply>;
 
@@ -101,6 +114,11 @@ const SIGNED_IN: Replies = {
   "GET /api/auth/me": { status: 200, body: ME_ADMIN },
   "GET /api/auth/users": { status: 200, body: USERS },
   "DELETE /api/auth/users/qa-member%40example.com": { status: 200, body: { ok: true } },
+  "POST /api/auth/users": { status: 200, body: { ok: true }, delayMs: 400 },
+  "GET /api/auth/telegram/links": { status: 200, body: { links: [TELEGRAM_LINK] } },
+  "GET /api/auth/audit": { status: 200, body: { entries: [] } },
+  "DELETE /api/auth/telegram/links/42": { status: 200, body: { ok: true } },
+  "POST /api/auth/telegram/disconnect": { status: 200, body: { result: { complete: true } } },
   "POST /api/auth/logout": { status: 200, body: { ok: true } },
 };
 
@@ -125,6 +143,8 @@ async function routeApi(page: SmokePage, replies: Replies, calls: string[]): Pro
       await route.abort();
       return;
     }
+    // Holds the answer back, so a second submit can land while the first is in flight.
+    if (reply.delayMs) await new Promise((r) => setTimeout(r, reply.delayMs));
     await route.fulfill({
       status: reply.status,
       contentType: reply.contentType ?? "application/json",
@@ -197,6 +217,32 @@ async function requestCode(page: SmokePage): Promise<void> {
 async function typeCode(page: SmokePage, code: string): Promise<void> {
   await page.click('input[aria-label="One-time code"]');
   await page.keyboard.type(code);
+}
+
+/** Counts any native confirm() the page would open; it answers "no" so nothing is removed. */
+async function spyOnConfirm(page: SmokePage): Promise<void> {
+  await page.evaluate(() => {
+    const spy = window as unknown as { __nativeConfirm: number };
+    spy.__nativeConfirm = 0;
+    window.confirm = () => {
+      spy.__nativeConfirm += 1;
+      return false;
+    };
+  });
+}
+
+async function nativeConfirmCount(page: SmokePage): Promise<number> {
+  return page.evaluate(() => (window as unknown as { __nativeConfirm: number }).__nativeConfirm);
+}
+
+/** Clicks the dialog button with this exact label. */
+async function clickDialogButton(page: SmokePage, label: string): Promise<void> {
+  await page.evaluate((text: string) => {
+    const button = [...document.querySelectorAll('[role="dialog"] button')].find(
+      (b) => b.textContent?.trim() === text,
+    );
+    (button as HTMLButtonElement | undefined)?.click();
+  }, label);
 }
 
 describeBrowser("sign-in, users and user menu QA (#1239)", () => {
@@ -395,6 +441,90 @@ describeBrowser("sign-in, users and user menu QA (#1239)", () => {
       expect(pageErrors).toEqual([]);
       await page.close();
     });
+
+    it("runs Telegram unbind and disconnect through the shared dialog, not native confirm()", async () => {
+      const pageErrors: string[] = [];
+      const calls: string[] = [];
+      const page = await openPage(width, pageErrors);
+      await routeApi(page, SIGNED_IN, calls);
+      await page.goto(`${server!.url}/settings?tab=security`, {
+        waitUntil: "load",
+        timeout: 15_000,
+      });
+      await waitUntil("the Telegram link row", () => exists(page, ".tg-link-row"));
+      await spyOnConfirm(page);
+      await page.click(".tg-link-row .auth-action.danger");
+      await waitUntil("the unbind dialog", () => exists(page, '[role="dialog"]'));
+      expect(await textOf(page, '[role="dialog"]')).toContain("Unbind Telegram @qa_member from");
+      await clickDialogButton(page, "Unbind");
+      await waitUntil("the unbind request", async () =>
+        calls.includes("DELETE /api/auth/telegram/links/42"),
+      );
+      await waitUntil(
+        "the unbind dialog to close",
+        async () => !(await exists(page, '[role="dialog"]')),
+      );
+      await page.click(".tg-disconnect-row .auth-action.danger");
+      await waitUntil("the disconnect dialog", () => exists(page, '[role="dialog"]'));
+      expect(await textOf(page, '[role="dialog"]')).toContain(
+        "Disconnect Telegram for this repository?",
+      );
+      await clickDialogButton(page, "Disconnect");
+      await waitUntil("the disconnect request", async () =>
+        calls.includes("POST /api/auth/telegram/disconnect"),
+      );
+      expect(await nativeConfirmCount(page)).toBe(0);
+      expect(pageErrors).toEqual([]);
+      await page.close();
+    }, 30_000);
+
+    it("shows a plain-English error, not an empty list, when Telegram links or the audit log cannot load", async () => {
+      const pageErrors: string[] = [];
+      const calls: string[] = [];
+      const page = await openPage(width, pageErrors);
+      await routeApi(
+        page,
+        { ...SIGNED_IN, "GET /api/auth/telegram/links": "abort", "GET /api/auth/audit": "abort" },
+        calls,
+      );
+      await page.goto(`${server!.url}/settings?tab=security`, {
+        waitUntil: "load",
+        timeout: 15_000,
+      });
+      await waitUntil("the Telegram error", () => exists(page, ".auth-error"));
+      expect(await textOf(page, ".auth-error")).toMatch(/Telegram accounts/);
+      expect(
+        await page.evaluate(() =>
+          document.body.innerText.includes("No Telegram accounts bound yet."),
+        ),
+      ).toBe(false);
+      await page.click(".auth-audit-toggle .auth-link");
+      await waitUntil("the audit error", () => exists(page, ".auth-audit .auth-error"));
+      expect(await textOf(page, ".auth-audit .auth-error")).toMatch(/audit log/);
+      expect(
+        await page.evaluate(() => document.body.innerText.includes("No audit entries yet.")),
+      ).toBe(false);
+      await page.close();
+    }, 30_000);
+
+    it("pressing Enter twice adds the user once while the first add is in flight", async () => {
+      const pageErrors: string[] = [];
+      const calls: string[] = [];
+      const page = await openPage(width, pageErrors);
+      await routeApi(page, SIGNED_IN, calls);
+      await page.goto(`${server!.url}/settings?tab=security`, {
+        waitUntil: "load",
+        timeout: 15_000,
+      });
+      await waitUntil("the add field", () => exists(page, 'input[placeholder="user@example.com"]'));
+      await page.click('input[placeholder="user@example.com"]');
+      await page.keyboard.type("qa-new@example.com");
+      await page.keyboard.press("Enter");
+      await page.keyboard.press("Enter");
+      await page.waitForTimeout(1_200);
+      expect(calls.filter((c) => c === "POST /api/auth/users")).toHaveLength(1);
+      await page.close();
+    }, 30_000);
 
     it("shows a plain-English error, not an empty list, when users cannot load", async () => {
       const pageErrors: string[] = [];

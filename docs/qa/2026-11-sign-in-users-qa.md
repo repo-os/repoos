@@ -10,8 +10,8 @@ Settings → Security users list at 375, 768 and 1280 CSS pixels.
   answers from fixtures. The state of the user, the code and the lockout are
   all simulated; no account, mailbox, credential or visible browser is used.
   Addresses in the tests are placeholders (`qa-member@example.com`).
-- Test: `src/ui-app/tests/sign-in-users-qa-browser.test.ts`, 34 cases: per
-  width, 7 sign-in cases, 3 users-list cases and 1 user-menu case, plus one
+- Test: `src/ui-app/tests/sign-in-users-qa-browser.test.ts`, 43 cases: per
+  width, 7 sign-in cases, 6 users-list cases and 1 user-menu case, plus one
   boot check. The touch-size checks run at 375 px only.
 - Every request not listed in a scenario passes through to the real fixture
   server, so the settings page gets real config instead of a "Couldn’t load
@@ -35,6 +35,9 @@ Settings → Security users list at 375, 768 and 1280 CSS pixels.
 | Sign-in button touch target at 375 px | At least 44 px tall | pass | pass |
 | User menu Escape | Closes and returns focus to the trigger | **fail**: focus lost to `<body>` | pass |
 | User menu log out | Sends the logout request | pass | pass |
+| Telegram unbind and disconnect | Shared dialog; no native `confirm()` | not run at the first pass (case added in review round 1) | pass |
+| Telegram links or audit log cannot load | Error with a retry, never "No Telegram accounts bound yet." / "No audit entries yet." | not run at the first pass (case added in review round 1) | pass |
+| Enter pressed twice on Add user | One request | not run at the first pass (case added in review round 1) | pass; with the guard removed the test fails with two POSTs |
 | Horizontal overflow | None at 375, 768, 1280 | pass | pass |
 
 "Before" is the unchanged code, run once with the new test file. Where a
@@ -66,6 +69,14 @@ described from the code, not from a baseline run.
    "Couldn’t load users…" with a Try again button.
 6. **Row action buttons were 22 px tall.** Below 760 px they now have a 44 px
    minimum height and 10 px horizontal padding. Desktop keeps the compact size.
+7. **Telegram actions on the same screen still used native `confirm()`.**
+   Unbinding, disconnecting the bot and reassigning an account now use the
+   shared `ConfirmDialog`. Reassign keeps the target chosen when the dialog
+   opened.
+8. **Telegram links and the audit log swallowed load errors.** Both showed
+   their empty state ("No Telegram accounts bound yet.", "No audit entries
+   yet.") when offline. Each now shows an error with a retry. Add user also
+   ignores a repeat submit while the first request is in flight.
 
 ## Left as they are
 
@@ -79,6 +90,13 @@ described from the code, not from a baseline run.
   non-focusable span.** Both are pre-existing. Neither was touched, because
   they are outside the sign-in/users screens QA. Not filed; a follow-up task
   is worth considering.
+
+- **Native controls elsewhere in the UI.** Found by grep of `src/ui-app/src`
+  and not changed here, since they sit outside the sign-in and users screens:
+  `confirm()` in `SystemResourcePanel.vue` (kill process),
+  `TelegramSettingsPanel.vue` (disconnect the bot, unbind a link) and
+  `TaskDrawer.vue`; native `<select>` in `DebugPanel.vue` and `TunnelDrawer.vue`
+  (Run mode). A follow-up task should cover these.
 
 ## Not verified here (needs a human)
 
