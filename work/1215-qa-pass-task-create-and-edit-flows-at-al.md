@@ -2,14 +2,14 @@
 id: "1215"
 title: "QA pass: task create and edit flows at all screen sizes"
 type: bug
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
 branch: ""
 created_at: "2026-11-19T03:17:33Z"
-updated_at: "2026-11-19T03:17:33Z"
+updated_at: "2026-11-19T03:17:36Z"
 ---
 ## Problem
 Task creation and editing (new task drawer, edit fields, attachments, screenshots) has not had a QA pass at phone, tablet and desktop widths.
@@ -25,3 +25,4 @@ Do not touch repoos.toml.
 ## Activity
 
 - 2026-11-19T03:17:33Z · created · t@t
+- 2026-11-19T03:17:36Z · status inbox→ready
