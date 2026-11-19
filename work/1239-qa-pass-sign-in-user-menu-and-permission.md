@@ -14,7 +14,7 @@ branch: feat/qa-pass-sign-in-user-menu-and-permission
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T18:27:10Z"
-updated_at: "2026-11-19T19:06:10Z"
+updated_at: "2026-11-19T19:19:15Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -68,3 +68,4 @@ Do not touch repoos.toml.
 - 2026-11-19T19:04:10Z · note: adopted orphaned engineer pid 25575
 - 2026-11-19T19:05:21Z · body
 - 2026-11-19T19:06:10Z · status active→review
+- 2026-11-19T19:19:15Z · note: ui verification passed: 2 of 2 shots captured with clean console
