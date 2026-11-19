@@ -74,3 +74,4 @@ When the server is slow or unreachable, the login page shows a plain-English sta
 - 2026-11-19T17:15:40Z · body
 - 2026-11-19T17:16:31Z · body
 - 2026-11-19T17:19:22Z · note: ui verification passed: 1 of 1 shot captured with clean console
+- 2026-11-19T17:19:22Z · message_queued at 2026-11-19T17:19:22.703Z
