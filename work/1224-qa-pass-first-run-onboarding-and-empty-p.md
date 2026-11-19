@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "1224"
 title: "QA pass: first-run onboarding and empty-project states at all screen sizes"
 type: bug
@@ -69,3 +70,4 @@ Do not touch repoos.toml.
 - 2026-11-19T08:45:57Z · orphaned run process stopped · pid 82676 · sleep 60 · cpu 0s · age 17s
 - 2026-11-19T08:46:10Z · orphaned run process stopped · pid 83886 · sleep 60 · cpu 0s · age 27s
 - 2026-11-19T08:50:33Z · body
+
