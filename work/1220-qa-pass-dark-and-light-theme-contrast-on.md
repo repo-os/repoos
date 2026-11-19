@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-19T06:41:09Z"
+review_passes: 3
 id: "1220"
 title: "QA pass: dark and light theme contrast on every main page"
 type: bug
@@ -9,11 +11,9 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-dark-and-light-theme-contrast-on
 created_at: "2026-11-19T06:17:41Z"
-updated_at: "2026-11-19T06:41:08Z"
 review_rounds: 2
 routing_switches: 1
 routing_escalations: 1
-review_passes: 2
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -50,3 +50,4 @@ Do not touch repoos.toml.
 - 2026-11-19T06:40:29Z · message_queued at 2026-11-19T06:40:29.485Z
 - 2026-11-19T06:40:30Z · note: shots: skipped — the diff (8 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-19T06:41:08Z · note: review pass 3: good to go
+
