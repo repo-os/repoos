@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-19T18:57:38Z"
-review_passes: 1
 id: "1239"
 title: "QA pass: sign-in, user menu and permissions screens at all screen sizes"
 type: bug
@@ -16,6 +14,8 @@ branch: feat/qa-pass-sign-in-user-menu-and-permission
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T18:27:10Z"
+updated_at: "2026-11-19T18:57:38Z"
+review_passes: 1
 ---
 ## Problem
 The sign-in flow, user menu and users/permissions settings have not been QA-checked together at phone, tablet and desktop widths since recent changes.
@@ -61,4 +61,4 @@ Do not touch repoos.toml.
 - 2026-11-19T18:55:27Z · status active→review
 - 2026-11-19T18:55:27Z · message_queued at 2026-11-19T18:55:27.946Z
 - 2026-11-19T18:57:38Z · note: review pass 1: needs some work
-
+- 2026-11-19T18:57:38Z · message_delivered: 1 message(s)
