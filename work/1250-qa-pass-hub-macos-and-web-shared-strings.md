@@ -12,7 +12,7 @@ branch: feat/qa-pass-hub-macos-and-web-shared-strings
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T21:47:05Z"
-updated_at: "2026-11-19T22:51:46Z"
+updated_at: "2026-11-19T23:06:58Z"
 last_close_out_gate_ms: 659183
 last_close_out_gate_at: "2026-11-19T22:50:05.313Z"
 review_passes: 3
@@ -60,3 +60,4 @@ Do not touch repoos.toml.
 - 2026-11-19T22:26:00Z · note: review pass 3: good to go
 - 2026-11-19T22:50:05Z · close-out gate completed in 659s
 - 2026-11-19T22:51:46Z · status done→done, release:success
+- 2026-11-19T23:06:58Z · message_dropped: 1 queued message(s) discarded — task is done
