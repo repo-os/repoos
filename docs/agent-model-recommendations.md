@@ -21,7 +21,7 @@ Every recommendation is tagged with confidence, sample size, and the evidence be
 ## Supported CLIs
 
 RepooOS has RepoOS drivers (spawns child processes with the CLI's documented
-headless permission mode) for eight coding-agent CLIs. A CLI must be
+headless permission mode) for eleven coding-agent CLIs. A CLI must be
 headless-installable and accept stdin/stdout control to be drivable.
 
 Antigravity CLI (`agy`) is supported with documented stream-JSON output,
