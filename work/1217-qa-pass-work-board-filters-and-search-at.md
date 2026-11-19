@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-work-board-filters-and-search-at
 created_at: "2026-11-19T03:47:37Z"
-updated_at: "2026-11-19T03:55:49Z"
+updated_at: "2026-11-19T03:55:50Z"
 ---
 ## Problem
 The Work board, search, filters and bulk actions have not had a QA pass at phone, tablet and desktop widths since the latest releases.
@@ -31,3 +31,4 @@ Do not touch repoos.toml.
 - 2026-11-19T03:53:56Z · body
 - 2026-11-19T03:55:49Z · status active→review
 - 2026-11-19T03:55:49Z · message_queued at 2026-11-19T03:55:49.873Z
+- 2026-11-19T03:55:50Z · note: shots: skipped — the diff (4 changed paths) touches no capture target's globs — no UI change to capture
