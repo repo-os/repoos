@@ -11,8 +11,10 @@ area: web
 assigned_to: ai
 created_by: t@t
 branch: ""
+cli_override: claude code
+model_override: haiku
 created_at: "2026-11-19T18:27:10Z"
-updated_at: "2026-11-19T18:27:15Z"
+updated_at: "2026-11-19T18:27:17Z"
 ---
 ## Problem
 The sign-in flow, user menu and users/permissions settings have not been QA-checked together at phone, tablet and desktop widths since recent changes.
@@ -30,3 +32,4 @@ Do not touch repoos.toml.
 - 2026-11-19T18:27:10Z · created · t@t
 - 2026-11-19T18:27:11Z · needs_input
 - 2026-11-19T18:27:15Z · status inbox→ready
+- 2026-11-19T18:27:17Z · cli_override, model_override
