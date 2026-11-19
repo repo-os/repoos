@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-system-resource-panel-pressure-g
 created_at: "2026-11-18T23:47:41Z"
-updated_at: "2026-11-19T03:47:43Z"
+updated_at: "2026-11-19T03:50:44Z"
 handoff_signal_retry_count: 2
 review_rounds: 1
 routing_switches: 1
@@ -155,3 +155,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-19T03:43:11Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-19T03:47:35Z · message_queued at 2026-11-19T03:47:35.676Z
 - 2026-11-19T03:47:43Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-19T03:50:44Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
