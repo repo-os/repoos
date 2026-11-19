@@ -10,7 +10,7 @@ assigned_to: unassigned
 created_by: docs-debt-agent
 branch: feat/docs-debt-stale-claims-in-agents-md-docs
 created_at: "2026-09-19T02:09:23.307Z"
-updated_at: "2026-11-19T01:39:12Z"
+updated_at: "2026-11-19T01:41:12Z"
 ---
 ## Docs Debt Findings
 
@@ -36,3 +36,4 @@ The Docs Debt Agent verified concrete claims in `AGENTS.md`/`docs/`/`user-docs/`
 - 2026-10-05T11:15:29Z · needs_input
 - 2026-11-19T01:39:09Z · status inbox→ready
 - 2026-11-19T01:39:12Z · status ready→active, needs_input, branch
+- 2026-11-19T01:41:12Z · CTO nudge: held — handoff gate is running
