@@ -54,3 +54,4 @@ When the server is slow or unreachable, the login page shows a plain-English sta
 - 2026-11-19T17:12:32Z · body
 - 2026-11-19T17:14:13Z · queued message undelivered for 5m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-19T17:14:14Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 130) · last assistant: All 12 pass, including my 3 new login scenarios. Now the scoped check: · stderr: (empty)
+- 2026-11-19T17:14:14Z · message_delivered: 1 message(s)
