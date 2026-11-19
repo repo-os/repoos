@@ -11,6 +11,70 @@ async function flush(): Promise<void> {
 }
 
 describe("AgentsView agent cards", () => {
+  it.each([
+    ["missing CLI", "Could not launch opencode: spawn opencode ENOENT", "Install OpenCode"],
+    ["signed out", "Not logged in", "Re-authenticate OpenCode"],
+    ["rate limited", "HTTP 429: too many requests", "Wait for the provider limit to reset"],
+  ])("Test reports an actionable %s result inline", async (_label, error, guidance) => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input);
+        if (url.includes("/api/models/test")) {
+          return {
+            ok: true,
+            json: async () => ({
+              result: { cli: "opencode", model: "default", status: "failed", durationMs: 8, error },
+            }),
+          };
+        }
+        if (url.includes("/api/models")) {
+          return {
+            ok: true,
+            json: async () => ({
+              byCli: { opencode: { supported: true, models: ["default"], refreshable: false } },
+            }),
+          };
+        }
+        if (url.includes("/api/agents/last-runs")) {
+          return { ok: true, json: async () => ({ agents: [] }) };
+        }
+        throw new Error(`unexpected fetch: ${url}`);
+      }),
+    );
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const config = useConfigStore();
+    const agent = { name: "engineer", cli: "opencode", model: "default", enabled: true };
+    config.agents = [agent];
+    config.agentsMeta = { clis: ["opencode"], models: ["default"], defaults: [agent], skills: [] };
+    config.loaded = true;
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [{ path: "/", component: { template: "<div />" } }],
+    });
+    await router.push("/");
+    const wrapper = mount(AgentsView, {
+      global: {
+        plugins: [pinia, router],
+        stubs: { teleport: true, Transition: true, VoiceDictate: true },
+      },
+    });
+    await flush();
+
+    const card = wrapper.find(".agent-tab-panel .agent-card");
+    await card.get(".agent-test-actions button").trigger("click");
+    await flush();
+
+    expect(card.find(".model-test").text()).toBe("failed");
+    expect(card.find(".model-test-detail").attributes("role")).toBe("status");
+    expect(card.find(".model-test-detail").text()).toContain(guidance);
+    expect(card.find(".model-test[title]").exists()).toBe(false);
+
+    wrapper.unmount();
+    vi.unstubAllGlobals();
+  });
+
   it("guides an unconfigured project to its built-in agent choices without saving the fixture", async () => {
     vi.stubGlobal(
       "fetch",

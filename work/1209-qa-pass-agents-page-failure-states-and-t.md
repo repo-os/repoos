@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 750743
-last_close_out_gate_at: "2026-11-19T00:28:29.749Z"
 id: "1209"
 title: "QA pass: Agents page failure states and Test button – missing CLI, signed-out agent, rate limit"
 type: bug
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: fbcd3d0fb7b40cdc7b2d0ec14e960018ef29018e
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-agents-page-failure-states-and-t
 created_at: "2026-11-18T23:17:32Z"
 updated_at: "2026-11-19T00:28:29Z"
+last_close_out_gate_ms: 750743
+last_close_out_gate_at: "2026-11-19T00:28:29.749Z"
 review_passes: 1
 ---
 ## Problem
