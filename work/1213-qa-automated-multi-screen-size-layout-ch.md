@@ -2,14 +2,14 @@
 id: "1213"
 title: "QA: automated multi-screen-size layout check for main pages"
 type: chore
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-automated-multi-screen-size-layout-ch
 created_at: "2026-11-19T02:18:15Z"
-updated_at: "2026-11-19T02:51:52Z"
+updated_at: "2026-11-19T02:55:49Z"
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -42,3 +42,4 @@ Do not touch repoos.toml. Keep the test fast (<60s).
 - 2026-11-19T02:43:07Z · watchdog: check wait ended or recovered — cleared needs_input
 - 2026-11-19T02:47:04Z · body
 - 2026-11-19T02:51:52Z · body
+- 2026-11-19T02:55:49Z · status active→review
