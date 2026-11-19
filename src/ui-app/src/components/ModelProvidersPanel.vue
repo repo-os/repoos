@@ -140,12 +140,22 @@ async function refreshUsage(id: string): Promise<void> {
   await loadUsage(id, { manual: true });
 }
 
-async function saveKey(row: ModelProviderRow): Promise<void> {
+/**
+ * Save the pasted key. An empty field is refused rather than sent: the API
+ * reads an empty key as "clear", so a Save with nothing pasted would delete
+ * the saved key. Clear is the only path that sends an empty value.
+ */
+async function saveKey(row: ModelProviderRow, opts?: { clear?: boolean }): Promise<void> {
   if (saving[row.id]) return;
+  if (!opts?.clear && !(drafts[row.id] ?? "").trim()) {
+    keyErrors[row.id] =
+      `Paste your ${row.label} API key to save it. To remove the saved key, use Clear.`;
+    return;
+  }
   saving[row.id] = true;
   keyErrors[row.id] = "";
   try {
-    const payload: Record<string, string> = { key: drafts[row.id] ?? "" };
+    const payload: Record<string, string> = { key: opts?.clear ? "" : (drafts[row.id] ?? "") };
     const res = await api<ModelProvidersKeyResponse>(
       `/api/model-providers/${row.id}/key`,
       JSON_OPTS("POST", payload),
@@ -164,7 +174,7 @@ async function saveKey(row: ModelProviderRow): Promise<void> {
 
 function clearKey(row: ModelProviderRow): void {
   drafts[row.id] = "";
-  void saveKey(row);
+  void saveKey(row, { clear: true });
 }
 
 function fmtUsd(v: number | null): string {
@@ -293,6 +303,13 @@ onMounted(() => {
           <span class="mp-pill" :class="row.kind === 'live' ? 'pill-live' : 'pill-link'">
             {{ row.kind === "live" ? "live" : "no live data" }}
           </span>
+          <span
+            v-if="isLive(row) && !row.usesCliLogin"
+            class="mp-pill mp-key-status"
+            :class="row.hasKey ? 'pill-live' : 'pill-unset'"
+            data-test-id="model-providers-key-status"
+            >{{ row.hasKey ? "Saved" : "Not set" }}</span
+          >
         </div>
         <a class="mp-dash-link" :href="row.dashboardUrl" target="_blank" rel="noopener noreferrer">
           {{ row.dashboardLabel || "Open dashboard" }} ↗
@@ -547,6 +564,10 @@ onMounted(() => {
           <!-- A refresh that failed outright keeps the last snapshot above;
                surface the failure here so the figures stay the main content,
                marked Stale in the actions row below. -->
+          <div v-if="keyErrors[row.id] && row.hasKey && !formOpen[row.id]" class="mp-error">
+            {{ keyErrors[row.id] }}
+          </div>
+
           <div v-if="rowState(row.id).error && rowState(row.id).usage" class="mp-error">
             {{ rowState(row.id).error }}
             <button class="mp-retry" @click="loadUsage(row.id)">Retry</button>
@@ -669,13 +690,15 @@ onMounted(() => {
 }
 .mp-row-head {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 10px;
+  gap: 6px 10px;
 }
 .mp-row-title {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  gap: 6px 8px;
   min-width: 0;
 }
 .mp-pill {
@@ -694,9 +717,13 @@ onMounted(() => {
   color: var(--green);
   border-color: color-mix(in srgb, var(--green) 35%, transparent);
 }
+.mp-pill.pill-unset {
+  color: var(--txt-dim);
+}
 .mp-dash-link {
   margin-left: auto;
   flex: none;
+  white-space: nowrap;
   font:
     500 10.5px "JetBrains Mono",
     monospace;
