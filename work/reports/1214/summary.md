@@ -1,3 +1,14 @@
+---
+id: summary
+title: summary
+type: feature
+status: inbox
+priority: p2
+area: general
+assigned_to: ai
+created_by: ""
+branch: ""
+---
 ## TL;DR
 
 A QA pass of the review and Move-to-done drawer flow at phone, tablet and desktop widths found **no actionable UI defect**. The branch shipped a single QA record, `docs/qa/2026-11-review-flow-qa.md` (+31/−0), mapping each review/close-out state to its preview fixtures and tests. Review verdict was **good to go** on pass 1, and the task landed cleanly. The one real weakness, noted by both engineer and reviewer: the exact five-state × three-width matrix (375/768/1280 px) was reviewed from source rather than rendered; only a 360 px smoke run exercised the drawer live.
@@ -20,10 +31,10 @@ Final verdict: review pass 1 returned **good to go**, the close-out gate complet
 - **Review rounds:** 1 (pass 1, verdict "good to go", state ok).
 - **Wall-clock, created → done:** 2026-11-19T02:18:22Z → 2026-11-19T02:58:49Z = 40 min 27 s. Active span (branch created → done): 02:19:14Z → 02:58:49Z = 39 min 35 s.
 - **Agents and models:**
-  - Engineer: `codex` on gpt-6-luna — one session, started 02:19:25Z, elapsed 1410 s (23 min 30 s), 15,264,765 tokens, cost not recorded.
-  - Reviewer: `reviewer` on gpt-6-luna — one session, started 02:52:02Z, elapsed 23 s, 96,239 tokens, cost not recorded.
-  - Routing: Model router (openrouter), model unknown, two sessions of 1 s each (engineer dispatch and review dispatch).
-  - Restarts or model swaps: none recorded.
+- Engineer: `codex` on gpt-6-luna — one session, started 02:19:25Z, elapsed 1410 s (23 min 30 s), 15,264,765 tokens, cost not recorded.
+- Reviewer: `reviewer` on gpt-6-luna — one session, started 02:52:02Z, elapsed 23 s, 96,239 tokens, cost not recorded.
+- Routing: Model router (openrouter), model unknown, two sessions of 1 s each (engineer dispatch and review dispatch).
+- Restarts or model swaps: none recorded.
 - **Tokens total:** 15,361,004 across the two agent sessions (sum of the two recorded figures; per-session costs were not recorded).
 - **Close-out gate:** completed in 305 s.
 
