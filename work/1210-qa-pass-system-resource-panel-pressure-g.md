@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-19T04:18:46Z"
+review_passes: 2
 id: "1210"
 title: "QA pass: system resource panel, pressure guard banners and Control stats under high load fixtures"
 type: bug
@@ -9,11 +11,9 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-system-resource-panel-pressure-g
 created_at: "2026-11-18T23:47:41Z"
-updated_at: "2026-11-19T04:18:46Z"
 handoff_signal_retry_count: 2
 review_rounds: 1
 routing_switches: 1
-review_passes: 1
 ---
 ## Problem
 Resource and pressure displays (warning, critical, swap/compressor numbers) need a hands-on pass in all states.
@@ -164,3 +164,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-19T04:11:02Z · message_queued at 2026-11-19T04:11:02.800Z
 - 2026-11-19T04:11:50Z · note: review pass 3: good to go
 - 2026-11-19T04:18:46Z · note: review pass 4: needs some work
+
