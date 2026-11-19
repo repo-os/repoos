@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-remote-runner-setup-docs-and-run
 created_at: "2026-11-19T00:17:32Z"
-updated_at: "2026-11-19T00:41:31Z"
+updated_at: "2026-11-19T00:42:03Z"
 ---
 ## Problem
 Docs and UI for adding and checking remote runners may not match how bee, thinkpad and mini are actually run (systemd, user accounts, PATH).
@@ -31,3 +31,4 @@ Do not touch repoos.toml.
 - 2026-11-19T00:41:31Z · status active→review
 - 2026-11-19T00:41:31Z · message_queued at 2026-11-19T00:41:31.782Z
 - 2026-11-19T00:41:31Z · note: shots: skipped — Docs site skipped: no docs shot declared
+- 2026-11-19T00:42:03Z · note: review pass 1: needs some work
