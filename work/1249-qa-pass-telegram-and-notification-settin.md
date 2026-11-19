@@ -11,7 +11,7 @@ branch: feat/qa-pass-telegram-and-notification-settin
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T21:46:55Z"
-updated_at: "2026-11-19T22:32:02Z"
+updated_at: "2026-11-19T22:34:08Z"
 ---
 ## Problem
 The notification and Telegram settings screens and the messages they produce have not been checked for wording, error states and small-screen layout.
@@ -47,3 +47,4 @@ Do not touch repoos.toml.
 - 2026-11-19T22:32:00Z · note: ui verification passed: 1 of 1 shot captured with clean console
 - 2026-11-19T22:32:01Z · status active→review
 - 2026-11-19T22:32:02Z · message_queued at 2026-11-19T22:32:02.002Z
+- 2026-11-19T22:34:08Z · note: review pass 1: needs some work
