@@ -1110,6 +1110,16 @@ export const useRepoStore = defineStore("repo", () => {
   let initRefreshAt = 0;
   /** Longest gap between init()'s fetch and the first SSE open that can be treated as "nothing happened". */
   const INIT_REFRESH_REUSE_MS = 2000;
+  /**
+   * Retry for the board refresh that runs on every SSE open (#1244). Frames
+   * missed while the stream was down are never replayed, so a refresh that
+   * failed on reconnect is not corrected by any later frame. On a quiet repo
+   * that meant the pre-outage counts and error stayed up indefinitely. The
+   * retry uses the stream's jittered backoff and is cancelled by a stream error,
+   * because the next open refreshes again anyway.
+   */
+  let boardRetryTimer: ReturnType<typeof setTimeout> | null = null;
+  let boardRetryAttempt = 0;
   let flashTimer: ReturnType<typeof setTimeout> | null = null;
   let transitionTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -2548,6 +2558,34 @@ export const useRepoStore = defineStore("repo", () => {
     }, GIT_STATUS_POLL_MS);
   }
 
+  function cancelBoardRetry(): void {
+    if (boardRetryTimer) {
+      clearTimeout(boardRetryTimer);
+      boardRetryTimer = null;
+    }
+  }
+
+  /**
+   * Board refresh for an SSE open, retried until it lands (#1244). A board that
+   * loads also retracts an offline banner left by a timed-out refresh: the
+   * server has just answered, so "offline" would contradict the visible board.
+   */
+  function refreshBoardOnOpen(): void {
+    cancelBoardRetry();
+    refresh().then(
+      () => {
+        boardRetryAttempt = 0;
+        clearOfflineOnStreamBack();
+      },
+      () => {
+        boardRetryTimer = setTimeout(() => {
+          boardRetryTimer = null;
+          refreshBoardOnOpen();
+        }, sseReconnectDelay(boardRetryAttempt++));
+      },
+    );
+  }
+
   function connectSSE(): void {
     if (sseReconnectTimer) {
       clearTimeout(sseReconnectTimer);
@@ -2584,9 +2622,7 @@ export const useRepoStore = defineStore("repo", () => {
       if (reusable) {
         /* init() just fetched it and no gap existed to miss events in */
       } else {
-        void refresh().catch(() => {
-          /* connection state already reflects the successful SSE open */
-        });
+        refreshBoardOnOpen();
       }
       void refreshAutoEng().catch(() => {
         /* non-fatal hydration */
@@ -2619,6 +2655,8 @@ export const useRepoStore = defineStore("repo", () => {
       // restarting server does not get every tab back at the same instant
       // (#1018). Each reconnect still refreshes the index after open.
       source.close();
+      // The next open refreshes the board, so a pending retry would only race it.
+      cancelBoardRetry();
       if (sseReconnectTimer) return;
       const delay = sseReconnectDelay(sseAttempt++);
       sseReconnectTimer = setTimeout(() => {

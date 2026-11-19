@@ -427,6 +427,7 @@
 .conn {
   display: flex;
   align-items: center;
+  flex-shrink: 0;
   gap: 7px;
   font-size: 11px;
   padding: 6px 11px;
@@ -447,19 +448,12 @@
   box-shadow: var(--dot-glow);
 }
 @media (max-width: 719.98px) {
+  /* #1244: keep the word on phones. A dot alone, in the inherited header
+     colour, did not say "reconnecting" to anyone who could not hover it. */
   .conn {
-    padding: 0;
-    background: none;
-    border: none;
-    gap: 0;
-  }
-  .conn.offline {
-    background: none;
-    border: none;
-    color: inherit;
-  }
-  .conn-text {
-    display: none;
+    padding: 4px 8px;
+    gap: 5px;
+    font-size: 10px;
   }
   .conn .dot {
     width: 8px;
