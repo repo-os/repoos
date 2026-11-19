@@ -2,14 +2,14 @@
 id: "1226"
 title: "QA pass: slow network and offline behavior in the web app and Hub"
 type: bug
-status: ready
+status: active
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
-branch: ""
+branch: feat/qa-pass-slow-network-and-offline-behavio
 created_at: "2026-11-19T09:47:34Z"
-updated_at: "2026-11-19T09:47:37Z"
+updated_at: "2026-11-19T09:47:39Z"
 ---
 ## Problem
 The web app and Hub have not been checked for slow, failing or dropped connections.
@@ -26,3 +26,5 @@ Do not touch repoos.toml.
 
 - 2026-11-19T09:47:34Z · created · t@t
 - 2026-11-19T09:47:37Z · status inbox→ready
+- 2026-11-19T09:47:39Z · status ready→active, branch
+- 2026-11-19T09:47:39Z · note: agent fallback: codex + gpt-6-luna is paused (out of usage since 2026-11-19T07:09:32.657Z: Codex hit a provider quota or rate limit. Wait for the provider limit to reset, then retry. (CLI: error: You’ve hit your usage limit. Upgrade to Pro (https://chatgpt.com/explore/pro), visit https://chatgpt.com/codex/settings/usage to purcha) — using opencode + opencode-go/glm-5.3-flash
