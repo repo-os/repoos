@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-hub-and-web-app-copy-review-word
 created_at: "2026-11-19T00:47:39Z"
-updated_at: "2026-11-19T01:39:11Z"
+updated_at: "2026-11-19T01:40:44Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-19T01:25:43.917Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_passes: 2
@@ -57,3 +57,4 @@ Do not touch repoos.toml.
 - 2026-11-19T01:37:36Z · status review→active
 - 2026-11-19T01:37:39Z · message_queued at 2026-11-19T01:37:39.007Z
 - 2026-11-19T01:39:11Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-19T01:40:44Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
