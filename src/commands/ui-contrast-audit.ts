@@ -1025,6 +1025,7 @@ function makeScreens(url: string): ScreenState[] {
     },
     { name: "agents", prepare: (p) => gotoApp(p, url, "/agents") },
     { name: "settings", prepare: (p) => gotoApp(p, url, "/settings") },
+    { name: "checks", prepare: (p) => gotoApp(p, url, "/checks") },
     // Keep the release and deployment surfaces in rendered contrast coverage;
     // both pages gained substantial status and action UI beyond the original
     // main-page set.
