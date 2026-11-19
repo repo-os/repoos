@@ -2,14 +2,14 @@
 id: "1228"
 title: "QA pass: CLI help and error messages match the docs and read in plain English"
 type: bug
-status: active
+status: review
 priority: p2
 area: core
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-cli-help-and-error-messages-matc
 created_at: "2026-11-19T11:47:39Z"
-updated_at: "2026-11-19T13:09:35Z"
+updated_at: "2026-11-19T13:10:51Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -74,3 +74,4 @@ Do not touch repoos.toml.
 - 2026-11-19T13:09:12Z · body
 - 2026-11-19T13:09:33Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-19T13:09:35Z · message_delivered: 1 message(s)
+- 2026-11-19T13:10:51Z · status active→review
