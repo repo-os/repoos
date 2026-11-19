@@ -3,16 +3,13 @@ id: "1234"
 title: "QA pass: Stats, Dev and activity-log pages at all screen sizes"
 type: bug
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "automatic resume could not start the engineer: This worktree already has a recorded live engineer for task #1234 (pid 81639). The task stayed active with its worktree intact."
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-stats-dev-and-activity-log-pages
 created_at: "2026-11-19T15:47:33Z"
-updated_at: "2026-11-19T15:55:14Z"
+updated_at: "2026-11-19T16:13:58Z"
 handoff_signal_retry_count: 2
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\",\"at\":\"2026-11-19T15:49:36.866Z\",\"kind\":\"dev-error\"}]"
@@ -41,3 +38,4 @@ Do not touch repoos.toml.
 - 2026-11-19T15:49:42Z · needs_input
 - 2026-11-19T15:55:13Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 1/3
 - 2026-11-19T15:55:14Z · watchdog: automatic resume failed — This worktree already has a recorded live engineer for task #1234 (pid 81639)
+- 2026-11-19T16:13:58Z · watchdog: restarting engineer after 19m with no live process
