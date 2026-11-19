@@ -2,14 +2,14 @@
 id: "1245"
 title: "QA pass: docs site and user-docs navigation, search and links at all screen sizes"
 type: bug
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
 branch: ""
 created_at: "2026-11-19T20:07:43Z"
-updated_at: "2026-11-19T20:07:43Z"
+updated_at: "2026-11-19T20:07:49Z"
 ---
 ## Problem
 The docs site pages, navigation and search have not been checked on phone widths since the latest docs changes.
@@ -25,3 +25,4 @@ Do not touch repoos.toml.
 ## Activity
 
 - 2026-11-19T20:07:43Z · created · t@t
+- 2026-11-19T20:07:49Z · status inbox→ready
