@@ -9,10 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-empty-loading-and-error-states-o
 created_at: "2026-11-19T03:17:43Z"
-updated_at: "2026-11-19T04:13:12Z"
-review_passes: 2
-review_rounds: 1
-routing_switches: 1
+updated_at: "2026-11-19T03:42:42Z"
 ---
 ## Problem
 The Agents, Checks and Releases pages have not been re-checked since the latest releases for empty, loading and error states.
@@ -25,51 +22,9 @@ Each page shows a clear plain-English empty, loading and error state and stays u
 ## Notes for AI
 Do not touch repoos.toml.
 
-## Shots
-```json
-[
-{
-"label": "Agents empty setup",
-"target": "default",
-"route": "/agents?shotState=agents%3Aempty",
-"state": "agents:empty"
-},
-{
-"label": "Checks plan and active progress",
-"target": "default",
-"route": "/checks?tab=plan&shotState=checks%3Aprogress",
-"state": "checks:progress"
-},
-{
-"label": "Releases with an available update",
-"target": "default",
-"route": "/releases?shotState=release%3AupdateAvailable",
-"state": "release:updateAvailable"
-}
-]
-```
-
 ## Activity
 
 - 2026-11-19T03:17:43Z · created · t@t
 - 2026-11-19T03:17:48Z · status inbox→ready
 - 2026-11-19T03:17:50Z · status ready→active, branch
-- 2026-11-19T03:23:21Z · body
-- 2026-11-19T03:28:11Z · CTO nudge: held — handoff gate is running
-- 2026-11-19T03:42:40Z · note: ui verification passed: 1 shot captured with clean console
 - 2026-11-19T03:42:42Z · status active→review
-- 2026-11-19T03:42:43Z · message_queued at 2026-11-19T03:42:43.120Z
-- 2026-11-19T03:43:27Z · note: review pass 1: needs some work
-- 2026-11-19T03:43:28Z · message_delivered: 1 message(s)
-- 2026-11-19T03:43:28Z · status review→active
-- 2026-11-19T03:43:31Z · CTO nudge: held — remote validation is running
-- 2026-11-19T04:01:33Z · body
-- 2026-11-19T04:04:33Z · body
-- 2026-11-19T04:05:53Z · body
-- 2026-11-19T04:07:05Z · status active→review
-- 2026-11-19T04:07:05Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
-- 2026-11-19T04:07:05Z · message_queued at 2026-11-19T04:07:05.279Z
-- 2026-11-19T04:07:05Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
-- 2026-11-19T04:07:53Z · note: review pass 2: good to go
-- 2026-11-19T04:12:57Z · orphaned run process stopped · pid 35762 · /bin/sh -c bun run build && bun dist/cli/index.js serve --port 50602 --host 127.0.0.1 · cpu 0s · age 16m
-- 2026-11-19T04:13:12Z · orphaned run process stopped · pid 37209 · repoos-qa-pass-empty-loading-and-error-states-o /Users/nick/code/nick/repoos-worktrees/feat/qa-pass- · cpu 11s · age 16m

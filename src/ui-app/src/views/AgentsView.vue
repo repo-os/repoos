@@ -740,7 +740,9 @@ onUnmounted(() => {
         <div class="page-desc">
           The AI agents that work this repo
           <span v-if="config.saving"> · Saving…</span>
-          <span v-else-if="config.error" class="save-msg err"> · {{ config.error }}</span>
+          <span v-else-if="config.loaded && config.error" class="save-msg err">
+            · {{ config.error }}</span
+          >
           <span v-else-if="config.msg" class="save-msg ok"> · Saved</span>
         </div>
       </div>
@@ -767,6 +769,14 @@ onUnmounted(() => {
       <Button variant="outline" @click="activeTab = 'team'">Choose a built-in agent</Button>
     </section>
 
+    <section v-if="!config.loaded && config.error" class="agents-load-error" role="alert">
+      <div>
+        <h2>Couldn’t load agents</h2>
+        <p>Check your connection to the RepoOS server, then try again.</p>
+      </div>
+      <Button variant="outline" @click="config.load()">Retry</Button>
+    </section>
+
     <div class="agent-tabs">
       <button
         v-for="t in AGENT_TABS"
@@ -786,7 +796,7 @@ onUnmounted(() => {
       </button>
     </div>
 
-    <PageSkeleton :loading="!config.loaded" kind="cards" />
+    <PageSkeleton :loading="!config.loaded && !config.error" kind="cards" />
 
     <template v-if="config.loaded">
       <div

@@ -145,6 +145,44 @@ describe("AgentsView agent cards", () => {
     vi.unstubAllGlobals();
   });
 
+  it("replaces the initial skeleton with an actionable config error", async () => {
+    const fetchMock = vi.fn(async () => ({
+      ok: false,
+      status: 503,
+      json: async () => ({ error: "offline" }),
+    }));
+    vi.stubGlobal("fetch", fetchMock);
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const config = useConfigStore();
+    config.error = "Can't reach the RepoOS server.";
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [{ path: "/", component: { template: "<div />" } }],
+    });
+    await router.push("/");
+    const wrapper = mount(AgentsView, {
+      global: {
+        plugins: [pinia, router],
+        stubs: { teleport: true, Transition: true, VoiceDictate: true },
+      },
+    });
+    await flush();
+
+    const error = wrapper.get(".agents-load-error");
+    expect(error.attributes("role")).toBe("alert");
+    expect(error.text()).toContain("Couldn’t load agents");
+    expect(error.text()).toContain("Retry");
+    expect(wrapper.find(".page-skeleton").exists()).toBe(false);
+    expect(wrapper.text()).not.toContain("Can't reach the RepoOS server.");
+    await error.get("button").trigger("click");
+    await flush();
+    expect(fetchMock).toHaveBeenCalled();
+
+    wrapper.unmount();
+    vi.unstubAllGlobals();
+  });
+
   it("lists default headless agents as PM, Engineer, Reviewer", async () => {
     vi.stubGlobal(
       "fetch",
