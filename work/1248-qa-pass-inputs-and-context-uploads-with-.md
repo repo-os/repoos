@@ -2,14 +2,14 @@
 id: "1248"
 title: "QA pass: Inputs and Context uploads with large, wrong-type and failing files"
 type: bug
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
 branch: ""
 created_at: "2026-11-19T21:26:57Z"
-updated_at: "2026-11-19T21:26:57Z"
+updated_at: "2026-11-19T21:27:01Z"
 ---
 ## Problem
 Uploads on the Inputs and Context pages have not been checked with very large files, wrong types, duplicate names and failing uploads.
@@ -24,3 +24,4 @@ Do not touch repoos.toml.
 ## Activity
 
 - 2026-11-19T21:26:57Z · created · t@t
+- 2026-11-19T21:27:01Z · status inbox→ready
