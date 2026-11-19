@@ -447,7 +447,7 @@ const RESULT_ICON: Record<string, string> = {
       <template v-else-if="activeTab === 'plan'">
         <PageSkeleton :loading="loading && !plan" kind="table" />
         <p v-if="error && plan" class="ck-err" role="status">Refresh failed: {{ error }}</p>
-        <p v-else-if="error" class="ck-err">{{ error }}</p>
+        <p v-else-if="error" class="ck-err" role="alert">{{ error }}</p>
 
         <template v-if="plan">
           <!-- Controls: which profile, and the changed-path fast mode. -->

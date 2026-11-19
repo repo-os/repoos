@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 167936
-last_close_out_gate_at: "2026-11-19T04:16:46.423Z"
 id: "1216"
 title: "QA pass: empty, loading and error states on Agents, Checks and Releases"
 type: bug
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: 5aca538c0c3fa731667f7fe775074c5f20e20553
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-empty-loading-and-error-states-o
 created_at: "2026-11-19T03:17:43Z"
 updated_at: "2026-11-19T04:16:46Z"
+last_close_out_gate_ms: 167936
+last_close_out_gate_at: "2026-11-19T04:16:46.423Z"
 review_passes: 2
 review_rounds: 1
 routing_switches: 1

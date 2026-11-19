@@ -1519,7 +1519,7 @@ onBeforeUnmount(() => {
 
     <div class="page-scroll-body">
       <PageSkeleton :loading="loading && !status" kind="cards" />
-      <p v-if="loadError && !status" class="rel-error">{{ loadError }}</p>
+      <p v-if="loadError && !status" class="rel-error" role="alert">{{ loadError }}</p>
       <p v-if="loadError && status" class="rel-error" role="status">
         Refresh failed: {{ loadError }}
       </p>
