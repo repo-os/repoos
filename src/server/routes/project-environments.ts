@@ -98,6 +98,17 @@ function resolveEnv(root: string, id: string) {
   return registry(root).environments.find((env) => env.id === id);
 }
 
+/**
+ * Plain-English 404 for a project environment id that does not exist — names
+ * the id and points at where the real ones are listed (the Secrets page),
+ * instead of the bare "Unknown project environment" that gave no next step.
+ */
+export function unknownEnvironmentError(id: string): { error: string } {
+  return {
+    error: `No project environment named "${id}". See the Secrets page in the web UI for the environments that exist.`,
+  };
+}
+
 export const listProjectEnvironmentSecrets: RouteHandler = (ctx, req, res, params) => {
   res.setHeader("Cache-Control", "no-store");
   const user = requireSignedIn(req, ctx.config, res);
@@ -105,7 +116,7 @@ export const listProjectEnvironmentSecrets: RouteHandler = (ctx, req, res, param
   if (!originAllowed(req)) return send(res, 403, { error: "Request origin rejected" });
   try {
     const env = resolveEnv(ctx.config.root, params.param1 ?? "");
-    if (!env) return send(res, 404, { error: "Unknown project environment" });
+    if (!env) return send(res, 404, unknownEnvironmentError(params.param1 ?? ""));
     const snapshot = readProjectEnvironment(ctx.config.root, env);
     const bindings = readProjectEnvironmentBindings(ctx.config.root).bindings;
     const keys = [...new Set([...snapshot.keys, ...snapshot.expectedKeys])]
@@ -230,7 +241,7 @@ export const mutateProjectEnvironmentSecret: RouteHandler = async (ctx, req, res
     return send(res, 400, { error: "A metadata version is required" });
   try {
     const env = resolveEnv(ctx.config.root, params.param1 ?? "");
-    if (!env) return send(res, 404, { error: "Unknown project environment" });
+    if (!env) return send(res, 404, unknownEnvironmentError(params.param1 ?? ""));
     const snapshot = readProjectEnvironment(ctx.config.root, env);
     const exists = snapshot.keys.includes(key);
     if ((action === "add" && exists) || (action === "replace" && !exists))
@@ -306,7 +317,7 @@ export const putProjectEnvironmentBinding: RouteHandler = async (ctx, req, res) 
       environment !== null &&
       !registry(ctx.config.root).environments.some((row) => row.id === environment)
     )
-      return send(res, 404, { error: "Unknown project environment" });
+      return send(res, 404, unknownEnvironmentError(String(environment)));
     const result = writeProjectEnvironmentBinding(ctx.config.root, consumer, environment, keys);
     return send(res, 200, { ok: true, ...result, restartNeeded: true });
   } catch (error) {
@@ -338,7 +349,7 @@ export const openProjectEnvironmentSourceInEditor: RouteHandler = async (ctx, re
   const body = (await readBody(req)) as { source?: unknown };
   const sourceId = typeof body.source === "string" ? body.source : undefined;
   const env = resolveEnv(ctx.config.root, params.param1 ?? "");
-  if (!env) return send(res, 404, { error: "Unknown project environment" });
+  if (!env) return send(res, 404, unknownEnvironmentError(params.param1 ?? ""));
   let resolved: ReturnType<typeof resolveProjectEnvironmentSource>;
   try {
     resolved = resolveProjectEnvironmentSource(ctx.config.root, env, sourceId);

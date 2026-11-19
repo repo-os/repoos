@@ -9,10 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-cli-help-and-error-messages-matc
 created_at: "2026-11-19T11:47:39Z"
-updated_at: "2026-11-19T13:18:09Z"
-review_passes: 2
-review_rounds: 1
-routing_switches: 1
+updated_at: "2026-11-19T12:52:57Z"
 last_check_failure: "repoos check at 2026-11-19T12:23:26.625Z: repoos check failed: ui verification failed (2 issue(s)): [overflow] CLI reference: newly documented checks timings/slots, certify, migrate and rm sections: body scrollWidth 1594 > innerWidth 1024@1024px; [overflow] CLI reference: newly documented checks timings/slots, certify, migrate and rm sections: body scrollWidth 1282 > innerWidth 375@375px"
 ---
 ## Problem
@@ -30,10 +27,15 @@ Do not touch repoos.toml.
 ```json
 [
 {
-"label": "CLI reference: newly documented checks timings/slots, certify, migrate and rm sections, and the control-plane table rows for summary, review followup, watch and allowlist",
+"label": "CLI reference: newly documented checks timings/slots, certify, migrate and rm sections",
 "target": "Docs site",
 "route": "/cli",
 "highlight": "#repoos-checks-timings-repoos-checks-slots"
+},
+{
+"label": "Control-plane table now lists summary, review followup, watch and allowlist",
+"target": "Docs site",
+"route": "/cli"
 }
 ]
 ```
@@ -60,21 +62,4 @@ Do not touch repoos.toml.
 - 2026-11-19T12:41:24Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-19T12:42:46Z · watchdog: restarting engineer because a queued message waited 3m with no live process
 - 2026-11-19T12:42:49Z · message_delivered: 1 message(s)
-- 2026-11-19T12:48:03Z · body
-- 2026-11-19T12:51:24Z · CTO nudge: held — handoff gate is running
-- 2026-11-19T12:52:55Z · note: ui verification passed: 1 of 2 shots captured with clean console
 - 2026-11-19T12:52:57Z · status active→review
-- 2026-11-19T12:52:57Z · message_queued at 2026-11-19T12:52:57.598Z
-- 2026-11-19T12:56:11Z · note: review pass 1: needs some work
-- 2026-11-19T12:56:12Z · message_delivered: 1 message(s)
-- 2026-11-19T12:56:12Z · status review→active
-- 2026-11-19T13:00:10Z · body
-- 2026-11-19T13:06:24Z · message_queued at 2026-11-19T13:06:24.856Z
-- 2026-11-19T13:06:25Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-19T13:09:12Z · body
-- 2026-11-19T13:09:33Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
-- 2026-11-19T13:09:35Z · message_delivered: 1 message(s)
-- 2026-11-19T13:10:51Z · status active→review
-- 2026-11-19T13:18:06Z · note: ui verification passed: 1 of 1 shot captured with clean console
-- 2026-11-19T13:18:08Z · note: review pass 2: good to go
-- 2026-11-19T13:18:09Z · message_queued at 2026-11-19T13:18:09.980Z
