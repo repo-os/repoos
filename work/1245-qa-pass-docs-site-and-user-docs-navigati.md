@@ -12,7 +12,7 @@ branch: feat/qa-pass-docs-site-and-user-docs-navigati
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T20:07:43Z"
-updated_at: "2026-11-19T21:27:38Z"
+updated_at: "2026-11-19T21:27:43Z"
 last_close_out_gate_ms: 335195
 last_close_out_gate_at: "2026-11-19T21:27:38.200Z"
 review_passes: 1
@@ -43,4 +43,4 @@ Do not touch repoos.toml.
 - 2026-11-19T21:00:37Z · message_queued at 2026-11-19T21:00:37.283Z
 - 2026-11-19T21:02:13Z · note: review pass 1: good to go
 - 2026-11-19T21:27:38Z · close-out gate completed in 335s
-
+- 2026-11-19T21:27:43Z · status done→done, release:success
