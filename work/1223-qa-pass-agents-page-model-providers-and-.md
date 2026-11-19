@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-agents-page-model-providers-and-
 created_at: "2026-11-19T07:47:39Z"
-updated_at: "2026-11-19T08:47:09Z"
+updated_at: "2026-11-19T08:49:16Z"
 handoff_signal_retry_count: 2
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\",\"at\":\"2026-11-19T08:22:29.659Z\",\"kind\":\"dev-error\"}]"
@@ -33,28 +33,22 @@ Do not touch repoos.toml.
 ```json
 [
 {
-"label": "Agent list at 375px: on/off switch keeps its 40x22 pill inside the 44px touch target",
-"target": "default",
-"route": "/agents",
-"highlight": ".agents-page button[role=\"switch\"]",
-"viewportWidth": 375,
-"viewportHeight": 812
+  "label": "Agents page: switch pill intact and agent list fits",
+  "target": "default",
+  "route": "/agents",
+  "highlight": ".agents-page [role=\"switch\"]"
 },
 {
-"label": "Model routing at 375px: the four config field labels stack above their controls",
-"target": "default",
-"route": "/agents?tab=model-routing",
-"highlight": ".mr-grid",
-"viewportWidth": 375,
-"viewportHeight": 812
+  "label": "Model providers: opencode Go usage without the spurious empty-state line",
+  "target": "default",
+  "route": "/agents?tab=model-providers",
+  "highlight": "[data-provider-id=\"opencode-go\"]"
 },
 {
-"label": "Model providers at 1280px: provider rows with masked keys (Saved/Not set), no false no-usage line under real windows",
-"target": "default",
-"route": "/agents?tab=providers",
-"highlight": ".mp-row",
-"viewportWidth": 1280,
-"viewportHeight": 900
+  "label": "Model routing: stacked field labels, missing-key notice and masked key form",
+  "target": "default",
+  "route": "/agents?tab=model-routing",
+  "highlight": "[data-testid=\"model-routing-panel\"]"
 }
 ]
 ```
@@ -75,3 +69,4 @@ Do not touch repoos.toml.
 - 2026-11-19T08:33:15Z · watchdog: automatic resume failed — This worktree already has a recorded live engineer for task #1223 (pid 97162)
 - 2026-11-19T08:36:56Z · body
 - 2026-11-19T08:47:09Z · body
+- 2026-11-19T08:49:16Z · body
