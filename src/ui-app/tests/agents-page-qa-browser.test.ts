@@ -34,8 +34,7 @@ import type {
 const VIEWPORTS = [375, 768, 1280] as const;
 const uiRoot = resolve(__dirname, "..");
 
-const iso = (minutesAgo: number) =>
-  new Date(Date.now() - minutesAgo * 60_000).toISOString();
+const iso = (minutesAgo: number) => new Date(Date.now() - minutesAgo * 60_000).toISOString();
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -62,10 +61,7 @@ describe("Agents page QA at 375/768/1280 (WebKit, fixtures)", () => {
 
   /** Compiled scoped CSS for one component, with the scope id its markup carries. */
   function scopedCss(markup: string, markerClass: string, component: string): string {
-    const source = readFileSync(
-      resolve(uiRoot, `src/components/${component}.vue`),
-      "utf8",
-    );
+    const source = readFileSync(resolve(uiRoot, `src/components/${component}.vue`), "utf8");
     const parsed = parse(source, { filename: component });
     const style = parsed.descriptor.styles[0]?.content ?? "";
     const marker = markup.indexOf(markerClass);
@@ -151,14 +147,10 @@ describe("Agents page QA at 375/768/1280 (WebKit, fixtures)", () => {
 
   async function expectFits(page: Page, what: string, width: number): Promise<void> {
     const result = await audit(page);
-    expect(
-      result.overflowers,
-      `${what} at ${width}px has off-viewport elements`,
-    ).toEqual([]);
-    expect(
-      result.documentWidth,
-      `${what} at ${width}px widens the document`,
-    ).toBeLessThanOrEqual(width + 1);
+    expect(result.overflowers, `${what} at ${width}px has off-viewport elements`).toEqual([]);
+    expect(result.documentWidth, `${what} at ${width}px widens the document`).toBeLessThanOrEqual(
+      width + 1,
+    );
   }
 
   /* ── 1. Agent list (default tab) ───────────────────────────────────────── */
@@ -281,9 +273,7 @@ describe("Agents page QA at 375/768/1280 (WebKit, fixtures)", () => {
         // 40×22 track drawn inside it and the thumb travelling within the
         // track. Above that the pill is its natural size.
         const switches = await page.evaluate(() => {
-          const roots = [
-            ...document.querySelectorAll<HTMLElement>('.agents-page [role="switch"]'),
-          ];
+          const roots = [...document.querySelectorAll<HTMLElement>('.agents-page [role="switch"]')];
           return roots.map((root) => {
             const rect = root.getBoundingClientRect();
             const thumb = (root.firstElementChild as HTMLElement).getBoundingClientRect();
@@ -416,7 +406,11 @@ describe("Agents page QA at 375/768/1280 (WebKit, fixtures)", () => {
             });
           }
           if (/\/api\/model-providers\/deepinfra\/usage/.test(url)) {
-            return { ok: false, status: 502, json: async () => ({ error: "DeepInfra request failed: network unreachable" }) };
+            return {
+              ok: false,
+              status: 502,
+              json: async () => ({ error: "DeepInfra request failed: network unreachable" }),
+            };
           }
           if (url.includes("/api/model-providers")) {
             return json({ providers: providersFixture(), at: iso(0) });
@@ -449,28 +443,20 @@ describe("Agents page QA at 375/768/1280 (WebKit, fixtures)", () => {
           "Paste your OpenRouter API key",
         );
         // Provider failure without data: the row explains itself and offers Retry.
-        const deepinfraErrorText = await textOf(
-          page,
-          '[data-provider-id="deepinfra"] .mp-error',
-        );
+        const deepinfraErrorText = await textOf(page, '[data-provider-id="deepinfra"] .mp-error');
         expect(deepinfraErrorText).toContain("DeepInfra request failed");
         expect(
-          await page
-            .locator('[data-provider-id="deepinfra"] .mp-error .mp-retry')
-            .count(),
+          await page.locator('[data-provider-id="deepinfra"] .mp-error .mp-retry').count(),
         ).toBe(1);
         // Provider failure with a message payload (Muse CLI login) also has Retry.
         const museText = await textOf(page, '[data-provider-id="muse"] .mp-part-error');
         expect(museText).toContain("muse login");
-        expect(await page.locator('[data-provider-id="muse"] .mp-part-error .mp-retry').count()).toBe(
-          1,
-        );
+        expect(
+          await page.locator('[data-provider-id="muse"] .mp-part-error .mp-retry').count(),
+        ).toBe(1);
         // A healthy keyed row shows its usage figures and a Refresh action.
         expect(await page.locator('[data-provider-id="opencode-go"] .mp-window').count()).toBe(2);
-        const goActions = await textOf(
-          page,
-          '[data-provider-id="opencode-go"] .mp-actions button',
-        );
+        const goActions = await textOf(page, '[data-provider-id="opencode-go"] .mp-actions button');
         expect(goActions).toContain("Refresh");
         // #1223: a row with usage data must not also claim "No usage reported
         // yet." — the fallback text is for rows without any windows.
@@ -487,7 +473,9 @@ describe("Agents page QA at 375/768/1280 (WebKit, fixtures)", () => {
 
   /* ── 3–4. Model routing tab ────────────────────────────────────────────── */
 
-  function routingStatus(over: Partial<ModelRoutingStatusResponse> = {}): ModelRoutingStatusResponse {
+  function routingStatus(
+    over: Partial<ModelRoutingStatusResponse> = {},
+  ): ModelRoutingStatusResponse {
     return {
       effective: {
         mode: "shadow",
@@ -660,16 +648,12 @@ describe("Agents page QA at 375/768/1280 (WebKit, fixtures)", () => {
       try {
         await expectFits(page, "routing missing-key state", width);
         // The pill names the state without revealing anything.
-        expect(
-          await textOf(page, '[data-testid="routing-credential-status"]'),
-        ).toContain("Not set");
-        expect(await textOf(page, '[data-testid="routing-provider-ready"]')).toContain(
-          "Not ready",
+        expect(await textOf(page, '[data-testid="routing-credential-status"]')).toContain(
+          "Not set",
         );
+        expect(await textOf(page, '[data-testid="routing-provider-ready"]')).toContain("Not ready");
         // The issue is explained in plain English, in a visible notice.
-        expect(await textOf(page, ".mr-issues")).toContain(
-          "No TypeSafe Jev API key is saved yet",
-        );
+        expect(await textOf(page, ".mr-issues")).toContain("No TypeSafe Jev API key is saved yet");
         // The open key form is a masked password field with a real placeholder.
         const keyInput = page.locator('[data-testid="routing-key-input"]');
         expect(await keyInput.count()).toBe(1);
@@ -697,9 +681,7 @@ describe("Agents page QA at 375/768/1280 (WebKit, fixtures)", () => {
         const stackedFields = await page.evaluate(() =>
           [...document.querySelectorAll(".mr-grid .field")].map((field) => {
             const label = field.querySelector<HTMLElement>(".field-label")!;
-            const control = field.querySelector<HTMLElement>(
-              "button, input, [role='combobox']",
-            )!;
+            const control = field.querySelector<HTMLElement>("button, input, [role='combobox']")!;
             return {
               labelBottom: Math.round(label.getBoundingClientRect().bottom),
               controlTop: Math.round(control.getBoundingClientRect().top),
@@ -714,9 +696,7 @@ describe("Agents page QA at 375/768/1280 (WebKit, fixtures)", () => {
         // placeholder is not truncated beside the Save button.
         if (width <= 480) {
           const keyBox = await keyInput.boundingBox();
-          const saveBox = await page
-            .locator('[data-testid="routing-key-save"]')
-            .boundingBox();
+          const saveBox = await page.locator('[data-testid="routing-key-save"]').boundingBox();
           expect(keyBox && saveBox && saveBox.y >= keyBox.y + keyBox.height - 1).toBe(true);
         }
       } finally {
