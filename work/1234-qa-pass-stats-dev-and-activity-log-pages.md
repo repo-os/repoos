@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-stats-dev-and-activity-log-pages
 created_at: "2026-11-19T15:47:33Z"
-updated_at: "2026-11-19T16:52:10Z"
+updated_at: "2026-11-19T16:56:43Z"
 handoff_signal_retry_count: 2
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\",\"at\":\"2026-11-19T15:49:36.866Z\",\"kind\":\"dev-error\"}]"
@@ -30,23 +30,23 @@ Do not touch repoos.toml.
 ```json
 [
 {
-  "label": "Mission Control: system resources with PID column beside ellipsized commands",
-  "target": "default",
-  "route": "/",
-  "highlight": ".resource-panel"
+"label": "Mission Control: system resources with PID column beside ellipsized commands",
+"target": "default",
+"route": "/",
+"highlight": ".resource-panel"
 },
 {
-  "label": "Dev page: failed target with holder row and wrapped meta cells",
-  "target": "default",
-  "route": "/dev",
-  "highlight": ".dev-failure",
-  "state": "dev:failed"
+"label": "Dev page: failed target with holder row and wrapped meta cells",
+"target": "default",
+"route": "/dev",
+"highlight": ".dev-failure",
+"state": "dev:failed"
 },
 {
-  "label": "Commit history: wrapped subjects and file paths",
-  "target": "default",
-  "route": "/repo?tab=history",
-  "highlight": ".hist-card"
+"label": "Commit history: wrapped subjects and file paths",
+"target": "default",
+"route": "/repo?tab=history",
+"highlight": ".hist-card"
 }
 ]
 ```
@@ -73,3 +73,4 @@ Do not touch repoos.toml.
 - 2026-11-19T16:47:16Z · body
 - 2026-11-19T16:51:05Z · body
 - 2026-11-19T16:52:10Z · body
+- 2026-11-19T16:56:43Z · body
