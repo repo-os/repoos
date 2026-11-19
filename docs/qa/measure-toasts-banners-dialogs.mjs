@@ -195,9 +195,13 @@ async function waitDrawer(page) {
   // Radix unmounts the drawer when closed; presence is the whole signal. (A
   // `position: fixed` element reports `offsetParent === null`, so visibility
   // can't be checked that way here.)
-  await page.waitForFunction(() => document.querySelector(".drawer-wrap.drawer") !== null, undefined, {
-    timeout: 10_000,
-  });
+  await page.waitForFunction(
+    () => document.querySelector(".drawer-wrap.drawer") !== null,
+    undefined,
+    {
+      timeout: 10_000,
+    },
+  );
 }
 
 // ── Scenario 1: a full toast stack — layout, overlap, dismiss ────────────────
@@ -247,9 +251,13 @@ async function toastStackScenario() {
         const btns = window.__qa.closeButtons();
         btns[btns.length - 1].click();
       });
-      await page.waitForFunction(() => document.querySelectorAll(".toast-item").length === 4, undefined, {
-        timeout: 5_000,
-      });
+      await page.waitForFunction(
+        () => document.querySelectorAll(".toast-item").length === 4,
+        undefined,
+        {
+          timeout: 5_000,
+        },
+      );
       const remaining = await page.evaluate(() =>
         [...document.querySelectorAll(".toast-item")].map((el) =>
           el.textContent.trim().slice(0, 40),
@@ -269,9 +277,13 @@ async function toastStackScenario() {
         return item ? item.textContent.trim().slice(0, 60) : null;
       });
       await page.keyboard.press("Enter");
-      await page.waitForFunction(() => document.querySelectorAll(".toast-item").length === 3, undefined, {
-        timeout: 5_000,
-      });
+      await page.waitForFunction(
+        () => document.querySelectorAll(".toast-item").length === 3,
+        undefined,
+        {
+          timeout: 5_000,
+        },
+      );
       const after = await page.evaluate(() =>
         [...document.querySelectorAll(".toast-item")].map((el) =>
           el.textContent.trim().slice(0, 40),
@@ -411,9 +423,13 @@ async function dialogScenario() {
       // covers a lost key event (harness input delivery, not app behaviour).
       await page.waitForTimeout(1_500);
       const gone = () =>
-        page.waitForFunction(() => document.querySelector(".release-update-modal") === null, undefined, {
-          timeout: 5_000,
-        });
+        page.waitForFunction(
+          () => document.querySelector(".release-update-modal") === null,
+          undefined,
+          {
+            timeout: 5_000,
+          },
+        );
       try {
         await page.keyboard.press("Escape");
         await gone();
@@ -432,9 +448,13 @@ async function dialogScenario() {
         const btn = document.querySelector('.release-update-modal [aria-label="Close"]');
         btn.click();
       });
-      await page.waitForFunction(() => document.querySelector(".release-update-modal") === null, undefined, {
-        timeout: 5_000,
-      });
+      await page.waitForFunction(
+        () => document.querySelector(".release-update-modal") === null,
+        undefined,
+        {
+          timeout: 5_000,
+        },
+      );
       record("dialog:close-button", width, true, null);
 
       if (errors.length) record("dialog:page-errors", width, false, errors);
@@ -505,9 +525,13 @@ async function drawerOverToastsScenario() {
       // guarded retry against lost key delivery.
       await page.waitForTimeout(1_500);
       const drawerGone = () =>
-        page.waitForFunction(() => document.querySelector(".drawer-wrap.drawer") === null, undefined, {
-          timeout: 5_000,
-        });
+        page.waitForFunction(
+          () => document.querySelector(".drawer-wrap.drawer") === null,
+          undefined,
+          {
+            timeout: 5_000,
+          },
+        );
       try {
         await page.keyboard.press("Escape");
         await drawerGone();
@@ -548,16 +572,24 @@ async function recoveryBannerScenario() {
       for (let nudge = 0; nudge < 20; nudge++) {
         await page.evaluate(() => window.dispatchEvent(new Event("focus")));
         const up = await page
-          .waitForFunction(() => document.querySelector(".ui-recovery-banner") !== null, undefined, {
-            timeout: 2_000,
-          })
+          .waitForFunction(
+            () => document.querySelector(".ui-recovery-banner") !== null,
+            undefined,
+            {
+              timeout: 2_000,
+            },
+          )
           .then(() => true)
           .catch(() => false);
         if (up) break;
       }
-      await page.waitForFunction(() => document.querySelector(".ui-recovery-banner") !== null, undefined, {
-        timeout: 15_000,
-      });
+      await page.waitForFunction(
+        () => document.querySelector(".ui-recovery-banner") !== null,
+        undefined,
+        {
+          timeout: 15_000,
+        },
+      );
 
       if (shotsDir) {
         await page.screenshot({ path: join(shotsDir, `recovery-banner-${width}.png`) });
@@ -595,9 +627,13 @@ async function recoveryBannerScenario() {
         );
         dismiss.click();
       });
-      await page.waitForFunction(() => document.querySelector(".ui-recovery-banner") === null, undefined, {
-        timeout: 5_000,
-      });
+      await page.waitForFunction(
+        () => document.querySelector(".ui-recovery-banner") === null,
+        undefined,
+        {
+          timeout: 5_000,
+        },
+      );
       record("recovery-banner:dismiss-clears", width, true, null);
 
       if (errors.length) record("recovery-banner:page-errors", width, false, errors);
