@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 836595
-last_close_out_gate_at: "2026-11-19T22:35:51.175Z"
 id: "1248"
 title: "QA pass: Inputs and Context uploads with large, wrong-type and failing files"
 type: bug
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: 7ef53db975fa895011cf3c1fe9d5a80011a6a8fb
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-inputs-and-context-uploads-with-
@@ -14,6 +13,8 @@ cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T21:26:57Z"
 updated_at: "2026-11-19T22:35:51Z"
+last_close_out_gate_ms: 836595
+last_close_out_gate_at: "2026-11-19T22:35:51.175Z"
 review_passes: 1
 ---
 ## Problem

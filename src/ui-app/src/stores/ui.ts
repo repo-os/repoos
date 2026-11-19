@@ -1,6 +1,7 @@
 import { reactive, ref } from "vue";
 import { defineStore } from "pinia";
 import { api } from "../api";
+import { screenshotMime, screenshotRejection, uniqueAttachmentName } from "../lib/upload-guard";
 import { normalizeStoryName } from "../../../core/stories.js";
 import { defaultTaskArea } from "../../../core/areas.js";
 import { isShotPreviewCaptureActive } from "../lib/shot-preview-fixtures.js";
@@ -365,18 +366,59 @@ export const useUiStore = defineStore("ui", () => {
   }
 
   /** Read each image file into memory as a data URL and queue it for New input. */
+  /**
+   * Plain-English notes from the last New input picks: rejected files, renamed
+   * duplicates, reads that failed, and files past the cap. The panel shows them
+   * until dismissed.
+   */
+  const inputUploadNotices = ref<string[]>([]);
+
+  function dismissInputUploadNotices(): void {
+    inputUploadNotices.value = [];
+  }
+
+  /**
+   * Validate and queue input screenshots. Bad files never enter the list, so
+   * the server never sees them. A slot is reserved before the read starts, so
+   * a multi-file drop cannot exceed the cap while the reads are still running.
+   */
   function addInputScreenshots(files: File[]): void {
+    const taken = new Set(inputScreenshots.map((s) => s.name));
     for (const file of files) {
-      if (inputScreenshots.length >= MAX_PENDING_SCREENSHOTS) break;
+      const problem = screenshotRejection(file);
+      if (problem) {
+        inputUploadNotices.value.push(problem);
+        continue;
+      }
+      if (inputScreenshots.length >= MAX_PENDING_SCREENSHOTS) {
+        inputUploadNotices.value.push(
+          `“${file.name}” wasn’t added. An input takes up to ${MAX_PENDING_SCREENSHOTS} screenshots. Remove one to add more.`,
+        );
+        continue;
+      }
+      const name = uniqueAttachmentName(file.name, taken);
+      taken.add(name);
+      if (name !== file.name) {
+        inputUploadNotices.value.push(
+          `“${file.name}” was already added, so it’s saved as “${name}”.`,
+        );
+      }
+      inputScreenshots.push({
+        name,
+        mime: screenshotMime(file) ?? file.type,
+        dataUrl: "",
+        size: file.size,
+      });
+      // Write to the reactive proxy, not the object above, so the thumbnail updates.
+      const stored = inputScreenshots[inputScreenshots.length - 1]!;
       const reader = new FileReader();
       reader.onload = () => {
-        if (typeof reader.result !== "string") return;
-        inputScreenshots.push({
-          name: file.name,
-          mime: file.type,
-          dataUrl: reader.result,
-          size: file.size,
-        });
+        if (typeof reader.result === "string") stored.dataUrl = reader.result;
+      };
+      reader.onerror = () => {
+        const idx = inputScreenshots.indexOf(stored);
+        if (idx >= 0) inputScreenshots.splice(idx, 1);
+        inputUploadNotices.value.push(`Couldn’t read “${file.name}”. Try adding it again.`);
       };
       reader.readAsDataURL(file);
     }
@@ -582,6 +624,8 @@ export const useUiStore = defineStore("ui", () => {
     hasFailedPendingScreenshots,
     inputScreenshots,
     addInputScreenshots,
+    inputUploadNotices,
+    dismissInputUploadNotices,
     removeInputScreenshot,
     clearInputScreenshots,
     clearInputDraft,
