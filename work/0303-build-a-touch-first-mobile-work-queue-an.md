@@ -3,6 +3,8 @@ id: "0303"
 title: Build a touch-first mobile Work queue and task detail flow
 type: feature
 status: ready
+is_archived: true
+archive_detail: "Superseded by ADR 0011: the server-served web UI provides the phone layout inside a connected server."
 priority: p1
 area: mobile
 story: RepoOS Hub for Mobile
@@ -11,7 +13,7 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-26T16:45:58Z"
-updated_at: "2026-10-07T14:01:49Z"
+updated_at: "2026-11-19T13:53:56Z"
 ---
 ## Problem
 
@@ -47,3 +49,4 @@ Read `docs/mobile-ux-strategy.md` and the connected-server shell contract in tas
 - 2026-10-05T11:15:30Z · needs_input
 - 2026-10-07T14:00:01Z · needs_input
 - 2026-10-07T14:01:49Z · body
+- 2026-11-19T13:53:56Z · archived: Superseded by ADR 0011: the server-served web UI provides the phone layout inside a connected server.
