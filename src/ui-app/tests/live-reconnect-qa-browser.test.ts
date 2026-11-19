@@ -43,14 +43,26 @@ function handle(req: IncomingMessage, res: ServerResponse, root: string): void {
   if (path === "/api/events") {
     res.writeHead(200, { "Content-Type": "text/event-stream", "Cache-Control": "no-cache" });
     res.write(`retry: 1000\n\n`);
-    res.write(`event: hello\ndata: ${JSON.stringify({ type: "hello", taskCount: 0, at: "fixture" })}\n\n`);
+    res.write(
+      `event: hello\ndata: ${JSON.stringify({ type: "hello", taskCount: 0, at: "fixture" })}\n\n`,
+    );
     fixture.streams.add(res);
     req.on("close", () => fixture.streams.delete(res));
     return;
   }
   if (path === "/api/health") {
     res.writeHead(200, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ ok: true, root, projectName: "fixture-repo", branch: "main", taskCount: fixture.ready, workDir: "work", restartCommand: "repoos serve" }));
+    res.end(
+      JSON.stringify({
+        ok: true,
+        root,
+        projectName: "fixture-repo",
+        branch: "main",
+        taskCount: fixture.ready,
+        workDir: "work",
+        restartCommand: "repoos serve",
+      }),
+    );
     return;
   }
   if (path === "/api/board") {
@@ -147,60 +159,60 @@ describe("Control dashboard live recovery at 375/768/1280 (WebKit, fixtures)", (
   }
 
   for (const width of VIEWPORTS) {
-    it(
-      `reconnects, catches up, and clears the pill at ${width}px without a reload`,
-      async () => {
-        fixture.ready = 0;
-        fixture.boardRefusals = 0;
-        const page = await browser.newPage({ viewport: { width, height: 812 } });
-        try {
-          await page.goto(baseUrl + "/");
-          await page.locator(".stat-link", { hasText: "ready to start" }).waitFor({ state: "visible", timeout: 30_000 });
-          // Live: no pill while the stream is up.
-          await page.waitForTimeout(500);
-          expect(await page.locator(".conn").count()).toBe(0);
+    it(`reconnects, catches up, and clears the pill at ${width}px without a reload`, async () => {
+      fixture.ready = 0;
+      fixture.boardRefusals = 0;
+      const page = await browser.newPage({ viewport: { width, height: 812 } });
+      try {
+        await page.goto(baseUrl + "/");
+        await page
+          .locator(".stat-link", { hasText: "ready to start" })
+          .waitFor({ state: "visible", timeout: 30_000 });
+        // Live: no pill while the stream is up.
+        await page.waitForTimeout(500);
+        expect(await page.locator(".conn").count()).toBe(0);
 
-          // Mark the page so a reload would be visible.
-          await page.evaluate(() => {
-            (window as unknown as { __qaMarker: number }).__qaMarker = 1;
-          });
+        // Mark the page so a reload would be visible.
+        await page.evaluate(() => {
+          (window as unknown as { __qaMarker: number }).__qaMarker = 1;
+        });
 
-          // The connection drops, and the server changes while it is down.
-          await outage();
-          fixture.ready = 3;
+        // The connection drops, and the server changes while it is down.
+        await outage();
+        fixture.ready = 3;
 
-          // Within the grace window the pill shows a plain-English reconnecting state.
-          const pill = page.locator(".conn");
-          await pill.waitFor({ state: "visible", timeout: 15_000 });
-          expect((await pill.textContent())?.trim()).toBe("reconnecting");
-          const box = await pill.boundingBox();
-          expect(box).not.toBeNull();
-          expect(box!.x).toBeGreaterThanOrEqual(0);
-          expect(box!.x + box!.width).toBeLessThanOrEqual(width);
-          // The word must be readable, not just a dot: its own box has text width.
-          expect(box!.width).toBeGreaterThan(60);
-          await shoot(page, `reconnecting-${width}.png`);
+        // Within the grace window the pill shows a plain-English reconnecting state.
+        const pill = page.locator(".conn");
+        await pill.waitFor({ state: "visible", timeout: 15_000 });
+        expect((await pill.textContent())?.trim()).toBe("reconnecting");
+        const box = await pill.boundingBox();
+        expect(box).not.toBeNull();
+        expect(box!.x).toBeGreaterThanOrEqual(0);
+        expect(box!.x + box!.width).toBeLessThanOrEqual(width);
+        // The word must be readable, not just a dot: its own box has text width.
+        expect(box!.width).toBeGreaterThan(60);
+        await shoot(page, `reconnecting-${width}.png`);
 
-          // Server returns: the stream reconnects and the board catches up on its own.
-          await restore();
-          await pill.waitFor({ state: "detached", timeout: 40_000 });
-          const readyCard = page.locator(".stat-link", { hasText: "ready to start" });
-          await expect
-            .poll(async () => (await readyCard.textContent()) ?? "", { timeout: 10_000 })
-            .toContain("3");
-          expect(await page.evaluate(() => (window as unknown as { __qaMarker?: number }).__qaMarker)).toBe(1);
-          await shoot(page, `recovered-${width}.png`);
+        // Server returns: the stream reconnects and the board catches up on its own.
+        await restore();
+        await pill.waitFor({ state: "detached", timeout: 40_000 });
+        const readyCard = page.locator(".stat-link", { hasText: "ready to start" });
+        await expect
+          .poll(async () => (await readyCard.textContent()) ?? "", { timeout: 10_000 })
+          .toContain("3");
+        expect(
+          await page.evaluate(() => (window as unknown as { __qaMarker?: number }).__qaMarker),
+        ).toBe(1);
+        await shoot(page, `recovered-${width}.png`);
 
-          // Document never widens past the viewport while reconnecting.
-          const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
-          expect(scrollWidth).toBeLessThanOrEqual(width);
-        } finally {
-          // A failed assertion mid-outage must not leave the server down for the next width.
-          await restore();
-          await page.close();
-        }
-      },
-      120_000,
-    );
+        // Document never widens past the viewport while reconnecting.
+        const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
+        expect(scrollWidth).toBeLessThanOrEqual(width);
+      } finally {
+        // A failed assertion mid-outage must not leave the server down for the next width.
+        await restore();
+        await page.close();
+      }
+    }, 120_000);
   }
 });

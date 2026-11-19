@@ -99,4 +99,6 @@ because there is no retry to cancel yet; it guards the new behaviour.
   and `src/ui-app/tests/index-fetch-dedupe.test.ts` pass (89 tests).
 - `src/ui-app/tests/live-reconnect-qa-browser.test.ts` passes at 375, 768 and
   1280 px (headless WebKit, fixtures only).
-- The `repoos check` result is recorded in the task's report, not here.
+- `REPOOS_CHECK_CHANGED=main repoos check`: exit 0. All 164 UI test files and
+  the second pass passed, along with the UI smoke test (1440, 390 and 320 px,
+  light and dark) and the rendered contrast audit.
