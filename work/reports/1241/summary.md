@@ -1,3 +1,14 @@
+---
+id: summary
+title: summary
+type: feature
+status: inbox
+priority: p2
+area: general
+assigned_to: ai
+created_by: ""
+branch: ""
+---
 ## TL;DR
 
 Task 1241 was a QA pass over the Agents page's Build Your Team, Scheduled Tasks and Reminders sections with long lists and long names, verified headlessly at 375, 768 and 1280 px. The engineer extended the existing `agents-page-qa-browser.test.ts` with long-list cases mounting the real panels against fixtures (55–60 entries each), added real form-validation cases, and fixed one real bug the pass found: a long unbroken schedule name overflowed its card because the title's flex container lacked `min-width: 0` and the title had no `overflow-wrap`. The fix landed in `ScheduledTasksPanel.vue` with a new `expectInsideCards` assertion that was proven to fail on the unfixed code. The QA record is `docs/qa/2026-11-agents-long-lists-qa.md`. Review passed in a single round ("good to go") and the task closed successfully on 2026-11-19.
@@ -20,9 +31,9 @@ Not shipped / documented gaps: built-in team cards remain stubbed (`BuiltInAgent
 - **Review passes:** 1 (pass 1, 2026-11-19T19:43:12Z, verdict "good to go").
 - **Wall-clock created → done:** 19:07:09Z → 20:21:27Z on 2026-11-19 = 1 h 14 min 18 s.
 - **Agents and models per role:**
-  - Engineer: agent `engineer`, model `haiku`, elapsed 1844 s, 146 tokens, cost 0.28857936999999995 (as recorded), finished.
-  - Reviewer: agent `reviewer`, model `opencode-go/glm-5.3-flash`, elapsed 111 s, 41915 tokens, cost 0.01692328, finished.
-  - Routing: model router (jev), model unknown, 0 s elapsed, no tokens/cost recorded, finished.
+- Engineer: agent `engineer`, model `haiku`, elapsed 1844 s, 146 tokens, cost 0.28857936999999995 (as recorded), finished.
+- Reviewer: agent `reviewer`, model `opencode-go/glm-5.3-flash`, elapsed 111 s, 41915 tokens, cost 0.01692328, finished.
+- Routing: model router (jev), model unknown, 0 s elapsed, no tokens/cost recorded, finished.
 - **Restarts or model swaps:** none recorded.
 - **Close-out gate:** completed in 375 s.
 - **Automated verification:** browser console-error check passed (handoff evidence, 2026-11-19T19:41:14Z); guard negative-test evidence skipped — no check guard rules were materially changed on the branch.
