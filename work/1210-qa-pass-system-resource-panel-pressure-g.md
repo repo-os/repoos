@@ -3,6 +3,9 @@ id: "1210"
 title: "QA pass: system resource panel, pressure guard banners and Control stats under high load fixtures"
 type: bug
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: `needs some work` — the server-computed landing checklist reports a conflict and task-scope failure in another task’s work file.
 priority: p2
 area: web
 assigned_to: ai
@@ -180,3 +183,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-19T05:43:42Z · note: review pass 5: good to go
 - 2026-11-19T05:43:42Z · message_queued at 2026-11-19T05:43:42.523Z
 - 2026-11-19T06:18:25Z · note: review pass 6: needs some work
+- 2026-11-19T06:18:25Z · needs_input
