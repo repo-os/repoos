@@ -67,3 +67,4 @@ Do not touch repoos.toml. Keep aria-labels descriptive (e.g. aria-label "Delete 
 - 2026-11-19T15:31:44Z · message_delivered: 1 message(s)
 - 2026-11-19T15:37:11Z · body
 - 2026-11-19T15:38:51Z · status active→review
+- 2026-11-19T15:38:51Z · note: shots: skipped — 2 shots already captured — an engineer-made capture pre-empts the automatic one
