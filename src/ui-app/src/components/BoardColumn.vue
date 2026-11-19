@@ -2,11 +2,14 @@
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import { COLUMNS, sortTasks, useRepoStore } from "../stores/repo";
 import type { Column } from "../stores/repo";
+import { DirtyCheckoutError, WorktreeHandoffConflictError } from "../stores/repo";
 import type { Task } from "../types";
 import { useConfigStore } from "../stores/config";
 import TaskCard from "./TaskCard.vue";
 import RestartTaskDialog from "./RestartTaskDialog.vue";
 import ReviewConfirmDialog from "./ReviewConfirmDialog.vue";
+import DirtyCheckoutDialog from "./DirtyCheckoutDialog.vue";
+import WorktreeHandoffConflictDialog from "./WorktreeHandoffConflictDialog.vue";
 import { confirmDependencyOverride } from "../lib/task-dependencies";
 import {
   applyCollapseDefaults,
@@ -216,36 +219,44 @@ const leavingTaskName = computed(() => {
 const dragOver = ref(false);
 let dragDepth = 0;
 
-/** Whether the task currently being dragged (if any) could actually land in
- *  this column, and why not — mirrors onDrop's own checks so the cue never
- *  promises a drop that would then fail. Null (no drag in progress, or a
- *  no-op drag back onto its own column) means "not applicable", not
- *  "invalid". The done column's checks need live agent/review state
- *  taskTransitions.ts has no way to know, so they're inlined here rather
- *  than folded into boardMoveRejectionReason. */
+/**
+ * Why dragging `task` onto the column for `toColId` can't land there, or null
+ * when the move is allowed. Shared by the hover cue (dropCheck) and the drop
+ * itself (onDrop), so the cue never promises a drop that would then fail and
+ * no drag source can bypass the check. The done column's checks need live
+ * agent/review state taskTransitions.ts has no way to know, so they're
+ * inlined here rather than folded into boardMoveRejectionReason.
+ */
+function moveRejection(task: Task, toColId: string): string | null {
+  if (task.status === toColId) return null;
+  if (toColId === "done") {
+    if (task.status !== "review") return "Only review tasks can be moved to done.";
+    if (repo.reviewFor(task.id)?.running) return "Waiting for automatic review to finish.";
+    return null;
+  }
+  // Mirrors the drawer's Review button, which disables itself while the
+  // agent is running: the commit-and-validate gate would otherwise run
+  // against a worktree the agent might still be writing to.
+  if (task.status === "active" && toColId === "review" && repo.isRunning(task.id)) {
+    return "The agent is still coding — Review becomes available when the turn ends.";
+  }
+  if (!isValidBoardMove(task.status, toColId)) {
+    return boardMoveRejectionReason(task.status, toColId);
+  }
+  return null;
+}
+
+/** Hover cue for the column: null (no drag in progress, or a no-op drag back
+ *  onto its own column) means "not applicable", not "invalid". A human task's
+ *  move validity is checked without a reason string — the plain-English cue is
+ *  for agent-owned tasks. */
 const dropCheck = computed<{ valid: boolean; reason: string | null } | null>(() => {
   const t = repo.draggingTask;
   if (!t || t.status === props.col.id) return null;
   if (t.assignee === "human")
     return { valid: isValidHumanBoardMove(t.status, props.col.id), reason: null };
-  if (props.col.id === "done") {
-    if (t.status !== "review")
-      return { valid: false, reason: "Only review tasks can be moved to done." };
-    if (repo.reviewFor(t.id)?.running)
-      return { valid: false, reason: "Waiting for automatic review to finish." };
-    return { valid: true, reason: null };
-  }
-  // Mirrors the drawer's Review button, which disables itself while the
-  // agent is running: the commit-and-validate gate would otherwise run
-  // against a worktree the agent might still be writing to.
-  if (t.status === "active" && props.col.id === "review" && repo.isRunning(t.id)) {
-    return {
-      valid: false,
-      reason: "The agent is still coding — Review becomes available when the turn ends.",
-    };
-  }
-  const valid = isValidBoardMove(t.status, props.col.id);
-  return { valid, reason: valid ? null : boardMoveRejectionReason(t.status, props.col.id) };
+  const reason = moveRejection(t, props.col.id);
+  return reason ? { valid: false, reason } : { valid: true, reason: null };
 });
 const dropIsValid = computed(() => (dropCheck.value === null ? null : dropCheck.value.valid));
 
@@ -325,17 +336,17 @@ async function onDrop(e: DragEvent): Promise<void> {
       if (isColumnCollapsed(props.col.id)) toggle();
       return;
     }
+    // Re-check the move with the same function the hover cue used. A drag
+    // source that bypasses dragover (a programmatic drop, another browser's
+    // quirks) still cannot land an invalid move silently: it throws the same
+    // plain-English reason and toasts it below.
+    const rejection = moveRejection(task, props.col.id);
+    if (rejection) throw new Error(rejection);
     if (props.col.id === "done") {
       // Done is never an ordinary board status transition: its endpoint owns
       // the review-running 409, merge, check, and worktree cleanup. This also
       // prevents a drag from bypassing the disabled drawer/card action.
-      if (task.status !== "review") {
-        throw new Error("Only review tasks can be moved to done");
-      }
-      if (repo.reviewFor(task.id)?.running) {
-        throw new Error("Waiting for automatic review to finish.");
-      }
-      await repo.completeTask(task);
+      await moveDraggedToDone(task);
     } else if (props.col.id === "active" && task.status === "ready") {
       // Same as clicking Start work — provisions the worktree/branch and
       // spawns the agent, not a bare status write, so it needs the real
@@ -348,8 +359,6 @@ async function onDrop(e: DragEvent): Promise<void> {
       } else {
         await repo.startWork(task, "resume", undefined, overrideDependencies);
       }
-    } else if (props.col.id === "review" && task.status === "active" && repo.isRunning(task.id)) {
-      throw new Error("The agent is still coding — Review becomes available when the turn ends.");
     } else if (props.col.id === "review") {
       // Ask before starting a check, exactly like the drawer's Review button.
       reviewTask.value = task;
@@ -358,8 +367,128 @@ async function onDrop(e: DragEvent): Promise<void> {
     }
     if (isColumnCollapsed(props.col.id)) toggle();
   } catch (err) {
-    repo.onError(err);
+    onDraggedMoveError(err);
   }
+}
+
+/** True while a board-initiated close-out request is in flight — the same
+ *  guard TaskCard's busy flag provides on the button path, so a double drop
+ *  cannot start two close-outs for the same task. */
+const closeOutBusy = ref(false);
+
+/**
+ * A drop onto Done runs the close-out endpoint, whose two confirmation
+ * rejections (0204/#0512 dirty checkout, #0834 worktree changed after handoff)
+ * are answered through dialogs, not toasts — the same dialogs the card and
+ * drawer open. `onError` deliberately swallows these error types, so without
+ * this routing a rejected drag-to-done used to be completely silent. A generic
+ * close-out failure stays with `repo.onError`: the endpoint records it as the
+ * task's inline DoneErrorCard, which already carries the plain-English reason
+ * and next step.
+ */
+async function moveDraggedToDone(task: Task): Promise<void> {
+  if (closeOutBusy.value) return;
+  closeOutBusy.value = true;
+  try {
+    await repo.completeTask(task);
+  } finally {
+    closeOutBusy.value = false;
+  }
+}
+
+function onDraggedMoveError(err: unknown): void {
+  if (err instanceof DirtyCheckoutError) {
+    dirtyTask.value = repo.tasks.find((t) => t.id === err.taskId) ?? null;
+    if (!dirtyTask.value) {
+      // The task is gone from the board (refresh raced the drop): fall back to
+      // the store's own surface instead of dropping the rejection silently.
+      repo.onError(err);
+    }
+    return;
+  }
+  if (err instanceof WorktreeHandoffConflictError) {
+    handoffConflictTask.value = repo.tasks.find((t) => t.id === err.taskId) ?? null;
+    if (!handoffConflictTask.value) repo.onError(err);
+    return;
+  }
+  repo.onError(err);
+}
+
+/** Uncommitted-changes confirmation (0204/#0512) for a drag-to-done — the same
+ *  modal TaskCard/TaskDrawer open on their own paths. */
+const dirtyTask = ref<Task | null>(null);
+const dirtyFiles = computed(() => (dirtyTask.value ? repo.dirtyFilesFor(dirtyTask.value.id) : []));
+const dirtyScope = computed(() =>
+  dirtyTask.value ? repo.dirtyScopeFor(dirtyTask.value.id) : ("main" as const),
+);
+const handoffConflictTask = ref<Task | null>(null);
+const handoffConflictMessage = computed(() =>
+  handoffConflictTask.value
+    ? (repo.worktreeHandoffConflictFor(handoffConflictTask.value.id)?.message ?? "")
+    : "",
+);
+const handoffConflictFiles = computed(() =>
+  handoffConflictTask.value
+    ? (repo.worktreeHandoffConflictFor(handoffConflictTask.value.id)?.files ?? [])
+    : [],
+);
+const handoffConflictFilesUnavailable = computed(
+  () =>
+    !!handoffConflictTask.value &&
+    !!repo.worktreeHandoffConflictFor(handoffConflictTask.value.id)?.filesUnavailable,
+);
+
+async function confirmCommitDirty(): Promise<void> {
+  const t = dirtyTask.value;
+  dirtyTask.value = null;
+  if (!t) return;
+  closeOutBusy.value = true;
+  try {
+    await repo.completeTask(t, { commitDirty: true });
+  } catch (err) {
+    onDraggedMoveError(err);
+  } finally {
+    closeOutBusy.value = false;
+  }
+}
+
+async function discardHandoffConflict(): Promise<void> {
+  const t = handoffConflictTask.value;
+  handoffConflictTask.value = null;
+  if (!t) return;
+  closeOutBusy.value = true;
+  try {
+    await repo.discardWorktreeHandoffEdits(t);
+    repo.pushToast("Post-handoff edits discarded — retry Move to done when ready.", "info");
+  } catch (err) {
+    repo.onError(err);
+  } finally {
+    closeOutBusy.value = false;
+  }
+}
+
+async function sendBackHandoffConflict(): Promise<void> {
+  const t = handoffConflictTask.value;
+  handoffConflictTask.value = null;
+  if (!t) return;
+  closeOutBusy.value = true;
+  try {
+    await repo.sendBackFromHandoffConflict(t);
+  } catch (err) {
+    repo.onError(err);
+  } finally {
+    closeOutBusy.value = false;
+  }
+}
+
+function cancelHandoffConflict(): void {
+  if (handoffConflictTask.value) repo.clearWorktreeHandoffConflict(handoffConflictTask.value.id);
+  handoffConflictTask.value = null;
+}
+
+function cancelDirty(): void {
+  if (dirtyTask.value) repo.clearDirtyCheckout(dirtyTask.value.id);
+  dirtyTask.value = null;
 }
 
 function clearDragOver(): void {
@@ -497,5 +626,25 @@ const unackedBadge = computed(() =>
     @update:open="(v) => (v ? undefined : closeReviewConfirm())"
     @run-checks="confirmReviewWith(true)"
     @skip-checks="confirmReviewWith(false)"
+  />
+
+  <!-- Rejections a drag-to-done pauses on (0204/#0512, #0598/#0834): the same
+       dialogs the card and drawer open for their own actions, so a rejected
+       board drag is answered by the UI instead of disappearing silently. -->
+  <DirtyCheckoutDialog
+    :task="dirtyTask"
+    :files="dirtyFiles"
+    :scope="dirtyScope"
+    @commit="confirmCommitDirty"
+    @cancel="cancelDirty"
+  />
+  <WorktreeHandoffConflictDialog
+    :task="handoffConflictTask"
+    :message="handoffConflictMessage"
+    :files="handoffConflictFiles"
+    :files-unavailable="handoffConflictFilesUnavailable"
+    @discard="discardHandoffConflict"
+    @send-back="sendBackHandoffConflict"
+    @cancel="cancelHandoffConflict"
   />
 </template>
