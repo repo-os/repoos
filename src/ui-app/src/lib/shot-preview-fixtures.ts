@@ -19,6 +19,7 @@ import { useNoticesStore } from "../stores/notices";
 import { useRemindersStore } from "../stores/reminders";
 import { useUiStore } from "../stores/ui";
 import type {
+  CheckPlanView,
   CheckRunRow,
   CloseOutOutcomeEvent,
   DevTargetView,
@@ -997,6 +998,8 @@ export interface ShotReleaseStatus {
 const RELEASE_STATUS_FIXTURES: ReadonlySet<ShotPreviewFixtureId> = new Set([
   "release:cutReady",
   "release:autoPublishWaiting",
+  // #1219 — a release status to go with the long distribution channel capture.
+  "release:longDistribution",
 ]);
 
 /** The `GET /api/release` body these fixtures pin; null keeps the live status. */
@@ -1026,6 +1029,74 @@ export function shotFixtureReleaseStatus(
     blockers: [],
     releaseUrl: "https://github.com/repo-os/repoos/releases/tag/v0.6.0",
     workflowUrl: null,
+  };
+}
+
+/**
+ * Long, unbroken check-plan rows for the #1219 Checks page data capture. The
+ * preview board's real plan is tidy and short, so a capture of ordinary data
+ * cannot show whether names and commands wrap at narrow widths.
+ */
+export function shotFixtureCheckPlan(fixture: ShotPreviewFixtureId | null): CheckPlanView | null {
+  if (fixture !== "checks:longData") return null;
+  return {
+    source: "declared",
+    defaultProfile: "default",
+    profile: "default",
+    profiles: ["default"],
+    warnings: [],
+    errors: [],
+    steps: Array.from({ length: 24 }, (_, i) => ({
+      name: `fixture-check-${"x".repeat(120)}-${i}`,
+      command: `bun run test -- ${"very-long-directory-name/".repeat(5)}${"y".repeat(80)}-${i}`,
+      timeoutMs: 600_000,
+      required: true,
+      profiles: [],
+      whenChanged: [],
+      dependsOn: [],
+      requires: [],
+      crossCutting: true,
+      selected: true,
+      missing: [],
+    })),
+    lastRun: null,
+  };
+}
+
+/** One pinned distribution channel for the #1219 long-data Releases capture. */
+export interface ShotDistributionChannel {
+  name: string;
+  kind: string | null;
+  url: string | null;
+  install: string[];
+  version: string | null;
+  state: "matching" | "out-of-sync" | "updating" | "unverified" | "unavailable" | "failed";
+  detail: string | null;
+}
+
+/** The `GET /api/release/distribution` body the `release:longDistribution` capture pins. */
+export interface ShotDistributionSeed {
+  releaseVersion: string;
+  releaseTag: string;
+  channels: ShotDistributionChannel[];
+}
+
+export function shotFixtureDistribution(
+  fixture: ShotPreviewFixtureId | null,
+): ShotDistributionSeed | null {
+  if (fixture !== "release:longDistribution") return null;
+  return {
+    releaseVersion: "0.6.0",
+    releaseTag: "v0.6.0",
+    channels: Array.from({ length: 24 }, (_, i) => ({
+      name: `fixture-channel-${i}-${"z".repeat(120)}`,
+      kind: "npm",
+      url: `https://packages.example.org/${"long-package-path/".repeat(5)}${"q".repeat(80)}-${i}`,
+      install: [`npm install -g ${"@repo-os/long-package-name-".repeat(3)}${"w".repeat(80)}-${i}`],
+      version: "0.6.0",
+      state: "matching",
+      detail: null,
+    })),
   };
 }
 

@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 491751
-last_close_out_gate_at: "2026-11-19T07:53:21.215Z"
 id: "1219"
 title: "QA pass: Checks and Releases pages with real data at all screen sizes"
 type: bug
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: a6f19eba60d81cf76325fca1d5fc39ebdc791d9e
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-checks-and-releases-pages-with-r
@@ -14,6 +13,8 @@ cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-11-19T06:17:33Z"
 updated_at: "2026-11-19T07:53:21Z"
+last_close_out_gate_ms: 491751
+last_close_out_gate_at: "2026-11-19T07:53:21.215Z"
 last_check_failure: "repoos check at 2026-11-19T06:56:03.096Z: repoos check failed: rendered-contrast — · div#setting-model_routing.timeoutMs.setting-row > div.setting-info > div.setting-desc — #958ab0 on #ffffff = 3.21 (need ≥4.5, 11px) [settings] \"How long one routing decision may take before the configured\""
 review_rounds: 1
 routing_switches: 1
