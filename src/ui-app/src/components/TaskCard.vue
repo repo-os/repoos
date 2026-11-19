@@ -1647,14 +1647,15 @@ async function openDebuggerFromError(): Promise<void> {
     @dragend="onDragEnd"
   >
     <div class="flex flex-1 flex-col p-[13px]">
-      <div class="flex items-center gap-[7px]">
+      <div class="flex flex-wrap items-center gap-x-[7px] gap-y-[6px]">
         <CopyableNumber
           :label="`#${task.id}`"
           :path="`/work?task=${encodeURIComponent(task.id)}`"
           :aria-label="`Copy link to task ${task.id}`"
         />
         <span
-          class="rounded-md border border-border bg-[var(--chip-bg)] px-2 py-[2px] font-mono text-[9.5px] text-[var(--txt-dim)]"
+          class="min-w-0 max-w-full truncate rounded-md border border-border bg-[var(--chip-bg)] px-2 py-[2px] font-mono text-[9.5px] text-[var(--txt-dim)]"
+          :data-tip="task.type"
           >{{ task.type }}</span
         >
         <span

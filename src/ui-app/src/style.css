@@ -17106,7 +17106,9 @@
  * area/dependency chips and the green file chip. */
 .tc-human-chip {
   display: inline-flex;
-  flex: none;
+  max-width: 100%;
+  min-width: 0;
+  overflow-wrap: anywhere;
   align-items: center;
   gap: 3px;
   padding: 2px 6px;
