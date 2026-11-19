@@ -380,4 +380,107 @@ describeBrowser("slow network and offline QA (#1226)", () => {
       await page.close();
     }
   });
+
+  it("offline: the login page replaces its spinner with a plain-English failure and retry (#1236)", async () => {
+    const page = await openPage();
+    try {
+      await goOffline(page);
+      await page.goto(`${server!.url}/login`, { waitUntil: "load", timeout: 20_000 });
+      await page.waitForFunction(
+        () => document.querySelector('[data-testid="login-status-error"]') !== null,
+        { timeout: 15_000 },
+      );
+      // The loading shell must have resolved to the error, not spun forever.
+      await page.waitForFunction(() => !document.querySelector(".login-loading"), {
+        timeout: 5_000,
+      });
+      const text = await page.evaluate(
+        () => document.querySelector('[data-testid="login-status-error"]')?.textContent ?? "",
+      );
+      expect(text).toContain("Can't reach the RepoOS server");
+      expect(
+        await page.evaluate(
+          () => document.querySelector('[data-testid="login-retry"]') !== null,
+        ),
+      ).toBe(true);
+
+      for (const width of VIEWPORTS) await expectNoHorizontalOverflow(page, width);
+      expect(bootErrors).toEqual([]);
+    } finally {
+      await page.close();
+    }
+  });
+
+  it("offline: the login page recovers on its own when the server is reachable again (#1236)", async () => {
+    const page = await openPage();
+    try {
+      await goOffline(page);
+      await page.goto(`${server!.url}/login`, { waitUntil: "load", timeout: 20_000 });
+      await page.waitForFunction(
+        () => document.querySelector('[data-testid="login-status-error"]') !== null,
+        { timeout: 15_000 },
+      );
+
+      // The server comes back and answers the auth probes normally.
+      await page.unroute("**/api/**");
+      await page.route("**/api/auth/status", async (route) => {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            enabled: true,
+            bootstrapNeeded: false,
+            hasGoogle: false,
+            hasEmailProvider: true,
+          }),
+        });
+      });
+      await page.route("**/api/auth/me", async (route) => {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({ authenticated: false, authEnabled: true }),
+        });
+      });
+
+      // No user action: tabbing back in re-probes the status endpoint and the
+      // sign-in form appears on its own.
+      await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+      await page.waitForFunction(
+        () => document.querySelector('input[aria-label="Email address"]') !== null,
+        { timeout: 10_000 },
+      );
+      await page.waitForFunction(
+        () => document.querySelector('[data-testid="login-status-error"]') === null,
+        { timeout: 5_000 },
+      );
+      expect(bootErrors).toEqual([]);
+    } finally {
+      await page.close();
+    }
+  });
+
+  it("stalled /api/auth/status: the login page's own timeout resolves the spinner (#1236)", async () => {
+    const page = await openPage();
+    try {
+      // The status probe never answers. Without the #1236 bound the login
+      // spinner would hang until the browser's default timeout.
+      await page.route("**/api/auth/status", () => new Promise<void>(() => {}));
+      await page.goto(`${server!.url}/login`, { waitUntil: "load", timeout: 20_000 });
+      await page.waitForFunction(
+        () => document.querySelector('[data-testid="login-status-error"]') !== null,
+        { timeout: 20_000 },
+      );
+      await page.waitForFunction(() => !document.querySelector(".login-loading"), {
+        timeout: 5_000,
+      });
+      const text = await page.evaluate(
+        () => document.querySelector('[data-testid="login-status-error"]')?.textContent ?? "",
+      );
+      expect(text).toContain("Can't reach the RepoOS server");
+      expect(bootErrors).toEqual([]);
+    } finally {
+      await page.close();
+    }
+  });
 });
