@@ -2,14 +2,14 @@
 id: "1220"
 title: "QA pass: dark and light theme contrast on every main page"
 type: bug
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-dark-and-light-theme-contrast-on
 created_at: "2026-11-19T06:17:41Z"
-updated_at: "2026-11-19T06:33:01Z"
+updated_at: "2026-11-19T06:34:08Z"
 handoff_signal_retry_count: 1
 review_rounds: 1
 routing_switches: 1
@@ -38,3 +38,4 @@ Do not touch repoos.toml.
 - 2026-11-19T06:22:34Z · message_delivered: 1 message(s)
 - 2026-11-19T06:22:34Z · status review→active
 - 2026-11-19T06:33:01Z · body
+- 2026-11-19T06:34:08Z · status active→review
