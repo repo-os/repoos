@@ -1,19 +1,20 @@
 ---
-last_close_out_gate_ms: 182293
-last_close_out_gate_at: "2026-11-19T17:34:12.799Z"
 id: "1236"
 title: "Easter eggs bundle: bound LoginView auth fetches (slow-server login spinner)"
 type: bug
-status: review
+status: done
 paths: [src/ui-app/src/views/LoginView.vue]
 priority: p3
 area: web
 depends_on: ["1226"]
+merged_commit: c57d7de15cda12c0807f9f8b21ef19216789464b
 assigned_to: ai
 created_by: t@t
 branch: feat/easter-eggs-bundle-bound-loginview-auth-
 created_at: "2026-11-19T16:18:14Z"
 updated_at: "2026-11-19T17:34:12Z"
+last_close_out_gate_ms: 182293
+last_close_out_gate_at: "2026-11-19T17:34:12.799Z"
 review_passes: 1
 ---
 ## Problem
