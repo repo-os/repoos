@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-agents-page-failure-states-and-t
 created_at: "2026-11-18T23:17:32Z"
-updated_at: "2026-11-18T23:55:15Z"
+updated_at: "2026-11-19T00:02:46Z"
 ---
 ## Problem
 Agent failure states (signed out, missing CLI, rate limited) are common in practice and need verification.
@@ -40,3 +40,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T23:47:50Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-18T23:53:05Z · body
 - 2026-11-18T23:55:15Z · CTO nudge: held — handoff gate is running
+- 2026-11-19T00:02:46Z · CTO nudge: held — handoff gate is running
