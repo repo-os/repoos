@@ -2,16 +2,16 @@
 id: "1255"
 title: "QA pass: update banner, version display and release notes modal at all screen sizes"
 type: bug
-status: ready
+status: active
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
-branch: ""
+branch: feat/qa-pass-update-banner-version-display-an
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T23:27:47Z"
-updated_at: "2026-11-19T23:27:59Z"
+updated_at: "2026-11-19T23:28:01Z"
 ---
 ## Problem
 The update-available banner, version display and release notes modal have not been checked since the restart fix.
@@ -29,3 +29,4 @@ Do not touch repoos.toml.
 - 2026-11-19T23:27:47Z · created · t@t
 - 2026-11-19T23:27:55Z · status inbox→ready
 - 2026-11-19T23:27:59Z · cli_override, model_override
+- 2026-11-19T23:28:01Z · status ready→active, branch
