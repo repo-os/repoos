@@ -360,7 +360,7 @@ export function writeStoryDefinition(
     : listStoryDefinitions(config);
   const existing = items.find((item) => item.key === storyKey(name)) ?? null;
   if (existing) {
-    throw new Error(`A story named "${existing.name}" already exists`);
+    throw new Error(`A story named "${existing.name}" already exists. Choose a different name.`);
   }
   const path = input.path ?? collisionFreeStoryPath(config, name);
   if (!path.startsWith(`${storiesDirOf(config)}/`) || !path.endsWith(".md")) {
@@ -420,7 +420,7 @@ export function rewriteStoryDefinition(
     : listStoryDefinitions(config);
   const clash = items.find((item) => item.key === storyKey(name)) ?? null;
   if (clash && clash.path !== path) {
-    throw new Error(`A story named "${clash.name}" already exists`);
+    throw new Error(`A story named "${clash.name}" already exists. Choose a different name.`);
   }
   const nextPath =
     storySlug(name) === storySlug(current.name) ? path : collisionFreeStoryPath(config, name, path);
