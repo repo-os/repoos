@@ -477,14 +477,26 @@ function saveRaw(): void {
 const testState = ref<"idle" | "sending" | "sent" | "failed">("idle");
 let testStateTimer: ReturnType<typeof setTimeout> | undefined;
 
+/** Plain-English result under the ntfy topic row; stays until the next attempt. */
+const ntfyTestMessage = ref<{ ok: boolean; text: string } | null>(null);
+
 async function sendTestNotification(): Promise<void> {
   testState.value = "sending";
+  ntfyTestMessage.value = null;
   clearTimeout(testStateTimer);
   try {
     await api("/api/ntfy/test", { method: "POST" });
     testState.value = "sent";
+    ntfyTestMessage.value = {
+      ok: true,
+      text: "Test sent. If nothing arrives in your ntfy app, check that the topic matches exactly.",
+    };
   } catch {
     testState.value = "failed";
+    ntfyTestMessage.value = {
+      ok: false,
+      text: "Couldn't send the test notification. Check that the topic matches the one your ntfy app is subscribed to, then try again.",
+    };
   }
   testStateTimer = setTimeout(() => {
     testState.value = "idle";
@@ -2132,6 +2144,21 @@ onUnmounted(() => {
                               : "Send test"
                         }}
                       </Button>
+                    </div>
+                    <div
+                      v-if="!form.ntfyEnabled || !String(form.ntfyTopic ?? '').trim()"
+                      class="setting-desc"
+                      style="width: 100%"
+                    >
+                      Turn on ntfy and enter a topic to send a test.
+                    </div>
+                    <div
+                      v-if="ntfyTestMessage"
+                      :class="ntfyTestMessage.ok ? 'ntfy-test-ok' : 'ff-error'"
+                      role="status"
+                      style="width: 100%"
+                    >
+                      {{ ntfyTestMessage.text }}
                     </div>
                   </div>
                 </div>

@@ -18,6 +18,7 @@
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import { ApiError, api, JSON_OPTS } from "../api";
 import { useAuthStore } from "../stores/auth";
+import ConfirmDialog from "./ConfirmDialog.vue";
 import Button from "./ui/button.vue";
 import Input from "./ui/input.vue";
 import Select from "./ui/select/root.vue";
@@ -91,6 +92,10 @@ const provisionRequest = ref<ProvisioningRequestView | null>(null);
 let provisionTimer: ReturnType<typeof setInterval> | null = null;
 
 const disconnecting = ref(false);
+/** Whether the disconnect dialog is open (replaces native confirm()). */
+const disconnectDialogOpen = ref(false);
+/** Bound chat waiting on the unbind dialog (replaces native confirm()). */
+const pendingUnbind = ref<TelegramLink | null>(null);
 
 const testChatId = ref<number | null>(null);
 const testText = ref("");
@@ -108,7 +113,10 @@ async function loadStatus(): Promise<void> {
   try {
     status.value = await api<TelegramStatus>("/api/telegram/status");
   } catch (err) {
-    statusError.value = err instanceof Error ? err.message : "Failed to load Telegram status";
+    statusError.value =
+      err instanceof Error
+        ? err.message
+        : "Couldn't load Telegram status. Check the connection, then press Refresh.";
   } finally {
     statusLoading.value = false;
   }
@@ -141,6 +149,17 @@ function chatLabel(link: TelegramLink): string {
   return `${handle} — ${link.email}`;
 }
 
+/** Plain-English receive mode for the status line (never the raw enum). */
+const TRANSPORT_LABELS: Record<TelegramStatus["transport"]["mode"], string> = {
+  off: "not receiving messages",
+  polling: "checking Telegram for messages",
+  webhook: "receiving messages by webhook",
+};
+
+function transportLabel(mode: TelegramStatus["transport"]["mode"] | undefined): string {
+  return TRANSPORT_LABELS[mode ?? "off"];
+}
+
 async function connectByo(): Promise<void> {
   const token = byoToken.value.trim();
   if (!token) return;
@@ -156,23 +175,28 @@ async function connectByo(): Promise<void> {
     byoWarnings.value = result.warnings ?? [];
     await loadStatus();
   } catch (err) {
-    byoError.value = err instanceof Error ? err.message : "Failed to connect the bot token";
+    byoError.value =
+      err instanceof Error
+        ? err.message
+        : "Couldn't connect that bot token. Copy the whole token from BotFather and try again.";
   } finally {
     byoConnecting.value = false;
   }
 }
 
+function askDisconnect(): void {
+  disconnectDialogOpen.value = true;
+}
+
 async function disconnect(): Promise<void> {
-  if (!confirm("Disconnect the Telegram bot? The stored credential is forgotten immediately.")) {
-    return;
-  }
   disconnecting.value = true;
   statusError.value = "";
   try {
     await api("/api/telegram/disconnect", { method: "POST" });
     await loadStatus();
   } catch (err) {
-    statusError.value = err instanceof Error ? err.message : "Failed to disconnect";
+    statusError.value =
+      err instanceof Error ? err.message : "Couldn't disconnect the bot. Try again in a moment.";
   } finally {
     disconnecting.value = false;
   }
@@ -221,7 +245,9 @@ async function redeemProvisioning(id: string): Promise<void> {
     await loadStatus();
   } catch (err) {
     provisionError.value =
-      err instanceof Error ? err.message : "Failed to redeem the provisioned credential";
+      err instanceof Error
+        ? err.message
+        : "Couldn't save the new bot. Press Connect Telegram to start setup again.";
   }
 }
 
@@ -248,7 +274,10 @@ async function beginProvisioning(): Promise<void> {
     ) {
       provisionNotConfigured.value = true;
     }
-    provisionError.value = err instanceof Error ? err.message : "Failed to start provisioning";
+    provisionError.value =
+      err instanceof Error
+        ? err.message
+        : "Couldn't start Telegram setup. Check the connection, then try again.";
   } finally {
     provisionStarting.value = false;
   }
@@ -276,24 +305,42 @@ async function sendTestMessage(): Promise<void> {
   } catch (err) {
     testResult.value = {
       ok: false,
-      detail: err instanceof Error ? err.message : "Failed to send the test message",
+      detail:
+        err instanceof Error
+          ? err.message
+          : "Couldn't send the test message. Check that the bot is still in that chat, then try again.",
     };
   } finally {
     testSending.value = false;
   }
 }
 
-async function unbindChat(link: TelegramLink): Promise<void> {
+/** The title names the account and email, so the dialog says what it will remove. */
+function unbindTitle(link: TelegramLink): string {
   const label = link.telegramUsername
     ? `@${link.telegramUsername}`
     : `Telegram id ${link.telegramUserId}`;
-  if (!confirm(`Unbind ${label} (${link.email})? It will stop receiving notifications.`)) return;
+  return `Unbind ${label} (${link.email})?`;
+}
+
+function askUnbind(link: TelegramLink): void {
+  pendingUnbind.value = link;
+}
+
+async function confirmUnbind(): Promise<void> {
+  const link = pendingUnbind.value;
+  pendingUnbind.value = null;
+  if (link) await unbindChat(link);
+}
+
+async function unbindChat(link: TelegramLink): Promise<void> {
   unbindingChat.value = link.telegramUserId;
   try {
     await api(`/api/auth/telegram/links/${link.telegramUserId}`, { method: "DELETE" });
     await loadLinks();
   } catch (err) {
-    statusError.value = err instanceof Error ? err.message : "Failed to unbind chat";
+    statusError.value =
+      err instanceof Error ? err.message : "Couldn't unbind that chat. Try again.";
   } finally {
     unbindingChat.value = null;
   }
@@ -333,7 +380,7 @@ onBeforeUnmount(() => {
                 ? "managed provisioning"
                 : "Bring Your Own Bot Token"
             }}
-            · transport {{ status?.transport?.mode ?? "off" }}
+            · {{ transportLabel(status?.transport?.mode) }}
           </span>
         </template>
         <template v-else>Not connected</template>
@@ -343,7 +390,7 @@ onBeforeUnmount(() => {
         variant="outline"
         size="sm"
         :disabled="disconnecting"
-        @click="disconnect"
+        @click="askDisconnect"
       >
         {{ disconnecting ? "Disconnecting…" : "Disconnect" }}
       </Button>
@@ -485,13 +532,42 @@ onBeforeUnmount(() => {
           <button
             class="tgp-unbind-btn"
             :disabled="unbindingChat === link.telegramUserId"
-            @click="unbindChat(link)"
+            @click="askUnbind(link)"
           >
             Unbind
           </button>
         </div>
       </div>
     </template>
+
+    <ConfirmDialog
+      :open="disconnectDialogOpen"
+      title="Disconnect the Telegram bot?"
+      confirm-label="Disconnect"
+      @update:open="(v) => (disconnectDialogOpen = v)"
+      @confirm="
+        () => {
+          disconnectDialogOpen = false;
+          void disconnect();
+        }
+      "
+    >
+      The stored bot credential is forgotten right away. Notifications and test messages stop until
+      you connect a bot again.
+    </ConfirmDialog>
+    <ConfirmDialog
+      :open="pendingUnbind !== null"
+      :title="pendingUnbind ? unbindTitle(pendingUnbind) : ''"
+      confirm-label="Unbind"
+      @update:open="
+        (v) => {
+          if (!v) pendingUnbind = null;
+        }
+      "
+      @confirm="confirmUnbind"
+    >
+      This chat stops receiving notifications until it is bound again.
+    </ConfirmDialog>
   </div>
 </template>
 

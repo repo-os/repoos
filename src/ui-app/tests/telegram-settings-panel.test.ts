@@ -256,65 +256,132 @@ describe("TelegramSettingsPanel — test message", () => {
   });
 });
 
-describe("TelegramSettingsPanel — unbind", () => {
-  it("confirms then deletes the link and reloads the list", async () => {
-    const boundLink = {
-      telegramUserId: 555111,
-      email: "member@repoos.org",
-      telegramUsername: "boundchat",
-      role: "member",
-      allowlisted: true,
-    };
-    const deleteCalls: StubRoute["calls"] = [];
-    vi.stubGlobal(
-      "confirm",
-      vi.fn(() => true),
-    );
-    let linksState = [boundLink];
-    const fn = vi.fn(async (url: string, opts?: RequestInit) => {
-      const u = String(url);
-      if (u.includes("/api/telegram/status")) {
-        return {
-          ok: true,
-          status: 200,
-          headers: { get: () => "application/json" },
-          json: async () => connectedStatus,
-        } as unknown as Response;
-      }
-      if (u.includes("/api/auth/telegram/links/") && opts?.method === "DELETE") {
-        deleteCalls.push({ url: u, opts });
-        linksState = [];
-        return {
-          ok: true,
-          status: 200,
-          headers: { get: () => "application/json" },
-          json: async () => ({ ok: true }),
-        } as unknown as Response;
-      }
-      if (u.includes("/api/auth/telegram/links")) {
-        return {
-          ok: true,
-          status: 200,
-          headers: { get: () => "application/json" },
-          json: async () => ({ links: linksState }),
-        } as unknown as Response;
-      }
-      throw new Error(`unexpected fetch ${u}`);
-    });
-    vi.stubGlobal("fetch", fn);
+/** Teleported dialog buttons live under document.body, not the wrapper. */
+function bodyButton(label: string): HTMLButtonElement | undefined {
+  return Array.from(document.body.querySelectorAll("button")).find(
+    (b) => b.textContent?.trim() === label,
+  );
+}
 
+function jsonResponse(body: unknown): Response {
+  return {
+    ok: true,
+    status: 200,
+    headers: { get: () => "application/json" },
+    json: async () => body,
+  } as unknown as Response;
+}
+
+describe("TelegramSettingsPanel — unbind", () => {
+  const boundLink = {
+    telegramUserId: 555111,
+    email: "member@repoos.org",
+    telegramUsername: "boundchat",
+    role: "member",
+    allowlisted: true,
+  };
+
+  function mountWithLink(): {
+    wrapper: ReturnType<typeof mount>;
+    deleteCalls: { url: string; opts?: RequestInit }[];
+  } {
+    const deleteCalls: { url: string; opts?: RequestInit }[] = [];
+    let linksState = [boundLink];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string, opts?: RequestInit) => {
+        const u = String(url);
+        if (u.includes("/api/telegram/status")) return jsonResponse(connectedStatus);
+        if (u.includes("/api/auth/telegram/links/") && opts?.method === "DELETE") {
+          deleteCalls.push({ url: u, opts });
+          linksState = [];
+          return jsonResponse({ ok: true });
+        }
+        if (u.includes("/api/auth/telegram/links")) return jsonResponse({ links: linksState });
+        throw new Error(`unexpected fetch ${u}`);
+      }),
+    );
     const wrapper = mount(TelegramSettingsPanel, { props: { enabled: true } });
+    return { wrapper, deleteCalls };
+  }
+
+  it("asks in the shared dialog, and cancelling sends no delete", async () => {
+    const { wrapper, deleteCalls } = mountWithLink();
     await flushPromises();
     expect(wrapper.text()).toContain("@boundchat");
 
     const unbindButton = wrapper.findAll("button").find((b) => b.text() === "Unbind");
-    expect(unbindButton).toBeTruthy();
     await unbindButton!.trigger("click");
+    await flushPromises();
+
+    expect(document.body.textContent).toContain("Unbind @boundchat (member@repoos.org)?");
+    expect(deleteCalls.length).toBe(0);
+    bodyButton("Cancel")!.click();
+    await flushPromises();
+    expect(deleteCalls.length).toBe(0);
+    wrapper.unmount();
+  });
+
+  it("confirming in the dialog deletes the link and reloads the list", async () => {
+    const { wrapper, deleteCalls } = mountWithLink();
+    await flushPromises();
+
+    const unbindButton = wrapper.findAll("button").find((b) => b.text() === "Unbind");
+    await unbindButton!.trigger("click");
+    await flushPromises();
+    bodyButton("Unbind")!.click();
     await flushPromises();
 
     expect(deleteCalls.length).toBe(1);
     expect(deleteCalls[0]?.url).toContain(`/api/auth/telegram/links/${boundLink.telegramUserId}`);
     expect(wrapper.text()).toContain("No chats bound yet.");
+    wrapper.unmount();
+  });
+});
+
+describe("TelegramSettingsPanel — disconnect and status copy", () => {
+  it("disconnect asks in the shared dialog before posting", async () => {
+    const disconnectCalls: { url: string; opts?: RequestInit }[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string, opts?: RequestInit) => {
+        const u = String(url);
+        if (u.includes("/api/telegram/disconnect") && opts?.method === "POST") {
+          disconnectCalls.push({ url: u, opts });
+          return jsonResponse({ ok: true });
+        }
+        if (u.includes("/api/telegram/status")) return jsonResponse(connectedStatus);
+        if (u.includes("/api/auth/telegram/links")) return jsonResponse({ links: [] });
+        throw new Error(`unexpected fetch ${u}`);
+      }),
+    );
+    const wrapper = mount(TelegramSettingsPanel, { props: { enabled: true } });
+    await flushPromises();
+
+    const disconnect = wrapper.findAll("button").find((b) => b.text() === "Disconnect");
+    await disconnect!.trigger("click");
+    await flushPromises();
+    expect(document.body.textContent).toContain("Disconnect the Telegram bot?");
+    expect(disconnectCalls.length).toBe(0);
+
+    bodyButton("Disconnect")!.click();
+    await flushPromises();
+    expect(disconnectCalls.length).toBe(1);
+    wrapper.unmount();
+  });
+
+  it("describes the receive mode in plain English, never the raw enum", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        if (String(url).includes("/api/telegram/status")) return jsonResponse(connectedStatus);
+        return jsonResponse({ links: [] });
+      }),
+    );
+    const wrapper = mount(TelegramSettingsPanel, { props: { enabled: true } });
+    await flushPromises();
+    expect(wrapper.text()).toContain("checking Telegram for messages");
+    expect(wrapper.text()).not.toContain("transport");
     wrapper.unmount();
   });
 });
