@@ -2,14 +2,14 @@
 id: "1215"
 title: "QA pass: task create and edit flows at all screen sizes"
 type: bug
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-task-create-and-edit-flows-at-al
 created_at: "2026-11-19T03:17:33Z"
-updated_at: "2026-11-19T07:02:54Z"
+updated_at: "2026-11-19T07:08:08Z"
 review_rounds: 2
 routing_switches: 1
 routing_escalations: 1
@@ -89,3 +89,4 @@ Do not touch repoos.toml.
 - 2026-11-19T06:51:31Z · status review→active
 - 2026-11-19T06:56:43Z · body
 - 2026-11-19T07:02:54Z · CTO nudge: held — handoff gate is running
+- 2026-11-19T07:08:08Z · status active→review
