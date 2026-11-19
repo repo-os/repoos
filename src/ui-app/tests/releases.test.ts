@@ -836,16 +836,15 @@ describe("feature releases", () => {
     );
   });
 
-  it("gives the waiting line the muted size on its own row, and keeps list bullets (#1255)", () => {
+  it("gives the waiting line the muted size on its own row (#1255)", () => {
     expect(releaseUpdateNotificationSource).toMatch(
-      /<p\s+v-if="restartStatus\.restartWhenIdlePending"\s+class="release-update-muted"\s+role="status"/,
-    );
-    expect(releaseUpdateNotificationSource).toMatch(/class="release-update-muted"\s+role="status"/);
-    expect(releaseUpdateNotificationSource).toMatch(
-      /\.release-update-actions\s*>\s*\[role="status"\]\s*\{[^}]*flex:\s*1 0 100%/s,
+      /<p\s+v-if="restartStatus\.restartWhenIdlePending"\s+class="release-update-muted release-update-status"\s+role="status"/,
     );
     expect(releaseUpdateNotificationSource).toMatch(
-      /\.release-update-markdown\s*:deep\(ul\)\s*\{[^}]*list-style:\s*disc/s,
+      /class="release-update-muted release-update-status"\s+role="status"/,
+    );
+    expect(releaseUpdateNotificationSource).toMatch(
+      /\.release-update-status\s*\{[^}]*flex:\s*1 0 100%/s,
     );
   });
 

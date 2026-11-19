@@ -61,9 +61,16 @@ navigation; release notes render with markers; no uncaught page errors.
    row, like the failure alert. The harness checks that its computed size is
    12 px. Test: `gives the waiting line the muted size on its own row, and keeps
    list bullets (#1255)`.
-4. **Release-note bullets had no markers.** The global list reset removed them.
-   Unordered and ordered lists now set their marker style explicitly. Test: the
-   same test as item 3, plus the harness's computed `list-style-type` check.
+4. **Markdown bullets had no markers.** Preflight sets every list to
+   `list-style: none`, so each markdown surface lost its markers while keeping
+   its indent. One shared rule in `style.css` now restores disc and decimal
+   markers on every rendered-markdown container: `md-rendered` (story bodies,
+   review reports, context and inputs), `pm-markdown`, `cto-markdown`,
+   `debugger-markdown`, `playground-markdown` and `release-update-markdown`. The
+   playground also gets the same 17 px list indent as the others, because it had
+   none. Test: `src/ui-app/tests/markdown-list-markers.test.ts`, which checks
+   each surface in a table and the playground indent. The release-notes
+   harness check verifies the computed `list-style-type` at every width.
 5. **The restart failure fixture had no command to run.** The fixture omitted
    `restartCommand`, so its alert read "Run in a terminal." The real status
    route always sends the command, so this was a fixture defect. The fixture now
@@ -110,5 +117,11 @@ deliberate 500 in the failure scenario is no longer counted as an error.
   (`#0214` on supervised and hand-run, three widths each), 3 were the restart
   failure fixture's missing command, and 9 were harness artifacts (modal case,
   reload-abort noise, the deliberate 500). After the fixes, 135 checks with 0
-  failures.
-- `bun run test:vitest -- src/ui-app/tests/releases.test.ts`: 48 passed.
+  failures in each of three consecutive runs on the final build.
+- One earlier run on the same build, immediately after the shared list-marker
+  change, reported one failed check. I did not capture which check it was, and
+  the three runs after it passed. Treat that as an unexplained flake until a
+  rerun says otherwise.
+- `bun run test:vitest -- src/ui-app/tests/releases.test.ts
+  src/ui-app/tests/markdown-list-markers.test.ts src/ui-app/tests/update-status.test.ts`:
+  70 passed.

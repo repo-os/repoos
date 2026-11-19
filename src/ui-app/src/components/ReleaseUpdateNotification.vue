@@ -393,7 +393,7 @@ onUnmounted(() => {
             </p>
             <p
               v-if="restartStatus.restartWhenIdlePending"
-              class="release-update-muted"
+              class="release-update-muted release-update-status"
               role="status"
             >
               Restart is waiting for agents, reviews and checks to finish.
@@ -718,12 +718,6 @@ onUnmounted(() => {
   margin: 0 0 12px;
   padding-left: 1.5em;
 }
-.release-update-markdown :deep(ul) {
-  list-style: disc;
-}
-.release-update-markdown :deep(ol) {
-  list-style: decimal;
-}
 .release-update-markdown :deep(li) {
   margin: 0 0 6px;
 }
@@ -737,8 +731,9 @@ onUnmounted(() => {
   color: var(--txt-dim);
   font-size: 12px;
 }
-/* The waiting line sits beside Cancel; give it its own row like the alert. */
-.release-update-actions > [role="status"] {
+/* The waiting line sits beside Cancel (supervised) or in the manual block
+   (hand-run); its own row works in both layouts, as the alert does. */
+.release-update-status {
   flex: 1 0 100%;
   margin: 0;
 }
