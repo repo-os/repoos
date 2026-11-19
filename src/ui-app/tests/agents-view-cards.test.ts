@@ -11,6 +11,46 @@ async function flush(): Promise<void> {
 }
 
 describe("AgentsView agent cards", () => {
+  it("exposes agent sections as keyboard-operable tabs with a single tab stop", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() => new Promise<Response>(() => {})),
+    );
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const config = useConfigStore();
+    config.loaded = false;
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [{ path: "/agents", component: { template: "<div />" } }],
+    });
+    await router.push("/agents");
+    const wrapper = mount(AgentsView, {
+      attachTo: document.body,
+      global: { plugins: [pinia, router], stubs: { teleport: true, Transition: true } },
+    });
+    await flush();
+
+    const tabs = wrapper.findAll('[role="tab"]');
+    expect(wrapper.get('[role="tablist"]').attributes("aria-label")).toBe("Agent settings");
+    expect(tabs[0]!.attributes()).toMatchObject({
+      "aria-selected": "true",
+      tabindex: "0",
+      "aria-controls": "agents-panel-default",
+    });
+    expect(tabs.slice(1).every((tab) => tab.attributes("tabindex") === "-1")).toBe(true);
+
+    await tabs[0]!.trigger("keydown", { key: "ArrowRight" });
+    expect(tabs[1]!.attributes("aria-selected")).toBe("true");
+    expect(document.activeElement).toBe(tabs[1]!.element);
+    await tabs[1]!.trigger("keydown", { key: "End" });
+    expect(tabs.at(-1)!.attributes("aria-selected")).toBe("true");
+    expect(document.activeElement).toBe(tabs.at(-1)!.element);
+
+    wrapper.unmount();
+    vi.unstubAllGlobals();
+  });
+
   it.each([
     ["missing CLI", "Could not launch opencode: spawn opencode ENOENT", "Install OpenCode"],
     ["signed out", "Not logged in", "Re-authenticate OpenCode"],

@@ -1469,9 +1469,6 @@ onUnmounted(() => {
                           ? `Remove ${t.label} from favorites`
                           : `Add ${t.label} to favorites`
                       "
-                      :title="
-                        config.isThemeFavorite(t.id) ? 'Remove from favorites' : 'Add to favorites'
-                      "
                       @click.stop="toggleThemeFavorite(t.id)"
                     >
                       {{ config.isThemeFavorite(t.id) ? "★" : "☆" }}
@@ -1722,7 +1719,6 @@ onUnmounted(() => {
                     <span
                       v-if="f.restartRequired"
                       class="restart-badge"
-                      title="Changes require restarting RepoOS"
                       aria-label="Restart required"
                       >restart required</span
                     >
@@ -1857,12 +1853,7 @@ onUnmounted(() => {
                       used.
                     </div>
                   </div>
-                  <span
-                    class="restart-badge"
-                    title="Changes require restarting RepoOS"
-                    aria-label="Restart required"
-                    >restart required</span
-                  >
+                  <span class="restart-badge" aria-label="Restart required">restart required</span>
                   <div class="setting-input tunnel-setting-actions">
                     <span class="tunnel-status-chip">{{ storageStatusChip }}</span>
                     <Select
@@ -1967,7 +1958,6 @@ onUnmounted(() => {
                     <span
                       v-if="f.restartRequired"
                       class="restart-badge"
-                      title="Changes require restarting RepoOS"
                       aria-label="Restart required"
                       >restart required</span
                     >
@@ -2334,12 +2324,7 @@ onUnmounted(() => {
                     Require login to access RepoOS (email OTP or Google OAuth).
                   </div>
                 </div>
-                <span
-                  class="restart-badge"
-                  title="Changes require restarting RepoOS"
-                  aria-label="Restart required"
-                  >restart required</span
-                >
+                <span class="restart-badge" aria-label="Restart required">restart required</span>
                 <div class="setting-input">
                   <Switch
                     :checked="!!form['auth.enabled']"
@@ -2355,12 +2340,7 @@ onUnmounted(() => {
                     How long a login session lasts before requiring sign-in again. Default 30 days.
                   </div>
                 </div>
-                <span
-                  class="restart-badge"
-                  title="Changes require restarting RepoOS"
-                  aria-label="Restart required"
-                  >restart required</span
-                >
+                <span class="restart-badge" aria-label="Restart required">restart required</span>
                 <div class="setting-input">
                   <Input
                     :model-value="sessionMaxAgeDays"
@@ -2392,11 +2372,7 @@ onUnmounted(() => {
                   <div class="setting-label">{{ f.label }}</div>
                   <div class="setting-desc">{{ f.description }}</div>
                 </div>
-                <span
-                  v-if="f.restartRequired"
-                  class="restart-badge"
-                  title="Changes require restarting RepoOS"
-                  aria-label="Restart required"
+                <span v-if="f.restartRequired" class="restart-badge" aria-label="Restart required"
                   >restart required</span
                 >
                 <div class="setting-input">
@@ -2461,11 +2437,7 @@ onUnmounted(() => {
                     <template v-if="fieldDurationUnit(f)"> {{ DURATION_HELP }}</template>
                   </div>
                 </div>
-                <span
-                  v-if="f.restartRequired"
-                  class="restart-badge"
-                  title="Changes require restarting RepoOS"
-                  aria-label="Restart required"
+                <span v-if="f.restartRequired" class="restart-badge" aria-label="Restart required"
                   >restart required</span
                 >
                 <div :data-config-key="f.key" class="setting-input">
@@ -2742,7 +2714,7 @@ onUnmounted(() => {
                       :name="screenshot.name"
                       @click="openBugReportViewer(index)"
                     />
-                    <figcaption :title="screenshot.name">{{ screenshot.name }}</figcaption>
+                    <figcaption>{{ screenshot.name }}</figcaption>
                     <button
                       type="button"
                       class="bug-report-remove-screenshot"
