@@ -623,7 +623,8 @@ since the result is identical either way):
   container. Requires Docker (Docker Desktop on macOS).
 - **`runner = "native"`.** Linux or macOS, no Docker. The stock gate runs
   directly on the host; a configured `remoteValidation.command` runs the
-  project's command with the declared toolchain in the SSH user's login environment.
+  project's command with the declared toolchain in the SSH user's
+  non-interactive login shell (`bash -lc`).
 
 **One-time setup per host.** The `just` recipes are the maintained path for
 both:
@@ -637,6 +638,41 @@ just setup-linux-native bee              # Linux, native — no Docker
 just _setup-runner <host> <arch|macos>         # any other Docker host
 just _setup-runner-native <host>               # any other native Linux/macOS host
 ```
+
+These recipes use the SSH identity available to the person invoking `just`.
+The `user@host` configured in `remoteValidation.tailscaleHosts` is the account
+RepoOS uses later for health probes and jobs; it must match the account whose
+runner setup you intend to use. The RepoOS server's local Unix account is a
+separate concern: when the server runs as a systemd service under another
+account, that service account needs its own SSH key/config and known-host
+trust. A probe initiated by the service runs remotely as the configured SSH
+user, not as the local service account, and it cannot use another account's
+SSH agent, home directory, or interactive-shell PATH.
+
+The maintained recipes have different privilege and PATH behavior:
+
+- `setup-bee` and `setup-thinkpad` use the SSH account's home directory to
+  stage and build `repoos-ci`, install `/opt/repoos/validate.sh` with `sudo`,
+  and expect that account to run Docker. On Arch, the recipe installs Docker
+  and adds the SSH account to the `docker` group; a new login may be needed
+  before group membership applies.
+- `setup-mini` assumes Docker Desktop and Docker CLI are already available to
+  the SSH account. It stages the image build under that account's home and
+  installs `/opt/repoos/validate.sh` with `sudo`.
+- `setup-mini-native` and `setup-linux-native` need no `sudo`: they install
+  `validate-macos.sh` as `~/.local/bin/repoos-validate` for the SSH account.
+  The native prerequisite probe and configured project command use
+  `bash -lc`, so native prerequisites and project tools must be available in
+  the SSH user's non-interactive login shell. Configure that account's login
+  PATH; interactive-only startup files are not read by this shell.
+
+The setup recipes also run `repoos runners setup <host>` on the machine where
+`just` is invoked. This installs declared engineer CLIs remotely where
+supported; it does not transfer the local server's SSH credentials or make a
+different local service account's key available. After setup, confirm the
+configured host user and run `repoos runners --probe` and `repoos runners
+check` from the same RepoOS service context when diagnosing service-only SSH
+or PATH failures.
 
 Docker recipes install `validate.sh` at `/opt/repoos/validate.sh` (sudo).
 Native recipes install `~/.local/bin/repoos-validate` for the SSH user (no
@@ -773,8 +809,9 @@ RepoOS invokes `~/.local/bin/repoos-validate` when present, then falls back to
 project caches can be installed user-level (for example SDKMAN for JDK, `nvm`
 for Node, and the Gradle wrapper shipped with the project). The Android SDK can live under
 `$HOME/Android/Sdk`; add its `platform-tools` and `cmdline-tools/latest/bin`
-directories to the SSH user's login `PATH`. Native execution runs the declared command from the
-checked-out project and keeps the same verified SHA, logs, artifacts, queue,
+directories to the SSH user's login `PATH`. Native execution runs the declared
+command through `bash -lc` from the checked-out project and keeps the same
+verified SHA, logs, artifacts, queue,
 retry and local-fallback behavior as the stock gate. Configure the host's
 `os`/`labels` according to the toolchain it actually has. Docker hosts run the
 same project command inside their configured image; the probe checks that
