@@ -2,14 +2,18 @@
 id: "1224"
 title: "QA pass: first-run onboarding and empty-project states at all screen sizes"
 type: bug
-status: active
+status: done
 priority: p2
 area: web
+merged_commit: 1c971acbe30dd8c0f2d513a268611810e6d80b47
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-first-run-onboarding-and-empty-p
 created_at: "2026-11-19T07:48:01Z"
-updated_at: "2026-11-19T09:15:06Z"
+updated_at: "2026-11-19T09:58:02Z"
+last_close_out_gate_ms: 488576
+last_close_out_gate_at: "2026-11-19T09:42:12.669Z"
+review_passes: 1
 handoff_signal_retry_count: 1
 dev_error_count: 1
 ---
@@ -74,3 +78,12 @@ Do not touch repoos.toml.
 - 2026-11-19T09:11:59Z · message_queued at 2026-11-19T09:11:59.281Z
 - 2026-11-19T09:15:05Z · watchdog: restarting engineer because a queued message waited 3m with no live process
 - 2026-11-19T09:15:06Z · message_delivered: 1 message(s)
+- 2026-11-19T09:25:03Z · body
+- 2026-11-19T09:28:37Z · note: ui verification passed: 1 of 1 shot captured with clean console
+- 2026-11-19T09:28:38Z · status active→review
+- 2026-11-19T09:28:38Z · message_queued at 2026-11-19T09:28:38.477Z
+- 2026-11-19T09:32:46Z · note: review pass 1: good to go
+- 2026-11-19T09:42:12Z · close-out gate completed in 489s
+- 2026-11-19T09:42:27Z · status done→done, release:success
+- 2026-11-19T09:47:41Z · message_dropped: 1 queued message(s) discarded — task is done
+- 2026-11-19T09:58:02Z · message_dropped: 1 queued message(s) discarded — task is done

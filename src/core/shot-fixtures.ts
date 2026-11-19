@@ -61,6 +61,9 @@ export const SHOT_PREVIEW_FIXTURE_IDS = [
   "work:failedLoad",
   // #1183 — Agents page with no configured built-in or custom roles.
   "agents:empty",
+  // #1224 — Checks plan tab on a brand-new repo: genuinely empty, error-free
+  // plan, so the amber "No checks configured" reminder is repeatable in shots.
+  "checks:emptyPlan",
   // #1203 — the informational toast shown after a task is created with a
   // spec-owned needs-input reason; the create path stays read-only in shots.
   "toast:taskNeedsInput",
