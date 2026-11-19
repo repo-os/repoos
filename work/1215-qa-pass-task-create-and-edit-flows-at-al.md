@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-task-create-and-edit-flows-at-al
 created_at: "2026-11-19T03:17:33Z"
-updated_at: "2026-11-19T06:50:35Z"
+updated_at: "2026-11-19T06:50:36Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 2
@@ -82,3 +82,4 @@ Do not touch repoos.toml.
 - 2026-11-19T06:37:53Z · CTO nudge: held — handoff gate is running
 - 2026-11-19T06:50:35Z · status active→review
 - 2026-11-19T06:50:35Z · message_queued at 2026-11-19T06:50:35.979Z
+- 2026-11-19T06:50:36Z · note: shots: skipped — the diff (10 changed paths) touches no capture target's globs — no UI change to capture
