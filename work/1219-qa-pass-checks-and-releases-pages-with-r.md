@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-checks-and-releases-pages-with-r
 created_at: "2026-11-19T06:17:33Z"
-updated_at: "2026-11-19T06:17:37Z"
+updated_at: "2026-11-19T06:19:45Z"
 ---
 ## Problem
 The Checks and Releases pages have not been checked with long lists, long names and slow data at phone, tablet and desktop widths.
@@ -22,8 +22,27 @@ Long titles, many rows and slow loads stay readable and usable at 375, 768 and 1
 ## Notes for AI
 Do not touch repoos.toml.
 
+## Shots
+```json
+[
+{
+  "label": "Checks with long step data",
+  "target": "default",
+  "route": "/checks?tab=plan",
+  "highlight": ".ck-steps"
+},
+{
+  "label": "Releases distribution and channel data",
+  "target": "default",
+  "route": "/releases",
+  "highlight": ".rel-dist"
+}
+]
+```
+
 ## Activity
 
 - 2026-11-19T06:17:33Z · created · t@t
 - 2026-11-19T06:17:35Z · status inbox→ready
 - 2026-11-19T06:17:37Z · status ready→active, branch
+- 2026-11-19T06:19:45Z · body
