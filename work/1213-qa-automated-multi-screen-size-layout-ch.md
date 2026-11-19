@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-automated-multi-screen-size-layout-ch
 created_at: "2026-11-19T02:18:15Z"
-updated_at: "2026-11-19T02:41:20Z"
+updated_at: "2026-11-19T02:47:04Z"
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -38,3 +38,6 @@ Do not touch repoos.toml. Keep the test fast (<60s).
 - 2026-11-19T02:30:49Z · message_delivered: 1 message(s)
 - 2026-11-19T02:38:49Z · body
 - 2026-11-19T02:41:20Z · body
+- 2026-11-19T02:42:52Z · watchdog: check wait escalated · waiting: waiting for a Playwright slot — position 2 (1 ahead); slot holder 66173 is dead for 14s · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-11-19T02:43:07Z · watchdog: check wait ended or recovered — cleared needs_input
+- 2026-11-19T02:47:04Z · body
