@@ -3,19 +3,13 @@ id: "1222"
 title: "QA pass: every Settings tab saves, validates and fits small screens (round 2)"
 type: bug
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: the agent process exited with an error — open the task to see the full output
-debug_tldr: "Stale .git/index.lock blocked the agent's git bookkeeping write — confirm no git process is running, delete the lock file, then retry."
-debug_tldr_at: "2026-11-19T08:22:39Z"
-debug_tldr_key: dev-error|the agent process exited with an error — open the task to see the full output
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-every-settings-tab-saves-validat
 created_at: "2026-11-19T07:17:47Z"
-updated_at: "2026-11-19T08:22:39Z"
+updated_at: "2026-11-19T08:22:41Z"
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\",\"at\":\"2026-11-19T08:22:33.140Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -86,3 +80,4 @@ Do not touch repoos.toml.
 - 2026-11-19T08:22:30Z · note: stopped orphaned engineer pid 91480
 - 2026-11-19T08:22:32Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
 - 2026-11-19T08:22:33Z · engineer crash recovery: resuming opencode + opencode-go/glm-5.3-flash (1/3 crashes in 30m) · the agent process exited with an error — open the task to see the full output. Open Raw CLI error for details. (CLI: the agent process exited with an error — open the task to see the full output)
+- 2026-11-19T08:22:41Z · needs_input
