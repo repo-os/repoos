@@ -577,9 +577,8 @@ const serveMessage = computed(() => {
               <span class="top-owner" :class="p.owner">{{
                 p.owner === "repoos" ? "RepoOS" : "other"
               }}</span>
-              <span class="top-name"
-                >{{ p.command }} <span class="top-pid">#{{ p.pid }}</span></span
-              >
+              <span class="top-name">{{ p.command }}</span>
+              <span class="top-pid">#{{ p.pid }}</span>
               <span class="top-val">{{ fmtPct(p.cpuPercent) }}%</span>
             </div>
           </div>
@@ -593,9 +592,8 @@ const serveMessage = computed(() => {
               <span class="top-owner" :class="p.owner">{{
                 p.owner === "repoos" ? "RepoOS" : "other"
               }}</span>
-              <span class="top-name"
-                >{{ p.command }} <span class="top-pid">#{{ p.pid }}</span></span
-              >
+              <span class="top-name">{{ p.command }}</span>
+              <span class="top-pid">#{{ p.pid }}</span>
               <span class="top-val">{{ fmtBytes(p.memBytes) }}</span>
             </div>
           </div>
@@ -792,7 +790,10 @@ const serveMessage = computed(() => {
 
 .top-row {
   display: grid;
-  grid-template-columns: 52px minmax(0, 1fr) auto;
+  /* The PID gets its own never-truncated column (#1234): nested inside the
+     ellipsized command name it disappeared exactly when the command was long
+     enough to need it. */
+  grid-template-columns: 52px minmax(0, 1fr) auto auto;
   gap: 8px;
   align-items: center;
   font-size: 11px;
@@ -833,6 +834,7 @@ const serveMessage = computed(() => {
 .top-pid {
   color: var(--txt-faint);
   font-size: 10px;
+  white-space: nowrap;
 }
 
 .top-val {

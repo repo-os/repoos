@@ -910,6 +910,13 @@ watch(
   --kv-label-w: 74px;
   font-size: 12.5px;
 }
+/* #1234: bare dd <code> values — the artifact's output path, a PID — wrap
+   like .dev-command, so a deep output path can't drag the meta row (or the
+   whole card) wider than the panel. */
+.dev-meta dd > code {
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
 .dev-command {
   font-family: "JetBrains Mono", monospace;
   color: var(--txt-dim);

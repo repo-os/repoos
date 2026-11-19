@@ -583,6 +583,9 @@ function openDiff(sha: string, file?: string): void {
   color: var(--txt);
   font-size: 13.5px;
   line-height: 1.4;
+  /* Long unbroken subjects (a pasted URL, a long sha-ish token) wrap inside
+     the row instead of painting over the ±counts column (#1234). */
+  overflow-wrap: anywhere;
 }
 .hist-type {
   color: var(--txt-muted);
@@ -702,6 +705,9 @@ function openDiff(sha: string, file?: string): void {
   font-family: "JetBrains Mono", monospace;
   font-size: 12px;
   color: var(--txt-dim);
+  /* Deep paths with one very long segment wrap inside the row (#1234). */
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 .hist-file-add {
   font-family: "JetBrains Mono", monospace;
