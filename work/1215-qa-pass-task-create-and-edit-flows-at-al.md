@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/task-create-edit-responsive.test.ts > task create/edit interactions at 375 px > selects and removes the prerequisite from the fixture picker, tests/task-create-edit-responsive.test.ts > task create/edit interactions at 768 px > selects and removes the prerequisite from the fixture picker, tests/task-create-edit-responsive.test.ts > task create/edit interactions at 1280 px > selects and removes the prerequisite from the fixture picker on thinkpad — fix it in the feature branch and re-run the gate"
+last_handoff_failure_sha: a67cddcbf8aeff91bd457a9f80f9ac34d097c302
 id: "1215"
 title: "QA pass: task create and edit flows at all screen sizes"
 type: bug
@@ -10,8 +12,6 @@ created_by: t@t
 branch: feat/qa-pass-task-create-and-edit-flows-at-al
 created_at: "2026-11-19T03:17:33Z"
 updated_at: "2026-11-19T05:33:24Z"
-last_handoff_failure_fingerprint: "check|repoos check failed: staleness — src/ui-app/tests/task-create-edit-responsive.test.ts(80,38): error TS2339: Property 'exists' does not exist on type 'Omit<DOMWrapper<Element>, \"exists\">'."
-last_handoff_failure_sha: 46a73bf59b37b1521b7b2c239a62594a7f55ff46
 review_passes: 1
 handoff_signal_retry_count: 1
 ---
@@ -65,3 +65,4 @@ Do not touch repoos.toml.
 - 2026-11-19T05:17:51Z · CTO nudge: held — handoff gate is running
 - 2026-11-19T05:33:24Z · message_queued at 2026-11-19T05:33:24.261Z
 - 2026-11-19T05:33:24Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: tests/task-create-edit-responsive.test.ts > task create/edit interactions at 375 px > selects and removes the prerequisite from the fixture picker, tests/task-create-edit-responsive.test.ts > task create/edit interactions at 768 px > selects and removes the prerequisite from the fixture picker, tests/task-create-edit-responsive.test.ts > task create/edit interactions at 1280 px > selects and removes the prerequisite from the fixture picker on thinkpad — fix it in the feature branch and re-run the gate
+
