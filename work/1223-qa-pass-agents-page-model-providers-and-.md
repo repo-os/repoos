@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 514296
-last_close_out_gate_at: "2026-11-19T09:51:06.907Z"
 id: "1223"
 title: "QA pass: Agents page, model providers and routing tab at all screen sizes"
 type: bug
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: 80e95e4c3ac83dbab35c4ba0803414edd2572405
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-agents-page-model-providers-and-
 created_at: "2026-11-19T07:47:39Z"
 updated_at: "2026-11-19T09:51:06Z"
+last_close_out_gate_ms: 514296
+last_close_out_gate_at: "2026-11-19T09:51:06.907Z"
 review_passes: 1
 last_check_failure: "repoos check at 2026-11-19T09:09:34.580Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Model providers: opencode Go usage without the spurious empty-state line (target \"default\"): highlight [data-provider-id=\"opencode-go\"] matched nothing on /agents?tab=model-providers (http://127.0.0.1:36641/agents?tab=model-providers)"
 handoff_signal_retry_count: 2

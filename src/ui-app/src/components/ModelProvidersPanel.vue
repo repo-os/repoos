@@ -452,7 +452,12 @@ onMounted(() => {
               Live usage responded, but in a format this build doesn't recognize — check the
               <a :href="row.dashboardUrl" target="_blank" rel="noopener noreferrer">console</a>.
             </div>
-            <div v-else class="mp-part-error">No usage reported yet.</div>
+            <div
+              v-else-if="!windowedUsage(rowState(row.id).usage)!.windows.length"
+              class="mp-part-error"
+            >
+              No usage reported yet.
+            </div>
           </div>
 
           <!-- DeepInfra: balance (sign-corrected), limit and monthly spend -->

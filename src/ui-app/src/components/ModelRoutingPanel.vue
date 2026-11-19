@@ -909,6 +909,18 @@ onMounted(() => {
 .mr-roles {
   margin: 8px 0 14px;
 }
+/* The section headings are bare inline spans (no global .field-label rule);
+   as inline flow they run into the first role chip on wide screens. */
+.mr-roles > .field-label {
+  display: block;
+}
+/* Same for the four config fields: a bare inline span, so the narrow
+   timeout input shared its label's line while the full-width controls
+   wrapped theirs below. Stack all four labels above their controls. */
+.mr-grid .field-label {
+  display: block;
+  margin-bottom: 6px;
+}
 .mr-role-chips {
   display: flex;
   flex-wrap: wrap;
@@ -974,6 +986,14 @@ onMounted(() => {
 .mr-key-form input {
   flex: 1 1 200px;
   min-width: 180px;
+}
+/* On a phone the pasted-key field keeps its whole row: squeezed beside the
+   Save button its placeholder truncated mid-word ("stored in.en"). */
+@media (max-width: 479.98px) {
+  .mr-key-form input {
+    flex-basis: 100%;
+    min-width: 0;
+  }
 }
 .mr-fallback {
   margin: 16px 0 8px;
@@ -1210,6 +1230,7 @@ onMounted(() => {
 }
 .mr-live-toggle {
   margin-left: auto;
+  white-space: nowrap;
 }
 .mr-live-details {
   margin-top: 10px;
