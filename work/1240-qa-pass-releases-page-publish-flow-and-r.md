@@ -11,7 +11,7 @@ branch: feat/qa-pass-releases-page-publish-flow-and-r
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T18:27:27Z"
-updated_at: "2026-11-19T18:44:15Z"
+updated_at: "2026-11-19T18:46:49Z"
 ---
 ## Problem
 The Releases page publish flow and notes editor have not been tested for failures (CI failing, tag exists, long notes, offline).
@@ -32,3 +32,4 @@ Do not touch repoos.toml. Do not call the real release API.
 - 2026-11-19T18:27:35Z · status ready→active, branch
 - 2026-11-19T18:36:51Z · note: adopted orphaned engineer pid 6052
 - 2026-11-19T18:44:15Z · body
+- 2026-11-19T18:46:49Z · CTO nudge: held — handoff gate is running
