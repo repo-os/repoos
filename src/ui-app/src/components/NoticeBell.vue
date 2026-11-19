@@ -27,6 +27,10 @@ import {
 import { useRepoStore } from "../stores/repo";
 import { useUiStore } from "../stores/ui";
 import { relTime } from "../lib/time";
+import {
+  setToastPanelDrop,
+  TOAST_PANEL_DROP_POPOVER_VAR,
+} from "../lib/uiRecovery";
 
 const router = useRouter();
 const notices = useNoticesStore();
@@ -39,6 +43,7 @@ const open = ref(false);
 const triggerEl = ref<HTMLButtonElement | null>(null);
 const popEl = ref<HTMLElement | null>(null);
 const popStyle = ref<Record<string, string>>({ left: "0px", top: "0px" });
+let popSizeObserver: ResizeObserver | undefined;
 
 /** Badge shows unread notices only — tasks already have the sidebar/panel. */
 const unreadCount = computed(() => unreadNotices.value.length);
@@ -59,6 +64,14 @@ function measure(): void {
     top: `${Math.round(top)}px`,
     width: `${width}px`,
   };
+  // #1225 — the open popover sits in the toast stack's corner; publish its
+  // bottom edge so the stack drops below it instead of covering the popover's
+  // header controls. Cleared on close/unmount.
+  setToastPanelDrop(TOAST_PANEL_DROP_POPOVER_VAR, top + height);
+}
+
+function clearToastPanelDrop(): void {
+  setToastPanelDrop(TOAST_PANEL_DROP_POPOVER_VAR, null);
 }
 
 async function toggle(): Promise<void> {
@@ -66,6 +79,14 @@ async function toggle(): Promise<void> {
   if (open.value) {
     await nextTick();
     measure();
+    // The popover's content can arrive after the first measure (async notice
+    // fetches grow it); republish the toast drop whenever its size changes,
+    // so the stack always clears the current bottom edge (#1225).
+    if (typeof ResizeObserver !== "undefined" && popEl.value) {
+      popSizeObserver?.disconnect();
+      popSizeObserver = new ResizeObserver(() => measure());
+      popSizeObserver.observe(popEl.value);
+    }
     popEl.value?.focus({ preventScroll: true });
   }
 }
@@ -73,8 +94,21 @@ async function toggle(): Promise<void> {
 function close(focusTrigger = false): void {
   if (!open.value) return;
   open.value = false;
+  popSizeObserver?.disconnect();
+  popSizeObserver = undefined;
   if (focusTrigger) nextTick(() => triggerEl.value?.focus());
 }
+
+// The popover can close through several paths (toggle, outside mousedown,
+// Escape, following a notice); every one must give the toast stack its corner
+// back (#1225).
+watch(open, (isOpen) => {
+  if (!isOpen) {
+    popSizeObserver?.disconnect();
+    popSizeObserver = undefined;
+    clearToastPanelDrop();
+  }
+});
 
 function onDocumentMouseDown(e: MouseEvent): void {
   const target = e.target as HTMLElement;
@@ -115,6 +149,9 @@ onMounted(() => {
 onBeforeUnmount(() => {
   document.removeEventListener("mousedown", onDocumentMouseDown);
   document.removeEventListener("keydown", onKeydown);
+  popSizeObserver?.disconnect();
+  popSizeObserver = undefined;
+  clearToastPanelDrop();
 });
 
 /** Clicking a notice navigates, marks it read and collapses the popover. */

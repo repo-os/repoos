@@ -64,6 +64,10 @@ export const SHOT_PREVIEW_FIXTURE_IDS = [
   // #1203 — the informational toast shown after a task is created with a
   // spec-owned needs-input reason; the create path stays read-only in shots.
   "toast:taskNeedsInput",
+  // #1225 — a full five-deep toast stack (error, success and info) pinned
+  // without the 6s auto-expiry, so stacking, dismissal and responsive QA and
+  // captures always see the same stack.
+  "toast:stack",
   "card:reviewChecksRunning",
   "card:reviewLandableReady",
   // #1085 — active task with a stale but live handoff record on the checks line.
