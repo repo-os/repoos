@@ -2,14 +2,14 @@
 id: "1235"
 title: "QA pass: Work board drag, status moves and bulk actions with failures"
 type: bug
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-work-board-drag-status-moves-and
 created_at: "2026-11-19T16:17:45Z"
-updated_at: "2026-11-19T17:35:45Z"
+updated_at: "2026-11-19T17:45:32Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -50,3 +50,4 @@ Do not touch repoos.toml.
 - 2026-11-19T17:34:15Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-19T17:35:44Z · watchdog: restarting engineer because a queued message waited 3m with no live process
 - 2026-11-19T17:35:45Z · message_delivered: 1 message(s)
+- 2026-11-19T17:45:32Z · status active→review
