@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-remote-runner-setup-docs-and-run
 created_at: "2026-11-19T00:17:32Z"
-updated_at: "2026-11-19T03:42:42Z"
+updated_at: "2026-11-19T04:30:03Z"
 review_passes: 4
 handoff_signal_retry_count: 1
 review_rounds: 2
@@ -96,3 +96,21 @@ Do not touch repoos.toml.
 - 2026-11-19T03:18:21Z · note: review pass 4: needs some work
 - 2026-11-19T03:18:21Z · needs_input
 - 2026-11-19T03:42:42Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-19T04:17:54Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-19T04:18:00Z · status review→active
+- 2026-11-19T04:18:01Z · needs_input
+- 2026-11-19T04:18:05Z · message_delivered: 1 message(s)
+- 2026-11-19T04:18:06Z · message_queued at 2026-11-19T04:18:06.758Z
+- 2026-11-19T04:18:25Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-19T04:21:52Z · queued message undelivered for 4m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-19T04:21:54Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code unknown) · last assistant: The safe scoped check is running with `--local-tests`, so it will not dispatch to the configured remote runner. Formatting, lint, build, and structural UI checks have passed; the rendered contrast audit has reproduced the known unrelated s… · stderr: Reading additional input from stdin... 2026-11-19T04:18:10.218349Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
+- 2026-11-19T04:22:00Z · note: handoff requested (cli)
+- 2026-11-19T04:22:01Z · orphaned run process stopped · pid 44992 · /opt/homebrew/Cellar/bun/1.4.2/bin/bun /Users/nick/code/nick/repoos-worktrees/feat/qa-pass-remote-ru · cpu 2s · age 6s
+- 2026-11-19T04:22:51Z · CTO nudge: held — handoff gate is running
+- 2026-11-19T04:24:12Z · message_delivered: 1 message(s)
+- 2026-11-19T04:26:36Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The docs now consistently describe native validation’s non-interactive login shell, and the single local-only scoped check passed. I did not remove the SSH incident from the QA record or re-handoff. The incident is factual, and the stored … · stderr: Reading additional input from stdin... 2026-11-19T04:18:10.218349Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
+- 2026-11-19T04:26:37Z · status active→review
+- 2026-11-19T04:26:41Z · needs_input
+- 2026-11-19T04:30:02Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
+- 2026-11-19T04:30:02Z · message_queued at 2026-11-19T04:30:02.693Z
+- 2026-11-19T04:30:03Z · handoff failed · task-file handoff failed at review · Engineering report draft is missing: .repoos/engineering-report-drafts/1211.md
