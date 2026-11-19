@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-19T09:32:46Z"
+review_passes: 1
 id: "1224"
 title: "QA pass: first-run onboarding and empty-project states at all screen sizes"
 type: bug
@@ -9,7 +11,6 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-first-run-onboarding-and-empty-p
 created_at: "2026-11-19T07:48:01Z"
-updated_at: "2026-11-19T09:32:46Z"
 handoff_signal_retry_count: 1
 dev_error_count: 1
 ---
@@ -79,3 +80,4 @@ Do not touch repoos.toml.
 - 2026-11-19T09:28:38Z · status active→review
 - 2026-11-19T09:28:38Z · message_queued at 2026-11-19T09:28:38.477Z
 - 2026-11-19T09:32:46Z · note: review pass 1: good to go
+
