@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-every-settings-tab-saves-validat
 created_at: "2026-11-19T07:17:47Z"
-updated_at: "2026-11-19T09:33:57Z"
+updated_at: "2026-11-19T09:47:41Z"
 last_close_out_gate_ms: 68924
 last_close_out_gate_at: "2026-11-19T09:33:54.356Z"
 review_passes: 1
@@ -98,3 +98,4 @@ Do not touch repoos.toml.
 - 2026-11-19T09:16:06Z · note: review pass 1: good to go
 - 2026-11-19T09:33:54Z · close-out gate completed in 69s
 - 2026-11-19T09:33:57Z · status done→done, release:success
+- 2026-11-19T09:47:41Z · message_dropped: 1 queued message(s) discarded — task is done
