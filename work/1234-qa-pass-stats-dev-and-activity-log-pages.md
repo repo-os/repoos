@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-stats-dev-and-activity-log-pages
 created_at: "2026-11-19T15:47:33Z"
-updated_at: "2026-11-19T16:19:51Z"
+updated_at: "2026-11-19T16:22:56Z"
 handoff_signal_retry_count: 2
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\",\"at\":\"2026-11-19T15:49:36.866Z\",\"kind\":\"dev-error\"}]"
@@ -30,24 +30,24 @@ Do not touch repoos.toml.
 ```json
 [
 {
-  "label": "Control dashboard resource panel: process table, charts and top processes at QA widths",
-  "target": "default",
-  "route": "/",
-  "highlight": ".process-table-wrap",
-  "state": "system:processTable"
+"label": "Control dashboard resource panel: process table, charts and top processes at QA widths",
+"target": "default",
+"route": "/",
+"highlight": ".process-table-wrap",
+"state": "system:processTable"
 },
 {
-  "label": "Dev page failed target with expanded log and port-holder row",
-  "target": "default",
-  "route": "/dev",
-  "highlight": ".dev-card[data-status=\"failed\"]",
-  "state": "dev:failed"
+"label": "Dev page failed target with expanded log and port-holder row",
+"target": "default",
+"route": "/dev",
+"highlight": ".dev-card[data-status=\"failed\"]",
+"state": "dev:failed"
 },
 {
-  "label": "Context history log: commit subjects and file paths wrap inside rows",
-  "target": "default",
-  "route": "/repo?tab=history",
-  "highlight": ".hist-subject"
+"label": "Context history log: commit subjects and file paths wrap inside rows",
+"target": "default",
+"route": "/repo?tab=history",
+"highlight": ".hist-subject"
 }
 ]
 ```
@@ -69,3 +69,4 @@ Do not touch repoos.toml.
 - 2026-11-19T16:17:33Z · needs_input
 - 2026-11-19T16:17:34Z · note: agent fallback: codex + gpt-6-luna is paused (out of usage since 2026-11-19T07:09:32.657Z: Codex hit a provider quota or rate limit. Wait for the provider limit to reset, then retry. (CLI: error: You’ve hit your usage limit. Upgrade to Pro (https://chatgpt.com/explore/pro), visit https://chatgpt.com/codex/settings/usage to purcha) — using opencode + opencode-go/glm-5.3-flash
 - 2026-11-19T16:19:51Z · body
+- 2026-11-19T16:22:56Z · body
