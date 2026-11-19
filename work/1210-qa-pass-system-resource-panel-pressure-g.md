@@ -2,14 +2,14 @@
 id: "1210"
 title: "QA pass: system resource panel, pressure guard banners and Control stats under high load fixtures"
 type: bug
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-system-resource-panel-pressure-g
 created_at: "2026-11-18T23:47:41Z"
-updated_at: "2026-11-19T05:26:48Z"
+updated_at: "2026-11-19T05:28:00Z"
 review_rounds: 2
 routing_switches: 1
 routing_escalations: 1
@@ -175,3 +175,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-19T05:11:49Z · watchdog: restarting engineer because a queued message waited 3m with no live process
 - 2026-11-19T05:11:51Z · message_delivered: 1 message(s)
 - 2026-11-19T05:26:48Z · body
+- 2026-11-19T05:28:00Z · status active→review
