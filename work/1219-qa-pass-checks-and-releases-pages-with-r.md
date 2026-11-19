@@ -12,7 +12,7 @@ branch: feat/qa-pass-checks-and-releases-pages-with-r
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-11-19T06:17:33Z"
-updated_at: "2026-11-19T07:54:41Z"
+updated_at: "2026-11-19T07:57:57Z"
 review_passes: 2
 last_close_out_gate_ms: 491751
 last_close_out_gate_at: "2026-11-19T07:53:21.215Z"
@@ -90,3 +90,4 @@ Do not touch repoos.toml.
 - 2026-11-19T07:53:23Z · status done→review
 - 2026-11-19T07:53:24Z · message_queued at 2026-11-19T07:53:24.965Z
 - 2026-11-19T07:54:41Z · status review→done, release:success
+- 2026-11-19T07:57:57Z · message_dropped: 1 queued message(s) discarded — task is done
