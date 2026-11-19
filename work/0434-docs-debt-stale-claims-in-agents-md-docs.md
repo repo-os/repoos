@@ -38,3 +38,4 @@ The Docs Debt Agent verified concrete claims in `AGENTS.md`/`docs/`/`user-docs/`
 - 2026-11-19T01:39:12Z · status ready→active, needs_input, branch
 - 2026-11-19T01:41:12Z · CTO nudge: held — handoff gate is running
 - 2026-11-19T01:42:43Z · status active→review
+- 2026-11-19T01:42:43Z · note: Task body is underspecified: missing sections: Problem, Acceptance criteria, Notes for AI
