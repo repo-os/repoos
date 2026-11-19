@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-19T05:21:35Z"
+review_passes: 1
 id: "1218"
 title: "QA pass: keyboard and screen-reader access on Settings, Agents and Releases"
 type: bug
@@ -9,7 +11,6 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-keyboard-and-screen-reader-acces
 created_at: "2026-11-19T04:18:15Z"
-updated_at: "2026-11-19T05:21:34Z"
 engineer_stall_resume_log: "[{\"at\":\"2026-11-19T05:06:49.249Z\",\"reason\":\"handoff-deferred\"}]"
 ---
 ## Problem
@@ -60,3 +61,4 @@ Do not touch repoos.toml.
 - 2026-11-19T05:20:57Z · status active→review
 - 2026-11-19T05:20:57Z · message_queued at 2026-11-19T05:20:57.413Z
 - 2026-11-19T05:21:34Z · note: review pass 1: good to go
+
