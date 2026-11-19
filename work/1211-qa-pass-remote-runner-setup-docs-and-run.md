@@ -2,14 +2,14 @@
 id: "1211"
 title: "QA pass: remote runner setup docs and runner health screens vs real bee/thinkpad/mini behavior"
 type: bug
-status: active
+status: review
 priority: p2
 area: [web, docs]
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-remote-runner-setup-docs-and-run
 created_at: "2026-11-19T00:17:32Z"
-updated_at: "2026-11-19T04:26:36Z"
+updated_at: "2026-11-19T04:26:37Z"
 review_passes: 4
 handoff_signal_retry_count: 1
 review_rounds: 2
@@ -106,3 +106,4 @@ Do not touch repoos.toml.
 - 2026-11-19T04:22:51Z · CTO nudge: held — handoff gate is running
 - 2026-11-19T04:24:12Z · message_delivered: 1 message(s)
 - 2026-11-19T04:26:36Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The docs now consistently describe native validation’s non-interactive login shell, and the single local-only scoped check passed. I did not remove the SSH incident from the QA record or re-handoff. The incident is factual, and the stored … · stderr: Reading additional input from stdin... 2026-11-19T04:18:10.218349Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
+- 2026-11-19T04:26:37Z · status active→review
