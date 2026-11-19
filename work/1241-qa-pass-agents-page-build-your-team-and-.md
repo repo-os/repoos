@@ -11,7 +11,7 @@ branch: feat/qa-pass-agents-page-build-your-team-and-
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T19:07:09Z"
-updated_at: "2026-11-19T19:41:20Z"
+updated_at: "2026-11-19T19:43:12Z"
 ---
 ## Problem
 Build Your Team, Scheduled Tasks and Reminders have not been checked with many entries and long names.
@@ -35,3 +35,4 @@ Do not touch repoos.toml.
 - 2026-11-19T19:41:19Z · note: ui verification passed: 1 shot captured with clean console
 - 2026-11-19T19:41:19Z · status active→review
 - 2026-11-19T19:41:20Z · message_queued at 2026-11-19T19:41:20.099Z
+- 2026-11-19T19:43:12Z · note: review pass 1: good to go
