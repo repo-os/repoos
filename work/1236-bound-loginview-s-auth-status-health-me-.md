@@ -11,7 +11,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/easter-eggs-bundle-bound-loginview-auth-
 created_at: "2026-11-19T16:18:14Z"
-updated_at: "2026-11-19T17:16:31Z"
+updated_at: "2026-11-19T17:19:22Z"
 ---
 ## Problem
 QA pass #1226 bounded the boot-gating fetches in the web app, but `LoginView.checkStatus` still issues its own unbounded `fetch("/api/auth/status")` and `/api/auth/me` with no `AbortSignal` — a stalled connection leaves the login page's spinner up until the browser's default timeout, the same unbounded-fetch class the pass fixed elsewhere.
@@ -32,11 +32,11 @@ When the server is slow or unreachable, the login page shows a plain-English sta
 ```json
 [
 {
-  "label": "Login page with bounded auth fetches — sign-in form renders normally",
-  "target": "default",
-  "route": "/login",
-  "highlight": ".login-form",
-  "state": "auth:login"
+"label": "Login page with bounded auth fetches — sign-in form renders normally",
+"target": "default",
+"route": "/login",
+"highlight": ".login-form",
+"state": "auth:login"
 }
 ]
 ```
@@ -73,3 +73,4 @@ When the server is slow or unreachable, the login page shows a plain-English sta
 - 2026-11-19T17:14:35Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-19T17:15:40Z · body
 - 2026-11-19T17:16:31Z · body
+- 2026-11-19T17:19:22Z · note: ui verification passed: 1 of 1 shot captured with clean console
