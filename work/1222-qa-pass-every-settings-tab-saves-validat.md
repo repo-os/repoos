@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-every-settings-tab-saves-validat
 created_at: "2026-11-19T07:17:47Z"
-updated_at: "2026-11-19T08:21:56Z"
+updated_at: "2026-11-19T08:22:30Z"
 ---
 ## Problem
 The Settings pages have many toggles and fields; some may not persist, may accept invalid values, or may be unreachable on a phone.
@@ -74,3 +74,5 @@ Do not touch repoos.toml.
 - 2026-11-19T08:20:32Z · message_delivered: 1 message(s)
 - 2026-11-19T08:21:55Z · message_queued at 2026-11-19T08:21:55.984Z
 - 2026-11-19T08:21:56Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-19T08:22:29Z · note: stopped orphaned engineer pid 91480
+- 2026-11-19T08:22:30Z · note: stopped orphaned engineer pid 91480
