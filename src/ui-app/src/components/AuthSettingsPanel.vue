@@ -4,6 +4,7 @@ import { useRouter } from "vue-router";
 import { api, JSON_OPTS } from "../api";
 import { useAuthStore } from "../stores/auth";
 import { useDocsStore } from "../stores/docs";
+import ConfirmDialog from "./ConfirmDialog.vue";
 import Button from "./ui/button.vue";
 import Card from "./ui/card.vue";
 import Input from "./ui/input.vue";
@@ -77,14 +78,21 @@ const loadingLinks = ref(false);
 const pendingInvite = ref<TelegramInvite | null>(null);
 const reassignEmail = ref<Record<number, string>>({});
 const disconnectingTelegram = ref(false);
+/** Email waiting on the shared removal dialog (replaces native confirm()). */
+const pendingRemoval = ref<string | null>(null);
+/** Email offered an invite right after it was added. */
+const pendingInviteOffer = ref<string | null>(null);
+/** Set when the list cannot load, so offline never reads as "No users added yet." */
+const usersError = ref("");
 
 async function loadUsers(): Promise<void> {
   loadingUsers.value = true;
+  usersError.value = "";
   try {
     const data = await api<{ users: AuthUser[] }>("/api/auth/users");
     users.value = data.users;
   } catch {
-    /* ignore */
+    usersError.value = "Couldn’t load users. Check the connection, then try again.";
   } finally {
     loadingUsers.value = false;
   }
@@ -135,9 +143,7 @@ async function addUser(): Promise<void> {
     newEmail.value = "";
     newRole.value = "member";
     await loadUsers();
-    if (confirm(`Send an invite email to ${email} now?`)) {
-      await sendInvite(email);
-    }
+    pendingInviteOffer.value = email;
   } catch (err) {
     errorMsg.value = err instanceof Error ? err.message : "Failed to add user";
   } finally {
@@ -249,8 +255,23 @@ async function reassignTelegram(link: TelegramLink): Promise<void> {
   }
 }
 
+function askRemoveUser(email: string): void {
+  pendingRemoval.value = email;
+}
+
+async function confirmRemoval(): Promise<void> {
+  const email = pendingRemoval.value;
+  pendingRemoval.value = null;
+  if (email) await removeUser(email);
+}
+
+async function confirmInviteOffer(): Promise<void> {
+  const email = pendingInviteOffer.value;
+  pendingInviteOffer.value = null;
+  if (email) await sendInvite(email);
+}
+
 async function removeUser(email: string): Promise<void> {
-  if (!confirm(`Remove ${email}? Their sessions will be revoked.`)) return;
   errorMsg.value = "";
   try {
     await api(`/api/auth/users/${encodeURIComponent(email)}`, { method: "DELETE" });
@@ -326,10 +347,23 @@ function formatDate(iso: string): string {
           style="flex: 1; max-width: 280px"
           @keyup.enter="addUser"
         />
-        <select v-model="newRole" class="auth-role-select">
-          <option value="member">Member</option>
-          <option value="admin">Admin</option>
-        </select>
+        <Select
+          :model-value="newRole"
+          @update:model-value="(v) => (newRole = v === 'admin' ? 'admin' : 'member')"
+        >
+          <SelectTrigger
+            class="h-[36px] w-[130px] rounded-[9px] px-[11px]"
+            aria-label="New user's role"
+          >
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent position="popper">
+            <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
+              <SelectItem value="member">Member</SelectItem>
+              <SelectItem value="admin">Admin</SelectItem>
+            </SelectViewport>
+          </SelectContent>
+        </Select>
         <Button size="sm" :disabled="adding || !newEmail.trim()" @click="addUser">
           {{ adding ? "Adding..." : "Add user" }}
         </Button>
@@ -339,6 +373,10 @@ function formatDate(iso: string): string {
 
       <!-- User list -->
       <div v-if="loadingUsers" class="auth-loading">Loading users...</div>
+      <div v-else-if="usersError" class="auth-error" role="alert">
+        {{ usersError }}
+        <button class="auth-action" @click="loadUsers">Try again</button>
+      </div>
       <div v-else-if="users.length === 0" class="auth-empty">No users added yet.</div>
       <div v-else class="auth-user-list">
         <div v-for="user in users" :key="user.email" class="auth-user-row">
@@ -364,10 +402,37 @@ function formatDate(iso: string): string {
             <button class="auth-action" @click="toggleRole(user)">
               {{ user.role === "admin" ? "Demote" : "Promote" }}
             </button>
-            <button class="auth-action danger" @click="removeUser(user.email)">Remove</button>
+            <button class="auth-action danger" @click="askRemoveUser(user.email)">Remove</button>
           </div>
         </div>
       </div>
+
+      <ConfirmDialog
+        :open="pendingRemoval !== null"
+        :title="`Remove ${pendingRemoval ?? ''}?`"
+        confirm-label="Remove user"
+        @update:open="
+          (v) => {
+            if (!v) pendingRemoval = null;
+          }
+        "
+        @confirm="confirmRemoval"
+      >
+        Their sessions will be revoked right away.
+      </ConfirmDialog>
+      <ConfirmDialog
+        :open="pendingInviteOffer !== null"
+        :title="`Send an invite email to ${pendingInviteOffer ?? ''} now?`"
+        confirm-label="Send invite"
+        @update:open="
+          (v) => {
+            if (!v) pendingInviteOffer = null;
+          }
+        "
+        @confirm="confirmInviteOffer"
+      >
+        They get an email with a link to sign in.
+      </ConfirmDialog>
 
       <div v-if="pendingInvite" class="tg-invite">
         <div class="tg-invite-label">Telegram bind invite for {{ pendingInvite.email }}</div>
@@ -477,14 +542,6 @@ function formatDate(iso: string): string {
   gap: 8px;
   padding: 8px 0;
 }
-.auth-role-select {
-  padding: 6px 10px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  font-size: 13px;
-  background: var(--panel-solid);
-  color: var(--txt);
-}
 .auth-error {
   color: var(--red);
   font-size: 12px;
@@ -552,6 +609,13 @@ function formatDate(iso: string): string {
 }
 .auth-action.danger {
   color: var(--red);
+}
+/* Phones get finger-sized row actions (#1239); desktop keeps the compact text buttons. */
+@media (max-width: 759px) {
+  .auth-action {
+    min-height: 44px;
+    padding: 0 10px;
+  }
 }
 .auth-audit-toggle {
   padding: 8px 0 0 0;

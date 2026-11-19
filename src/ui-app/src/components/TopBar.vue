@@ -453,6 +453,7 @@ watch(repoName, () => {
     </div>
     <div v-if="auth.authEnabled && auth.authenticated" class="user-menu-wrapper">
       <button
+        ref="userMenuTrigger"
         class="user-menu-trigger"
         type="button"
         aria-label="User menu"

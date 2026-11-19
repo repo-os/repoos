@@ -67,6 +67,16 @@ async function fetchBounded(url: string, init?: RequestInit): Promise<Response> 
   }
 }
 
+/**
+ * The server's plain-English `error`, or `fallback` when the reply is not JSON
+ * (a proxy's HTML 502, say). A reply the server did send is never reported as
+ * a network failure, so the message blames the right thing (#1239).
+ */
+async function replyError(res: Response, fallback: string): Promise<string> {
+  const data = (await res.json().catch(() => null)) as { error?: string } | null;
+  return data?.error || fallback;
+}
+
 async function checkStatus(): Promise<void> {
   loading.value = true;
   statusError.value = "";
@@ -166,7 +176,8 @@ function startResendTimer(): void {
 }
 
 async function requestOtp(): Promise<void> {
-  if (!email.value.trim()) return;
+  // An Enter repeat while the first request is in flight must not send another.
+  if (!email.value.trim() || sending.value) return;
   sending.value = true;
   errorMsg.value = "";
   try {
@@ -179,8 +190,7 @@ async function requestOtp(): Promise<void> {
       step.value = "otp";
       startResendTimer();
     } else {
-      const data = await res.json();
-      errorMsg.value = data.error || "Failed to send code";
+      errorMsg.value = await replyError(res, "Failed to send code");
     }
   } catch {
     errorMsg.value = "Network error — try again";
@@ -190,7 +200,10 @@ async function requestOtp(): Promise<void> {
 }
 
 async function verifyOtp(): Promise<void> {
-  if (!otpCode.value.trim()) return;
+  // The Enter key bypasses the button's disabled state, so the six-digit rule
+  // lives here too. A partial code is never sent, and each send counts against
+  // the server's wrong-code lockout (#1239).
+  if (verifying.value || otpCode.value.trim().length !== 6) return;
   verifying.value = true;
   errorMsg.value = "";
   try {
@@ -209,8 +222,7 @@ async function verifyOtp(): Promise<void> {
       const redirect = (route.query.redirect as string) || "/";
       router.replace(redirect);
     } else {
-      const data = await res.json();
-      errorMsg.value = data.error || "Invalid code";
+      errorMsg.value = await replyError(res, "The server couldn’t check the code. Try again.");
       otpCode.value = "";
     }
   } catch {
@@ -221,7 +233,7 @@ async function verifyOtp(): Promise<void> {
 }
 
 async function doBootstrap(): Promise<void> {
-  if (!bootstrapEmail.value.trim()) return;
+  if (!bootstrapEmail.value.trim() || bootstrapping.value) return;
   bootstrapping.value = true;
   errorMsg.value = "";
   try {
@@ -236,8 +248,7 @@ async function doBootstrap(): Promise<void> {
       await auth.loadMe();
       router.replace("/");
     } else {
-      const data = await res.json();
-      errorMsg.value = data.error || "Failed to create admin";
+      errorMsg.value = await replyError(res, "Failed to create admin");
     }
   } catch {
     errorMsg.value = "Network error — try again";
