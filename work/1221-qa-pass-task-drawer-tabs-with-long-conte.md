@@ -3,16 +3,13 @@ id: "1221"
 title: "QA pass: task drawer tabs with long content at all screen sizes"
 type: bug
 status: active
-needs_input: true
-needs_input_reason: provider-failure
-needs_input_detail: "Codex hit a provider quota or rate limit. Wait for the provider limit to reset, then retry. (CLI: error: You’ve hit your usage limit. Upgrade to Pro (https://chatgpt.com/explore/pro), visit https://chatgpt.com/codex/settings/usage to purchase more credits or try again at Nov 22nd, 2026 8:27 PM.)"
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-task-drawer-tabs-with-long-conte
 created_at: "2026-11-19T06:47:59Z"
-updated_at: "2026-11-19T07:09:32Z"
+updated_at: "2026-11-19T07:09:34Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -48,3 +45,4 @@ Do not touch repoos.toml.
 - 2026-11-19T07:08:56Z · status review→active
 - 2026-11-19T07:09:32Z · agent exited with an error (codex) · Codex hit a provider quota or rate limit. Wait for the provider limit to reset, then retry. (CLI: error: You’ve hit your usage limit. Upgrade to Pro (https://chatgpt.com/explore/pro), visit https://chatgpt.com/codex/settings/usage to purchase more credits or try again at Nov 22nd, 2026 8:27 PM.)
 - 2026-11-19T07:09:32Z · engineer crash recovery: switched codex + gpt-6-luna → opencode + opencode-go/deepseek-v4.1-flash after 1/3 crashes in 30m · Codex hit a provider quota or rate limit. Wait for the provider limit to reset, then retry. (CLI: error: You’ve hit your usage limit. Upgrade to Pro (https://chatgpt.com/explore/pro), visit https://chatgpt.com/codex/settings/usage to pur…
+- 2026-11-19T07:09:34Z · needs_input
