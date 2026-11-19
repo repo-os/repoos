@@ -12,7 +12,7 @@ branch: feat/qa-pass-agents-page-build-your-team-and-
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T19:07:09Z"
-updated_at: "2026-11-19T20:21:09Z"
+updated_at: "2026-11-19T20:21:27Z"
 last_close_out_gate_ms: 374650
 last_close_out_gate_at: "2026-11-19T20:21:09.311Z"
 review_passes: 1
@@ -41,4 +41,4 @@ Do not touch repoos.toml.
 - 2026-11-19T19:41:20Z · message_queued at 2026-11-19T19:41:20.099Z
 - 2026-11-19T19:43:12Z · note: review pass 1: good to go
 - 2026-11-19T20:21:09Z · close-out gate completed in 375s
-
+- 2026-11-19T20:21:27Z · status done→done, release:success
