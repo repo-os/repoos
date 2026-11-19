@@ -82,3 +82,4 @@ Do not touch repoos.toml.
 - 2026-11-19T17:49:28Z · note: ui verification passed: 3 of 3 shots captured with clean console
 - 2026-11-19T17:49:29Z · handoff failed · handoff recovery attempted · finalization failed
 - 2026-11-19T17:54:30Z · watchdog: auto-surfaced stuck task · status active→review · handoff recovery was attempted after an interrupted turn but finalization failed — manual intervention needed · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-11-19T17:54:30Z · note: handoff requested (cli)
