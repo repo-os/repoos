@@ -82,8 +82,15 @@ describe("task drawer long content at phone, tablet and desktop widths", () => {
             expect(
               await page.locator(".drawer-body").evaluate((el) => el.scrollTop),
             ).toBeGreaterThan(0);
-            if (tab === "Shots")
-              expect(await page.getByRole("button", { name: "Open shot 24" }).count()).toBe(1);
+            if (tab === "Shots") {
+              const lastShot = page.getByRole("button", { name: "Open shot 24" });
+              expect(await lastShot.count()).toBe(1);
+              await lastShot.evaluate((el) =>
+                el.addEventListener("click", () => el.setAttribute("data-clicked", "true")),
+              );
+              await lastShot.click();
+              expect(await lastShot.getAttribute("data-clicked")).toBe("true");
+            }
           }
         } finally {
           await page.close();
