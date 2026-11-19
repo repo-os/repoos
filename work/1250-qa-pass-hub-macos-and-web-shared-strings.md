@@ -11,7 +11,7 @@ branch: feat/qa-pass-hub-macos-and-web-shared-strings
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T21:47:05Z"
-updated_at: "2026-11-19T22:25:15Z"
+updated_at: "2026-11-19T22:26:00Z"
 review_rounds: 2
 review_passes: 2
 ---
@@ -54,3 +54,4 @@ Do not touch repoos.toml.
 - 2026-11-19T22:25:14Z · note: ui verification passed: 1 shot captured with clean console
 - 2026-11-19T22:25:15Z · status active→review
 - 2026-11-19T22:25:15Z · message_queued at 2026-11-19T22:25:15.507Z
+- 2026-11-19T22:26:00Z · note: review pass 3: good to go
