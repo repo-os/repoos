@@ -3,22 +3,20 @@ id: "1226"
 title: "QA pass: slow network and offline behavior in the web app and Hub"
 type: bug
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "OpenCode exited with an error. Open Raw CLI error for details. (CLI: ✗ Server finalization stopped at review: Engineering report must begin with ## TL;DR; remove any text before it.. The same worktree can be resumed and retried.)"
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-slow-network-and-offline-behavio
 created_at: "2026-11-19T09:47:34Z"
-updated_at: "2026-11-19T15:49:36Z"
+updated_at: "2026-11-19T15:49:38Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
 handoff_signal_retry_count: 2
 dev_error_count: 3
 engineer_stall_resume_log: "[{\"at\":\"2026-11-19T10:00:44.011Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-19T12:54:47.309Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-19T14:15:26.925Z\",\"reason\":\"clean-exit-without-handoff\"}]"
+engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\",\"at\":\"2026-11-19T15:49:36.420Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 The web app and Hub have not been checked for slow, failing or dropped connections.
@@ -161,3 +159,5 @@ Do not touch repoos.toml.
 - 2026-11-19T15:44:51Z · body
 - 2026-11-19T15:49:36Z · note: stopped orphaned engineer pid 42969
 - 2026-11-19T15:49:36Z · agent exited with an error (opencode) · OpenCode exited with an error. Open Raw CLI error for details. (CLI: ✗ Server finalization stopped at review: Engineering report must begin with ## TL;DR; remove any text before it.. The same worktree can be resumed and retried.)
+- 2026-11-19T15:49:36Z · engineer crash recovery: resuming opencode + opencode-go/glm-5.3-flash (1/3 crashes in 30m) · OpenCode exited with an error. Open Raw CLI error for details. (CLI: ✗ Server finalization stopped at review: Engineering report must begin with ## TL;DR; remove any text before it.. The same worktree can be resumed and retried.)
+- 2026-11-19T15:49:38Z · needs_input
