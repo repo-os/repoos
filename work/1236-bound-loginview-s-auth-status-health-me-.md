@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-11-19T17:31:04Z"
-review_passes: 1
+last_close_out_gate_ms: 182293
+last_close_out_gate_at: "2026-11-19T17:34:12.799Z"
 id: "1236"
 title: "Easter eggs bundle: bound LoginView auth fetches (slow-server login spinner)"
 type: bug
@@ -13,6 +13,8 @@ assigned_to: ai
 created_by: t@t
 branch: feat/easter-eggs-bundle-bound-loginview-auth-
 created_at: "2026-11-19T16:18:14Z"
+updated_at: "2026-11-19T17:34:12Z"
+review_passes: 1
 ---
 ## Problem
 QA pass #1226 bounded the boot-gating fetches in the web app, but `LoginView.checkStatus` still issues its own unbounded `fetch("/api/auth/status")` and `/api/auth/me` with no `AbortSignal` — a stalled connection leaves the login page's spinner up until the browser's default timeout, the same unbounded-fetch class the pass fixed elsewhere.
@@ -84,4 +86,5 @@ When the server is slow or unreachable, the login page shows a plain-English sta
 - 2026-11-19T17:29:48Z · status active→review
 - 2026-11-19T17:29:49Z · message_queued at 2026-11-19T17:29:49.074Z
 - 2026-11-19T17:31:04Z · note: review pass 1: good to go
+- 2026-11-19T17:34:12Z · close-out gate completed in 182s
 
