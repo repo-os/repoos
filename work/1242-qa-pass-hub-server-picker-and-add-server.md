@@ -2,14 +2,14 @@
 id: "1242"
 title: "QA pass: Hub server picker and add-server flow copy and error states"
 type: bug
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
 branch: ""
 created_at: "2026-11-19T19:07:19Z"
-updated_at: "2026-11-19T19:07:19Z"
+updated_at: "2026-11-19T19:07:24Z"
 ---
 ## Problem
 The Hub server picker and add-server flow need a final check of wording and error states (bad URL, unreachable server, duplicate name, unsafe scheme) in the web preview of the shell.
@@ -25,3 +25,4 @@ Do not touch repoos.toml.
 ## Activity
 
 - 2026-11-19T19:07:19Z · created · t@t
+- 2026-11-19T19:07:24Z · status inbox→ready
