@@ -38,7 +38,7 @@ describe("mobile tailnet discovery", () => {
   it("preserves a Serve path when validating and requesting a server", async () => {
     expect(serverUrlOf("https://bee.tail.ts.net/repoos/")).toBe("https://bee.tail.ts.net/repoos");
     const fetchImpl = vi.fn(
-      async () => new Response(JSON.stringify({ status: "ok" }), { status: 200 }),
+      async () => new Response(JSON.stringify({ ok: true, root: "/repo" }), { status: 200 }),
     );
     await expect(
       validateServer("https://bee.tail.ts.net/repoos", 500, fetchImpl),

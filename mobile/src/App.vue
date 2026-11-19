@@ -54,6 +54,7 @@ type Route = HubRoute;
 const route = ref<Route>("picker");
 const sheetServer = ref<ServerEntry | null>(null);
 const sheetName = ref("");
+const sheetError = ref("");
 
 const formName = ref("");
 const formUrl = ref("");
@@ -194,10 +195,12 @@ async function onAddDiscovered() {
 function openSheet(server: ServerEntry) {
   sheetServer.value = server;
   sheetName.value = server.name;
+  sheetError.value = "";
 }
 
 function closeSheet() {
   sheetServer.value = null;
+  sheetError.value = "";
 }
 
 function backToPicker() {
@@ -225,7 +228,11 @@ async function submitAdd() {
 
 async function saveSheet() {
   if (!sheetServer.value) return;
-  await renameServer(sheetServer.value.id, sheetName.value);
+  const res = await renameServer(sheetServer.value.id, sheetName.value);
+  if (res.error) {
+    sheetError.value = res.error;
+    return;
+  }
   closeSheet();
 }
 
@@ -379,6 +386,9 @@ async function onLockScope(scope: "reopen" | "server") {
         <span class="field-label">Display name</span>
         <input v-model="sheetName" type="text" autocomplete="off" />
       </label>
+      <p v-if="sheetError" class="form-error" role="alert" data-testid="hub-sheet-error">
+        {{ sheetError }}
+      </p>
       <p v-if="sheetServer" class="hint">{{ sheetServer.url }}</p>
       <div class="sheet-actions">
         <button
