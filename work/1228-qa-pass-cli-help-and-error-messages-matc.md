@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-cli-help-and-error-messages-matc
 created_at: "2026-11-19T11:47:39Z"
-updated_at: "2026-11-19T12:21:24Z"
+updated_at: "2026-11-19T12:23:23Z"
 ---
 ## Problem
 CLI commands, flags and error messages may be out of step with user-docs/cli.md and use jargon.
@@ -51,3 +51,4 @@ Do not touch repoos.toml.
 - 2026-11-19T12:20:12Z · body
 - 2026-11-19T12:20:17Z · body
 - 2026-11-19T12:21:24Z · CTO nudge: held — handoff gate is running
+- 2026-11-19T12:23:23Z · note: ui verification failed: ui verification failed (2 issue(s)): [overflow] CLI reference: newly documented checks timings/slots, certify, migrate and rm sections: body scrollWidth 1594 > innerWidth 1024@1024px; [overflow] CLI reference: newly documented checks timings/slots, certify, migrate and rm sections: body scrollWidth 1282 > innerWidth 375@375px
