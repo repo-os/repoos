@@ -11,7 +11,7 @@ branch: feat/qa-pass-update-banner-version-display-an
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T23:27:47Z"
-updated_at: "2026-11-19T23:41:42Z"
+updated_at: "2026-11-19T23:43:30Z"
 ---
 ## Problem
 The update-available banner, version display and release notes modal have not been checked since the restart fix.
@@ -24,6 +24,33 @@ The banner and modal explain what is new in plain English, restart or dismiss wo
 ## Notes for AI
 Do not touch repoos.toml.
 
+## Shots
+```json
+[
+{
+  "label": "Release notes modal with bullet markers",
+  "target": "default",
+  "route": "/work",
+  "highlight": ".release-update-modal",
+  "state": "release:updateAvailable"
+},
+{
+  "label": "Installed restart notice (systemd)",
+  "target": "default",
+  "route": "/work",
+  "highlight": "[data-test-id=\"installed-restart-notice\"]",
+  "state": "release:restartPendingDark"
+},
+{
+  "label": "Restart failure names the command to run",
+  "target": "default",
+  "route": "/work",
+  "highlight": "[data-test-id=\"installed-restart-notice\"] [role=\"alert\"]",
+  "state": "release:restartError"
+}
+]
+```
+
 ## Activity
 
 - 2026-11-19T23:27:47Z · created · t@t
@@ -31,3 +58,4 @@ Do not touch repoos.toml.
 - 2026-11-19T23:27:59Z · cli_override, model_override
 - 2026-11-19T23:28:01Z · status ready→active, branch
 - 2026-11-19T23:41:42Z · body
+- 2026-11-19T23:43:30Z · body
