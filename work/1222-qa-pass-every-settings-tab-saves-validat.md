@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-every-settings-tab-saves-validat
 created_at: "2026-11-19T07:17:47Z"
-updated_at: "2026-11-19T08:27:26Z"
+updated_at: "2026-11-19T08:35:38Z"
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\",\"at\":\"2026-11-19T08:22:33.140Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -83,3 +83,4 @@ Do not touch repoos.toml.
 - 2026-11-19T08:22:41Z · needs_input
 - 2026-11-19T08:22:41Z · message_delivered: 1 message(s)
 - 2026-11-19T08:27:26Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-19T08:35:38Z · orphaned run process stopped · pid 75340 · /opt/homebrew/bin/bun -e process.on("exit",c=>console.error("exitcode",c)); import("./docs/qa/settin · cpu 2s · age 2m
