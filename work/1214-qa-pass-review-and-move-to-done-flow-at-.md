@@ -2,14 +2,14 @@
 id: "1214"
 title: "QA pass: review and Move to done flow at phone, tablet and desktop widths"
 type: bug
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-review-and-move-to-done-flow-at-
 created_at: "2026-11-19T02:18:22Z"
-updated_at: "2026-11-19T02:19:14Z"
+updated_at: "2026-11-19T02:51:49Z"
 ---
 ## Problem
 The review and Move to done flow (task drawer, review verdicts, landable checklist, close-out errors) has not had a QA pass at phone width or with failure states.
@@ -27,3 +27,4 @@ Do not touch repoos.toml.
 - 2026-11-19T02:18:22Z · created · t@t
 - 2026-11-19T02:19:06Z · status inbox→ready
 - 2026-11-19T02:19:14Z · status ready→active, branch
+- 2026-11-19T02:51:49Z · status active→review
