@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-19T21:02:13Z"
-review_passes: 1
 id: "1245"
 title: "QA pass: docs site and user-docs navigation, search and links at all screen sizes"
 type: bug
