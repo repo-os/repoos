@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-every-settings-tab-saves-validat
 created_at: "2026-11-19T07:17:47Z"
-updated_at: "2026-11-19T07:55:30Z"
+updated_at: "2026-11-19T07:57:57Z"
 ---
 ## Problem
 The Settings pages have many toggles and fields; some may not persist, may accept invalid values, or may be unreachable on a phone.
@@ -50,3 +50,4 @@ Do not touch repoos.toml.
 - 2026-11-19T07:55:29Z · queued message undelivered for 13m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-19T07:55:29Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 130) · last assistant: Those three timeouts are hidden/disabled fields (`v-show` panels keep all tabs' controls in the DOM, so my enumeration included invisible ones). Fill timeouts on non-editable fields = skip, not failure. Let me wait for the audit to finish: · stderr: (empty)
 - 2026-11-19T07:55:30Z · message_delivered: 1 message(s)
+- 2026-11-19T07:57:57Z · message_queued at 2026-11-19T07:57:57.308Z
