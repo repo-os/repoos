@@ -21,6 +21,8 @@ import {
   shotFixtureReleaseRun,
   shotFixtureReleaseStatus,
   shotFixtureReleaseAutoPublish,
+  shotFixtureCheckPlan,
+  shotFixtureDistribution,
   shotFixtureSchedules,
   shotFixtureAgentLastRuns,
   isShotPreviewSeededTaskId,
@@ -291,6 +293,30 @@ describe("shot preview board fixtures (#0743)", () => {
     expect(promise?.mode).toBe("publish");
     expect(promise?.tag).toBe("v0.6.1");
     expect(promise?.notes).toBeNull();
+  });
+
+  it("seeds long check and distribution data for the #1219 captures", () => {
+    expect(shotFixtureCheckPlan(null)).toBeNull();
+    expect(shotFixtureCheckPlan("checks:progress")).toBeNull();
+    const plan = shotFixtureCheckPlan("checks:longData");
+    expect(plan?.source).toBe("declared");
+    expect(plan?.steps).toHaveLength(24);
+    expect(plan?.steps[0]?.name.length).toBeGreaterThan(120);
+    expect(plan?.steps[0]?.name).toMatch(/x{100,}/);
+    expect(plan?.steps[0]?.command).toContain("very-long-directory-name/".repeat(5));
+    // No structural requirement: the Checks route itself is the capture target.
+    expect(shotFixtureContainer("checks:longData")).toBeNull();
+
+    expect(shotFixtureDistribution(null)).toBeNull();
+    expect(shotFixtureDistribution("checks:longData")).toBeNull();
+    const distribution = shotFixtureDistribution("release:longDistribution");
+    expect(distribution?.channels).toHaveLength(24);
+    expect(distribution?.channels[0]?.name).toMatch(/z{100,}/);
+    expect(distribution?.channels[0]?.install[0]).toContain("@repo-os/");
+    // The page only renders the distribution card next to a release status.
+    expect(shotFixtureReleaseStatus("release:longDistribution")?.version).toBe(
+      distribution?.releaseVersion,
+    );
   });
 
   it("clears the configured editor so the Set-editor hint renders (#0805)", () => {

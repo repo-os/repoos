@@ -1,19 +1,19 @@
 ---
-updated_at: "2026-11-19T06:18:22Z"
-review_passes: 5
 id: "1211"
 title: "QA pass: remote runner setup docs and runner health screens vs real bee/thinkpad/mini behavior"
 type: bug
-status: review
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: `needs some work` — the task’s no-SSH requirement was violated by an earlier check.
+status: done
 priority: p2
 area: [web, docs]
+merged_commit: 9c207501b3aac632e735000a13aed7a5506bea9b
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-remote-runner-setup-docs-and-run
 created_at: "2026-11-19T00:17:32Z"
+updated_at: "2026-11-19T08:56:08Z"
+last_close_out_gate_ms: 1122121
+last_close_out_gate_at: "2026-11-19T08:44:46.065Z"
+review_passes: 6
 handoff_signal_retry_count: 1
 review_rounds: 2
 routing_switches: 1
@@ -118,4 +118,15 @@ Do not touch repoos.toml.
 - 2026-11-19T06:17:31Z · needs_input (review-rounds-exhausted) cleared for review again by human
 - 2026-11-19T06:18:22Z · note: review pass 5: needs some work
 - 2026-11-19T06:18:22Z · needs_input
-
+- 2026-11-19T08:08:39Z · status review→active
+- 2026-11-19T08:08:41Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-19T08:08:43Z · needs_input
+- 2026-11-19T08:11:31Z · message_delivered: 1 message(s)
+- 2026-11-19T08:15:02Z · body
+- 2026-11-19T08:15:54Z · status active→review
+- 2026-11-19T08:22:25Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
+- 2026-11-19T08:22:27Z · note: review pass 6: good to go
+- 2026-11-19T08:22:28Z · message_queued at 2026-11-19T08:22:28.955Z
+- 2026-11-19T08:44:46Z · close-out gate completed in 1122s
+- 2026-11-19T08:45:16Z · status done→done, release:success
+- 2026-11-19T08:56:08Z · message_dropped: 1 queued message(s) discarded — task is done
