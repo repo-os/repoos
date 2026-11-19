@@ -2,16 +2,17 @@
 id: "1211"
 title: "QA pass: remote runner setup docs and runner health screens vs real bee/thinkpad/mini behavior"
 type: bug
-status: review
+status: active
 priority: p2
 area: [web, docs]
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-remote-runner-setup-docs-and-run
 created_at: "2026-11-19T00:17:32Z"
-updated_at: "2026-11-19T00:59:25Z"
+updated_at: "2026-11-19T00:59:26Z"
 review_rounds: 1
 routing_switches: 1
+routing_escalations: 1
 review_passes: 1
 ---
 ## Problem
@@ -54,3 +55,4 @@ Do not touch repoos.toml.
 - 2026-11-19T00:54:25Z · body
 - 2026-11-19T00:59:24Z · status active→review
 - 2026-11-19T00:59:25Z · message_queued at 2026-11-19T00:59:25.860Z
+- 2026-11-19T00:59:26Z · status review→active
