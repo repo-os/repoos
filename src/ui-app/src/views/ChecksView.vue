@@ -123,6 +123,8 @@ const localSlotHolders = ref<
 const localSlotQueue = ref<Array<{ taskId: string; position: number; since: string }>>([]);
 const activeCheckRuns = ref<TaskCheckRun[]>([]);
 const slotToRelease = ref<(typeof localSlotHolders.value)[number] | null>(null);
+const slotActionNotice = ref("");
+const slotActionError = ref("");
 let activeCheckPoll: number | undefined;
 let localSlotPoll: number | undefined;
 
@@ -168,12 +170,18 @@ function releaseWedgedSlot(holder: (typeof localSlotHolders.value)[number]): voi
 async function confirmReleaseWedgedSlot(): Promise<void> {
   const holder = slotToRelease.value;
   if (!holder?.pid) return;
+  slotActionNotice.value = "";
+  slotActionError.value = "";
   try {
     await api(`/api/local-check-slots/${holder.slot}/release/${holder.pid}`, { method: "POST" });
     slotToRelease.value = null;
+    slotActionNotice.value = `Released slot ${holder.slot} (PID ${holder.pid}). The check process group it held was stopped.`;
     await loadLocalSlotHolders();
   } catch (e) {
-    error.value = e instanceof Error ? e.message : "Could not release the local check slot.";
+    // The Now tab has no page-level error line, so the failure is shown here
+    // once the dialog closes; a silent failure would look like a success.
+    slotToRelease.value = null;
+    slotActionError.value = e instanceof Error ? e.message : "Could not release the local check slot.";
   }
 }
 
@@ -408,7 +416,7 @@ const RESULT_ICON: Record<string, string> = {
             <div class="ck-live-check-heading">
               <a :href="`/work?task=${encodeURIComponent(run.taskId)}`">Task #{{ run.taskId }}</a>
               <span>{{ run.kind === "handoff-finalize" ? "Handoff" : "Close-out" }}</span>
-              <span v-if="run.machine">on {{ run.machine }}</span>
+              <span v-if="run.machine" class="ck-live-check-machine">on {{ run.machine }}</span>
             </div>
             <div class="check-progress" data-test-id="checks-page-progress">
               <progress
@@ -453,6 +461,10 @@ const RESULT_ICON: Record<string, string> = {
             Queue {{ index + 1 }} · #{{ queued.taskId }} · position {{ queued.position }} · waiting
             {{ fmtDuration(Date.now() - Date.parse(queued.since)) }}
           </p>
+          <p v-if="slotActionNotice" class="ck-slot-notice" role="status">
+            {{ slotActionNotice }}
+          </p>
+          <p v-if="slotActionError" class="ck-err" role="alert">{{ slotActionError }}</p>
         </section>
         <IntegrationPipelineSummary />
         <RemoteRunnersPanel />
@@ -701,6 +713,7 @@ const RESULT_ICON: Record<string, string> = {
 }
 .ck-live-checks {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 10px;
   margin-bottom: 18px;
   padding: 14px 16px;
@@ -752,11 +765,14 @@ const RESULT_ICON: Record<string, string> = {
 .ck-live-check {
   display: grid;
   gap: 7px;
+  min-width: 0;
 }
 .ck-live-check-heading {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
+  min-width: 0;
   color: var(--txt-dim);
   font-size: 12px;
 }
@@ -766,6 +782,15 @@ const RESULT_ICON: Record<string, string> = {
 }
 .ck-live-check-heading a:hover {
   text-decoration: underline;
+}
+/* A hostname or long token has no break point: let it wrap inside the box. */
+.ck-live-check-machine {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.ck-slot-notice {
+  color: var(--green);
+  font-size: 12px;
 }
 .ck-live-check .check-progress {
   display: flex;
