@@ -27,6 +27,9 @@ export const API_TIMEOUT_MS = 15_000;
  */
 export const MODEL_API_TIMEOUT_MS = 30_000;
 
+export const SERVER_UNREACHABLE_MESSAGE =
+  "Can't reach the RepoOS server — it may be offline. Start the server, then reload.";
+
 export type ApiRequestInit = RequestInit & { timeoutMs?: number };
 
 export async function api<T = unknown>(path: string, opts?: ApiRequestInit): Promise<T> {
@@ -71,9 +74,7 @@ export async function api<T = unknown>(path: string, opts?: ApiRequestInit): Pro
     // the connection was refused, or the browser is offline. It never rejects
     // on an HTTP error status. Say that instead of the browser's opaque
     // "Failed to fetch" / "Load failed".
-    throw new Error(
-      "Can't reach the RepoOS server — it may be offline. Start the server, then reload.",
-    );
+    throw new Error(SERVER_UNREACHABLE_MESSAGE);
   } finally {
     if (timeout !== undefined) clearTimeout(timeout);
   }

@@ -111,7 +111,7 @@ enum ServerWebLoadFailure: Equatable {
         case .offline: return "Server unreachable"
         case .tls: return "Secure connection failed"
         case .timeout: return "Connection timed out"
-        case .httpStatus(let code): return "Server returned error code \(code)"
+        case .httpStatus(let code): return "Server error (\(code))"
         case .blockedNavigation: return "Navigation blocked"
         case .unknown: return "Could not load page"
         }

@@ -7,10 +7,11 @@ banner provides a restart action, and the macOS Hub used the networking acronym
 “HTTP” in an address-checking error.
 
 The web message now says the RepoOS server may be offline and tells the user to
-start it before reloading. The macOS health-check message now calls the numeric
-value an “error code.” Its guidance tells the user to check that the address
-points to a RepoOS server. The macOS web-view status title uses the same term.
-The response code stays visible because support and debugging often need it.
+start it before reloading. The macOS health-check message now says that the
+server returned an error and keeps the response number in parentheses. The
+web-view status title uses the short form “Server error” with that same number.
+Hub summary and task-search failures use the same plain-language wording. The
+response number stays visible because support and debugging often need it.
 
 Terminology reviewed: “server” names the reachable RepoOS instance; “project”
 names the repository served by it; “runner” and “agent” remain distinct product

@@ -4,8 +4,12 @@ import XCTest
 final class ServerNavigationPolicyTests: XCTestCase {
     private let origin = URL(string: "https://repo.example.com")!
 
-    func testHTTPStatusFailureUsesPlainLanguageErrorCode() {
-        XCTAssertEqual(ServerWebLoadFailure.httpStatus(503).title, "Server returned error code 503")
+    func testHTTPStatusFailureUsesPlainLanguageServerError() {
+        XCTAssertEqual(ServerWebLoadFailure.httpStatus(503).title, "Server error (503)")
+        XCTAssertEqual(
+            ServerWebLoadFailure.httpStatus(503).guidance,
+            "RepoOS returned an unexpected response. The server may be restarting."
+        )
         XCTAssertFalse(ServerWebLoadFailure.httpStatus(503).title.contains("HTTP"))
     }
 

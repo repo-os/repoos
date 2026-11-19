@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { mount } from "@vue/test-utils";
 import UiRecoveryBanner from "../src/components/UiRecoveryBanner.vue";
+import { SERVER_UNREACHABLE_MESSAGE } from "../src/api";
 import {
   configureUiRecovery,
   dismissRecovery,
@@ -47,8 +48,7 @@ describe("UiRecoveryBanner", () => {
 });
 
 describe("server down vs not responding (#0959)", () => {
-  const refused =
-    "Can't reach the RepoOS server — it may be offline. Start the server, then reload.";
+  const refused = SERVER_UNREACHABLE_MESSAGE;
   const timedOut =
     "The RepoOS server did not respond in time — retry the request or reload when the server is ready.";
 

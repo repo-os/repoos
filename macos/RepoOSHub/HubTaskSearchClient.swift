@@ -68,7 +68,7 @@ struct HubTaskSearchClient: HubTaskSearchFetching {
                 let retry = parseRetryAfter(http)
                 return .failure(.rateLimited(retryAfter: retry))
             default:
-                return .failure(.transport("HTTP \(http.statusCode)"))
+                return .failure(.transport("The server returned an error (\(http.statusCode))."))
             }
         } catch is CancellationError {
             return .failure(.transport("cancelled"))
