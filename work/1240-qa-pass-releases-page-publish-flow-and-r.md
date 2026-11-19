@@ -12,7 +12,7 @@ branch: feat/qa-pass-releases-page-publish-flow-and-r
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T18:27:27Z"
-updated_at: "2026-11-19T19:03:52Z"
+updated_at: "2026-11-19T19:04:08Z"
 last_close_out_gate_ms: 284037
 last_close_out_gate_at: "2026-11-19T19:03:52.807Z"
 review_passes: 1
@@ -42,4 +42,4 @@ Do not touch repoos.toml. Do not call the real release API.
 - 2026-11-19T18:47:39Z · message_queued at 2026-11-19T18:47:39.279Z
 - 2026-11-19T18:50:02Z · note: review pass 1: good to go
 - 2026-11-19T19:03:52Z · close-out gate completed in 284s
-
+- 2026-11-19T19:04:08Z · status done→done, release:success
