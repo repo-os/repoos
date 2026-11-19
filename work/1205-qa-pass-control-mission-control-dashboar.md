@@ -12,8 +12,6 @@ created_at: "2026-11-18T21:47:29Z"
 updated_at: "2026-11-19T00:42:55Z"
 close_out_repair_count: 1
 review_passes: 2
-last_handoff_failure_fingerprint: "check|repoos check failed: check-fmt:check — Formatting failed — run `bun run fmt` to fix:"
-last_handoff_failure_sha: c23e5318dc07620af19c3b6c3d71f3368ce6a9f8
 handoff_signal_retry_count: 1
 review_rounds: 1
 routing_switches: 1
@@ -116,3 +114,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-19T00:33:58Z · CTO nudge: held — handoff gate is running
 - 2026-11-19T00:42:54Z · note: ui verification passed: 2 of 2 shots captured with clean console
 - 2026-11-19T00:42:55Z · status active→review
+
