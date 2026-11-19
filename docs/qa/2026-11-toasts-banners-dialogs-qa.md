@@ -84,9 +84,9 @@ advance (no auto-expiry was armed).
   merging main into the branch (main had moved 157 commits; the merge was
   conflict-free and touched none of this task's files beyond bookkeeping).
 - `bun docs/qa/measure-toasts-banners-dialogs.mjs` — 63 checks, 0 failed across
-  375 / 768 / 1280 px, twice consecutively on the final tree (after the two
-  harness-race fixes above; before them the same script reproduced the dialog
-  Escape failure twice in a row).
+  375 / 768 / 1280 px; three consecutive green runs on the fixed script,
+  including one on the final formatted tree (before the fixes, the same script
+  reproduced the dialog Escape failure twice in a row).
 - `bun run test -- src/ui-app/tests/toast-panel-drop.test.ts
   src/ui-app/tests/toast-panel-a11y.test.ts src/ui-app/tests/shot-preview-fixtures.test.ts
   src/ui-app/tests/ui-recovery-banner.test.ts` — 97 tests passed.
