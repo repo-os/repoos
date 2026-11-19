@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-stats-dev-and-activity-log-pages
 created_at: "2026-11-19T15:47:33Z"
-updated_at: "2026-11-19T17:54:30Z"
+updated_at: "2026-11-19T17:59:27Z"
 handoff_signal_retry_count: 2
 dev_error_count: 1
 engineer_stall_resume_log: "[{\"at\":\"2026-11-19T15:55:13.079Z\",\"reason\":\"clean-exit-without-handoff\"}]"
@@ -83,3 +83,4 @@ Do not touch repoos.toml.
 - 2026-11-19T17:49:29Z · handoff failed · handoff recovery attempted · finalization failed
 - 2026-11-19T17:54:30Z · watchdog: auto-surfaced stuck task · status active→review · handoff recovery was attempted after an interrupted turn but finalization failed — manual intervention needed · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
 - 2026-11-19T17:54:30Z · note: handoff requested (cli)
+- 2026-11-19T17:59:27Z · CTO nudge: held — handoff gate is running
