@@ -6,6 +6,8 @@ status: inbox
 needs_input: true
 needs_input_reason: underspecified
 needs_input_detail: "missing sections: Notes for AI"
+is_archived: true
+archive_detail: "Superseded by ADR 0011: the server-served web UI provides the phone layout inside a connected server."
 priority: p1
 area: mobile
 story: RepoOS Hub for Mobile
@@ -16,7 +18,7 @@ model_override: deepinfra/Qwen/Qwen3-Coder-480B-A35B-Instruct-Turbo
 pm_model_override: deepinfra/deepseek-ai/DeepSeek-V4-Pro-0813
 review_model_override: deepinfra/Qwen/Qwen3-Coder-480B-A35B-Instruct-Turbo
 created_at: "2026-08-26T16:39:04Z"
-updated_at: "2026-10-05T22:38:15Z"
+updated_at: "2026-11-19T13:53:56Z"
 review_passes: 4
 check_retry_count: 2
 handoff_signal_retry_count: 1
@@ -73,3 +75,4 @@ Follow docs/mobile-ux-strategy.md and docs/mobile-architecture.md. Ionic Vue pri
 - 2026-09-17T15:13:26Z · status ready→inbox
 - 2026-09-23T06:53:53Z · story
 - 2026-10-05T11:15:27Z · needs_input
+- 2026-11-19T13:53:56Z · archived: Superseded by ADR 0011: the server-served web UI provides the phone layout inside a connected server.
