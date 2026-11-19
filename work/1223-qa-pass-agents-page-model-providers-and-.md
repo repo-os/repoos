@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-agents-page-model-providers-and-
 created_at: "2026-11-19T07:47:39Z"
-updated_at: "2026-11-19T09:51:26Z"
+updated_at: "2026-11-19T09:58:02Z"
 last_close_out_gate_ms: 514296
 last_close_out_gate_at: "2026-11-19T09:51:06.907Z"
 review_passes: 1
@@ -109,3 +109,4 @@ Do not touch repoos.toml.
 - 2026-11-19T09:51:06Z · close-out gate completed in 514s
 - 2026-11-19T09:51:22Z · status done→done, release:success
 - 2026-11-19T09:51:26Z · message_dropped: 1 queued message(s) discarded — task is done
+- 2026-11-19T09:58:02Z · message_dropped: 1 queued message(s) discarded — task is done
