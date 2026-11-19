@@ -11,7 +11,7 @@ branch: feat/qa-pass-hub-macos-and-web-shared-strings
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T21:47:05Z"
-updated_at: "2026-11-19T21:57:45Z"
+updated_at: "2026-11-19T21:59:23Z"
 ---
 ## Problem
 Tooltips, aria-labels, placeholders and empty-state labels across the app may be missing, duplicated or inconsistent (for example native title tooltips, which are banned in new UI).
@@ -32,3 +32,4 @@ Do not touch repoos.toml.
 - 2026-11-19T21:47:13Z · status ready→active, branch
 - 2026-11-19T21:56:02Z · body
 - 2026-11-19T21:57:45Z · CTO nudge: held — handoff gate is running
+- 2026-11-19T21:59:23Z · note: ui verification passed: 1 shot captured with clean console
