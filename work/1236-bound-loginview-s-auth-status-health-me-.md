@@ -39,3 +39,4 @@ When the server is slow or unreachable, the login page shows a plain-English sta
 - 2026-11-19T16:47:33Z · status ready→active, branch
 - 2026-11-19T16:47:33Z · note: agent fallback: codex + gpt-6-luna is paused (out of usage since 2026-11-19T07:09:32.657Z: Codex hit a provider quota or rate limit. Wait for the provider limit to reset, then retry. (CLI: error: You’ve hit your usage limit. Upgrade to Pro (https://chatgpt.com/explore/pro), visit https://chatgpt.com/codex/settings/usage to purcha) — using opencode + opencode-go/glm-5.3-flash
 - 2026-11-19T16:59:35Z · message_queued at 2026-11-19T16:59:35.826Z
+- 2026-11-19T16:59:35Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
