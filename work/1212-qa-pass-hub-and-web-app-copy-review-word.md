@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-hub-and-web-app-copy-review-word
 created_at: "2026-11-19T00:47:39Z"
-updated_at: "2026-11-19T02:34:02Z"
+updated_at: "2026-11-19T02:34:40Z"
 last_close_out_gate_ms: 730488
 last_close_out_gate_at: "2026-11-19T02:29:34.947Z"
 review_passes: 3
@@ -94,3 +94,4 @@ Do not touch repoos.toml.
 - 2026-11-19T02:16:55Z · note: review pass 3: good to go
 - 2026-11-19T02:29:34Z · close-out gate completed in 730s
 - 2026-11-19T02:34:02Z · status done→done, release:success
+- 2026-11-19T02:34:40Z · message_dropped: 3 queued message(s) discarded — task is done
