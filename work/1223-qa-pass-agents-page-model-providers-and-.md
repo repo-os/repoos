@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-agents-page-model-providers-and-
 created_at: "2026-11-19T07:47:39Z"
-updated_at: "2026-11-19T09:51:06Z"
+updated_at: "2026-11-19T09:51:22Z"
 last_close_out_gate_ms: 514296
 last_close_out_gate_at: "2026-11-19T09:51:06.907Z"
 review_passes: 1
@@ -107,4 +107,4 @@ Do not touch repoos.toml.
 - 2026-11-19T09:32:35Z · message_queued at 2026-11-19T09:32:35.678Z
 - 2026-11-19T09:35:36Z · note: review pass 1: good to go
 - 2026-11-19T09:51:06Z · close-out gate completed in 514s
-
+- 2026-11-19T09:51:22Z · status done→done, release:success
