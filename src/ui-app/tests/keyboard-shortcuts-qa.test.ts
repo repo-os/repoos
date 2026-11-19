@@ -22,7 +22,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { defineComponent, nextTick, ref } from "vue";
+import { defineComponent, nextTick, ref, type Ref } from "vue";
 import { flushPromises, mount } from "@vue/test-utils";
 import { createPinia, setActivePinia } from "pinia";
 import SearchBar from "../src/components/SearchBar.vue";
@@ -154,7 +154,7 @@ describe("⌘K opens the command palette on every main page", () => {
 /** Board harness around the real useBoardKeyboardNav composable, so the
  *  Esc interplay with the palette is tested against the production wiring
  *  (WorkView uses panelOpen = !!ui.active, closePanel = ui.close). */
-function mountBoardHarness(options: { panelOpen: ReturnType<typeof ref<boolean>> }) {
+function mountBoardHarness(options: { panelOpen: Ref<boolean> }) {
   const closePanel = vi.fn();
   const tasks = ref<Task[]>([
     makeTask({ id: "t1", status: "ready" }),
