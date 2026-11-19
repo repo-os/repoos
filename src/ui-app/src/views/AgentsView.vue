@@ -780,7 +780,7 @@ onUnmounted(() => {
       <Button variant="outline" @click="activeTab = 'team'">Choose a built-in agent</Button>
     </section>
 
-    <section v-if="!config.loaded && config.error" class="agents-load-error" role="alert">
+    <section v-if="!config.loaded && config.error" class="page-load-error" role="alert">
       <div>
         <h2>Couldn’t load agents</h2>
         <p>Check your connection to the RepoOS server, then try again.</p>

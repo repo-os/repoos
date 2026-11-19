@@ -1348,8 +1348,23 @@ onUnmounted(() => {
     </div>
 
     <!-- The tab strip above is real chrome and renders immediately; only the
-         panel body waits for the config, and it waits as a skeleton (#0950). -->
-    <PageSkeleton :loading="!config.loaded" kind="rows" :count="GENERAL_FIELD_SECTIONS.length" />
+         panel body waits for the config, and it waits as a skeleton (#0950).
+         When the config itself failed to load (offline, 500, slow) the body
+         never resolves — show a plain-English error with Retry instead of a
+         skeleton that would spin forever (#1226). -->
+    <section v-if="!config.loaded && config.error" class="page-load-error" role="alert">
+      <div>
+        <h2>Couldn't load settings</h2>
+        <p>Check your connection to the RepoOS server, then try again.</p>
+      </div>
+      <Button variant="outline" @click="config.load()">Retry</Button>
+    </section>
+
+    <PageSkeleton
+      :loading="!config.loaded && !config.error"
+      kind="rows"
+      :count="GENERAL_FIELD_SECTIONS.length"
+    />
 
     <div v-if="config.loaded" class="page-scroll-body">
       <div class="settings-panels">

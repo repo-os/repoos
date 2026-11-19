@@ -11058,7 +11058,7 @@
   border-radius: 12px;
   background: var(--panel);
 }
-.agents-load-error {
+.page-load-error {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -11069,18 +11069,18 @@
   border-radius: 12px;
   background: var(--panel);
 }
-.agents-load-error h2 {
+.page-load-error h2 {
   margin: 0;
   color: var(--txt);
   font-size: 14px;
 }
-.agents-load-error p {
+.page-load-error p {
   margin: 4px 0 0;
   color: var(--txt-muted);
   font-size: 12.5px;
   line-height: 1.45;
 }
-.agents-load-error button {
+.page-load-error button {
   min-height: 42px;
   flex: none;
 }
@@ -11530,7 +11530,7 @@
     align-items: flex-start;
     flex-wrap: wrap;
   }
-  .agents-load-error {
+  .page-load-error {
     align-items: flex-start;
     flex-wrap: wrap;
   }

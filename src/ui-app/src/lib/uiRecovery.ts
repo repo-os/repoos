@@ -176,6 +176,21 @@ export function showOffline(
   state.probeResult = null;
 }
 
+/**
+ * #1226: the SSE event stream reconnected, so the server is demonstrably
+ * reachable again — clear the offline banner without waiting for the user to
+ * focus or navigate (which is when `checkUiBuild` would normally re-probe).
+ * A page whose data recovers on its own should not keep telling the user the
+ * server is down.
+ */
+export function clearOfflineOnStreamBack(): void {
+  if (state.reloading || state.kind !== "offline") return;
+  state.kind = null;
+  state.message = "";
+  state.offlineReason = null;
+  state.probeResult = null;
+}
+
 export function dismissRecovery(): void {
   const storage = getSessionStorage();
   try {
