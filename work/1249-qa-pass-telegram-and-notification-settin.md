@@ -2,7 +2,7 @@
 id: "1249"
 title: "QA pass: Telegram and notification settings screens and their messages"
 type: bug
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/qa-pass-telegram-and-notification-settin
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T21:46:55Z"
-updated_at: "2026-11-19T23:24:46Z"
+updated_at: "2026-11-19T23:26:06Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -60,3 +60,4 @@ Do not touch repoos.toml.
 - 2026-11-19T22:52:42Z · message_delivered: 1 message(s)
 - 2026-11-19T23:02:09Z · body
 - 2026-11-19T23:24:46Z · body
+- 2026-11-19T23:26:06Z · status active→review
