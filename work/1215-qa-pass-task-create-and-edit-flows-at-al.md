@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-task-create-and-edit-flows-at-al
 created_at: "2026-11-19T03:17:33Z"
-updated_at: "2026-11-19T03:37:15Z"
+updated_at: "2026-11-19T03:37:47Z"
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -34,3 +34,4 @@ Do not touch repoos.toml.
 - 2026-11-19T03:37:15Z · status active→review
 - 2026-11-19T03:37:15Z · message_queued at 2026-11-19T03:37:15.469Z
 - 2026-11-19T03:37:15Z · note: shots: skipped — the diff (4 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-11-19T03:37:47Z · note: review pass 1: needs some work
