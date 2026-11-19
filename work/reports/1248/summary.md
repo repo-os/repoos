@@ -1,3 +1,14 @@
+---
+id: summary
+title: summary
+type: feature
+status: inbox
+priority: p2
+area: general
+assigned_to: ai
+created_by: ""
+branch: ""
+---
 ## TL;DR
 
 Task 1248 was a QA pass on file uploads for the Inputs and Context pages. It shipped a client-side upload guard for the Inputs path (wrong type, empty file and over-10 MB files are rejected before reading, with plain-English reasons), a 12-file cap that now holds across multi-file drops, duplicate-name renaming, honest server status codes (400/413/404/500 instead of 404 for every failure), and a fix for a layout bug that pushed the "Dismiss" button off-screen at 375 px. Headless WebKit audits at 375, 768 and 1280 px plus a 277-line unit/integration test file back the changes. Context (doc and skill) uploads were deliberately left without limits — that is a product decision — and were recorded as open items in the QA doc. The task completed in one engineering round and one review pass (`good to go`) in 1 h 11 min 3 s from creation to done, with one watchdog restart of the engineer and no model swaps.
@@ -23,9 +34,9 @@ Task 1248 was a QA pass on file uploads for the Inputs and Context pages. It shi
 - **Engineering rounds:** 1 (round recorded 2026-11-19T22:19:04Z). **Review passes:** 1, verdict `good to go`. No re-review was needed.
 - **Wall-clock start to done:** created 2026-11-19T21:26:57Z, done 2026-11-19T22:38:00Z — 1 h 11 min 3 s.
 - **Agents and models per role:**
-  - Engineer: `claude code` agent, model `haiku`. Session elapsed 971 s (~16 min), 56,371 tokens, cost $0.4532 (recorded 0.45318601).
-  - Reviewer: `opencode` agent, model `opencode-go/glm-5.3-flash`. Session elapsed 153 s, 58,954 tokens, cost $0.0297 (recorded 0.02966962).
-  - Routing: `Model router (jev)`, model unknown, 0 s elapsed, no tokens or cost recorded.
+- Engineer: `claude code` agent, model `haiku`. Session elapsed 971 s (~16 min), 56,371 tokens, cost $0.4532 (recorded 0.45318601).
+- Reviewer: `opencode` agent, model `opencode-go/glm-5.3-flash`. Session elapsed 153 s, 58,954 tokens, cost $0.0297 (recorded 0.02966962).
+- Routing: `Model router (jev)`, model unknown, 0 s elapsed, no tokens or cost recorded.
 - **Totals where known:** 115,325 tokens, $0.4829 (recorded values sum to 0.48285563). Cost per engineering round: one engineer session is recorded in the sessions table; the watchdog restart below did not produce a second recorded engineer session.
 - **Restarts:** one watchdog restart of the engineer (2026-11-19T22:04:02Z). **Model swaps:** none recorded.
 - **Close-out gate:** completed in 837 s (~14 min) at 2026-11-19T22:35:51Z.

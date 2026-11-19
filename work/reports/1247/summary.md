@@ -1,3 +1,14 @@
+---
+id: summary
+title: summary
+type: feature
+status: inbox
+priority: p2
+area: general
+assigned_to: ai
+created_by: ""
+branch: ""
+---
 ## TL;DR
 
 Task 1247 was a QA pass over the Checks page live run view and its cancel/retry controls at phone (375 px), tablet (768 px) and desktop (1280 px) widths, against seeded fixtures for running, queued, stalled and failed states — headless Playwright only, no real check runs. It shipped in a single engineering round with one review pass (`good to go`) and landed as commit `4ebcbb3a2cb763c84e7417b207fd2da41a915438`. Two real defects were found and fixed: a running check's heading overflowed its box at phone and tablet widths when the machine name had no break point, and a failed "Release slot" action was completely silent on the Now tab (the error rendered only on the Check plan tab); the success path also gave no feedback and gained a confirmation notice. All fixes are covered by a new WebKit responsive-layout test suite (9 tests, passing), and the QA record is committed at `docs/qa/2026-11-checks-live-run-qa.md`.
@@ -22,9 +33,9 @@ The task's acceptance criteria were met:
 - **Review rounds:** 1 (Pass 1, 2026-11-19T21:38:45Z, verdict `good to go`).
 - **Wall-clock start to done:** created 2026-11-19T21:07:03Z, done 2026-11-19T22:02:16Z — 55 minutes 13 seconds.
 - **Agents and models:**
-  - Engineer: `engineer`, haiku, started 2026-11-19T21:07:12Z, elapsed 121 s, 1,796 tokens, cost $0.5942376. One orphaned engineer process (pid 30233) was adopted rather than restarted; no restarts or model swaps otherwise.
-  - Reviewer: `reviewer`, opencode-go/glm-5.3-flash, started 2026-11-19T21:36:45Z, elapsed 120 s, 61,709 tokens, cost $0.03660323.
-  - Routing: Model router (jev), unknown model, 0 s, no tokens/cost recorded.
+- Engineer: `engineer`, haiku, started 2026-11-19T21:07:12Z, elapsed 121 s, 1,796 tokens, cost $0.5942376. One orphaned engineer process (pid 30233) was adopted rather than restarted; no restarts or model swaps otherwise.
+- Reviewer: `reviewer`, opencode-go/glm-5.3-flash, started 2026-11-19T21:36:45Z, elapsed 120 s, 61,709 tokens, cost $0.03660323.
+- Routing: Model router (jev), unknown model, 0 s, no tokens/cost recorded.
 - **Totals where derivable from the recorded per-role figures:** tokens 63,505 (1,796 + 61,709); cost $0.63084083 (sum of the two recorded figures). Per-run cost/token totals beyond these were not recorded.
 - **Close-out gate:** completed in 1,071 s.
 
