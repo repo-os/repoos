@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-11-19T09:16:06Z"
-review_passes: 1
+last_close_out_gate_ms: 68924
+last_close_out_gate_at: "2026-11-19T09:33:54.356Z"
 id: "1222"
 title: "QA pass: every Settings tab saves, validates and fits small screens (round 2)"
 type: bug
@@ -11,6 +11,8 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-every-settings-tab-saves-validat
 created_at: "2026-11-19T07:17:47Z"
+updated_at: "2026-11-19T09:33:54Z"
+review_passes: 1
 handoff_signal_retry_count: 1
 dev_error_count: 1
 ---
@@ -93,4 +95,5 @@ Do not touch repoos.toml.
 - 2026-11-19T09:15:08Z · message_queued at 2026-11-19T09:15:08.623Z
 - 2026-11-19T09:15:08Z · note: shots: skipped — the diff (10 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-19T09:16:06Z · note: review pass 1: good to go
+- 2026-11-19T09:33:54Z · close-out gate completed in 69s
 
