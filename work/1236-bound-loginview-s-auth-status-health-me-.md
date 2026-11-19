@@ -11,7 +11,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/easter-eggs-bundle-bound-loginview-auth-
 created_at: "2026-11-19T16:18:14Z"
-updated_at: "2026-11-19T17:07:43Z"
+updated_at: "2026-11-19T17:07:44Z"
 ---
 ## Problem
 QA pass #1226 bounded the boot-gating fetches in the web app, but `LoginView.checkStatus` still issues its own unbounded `fetch("/api/auth/status")` and `/api/auth/me` with no `AbortSignal` — a stalled connection leaves the login page's spinner up until the browser's default timeout, the same unbounded-fetch class the pass fixed elsewhere.
@@ -46,3 +46,4 @@ When the server is slow or unreachable, the login page shows a plain-English sta
 - 2026-11-19T17:04:35Z · message_queued at 2026-11-19T17:04:35.624Z
 - 2026-11-19T17:04:35Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-19T17:07:43Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-19T17:07:44Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 130) · last assistant: That timed out. Let me run just that file directly with the UI app's config: · stderr: (empty)
