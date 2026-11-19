@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-control-mission-control-dashboar
 created_at: "2026-11-18T21:47:29Z"
-updated_at: "2026-11-19T01:25:25Z"
+updated_at: "2026-11-19T01:25:40Z"
 last_close_out_gate_ms: 106218
 last_close_out_gate_at: "2026-11-19T01:25:25.710Z"
 review_passes: 4
@@ -135,4 +135,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-19T01:22:15Z · message_queued at 2026-11-19T01:22:15.700Z
 - 2026-11-19T01:23:25Z · note: review pass 4: good to go
 - 2026-11-19T01:25:25Z · close-out gate completed in 106s
-
+- 2026-11-19T01:25:40Z · message_dropped: 1 queued message(s) discarded — task is done
