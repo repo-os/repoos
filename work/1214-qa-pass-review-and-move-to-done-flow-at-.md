@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-review-and-move-to-done-flow-at-
 created_at: "2026-11-19T02:18:22Z"
-updated_at: "2026-11-19T02:51:49Z"
+updated_at: "2026-11-19T02:51:50Z"
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -33,3 +33,4 @@ Do not touch repoos.toml.
 - 2026-11-19T02:51:12Z · CTO nudge: held — handoff gate is running
 - 2026-11-19T02:51:49Z · status active→review
 - 2026-11-19T02:51:49Z · message_queued at 2026-11-19T02:51:49.757Z
+- 2026-11-19T02:51:50Z · note: shots: skipped — the diff (3 changed paths) touches no capture target's globs — no UI change to capture
