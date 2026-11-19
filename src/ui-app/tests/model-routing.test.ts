@@ -414,6 +414,23 @@ describe("policy", () => {
     if (out.kind === "blocked") expect(out.reason).toBe("no-eligible-fallback");
   });
 
+  it("explains a blocked decision in plain words, with no internal reason slug", () => {
+    const forbiddenFallback: RoutingCandidate = { cli: "kiro", model: "default", reasoning: null };
+    const out = decideRouting({
+      eligible,
+      fallback: forbiddenFallback,
+      answers: null,
+      failure: new RoutingProviderError("transport", "x"),
+      costTime: {},
+      weights: { costWeight: 0.5, timeWeight: 0.5 },
+    });
+    expect(out.kind).toBe("blocked");
+    if (out.kind !== "blocked") return;
+    expect(out.message).toContain("the decision model could not be reached");
+    expect(out.message).toContain("Pick a model on the Agents page");
+    expect(out.message).not.toMatch(/\(provider-failure\)|provider-failure/);
+  });
+
   it("treats low-confidence suitability as insufficient evidence and falls back", () => {
     const weak = answersWith(
       suitabilityAnswer({ [candidateKey(codex)]: 0.4, [candidateKey(claude)]: 0.3 }, 0.9),

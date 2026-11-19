@@ -523,7 +523,8 @@ describe("Agents page QA at 375/768/1280 (WebKit, fixtures)", () => {
       credentialPresent: false,
       credentialLabel: "not_set",
       providerReady: false,
-      issues: ["No TypeSafe Jev API key is saved yet — paste one below to enable routing."],
+      // The exact wording `modelRoutingStatus` returns for a missing Jev key.
+      issues: ["Save your TypeSafe Jev API key below (stored in .env only)."],
       ...over,
     };
   }
@@ -616,7 +617,7 @@ describe("Agents page QA at 375/768/1280 (WebKit, fixtures)", () => {
 
   async function mountRoutingPanel(
     status: ModelRoutingStatusResponse,
-    decisions: RoutingDecisionView[],
+    decisions: RoutingDecisionView[] | "load-failed",
     beforeCapture?: (wrapper: VueWrapper) => Promise<void>,
   ): Promise<{ markup: string; css: string }> {
     vi.stubGlobal(
@@ -625,6 +626,7 @@ describe("Agents page QA at 375/768/1280 (WebKit, fixtures)", () => {
         const url = String(input);
         if (url.includes("/api/model-routing/status")) return json(status);
         if (url.includes("/api/model-routing/decisions")) {
+          if (decisions === "load-failed") throw new TypeError("Failed to fetch");
           return json({ decisions });
         }
         if (url.includes("/api/model-routing/probe")) {
@@ -686,7 +688,7 @@ describe("Agents page QA at 375/768/1280 (WebKit, fixtures)", () => {
         );
         expect(await textOf(page, '[data-testid="routing-provider-ready"]')).toContain("Not ready");
         // The issue is explained in plain English, in a visible notice.
-        expect(await textOf(page, ".mr-issues")).toContain("No TypeSafe Jev API key is saved yet");
+        expect(await textOf(page, ".mr-issues")).toContain("Save your TypeSafe Jev API key below");
         // The open key form is a masked password field with a real placeholder.
         const keyInput = page.locator('[data-testid="routing-key-input"]');
         expect(await keyInput.count()).toBe(1);
@@ -787,6 +789,25 @@ describe("Agents page QA at 375/768/1280 (WebKit, fixtures)", () => {
         // Recent decisions render with their chosen/recommended pairs.
         expect(await page.locator(".mr-decision").count()).toBe(4);
         expect(await textOf(page, ".mr-decision")).toContain("codex · gpt-5");
+      } finally {
+        await page.close();
+      }
+    },
+  );
+
+  it.each(VIEWPORTS)(
+    "model routing tab fits at %spx when recent decisions fail to load, and does not claim none",
+    async (width) => {
+      const { markup, css } = await mountRoutingPanel(routingStatus(), "load-failed");
+      const page = await openFixturePage("routing-decisions-load-failed", markup, css, width);
+      try {
+        await expectFits(page, "routing decisions load-failed state", width);
+        const error = await textOf(page, '[data-testid="routing-decisions-error"]');
+        expect(error).toContain("could not be loaded");
+        expect(error).toContain("not the same as no decisions yet");
+        expect(await page.locator('[data-testid="routing-decisions-retry"]').count()).toBe(1);
+        // A failed load must not read as an empty history.
+        expect(await textOf(page, ".mr-decisions")).not.toContain("Nothing recorded yet");
       } finally {
         await page.close();
       }
