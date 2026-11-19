@@ -21,6 +21,7 @@ import { invalidatePageData, refreshPageData } from "../composables/page-data-ca
 import {
   isShotPreviewCaptureActive,
   readShotPreviewFixtureFromLocation,
+  shotFixtureDistribution,
   shotFixtureReleaseAutoPublish,
   shotFixtureReleaseEmail,
   shotFixtureReleaseRun,
@@ -687,6 +688,21 @@ async function resendReleaseEmailNow(): Promise<void> {
  * keeps cached channels visible with a non-blocking retry notice.
  */
 async function loadDistribution(manual = false): Promise<void> {
+  // #1219: a capture of ordinary channels cannot show the wrapping this page
+  // must do for long names and install commands. Seed the fixture on the
+  // initial load; a manual "Check again" still asks the live server.
+  const pinned = manual
+    ? null
+    : shotFixtureDistribution(readShotPreviewFixtureFromLocation(window.location));
+  if (pinned) {
+    distribution.value = pinned.channels;
+    distributionReleaseVersion.value = pinned.releaseVersion;
+    distributionCiFailure.value = null;
+    distributionRefreshError.value = "";
+    distributionLoading.value = false;
+    distributionRefreshing.value = false;
+    return;
+  }
   // A release landing while the mount-time lookup is still in flight starts a
   // second lookup; the older response must not overwrite the newer one or
   // clear the loading indicator while the newer lookup is still pending.
@@ -2365,6 +2381,7 @@ Subject: {{ releaseEmailPreview.subject }}
   font-family: var(--mono);
   font-size: 12px;
   margin-top: 2px;
+  overflow-wrap: anywhere;
 }
 .rel-cut-open {
   display: inline-flex;
@@ -2706,6 +2723,7 @@ Subject: {{ releaseEmailPreview.subject }}
   color: var(--txt-faint);
   font-size: 12px;
   margin: 4px 0 0;
+  overflow-wrap: anywhere;
 }
 .rel-dist-sub code {
   font-family: var(--mono);
@@ -2713,9 +2731,13 @@ Subject: {{ releaseEmailPreview.subject }}
 }
 .rel-dist-channels {
   display: grid;
+  /* An unbroken channel name must not force the single track wider than the
+     card; the name wraps inside it instead (#1219). */
+  grid-template-columns: minmax(0, 1fr);
   gap: 12px;
 }
 .rel-channel {
+  min-width: 0;
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 14px 16px;
@@ -2728,10 +2750,12 @@ Subject: {{ releaseEmailPreview.subject }}
   gap: 12px;
 }
 .rel-channel-name {
+  min-width: 0;
   font-size: 13.5px;
   font-weight: 700;
   color: var(--txt);
   text-decoration: none;
+  overflow-wrap: anywhere;
 }
 a.rel-channel-name:hover {
   color: var(--cyan);
@@ -2777,15 +2801,20 @@ a.rel-channel-name:hover {
   color: var(--txt-faint);
   font-size: 12px;
   margin: 5px 0 0;
+  overflow-wrap: anywhere;
 }
 .rel-installs {
   list-style: none;
   margin: 12px 0 0;
   padding: 0;
   display: grid;
+  /* A long install command scrolls inside its code box (below); the row
+     itself still has to shrink to the card width (#1219). */
+  grid-template-columns: minmax(0, 1fr);
   gap: 6px;
 }
 .rel-install {
+  min-width: 0;
   display: flex;
   align-items: center;
   gap: 10px;
