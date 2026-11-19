@@ -1,6 +1,7 @@
 import { computed, reactive, ref } from "vue";
 import { defineStore } from "pinia";
 import { api, API_TIMEOUT_MS, ApiError, JSON_OPTS } from "../api";
+import { keepSameList } from "../lib/boardVisibility";
 import type { DeclaredShot } from "../../../core/shot-plan.js";
 import {
   checkUiBuild,
@@ -629,14 +630,22 @@ export function sortTasks(tasks: Task[], order: SortOrder, columnStatus?: string
   const copy = [...tasks];
   switch (order) {
     case "recent":
+      if (columnStatus === "done") {
+        // Derive each key once. Scanning the body inside the comparator repeats
+        // the activity-log regex on every comparison, which is most of the
+        // Done column's cost on a board with ~1000 done tasks (#1251).
+        const keyed = copy.map((t) => ({
+          task: t,
+          at: doneAtFromActivity(t.body) ?? t.updated_at ?? t.created_at ?? "",
+        }));
+        keyed.sort((a, b) => {
+          if (!a.at) return b.at ? 1 : 0;
+          if (!b.at) return -1;
+          return b.at.localeCompare(a.at);
+        });
+        return keyed.map((k) => k.task);
+      }
       return copy.sort((a, b) => {
-        if (columnStatus === "done") {
-          const ua = doneAtFromActivity(a.body) ?? a.updated_at ?? a.created_at ?? "";
-          const ub = doneAtFromActivity(b.body) ?? b.updated_at ?? b.created_at ?? "";
-          if (!ua) return ub ? 1 : 0;
-          if (!ub) return -1;
-          return ub.localeCompare(ua);
-        }
         if (!a.updated_at) return b.updated_at ? 1 : 0;
         if (!b.updated_at) return -1;
         return b.updated_at.localeCompare(a.updated_at);
@@ -1205,6 +1214,7 @@ export const useRepoStore = defineStore("repo", () => {
    *  parked out of ALL automation. Uses `isHoldActive` (tag-aware and
    *  expiry-aware) so a `hold` tag surfaces here exactly as the flag does, and
    *  a hold whose auto-release time has passed is no longer shown. */
+  let heldList: Task[] = [];
   const heldTasks = computed<Task[]>(() => {
     const held: Task[] = [];
     for (const t of tasks.value) {
@@ -1214,7 +1224,9 @@ export const useRepoStore = defineStore("repo", () => {
       // invalidated every second.
       if (taskIsHeld(t) && isHoldActive(t, holdNow.value)) held.push(t);
     }
-    return held.sort((a, b) => (b.updated_at ?? "").localeCompare(a.updated_at ?? ""));
+    held.sort((a, b) => (b.updated_at ?? "").localeCompare(a.updated_at ?? ""));
+    heldList = keepSameList(held, heldList);
+    return heldList;
   });
 
   function setSortOrder(order: SortOrder): void {
