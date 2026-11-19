@@ -11,7 +11,7 @@ branch: feat/qa-pass-stories-inbox-and-search-pages-w
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T17:46:51Z"
-updated_at: "2026-11-19T18:19:29Z"
+updated_at: "2026-11-19T18:20:07Z"
 ---
 ## Problem
 Stories, Inbox and Search have not been checked with many items, long titles and zero results at phone, tablet and desktop widths.
@@ -39,3 +39,4 @@ Do not touch repoos.toml.
 - 2026-11-19T18:14:27Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-19T18:19:29Z · message_delivered: 1 message(s)
 - 2026-11-19T18:19:29Z · CTO action: restart-stalled-agent (fresh) · agent exited without emitting the handoff signal
+- 2026-11-19T18:20:07Z · body
