@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-remote-runner-setup-docs-and-run
 created_at: "2026-11-19T00:17:32Z"
-updated_at: "2026-11-19T01:46:12Z"
+updated_at: "2026-11-19T01:49:16Z"
 handoff_signal_retry_count: 1
 review_rounds: 2
 routing_switches: 1
@@ -71,3 +71,4 @@ Do not touch repoos.toml.
 - 2026-11-19T01:46:10Z · message_queued at 2026-11-19T01:46:10.599Z
 - 2026-11-19T01:46:10Z · handoff failed · handoff recovery attempted · finalization failed
 - 2026-11-19T01:46:12Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-19T01:49:16Z · watchdog: restarting engineer because a queued message waited 3m with no live process
