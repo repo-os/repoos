@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-19T07:08:49Z"
+review_passes: 4
 id: "1215"
 title: "QA pass: task create and edit flows at all screen sizes"
 type: bug
@@ -9,11 +11,9 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-task-create-and-edit-flows-at-al
 created_at: "2026-11-19T03:17:33Z"
-updated_at: "2026-11-19T07:08:49Z"
 review_rounds: 2
 routing_switches: 1
 routing_escalations: 1
-review_passes: 3
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -93,3 +93,4 @@ Do not touch repoos.toml.
 - 2026-11-19T07:08:09Z · message_queued at 2026-11-19T07:08:09.708Z
 - 2026-11-19T07:08:10Z · note: shots: skipped — the diff (12 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-19T07:08:49Z · note: review pass 4: good to go
+
