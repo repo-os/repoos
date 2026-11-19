@@ -4,6 +4,11 @@ import XCTest
 final class ServerNavigationPolicyTests: XCTestCase {
     private let origin = URL(string: "https://repo.example.com")!
 
+    func testHTTPStatusFailureUsesPlainLanguageErrorCode() {
+        XCTAssertEqual(ServerWebLoadFailure.httpStatus(503).title, "Server returned error code 503")
+        XCTAssertFalse(ServerWebLoadFailure.httpStatus(503).title.contains("HTTP"))
+    }
+
     func testAllowsSameOriginPaths() {
         let taskURL = URL(string: "https://repo.example.com/tasks/0042")!
         let decision = ServerNavigationPolicy.decide(

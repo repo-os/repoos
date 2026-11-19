@@ -45,6 +45,18 @@ describe("api()", () => {
     expect(err.message).not.toContain("Failed to fetch");
   });
 
+  it("gives a plain-language next step when the RepoOS server is unreachable", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        throw new TypeError("Failed to fetch");
+      }),
+    );
+    await expect(api("/api/health")).rejects.toThrow(
+      "Can't reach the RepoOS server — it may be offline. Start the server, then reload.",
+    );
+  });
+
   it("lets a deliberate AbortError pass through untouched", async () => {
     vi.stubGlobal(
       "fetch",

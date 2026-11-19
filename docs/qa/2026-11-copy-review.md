@@ -8,9 +8,9 @@ banner provides a restart action, and the macOS Hub used the networking acronym
 
 The web message now says the RepoOS server may be offline and tells the user to
 start it before reloading. The macOS health-check message now calls the numeric
-value an “error code” and tells the user to check that the address points to a
-RepoOS server. The response code stays visible because support and debugging
-often need it.
+value an “error code.” Its guidance tells the user to check that the address
+points to a RepoOS server. The macOS web-view status title uses the same term.
+The response code stays visible because support and debugging often need it.
 
 Terminology reviewed: “server” names the reachable RepoOS instance; “project”
 names the repository served by it; “runner” and “agent” remain distinct product
@@ -26,6 +26,7 @@ and timeout guidance is also specific about the next step. The remaining “HTTP
 references are protocol requirements, provider diagnostics, or internal code,
 not general connection guidance.
 
-The web copy assertion checks the new plain-language message and guards against
-reintroducing the terminal command. No browser was opened; this copy-only change
-does not need a visual review. Automated checks are recorded by the task handoff.
+The web copy assertion exercises the API wrapper's actual network failure and
+guards against reintroducing the terminal command. No browser was opened; these
+copy changes do not need a visual review. Automated checks are recorded by the
+task handoff.
