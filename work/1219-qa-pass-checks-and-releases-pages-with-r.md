@@ -11,7 +11,7 @@ branch: feat/qa-pass-checks-and-releases-pages-with-r
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-11-19T06:17:33Z"
-updated_at: "2026-11-19T07:16:23Z"
+updated_at: "2026-11-19T07:25:11Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-19T06:56:03.096Z: repoos check failed: rendered-contrast — · div#setting-model_routing.timeoutMs.setting-row > div.setting-info > div.setting-desc — #958ab0 on #ffffff = 3.21 (need ≥4.5, 11px) [settings] \"How long one routing decision may take before the configured\""
 review_rounds: 1
@@ -36,18 +36,18 @@ Do not touch repoos.toml.
 ```json
 [
 {
-  "label": "Checks with long step data",
-  "target": "default",
-  "route": "/checks?tab=plan",
-  "highlight": ".ck-steps",
-  "state": "checks:longData"
+"label": "Checks with long step data",
+"target": "default",
+"route": "/checks?tab=plan",
+"highlight": ".ck-steps",
+"state": "checks:longData"
 },
 {
-  "label": "Releases distribution with long channel data",
-  "target": "default",
-  "route": "/releases",
-  "highlight": ".rel-dist",
-  "state": "release:longDistribution"
+"label": "Releases distribution with long channel data",
+"target": "default",
+"route": "/releases",
+"highlight": ".rel-dist",
+"state": "release:longDistribution"
 }
 ]
 ```
@@ -81,3 +81,4 @@ Do not touch repoos.toml.
 - 2026-11-19T07:09:57Z · needs_input
 - 2026-11-19T07:09:57Z · message_delivered: 1 message(s)
 - 2026-11-19T07:16:23Z · body
+- 2026-11-19T07:25:11Z · body
