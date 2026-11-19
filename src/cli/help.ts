@@ -381,8 +381,7 @@ export const GROUPS: readonly CommandGroup[] = [
       },
       {
         name: "doctor",
-        usage:
-          "doctor [--json] [--verbose] [--probe <cli> [--model <id>]] [--binary <path>]",
+        usage: "doctor [--json] [--verbose] [--probe <cli> [--model <id>]] [--binary <path>]",
         desc: "Readiness preflight: config, layout, tools, server and secrets",
         flags: "--json · --verbose · --probe <cli> · --model <id> · --binary <path>",
       },

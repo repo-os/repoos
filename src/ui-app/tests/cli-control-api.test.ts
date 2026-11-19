@@ -441,7 +441,10 @@ describe("control API CLI", () => {
     const health = vi.spyOn(RepoOsApi.prototype, "health").mockResolvedValue(true);
     const request = vi.spyOn(RepoOsApi.prototype, "request").mockResolvedValue({
       status: 200,
-      body: nonJsonResponse("/api/definitely-not-a-route", "<!DOCTYPE html><html><body>x</body></html>"),
+      body: nonJsonResponse(
+        "/api/definitely-not-a-route",
+        "<!DOCTYPE html><html><body>x</body></html>",
+      ),
     });
     const err = vi.spyOn(console, "error").mockImplementation(() => {});
     const log = vi.spyOn(console, "log").mockImplementation(() => {});

@@ -21,7 +21,9 @@ const docs = readFileSync(docsPath, "utf8");
 
 /** `repoos <name>` as a standalone reference (not a longer command's prefix). */
 function docsMention(command: string): boolean {
-  return new RegExp(`repoos ${command.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?![\\w-])`).test(docs);
+  return new RegExp(`repoos ${command.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?![\\w-])`).test(
+    docs,
+  );
 }
 
 describe("every CLI help command is documented in user-docs/cli.md", () => {
@@ -32,11 +34,20 @@ describe("every CLI help command is documented in user-docs/cli.md", () => {
         if (!docsMention(cmd.name)) missing.push(cmd.name);
       }
     }
-    expect(missing, `commands in --help but absent from user-docs/cli.md: ${missing.join(", ")}`).toEqual([]);
+    expect(
+      missing,
+      `commands in --help but absent from user-docs/cli.md: ${missing.join(", ")}`,
+    ).toEqual([]);
   });
 
   it("documents the sub-commands the help table lists", () => {
-    for (const sub of ["review again", "review followup", "review keep", "checks timings", "checks slots"]) {
+    for (const sub of [
+      "review again",
+      "review followup",
+      "review keep",
+      "checks timings",
+      "checks slots",
+    ]) {
       expect(docsMention(sub), `${sub} should be documented`).toBe(true);
     }
   });
@@ -61,7 +72,10 @@ describe("per-command help matches the documented flags", () => {
 
 describe("non-JSON API responses read in plain English", () => {
   it("an HTML page (SPA fallback on a wrong /api/ path) becomes a clear message", () => {
-    const body = nonJsonResponse("/api/bogus-route", "<!DOCTYPE html>\n<html><body>app</body></html>");
+    const body = nonJsonResponse(
+      "/api/bogus-route",
+      "<!DOCTYPE html>\n<html><body>app</body></html>",
+    );
     expect(body.htmlResponse).toBe(true);
     const err = String(body.error);
     expect(err).toContain("/api/bogus-route");
