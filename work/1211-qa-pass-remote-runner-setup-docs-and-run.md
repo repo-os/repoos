@@ -2,14 +2,14 @@
 id: "1211"
 title: "QA pass: remote runner setup docs and runner health screens vs real bee/thinkpad/mini behavior"
 type: bug
-status: inbox
+status: ready
 priority: p2
 area: [web, docs]
 assigned_to: ai
 created_by: t@t
 branch: ""
 created_at: "2026-11-19T00:17:32Z"
-updated_at: "2026-11-19T00:17:32Z"
+updated_at: "2026-11-19T00:17:37Z"
 ---
 ## Problem
 Docs and UI for adding and checking remote runners may not match how bee, thinkpad and mini are actually run (systemd, user accounts, PATH).
@@ -24,3 +24,4 @@ Do not touch repoos.toml.
 ## Activity
 
 - 2026-11-19T00:17:32Z · created · t@t
+- 2026-11-19T00:17:37Z · status inbox→ready
