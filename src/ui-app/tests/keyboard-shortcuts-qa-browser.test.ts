@@ -223,5 +223,57 @@ describe.skipIf(!existsSync(webkit.executablePath()))(
         await page.close();
       }
     });
+
+    /** #1231 round-2 review follow-up: `--shadow-lg` is declared exactly twice
+     *  — at `:root` (dark base, 0.45 alpha) and at `[data-theme="light"]`
+     *  (0.16). The ui-theme variant roots never declare it, so the resolved
+     *  value depends on a subtle cascade fact: `:root` and
+     *  `[data-theme="light"]` tie on specificity and the light declaration
+     *  wins by source order. A reviewer worried the light ui-theme variants
+     *  fall through to the heavy dark shadow; measuring in WebKit says they
+     *  don't. This table pins the computed value for every combination so a
+     *  future block reorder, or a `--shadow-lg` added to a ui-theme root,
+     *  cannot silently put the dark shadow back on light themes. */
+    const uiThemes = [
+      "clear",
+      "gen z",
+      "jelly",
+      "gruvbox",
+      "catppuccin",
+      "hypercolor",
+      "solarized",
+    ] as const;
+    const shadowCases = [
+      { label: "default (dark base)", attrs: {}, alpha: "0.45" },
+      { label: "light theme", attrs: { "data-theme": "light" }, alpha: "0.16" },
+      ...uiThemes.flatMap((theme) => [
+        { label: `${theme} ui-theme (dark)`, attrs: { "data-ui-theme": theme }, alpha: "0.45" },
+        {
+          label: `${theme} ui-theme + light`,
+          attrs: { "data-ui-theme": theme, "data-theme": "light" },
+          alpha: "0.16",
+        },
+      ]),
+    ];
+    it.each(shadowCases)(
+      "resolves --shadow-lg to the $alpha alpha shadow for: $label",
+      async ({ attrs, alpha }) => {
+        const page = await browser.newPage();
+        try {
+          await page.setContent(`<style>${globalCss}</style><body></body>`);
+          const value = await page.evaluate((attrsToSet) => {
+            for (const [name, v] of Object.entries(attrsToSet)) {
+              document.documentElement.setAttribute(name, v);
+            }
+            return getComputedStyle(document.documentElement)
+              .getPropertyValue("--shadow-lg")
+              .trim();
+          }, attrs);
+          expect(value).toBe(`0 18px 40px rgba(0, 0, 0, ${alpha})`);
+        } finally {
+          await page.close();
+        }
+      },
+    );
   },
 );

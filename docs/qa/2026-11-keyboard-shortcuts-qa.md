@@ -121,3 +121,28 @@ Tab trap, the z-index ladder including the documented modal modality, and the
 stylesheet-wide undeclared-variable guard. `keyboard-shortcuts-qa-browser.test.ts`
 (headless WebKit, fixtures): no-overflow audits and touch-target assertions at
 375/768/1280, plus the close button's visible focus ring.
+
+## Round-2 review follow-ups
+
+Two items came back from review round 2; both are addressed with evidence.
+
+**Dashboard shot captured under the loading veil.** The skeleton veil
+(`PageSkeleton`) shows after 180 ms of loading and stays visible a minimum of
+350 ms once shown (`SKELETON_MIN_VISIBLE_MS`, anti-flicker), so a capture
+scheduled 300 ms after the click could land inside that window — the round-2
+dashboard shot was recorded `missing-target` with `[aria-busy="true"]` still
+up, and the round-2 `/work` capture hit the same veil before passing on retry.
+Both declared shots now settle 900 ms after the palette opens, clearing the
+worst-case veil lifetime; the shot *content* is unchanged.
+
+**`--shadow-lg` on the light ui-theme variants.** The reviewer flagged the
+dark value (0.45 alpha) as possibly leaking onto light ui-theme variants,
+which don't redefine the token. Measured in WebKit across all seven ui-theme
+variants in both dark and light modes: they don't. `--shadow-lg` is declared
+exactly twice — `:root` (0.45) and `[data-theme="light"]` (0.16) — and the
+two tie on specificity, with light winning by source order; the ui-theme
+roots never declare it, so every light variant resolves to 0.16. The cascade
+is now pinned by a 16-case table in `keyboard-shortcuts-qa-browser.test.ts`
+(computed values in WebKit), so a future block reorder or a `--shadow-lg`
+added to a ui-theme root cannot silently put the heavy dark shadow back on
+light themes. No stylesheet change was needed.
