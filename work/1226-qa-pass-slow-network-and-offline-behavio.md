@@ -3,16 +3,13 @@ id: "1226"
 title: "QA pass: slow network and offline behavior in the web app and Hub"
 type: bug
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "Automatic recovery could not restart the engineer: This worktree already has a recorded live engineer for task #1226 (pid 3767)"
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-slow-network-and-offline-behavio
 created_at: "2026-11-19T09:47:34Z"
-updated_at: "2026-11-19T10:11:00Z"
+updated_at: "2026-11-19T10:28:29Z"
 handoff_signal_retry_count: 2
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\",\"at\":\"2026-11-19T09:51:25.262Z\",\"kind\":\"dev-error\"}]"
@@ -43,3 +40,4 @@ Do not touch repoos.toml.
 - 2026-11-19T10:00:45Z · watchdog: automatic resume failed — This worktree already has a recorded live engineer for task #1226 (pid 3767)
 - 2026-11-19T10:10:59Z · watchdog: restarting engineer after 10m with no live process
 - 2026-11-19T10:11:00Z · watchdog: active-without-engineer recovery failed — This worktree already has a recorded live engineer for task #1226 (pid 3767)
+- 2026-11-19T10:28:29Z · watchdog: restarting engineer after 17m with no live process
