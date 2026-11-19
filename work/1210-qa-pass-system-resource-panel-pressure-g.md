@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-system-resource-panel-pressure-g
 created_at: "2026-11-18T23:47:41Z"
-updated_at: "2026-11-19T07:28:20Z"
+updated_at: "2026-11-19T07:29:45Z"
 last_close_out_gate_ms: 410673
 last_close_out_gate_at: "2026-11-19T07:26:50.253Z"
 review_passes: 5
@@ -192,3 +192,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-19T07:18:59Z · note: review pass 8: good to go
 - 2026-11-19T07:26:50Z · close-out gate completed in 411s
 - 2026-11-19T07:28:20Z · status done→done, release:success
+- 2026-11-19T07:29:45Z · message_dropped: 1 queued message(s) discarded — task is done
