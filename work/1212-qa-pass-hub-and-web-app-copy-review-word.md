@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-hub-and-web-app-copy-review-word
 created_at: "2026-11-19T00:47:39Z"
-updated_at: "2026-11-19T02:07:13Z"
+updated_at: "2026-11-19T02:07:16Z"
 last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (appeared: src/ui-app/src/lib/shot-preview-fixtures.ts, src/ui-app/tests/mobile-work-queue.test.ts, src/ui-app/tests/remote-validation-drawer.test.ts, src/ui-app/tests/shot-preview-fixtures.test.ts, src/ui-app/tests/work-queue-visibility.test.ts) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 last_handoff_failure_sha: 987e0e851e0df1a9a915aab143e4b54969778242
 last_check_failure: "repoos check at 2026-11-19T01:25:43.917Z: repoos check failed: reused check inputs changed during handoff — run the check again"
@@ -84,3 +84,4 @@ Do not touch repoos.toml.
 - 2026-11-19T02:05:35Z · body
 - 2026-11-19T02:07:13Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-19T02:07:13Z · message_queued at 2026-11-19T02:07:13.850Z
+- 2026-11-19T02:07:16Z · ↻ resuming engineer to read queued message
