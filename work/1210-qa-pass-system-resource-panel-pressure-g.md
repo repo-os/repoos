@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-system-resource-panel-pressure-g
 created_at: "2026-11-18T23:47:41Z"
-updated_at: "2026-11-19T00:28:59Z"
+updated_at: "2026-11-19T00:34:19Z"
 ---
 ## Problem
 Resource and pressure displays (warning, critical, swap/compressor numbers) need a hands-on pass in all states.
@@ -28,3 +28,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T23:47:51Z · status ready→active, branch
 - 2026-11-19T00:22:45Z · body
 - 2026-11-19T00:28:59Z · note: adopted orphaned engineer pid 66279
+- 2026-11-19T00:34:19Z · body
