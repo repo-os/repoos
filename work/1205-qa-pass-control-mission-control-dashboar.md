@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-19T01:23:25Z"
-review_passes: 4
 id: "1205"
 title: "QA pass: Control (Mission Control) dashboard – every card, chart and empty state at desktop and 375px"
 type: bug
@@ -11,6 +9,8 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-control-mission-control-dashboar
 created_at: "2026-11-18T21:47:29Z"
+updated_at: "2026-11-19T01:22:15Z"
+review_passes: 3
 close_out_repair_count: 1
 handoff_signal_retry_count: 1
 review_rounds: 1
@@ -119,16 +119,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-19T00:47:35Z · status review→active
 - 2026-11-19T00:47:37Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-19T00:47:38Z · message_delivered: 1 message(s)
-- 2026-11-19T01:00:32Z · body
-- 2026-11-19T01:03:58Z · CTO nudge: held — handoff gate is running
-- 2026-11-19T01:04:15Z · note: ui verification passed: 2 of 2 shots captured with clean console
-- 2026-11-19T01:04:16Z · message_queued at 2026-11-19T01:04:16.176Z
-- 2026-11-19T01:07:31Z · watchdog: restarting engineer because a queued message waited 3m with no live process
-- 2026-11-19T01:07:32Z · message_delivered: 1 message(s)
-- 2026-11-19T01:17:46Z · body
-- 2026-11-19T01:18:58Z · CTO nudge: held — handoff gate is running
-- 2026-11-19T01:22:14Z · note: ui verification passed: 2 of 2 shots captured with clean console
 - 2026-11-19T01:22:15Z · status active→review
-- 2026-11-19T01:22:15Z · message_queued at 2026-11-19T01:22:15.700Z
-- 2026-11-19T01:23:25Z · note: review pass 4: good to go
-
