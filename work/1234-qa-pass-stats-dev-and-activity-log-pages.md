@@ -91,3 +91,4 @@ Do not touch repoos.toml.
 - 2026-11-19T18:15:03Z · body
 - 2026-11-19T18:18:10Z · note: ui verification passed: 3 of 3 shots captured with clean console
 - 2026-11-19T18:18:11Z · status active→review
+- 2026-11-19T18:18:11Z · message_queued at 2026-11-19T18:18:11.765Z
