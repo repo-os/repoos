@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-11-19T21:20:38Z"
-review_passes: 1
+last_close_out_gate_ms: 809300
+last_close_out_gate_at: "2026-11-19T21:42:17.760Z"
 id: "1246"
 title: "QA pass: task cards and board columns with long titles, many labels and odd states"
 type: bug
@@ -13,6 +13,8 @@ branch: feat/qa-pass-task-cards-and-board-columns-wit
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T21:06:54Z"
+updated_at: "2026-11-19T21:42:17Z"
+review_passes: 1
 ---
 ## Problem
 Task cards and board columns have not been checked with very long titles, many labels, unusual statuses (held, paused, needs-input, archived) and missing fields.
@@ -50,4 +52,5 @@ Do not touch repoos.toml.
 - 2026-11-19T21:19:11Z · status active→review
 - 2026-11-19T21:19:11Z · message_queued at 2026-11-19T21:19:11.388Z
 - 2026-11-19T21:20:38Z · note: review pass 1: good to go
+- 2026-11-19T21:42:17Z · close-out gate completed in 809s
 
