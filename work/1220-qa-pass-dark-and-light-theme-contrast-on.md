@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-19T06:41:09Z"
-review_passes: 3
 id: "1220"
 title: "QA pass: dark and light theme contrast on every main page"
 type: bug
@@ -11,10 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-dark-and-light-theme-contrast-on
 created_at: "2026-11-19T06:17:41Z"
-review_rounds: 2
-routing_switches: 1
-routing_escalations: 1
-handoff_signal_retry_count: 1
+updated_at: "2026-11-19T06:21:55Z"
 ---
 ## Problem
 Theme contrast on newer pages and dialogs has not been re-checked since recent UI changes.
@@ -32,22 +27,4 @@ Do not touch repoos.toml.
 - 2026-11-19T06:17:41Z · created · t@t
 - 2026-11-19T06:17:44Z · status inbox→ready
 - 2026-11-19T06:17:46Z · status ready→active, branch
-- 2026-11-19T06:21:56Z · status active→review
-- 2026-11-19T06:21:56Z · message_queued at 2026-11-19T06:21:56.417Z
-- 2026-11-19T06:21:57Z · note: shots: skipped — the diff (3 changed paths) touches no capture target's globs — no UI change to capture
-- 2026-11-19T06:22:33Z · note: review pass 1: needs some work
-- 2026-11-19T06:22:34Z · message_delivered: 1 message(s)
-- 2026-11-19T06:22:34Z · status review→active
-- 2026-11-19T06:33:01Z · body
-- 2026-11-19T06:34:08Z · status active→review
-- 2026-11-19T06:34:08Z · message_queued at 2026-11-19T06:34:08.761Z
-- 2026-11-19T06:34:09Z · note: shots: skipped — the diff (6 changed paths) touches no capture target's globs — no UI change to capture
-- 2026-11-19T06:34:41Z · note: review pass 2: needs some work
-- 2026-11-19T06:34:41Z · message_delivered: 1 message(s)
-- 2026-11-19T06:34:42Z · status review→active
-- 2026-11-19T06:39:19Z · body
-- 2026-11-19T06:40:29Z · status active→review
-- 2026-11-19T06:40:29Z · message_queued at 2026-11-19T06:40:29.485Z
-- 2026-11-19T06:40:30Z · note: shots: skipped — the diff (8 changed paths) touches no capture target's globs — no UI change to capture
-- 2026-11-19T06:41:08Z · note: review pass 3: good to go
-
+- 2026-11-19T06:21:55Z · status active→review
