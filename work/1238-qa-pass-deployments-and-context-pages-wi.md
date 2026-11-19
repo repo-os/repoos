@@ -11,7 +11,7 @@ branch: feat/qa-pass-deployments-and-context-pages-wi
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T18:26:58Z"
-updated_at: "2026-11-19T19:26:11Z"
+updated_at: "2026-11-19T19:26:13Z"
 engineer_stall_resume_log: "[{\"at\":\"2026-11-19T19:26:11.959Z\",\"reason\":\"handoff-deferred\"}]"
 ---
 ## Problem
@@ -53,3 +53,4 @@ Do not touch repoos.toml.
 - 2026-11-19T19:26:11Z · message_queued at 2026-11-19T19:26:11.677Z
 - 2026-11-19T19:26:11Z · handoff failed · handoff recovery attempted · finalization failed
 - 2026-11-19T19:26:11Z · watchdog: auto-resumed engineer to read a deferred handoff message · resume 1/3
+- 2026-11-19T19:26:13Z · message_delivered: 1 message(s)
