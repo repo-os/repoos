@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-cli-help-and-error-messages-matc
 created_at: "2026-11-19T11:47:39Z"
-updated_at: "2026-11-19T12:56:12Z"
+updated_at: "2026-11-19T13:00:10Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -30,15 +30,10 @@ Do not touch repoos.toml.
 ```json
 [
 {
-"label": "CLI reference: newly documented checks timings/slots, certify, migrate and rm sections",
-"target": "Docs site",
-"route": "/cli",
-"highlight": "#repoos-checks-timings-repoos-checks-slots"
-},
-{
-"label": "Control-plane table now lists summary, review followup, watch and allowlist",
-"target": "Docs site",
-"route": "/cli"
+  "label": "CLI reference: newly documented checks timings/slots, certify, migrate and rm sections, and the control-plane table rows for summary, review followup, watch and allowlist",
+  "target": "Docs site",
+  "route": "/cli",
+  "highlight": "#repoos-checks-timings-repoos-checks-slots"
 }
 ]
 ```
@@ -73,3 +68,4 @@ Do not touch repoos.toml.
 - 2026-11-19T12:56:11Z · note: review pass 1: needs some work
 - 2026-11-19T12:56:12Z · message_delivered: 1 message(s)
 - 2026-11-19T12:56:12Z · status review→active
+- 2026-11-19T13:00:10Z · body
