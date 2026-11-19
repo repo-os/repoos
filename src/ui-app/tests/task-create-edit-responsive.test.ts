@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { mount, type VueWrapper } from "@vue/test-utils";
 import { createPinia, setActivePinia } from "pinia";
 import { createMemoryHistory, createRouter } from "vue-router";
-import { nextTick } from "vue";
+import { nextTick, reactive } from "vue";
 import TaskDrawer from "../src/components/TaskDrawer.vue";
 import AreaPicker from "../src/components/AreaPicker.vue";
 import Select from "../src/components/ui/select/root.vue";
@@ -181,17 +181,17 @@ describe.each(VIEWPORTS)("task create/edit interactions at %i px", (width) => {
 
   it("selects and removes the prerequisite from the fixture picker", async () => {
     await setViewport(width);
-    const wrapper = mount(TaskDependencyPicker, {
-      props: {
-        id: "fixture-dependencies",
-        tasks: [makeTask(), makeTask({ id: "0002", title: "Prerequisite" })],
-        modelValue: [],
-      },
+    const props = reactive({
+      id: "fixture-dependencies",
+      tasks: [makeTask(), makeTask({ id: "0002", title: "Prerequisite" })],
+      modelValue: [] as string[],
     });
+    const wrapper = mount(TaskDependencyPicker, { props });
     try {
       await wrapper.get(".dependency-option").trigger("click");
       expect(wrapper.emitted("update:modelValue")?.at(-1)?.[0]).toEqual(["0001"]);
-      await wrapper.setProps({ modelValue: ["0001"] });
+      props.modelValue = ["0001"];
+      await flush();
       await wrapper.get('[aria-label="Remove dependency 0001"]').trigger("click");
       expect(wrapper.emitted("update:modelValue")?.at(-1)?.[0]).toEqual([]);
     } finally {
