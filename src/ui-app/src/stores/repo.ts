@@ -2,7 +2,13 @@ import { computed, reactive, ref } from "vue";
 import { defineStore } from "pinia";
 import { api, API_TIMEOUT_MS, ApiError, JSON_OPTS } from "../api";
 import type { DeclaredShot } from "../../../core/shot-plan.js";
-import { checkUiBuild, clearOfflineOnStreamBack, isstaleDismissed, showStaleUi, uiRecoveryState } from "../lib/uiRecovery";
+import {
+  checkUiBuild,
+  clearOfflineOnStreamBack,
+  isstaleDismissed,
+  showStaleUi,
+  uiRecoveryState,
+} from "../lib/uiRecovery";
 import {
   clearAttachmentUploadState,
   markAttachmentUploadFailed,

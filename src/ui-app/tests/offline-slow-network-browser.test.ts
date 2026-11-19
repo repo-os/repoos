@@ -147,10 +147,9 @@ describeBrowser("slow network and offline QA (#1226)", () => {
 
       // The global recovery banner names the problem in plain English too.
       await page.evaluate(() => window.dispatchEvent(new Event("focus")));
-      await page.waitForFunction(
-        () => document.querySelector(".ui-recovery-banner") !== null,
-        { timeout: 10_000 },
-      );
+      await page.waitForFunction(() => document.querySelector(".ui-recovery-banner") !== null, {
+        timeout: 10_000,
+      });
       const banner = await page.evaluate(() => {
         const el = document.querySelector(".ui-recovery-banner");
         return { title: el?.querySelector("strong")?.textContent ?? "" };
@@ -173,10 +172,9 @@ describeBrowser("slow network and offline QA (#1226)", () => {
         ["/settings", "Couldn't load settings"],
       ] as const) {
         await page.goto(`${server!.url}${route}`, { waitUntil: "load", timeout: 20_000 });
-        await page.waitForFunction(
-          () => document.querySelector(".page-load-error") !== null,
-          { timeout: 10_000 },
-        );
+        await page.waitForFunction(() => document.querySelector(".page-load-error") !== null, {
+          timeout: 10_000,
+        });
         await page.waitForFunction(() => !document.querySelector(".page-skeleton"), {
           timeout: 5_000,
         });
@@ -213,15 +211,13 @@ describeBrowser("slow network and offline QA (#1226)", () => {
       expect(text).toContain("The server hit an unexpected error");
 
       await page.goto(`${server!.url}/agents`, { waitUntil: "load", timeout: 20_000 });
-      await page.waitForFunction(
-        () => document.querySelector(".page-load-error") !== null,
-        { timeout: 10_000 },
-      );
+      await page.waitForFunction(() => document.querySelector(".page-load-error") !== null, {
+        timeout: 10_000,
+      });
       await page.goto(`${server!.url}/settings`, { waitUntil: "load", timeout: 20_000 });
-      await page.waitForFunction(
-        () => document.querySelector(".page-load-error") !== null,
-        { timeout: 10_000 },
-      );
+      await page.waitForFunction(() => document.querySelector(".page-load-error") !== null, {
+        timeout: 10_000,
+      });
       expect(bootErrors).toEqual([]);
     } finally {
       await page.close();
@@ -311,9 +307,9 @@ describeBrowser("slow network and offline QA (#1226)", () => {
       // reading it once — on a slow machine the panel can win the race.
       await page.waitForFunction(
         () =>
-          document.querySelector(".ui-recovery-banner strong")?.textContent?.includes(
-            "is not responding",
-          ) === true,
+          document
+            .querySelector(".ui-recovery-banner strong")
+            ?.textContent?.includes("is not responding") === true,
         { timeout: 20_000 },
       );
       expect(bootErrors).toEqual([]);
@@ -327,10 +323,9 @@ describeBrowser("slow network and offline QA (#1226)", () => {
     try {
       await goOffline(page);
       await page.goto(`${server!.url}/agents`, { waitUntil: "load", timeout: 20_000 });
-      await page.waitForFunction(
-        () => document.querySelector(".page-load-error") !== null,
-        { timeout: 10_000 },
-      );
+      await page.waitForFunction(() => document.querySelector(".page-load-error") !== null, {
+        timeout: 10_000,
+      });
 
       // The server comes back: lift the interception.
       await page.unroute("**/api/**");
@@ -344,10 +339,9 @@ describeBrowser("slow network and offline QA (#1226)", () => {
 
       // The page's own Retry button reloads its data — no full reload needed.
       await page.click(".page-load-error button");
-      await page.waitForFunction(
-        () => document.querySelector(".agent-tabs") !== null,
-        { timeout: 10_000 },
-      );
+      await page.waitForFunction(() => document.querySelector(".agent-tabs") !== null, {
+        timeout: 10_000,
+      });
       expect(bootErrors).toEqual([]);
     } finally {
       await page.close();

@@ -65,10 +65,11 @@ describe("auth store under a stalled /api/auth/me (#1226)", () => {
     // Connection drops after the headers: res.json() rejects.
     vi.stubGlobal(
       "fetch",
-      vi.fn(async () =>
-        ({
-          json: () => Promise.reject(new Error("connection reset mid-read")),
-        }) as unknown as Response,
+      vi.fn(
+        async () =>
+          ({
+            json: () => Promise.reject(new Error("connection reset mid-read")),
+          }) as unknown as Response,
       ),
     );
     setActivePinia(createPinia());

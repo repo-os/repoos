@@ -41,11 +41,17 @@ export interface SmokeRoute {
     json(): Promise<unknown>;
   }>;
   abort(): Promise<void>;
-  fulfill(options:
-    | { status: number; contentType: string; body: string }
-    | {
-        response: { status(): number; body(): Promise<Buffer | string>; json(): Promise<unknown> };
-      }): Promise<void>;
+  fulfill(
+    options:
+      | { status: number; contentType: string; body: string }
+      | {
+          response: {
+            status(): number;
+            body(): Promise<Buffer | string>;
+            json(): Promise<unknown>;
+          };
+        },
+  ): Promise<void>;
 }
 export interface SmokePage {
   on(event: "console", handler: (msg: SmokeConsoleMessage) => void): void;
