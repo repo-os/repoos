@@ -93,3 +93,13 @@ finding.
 The scoped `repoos check` result is recorded by RepoOS at handoff. The new
 browser suite passed twice consecutively (9/9), and the touched unit suites
 (auth, ui-recovery, settings-load-error, agents-view-cards) pass.
+
+One note for the reviewer: the first remote-validation run of the rendered
+contrast audit reported 154 `clear-light` settings-page failures that were a
+mixed-theme sample (light-theme text over the dark theme's `--panel`), the same
+class #0596/#0617 already document as unreproducible phantom failures. The
+identical commit re-run clean in the identical runner container minutes later
+(audit passed twice in that run), the audit's own settle-and-retry barrier
+logged no warning, and the diff does not touch any theme token — the settings
+screen it flagged renders byte-identically on `main` under a healthy config
+load. Treated as a load-dependent audit flake, not a finding.
