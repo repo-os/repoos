@@ -15,7 +15,7 @@ branch: feat/qa-pass-sign-in-user-menu-and-permission
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T18:27:10Z"
-updated_at: "2026-11-19T20:13:51Z"
+updated_at: "2026-11-19T20:23:49Z"
 last_close_out_gate_ms: 737850
 last_close_out_gate_at: "2026-11-19T19:59:09.211Z"
 review_passes: 2
@@ -78,3 +78,4 @@ Do not touch repoos.toml.
 - 2026-11-19T19:59:26Z · status done→done, release:success
 - 2026-11-19T20:07:30Z · message_dropped: 1 queued message(s) discarded — task is done
 - 2026-11-19T20:13:51Z · needs_input
+- 2026-11-19T20:23:49Z · message_dropped: 1 queued message(s) discarded — task is done
