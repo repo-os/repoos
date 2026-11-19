@@ -1,5 +1,4 @@
 ---
-handoff_signal_retry_count: 1
 id: "1222"
 title: "QA pass: every Settings tab saves, validates and fits small screens (round 2)"
 type: bug
@@ -11,8 +10,8 @@ created_by: t@t
 branch: feat/qa-pass-every-settings-tab-saves-validat
 created_at: "2026-11-19T07:17:47Z"
 updated_at: "2026-11-19T08:35:38Z"
+handoff_signal_retry_count: 1
 dev_error_count: 1
-engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\",\"at\":\"2026-11-19T08:22:33.140Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 The Settings pages have many toggles and fields; some may not persist, may accept invalid values, or may be unreachable on a phone.
