@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-19T07:08:55Z"
+review_passes: 1
 id: "1221"
 title: "QA pass: task drawer tabs with long content at all screen sizes"
 type: bug
@@ -9,7 +11,6 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-task-drawer-tabs-with-long-conte
 created_at: "2026-11-19T06:47:59Z"
-updated_at: "2026-11-19T07:08:55Z"
 ---
 ## Problem
 The task drawer tabs (Overview, Changes, Reviews, Activity, Shots) have not been QA-checked at phone, tablet and desktop widths with long content.
@@ -35,3 +36,4 @@ Do not touch repoos.toml.
 - 2026-11-19T07:08:15Z · message_queued at 2026-11-19T07:08:15.323Z
 - 2026-11-19T07:08:15Z · note: shots: skipped — the diff (4 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-19T07:08:55Z · note: review pass 1: needs some work
+
