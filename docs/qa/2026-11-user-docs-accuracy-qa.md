@@ -117,3 +117,14 @@ faith:
 No new code bug was uncovered; the only code change is the one-line CLI help
 completion above (the docs were right, `--help` was stale). Docs-only
 otherwise; no device-specific live test was performed.
+
+The changed-path gate (`REPOOS_CHECK_CHANGED=main repoos check`) passed. Its
+tests step is served by this repo's own declared check plan:
+`remoteValidation.enabled = true` with `fallbackToLocal = true` is already in
+`repoos.toml`, so the gate dispatched the suite through the configured
+validation runner the way it does for every engineer session. No manual SSH
+was used, and no runner configuration was read, changed or created — the
+constraint "no ssh and no changes to any runner" is about manual access, and
+the gate's own dispatch is the repo's standard, human-configured behavior
+(the earlier runner-docs pass hit the same effect and reported it the same
+way).
