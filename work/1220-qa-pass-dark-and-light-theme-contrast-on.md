@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-dark-and-light-theme-contrast-on
 created_at: "2026-11-19T06:17:41Z"
-updated_at: "2026-11-19T06:40:29Z"
+updated_at: "2026-11-19T06:40:30Z"
 review_rounds: 2
 routing_switches: 1
 routing_escalations: 1
@@ -48,3 +48,4 @@ Do not touch repoos.toml.
 - 2026-11-19T06:39:19Z · body
 - 2026-11-19T06:40:29Z · status active→review
 - 2026-11-19T06:40:29Z · message_queued at 2026-11-19T06:40:29.485Z
+- 2026-11-19T06:40:30Z · note: shots: skipped — the diff (8 changed paths) touches no capture target's globs — no UI change to capture
