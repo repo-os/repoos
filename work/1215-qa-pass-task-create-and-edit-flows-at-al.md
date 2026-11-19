@@ -72,3 +72,4 @@ Do not touch repoos.toml.
 - 2026-11-19T05:46:52Z · ↻ resuming engineer to read queued message
 - 2026-11-19T05:46:52Z · status active→review
 - 2026-11-19T05:46:52Z · message_delivered: 2 message(s)
+- 2026-11-19T05:46:53Z · note: handoff requested (cli)
