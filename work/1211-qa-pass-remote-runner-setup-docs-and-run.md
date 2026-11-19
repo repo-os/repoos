@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-remote-runner-setup-docs-and-run
 created_at: "2026-11-19T00:17:32Z"
-updated_at: "2026-11-19T08:22:25Z"
+updated_at: "2026-11-19T08:22:27Z"
 review_passes: 5
 handoff_signal_retry_count: 1
 review_rounds: 2
@@ -122,3 +122,4 @@ Do not touch repoos.toml.
 - 2026-11-19T08:15:02Z · body
 - 2026-11-19T08:15:54Z · status active→review
 - 2026-11-19T08:22:25Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
+- 2026-11-19T08:22:27Z · note: review pass 6: good to go
