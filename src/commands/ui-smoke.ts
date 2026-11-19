@@ -218,6 +218,79 @@ async function runUISmokeTest(): Promise<void> {
       }
     };
 
+    // Responsive layout matrix for the high-traffic screens (#1213). Each
+    // route uses the same deterministic preview fixtures as captured shots.
+    const assertResponsiveLayout = async (
+      label: string,
+      route: string,
+      fixture: string,
+      width: number,
+    ): Promise<void> => {
+      await page.setViewportSize({ width, height: width < 600 ? 812 : 900 });
+      const separator = route.includes("?") ? "&" : "?";
+      await page.goto(`${server!.url}${route}${separator}shotState=${encodeURIComponent(fixture)}`, {
+        waitUntil: "load",
+        timeout: 20_000,
+      });
+      await page.waitForFunction(
+        () => Boolean(document.querySelector("#app")?.textContent?.trim()),
+        { timeout: 8_000 },
+      );
+      const result = await page.evaluate(() => {
+        const width = window.innerWidth;
+        const overflow = Math.max(document.body.scrollWidth, document.documentElement.scrollWidth);
+        const visible = (el: HTMLElement) => {
+          const rect = el.getBoundingClientRect();
+          const style = getComputedStyle(el);
+          return style.display !== "none" && style.visibility !== "hidden" && rect.width > 0 && rect.height > 0;
+        };
+        const clippedButtons: string[] = [];
+        for (const el of Array.from(document.querySelectorAll<HTMLElement>("button.btn.primary, button[data-primary-action]"))) {
+          if (!visible(el)) continue;
+          const rect = el.getBoundingClientRect();
+          if (rect.left < 0 || rect.right > width) clippedButtons.push(el.innerText.trim().slice(0, 48));
+          for (let parent = el.parentElement; parent && parent !== document.body; parent = parent.parentElement) {
+            const style = getComputedStyle(parent);
+            if (!/(hidden|clip|auto|scroll)/.test(`${style.overflowX} ${style.overflowY}`)) continue;
+            const bounds = parent.getBoundingClientRect();
+            if (rect.left < bounds.left - 1 || rect.right > bounds.right + 1) {
+              clippedButtons.push(el.innerText.trim().slice(0, 48));
+              break;
+            }
+          }
+        }
+        const fixed = Array.from(document.querySelectorAll<HTMLElement>("body *"))
+          .filter((el) => visible(el) && getComputedStyle(el).position === "fixed")
+          .map((el) => ({ el, rect: el.getBoundingClientRect() }))
+          .filter(({ rect }) => rect.width > width * 0.55 && rect.height >= 20 && rect.height < 180);
+        const overlaps: string[] = [];
+        for (let i = 0; i < fixed.length; i++) for (let j = i + 1; j < fixed.length; j++) {
+          const a = fixed[i]!.rect, b = fixed[j]!.rect;
+          if (a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top) {
+            overlaps.push(`${fixed[i]!.el.className || fixed[i]!.el.tagName}/${fixed[j]!.el.className || fixed[j]!.el.tagName}`);
+          }
+        }
+        return { overflow, width, clippedButtons, overlaps };
+      });
+      if (result.overflow > result.width) throw new Error(`${label} has horizontal page scroll at ${width}px (${result.overflow}px)`);
+      if (result.clippedButtons.length) throw new Error(`${label} primary button clipped at ${width}px: ${result.clippedButtons.join(", ")}`);
+      if (result.overlaps.length) throw new Error(`${label} fixed bars overlap at ${width}px: ${result.overlaps.join(", ")}`);
+    };
+
+    const responsivePages = [
+      ["Work", "/work", "pages:scroll"],
+      ["Agents", "/agents", "agents:scheduledSeeded"],
+      ["Settings", "/settings", "settings:motionOff"],
+      ["Checks", "/checks", "checks:progress"],
+      ["Releases", "/releases", "release:cutReady"],
+      ["Task drawer", "/work?task=9999", "drawer:reviewWithBranch"],
+    ] as const;
+    for (const [label, route, fixture] of responsivePages) {
+      for (const width of [375, 768, 1280]) {
+        await assertResponsiveLayout(label, route, fixture, width);
+      }
+    }
+
     await assertNoHorizontalOverflow("dashboard", server.url);
     await assertNoHorizontalOverflow("docs", `${server.url}/repo`);
     // #1133 — the Agents page replaced its header log with inline per-card

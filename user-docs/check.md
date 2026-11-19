@@ -154,6 +154,12 @@ With neither, the step skips with a clear message rather than pretending your
 UI was tested. RepoOS's own repo dogfoods this same mechanism — it declares a
 `smoke` script instead of being special-cased.
 
+RepoOS's smoke script also checks Work, Agents, Settings, Checks, Releases,
+and a task drawer at 375, 768, and 1280 CSS pixels. It uses seeded preview
+fixtures and fails on page-level horizontal scrolling, clipped visible primary
+buttons, or intersecting fixed bars. The browser run is headless WebKit; when
+Playwright or WebKit is unavailable, the smoke step skips with install advice.
+
 ## Hard-coded colors and the rendered contrast audit
 
 Token pairs can't see a component that styles itself. Two guards catch that
