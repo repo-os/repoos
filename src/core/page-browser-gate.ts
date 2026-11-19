@@ -101,6 +101,21 @@ export function createPageGateCollector(pageOrigin?: string): PageGateCollector 
           if (isBenignFailedResourceUrl(failUrl)) return;
           issues.push({ kind: "request", message: text, url: url || undefined });
         } else {
+          // WebKit reports a failed <link rel="preconnect"> as a console error
+          // naming the host, not as a "Failed to load resource" event. Offline
+          // or sandboxed capture hosts hit this for the webfont CDNs, where the
+          // app falls back to system fonts — the same cosmetic failure the
+          // benign-URL list already covers (#1225).
+          const preconnectUrl = /^Failed to preconnect to (\S+?)\.?(?:\s|$)/.exec(text)?.[1];
+          if (
+            preconnectUrl &&
+            // WebKit usually keeps the host's trailing slash, but a bare-host
+            // form has no path for the benign pattern to anchor on.
+            (isBenignFailedResourceUrl(preconnectUrl) ||
+              isBenignFailedResourceUrl(`${preconnectUrl}/`))
+          ) {
+            return;
+          }
           issues.push({ kind: "console", message: text, url: url || undefined });
         }
       });
