@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-task-drawer-tabs-with-long-conte
 created_at: "2026-11-19T06:47:59Z"
-updated_at: "2026-11-19T07:08:56Z"
+updated_at: "2026-11-19T07:09:17Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
