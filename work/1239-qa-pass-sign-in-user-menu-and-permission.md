@@ -14,7 +14,7 @@ branch: feat/qa-pass-sign-in-user-menu-and-permission
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T18:27:10Z"
-updated_at: "2026-11-19T18:41:49Z"
+updated_at: "2026-11-19T18:55:26Z"
 ---
 ## Problem
 The sign-in flow, user menu and users/permissions settings have not been QA-checked together at phone, tablet and desktop widths since recent changes.
@@ -56,3 +56,4 @@ Do not touch repoos.toml.
 - 2026-11-19T18:40:16Z · body
 - 2026-11-19T18:41:07Z · body
 - 2026-11-19T18:41:49Z · CTO nudge: held — handoff gate is running
+- 2026-11-19T18:55:26Z · note: ui verification passed: 2 of 2 shots captured with clean console
