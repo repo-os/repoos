@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-19T15:37:14.041Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Command palette open over the work board (stacks above drawers, consumes Esc) (target \"default\"): loading state detected: loading indicator [aria-busy=\"true\"] on /work (http://127.0.0.1:43037/work)"
 id: "1231"
 title: "QA pass: keyboard shortcuts and command palette across pages"
 type: bug
@@ -93,3 +95,4 @@ Do not touch repoos.toml.
 - 2026-11-19T15:37:10Z · note: ui verification failed: ui verification failed (1 issue(s)): [missing-target] Command palette open over the work board (stacks above drawers, consumes Esc) (target "default"): loading state detected: loading indicator [aria-busy="true"] on /work (http://127.0.0.1:43037/work)
 - 2026-11-19T15:37:10Z · message_queued at 2026-11-19T15:37:10.923Z
 - 2026-11-19T15:37:13Z · message_delivered: 1 message(s)
+
