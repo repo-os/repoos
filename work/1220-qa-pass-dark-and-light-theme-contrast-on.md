@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "1220"
 title: "QA pass: dark and light theme contrast on every main page"
 type: bug
@@ -36,3 +37,4 @@ Do not touch repoos.toml.
 - 2026-11-19T06:22:33Z · note: review pass 1: needs some work
 - 2026-11-19T06:22:34Z · message_delivered: 1 message(s)
 - 2026-11-19T06:22:34Z · status review→active
+
