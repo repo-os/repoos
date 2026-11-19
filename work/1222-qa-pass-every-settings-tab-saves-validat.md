@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-every-settings-tab-saves-validat
 created_at: "2026-11-19T07:17:47Z"
-updated_at: "2026-11-19T07:29:46Z"
+updated_at: "2026-11-19T07:32:51Z"
 ---
 ## Problem
 The Settings pages have many toggles and fields; some may not persist, may accept invalid values, or may be unreachable on a phone.
@@ -30,3 +30,4 @@ Do not touch repoos.toml.
 - 2026-11-19T07:17:55Z · note: agent fallback: codex + gpt-6-luna is paused (out of usage since 2026-11-19T07:09:32.657Z: Codex hit a provider quota or rate limit. Wait for the provider limit to reset, then retry. (CLI: error: You’ve hit your usage limit. Upgrade to Pro (https://chatgpt.com/explore/pro), visit https://chatgpt.com/codex/settings/usage to purcha) — using opencode + opencode-go/glm-5.3-flash
 - 2026-11-19T07:29:45Z · message_queued at 2026-11-19T07:29:45.793Z
 - 2026-11-19T07:29:46Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-19T07:32:51Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
