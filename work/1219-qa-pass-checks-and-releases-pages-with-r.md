@@ -2,7 +2,7 @@
 id: "1219"
 title: "QA pass: Checks and Releases pages with real data at all screen sizes"
 type: bug
-status: done
+status: review
 priority: p2
 area: web
 merged_commit: a6f19eba60d81cf76325fca1d5fc39ebdc791d9e
@@ -87,3 +87,4 @@ Do not touch repoos.toml.
 - 2026-11-19T07:45:34Z · note: ui verification passed: 2 of 2 shots captured with clean console
 - 2026-11-19T07:53:21Z · close-out gate completed in 492s
 - 2026-11-19T07:53:23Z · note: review pass 2: good to go
+- 2026-11-19T07:53:23Z · status done→review
