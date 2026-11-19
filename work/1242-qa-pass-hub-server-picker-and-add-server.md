@@ -51,3 +51,4 @@ Do not touch repoos.toml.
 - 2026-11-19T19:45:16Z · note: handoff requested (cli)
 - 2026-11-19T19:45:59Z · status active→review
 - 2026-11-19T19:45:59Z · message_queued at 2026-11-19T19:45:59.395Z
+- 2026-11-19T19:45:59Z · note: shots: skipped — Docs site skipped: no docs shot declared
