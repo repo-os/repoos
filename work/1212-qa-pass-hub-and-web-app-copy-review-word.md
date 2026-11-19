@@ -88,3 +88,4 @@ Do not touch repoos.toml.
 - 2026-11-19T02:07:21Z · note: handoff requested (cli)
 - 2026-11-19T02:10:43Z · status active→review
 - 2026-11-19T02:10:44Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
+- 2026-11-19T02:10:44Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
