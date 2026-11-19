@@ -2,7 +2,7 @@
 id: "1215"
 title: "QA pass: task create and edit flows at all screen sizes"
 type: bug
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -59,3 +59,4 @@ Do not touch repoos.toml.
 - 2026-11-19T05:12:51Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-19T05:16:19Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-19T05:16:20Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code unknown) · last assistant: The retry has passed well over half of the cases so far, including the viewport browser checks. The earlier test failure was the fixture selecting its own task as a prerequisite; I corrected it to select the separate prerequisite task. · stderr: 2026-11-19T04:43:23.794614Z ERROR codex_core::util: Custom tool call output is missing for call id: call_c95fb4acd66545ebb8d50b585fdb68b1 2026-11-19T04:43:37.447772Z ERROR codex_core::util: Custom tool call output is missing for call id: call_c95fb4acd66545ebb8d50b585fdb68b1 2026-11-19T04:43:42.069119Z ERROR codex_cor…
+- 2026-11-19T05:16:20Z · status active→review
