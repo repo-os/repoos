@@ -283,6 +283,7 @@ watch(
                     class="am-star-btn"
                     @click="toggleFavoriteForModel(cli, m.value, $event)"
                     title="Remove from favorites"
+                    aria-label="Remove from favorites"
                   >
                     <Star class="size-3.5" fill="currentColor" />
                   </button>
@@ -318,6 +319,7 @@ watch(
                   :class="{ active: isFavorite(cli, m.value) }"
                   @click="toggleFavoriteForModel(cli, m.value, $event)"
                   title="Add to favorites"
+                  aria-label="Add to favorites"
                 >
                   <Star
                     class="size-3.5"

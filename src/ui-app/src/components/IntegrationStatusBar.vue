@@ -657,6 +657,7 @@ async function fileSetupTask(): Promise<void> {
           type="button"
           class="ibar-toggle"
           :title="'Collapse integration pipeline'"
+          aria-label="Collapse integration pipeline"
           @click="collapsed = true"
         >
           <ChevronDown class="bar-chev" aria-hidden="true" />
