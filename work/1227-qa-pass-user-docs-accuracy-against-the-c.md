@@ -50,3 +50,4 @@ Do not touch repoos.toml.
 - 2026-11-19T10:50:10Z · body
 - 2026-11-19T10:50:58Z · status active→review
 - 2026-11-19T10:50:59Z · message_queued at 2026-11-19T10:50:59.047Z
+- 2026-11-19T10:50:59Z · note: shots: skipped — Docs site skipped: no docs shot declared
