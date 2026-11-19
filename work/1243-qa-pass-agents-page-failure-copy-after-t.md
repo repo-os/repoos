@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-19T20:56:58Z"
-review_passes: 1
 id: "1243"
 title: "QA pass: Agents page failure copy after the Jev routing switch and missing key"
 type: bug
@@ -13,6 +11,8 @@ branch: feat/qa-pass-agents-page-failure-copy-after-t
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T20:07:21Z"
+updated_at: "2026-11-19T20:56:58Z"
+review_passes: 1
 ---
 ## Problem
 After switching model routing to Jev, the Agents page routing tab and decisions list need a check for the missing-key and provider-failure wording and a recent-decisions list that is empty or all failures.
@@ -51,4 +51,4 @@ Do not touch repoos.toml.
 - 2026-11-19T20:55:39Z · status active→review
 - 2026-11-19T20:55:39Z · message_queued at 2026-11-19T20:55:39.266Z
 - 2026-11-19T20:56:58Z · note: review pass 1: needs some work
-
+- 2026-11-19T20:56:58Z · message_delivered: 1 message(s)
