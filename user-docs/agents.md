@@ -59,7 +59,7 @@ must weigh its rationale, experiments, and known limitations with the diff.
 
 ## Supported coding agents
 
-RepoOS has a driver for eight CLIs:
+RepoOS has a driver for eleven CLIs:
 
 | CLI | Notes |
 | --- | --- |
@@ -71,6 +71,9 @@ RepoOS has a driver for eight CLIs:
 | `kiro` | Driver present. |
 | `cursor` | The Cursor Agent CLI (`cursor-agent`). Structured stream-JSON, session resume, and model selection. |
 | `antigravity` | Google Antigravity CLI (`agy`). Structured stream-JSON, model discovery, and exact conversation resume. |
+| `crush` | Charm's terminal coding agent (`crush`). Plain-text headless runs with auto-approval in run mode and `crush models`; provider setup is interactive. |
+| `pi` | Strict JSONL event stream, documented session resume, and no approval prompts in headless runs. |
+| `muse` | Meta's terminal coding agent (`muse`). Headless JSONL stream (`muse exec --json`) and UUID session resume. |
 
 A CLI has to be installable headless and drivable over stdin/stdout to be
 useful here. If a tool is missing from `PATH`, the **Detected Coding Agents**

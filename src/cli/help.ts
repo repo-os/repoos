@@ -385,7 +385,7 @@ const GROUPS: readonly CommandGroup[] = [
       {
         name: "secrets",
         usage:
-          "secrets <list|add|replace|delete> <environment> [KEY] | bind <consumer> <environment> [KEY ...]",
+          "secrets <list|add|replace|delete> <environment> [KEY] | bind <consumer> <environment> [KEY ...] | bindings",
         desc: "Manage project environment values and explicit per-consumer key grants",
       },
       {
