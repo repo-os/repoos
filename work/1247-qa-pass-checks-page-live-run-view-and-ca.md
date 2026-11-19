@@ -11,7 +11,7 @@ branch: feat/qa-pass-checks-page-live-run-view-and-ca
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T21:07:03Z"
-updated_at: "2026-11-19T21:17:35Z"
+updated_at: "2026-11-19T21:20:59Z"
 ---
 ## Problem
 The live check run view, cancel and retry controls have not been checked for running, queued, stalled and failed runs at phone widths.
@@ -30,3 +30,4 @@ Do not touch repoos.toml.
 - 2026-11-19T21:07:09Z · cli_override, model_override
 - 2026-11-19T21:07:10Z · status ready→active, branch
 - 2026-11-19T21:17:35Z · body
+- 2026-11-19T21:20:59Z · note: adopted orphaned engineer pid 30233
