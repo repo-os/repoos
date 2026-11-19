@@ -2,7 +2,7 @@
 id: "1219"
 title: "QA pass: Checks and Releases pages with real data at all screen sizes"
 type: bug
-status: review
+status: active
 priority: p2
 area: web
 assigned_to: ai
@@ -10,6 +10,8 @@ created_by: t@t
 branch: feat/qa-pass-checks-and-releases-pages-with-r
 created_at: "2026-11-19T06:17:33Z"
 updated_at: "2026-11-19T06:32:56Z"
+review_rounds: 1
+routing_switches: 1
 review_passes: 1
 ---
 ## Problem
@@ -56,3 +58,4 @@ Do not touch repoos.toml.
 - 2026-11-19T06:32:13Z · message_queued at 2026-11-19T06:32:13.997Z
 - 2026-11-19T06:32:56Z · note: review pass 1: needs some work
 - 2026-11-19T06:32:56Z · message_delivered: 1 message(s)
+- 2026-11-19T06:32:56Z · status review→active
