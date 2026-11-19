@@ -3,16 +3,13 @@ id: "1225"
 title: "QA pass: toasts, banners and dialogs stacking and dismissal at all screen sizes"
 type: bug
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "Automatic recovery could not restart the engineer: This worktree already has a recorded live engineer for task #1225 (pid 3329)"
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-toasts-banners-and-dialogs-stack
 created_at: "2026-11-19T09:17:32Z"
-updated_at: "2026-11-19T10:18:45Z"
+updated_at: "2026-11-19T10:28:59Z"
 handoff_signal_retry_count: 2
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\",\"at\":\"2026-11-19T09:51:24.864Z\",\"kind\":\"dev-error\"}]"
@@ -72,3 +69,4 @@ Do not touch repoos.toml.
 - 2026-11-19T10:08:31Z · watchdog: automatic resume failed — This worktree already has a recorded live engineer for task #1225 (pid 3329)
 - 2026-11-19T10:18:44Z · watchdog: restarting engineer after 10m with no live process
 - 2026-11-19T10:18:45Z · watchdog: active-without-engineer recovery failed — This worktree already has a recorded live engineer for task #1225 (pid 3329)
+- 2026-11-19T10:28:59Z · watchdog: restarting engineer after 10m with no live process
