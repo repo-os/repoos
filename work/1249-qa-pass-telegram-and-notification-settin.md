@@ -8,8 +8,10 @@ area: web
 assigned_to: ai
 created_by: t@t
 branch: ""
+cli_override: claude code
+model_override: haiku
 created_at: "2026-11-19T21:46:55Z"
-updated_at: "2026-11-19T21:46:59Z"
+updated_at: "2026-11-19T21:47:00Z"
 ---
 ## Problem
 The notification and Telegram settings screens and the messages they produce have not been checked for wording, error states and small-screen layout.
@@ -25,3 +27,4 @@ Do not touch repoos.toml.
 
 - 2026-11-19T21:46:55Z · created · t@t
 - 2026-11-19T21:46:59Z · status inbox→ready
+- 2026-11-19T21:47:00Z · cli_override, model_override
