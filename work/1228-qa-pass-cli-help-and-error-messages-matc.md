@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-cli-help-and-error-messages-matc
 created_at: "2026-11-19T11:47:39Z"
-updated_at: "2026-11-19T12:18:43Z"
+updated_at: "2026-11-19T12:20:12Z"
 ---
 ## Problem
 CLI commands, flags and error messages may be out of step with user-docs/cli.md and use jargon.
@@ -22,6 +22,24 @@ Every repoos command's --help matches user-docs/cli.md, and common errors say wh
 ## Notes for AI
 Do not touch repoos.toml.
 
+## Shots
+```json
+[
+{
+  "label": "CLI reference: newly documented rm, release email, checks timings/slots, certify, migrate sections",
+  "target": "Docs site",
+  "route": "/cli",
+  "highlight": "#repoos-checks-timings-repoos-checks-slots"
+},
+{
+  "label": "Control-plane table now lists summary, review followup, watch and allowlist",
+  "target": "Docs site",
+  "route": "/cli",
+  "highlight": "#the-board"
+}
+]
+```
+
 ## Activity
 
 - 2026-11-19T11:47:39Z · created · t@t
@@ -31,3 +49,4 @@ Do not touch repoos.toml.
 - 2026-11-19T12:05:02Z · body
 - 2026-11-19T12:10:18Z · body
 - 2026-11-19T12:18:43Z · body
+- 2026-11-19T12:20:12Z · body
