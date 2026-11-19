@@ -14,7 +14,7 @@ branch: feat/qa-pass-sign-in-user-menu-and-permission
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T18:27:10Z"
-updated_at: "2026-11-19T18:40:16Z"
+updated_at: "2026-11-19T18:41:07Z"
 ---
 ## Problem
 The sign-in flow, user menu and users/permissions settings have not been QA-checked together at phone, tablet and desktop widths since recent changes.
@@ -27,6 +27,25 @@ Sign-in, OTP entry, user menu and the users list work by keyboard and touch, wit
 ## Notes for AI
 Do not touch repoos.toml.
 
+## Shots
+```json
+[
+{
+  "label": "OTP entry step after the sign-in fixes",
+  "target": "default",
+  "route": "/login",
+  "highlight": ".login-form",
+  "state": "auth:otp"
+},
+{
+  "label": "Security tab users row with the styled role dropdown",
+  "target": "default",
+  "route": "/settings?tab=security",
+  "highlight": ".auth-add-row"
+}
+]
+```
+
 ## Activity
 
 - 2026-11-19T18:27:10Z · created · t@t
@@ -35,3 +54,4 @@ Do not touch repoos.toml.
 - 2026-11-19T18:27:17Z · cli_override, model_override
 - 2026-11-19T18:27:18Z · status ready→active, branch
 - 2026-11-19T18:40:16Z · body
+- 2026-11-19T18:41:07Z · body
