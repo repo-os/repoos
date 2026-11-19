@@ -156,6 +156,9 @@ describe("mobile Work queue", () => {
     repo.tasks = [];
     wrapper = mountQueue();
     expect(wrapper.text()).toContain("No tasks yet");
+    // #1224: with nothing on the board the count line must not claim a filter
+    // hid tasks — say the queue is empty instead.
+    expect(wrapper.get("[data-testid='mobile-queue-count']").text()).toBe("No tasks yet");
     wrapper.unmount();
     repo.tasks = [task("0001", "ready")];
     wrapper = mountQueue();
@@ -165,6 +168,8 @@ describe("mobile Work queue", () => {
     (wrapper.vm as unknown as { status: string }).status = "done";
     await flushPromises();
     expect(wrapper.text()).toContain("No done tasks");
+    // #1224: a real filter miss still says so — the two empty states differ.
+    expect(wrapper.get("[data-testid='mobile-queue-count']").text()).toBe("No matching tasks");
   });
 
   // #1138 C1: the default view is the grouped "needs attention" view. Review,
