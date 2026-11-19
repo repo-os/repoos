@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-19T16:13:34Z"
-review_passes: 2
 id: "1226"
 title: "QA pass: slow network and offline behavior in the web app and Hub"
 type: bug
@@ -11,6 +9,8 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-slow-network-and-offline-behavio
 created_at: "2026-11-19T09:47:34Z"
+updated_at: "2026-11-19T16:13:57Z"
+review_passes: 2
 review_rounds: 1
 routing_switches: 1
 handoff_signal_retry_count: 2
@@ -174,4 +174,4 @@ Do not touch repoos.toml.
 - 2026-11-19T16:09:26Z · orphaned run process stopped · pid 86654 · ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new -o ConnectTimeout=15 -o ServerAliveInterval · cpu 0s · age 17m
 - 2026-11-19T16:12:53Z · body
 - 2026-11-19T16:13:33Z · note: review pass 2: good to go
-
+- 2026-11-19T16:13:57Z · orphaned run process stopped · pid 59293 · /Users/nick/.vite-plus/js_runtime/node/26.13.1/bin/node --experimental-import-meta-resolve --require · cpu 0s · age 9s
