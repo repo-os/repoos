@@ -23,6 +23,8 @@ async function loadTelegramChatNotifications(): Promise<void> {
   if (!config.form["telegram.enabled"]) {
     telegramChats.value = [];
     loadError.value = "";
+    // The rows a toggle error names are gone, so the message must go too.
+    toggleError.value = "";
     return;
   }
   telegramChatsLoading.value = true;
@@ -51,6 +53,18 @@ async function setTelegramChatNotifications(
   } catch {
     toggleError.value = `Couldn't turn notifications ${enabled ? "on" : "off"} for ${chatName(chat)}. Try again.`;
   }
+}
+
+/** Plain-English chat kind; Telegram's raw type names are not user words. */
+const CHAT_TYPE_LABELS: Record<string, string> = {
+  private: "Private chat",
+  group: "Group",
+  supergroup: "Group",
+  channel: "Channel",
+};
+
+function chatTypeLabel(type: string): string {
+  return CHAT_TYPE_LABELS[type] ?? "Chat";
 }
 
 function chatName(chat: TelegramChatNotificationRow): string {
@@ -90,7 +104,7 @@ watch(
       <div class="setting-info">
         <div class="setting-label">{{ chat.title || "Chat " + chat.telegramChatId }}</div>
         <div class="setting-desc">
-          {{ chat.chatType }} · id {{ chat.telegramChatId }} · task lifecycle notifications for this
+          {{ chatTypeLabel(chat.chatType) }} · id {{ chat.telegramChatId }} · task lifecycle notifications for this
           repository.
         </div>
       </div>

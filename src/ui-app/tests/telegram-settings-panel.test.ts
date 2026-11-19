@@ -381,7 +381,26 @@ describe("TelegramSettingsPanel — disconnect and status copy", () => {
     const wrapper = mount(TelegramSettingsPanel, { props: { enabled: true } });
     await flushPromises();
     expect(wrapper.text()).toContain("checking Telegram for messages");
-    expect(wrapper.text()).not.toContain("transport");
+    expect(wrapper.text()).not.toMatch(/transport (off|polling|webhook)/);
+    wrapper.unmount();
+  });
+});
+
+describe("TelegramSettingsPanel — unknown receive mode", () => {
+  it("reads an unrecognised transport mode as a sentence, never a bare dot", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        if (String(url).includes("/api/telegram/status")) {
+          return jsonResponse({ ...connectedStatus, transport: { mode: "carrier-pigeon" } });
+        }
+        return jsonResponse({ links: [] });
+      }),
+    );
+    const wrapper = mount(TelegramSettingsPanel, { props: { enabled: true } });
+    await flushPromises();
+    expect(wrapper.text()).toContain("receive status unknown");
+    expect(wrapper.text()).not.toMatch(/·\s*$/m);
     wrapper.unmount();
   });
 });

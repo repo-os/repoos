@@ -21,6 +21,11 @@ The test file is `src/ui-app/tests/notifications-settings-qa-browser.test.ts`. C
 | Several failure fallbacks read "Failed to …" with no next step. | Connect, provisioning, test message and unbind failures gave no direction. | Each fallback says what failed and what to check, for example "Couldn't send the test message. Check that the bot is still in that chat, then try again." |
 | The ntfy test showed only "✗ Failed" on the button, reverting after two seconds. | No reason and no next step. The disabled button also gave no explanation. | A result line sits under the topic row and stays until the next attempt. A disabled test shows "Turn on ntfy and enter a topic to send a test." |
 | The disabled-integration API error said "set [telegram] enabled = true in repoos.toml". | A settings user cannot act on a TOML key from this screen. | Now: "Telegram is off for this repository. Turn on the Telegram bot in Settings → Notifications, then try again." Three route-test assertions moved to the new wording. |
+| Chat rows showed Telegram's raw chat type ("supergroup"). | Jargon on the notifications screen. | Plain labels: "Private chat", "Group", "Channel", and "Chat" for anything unknown. |
+| A stale toggle error stayed on screen after the Telegram switch was turned off. | The message named chat rows that were no longer shown. | The error clears when the feature goes off. |
+| An unrecognised receive mode rendered as a bare "· " in the status line. | A dangling separator with no meaning. | Unknown modes read "receive status unknown". |
+| Review round 1: the same `...JSON_OPTS` spread bug sat in three sibling call sites (reminders store, AuthSettingsPanel disconnect, TaskDrawer split). | Reminder writes and other bodyless POSTs went out without JSON headers. | Every spread now calls `JSON_OPTS(method, body)` (or `JSON_OPTS("POST", {})` for bodyless POSTs). The helper accepts `DELETE` so the reminders store can use it for every method. |
+| Review round 1: five more native `confirm()` calls: removing the background service, cancelling a stalled check, killing a process, reopening a done task, and discarding unsaved `repoos.toml` edits. | Each was a native browser prompt for an app action, which AGENTS.md bans. | Each now opens the shared `ConfirmDialog` with a named action. Cancelling leaves the state unchanged. |
 
 ## Layout and security checks
 
@@ -39,5 +44,11 @@ Bot-token check: a token typed into the BYO field and accepted by the server is 
 
 - `bun run test -- src/ui-app/tests/telegram-settings-panel.test.ts src/ui-app/tests/telegram-chat-notifications-settings.test.ts src/ui-app/tests/telegram-routes.test.ts` — the component and route tests pass. The chat-notification file adds four state and PATCH tests; the panel file adds disconnect and dialog tests.
 - `bun run test -- src/ui-app/tests/notifications-settings-qa-browser.test.ts` — 13 of 13 pass: four cases at each of 375, 768 and 1280 px, plus the setup check. Zero page exceptions, zero native dialogs, no horizontal overflow.
-- `bun run build:ui` — passes after the type fix in the panel test.
+- `bun run test -- src/ui-app/tests/telegram-settings-panel.test.ts src/ui-app/tests/telegram-chat-notifications-settings.test.ts src/ui-app/tests/telegram-routes.test.ts` — 12 panel tests and 7 chat-notification tests pass, plus the route tests.
+- `bun run test -- src/ui-app/tests/native-dialog-json-opts-guard.test.ts` — 11 of 11 pass. The guard scans every `.vue` and `.ts` file under `src/ui-app/src` for a `...JSON_OPTS` spread and for a native `confirm()`, and it proves the scanner catches the bad forms.
+- `bun run test -- src/ui-app/tests/notifications-settings-qa-browser.test.ts src/ui-app/tests/sign-in-users-qa-browser.test.ts` — 56 of 56 pass across the two files. The notifications file covers 13 cases at 375, 768 and 1280 px. The sign-in file covers the AuthSettingsPanel disconnect that now uses the corrected helper.
+- Touched-component suites (reminders, system resources, task transitions, Telegram disconnect, reload, raw config store, merge guard) — all pass.
+- `bun run build:ui` — passes, including `vue-tsc`.
 - `REPOOS_CHECK_CHANGED=main repoos check` — see the task's final report for the result.
+
+Per-dialog behaviour tests for the five new confirms were not added. The guard test proves that no native confirm remains, and the existing suites for those components still pass.

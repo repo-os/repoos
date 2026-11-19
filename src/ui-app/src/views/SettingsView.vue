@@ -21,6 +21,7 @@ import {
 } from "../lib/storage-status";
 import Button from "../components/ui/button.vue";
 import Card from "../components/ui/card.vue";
+import ConfirmDialog from "../components/ConfirmDialog.vue";
 import PageSkeleton from "../components/PageSkeleton.vue";
 import Input from "../components/ui/input.vue";
 import Switch from "../components/ui/switch.vue";
@@ -460,13 +461,19 @@ function syncRawScroll(): void {
   pre.scrollLeft = ta.scrollLeft;
 }
 
+/** Whether the discard-and-reload dialog is open (replaces native confirm()). */
+const reloadRawConfirmOpen = ref(false);
+
 function reloadRaw(): void {
-  if (
-    config.rawDirty &&
-    !window.confirm("Discard your unsaved repoos.toml changes and reload from disk?")
-  ) {
+  if (config.rawDirty) {
+    reloadRawConfirmOpen.value = true;
     return;
   }
+  void config.loadRaw();
+}
+
+function confirmReloadRaw(): void {
+  reloadRawConfirmOpen.value = false;
   void config.loadRaw();
 }
 
@@ -3038,6 +3045,15 @@ onUnmounted(() => {
                     @click="saveRaw"
                     >{{ config.rawSaving ? "Saving…" : "Save" }}</Button
                   >
+                  <ConfirmDialog
+                    :open="reloadRawConfirmOpen"
+                    title="Discard unsaved repoos.toml changes?"
+                    confirm-label="Discard and reload"
+                    @update:open="(v) => (reloadRawConfirmOpen = v)"
+                    @confirm="confirmReloadRaw"
+                  >
+                    Your edits that aren't saved yet are lost. The file is reloaded from disk.
+                  </ConfirmDialog>
                 </div>
               </div>
               <div class="toml-editor">

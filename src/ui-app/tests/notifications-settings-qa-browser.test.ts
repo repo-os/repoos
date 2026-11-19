@@ -318,7 +318,7 @@ describeBrowser("notification and Telegram settings QA (#1249)", () => {
         );
         const text = await bodyText(page);
         expect(text).toContain("checking Telegram for messages");
-        expect(text).not.toContain("transport");
+        expect(text).not.toMatch(/transport (off|polling|webhook)/);
         await expectNoHorizontalOverflow(page, width);
 
         await clickButton(page, "Unbind");

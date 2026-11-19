@@ -89,12 +89,12 @@ export const useRemindersStore = defineStore("reminders", () => {
       if (version === requestVersion) loading.value = false;
     }
   }
-  async function mutate(method: string, path: string, body?: unknown): Promise<void> {
-    await api(path, {
-      ...JSON_OPTS,
-      method,
-      ...(body === undefined ? {} : { body: JSON.stringify(body) }),
-    });
+  async function mutate(
+    method: "POST" | "PATCH" | "DELETE",
+    path: string,
+    body?: unknown,
+  ): Promise<void> {
+    await api(path, body === undefined ? { method } : JSON_OPTS(method, body));
     await refresh();
   }
   const add = (input: ReminderInput) => mutate("POST", "/api/reminders", input);

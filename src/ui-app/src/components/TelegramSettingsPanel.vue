@@ -157,7 +157,8 @@ const TRANSPORT_LABELS: Record<TelegramStatus["transport"]["mode"], string> = {
 };
 
 function transportLabel(mode: TelegramStatus["transport"]["mode"] | undefined): string {
-  return TRANSPORT_LABELS[mode ?? "off"];
+  // A mode this build does not know must still read as a sentence, never "· ".
+  return TRANSPORT_LABELS[mode ?? "off"] ?? "receive status unknown";
 }
 
 async function connectByo(): Promise<void> {

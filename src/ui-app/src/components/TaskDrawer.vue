@@ -117,6 +117,7 @@ import { bubbleRole, toDisplayRows, type DisplayRow } from "../lib/chat-rows";
 import { confirmDependencyOverride } from "../lib/task-dependencies";
 import DependencyChip from "./DependencyChip.vue";
 import RestartTaskDialog from "./RestartTaskDialog.vue";
+import ConfirmDialog from "./ConfirmDialog.vue";
 import HotfixConfirmDialog from "./HotfixConfirmDialog.vue";
 import HotfixBadge from "./HotfixBadge.vue";
 import { hotfixBannerText } from "../lib/hotfix";
@@ -2170,14 +2171,17 @@ async function openSupportFromError(): Promise<void> {
   ui.close();
 }
 
+/** Whether the reopen dialog is open (replaces native confirm()). */
+const reopenConfirmOpen = ref(false);
+
+function askReopenTask(): void {
+  if (!ui.active) return;
+  reopenConfirmOpen.value = true;
+}
+
 async function reopenTask(): Promise<void> {
   if (!ui.active) return;
-  if (
-    !confirm(
-      "Reopen this done task? It goes back to ready with a fresh branch on the next Start work.",
-    )
-  )
-    return;
+  reopenConfirmOpen.value = false;
   ui.saving = true;
   try {
     await repo.reopenTask(ui.active);
@@ -4398,7 +4402,7 @@ async function runNeedsInputPrimaryAction(): Promise<void> {
     try {
       const result = await api<{ task: typeof ui.active; humanTask: { id: string } }>(
         `/api/tasks/${ui.active.id}/split`,
-        { method: "POST", ...JSON_OPTS },
+        JSON_OPTS("POST", {}),
       );
       ui.syncActive(result.task);
     } catch (err) {
@@ -5747,7 +5751,7 @@ watch(
                 variant="outline"
                 :disabled="ui.saving"
                 title="Send this task back to ready with a fresh branch on the next Start work"
-                @click="reopenTask"
+                @click="askReopenTask"
               >
                 <RotateCcw class="size-3.5" />
                 Reopen
@@ -8026,6 +8030,16 @@ watch(
       </div>
     </DialogContent>
   </Dialog>
+
+  <ConfirmDialog
+    :open="reopenConfirmOpen"
+    title="Reopen this done task?"
+    confirm-label="Reopen task"
+    @update:open="(v) => (reopenConfirmOpen = v)"
+    @confirm="reopenTask"
+  >
+    It goes back to ready with a fresh branch on the next Start work.
+  </ConfirmDialog>
 
   <HotfixConfirmDialog
     :open="confirmHotfix"

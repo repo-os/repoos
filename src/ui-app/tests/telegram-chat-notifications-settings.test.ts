@@ -101,3 +101,39 @@ describe("TelegramChatNotificationsSettings — states and copy", () => {
     wrapper.unmount();
   });
 });
+
+describe("TelegramChatNotificationsSettings — review fixes", () => {
+  it("names Telegram chat types in plain English, never the raw type", async () => {
+    const config = useConfigStore();
+    config.form["telegram.enabled"] = true;
+    config.loaded = true;
+    api.mockResolvedValueOnce({
+      chats: [{ telegramChatId: 7, chatType: "supergroup", title: "Team", notificationsEnabled: true }],
+    });
+
+    const wrapper = mount(TelegramChatNotificationsSettings);
+    await flushPromises();
+
+    expect(wrapper.text()).toContain("Group · id 7");
+    expect(wrapper.text()).not.toContain("supergroup");
+    wrapper.unmount();
+  });
+
+  it("clears a stale toggle error when the feature is switched off", async () => {
+    const config = useConfigStore();
+    config.form["telegram.enabled"] = true;
+    config.loaded = true;
+    const wrapper = mount(TelegramChatNotificationsSettings);
+    await flushPromises();
+    api.mockRejectedValueOnce(new Error("Chat binding not found"));
+    await wrapper.find('[role="switch"]').trigger("click");
+    await flushPromises();
+    expect(wrapper.text()).toContain("Couldn't turn notifications off for Ops");
+
+    config.form["telegram.enabled"] = false;
+    await flushPromises();
+
+    expect(wrapper.text()).not.toContain("Couldn't turn notifications");
+    wrapper.unmount();
+  });
+});
