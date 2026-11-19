@@ -3,18 +3,26 @@ id: "1219"
 title: "QA pass: Checks and Releases pages with real data at all screen sizes"
 type: bug
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "Codex exited with an error. Open Raw CLI error for details. (CLI: 2026-11-19T07:09:54.049507Z ERROR codex_core::session: failed to record rollout items: thread 01a1f274-2304-74c2-a690-f65c35189b68 not found)"
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-checks-and-releases-pages-with-r
+cli_override: opencode
+model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-11-19T06:17:33Z"
-updated_at: "2026-11-19T07:08:11Z"
+updated_at: "2026-11-19T07:09:54Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-19T06:56:03.096Z: repoos check failed: rendered-contrast — · div#setting-model_routing.timeoutMs.setting-row > div.setting-info > div.setting-desc — #958ab0 on #ffffff = 3.21 (need ≥4.5, 11px) [settings] \"How long one routing decision may take before the configured\""
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
+dev_error_count: 1
+engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-19T07:09:54.377Z\",\"kind\":\"dev-error\"}]"
+engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\"}"
 ---
 ## Problem
 The Checks and Releases pages have not been checked with long lists, long names and slow data at phone, tablet and desktop widths.
@@ -69,3 +77,5 @@ Do not touch repoos.toml.
 - 2026-11-19T07:07:54Z · message_queued at 2026-11-19T07:07:54.361Z
 - 2026-11-19T07:07:54Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-19T07:08:11Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-19T07:09:54Z · agent exited with an error (codex) · Codex exited with an error. Open Raw CLI error for details. (CLI: 2026-11-19T07:09:54.049507Z ERROR codex_core::session: failed to record rollout items: thread 01a1f274-2304-74c2-a690-f65c35189b68 not found)
+- 2026-11-19T07:09:54Z · engineer crash recovery: switched codex + gpt-6-luna → opencode + opencode-go/deepseek-v4.1-flash after 1/3 crashes in 30m · Codex exited with an error. Open Raw CLI error for details. (CLI: 2026-11-19T07:09:54.049507Z ERROR codex_core::session: failed to record rollout items: thread 01a1f274-2304-74c2-a690-f65c35189b68 not found)
