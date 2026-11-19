@@ -3,16 +3,13 @@ id: "1224"
 title: "QA pass: first-run onboarding and empty-project states at all screen sizes"
 type: bug
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: the agent process exited with an error — open the task to see the full output
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-first-run-onboarding-and-empty-p
 created_at: "2026-11-19T07:48:01Z"
-updated_at: "2026-11-19T08:22:31Z"
+updated_at: "2026-11-19T08:22:39Z"
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\",\"at\":\"2026-11-19T08:22:31.911Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -38,3 +35,5 @@ Do not touch repoos.toml.
 - 2026-11-19T08:22:30Z · note: stopped orphaned engineer pid 81043
 - 2026-11-19T08:22:31Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
 - 2026-11-19T08:22:31Z · engineer crash recovery: resuming opencode + opencode-go/glm-5.3-flash (1/3 crashes in 30m) · the agent process exited with an error — open the task to see the full output. Open Raw CLI error for details. (CLI: the agent process exited with an error — open the task to see the full output)
+- 2026-11-19T08:22:33Z · orphaned run process stopped · pid 94299 · just serve-noauth 7272 · cpu 0s · age 30m
+- 2026-11-19T08:22:39Z · needs_input
