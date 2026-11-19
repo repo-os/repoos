@@ -1,18 +1,19 @@
 ---
-last_close_out_gate_ms: 153045
-last_close_out_gate_at: "2026-11-19T01:46:26.418Z"
 id: "0434"
 title: "Docs debt: stale claims in AGENTS.md, docs/, and user-docs/"
 type: chore
-status: review
+status: done
 priority: p2
 area: docs-debt
 story: MacOS Native App
+merged_commit: 784a8814d4e03b8b01e6d579e82b977357902ab1
 assigned_to: unassigned
 created_by: docs-debt-agent
 branch: feat/docs-debt-stale-claims-in-agents-md-docs
 created_at: "2026-09-19T02:09:23.307Z"
 updated_at: "2026-11-19T01:46:26Z"
+last_close_out_gate_ms: 153045
+last_close_out_gate_at: "2026-11-19T01:46:26.418Z"
 review_passes: 1
 ---
 ## Docs Debt Findings

@@ -111,55 +111,32 @@ time.** Running both makes two processes compete for the port and `.repoos/serve
 and makes it impossible to tell whether a shutdown was intentional or a supervisor
 restart.
 
-### Option A: launchd plus health watchdog (persistent)
+### Foreground server and optional background service
 
-On macOS, `com.repoos.serve` starts the server at login and restarts it after a crash.
-`com.repoos.watchdog` checks `/api/health` every minute and kickstarts the service after
-three consecutive failed checks. Both are needed because RepoOS's reload handoff creates
-a replacement process that launchd no longer directly tracks. This is the intended
-always-on setup described by task #0185.
+Run a foreground development server with `just serve`; after rebuilding, or if it
+stops, use `just restart`. This process is managed by the invoking shell and does
+not start automatically at login.
 
-Use this option when RepoOS should survive reboots and crashes. Do **not** run `just
-serve` while these LaunchAgents are loaded.
+For an always-on server, use RepoOS's per-repository service management from the
+Settings page or `repoos service` commands. Installing and enabling a service are
+explicit actions. macOS uses a repository-specific LaunchAgent and Linux uses a
+systemd user unit. The OS service manager restarts a failed process; RepoOS also
+supports an explicit service health check. There is no separate
+`com.repoos.watchdog` LaunchAgent that polls `/api/health` every minute, and no
+three-failure kickstart rule. The reload handoff may leave a replacement process
+that the OS service manager no longer tracks; service stop/restart/remove use the
+RepoOS serve lock to find and reap that process. See the
+[`repoos service` guide](../user-docs/cli.md#repoos-service-subcommand) for the
+available commands.
 
-### Option B: manual development server (current local development choice)
+Do not run a foreground server and a managed service for the same repository and
+port at the same time. The service installer refuses a port that is already in use.
 
-For development and debugging, unload both LaunchAgents and run the server manually:
-
-```bash
-just serve
-```
-
-After rebuilding, or if it stops, replace it with:
-
-```bash
-just restart
-```
-
-This intentionally gives up automatic crash/reboot recovery in exchange for a single,
-easy-to-observe server process. **This is the current development setup on this machine**
-while we evaluate server/reload efficiency. Do not run the launchd service or watchdog
-alongside it.
-
-To switch back to Option A later:
-
-```bash
-launchctl enable gui/$(id -u)/com.repoos.serve
-launchctl enable gui/$(id -u)/com.repoos.watchdog
-launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.repoos.serve.plist
-launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.repoos.watchdog.plist
-```
-
-**Update, 2026-08-23:** both LaunchAgents were found loaded and fighting the manual
-process despite this doc — `com.repoos.serve` was stuck silently crash-looping (no
-error output at all) every ~10-30s after each of a series of manual restarts during an
-active dev session, never reaching `listen()`. The same build runs fine started
-directly, so this is specific to running under launchd, not a code bug. Given how often
-main gets rebuilt and restarted during active development right now, `launchctl disable`
-was run for both agents (not just `bootout`, so it survives login/reboot — `enable` above
-undoes it) to stop them from re-launching and colliding with `just serve`/`just restart`.
-Root cause of the launchd-specific crash loop is still unknown — investigate before
-re-enabling Option A.
+**Historical incident, 2026-08-23:** an earlier manually configured LaunchAgent
+for this checkout repeatedly crashed while competing with foreground development
+servers. That setup predates the per-repository service manager and is not the
+current supported configuration. The root cause was not established; use the
+RepoOS service controls rather than recreating the old fixed-name agents.
 
 ## Workflow ownership
 
