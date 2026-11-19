@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-19T03:43:28Z"
-review_passes: 1
 id: "1216"
 title: "QA pass: empty, loading and error states on Agents, Checks and Releases"
 type: bug
@@ -11,6 +9,8 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-empty-loading-and-error-states-o
 created_at: "2026-11-19T03:17:43Z"
+updated_at: "2026-11-19T03:43:28Z"
+review_passes: 1
 ---
 ## Problem
 The Agents, Checks and Releases pages have not been re-checked since the latest releases for empty, loading and error states.
@@ -34,4 +34,4 @@ Do not touch repoos.toml.
 - 2026-11-19T03:42:42Z · status active→review
 - 2026-11-19T03:42:43Z · message_queued at 2026-11-19T03:42:43.120Z
 - 2026-11-19T03:43:27Z · note: review pass 1: needs some work
-
+- 2026-11-19T03:43:28Z · message_delivered: 1 message(s)
