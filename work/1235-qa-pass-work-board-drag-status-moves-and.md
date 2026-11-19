@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-work-board-drag-status-moves-and
 created_at: "2026-11-19T16:17:45Z"
-updated_at: "2026-11-19T17:45:36Z"
+updated_at: "2026-11-19T17:58:00Z"
 review_rounds: 1
 routing_switches: 1
 routing_escalations: 1
@@ -55,3 +55,4 @@ Do not touch repoos.toml.
 - 2026-11-19T17:45:34Z · message_queued at 2026-11-19T17:45:34.116Z
 - 2026-11-19T17:45:34Z · status review→active
 - 2026-11-19T17:45:36Z · CTO nudge: held — handoff gate is running
+- 2026-11-19T17:58:00Z · note: ui verification passed: 1 shot captured with clean console
