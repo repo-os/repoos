@@ -1,5 +1,4 @@
 ---
-handoff_signal_retry_count: 2
 id: "1226"
 title: "QA pass: slow network and offline behavior in the web app and Hub"
 type: bug
@@ -10,9 +9,11 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-slow-network-and-offline-behavio
 created_at: "2026-11-19T09:47:34Z"
-updated_at: "2026-11-19T09:51:28Z"
+updated_at: "2026-11-19T10:00:44Z"
+handoff_signal_retry_count: 2
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\",\"at\":\"2026-11-19T09:51:25.262Z\",\"kind\":\"dev-error\"}]"
+engineer_stall_resume_log: "[{\"at\":\"2026-11-19T10:00:44.011Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
 ## Problem
 The web app and Hub have not been checked for slow, failing or dropped connections.
@@ -35,5 +36,4 @@ Do not touch repoos.toml.
 - 2026-11-19T09:51:25Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
 - 2026-11-19T09:51:25Z · engineer crash recovery: resuming opencode + opencode-go/glm-5.3-flash (1/3 crashes in 30m) · the agent process exited with an error — open the task to see the full output. Open Raw CLI error for details. (CLI: the agent process exited with an error — open the task to see the full output)
 - 2026-11-19T09:51:28Z · needs_input
-
-
+- 2026-11-19T10:00:44Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 1/3
