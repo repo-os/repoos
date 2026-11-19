@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: "check|repoos check failed: could not resolve task branch for check-gate lock"
+last_handoff_failure_sha: 2babf320f5c2ecf34a533773e547aef6b00f0ef9
 id: "1226"
 title: "QA pass: slow network and offline behavior in the web app and Hub"
 type: bug
@@ -182,3 +184,4 @@ Do not touch repoos.toml.
 - 2026-11-19T16:24:08Z · status done→done, release:success
 - 2026-11-19T16:24:27Z · message_queued at 2026-11-19T16:24:27.617Z
 - 2026-11-19T16:24:27Z · handoff failed · task-file handoff failed at check · repoos check failed: could not resolve task branch for check-gate lock
+
