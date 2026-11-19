@@ -5,6 +5,20 @@ pipeline from `release-history.json`; the newest entry is also the GitHub
 release body. The full discussion of each change lives in the release notes
 and on GitHub.
 
+## [v0.5.92] - 2026-11-19
+
+## Highlights
+
+- **Another big hands-on quality pass, this time round two.** Engineers kept using the web app at phone, tablet and desktop widths and fixed what they found across Work (board, filters, search, drag and status moves), the task drawer and its tabs, task create and edit, Settings (every tab saves, validates and fits small screens), Agents (providers, routing, failure states), Checks, Releases, Deployments, Context and Inputs, Stories, Inbox and Search, sign-in and session screens, the Control dashboard and Stats, Dev and log pages (#1196-#1210, #1212, #1214-#1225, #1231, #1234, #1235, #1237, #1240). Each fix has a test and a written QA record under docs/qa.
+- **Automatic screen-size check.** A new headless check renders the main pages at phone, tablet and desktop widths and fails on sideways scrolling or clipped controls, so layout breaks get caught before review (#1213).
+- **Slow and offline behaviour.** Pages now show a plain-English status when the server is slow, unreachable or reconnecting, instead of a blank screen or endless spinner, and the login screen no longer hangs on a stalled server (#1226, #1236).
+- **Keyboard and screen-reader access.** Focus order, labels, dialogs and keyboard shortcuts were checked and fixed (#1218, #1231).
+- **Clearer buttons.** Task actions now read Delete, Archive and Hold instead of repeating the word task (#1232).
+- **Docs and CLI.** User docs, CLI help and error messages were checked against current behaviour and tidied, and stale claims in the docs were removed (#0434, #1203, #1211, #1227, #1228).
+- **System pressure and runners.** The system resource panel and pressure banners were checked under heavy load, and the remote runner setup docs now match how real servers run (#1210, #1211).
+
+[Release on GitHub](https://github.com/repo-os/repoos/releases/tag/v0.5.92)
+
 ## [v0.5.91] - 2026-11-18
 
 ## Highlights
