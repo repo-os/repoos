@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-keyboard-shortcuts-and-command-p
 created_at: "2026-11-19T13:47:53Z"
-updated_at: "2026-11-19T14:52:03Z"
+updated_at: "2026-11-19T14:56:36Z"
 handoff_signal_retry_count: 2
 dev_error_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-11-19T14:18:11.944Z\",\"reason\":\"clean-exit-without-handoff\"}]"
@@ -75,3 +75,4 @@ Do not touch repoos.toml.
 - 2026-11-19T14:51:59Z · agent exited with an error (opencode) · OpenCode exited with an error. Open Raw CLI error for details. (CLI: ✗ Server finalization stopped at review: Engineering report must begin with ## TL;DR; remove any text before it.. The same worktree can be resumed and retried.)
 - 2026-11-19T14:51:59Z · engineer crash recovery: resuming opencode + opencode-go/glm-5.3-flash (1/3 crashes in 30m) · OpenCode exited with an error. Open Raw CLI error for details. (CLI: ✗ Server finalization stopped at review: Engineering report must begin with ## TL;DR; remove any text before it.. The same worktree can be resumed and retried.)
 - 2026-11-19T14:52:03Z · needs_input
+- 2026-11-19T14:56:36Z · body
