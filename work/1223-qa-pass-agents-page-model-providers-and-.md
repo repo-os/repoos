@@ -12,7 +12,6 @@ created_at: "2026-11-19T07:47:39Z"
 updated_at: "2026-11-19T09:05:04Z"
 handoff_signal_retry_count: 2
 dev_error_count: 1
-engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\",\"at\":\"2026-11-19T08:22:29.659Z\",\"kind\":\"dev-error\"}]"
 engineer_stall_resume_log: "[{\"at\":\"2026-11-19T08:33:07.295Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
 ## Problem
