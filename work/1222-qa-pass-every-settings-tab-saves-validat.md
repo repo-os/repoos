@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-every-settings-tab-saves-validat
 created_at: "2026-11-19T07:17:47Z"
-updated_at: "2026-11-19T07:41:07Z"
+updated_at: "2026-11-19T07:41:08Z"
 ---
 ## Problem
 The Settings pages have many toggles and fields; some may not persist, may accept invalid values, or may be unreachable on a phone.
@@ -42,3 +42,4 @@ Do not touch repoos.toml.
 - 2026-11-19T07:37:54Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-19T07:39:34Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-19T07:41:07Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-19T07:41:08Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 130) · last assistant: Now run the layout walk alone first — it should be quick: · stderr: (empty)
