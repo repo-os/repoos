@@ -77,3 +77,4 @@ Do not touch repoos.toml.
 - 2026-11-19T07:09:54Z · agent exited with an error (codex) · Codex exited with an error. Open Raw CLI error for details. (CLI: 2026-11-19T07:09:54.049507Z ERROR codex_core::session: failed to record rollout items: thread 01a1f274-2304-74c2-a690-f65c35189b68 not found)
 - 2026-11-19T07:09:54Z · engineer crash recovery: switched codex + gpt-6-luna → opencode + opencode-go/deepseek-v4.1-flash after 1/3 crashes in 30m · Codex exited with an error. Open Raw CLI error for details. (CLI: 2026-11-19T07:09:54.049507Z ERROR codex_core::session: failed to record rollout items: thread 01a1f274-2304-74c2-a690-f65c35189b68 not found)
 - 2026-11-19T07:09:57Z · needs_input
+- 2026-11-19T07:09:57Z · message_delivered: 1 message(s)
