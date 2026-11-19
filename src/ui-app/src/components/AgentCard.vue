@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { computed, ref } from "vue";
+import { classifyAgentFailure } from "../../../core/agent-failure.js";
 import type { Agent, ModelTestResult } from "../types";
 import type { AgentLastRunRow } from "../../../core/agent-last-runs.js";
 import { useConfigStore } from "../stores/config";
@@ -41,6 +42,12 @@ const emit = defineEmits<{
 
 const config = useConfigStore();
 const instrExpanded = ref(false);
+const testMessage = computed(() => {
+  const error = props.testResult?.error;
+  if (!error) return "";
+  const reason = classifyAgentFailure(error, props.agent.cli);
+  return reason ? `${reason.summary} ${reason.fix}` : error;
+});
 
 function isLegacyGemini(cli: string): boolean {
   return cli.toLowerCase() === "gemini";
@@ -104,11 +111,12 @@ function badgeLabel(): string | null {
           <span
             v-if="testResult"
             :class="'model-test model-test-' + testResult.status"
-            :title="testResult.error"
+            role="status"
           >
             {{ testResult.status.replace("_", " ") }}
           </span>
         </div>
+        <p v-if="testMessage" class="model-test-detail" role="status">{{ testMessage }}</p>
       </div>
       <div class="agent-field agent-instr-field">
         <div class="instr-header agent-instr-header">
