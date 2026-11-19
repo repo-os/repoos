@@ -2,7 +2,7 @@
 id: "1212"
 title: "QA pass: Hub and web app copy review – wording, plain-English errors and consistent terminology"
 type: chore
-status: review
+status: active
 priority: p3
 area: [web, mobile, macos]
 assigned_to: ai
