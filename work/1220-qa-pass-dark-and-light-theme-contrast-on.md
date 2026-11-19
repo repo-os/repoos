@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 817752
-last_close_out_gate_at: "2026-11-19T06:55:23.295Z"
 id: "1220"
 title: "QA pass: dark and light theme contrast on every main page"
 type: bug
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: fbe5e6a692d1721961f36d0d94759768ef67dda3
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-dark-and-light-theme-contrast-on
 created_at: "2026-11-19T06:17:41Z"
 updated_at: "2026-11-19T06:55:23Z"
+last_close_out_gate_ms: 817752
+last_close_out_gate_at: "2026-11-19T06:55:23.295Z"
 review_passes: 3
 review_rounds: 2
 routing_switches: 1
