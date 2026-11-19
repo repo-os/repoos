@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "1213"
 title: "QA: automated multi-screen-size layout check for main pages"
 type: chore
@@ -29,3 +30,4 @@ Do not touch repoos.toml. Keep the test fast (<60s).
 - 2026-11-19T02:18:37Z · status inbox→ready
 - 2026-11-19T02:18:44Z · status ready→active, branch
 - 2026-11-19T02:23:58Z · message_queued at 2026-11-19T02:23:58.655Z
+
