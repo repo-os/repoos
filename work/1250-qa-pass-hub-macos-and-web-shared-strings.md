@@ -11,7 +11,7 @@ branch: feat/qa-pass-hub-macos-and-web-shared-strings
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T21:47:05Z"
-updated_at: "2026-11-19T22:10:34Z"
+updated_at: "2026-11-19T22:12:45Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -41,3 +41,4 @@ Do not touch repoos.toml.
 - 2026-11-19T22:01:09Z · message_delivered: 1 message(s)
 - 2026-11-19T22:01:09Z · status review→active
 - 2026-11-19T22:10:34Z · body
+- 2026-11-19T22:12:45Z · CTO nudge: held — handoff gate is running
