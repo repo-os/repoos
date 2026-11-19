@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-keyboard-and-screen-reader-acces
 created_at: "2026-11-19T04:18:15Z"
-updated_at: "2026-11-19T05:25:15Z"
+updated_at: "2026-11-19T05:33:24Z"
 last_close_out_gate_ms: 126508
 last_close_out_gate_at: "2026-11-19T05:24:37.265Z"
 review_passes: 1
@@ -66,3 +66,4 @@ Do not touch repoos.toml.
 - 2026-11-19T05:21:34Z · note: review pass 1: good to go
 - 2026-11-19T05:24:37Z · close-out gate completed in 127s
 - 2026-11-19T05:25:15Z · status done→done, release:success
+- 2026-11-19T05:33:24Z · message_dropped: 1 queued message(s) discarded — task is done
