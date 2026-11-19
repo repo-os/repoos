@@ -2,7 +2,7 @@
 id: "1231"
 title: "QA pass: keyboard shortcuts and command palette across pages"
 type: bug
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -39,13 +39,13 @@ Do not touch repoos.toml.
 "highlight": ".search-overlay",
 "steps": [
 {
-  "waitFor": ".stat-link"
+"waitFor": ".stat-link"
 },
 {
-  "click": ".search-input"
+"click": ".search-input"
 },
 {
-  "waitMs": 900
+"waitMs": 900
 }
 ]
 },
@@ -56,13 +56,13 @@ Do not touch repoos.toml.
 "highlight": ".search-overlay",
 "steps": [
 {
-  "waitFor": ".task-card"
+"waitFor": ".task-card"
 },
 {
-  "click": ".search-input"
+"click": ".search-input"
 },
 {
-  "waitMs": 900
+"waitMs": 900
 }
 ],
 "state": "board:withReviewTask"
@@ -149,3 +149,4 @@ Do not touch repoos.toml.
 - 2026-11-19T16:24:36Z · body
 - 2026-11-19T16:27:13Z · queued message undelivered for 9m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-19T16:27:13Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 130) · last assistant: Now the scoped check. This is the gate — build staleness, format/lint, scoped tests, smoke test: · stderr: (empty)
+- 2026-11-19T16:27:13Z · status active→review
