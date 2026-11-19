@@ -942,12 +942,12 @@ describe("Stats, Dev and activity-log pages QA at 375/768/1280 (WebKit, fixtures
           expect(log.codeScroll).toBeLessThanOrEqual(log.codeClient + 1);
         }
 
-        // The long target name and the long command wrap instead of pushing
-        // the card wider.
+        // The long target name, the long command and every bare meta code
+        // (the artifact's output path) wrap instead of pushing the card wider.
         const codeCells = await page.evaluate(() =>
           [
             ...document.querySelectorAll<HTMLElement>(
-              ".dev-card-name, .dev-card-label, .dev-command, .dev-holder-command, .dev-service-name, .dev-open",
+              ".dev-card-name, .dev-card-label, .dev-command, .dev-holder-command, .dev-service-name, .dev-open, .dev-meta dd > code",
             ),
           ].map((el) => ({
             right: Math.round(el.getBoundingClientRect().right),
@@ -955,6 +955,7 @@ describe("Stats, Dev and activity-log pages QA at 375/768/1280 (WebKit, fixtures
             client: el.clientWidth,
           })),
         );
+        expect(codeCells.length).toBeGreaterThanOrEqual(4);
         for (const c of codeCells) {
           expect(c.scroll).toBeLessThanOrEqual(c.client + 1);
           expect(c.right).toBeLessThanOrEqual(width + 1);
