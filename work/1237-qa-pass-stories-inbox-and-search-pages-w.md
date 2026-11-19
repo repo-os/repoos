@@ -12,7 +12,7 @@ branch: feat/qa-pass-stories-inbox-and-search-pages-w
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T17:46:51Z"
-updated_at: "2026-11-19T18:58:03Z"
+updated_at: "2026-11-19T19:07:18Z"
 last_close_out_gate_ms: 313758
 last_close_out_gate_at: "2026-11-19T18:57:45.663Z"
 review_passes: 1
@@ -52,3 +52,4 @@ Do not touch repoos.toml.
 - 2026-11-19T18:27:53Z · note: review pass 1: good to go
 - 2026-11-19T18:57:45Z · close-out gate completed in 314s
 - 2026-11-19T18:58:03Z · status done→done, release:success
+- 2026-11-19T19:07:18Z · message_dropped: 1 queued message(s) discarded — task is done
