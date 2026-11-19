@@ -33,28 +33,28 @@ Do not touch repoos.toml.
 ```json
 [
 {
-  "label": "Agent list at 375px: on/off switch keeps its 40x22 pill inside the 44px touch target",
-  "target": "default",
-  "route": "/agents",
-  "highlight": ".agents-page button[role=\"switch\"]",
-  "viewportWidth": 375,
-  "viewportHeight": 812
+"label": "Agent list at 375px: on/off switch keeps its 40x22 pill inside the 44px touch target",
+"target": "default",
+"route": "/agents",
+"highlight": ".agents-page button[role=\"switch\"]",
+"viewportWidth": 375,
+"viewportHeight": 812
 },
 {
-  "label": "Model routing at 375px: the four config field labels stack above their controls",
-  "target": "default",
-  "route": "/agents?tab=model-routing",
-  "highlight": ".mr-grid",
-  "viewportWidth": 375,
-  "viewportHeight": 812
+"label": "Model routing at 375px: the four config field labels stack above their controls",
+"target": "default",
+"route": "/agents?tab=model-routing",
+"highlight": ".mr-grid",
+"viewportWidth": 375,
+"viewportHeight": 812
 },
 {
-  "label": "Model providers at 1280px: provider rows with masked keys (Saved/Not set), no false no-usage line under real windows",
-  "target": "default",
-  "route": "/agents?tab=providers",
-  "highlight": ".mp-row",
-  "viewportWidth": 1280,
-  "viewportHeight": 900
+"label": "Model providers at 1280px: provider rows with masked keys (Saved/Not set), no false no-usage line under real windows",
+"target": "default",
+"route": "/agents?tab=providers",
+"highlight": ".mp-row",
+"viewportWidth": 1280,
+"viewportHeight": 900
 }
 ]
 ```
