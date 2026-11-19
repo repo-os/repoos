@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-empty-loading-and-error-states-o
 created_at: "2026-11-19T03:17:43Z"
-updated_at: "2026-11-19T04:04:33Z"
+updated_at: "2026-11-19T04:05:53Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -24,6 +24,30 @@ Each page shows a clear plain-English empty, loading and error state and stays u
 - Commit docs/qa/2026-11-empty-error-states-qa.md.
 ## Notes for AI
 Do not touch repoos.toml.
+
+## Shots
+```json
+[
+{
+  "label": "Agents empty setup",
+  "target": "default",
+  "route": "/agents?shotState=agents%3Aempty",
+  "state": "agents:empty"
+},
+{
+  "label": "Checks plan and active progress",
+  "target": "default",
+  "route": "/checks?tab=plan&shotState=checks%3Aprogress",
+  "state": "checks:progress"
+},
+{
+  "label": "Releases with an available update",
+  "target": "default",
+  "route": "/releases?shotState=release%3AupdateAvailable",
+  "state": "release:updateAvailable"
+}
+]
+```
 
 ## Activity
 
@@ -41,3 +65,4 @@ Do not touch repoos.toml.
 - 2026-11-19T03:43:31Z · CTO nudge: held — remote validation is running
 - 2026-11-19T04:01:33Z · body
 - 2026-11-19T04:04:33Z · body
+- 2026-11-19T04:05:53Z · body
