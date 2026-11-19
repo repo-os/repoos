@@ -114,4 +114,22 @@ describe("Control dashboard pressure state fixtures (#1210)", () => {
       }
     },
   );
+
+  it("keeps a populated process row available for desktop and narrow captures", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    window.history.replaceState({}, "", "/?shotState=system%3AprocessTable");
+    const repo = useRepoStore();
+    repo.health = { isPreviewBuild: true } as Health;
+    applyShotPreviewFixture(repo, "system:processTable");
+
+    wrapper = mount(SystemResourcePanel, { global: { plugins: [pinia] } });
+    await flushPromises();
+
+    expect(shotFixturePinnedSystemStats()).toBe(repo.systemStats);
+    expect(wrapper.findAll(".process-row")).toHaveLength(1);
+    expect(wrapper.get(".process-table-wrap").text()).toContain("#1205");
+    expect(wrapper.get(".process-table-header").text()).toMatch(/runtime/i);
+    expect(wrapper.findAll(".sparkline path")).toHaveLength(2);
+  });
 });

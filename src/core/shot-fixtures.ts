@@ -4,9 +4,14 @@
  * on preview builds (`isPreviewBuild`).
  */
 export const SHOT_PREVIEW_FIXTURE_IDS = [
+  // #1208 — Login screen states for the auth-disabled managed preview.
+  "auth:login",
+  "auth:otp",
   // #0923 — Control dashboard Codebase data so worktree GC captures never
   // race the live resource sampler's loading state.
   "system:worktreeGc",
+  // #1205 — stable populated resource panel and process row for responsive captures.
+  "system:processTable",
   // #1134 — orphaned run processes stopped after a finished turn.
   "system:orphanedRuns",
   // #1210 — pressure states use stable synthetic readings for responsive QA.
