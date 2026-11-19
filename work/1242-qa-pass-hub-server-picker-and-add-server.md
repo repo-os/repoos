@@ -8,8 +8,10 @@ area: web
 assigned_to: ai
 created_by: t@t
 branch: ""
+cli_override: claude code
+model_override: haiku
 created_at: "2026-11-19T19:07:19Z"
-updated_at: "2026-11-19T19:07:24Z"
+updated_at: "2026-11-19T19:07:25Z"
 ---
 ## Problem
 The Hub server picker and add-server flow need a final check of wording and error states (bad URL, unreachable server, duplicate name, unsafe scheme) in the web preview of the shell.
@@ -26,3 +28,4 @@ Do not touch repoos.toml.
 
 - 2026-11-19T19:07:19Z · created · t@t
 - 2026-11-19T19:07:24Z · status inbox→ready
+- 2026-11-19T19:07:25Z · cli_override, model_override
