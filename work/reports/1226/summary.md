@@ -1,3 +1,14 @@
+---
+id: summary
+title: summary
+type: feature
+status: inbox
+priority: p2
+area: general
+assigned_to: ai
+created_by: ""
+branch: ""
+---
 ## TL;DR
 
 Task #1226 was a QA pass over slow, failing and dropped network connections in the RepoOS web app and Hub. Using headless Playwright request interception only, it found and fixed three real defects — an unbounded auth check that could freeze the whole app behind an endless skeleton, an offline banner that outlived a page that had already recovered on its own, and an endless skeleton in Settings when config loading failed — with unit tests, a new 9-test browser matrix, a QA doc and two declared shots. One review pass found a gap in the banner-retraction invariant, which was fixed; the second review passed. The task landed as `done` with `release:success` on 2026-11-19. The session itself was rocky: agent fallback after a provider quota pause, repeated orphaned processes and watchdog recovery failures, a report-formatting finalization error, and one load-dependent contrast-audit flake.
@@ -22,11 +33,11 @@ Supporting work: a new `offline-slow-network-browser.test.ts` (9 headless tests 
 - **Engineering rounds:** 1 recorded engineering round (2026-11-19T15:25:21Z), built on WIP checkpoint commits left by earlier engineer runs that never handed off.
 - **Review rounds:** 2. Pass 1 (15:28:18Z) — `needs some work`, one banner-retraction gap. Pass 2 (16:13:33Z) — `good to go`.
 - **Agents and models:**
-  - Engineer: `opencode` + `opencode-go/glm-5.3-flash` — used throughout as the fallback because the primary `codex` + `gpt-6-luna` was paused out of usage since 2026-11-19T07:09:32Z (noted repeatedly in the log). Recorded session: 318,327 tokens, $0.05647497, 657 s.
-  - Reviewer: `opencode-go/glm-5.3-flash`. Pass 1: 65,733 tokens, $0.03775074, 175 s. Pass 2: 46,075 tokens, $0.01355427, 74 s.
-  - Debugger: one `opencode-go/deepseek-v4.1-flash` session at 09:51:25Z, 5 s; tokens/cost not recorded.
-  - Routing sessions (11 × Model router, `jev`): model, tokens and cost not recorded.
-  - Recorded totals (engineer + both reviewers): 430,135 tokens, $0.10777998. Debugger, routing and any unrecorded sessions are not included.
+- Engineer: `opencode` + `opencode-go/glm-5.3-flash` — used throughout as the fallback because the primary `codex` + `gpt-6-luna` was paused out of usage since 2026-11-19T07:09:32Z (noted repeatedly in the log). Recorded session: 318,327 tokens, $0.05647497, 657 s.
+- Reviewer: `opencode-go/glm-5.3-flash`. Pass 1: 65,733 tokens, $0.03775074, 175 s. Pass 2: 46,075 tokens, $0.01355427, 74 s.
+- Debugger: one `opencode-go/deepseek-v4.1-flash` session at 09:51:25Z, 5 s; tokens/cost not recorded.
+- Routing sessions (11 × Model router, `jev`): model, tokens and cost not recorded.
+- Recorded totals (engineer + both reviewers): 430,135 tokens, $0.10777998. Debugger, routing and any unrecorded sessions are not included.
 - **Restarts and swaps:** 3 engineer crash-recovery events (09:51:25Z, 14:04:52Z, 15:49:36Z, each "1/3 crashes in 30m"); 3 watchdog auto-resumes (10:00:44Z, 12:54:47Z, 14:15:26Z) plus one more after the finalization error (15:56:58Z); 5 watchdog restarts after no live process (10:10:59Z, 10:28:29Z, 10:38:44Z, 14:52:11Z, 15:10:57Z); 3 orphaned engineer processes stopped (pids 94488, 89979, 42969); 5 orphaned run processes stopped (pids 39755, 3992, 13797, 86654, 59293); 1 engineer stopped by request (13:47:43Z). No model swap beyond the initial codex→opencode fallback.
 - **Close-out:** gate completed in 571 s; two UI verification runs each captured 2 of 2 shots with clean console (15:07:47Z, 15:25:20Z).
 
