@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-cli-help-and-error-messages-matc
 created_at: "2026-11-19T11:47:39Z"
-updated_at: "2026-11-19T12:52:57Z"
+updated_at: "2026-11-19T12:56:11Z"
 last_check_failure: "repoos check at 2026-11-19T12:23:26.625Z: repoos check failed: ui verification failed (2 issue(s)): [overflow] CLI reference: newly documented checks timings/slots, certify, migrate and rm sections: body scrollWidth 1594 > innerWidth 1024@1024px; [overflow] CLI reference: newly documented checks timings/slots, certify, migrate and rm sections: body scrollWidth 1282 > innerWidth 375@375px"
 ---
 ## Problem
@@ -67,3 +67,4 @@ Do not touch repoos.toml.
 - 2026-11-19T12:52:55Z · note: ui verification passed: 1 of 2 shots captured with clean console
 - 2026-11-19T12:52:57Z · status active→review
 - 2026-11-19T12:52:57Z · message_queued at 2026-11-19T12:52:57.598Z
+- 2026-11-19T12:56:11Z · note: review pass 1: needs some work
