@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-19T07:42:13Z"
+review_passes: 2
 id: "1221"
 title: "QA pass: task drawer tabs with long content at all screen sizes"
 type: bug
@@ -9,10 +11,8 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-task-drawer-tabs-with-long-conte
 created_at: "2026-11-19T06:47:59Z"
-updated_at: "2026-11-19T07:42:13Z"
 review_rounds: 1
 routing_switches: 1
-review_passes: 1
 dev_error_count: 1
 engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\"}"
 ---
@@ -50,3 +50,4 @@ Do not touch repoos.toml.
 - 2026-11-19T07:39:33Z · note: shots: skipped — the diff (8 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-19T07:40:45Z · message_queued at 2026-11-19T07:40:45.040Z
 - 2026-11-19T07:42:13Z · note: review pass 2: good to go
+
