@@ -300,7 +300,12 @@ onMounted(() => {
               <Button size="sm" variant="ghost" :disabled="isBusy" @click="runHealthCheck">
                 {{ actionPending === "health" ? "Checking…" : "Health check" }}
               </Button>
-              <Button size="sm" variant="destructive" :disabled="isBusy" @click="removeConfirmOpen = true">
+              <Button
+                size="sm"
+                variant="destructive"
+                :disabled="isBusy"
+                @click="removeConfirmOpen = true"
+              >
                 {{ actionPending === "remove" ? "Removing…" : "Remove service" }}
               </Button>
             </div>

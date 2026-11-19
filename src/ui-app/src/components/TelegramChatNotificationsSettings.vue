@@ -104,8 +104,8 @@ watch(
       <div class="setting-info">
         <div class="setting-label">{{ chat.title || "Chat " + chat.telegramChatId }}</div>
         <div class="setting-desc">
-          {{ chatTypeLabel(chat.chatType) }} · id {{ chat.telegramChatId }} · task lifecycle notifications for this
-          repository.
+          {{ chatTypeLabel(chat.chatType) }} · id {{ chat.telegramChatId }} · task lifecycle
+          notifications for this repository.
         </div>
       </div>
       <div class="setting-input">

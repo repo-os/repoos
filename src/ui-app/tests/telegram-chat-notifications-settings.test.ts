@@ -108,7 +108,9 @@ describe("TelegramChatNotificationsSettings — review fixes", () => {
     config.form["telegram.enabled"] = true;
     config.loaded = true;
     api.mockResolvedValueOnce({
-      chats: [{ telegramChatId: 7, chatType: "supergroup", title: "Team", notificationsEnabled: true }],
+      chats: [
+        { telegramChatId: 7, chatType: "supergroup", title: "Team", notificationsEnabled: true },
+      ],
     });
 
     const wrapper = mount(TelegramChatNotificationsSettings);

@@ -256,10 +256,9 @@ async function disconnectTelegramIntegration(): Promise<void> {
   errorMsg.value = "";
   successMsg.value = "";
   try {
-    const body = (await api(
-      "/api/auth/telegram/disconnect",
-      JSON_OPTS("POST", {}),
-    )) as { result?: { complete?: boolean; warning?: string } };
+    const body = (await api("/api/auth/telegram/disconnect", JSON_OPTS("POST", {}))) as {
+      result?: { complete?: boolean; warning?: string };
+    };
     successMsg.value = "Telegram disconnected for this repository";
     await loadTelegramLinks();
   } catch (err) {
