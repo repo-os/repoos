@@ -11,7 +11,7 @@ branch: feat/qa-pass-update-banner-version-display-an
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T23:27:47Z"
-updated_at: "2026-11-19T23:46:58Z"
+updated_at: "2026-11-19T23:46:59Z"
 ---
 ## Problem
 The update-available banner, version display and release notes modal have not been checked since the restart fix.
@@ -61,3 +61,4 @@ Do not touch repoos.toml.
 - 2026-11-19T23:43:30Z · body
 - 2026-11-19T23:46:56Z · note: ui verification passed: 3 of 3 shots captured with clean console
 - 2026-11-19T23:46:58Z · status active→review
+- 2026-11-19T23:46:59Z · message_queued at 2026-11-19T23:46:59.129Z
