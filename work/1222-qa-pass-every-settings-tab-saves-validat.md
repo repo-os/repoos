@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "1222"
 title: "QA pass: every Settings tab saves, validates and fits small screens (round 2)"
 type: bug
@@ -84,3 +85,4 @@ Do not touch repoos.toml.
 - 2026-11-19T08:22:41Z · message_delivered: 1 message(s)
 - 2026-11-19T08:27:26Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-19T08:35:38Z · orphaned run process stopped · pid 75340 · /opt/homebrew/bin/bun -e process.on("exit",c=>console.error("exitcode",c)); import("./docs/qa/settin · cpu 2s · age 2m
+
