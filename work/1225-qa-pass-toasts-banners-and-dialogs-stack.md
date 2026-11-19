@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-toasts-banners-and-dialogs-stack
 created_at: "2026-11-19T09:17:32Z"
-updated_at: "2026-11-19T11:14:59Z"
+updated_at: "2026-11-19T12:17:33Z"
 handoff_signal_retry_count: 2
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\",\"at\":\"2026-11-19T09:51:24.864Z\",\"kind\":\"dev-error\"}]"
@@ -30,26 +30,26 @@ Do not touch repoos.toml.
 ```json
 [
 {
-  "label": "Pinned five-toast stack from the new toast:stack fixture",
-  "target": "default",
-  "route": "/work",
-  "highlight": ".toast-panel",
-  "state": "toast:stack"
+"label": "Pinned five-toast stack from the new toast:stack fixture",
+"target": "default",
+"route": "/work",
+"highlight": ".toast-panel",
+"state": "toast:stack"
 },
 {
-  "label": "Notice-bell popover open: toast stack drops below it, corner returns on close",
-  "target": "default",
-  "route": "/work",
-  "highlight": "[data-test-id=\"notice-bell-popover\"]",
-  "steps": [
-    {
-      "click": "[data-test-id=\"notice-bell-trigger\"]"
-    },
-    {
-      "waitMs": 700
-    }
-  ],
-  "state": "toast:stack"
+"label": "Notice-bell popover open: toast stack drops below it, corner returns on close",
+"target": "default",
+"route": "/work",
+"highlight": "[data-test-id=\"notice-bell-popover\"]",
+"steps": [
+  {
+    "click": "[data-test-id=\"notice-bell-trigger\"]"
+  },
+  {
+    "waitMs": 700
+  }
+],
+"state": "toast:stack"
 }
 ]
 ```
