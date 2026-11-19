@@ -57,7 +57,7 @@ const emit = defineEmits<{
           @input="emit('update:url', ($event.target as HTMLInputElement).value)"
         />
       </label>
-      <p v-if="error" class="form-error">{{ error }}</p>
+      <p v-if="error" class="form-error" role="alert">{{ error }}</p>
       <p v-if="mode === 'edit'" class="hint">
         URL can't be changed here — delete and re-add to point elsewhere.
       </p>

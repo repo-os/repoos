@@ -6,7 +6,8 @@
 import { ref, computed } from "vue";
 import type { ServerEntry, LockSettings, ReachabilityState } from "./types";
 import * as store from "./store";
-import { validateServer, serverUrlOf } from "./reachability";
+import { validateServer, serverUrlOf, serverUrlProblem } from "./reachability";
+import { duplicateNameProblem, duplicateUrlProblem } from "./server-entries";
 import {
   fetchTailnetServers,
   mergeTailnetResults,
@@ -138,15 +139,16 @@ export interface AddResult {
  */
 export async function addServer(name: string, url: string): Promise<AddResult> {
   const serverUrl = serverUrlOf(url);
-  if (!serverUrl) return { error: "Enter an HTTPS URL (e.g. https://dev.repoos.org)." };
-  // Distinct Serve paths can map to different RepoOS projects on one host.
-  if (servers.value.some((s) => serverUrlOf(s.url) === serverUrl)) {
-    return { error: "That server is already saved." };
-  }
-  const reach = await validateServer(url);
-  if (!reach.ok) return { error: reach.error ?? "Unreachable." };
-
+  if (!serverUrl) return { error: serverUrlProblem(url) ?? "Enter a server URL." };
+  const urlError = duplicateUrlProblem(servers.value, serverUrl);
+  if (urlError) return { error: urlError };
   const trimmedName = name.trim() || serverUrl.replace("https://", "");
+  const nameError = duplicateNameProblem(servers.value, trimmedName);
+  if (nameError) return { error: nameError };
+  // Duplicates are refused before the network check, so a repeat never waits on a server.
+  const reach = await validateServer(url);
+  if (!reach.ok) return { error: reach.error ?? "Can't reach that server." };
+
   const entry: ServerEntry = {
     id: uuid(),
     url: serverUrl,
@@ -275,11 +277,15 @@ export async function selectServer(id: string): Promise<void> {
   await store.saveSelectedId(id);
 }
 
-export async function renameServer(id: string, name: string): Promise<void> {
+export async function renameServer(id: string, name: string): Promise<{ error?: string }> {
   const s = servers.value.find((x) => x.id === id);
-  if (!s) return;
-  s.name = name.trim() || s.url.replace("https://", "");
+  if (!s) return {};
+  const next = name.trim() || s.url.replace("https://", "");
+  const error = duplicateNameProblem(servers.value, next, id);
+  if (error) return { error };
+  s.name = next;
   await persist();
+  return {};
 }
 
 export async function removeServer(id: string): Promise<void> {
