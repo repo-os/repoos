@@ -11,7 +11,7 @@ branch: feat/qa-pass-stories-inbox-and-search-pages-w
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T17:46:51Z"
-updated_at: "2026-11-19T18:11:16Z"
+updated_at: "2026-11-19T18:13:43Z"
 ---
 ## Problem
 Stories, Inbox and Search have not been checked with many items, long titles and zero results at phone, tablet and desktop widths.
@@ -35,3 +35,4 @@ Do not touch repoos.toml.
 - 2026-11-19T18:07:12Z · cli_override, model_override
 - 2026-11-19T18:07:12Z · engineer stopped by request
 - 2026-11-19T18:11:16Z · body
+- 2026-11-19T18:13:43Z · message_queued at 2026-11-19T18:13:43.259Z
