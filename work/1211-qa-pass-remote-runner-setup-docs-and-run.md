@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 1122121
-last_close_out_gate_at: "2026-11-19T08:44:46.065Z"
 id: "1211"
 title: "QA pass: remote runner setup docs and runner health screens vs real bee/thinkpad/mini behavior"
 type: bug
-status: review
+status: done
 priority: p2
 area: [web, docs]
+merged_commit: 9c207501b3aac632e735000a13aed7a5506bea9b
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-remote-runner-setup-docs-and-run
 created_at: "2026-11-19T00:17:32Z"
 updated_at: "2026-11-19T08:44:46Z"
+last_close_out_gate_ms: 1122121
+last_close_out_gate_at: "2026-11-19T08:44:46.065Z"
 review_passes: 6
 handoff_signal_retry_count: 1
 review_rounds: 2
