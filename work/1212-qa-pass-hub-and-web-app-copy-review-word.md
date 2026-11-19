@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-hub-and-web-app-copy-review-word
 created_at: "2026-11-19T00:47:39Z"
-updated_at: "2026-11-19T01:58:24Z"
+updated_at: "2026-11-19T01:58:25Z"
 last_check_failure: "repoos check at 2026-11-19T01:25:43.917Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_passes: 2
 review_rounds: 1
@@ -76,3 +76,4 @@ Do not touch repoos.toml.
 - 2026-11-19T01:41:12Z · CTO nudge: held — handoff gate is running
 - 2026-11-19T01:50:18Z · body
 - 2026-11-19T01:58:24Z · message_queued at 2026-11-19T01:58:24.873Z
+- 2026-11-19T01:58:25Z · handoff failed · task-file handoff failed at check · the worktree changed while the gate was running (appeared: src/ui-app/src/lib/shot-preview-fixtures.ts, src/ui-app/tests/mobile-work-queue.test.ts, src/ui-app/tests/remote-validation-drawer.test.ts, src/ui-app/tests/shot-preview-fixtures.test.ts, src/ui-app/tests/work-queue-visibility.test.ts) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
