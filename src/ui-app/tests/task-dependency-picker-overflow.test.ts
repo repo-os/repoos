@@ -23,10 +23,12 @@ describe.skipIf(!existsSync(webkit.executablePath()))(
       await browser?.close();
     });
 
-    it.each([375, 768, 1280])("keeps long task titles inside the picker at %i px", async (width) => {
-      const page = await browser.newPage({ viewport: { width, height: 900 } });
-      try {
-        await page.setContent(`
+    it.each([375, 768, 1280])(
+      "keeps long task titles inside the picker at %i px",
+      async (width) => {
+        const page = await browser.newPage({ viewport: { width, height: 900 } });
+        try {
+          await page.setContent(`
         <style>
           * { box-sizing: border-box; }
           body { margin: 0; padding: 16px; font: 14px sans-serif; }
@@ -46,34 +48,35 @@ describe.skipIf(!existsSync(webkit.executablePath()))(
         </div>
       `);
 
-        const geometry = await page.locator(".dependency-options").evaluate((list) => {
-          const row = list.querySelector<HTMLElement>("li")!;
-          const button = row.querySelector<HTMLElement>("button")!;
-          const title = button.querySelector<HTMLElement>(".dependency-copy")!;
-          const rect = (element: HTMLElement) => {
-            const { width, right } = element.getBoundingClientRect();
-            return {
-              width,
-              right,
-              clientWidth: element.clientWidth,
-              scrollWidth: element.scrollWidth,
+          const geometry = await page.locator(".dependency-options").evaluate((list) => {
+            const row = list.querySelector<HTMLElement>("li")!;
+            const button = row.querySelector<HTMLElement>("button")!;
+            const title = button.querySelector<HTMLElement>(".dependency-copy")!;
+            const rect = (element: HTMLElement) => {
+              const { width, right } = element.getBoundingClientRect();
+              return {
+                width,
+                right,
+                clientWidth: element.clientWidth,
+                scrollWidth: element.scrollWidth,
+              };
             };
-          };
-          return {
-            list: rect(list as HTMLElement),
-            row: rect(row),
-            button: rect(button),
-            title: rect(title),
-          };
-        });
+            return {
+              list: rect(list as HTMLElement),
+              row: rect(row),
+              button: rect(button),
+              title: rect(title),
+            };
+          });
 
-        expect(geometry.list.scrollWidth).toBeLessThanOrEqual(geometry.list.clientWidth);
-        expect(geometry.row.right).toBeLessThanOrEqual(geometry.list.right + 1);
-        expect(geometry.button.scrollWidth).toBeLessThanOrEqual(geometry.button.clientWidth);
-        expect(geometry.title.scrollWidth).toBeGreaterThan(geometry.title.clientWidth);
-      } finally {
-        await page.close();
-      }
-    });
+          expect(geometry.list.scrollWidth).toBeLessThanOrEqual(geometry.list.clientWidth);
+          expect(geometry.row.right).toBeLessThanOrEqual(geometry.list.right + 1);
+          expect(geometry.button.scrollWidth).toBeLessThanOrEqual(geometry.button.clientWidth);
+          expect(geometry.title.scrollWidth).toBeGreaterThan(geometry.title.clientWidth);
+        } finally {
+          await page.close();
+        }
+      },
+    );
   },
 );
