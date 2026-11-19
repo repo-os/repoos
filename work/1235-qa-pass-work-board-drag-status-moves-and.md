@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-work-board-drag-status-moves-and
 created_at: "2026-11-19T16:17:45Z"
-updated_at: "2026-11-19T17:45:32Z"
+updated_at: "2026-11-19T17:45:34Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -51,3 +51,4 @@ Do not touch repoos.toml.
 - 2026-11-19T17:35:44Z · watchdog: restarting engineer because a queued message waited 3m with no live process
 - 2026-11-19T17:35:45Z · message_delivered: 1 message(s)
 - 2026-11-19T17:45:32Z · status active→review
+- 2026-11-19T17:45:34Z · message_queued at 2026-11-19T17:45:34.116Z
