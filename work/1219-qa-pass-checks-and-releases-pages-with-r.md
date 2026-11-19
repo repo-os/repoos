@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-19T06:32:56Z"
-review_passes: 1
 id: "1219"
 title: "QA pass: Checks and Releases pages with real data at all screen sizes"
 type: bug
@@ -11,6 +9,8 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-checks-and-releases-pages-with-r
 created_at: "2026-11-19T06:17:33Z"
+updated_at: "2026-11-19T06:32:56Z"
+review_passes: 1
 ---
 ## Problem
 The Checks and Releases pages have not been checked with long lists, long names and slow data at phone, tablet and desktop widths.
@@ -55,4 +55,4 @@ Do not touch repoos.toml.
 - 2026-11-19T06:32:13Z · status active→review
 - 2026-11-19T06:32:13Z · message_queued at 2026-11-19T06:32:13.997Z
 - 2026-11-19T06:32:56Z · note: review pass 1: needs some work
-
+- 2026-11-19T06:32:56Z · message_delivered: 1 message(s)
