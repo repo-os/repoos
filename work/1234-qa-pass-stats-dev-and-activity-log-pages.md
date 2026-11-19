@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-stats-dev-and-activity-log-pages
 created_at: "2026-11-19T15:47:33Z"
-updated_at: "2026-11-19T18:36:25Z"
+updated_at: "2026-11-19T18:36:47Z"
 last_close_out_gate_ms: 574625
 last_close_out_gate_at: "2026-11-19T18:36:25.916Z"
 review_passes: 1
@@ -98,4 +98,4 @@ Do not touch repoos.toml.
 - 2026-11-19T18:18:11Z · message_queued at 2026-11-19T18:18:11.765Z
 - 2026-11-19T18:20:42Z · note: review pass 1: good to go
 - 2026-11-19T18:36:25Z · close-out gate completed in 575s
-
+- 2026-11-19T18:36:47Z · status done→done, release:success
