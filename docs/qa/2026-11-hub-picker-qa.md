@@ -6,9 +6,9 @@ Task #1242. Copy and error-state pass over the Android/iOS Hub picker and its ad
 
 The app was served with `bunx vite --port 5188` from `mobile/`. Playwright runs headless Chromium (`headless: true`). Every request the page makes goes through one route table. The fixture hosts (`ok.example.test`, `gone.example.test`, `page.example.test`, `dead.example.test`, `slow.example.test`) get canned replies, or no reply for the slow case. Any other host is aborted, and the sweep records each host it sees. For every address that the form should refuse before the network, the sweep asserts that no request was made.
 
-Four viewports were run: 360×800 and 412×915 (phone portrait), and 768×1024 and 1024×768 (tablet portrait and landscape), each at device scale factor 2. At each width the sweep covers the add-server form with 13 addresses and the rename sheet on a saved server.
+Four viewports were run: 360×800 and 412×915 (phone portrait), and 768×1024 and 1024×768 (tablet portrait and landscape), each at device scale factor 2. At each width the sweep covers the add-server form with 14 addresses and the rename sheet on a saved server.
 
-The sweep ran 316 checks, all passing. Each add case checks that the previous error cleared, the exact message, that the error is announced (`role="alert"`), that no element leaves the viewport, and that the error text fits its box. The refused-before-network cases also check that no request was made.
+The sweep ran 340 checks, all passing. Each add case checks that the previous error cleared, the exact message, that the error is announced (`role="alert"`), that no element leaves the viewport, and that the error text fits its box. The refused-before-network cases also check that no request was made.
 
 Setup note: `mobile/` had no `node_modules` in this worktree. `bun install` in `mobile/` installed its declared dependencies. `vue-tsc --noEmit` in `mobile/` passes.
 
@@ -22,6 +22,7 @@ Setup note: `mobile/` had no `node_modules` in this worktree. `bun install` in `
 | `javascript:alert(1)` | That address starts with javascript:, which Hub can't use. … | none |
 | `ftp://…` | That address starts with ftp:, which Hub can't use. … | none |
 | `https://…?x=1` | Remove everything after the ? or # in the address. … | none |
+| `https://user:pass@…` | Remove the username and password from the address. Hub doesn't store them. Enter just the server's https:// address, like https://dev.repoos.org. | none |
 | `https://ok example` | That doesn't look like a web address. Enter the server's address, like https://dev.repoos.org. | none |
 | saved address | That server is already saved as "dev". Pick it from the list instead. | none |
 | saved name, different case (`DEV`) | A server named "dev" is already saved. Give this one a different display name. | none |
@@ -47,7 +48,9 @@ The rename sheet refuses a name already used by another saved server, and shows 
 
 **Duplicate-address and timeout copy was vague.** "That server is already saved." did not say which server. "Timed out — is the server reachable?" and "Unreachable — check the URL and your connection." did not say what to do. Each now names the saved server or the next step.
 
-**Errors were not announced.** The inline error had no live-region role, so a failed Save was silent to screen readers. Both error paragraphs now have `role="alert"`.
+**Errors were not announced.** The inline error had no live-region role, so a failed Save was silent to screen readers. The add-form error, the rename-sheet error and the tailnet-discovery error now all have `role="alert"`.
+
+**Credentials and underscores.** An address with `user:pass@` was refused with the generic message, which did not say why. It now names the username and password. Hostnames with underscores (`my_server.example.com`), which browsers accept, are now allowed.
 
 **The user docs claimed loopback HTTP works.** `user-docs/android-hub.md` said `http://localhost` was accepted. The code has never allowed plain HTTP, including loopback. The docs now say so, and point to a tunnel for HTTPS. The code was not loosened, because the task requires refusing `http`.
 
@@ -62,6 +65,7 @@ No element left the viewport and no error text overflowed its box at any of the 
 - No real device, Android WebView, or iOS WKWebView was used. Those engines differ from Chromium, and the URL-parser finding above is an example of that difference. A human needs a device pass before this is called verified on device.
 - No real network was used. Reachability is mocked, so "unreachable" and "slow" describe the app's handling of mocked replies, not a real server's behavior.
 - Touch targets, the on-screen keyboard, and the Android back gesture were not exercised.
+- Older RepoOS servers whose health reply lacks `ok: true` are now refused. The current server returns `ok: true`.
 - Discovery (`Find servers on my tailnet`) has one known gap: when two discovered rows share a project name, the second add fails with the duplicate-name message, and the user cannot rename it inside discovery. Not changed here; it needs a design decision on the discovery screen.
 
 ## How to repeat

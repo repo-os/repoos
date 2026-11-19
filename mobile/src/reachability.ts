@@ -52,8 +52,17 @@ function parseServerInput(input: string): ParsedServerInput {
   // WebKit and Chromium accept a space or `%20` inside a host (the WebView's URL
   // parser is more lenient than Node's), so check the host[:port] text here.
   const authority = rest.split(/[/?#]/, 1)[0] ?? "";
+  // Hub never stores credentials, so an address with `user:pass@` is refused
+  // with its own reason rather than the generic one.
+  if (authority.includes("@")) {
+    return {
+      problem:
+        "Remove the username and password from the address. Hub doesn't store them. Enter just the server's https:// address, like https://dev.repoos.org.",
+    };
+  }
+  // Underscores are legal in DNS names that browsers accept (`my_server.example.com`).
   const plausibleAuthority =
-    /^[a-z0-9.-]+(:\d+)?$/i.test(authority) || /^\[[0-9a-f:.]+\](:\d+)?$/i.test(authority);
+    /^[a-z0-9._-]+(:\d+)?$/i.test(authority) || /^\[[0-9a-f:.]+\](:\d+)?$/i.test(authority);
   let u: URL | null = null;
   if (plausibleAuthority) {
     try {

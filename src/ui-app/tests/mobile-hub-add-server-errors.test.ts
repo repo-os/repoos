@@ -12,6 +12,7 @@ import { serverUrlOf, serverUrlProblem, validateServer } from "../../../mobile/s
 import { duplicateNameProblem, duplicateUrlProblem } from "../../../mobile/src/server-entries";
 import type { ServerEntry } from "../../../mobile/src/types";
 import AddServerView from "../../../mobile/src/components/AddServerView.vue";
+import TailnetDiscoveryView from "../../../mobile/src/components/TailnetDiscoveryView.vue";
 
 const SAVED: ServerEntry[] = [
   { id: "a", url: "https://dev.repoos.org", name: "dev", order: 0, createdAt: 1 },
@@ -36,6 +37,7 @@ describe("add-server URL problems", () => {
     ["https://ok example", "doesn't look like a web address"],
     ["https://ok%20example", "doesn't look like a web address"],
     ["https://dev.repoos.org:99999", "doesn't look like a web address"],
+    ["https://user:pass@dev.repoos.org", "Remove the username and password"],
   ])("rejects %j with a plain reason", (input, reason) => {
     const problem = serverUrlProblem(input);
     expect(problem).not.toBeNull();
@@ -47,6 +49,7 @@ describe("add-server URL problems", () => {
     "https://dev.repoos.org",
     "dev.repoos.org",
     "dev.repoos.org:8443",
+    "https://my_server.example.com",
     "https://dev.repoos.org/",
     "https://bee.tail.ts.net/repoos/",
     "  https://dev.repoos.org  ",
@@ -209,5 +212,25 @@ describe("add-server error announcement", () => {
     const error = wrapper.find(".form-error");
     expect(error.attributes("role")).toBe("alert");
     expect(error.text()).toContain("uses http://");
+  });
+});
+
+describe("discovery error announcement", () => {
+  it("announces a failed discovery add so a screen reader reads it", () => {
+    const wrapper = mount(TailnetDiscoveryView, {
+      props: {
+        busy: false,
+        trustedName: "dev",
+        trustedUrl: "https://dev.repoos.org",
+        message: "",
+        error: 'celleris: A server named "dev" is already saved.',
+        servers: [],
+        selected: [],
+        platform: "web",
+      },
+    });
+    const error = wrapper.find('[data-testid="hub-discovery-error"]');
+    expect(error.attributes("role")).toBe("alert");
+    expect(error.text()).toContain("already saved");
   });
 });

@@ -89,6 +89,12 @@ const ADD_CASES: AddCase[] = [
     noRequest: true,
   },
   {
+    name: "address with credentials",
+    url: "https://user:pass@ok.example.test",
+    expect: "Remove the username and password from the address",
+    noRequest: true,
+  },
+  {
     name: "malformed host",
     url: "https://ok example",
     expect: "doesn't look like a web address",
