@@ -50,3 +50,4 @@ Do not touch repoos.toml.
 - 2026-11-19T19:06:13Z · CTO nudge: held — handoff gate is running
 - 2026-11-19T19:26:11Z · handoff failed · remote validation failed: test failure: tests/checks-releases-data-responsive.test.ts > Checks and Releases long data (WebKit) > renders real page components with long data at 375 px on thinkpad — fix it in the feature branch and re-run the gate
 - 2026-11-19T19:26:11Z · message_queued at 2026-11-19T19:26:11.677Z
+- 2026-11-19T19:26:11Z · handoff failed · handoff recovery attempted · finalization failed
