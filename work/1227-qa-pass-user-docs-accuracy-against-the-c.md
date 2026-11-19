@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-user-docs-accuracy-against-the-c
 created_at: "2026-11-19T09:47:43Z"
-updated_at: "2026-11-19T09:58:33Z"
+updated_at: "2026-11-19T10:06:20Z"
 handoff_signal_retry_count: 2
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\",\"at\":\"2026-11-19T09:51:27.279Z\",\"kind\":\"dev-error\"}]"
@@ -42,3 +42,4 @@ Do not touch repoos.toml.
 - 2026-11-19T09:51:29Z · needs_input
 - 2026-11-19T09:58:29Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 1/3
 - 2026-11-19T09:58:33Z · watchdog: automatic resume failed — This worktree already has a recorded live engineer for task #1227 (pid 4050)
+- 2026-11-19T10:06:20Z · body
