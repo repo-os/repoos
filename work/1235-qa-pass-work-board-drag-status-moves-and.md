@@ -2,14 +2,14 @@
 id: "1235"
 title: "QA pass: Work board drag, status moves and bulk actions with failures"
 type: bug
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
 branch: ""
 created_at: "2026-11-19T16:17:45Z"
-updated_at: "2026-11-19T16:17:45Z"
+updated_at: "2026-11-19T16:17:49Z"
 ---
 ## Problem
 Status changes, drag/drop and bulk actions on the Work board have not been tested when the server rejects them (blocked move, dirty main, conflict).
@@ -25,3 +25,4 @@ Do not touch repoos.toml.
 ## Activity
 
 - 2026-11-19T16:17:45Z · created · t@t
+- 2026-11-19T16:17:49Z · status inbox→ready
