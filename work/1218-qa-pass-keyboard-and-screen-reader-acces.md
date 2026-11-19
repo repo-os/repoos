@@ -50,3 +50,4 @@ Do not touch repoos.toml.
 - 2026-11-19T04:35:19Z · body
 - 2026-11-19T04:57:51Z · CTO nudge: held — handoff gate is running
 - 2026-11-19T05:06:48Z · handoff failed · remote validation failed: test failure: tests/settings-restart-badge-layout.test.ts > Settings restart badge layout (#0911) > places each restart hint before its control and keeps its accessible explanation on thinkpad — fix it in the feature branch and re-run the gate
+- 2026-11-19T05:06:48Z · message_queued at 2026-11-19T05:06:48.967Z
