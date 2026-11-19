@@ -30,3 +30,4 @@ Do not touch repoos.toml.
 - 2026-11-19T00:33:58Z · CTO nudge: held — handoff gate is running
 - 2026-11-19T00:41:31Z · status active→review
 - 2026-11-19T00:41:31Z · message_queued at 2026-11-19T00:41:31.782Z
+- 2026-11-19T00:41:31Z · note: shots: skipped — Docs site skipped: no docs shot declared
