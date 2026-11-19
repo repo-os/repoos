@@ -38,3 +38,4 @@ Do not touch repoos.toml.
 - 2026-11-19T18:13:43Z · message_queued at 2026-11-19T18:13:43.259Z
 - 2026-11-19T18:14:27Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-19T18:19:29Z · message_delivered: 1 message(s)
+- 2026-11-19T18:19:29Z · CTO action: restart-stalled-agent (fresh) · agent exited without emitting the handoff signal
