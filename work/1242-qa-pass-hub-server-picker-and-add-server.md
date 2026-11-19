@@ -2,7 +2,7 @@
 id: "1242"
 title: "QA pass: Hub server picker and add-server flow copy and error states"
 type: bug
-status: review
+status: active
 priority: p2
 area: web
 assigned_to: ai
@@ -12,6 +12,7 @@ cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T19:07:19Z"
 updated_at: "2026-11-19T19:33:03Z"
+review_rounds: 1
 review_passes: 1
 ---
 ## Problem
@@ -38,3 +39,4 @@ Do not touch repoos.toml.
 - 2026-11-19T19:30:47Z · note: shots: skipped — Docs site skipped: no docs shot declared
 - 2026-11-19T19:33:03Z · note: review pass 1: needs some work
 - 2026-11-19T19:33:03Z · message_delivered: 1 message(s)
+- 2026-11-19T19:33:03Z · status review→active
