@@ -498,6 +498,15 @@ queue position; what the server has queued next; and the last completed run.
 **Refresh** shows a spinner, then "Updated just now" (or an error toast).
 Idle means no holders and no waiters on that host.
 
+The `user@host` shown for a runner is the SSH login RepoOS uses for probes and
+jobs; it is not the Unix account running the RepoOS server. If RepoOS runs as a
+systemd service under another account, that service account needs its own SSH
+key/config and host-key trust for the configured runner. The probe runs with
+the configured SSH account's permissions and environment, so a successful
+probe does not certify access for a different account. Docker runners use that
+account to access Docker, while native runner commands and user-level
+`~/.local/bin/repoos-validate` run as that account.
+
 On the task page, a routine check stays on the status line under the preview
 ("Running checks…") and its result lives in the Debug tab. A chip appears in
 the header only when that run is longer than expected.

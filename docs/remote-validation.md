@@ -638,6 +638,40 @@ just _setup-runner <host> <arch|macos>         # any other Docker host
 just _setup-runner-native <host>               # any other native Linux/macOS host
 ```
 
+These recipes use the SSH identity available to the person invoking `just`.
+The `user@host` configured in `remoteValidation.tailscaleHosts` is the account
+RepoOS uses later for health probes and jobs; it must match the account whose
+runner setup you intend to use. The RepoOS server's local Unix account is a
+separate concern: when the server runs as a systemd service under another
+account, that service account needs its own SSH key/config and known-host
+trust. A probe initiated by the service runs remotely as the configured SSH
+user, not as the local service account, and it cannot use another account's
+SSH agent, home directory, or interactive-shell PATH.
+
+The maintained recipes have different privilege and PATH behavior:
+
+- `setup-bee` and `setup-thinkpad` use the SSH account's home directory to
+  stage and build `repoos-ci`, install `/opt/repoos/validate.sh` with `sudo`,
+  and expect that account to run Docker. On Arch, the recipe installs Docker
+  and adds the SSH account to the `docker` group; a new login may be needed
+  before group membership applies.
+- `setup-mini` assumes Docker Desktop and Docker CLI are already available to
+  the SSH account. It stages the image build under that account's home and
+  installs `/opt/repoos/validate.sh` with `sudo`.
+- `setup-mini-native` and `setup-linux-native` need no `sudo`: they install
+  `validate-macos.sh` as `~/.local/bin/repoos-validate` for the SSH account.
+  Native prerequisites and project tools must be available in the non-login
+  SSH environment used by RepoOS; interactive shell startup files are not a
+  reliable PATH source.
+
+The setup recipes also run `repoos runners setup <host>` on the machine where
+`just` is invoked. This installs declared engineer CLIs remotely where
+supported; it does not transfer the local server's SSH credentials or make a
+different local service account's key available. After setup, confirm the
+configured host user and run `repoos runners --probe` and `repoos runners
+check` from the same RepoOS service context when diagnosing service-only SSH
+or PATH failures.
+
 Docker recipes install `validate.sh` at `/opt/repoos/validate.sh` (sudo).
 Native recipes install `~/.local/bin/repoos-validate` for the SSH user (no
 sudo). RepoOS prefers the user-level script and falls back to `/opt` for older
