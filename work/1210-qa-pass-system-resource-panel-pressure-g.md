@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-system-resource-panel-pressure-g
 created_at: "2026-11-18T23:47:41Z"
-updated_at: "2026-11-19T00:56:07Z"
+updated_at: "2026-11-19T00:57:23Z"
 handoff_signal_retry_count: 1
 review_rounds: 1
 routing_switches: 1
