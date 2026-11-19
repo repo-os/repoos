@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-19T15:28:18Z"
+review_passes: 1
 id: "1226"
 title: "QA pass: slow network and offline behavior in the web app and Hub"
 type: bug
@@ -9,7 +11,6 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-slow-network-and-offline-behavio
 created_at: "2026-11-19T09:47:34Z"
-updated_at: "2026-11-19T15:28:18Z"
 handoff_signal_retry_count: 2
 dev_error_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-11-19T10:00:44.011Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-19T12:54:47.309Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-19T14:15:26.925Z\",\"reason\":\"clean-exit-without-handoff\"}]"
@@ -150,3 +151,4 @@ Do not touch repoos.toml.
 - 2026-11-19T15:25:21Z · status active→review
 - 2026-11-19T15:25:21Z · message_queued at 2026-11-19T15:25:21.504Z
 - 2026-11-19T15:28:18Z · note: review pass 1: needs some work
+
