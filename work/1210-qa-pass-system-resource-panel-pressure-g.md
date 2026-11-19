@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-system-resource-panel-pressure-g
 created_at: "2026-11-18T23:47:41Z"
-updated_at: "2026-11-19T00:49:50Z"
+updated_at: "2026-11-19T00:49:52Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -38,3 +38,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-19T00:49:09Z · message_queued at 2026-11-19T00:49:09.071Z
 - 2026-11-19T00:49:49Z · note: review pass 1: needs some work
 - 2026-11-19T00:49:50Z · status review→active
+- 2026-11-19T00:49:52Z · CTO nudge: held — an undelivered message is already queued
