@@ -2,7 +2,7 @@
 id: "1231"
 title: "QA pass: keyboard shortcuts and command palette across pages"
 type: bug
-status: review
+status: active
 priority: p2
 area: web
 assigned_to: ai
