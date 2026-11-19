@@ -2,7 +2,7 @@
 id: "1235"
 title: "QA pass: Work board drag, status moves and bulk actions with failures"
 type: bug
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -38,3 +38,4 @@ Do not touch repoos.toml.
 - 2026-11-19T16:55:24Z · body
 - 2026-11-19T16:59:35Z · CTO nudge: held — handoff gate is running
 - 2026-11-19T17:10:47Z · note: ui verification passed: 1 shot captured with clean console
+- 2026-11-19T17:10:47Z · status active→review
