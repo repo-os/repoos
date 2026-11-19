@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-cli-help-and-error-messages-matc
 created_at: "2026-11-19T11:47:39Z"
-updated_at: "2026-11-19T13:09:33Z"
+updated_at: "2026-11-19T13:09:35Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -73,3 +73,4 @@ Do not touch repoos.toml.
 - 2026-11-19T13:06:25Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-19T13:09:12Z · body
 - 2026-11-19T13:09:33Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-19T13:09:35Z · message_delivered: 1 message(s)
