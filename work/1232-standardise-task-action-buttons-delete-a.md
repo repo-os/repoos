@@ -11,7 +11,6 @@ branch: feat/easter-eggs-bundle-task-action-button-la
 created_at: "2026-11-19T13:54:07Z"
 updated_at: "2026-11-19T15:10:47Z"
 dev_error_count: 1
-engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\",\"at\":\"2026-11-19T14:51:58.346Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 The task drawer footer buttons read "Delete task", "Archive task" and "Hold". The word "task" is redundant (the drawer is already a task) and the three are inconsistent.
