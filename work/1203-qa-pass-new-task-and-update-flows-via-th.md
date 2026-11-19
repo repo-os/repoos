@@ -2,19 +2,21 @@
 id: "1203"
 title: "QA pass: new-task and update flows via the CLI and UI agree – body sections, validation messages and needs-input handling"
 type: bug
-status: active
+status: done
 priority: p2
 area: [web, core]
+merged_commit: 5bf1c3fd3812eaf14bc756c15cd67c703819568c
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-new-task-and-update-flows-via-th
 created_at: "2026-11-18T20:47:36Z"
-updated_at: "2026-11-18T21:44:50Z"
-check_retry_count: 1
+updated_at: "2026-11-18T22:00:13Z"
+last_close_out_gate_ms: 217826
+last_close_out_gate_at: "2026-11-18T21:59:47.148Z"
+review_passes: 2
 last_check_failure: "repoos check at 2026-11-18T21:29:29.351Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 1
 routing_switches: 1
-review_passes: 1
 ---
 ## Problem
 UI and CLI task creation have different validation (needs input, required sections) and may give confusing messages.
@@ -71,3 +73,10 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T21:43:06Z · message_delivered: 1 message(s)
 - 2026-11-18T21:43:07Z · note: handoff requested (cli)
 - 2026-11-18T21:44:50Z · CTO nudge: held — handoff gate is running
+- 2026-11-18T21:54:41Z · body
+- 2026-11-18T21:55:17Z · status active→review
+- 2026-11-18T21:55:59Z · note: ui verification passed: 1 of 1 shot captured with clean console
+- 2026-11-18T21:55:59Z · note: review pass 2: good to go
+- 2026-11-18T21:56:00Z · handoff failed · task-file handoff failed at review · could not commit finalized engineering report: On branch feat/qa-pass-new-task-and-update-flows-via-th · nothing to commit, working tree clean
+- 2026-11-18T21:59:47Z · close-out gate completed in 218s
+- 2026-11-18T22:00:13Z · status done→done, release:success
