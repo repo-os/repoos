@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/easter-eggs-bundle-bound-loginview-auth-
 created_at: "2026-11-19T16:18:14Z"
-updated_at: "2026-11-19T17:34:12Z"
+updated_at: "2026-11-19T17:34:26Z"
 last_close_out_gate_ms: 182293
 last_close_out_gate_at: "2026-11-19T17:34:12.799Z"
 review_passes: 1
@@ -88,4 +88,4 @@ When the server is slow or unreachable, the login page shows a plain-English sta
 - 2026-11-19T17:29:49Z · message_queued at 2026-11-19T17:29:49.074Z
 - 2026-11-19T17:31:04Z · note: review pass 1: good to go
 - 2026-11-19T17:34:12Z · close-out gate completed in 182s
-
+- 2026-11-19T17:34:26Z · status done→done, release:success
