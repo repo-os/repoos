@@ -11,7 +11,7 @@ branch: feat/qa-pass-settings-model-providers-and-api
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T23:27:11Z"
-updated_at: "2026-11-19T23:47:27Z"
+updated_at: "2026-11-19T23:49:03Z"
 ---
 ## Problem
 The model providers and API key screens have not had a recent check for masked values, saving, wrong keys and offline errors.
@@ -46,3 +46,4 @@ Do not touch repoos.toml. Follow docs/api-keys.md.
 - 2026-11-19T23:47:23Z · note: ui verification passed: 1 of 1 shot captured with clean console
 - 2026-11-19T23:47:26Z · status active→review
 - 2026-11-19T23:47:27Z · message_queued at 2026-11-19T23:47:27.097Z
+- 2026-11-19T23:49:03Z · note: review pass 1: good to go
