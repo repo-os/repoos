@@ -112,6 +112,33 @@ faith:
   "Scheduled Tasks", "Reminders") and `TelegramSettingsPanel.vue`
   ("Send a test message" section, "Send test" button).
 
+## Final verification (second resumed session)
+
+The worktree was resumed once more after the engineer process restarted. This
+session re-verified the report's claims independently rather than trusting the
+earlier runs:
+
+- Re-ran the configuration cross-check programmatically: all 293 documented
+  rows in `user-docs/configuration.md` parsed; the 154 rows whose keys exist in
+  `getConfigSchema()` (167 fields) all match the schema defaults. The only
+  apparent mismatches were formatting differences (arrays printed as
+  `[1024, 375]` vs `1024,375`) or prose default columns (`maxConcurrentAgents`
+  documented as "derived from CPU count" — verified accurate against
+  `defaultMaxConcurrentAgents()`, which is `cores / 2` clamped 2–8).
+- Re-confirmed the eleven-CLI agent registry from `KNOWN_AGENTS`
+  (`src/core/detect.ts`): opencode, claude code, qwen code, codex, github
+  copilot, antigravity, kiro, pi, cursor, crush, muse — matching the
+  `user-docs/agents.md` table after the fix.
+- Re-captured `repoos secrets --help` from the current build; the usage line
+  includes the `bindings` subcommand, matching `user-docs/cli.md`.
+- Re-checked the UI labels quoted by the docs against the components:
+  "Authentication & Users" (`AuthSettingsPanel.vue`), "Send a test message" /
+  "Send test" (`TelegramSettingsPanel.vue`), "Build Your Team" /
+  "Scheduled Tasks" / "Reminders" (`AgentsView.vue`).
+- Grepped `user-docs/` for hard-coded version strings (`v0.5.8x`/`v0.5.9x`);
+  none outside the changelog.
+- Re-ran `REPOOS_CHECK_CHANGED=main repoos check`: all steps passed.
+
 ## QA notes
 
 No new code bug was uncovered; the only code change is the one-line CLI help
