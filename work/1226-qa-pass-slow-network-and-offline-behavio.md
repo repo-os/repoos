@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-slow-network-and-offline-behavio
 created_at: "2026-11-19T09:47:34Z"
-updated_at: "2026-11-19T16:24:08Z"
+updated_at: "2026-11-19T16:24:27Z"
 last_close_out_gate_ms: 570761
 last_close_out_gate_at: "2026-11-19T16:23:35.248Z"
 review_passes: 2
@@ -180,3 +180,4 @@ Do not touch repoos.toml.
 - 2026-11-19T16:13:57Z · orphaned run process stopped · pid 59293 · /Users/nick/.vite-plus/js_runtime/node/26.13.1/bin/node --experimental-import-meta-resolve --require · cpu 0s · age 9s
 - 2026-11-19T16:23:35Z · close-out gate completed in 571s
 - 2026-11-19T16:24:08Z · status done→done, release:success
+- 2026-11-19T16:24:27Z · message_queued at 2026-11-19T16:24:27.617Z
