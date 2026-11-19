@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-checks-and-releases-pages-with-r
 created_at: "2026-11-19T06:17:33Z"
-updated_at: "2026-11-19T06:32:13Z"
+updated_at: "2026-11-19T06:32:56Z"
 ---
 ## Problem
 The Checks and Releases pages have not been checked with long lists, long names and slow data at phone, tablet and desktop widths.
@@ -53,3 +53,4 @@ Do not touch repoos.toml.
 - 2026-11-19T06:32:12Z · note: ui verification passed: 2 of 2 shots captured with clean console
 - 2026-11-19T06:32:13Z · status active→review
 - 2026-11-19T06:32:13Z · message_queued at 2026-11-19T06:32:13.997Z
+- 2026-11-19T06:32:56Z · note: review pass 1: needs some work
