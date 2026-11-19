@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-19T18:27:53Z"
+review_passes: 1
 id: "1237"
 title: "QA pass: Stories, Inbox and Search pages with many items at all screen sizes"
 type: bug
@@ -11,7 +13,6 @@ branch: feat/qa-pass-stories-inbox-and-search-pages-w
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T17:46:51Z"
-updated_at: "2026-11-19T18:27:53Z"
 ---
 ## Problem
 Stories, Inbox and Search have not been checked with many items, long titles and zero results at phone, tablet and desktop widths.
@@ -46,3 +47,4 @@ Do not touch repoos.toml.
 - 2026-11-19T18:26:11Z · status active→review
 - 2026-11-19T18:26:11Z · message_queued at 2026-11-19T18:26:11.914Z
 - 2026-11-19T18:27:53Z · note: review pass 1: good to go
+
