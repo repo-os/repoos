@@ -2,14 +2,14 @@
 id: "1216"
 title: "QA pass: empty, loading and error states on Agents, Checks and Releases"
 type: bug
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-empty-loading-and-error-states-o
 created_at: "2026-11-19T03:17:43Z"
-updated_at: "2026-11-19T04:05:53Z"
+updated_at: "2026-11-19T04:07:05Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -29,22 +29,22 @@ Do not touch repoos.toml.
 ```json
 [
 {
-  "label": "Agents empty setup",
-  "target": "default",
-  "route": "/agents?shotState=agents%3Aempty",
-  "state": "agents:empty"
+"label": "Agents empty setup",
+"target": "default",
+"route": "/agents?shotState=agents%3Aempty",
+"state": "agents:empty"
 },
 {
-  "label": "Checks plan and active progress",
-  "target": "default",
-  "route": "/checks?tab=plan&shotState=checks%3Aprogress",
-  "state": "checks:progress"
+"label": "Checks plan and active progress",
+"target": "default",
+"route": "/checks?tab=plan&shotState=checks%3Aprogress",
+"state": "checks:progress"
 },
 {
-  "label": "Releases with an available update",
-  "target": "default",
-  "route": "/releases?shotState=release%3AupdateAvailable",
-  "state": "release:updateAvailable"
+"label": "Releases with an available update",
+"target": "default",
+"route": "/releases?shotState=release%3AupdateAvailable",
+"state": "release:updateAvailable"
 }
 ]
 ```
@@ -66,3 +66,4 @@ Do not touch repoos.toml.
 - 2026-11-19T04:01:33Z · body
 - 2026-11-19T04:04:33Z · body
 - 2026-11-19T04:05:53Z · body
+- 2026-11-19T04:07:05Z · status active→review
