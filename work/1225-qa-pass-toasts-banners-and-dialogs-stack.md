@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-19T13:05:06.200Z: repoos check failed: check-fmt:check — Formatting failed — run `bun run fmt` to fix:"
 id: "1225"
 title: "QA pass: toasts, banners and dialogs stacking and dismissal at all screen sizes"
 type: bug
@@ -87,3 +89,4 @@ Do not touch repoos.toml.
 - 2026-11-19T13:04:44Z · body
 - 2026-11-19T13:05:03Z · message_queued at 2026-11-19T13:05:03.043Z
 - 2026-11-19T13:05:06Z · message_delivered: 1 message(s)
+
