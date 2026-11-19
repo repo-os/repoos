@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-remote-runner-setup-docs-and-run
 created_at: "2026-11-19T00:17:32Z"
-updated_at: "2026-11-19T08:45:16Z"
+updated_at: "2026-11-19T08:56:08Z"
 last_close_out_gate_ms: 1122121
 last_close_out_gate_at: "2026-11-19T08:44:46.065Z"
 review_passes: 6
@@ -129,3 +129,4 @@ Do not touch repoos.toml.
 - 2026-11-19T08:22:28Z · message_queued at 2026-11-19T08:22:28.955Z
 - 2026-11-19T08:44:46Z · close-out gate completed in 1122s
 - 2026-11-19T08:45:16Z · status done→done, release:success
+- 2026-11-19T08:56:08Z · message_dropped: 1 queued message(s) discarded — task is done
