@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-agents-page-model-providers-and-
 created_at: "2026-11-19T07:47:39Z"
-updated_at: "2026-11-19T09:05:04Z"
+updated_at: "2026-11-19T09:09:31Z"
 handoff_signal_retry_count: 2
 dev_error_count: 1
 engineer_stall_resume_log: "[{\"at\":\"2026-11-19T08:33:07.295Z\",\"reason\":\"clean-exit-without-handoff\"}]"
@@ -68,3 +68,4 @@ Do not touch repoos.toml.
 - 2026-11-19T08:49:16Z · body
 - 2026-11-19T08:59:20Z · watchdog: restarting engineer after 10m with no live process
 - 2026-11-19T09:05:04Z · body
+- 2026-11-19T09:09:31Z · note: ui verification failed: ui verification failed (1 issue(s)): [missing-target] Model providers: opencode Go usage without the spurious empty-state line (target "default"): highlight [data-provider-id="opencode-go"] matched nothing on /agents?tab=model-providers (http://127.0.0.1:36641/agents?tab=model-providers)
