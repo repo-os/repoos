@@ -20,7 +20,9 @@ describe("real task drawer layout (WebKit)", () => {
   let browser: Browser;
   let globalCss: string;
   let taskDrawerStyle: string;
+  let dependencyPickerStyle: string;
   let taskDrawerCss: string;
+  let dependencyPickerCss: string;
 
   beforeAll(async () => {
     browser = await webkit.launch();
@@ -28,22 +30,39 @@ describe("real task drawer layout (WebKit)", () => {
     const cssAsset = (await readdir(assetDir)).find((name) => /^index-.*\.css$/.test(name));
     if (!cssAsset) throw new Error("Built global UI stylesheet was not found");
     globalCss = await readFile(resolve(assetDir, cssAsset), "utf8");
-    const source = await readFile(resolve(uiRoot, "src/components/TaskDrawer.vue"), "utf8");
-    const parsed = parse(source, { filename: resolve(uiRoot, "src/components/TaskDrawer.vue") });
-    taskDrawerStyle = parsed.descriptor.styles[0]?.content ?? "";
+    for (const [component, assign] of [
+      ["TaskDrawer", (style: string) => (taskDrawerStyle = style)],
+      ["TaskDependencyPicker", (style: string) => (dependencyPickerStyle = style)],
+    ] as const) {
+      const filename = resolve(uiRoot, `src/components/${component}.vue`);
+      const source = await readFile(filename, "utf8");
+      const parsed = parse(source, { filename });
+      assign(parsed.descriptor.styles[0]?.content ?? "");
+    }
   });
 
   afterAll(async () => {
     await browser?.close();
   });
 
-  function compileDrawerStyle(markup: string): string {
-    const scopeId = markup.match(/data-v-[a-f0-9]+/)?.[0];
-    if (!scopeId) throw new Error("TaskDrawer scope ID was not present in the rendered markup");
+  function compileScopedStyle(
+    markup: string,
+    className: string,
+    component: string,
+    source: string,
+  ): string {
+    const marker = `class="${className}"`;
+    const classIndex = markup.indexOf(marker);
+    const tagStart = markup.lastIndexOf("<", classIndex);
+    const tagEnd = markup.indexOf(">", classIndex);
+    const tag =
+      classIndex >= 0 && tagStart >= 0 && tagEnd >= 0 ? markup.slice(tagStart, tagEnd) : "";
+    const scopeId = tag.match(/data-v-[a-f0-9]+/)?.[0];
+    if (!scopeId) throw new Error(`${component} scope ID was not present on .${className}`);
     const compiled = compileStyle({
-      filename: resolve(uiRoot, "src/components/TaskDrawer.vue"),
+      filename: resolve(uiRoot, `src/components/${component}.vue`),
       id: scopeId,
-      source: taskDrawerStyle,
+      source,
     });
     if (compiled.errors.length) throw compiled.errors[0];
     return compiled.code;
@@ -108,7 +127,13 @@ describe("real task drawer layout (WebKit)", () => {
     }
     await flush();
     const markup = document.body.innerHTML;
-    taskDrawerCss = compileDrawerStyle(markup);
+    taskDrawerCss = compileScopedStyle(markup, "drawer-wrap drawer", "TaskDrawer", taskDrawerStyle);
+    dependencyPickerCss = compileScopedStyle(
+      markup,
+      "task-dependency-picker",
+      "TaskDependencyPicker",
+      dependencyPickerStyle,
+    );
     wrapper.unmount();
     document.body.innerHTML = "";
     vi.unstubAllGlobals();
@@ -119,7 +144,7 @@ describe("real task drawer layout (WebKit)", () => {
   async function checkActualDrawer(page: Page, markup: string, width: number): Promise<void> {
     await page.setViewportSize({ width, height: 900 });
     await page.setContent(
-      `<meta name="viewport" content="width=device-width, initial-scale=1.0"><style>${globalCss}</style><style>${taskDrawerCss}</style><style>html, body { width: 100%; margin: 0; overflow: hidden; } *, *::before, *::after { animation: none !important; transition: none !important; }</style>${markup}`,
+      `<meta name="viewport" content="width=device-width, initial-scale=1.0"><style>${globalCss}</style><style>${taskDrawerCss}</style><style>${dependencyPickerCss}</style><style>html, body { width: 100%; margin: 0; overflow: hidden; } *, *::before, *::after { animation: none !important; transition: none !important; }</style>${markup}`,
     );
     const dialog = page.locator(".drawer-wrap");
     await dialog.waitFor();
