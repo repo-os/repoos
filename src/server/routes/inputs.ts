@@ -15,6 +15,8 @@ import {
 } from "../../core/input.js";
 import { commitTaskFile } from "../../core/git.js";
 import { removeInputAttachments } from "../../core/input.js";
+import { mimeForAttachmentObjectName } from "../../core/attachment-reference.js";
+import { MAX_SCREENSHOT_BYTES, SCREENSHOT_MIME } from "../attachments.js";
 import { deleteInputFile, PathGuardError, WriteError } from "../write.js";
 import type { Agent } from "../../core/types.js";
 import { repoAgentRunTmpOpts } from "../../core/agent-run-tmpdir.js";
@@ -240,13 +242,28 @@ export const uploadInputAttachment: RouteHandler = async (ctx, req, res, p) => {
   const b = (await readBody(req)) as Record<string, unknown>;
   if (typeof b.name !== "string" || typeof b.data !== "string")
     return json(res, 400, { error: "name and data are required" });
+  // Same rules as task screenshots (saveScreenshot): an image type we can show,
+  // non-empty, and under the size cap. Checked before anything reaches disk.
+  const mime = mimeForAttachmentObjectName(b.name);
+  if (!mime || !(mime in SCREENSHOT_MIME))
+    return json(res, 400, {
+      error: `"${b.name}" isn't an image we can attach. Use PNG, JPEG, GIF, WebP, AVIF or BMP.`,
+    });
+  const size = Buffer.byteLength(b.data, "base64");
+  if (size === 0)
+    return json(res, 400, { error: "The image is empty. Pick a file that has content." });
+  if (size > MAX_SCREENSHOT_BYTES)
+    return json(res, 413, {
+      error: `The image is too large (max ${Math.round(MAX_SCREENSHOT_BYTES / 1024 / 1024)} MB). Crop or compress it, then add it again.`,
+    });
   try {
     return json(res, 201, {
       ok: true,
       attachment: saveInputAttachment(ctx.config, p.param1, b.name, b.data),
     });
   } catch (e) {
-    return json(res, 404, { error: (e as Error).message });
+    const message = (e as Error).message;
+    return json(res, message === "input not found" ? 404 : 500, { error: message });
   }
 };
 /**

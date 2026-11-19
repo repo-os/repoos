@@ -50,6 +50,7 @@ watch(open, (v) => {
   if (!v) return;
   submitted.value = false;
   activeSubmitBatchId.value = null;
+  ui.dismissInputUploadNotices();
   // The panel reuses the draft, so size its remounted textarea immediately.
   void nextTick(adjustInputHeight);
 });
@@ -196,6 +197,21 @@ function done(): void {
               @open-shot="(i) => openInputViewer(ui.inputScreenshots[i]!.dataUrl)"
               @remove="(i) => ui.removeInputScreenshot(i)"
             />
+            <div
+              v-if="ui.inputUploadNotices.length"
+              class="ff-error ff-upload-notices"
+              role="alert"
+            >
+              <p v-for="(note, i) in ui.inputUploadNotices" :key="i">{{ note }}</p>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                @click="ui.dismissInputUploadNotices()"
+              >
+                Dismiss
+              </Button>
+            </div>
           </div>
           <div class="field">
             <div class="field-header">
@@ -221,7 +237,10 @@ function done(): void {
           </div>
           <div class="btn-row" style="margin-top: 20px">
             <Button variant="outline" @click="ui.close">Cancel</Button>
-            <Button variant="default" :disabled="!ui.inputText.trim()" @click="submit"
+            <Button
+              variant="default"
+              :disabled="!ui.inputText.trim() || ui.inputScreenshots.some((s) => !s.dataUrl)"
+              @click="submit"
               >Submit input</Button
             >
           </div>
