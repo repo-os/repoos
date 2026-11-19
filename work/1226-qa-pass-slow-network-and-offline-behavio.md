@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-slow-network-and-offline-behavio
 created_at: "2026-11-19T09:47:34Z"
-updated_at: "2026-11-19T14:34:29Z"
+updated_at: "2026-11-19T14:52:11Z"
 handoff_signal_retry_count: 2
 dev_error_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-11-19T10:00:44.011Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-19T12:54:47.309Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-19T14:15:26.925Z\",\"reason\":\"clean-exit-without-handoff\"}]"
@@ -137,3 +137,4 @@ Do not touch repoos.toml.
 - 2026-11-19T14:20:42Z · orphaned run process stopped · pid 13797 · ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new -o ConnectTimeout=15 -o ServerAliveInterval · cpu 0s · age 14m
 - 2026-11-19T14:25:33Z · body
 - 2026-11-19T14:34:29Z · body
+- 2026-11-19T14:52:11Z · watchdog: restarting engineer after 18m with no live process
