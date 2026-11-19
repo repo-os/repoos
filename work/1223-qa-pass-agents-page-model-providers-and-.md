@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-19T09:09:34.580Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Model providers: opencode Go usage without the spurious empty-state line (target \"default\"): highlight [data-provider-id=\"opencode-go\"] matched nothing on /agents?tab=model-providers (http://127.0.0.1:36641/agents?tab=model-providers)"
 id: "1223"
 title: "QA pass: Agents page, model providers and routing tab at all screen sizes"
 type: bug
@@ -71,3 +73,4 @@ Do not touch repoos.toml.
 - 2026-11-19T09:09:31Z · note: ui verification failed: ui verification failed (1 issue(s)): [missing-target] Model providers: opencode Go usage without the spurious empty-state line (target "default"): highlight [data-provider-id="opencode-go"] matched nothing on /agents?tab=model-providers (http://127.0.0.1:36641/agents?tab=model-providers)
 - 2026-11-19T09:09:31Z · message_queued at 2026-11-19T09:09:31.440Z
 - 2026-11-19T09:09:34Z · message_delivered: 1 message(s)
+
