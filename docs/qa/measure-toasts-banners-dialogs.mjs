@@ -195,7 +195,7 @@ async function waitDrawer(page) {
   // Radix unmounts the drawer when closed; presence is the whole signal. (A
   // `position: fixed` element reports `offsetParent === null`, so visibility
   // can't be checked that way here.)
-  await page.waitForFunction(() => document.querySelector(".drawer-wrap.drawer") !== null, {
+  await page.waitForFunction(() => document.querySelector(".drawer-wrap.drawer") !== null, undefined, {
     timeout: 10_000,
   });
 }
@@ -247,7 +247,7 @@ async function toastStackScenario() {
         const btns = window.__qa.closeButtons();
         btns[btns.length - 1].click();
       });
-      await page.waitForFunction(() => document.querySelectorAll(".toast-item").length === 4, {
+      await page.waitForFunction(() => document.querySelectorAll(".toast-item").length === 4, undefined, {
         timeout: 5_000,
       });
       const remaining = await page.evaluate(() =>
@@ -269,7 +269,7 @@ async function toastStackScenario() {
         return item ? item.textContent.trim().slice(0, 60) : null;
       });
       await page.keyboard.press("Enter");
-      await page.waitForFunction(() => document.querySelectorAll(".toast-item").length === 3, {
+      await page.waitForFunction(() => document.querySelectorAll(".toast-item").length === 3, undefined, {
         timeout: 5_000,
       });
       const after = await page.evaluate(() =>
@@ -380,6 +380,7 @@ async function dialogScenario() {
             document.querySelector(
               '[data-test-id="installed-restart-notice"], .release-update-modal',
             ) !== null,
+          undefined,
           { timeout: 10_000 },
         );
         await page.evaluate(PAGE_HELPERS);
@@ -401,20 +402,37 @@ async function dialogScenario() {
       });
       record("dialog:fits-viewport", width, fit.inViewport, fit.rect);
 
-      // Escape dismisses.
-      await page.keyboard.press("Escape");
-      await page.waitForFunction(() => document.querySelector(".release-update-modal") === null, {
-        timeout: 5_000,
-      });
+      // Escape dismisses. The capture fixture is re-applied at the end of every
+      // SSE-triggered board refresh (#0782), and for this fixture that re-run
+      // opens the dialog again — Escape pressed inside that initial window
+      // closes it and the re-apply reopens it ~20ms later, a blink the
+      // rAF-polling wait can miss. Press only after the re-application has
+      // settled, so the dismissal is the last state change. One guarded retry
+      // covers a lost key event (harness input delivery, not app behaviour).
+      await page.waitForTimeout(1_500);
+      const gone = () =>
+        page.waitForFunction(() => document.querySelector(".release-update-modal") === null, undefined, {
+          timeout: 5_000,
+        });
+      try {
+        await page.keyboard.press("Escape");
+        await gone();
+      } catch {
+        await page.keyboard.press("Escape");
+        await gone();
+      }
       record("dialog:escape-dismiss", width, true, null);
 
-      // The X button dismisses too (re-open via fixture reload).
+      // The X button dismisses too (re-open via fixture reload). Same settle
+      // as the Escape check: the refresh re-applies the fixture and re-opens
+      // the dialog, so click only after that has settled (#0782).
       await open();
+      await page.waitForTimeout(1_500);
       await page.evaluate(() => {
         const btn = document.querySelector('.release-update-modal [aria-label="Close"]');
         btn.click();
       });
-      await page.waitForFunction(() => document.querySelector(".release-update-modal") === null, {
+      await page.waitForFunction(() => document.querySelector(".release-update-modal") === null, undefined, {
         timeout: 5_000,
       });
       record("dialog:close-button", width, true, null);
@@ -447,6 +465,24 @@ async function drawerOverToastsScenario() {
       }
 
       // The drawer's close button must be the hit-test target at its center.
+      // Wait for the entrance animation to settle first: the panel slides in
+      // from off-viewport, and a probe during the slide finds the button's
+      // centre outside the viewport — elementFromPoint returns null, which
+      // would read as a dead button that nothing actually covers.
+      await page.waitForFunction(
+        () => {
+          const btn = document.querySelector('[aria-label="Close task detail"]');
+          if (!btn) return false;
+          const r = btn.getBoundingClientRect();
+          const vw = document.documentElement.clientWidth;
+          const vh = document.documentElement.clientHeight;
+          const cx = r.left + r.width / 2;
+          const cy = r.top + r.height / 2;
+          return cx >= 0 && cx <= vw && cy >= 0 && cy <= vh;
+        },
+        undefined,
+        { timeout: 5_000 },
+      );
       const closeProbe = await page.evaluate(() => {
         const btn = document.querySelector('[aria-label="Close task detail"]');
         if (!btn) return null;
@@ -463,11 +499,22 @@ async function drawerOverToastsScenario() {
         closeProbe,
       );
 
-      // Escape closes the drawer.
-      await page.keyboard.press("Escape");
-      await page.waitForFunction(() => document.querySelector(".drawer-wrap.drawer") === null, {
-        timeout: 5_000,
-      });
+      // Escape closes the drawer. Same settle as the dialog check: presses in
+      // the page's first moments can be lost or race the post-refresh fixture
+      // re-application (#0782); wait for quiescence, then press — with one
+      // guarded retry against lost key delivery.
+      await page.waitForTimeout(1_500);
+      const drawerGone = () =>
+        page.waitForFunction(() => document.querySelector(".drawer-wrap.drawer") === null, undefined, {
+          timeout: 5_000,
+        });
+      try {
+        await page.keyboard.press("Escape");
+        await drawerGone();
+      } catch {
+        await page.keyboard.press("Escape");
+        await drawerGone();
+      }
       record("drawer-over-toasts:escape-dismiss", width, true, null);
 
       if (errors.length) record("drawer-over-toasts:page-errors", width, false, errors);
@@ -492,8 +539,23 @@ async function recoveryBannerScenario() {
       await waitToasts(page, 5);
       // From now on every API request fails, like a stalled server.
       await page.route("**/api/**", (route) => route.abort());
-      await page.evaluate(() => window.dispatchEvent(new Event("focus")));
-      await page.waitForFunction(() => document.querySelector(".ui-recovery-banner") !== null, {
+      // A focus-triggered checkUp joins any in-flight health check, and the
+      // startup check (fired by the router) may still be in flight here — that
+      // focus would be consumed without a fresh probe ever seeing the abort.
+      // Keep nudging focus until the banner is up; extra nudges are harmless
+      // (showOffline is idempotent and an offline state short-circuits the
+      // message path).
+      for (let nudge = 0; nudge < 20; nudge++) {
+        await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+        const up = await page
+          .waitForFunction(() => document.querySelector(".ui-recovery-banner") !== null, undefined, {
+            timeout: 2_000,
+          })
+          .then(() => true)
+          .catch(() => false);
+        if (up) break;
+      }
+      await page.waitForFunction(() => document.querySelector(".ui-recovery-banner") !== null, undefined, {
         timeout: 15_000,
       });
 
@@ -533,7 +595,7 @@ async function recoveryBannerScenario() {
         );
         dismiss.click();
       });
-      await page.waitForFunction(() => document.querySelector(".ui-recovery-banner") === null, {
+      await page.waitForFunction(() => document.querySelector(".ui-recovery-banner") === null, undefined, {
         timeout: 5_000,
       });
       record("recovery-banner:dismiss-clears", width, true, null);
@@ -561,6 +623,7 @@ async function noticePopoverScenario() {
       await page.click('[data-test-id="notice-bell-trigger"]');
       await page.waitForFunction(
         () => document.querySelector('[data-test-id="notice-bell-popover"]') !== null,
+        undefined,
         { timeout: 5_000 },
       );
       // Let async popover content land and the ResizeObserver republish the
@@ -603,6 +666,7 @@ async function noticePopoverScenario() {
       await page.keyboard.press("Escape");
       await page.waitForFunction(
         () => document.querySelector('[data-test-id="notice-bell-popover"]') === null,
+        undefined,
         { timeout: 5_000 },
       );
       const after = await page.evaluate(() => {

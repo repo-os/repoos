@@ -46,6 +46,8 @@ JSON finding per check and exits non-zero on failure. Its 63 checks cover:
 | The `UiRecoveryBanner` (fixed, top-centered, `z-index: 1000`, width `min(560px, 100vw - 32px)`) covered the entire toast stack at 375 px. All five toasts sat underneath it and every dismiss button failed the hit-test probe — a dead dismiss control behind a banner that can stay up until the server recovers. At 768/1280 the buttons escaped only because the banner is narrower than the stack. | The toasts were unreadable and undismissible for as long as the offline/stale banner stayed up. | `UiRecoveryBanner` now publishes its bottom edge as `--toast-panel-drop-banner` (via `uiRecovery.setToastPanelDrop`, tracked with a `ResizeObserver` so reflow keeps it honest) and clears the var on dismiss and unmount. `ToastPanel`'s top becomes its default plus the larger published drop, so the stack moves below whichever surface is covering it. |
 | The notice-bell popover (`.notice-pop`, deliberately opened, top-right) was overlapped by toasts at every width — toasts painted over the popover's header controls. | A user-opened panel was partially covered by transient toasts. | `NoticeBell` publishes the open popover's bottom edge as `--toast-panel-drop-notice` (republished by a `ResizeObserver` because async notice content can grow the popover after the first measure) and clears it on every close path (toggle, outside mousedown, Escape, following a notice) and on unmount. The toast panel takes the `max()` of the two drops, so the banner and popover compose. |
 | New fixture `toast:stack` did not exist, so the stacked-toasts case could only be produced one toast at a time. | Stacking could not be reviewed or QA'd. | Registered `toast:stack` in `SHOT_PREVIEW_FIXTURE_IDS` and applied it in `shot-preview-fixtures.ts`, seeding five pinned toasts (no auto-expiry), with a fixture regression test. |
+| The dialog scenario's Escape check raced the post-refresh fixture re-application (#0782): `refresh()` re-applies `release:updateAvailable` at the end of every board rebuild, and that re-run sets the dialog's `open` back to true, undoing an Escape pressed inside the initial refresh window (a ~20 ms close→reopen blink the polling wait can miss); a second defect — `page.waitForFunction(fn, { timeout })` passing options as the `arg` parameter — silently made every wait use the 30 s default instead of the intended 5 s. | The scripted pass failed intermittently at the dialog scenario's first Escape press (dialog never observed gone), and real failures would have waited 6× longer than designed. | The script now settles 1.5 s before every keyboard dismissal (dialog Escape, dialog Close ×, drawer Escape) so the press lands after the fixture re-application has settled — the dismissal is then the last state change — with one guarded retry against a lost key event, and every `waitForFunction` passes `undefined` for `arg` so the intended timeouts actually apply. Escape itself was never broken: probes confirmed the dialog closes on Escape and the Close × in the quiescent state. |
+| Two more probe-timing races surfaced when the pass was re-run after merging a newer main. The drawer's close button read as "dead" at 375/1280 because the probe fired during the drawer's slide-in animation, while the button's centre was still outside the viewport (`elementFromPoint` → null, the same signature as a real dead control); and the recovery-banner scenario's single focus nudge could join the still-in-flight startup health check, be consumed without a fresh probe ever seeing the aborted API, and leave the banner unraised. | Two scenarios could fail intermittently (or never raise the state they were meant to test), independent of app behaviour. | The drawer scenario now waits for the close button's centre to be inside the viewport before hit-testing it; the recovery scenario nudges focus in a bounded loop until the banner is up (extra nudges are harmless — `showOffline` is idempotent). Verified with instrumented probes that logged the button rect and `elementFromPoint` result frame by frame. |
 
 ## Accepted behaviour (checked, not changed)
 
@@ -58,7 +60,9 @@ JSON finding per check and exits non-zero on failure. Its 63 checks cover:
   in the URL, Retry cannot clear the banner because `refresh()` re-applies the
   capture fixture on success (#0782). That is capture-bookkeeping, not app
   behaviour; against a *real* failed fetch (route interception), Retry clears the
-  banner on both the desktop and mobile surfaces.
+  banner on both the desktop and mobile surfaces. The same bookkeeping applies to
+  the update dialog: a fixture re-application re-opens it, so the scripted
+  Escape/× dismissal checks settle past the initial refresh window first.
 - **Toast dismiss buttons are always reachable otherwise.** The stack never
   covers topbar or mobile tab-bar controls, sits 10 px below the topbar at all
   three widths, and toasts never overlap each other.
@@ -76,9 +80,13 @@ advance (no auto-expiry was armed).
 
 ## Verification
 
-- `bun run build` (including `vue-tsc` and the UI build) — passed.
+- `bun run build` (including `vue-tsc` and the UI build) — passed, re-run after
+  merging main into the branch (main had moved 157 commits; the merge was
+  conflict-free and touched none of this task's files beyond bookkeeping).
 - `bun docs/qa/measure-toasts-banners-dialogs.mjs` — 63 checks, 0 failed across
-  375 / 768 / 1280 px.
+  375 / 768 / 1280 px, twice consecutively on the final tree (after the two
+  harness-race fixes above; before them the same script reproduced the dialog
+  Escape failure twice in a row).
 - `bun run test -- src/ui-app/tests/toast-panel-drop.test.ts
   src/ui-app/tests/toast-panel-a11y.test.ts src/ui-app/tests/shot-preview-fixtures.test.ts
   src/ui-app/tests/ui-recovery-banner.test.ts` — 97 tests passed.
