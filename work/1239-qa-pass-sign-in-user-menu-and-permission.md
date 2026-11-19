@@ -14,9 +14,7 @@ branch: feat/qa-pass-sign-in-user-menu-and-permission
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T18:27:10Z"
-updated_at: "2026-11-19T19:19:16Z"
-review_passes: 2
-review_rounds: 1
+updated_at: "2026-11-19T18:55:27Z"
 ---
 ## Problem
 The sign-in flow, user menu and users/permissions settings have not been QA-checked together at phone, tablet and desktop widths since recent changes.
@@ -29,25 +27,6 @@ Sign-in, OTP entry, user menu and the users list work by keyboard and touch, wit
 ## Notes for AI
 Do not touch repoos.toml.
 
-## Shots
-```json
-[
-{
-"label": "OTP entry step after the sign-in fixes",
-"target": "default",
-"route": "/login",
-"highlight": ".login-form",
-"state": "auth:otp"
-},
-{
-"label": "Security tab users row with the styled role dropdown",
-"target": "default",
-"route": "/settings?tab=security",
-"highlight": ".auth-add-row"
-}
-]
-```
-
 ## Activity
 
 - 2026-11-19T18:27:10Z · created · t@t
@@ -55,19 +34,4 @@ Do not touch repoos.toml.
 - 2026-11-19T18:27:15Z · status inbox→ready
 - 2026-11-19T18:27:17Z · cli_override, model_override
 - 2026-11-19T18:27:18Z · status ready→active, branch
-- 2026-11-19T18:40:16Z · body
-- 2026-11-19T18:41:07Z · body
-- 2026-11-19T18:41:49Z · CTO nudge: held — handoff gate is running
-- 2026-11-19T18:55:26Z · note: ui verification passed: 2 of 2 shots captured with clean console
 - 2026-11-19T18:55:27Z · status active→review
-- 2026-11-19T18:55:27Z · message_queued at 2026-11-19T18:55:27.946Z
-- 2026-11-19T18:57:38Z · note: review pass 1: needs some work
-- 2026-11-19T18:57:38Z · message_delivered: 1 message(s)
-- 2026-11-19T18:57:38Z · status review→active
-- 2026-11-19T18:58:05Z · note: adopted orphaned engineer pid 25575
-- 2026-11-19T19:04:10Z · note: adopted orphaned engineer pid 25575
-- 2026-11-19T19:05:21Z · body
-- 2026-11-19T19:06:10Z · status active→review
-- 2026-11-19T19:19:15Z · note: ui verification passed: 2 of 2 shots captured with clean console
-- 2026-11-19T19:19:15Z · note: review pass 2: good to go
-- 2026-11-19T19:19:16Z · message_queued at 2026-11-19T19:19:16.294Z
