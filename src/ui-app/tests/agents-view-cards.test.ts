@@ -12,7 +12,10 @@ async function flush(): Promise<void> {
 
 describe("AgentsView agent cards", () => {
   it("exposes agent sections as keyboard-operable tabs with a single tab stop", async () => {
-    vi.stubGlobal("fetch", vi.fn(() => new Promise<Response>(() => {})));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() => new Promise<Response>(() => {})),
+    );
     const pinia = createPinia();
     setActivePinia(pinia);
     const config = useConfigStore();

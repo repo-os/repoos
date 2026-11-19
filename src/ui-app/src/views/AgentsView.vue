@@ -1140,10 +1140,9 @@ onUnmounted(() => {
                     </span>
                   </details>
                   <span v-if="r.status === 'auth'" class="detect-hint-inline">
-                    <code
-                      class="detect-hint-code"
-                      >{{ r.agent.authHint || "sign in with the CLI" }}</code
-                    >
+                    <code class="detect-hint-code">{{
+                      r.agent.authHint || "sign in with the CLI"
+                    }}</code>
                     <button
                       v-if="r.agent.authHint"
                       class="detect-copy"
@@ -1153,17 +1152,13 @@ onUnmounted(() => {
                     </button>
                   </span>
                   <span v-else-if="r.status === 'desktop'" class="detect-hint-inline">
-                    <code class="detect-hint-code">{{
-                      r.agent.installHint
-                    }}</code>
+                    <code class="detect-hint-code">{{ r.agent.installHint }}</code>
                     <button class="detect-copy" @click="copyHint(r.agent.installHint)">
                       {{ detectHintCopied === r.agent.installHint ? "copied" : "copy" }}
                     </button>
                   </span>
                   <span v-else-if="r.status === 'missing'" class="detect-hint-inline">
-                    <code class="detect-hint-code">{{
-                      r.agent.installHint
-                    }}</code>
+                    <code class="detect-hint-code">{{ r.agent.installHint }}</code>
                     <button class="detect-copy" @click="copyHint(r.agent.installHint)">
                       {{ detectHintCopied === r.agent.installHint ? "copied" : "copy" }}
                     </button>
