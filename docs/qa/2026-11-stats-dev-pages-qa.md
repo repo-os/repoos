@@ -48,15 +48,22 @@ Surfaces:
    A long unbroken subject (a pasted URL) and a deep path with one very long
    segment overflowed their boxes inside the history row at 375 px.
    `.hist-subject` and `.hist-file-path` now wrap with `overflow-wrap: anywhere`.
+5. **An artifact target's output path was clipped mid-word.** The Dev page's
+   `Output` row renders a bare `<code>` with no wrap rule (unlike `Command`
+   and the port-holder), so a deep artifact path with one very long directory
+   name overflowed its meta cell and was cut off at the card edge instead of
+   wrapping. Every bare `dd > code` in the dev meta now wraps like
+   `.dev-command`, and the test covers `.dev-meta dd > code` cells.
 
 ## Verified clean (no change needed)
 
 - **Dev page:** long target names, long commands (`.dev-command` already wraps
-  with `overflow-wrap: anywhere`), long URLs, artifact paths, holder commands,
+  with `overflow-wrap: anywhere`), long URLs, holder commands,
   per-service rows and expanded log bodies all stay inside the card at every
   width; the Start / Restart / Stop buttons keep a clickable, on-page
   bounding box at 375 px; log bodies wrap long lines and scroll vertically in
-  their own six-line box (#0814).
+  their own six-line box (#0814). The artifact output path was the one Dev
+  finding (above).
 - **Process table:** keeps its 560 px minimum row inside its own horizontal
   scroller at 375/768 px — the page never widens (the #1205 fix holds).
 - **Usage tables:** `nowrap` cells wider than a phone's panel scroll inside
@@ -72,3 +79,20 @@ Surfaces:
 `bun run test -- stats-dev-activity-qa-browser` passed, and
 `REPOOS_CHECK_CHANGED=main repoos check` passed (build, typecheck, scoped
 tests, UI smoke).
+
+## Review evidence
+
+Headless WebKit captures of every fixture at every width, taken on the fixed
+build (`QA_SHOTS=<dir> bun run test -- stats-dev-activity-qa-browser`):
+
+| Fixture | 375 px | 768 px | 1280 px |
+| --- | --- | --- | --- |
+| System Resources | [375](2026-11-stats-dev-pages-qa/system-resources-375.jpg) | [768](2026-11-stats-dev-pages-qa/system-resources-768.jpg) | [1280](2026-11-stats-dev-pages-qa/system-resources-1280.jpg) |
+| AI usage | [375](2026-11-stats-dev-pages-qa/usage-panel-375.jpg) | [768](2026-11-stats-dev-pages-qa/usage-panel-768.jpg) | [1280](2026-11-stats-dev-pages-qa/usage-panel-1280.jpg) |
+| Live activity | [375](2026-11-stats-dev-pages-qa/activity-feed-375.jpg) | [768](2026-11-stats-dev-pages-qa/activity-feed-768.jpg) | [1280](2026-11-stats-dev-pages-qa/activity-feed-1280.jpg) |
+| Dev | [375](2026-11-stats-dev-pages-qa/dev-page-375.jpg) | [768](2026-11-stats-dev-pages-qa/dev-page-768.jpg) | [1280](2026-11-stats-dev-pages-qa/dev-page-1280.jpg) |
+| Commit history | [375](2026-11-stats-dev-pages-qa/history-panel-375.jpg) | [768](2026-11-stats-dev-pages-qa/history-panel-768.jpg) | [1280](2026-11-stats-dev-pages-qa/history-panel-1280.jpg) |
+
+The Dev 375 px capture shows the fixed artifact `Output` row wrapping inside
+its meta cell, and the System Resources 375 px capture shows the four-column
+Top-processes rows with the PID visible beside a fully ellipsized command.
