@@ -26,12 +26,13 @@ function vueFiles(dir: string): string[] {
 /** Returns `file:line` for each button/link that has no accessible name. */
 function unnamedIconControls(source: string, file: string): string[] {
   const offenders: string[] = [];
-  const re = /<(button|a)\b([^>]*)>([\s\S]*?)<\/\1>/g;
+  // The open tag is quote-aware, so a `>` inside an attribute value such as
+  // `:disabled="i > 0"` does not end the tag early.
+  const re = /<(button|a)\b((?:[^>"']|"[^"]*"|'[^']*')*)>([\s\S]*?)<\/\1>/g;
   let match: RegExpExecArray | null;
   while ((match = re.exec(source))) {
     const attrs = match[2];
     const body = match[3];
-    if (/v-bind=/.test(attrs)) continue;
     if (/aria-label|aria-labelledby/.test(attrs)) continue;
     const text = body
       .replace(/<svg[\s\S]*?<\/svg>/g, "")
@@ -82,5 +83,31 @@ describe("icon-only controls have their own accessible name", () => {
       '<button type="button" title="Close" aria-label="Close" @click="x()"><X /></button>';
     expect(unnamedIconControls(bad, "fixture.vue")).toHaveLength(1);
     expect(unnamedIconControls(good, "fixture.vue")).toEqual([]);
+  });
+
+  it.each([
+    [
+      "a > inside a quoted attribute does not hide an unnamed icon button",
+      '<button type="button" :disabled="i > 0" title="Previous file" @click="prev()"><ChevronLeft /></button>',
+    ],
+    [
+      "a > inside a title does not hide an unnamed icon button",
+      "<button :title=\"a > b ? 'x' : 'y'\" @click=\"go()\"><Star /></button>",
+    ],
+    [
+      "bound attributes do not exempt an unnamed icon button",
+      '<button v-bind="attrs" title="Close"><X /></button>',
+    ],
+    [
+      "an empty img alt is not a name",
+      '<button @click="x()"><img src="/a.webp" alt="" /></button>',
+    ],
+  ])("flags an unnamed icon control: %s", (_label, markup) => {
+    expect(unnamedIconControls(markup, "fixture.vue")).toHaveLength(1);
+  });
+
+  it("accepts a quoted > when the control has its own aria-label", () => {
+    const markup = '<button :disabled="i > 0" aria-label="Previous file"><ChevronLeft /></button>';
+    expect(unnamedIconControls(markup, "fixture.vue")).toEqual([]);
   });
 });

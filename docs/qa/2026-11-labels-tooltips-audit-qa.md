@@ -8,6 +8,12 @@ This pass scanned the Vue templates under `src/ui-app/src` for three things: nat
 
 Two scans were run. The first looked for `<button>` and `<a>` elements with no visible text and no `aria-label`, `aria-labelledby`, `title` or `v-bind` (dynamic) attributes. It found none. The second looked for icon-only controls whose only name was a `title`. It found eight, of which three were `FloatingHeads` head buttons whose `<img alt>` already supplies a name. The scans are heuristic: they do not evaluate computed names, and a control built from a child component with its own name (for example an `<IconButton>` wrapper) can slip past them.
 
+## macOS Hub
+
+The task title also covers the macOS Hub, but the scans above only read the web UI. The Hub was checked by reading its Swift sources, not by running it. `macos/RepoOSHub/HubSidebarControls.swift` gives each icon-only control an `accessibilityLabel` and a `.help()` string, and `ServerSidebarView.swift`, `ServerEditorSheet.swift` and `HubSettingsView.swift` name their other icon controls the same way. Nothing looked unlabelled.
+
+The web rule against native `title` tooltips does not carry over to the Hub. `.help()` is the native macOS tooltip for a native app, so it is the correct tool there and was left unchanged.
+
 ## Native title attributes
 
 Roughly 100 `title` attributes remain in the app. They are not browser bubbles in practice. `src/ui-app/src/lib/tooltip.ts` installs one delegated, body-level tooltip that restyles any `title` (or `data-tip`) into a popup, so these are styled tooltips that use the banned attribute as their source. Replacing them all with a per-component tooltip is a large, separate refactor and was not attempted here. The convention rule (no new native `title` tooltips in new UI, see `docs/agent-ui-and-preview-conventions.md`) still applies to new code.
@@ -37,7 +43,7 @@ Observed but not changed, because each needs a product decision on the verb rath
 
 ## Tests
 
-`src/ui-app/tests/icon-control-names.test.ts` is the ratchet. It fails if any button or link in `src/ui-app/src` has no visible text and no name attribute (or non-empty `<img alt>`). It also pins the `aria-label` values of the controls fixed here and the shared full-screen diff wording. A fixture case checks that the scan itself flags a title-only icon button and accepts it once it is named.
+`src/ui-app/tests/icon-control-names.test.ts` is the ratchet. It fails if any button or link in `src/ui-app/src` has no visible text and no name attribute (or non-empty `<img alt>`). The open-tag match is quote-aware, so a `>` inside an attribute value such as `:disabled="i > 0"` cannot hide a control. Bound attributes (`v-bind`) do not exempt a control, so an unnamed control with a spread of attributes is still flagged. It also pins the `aria-label` values of the controls fixed here and the shared full-screen diff wording. Fixture cases check that the scan flags a title-only icon button, a `>` inside an attribute, a `v-bind` control with no name, and an empty `alt`, and accepts the same markup once it is named.
 
 Existing suites that cover these components still pass: `favorites`, `agent-model-memory`, `integration-status-bar`, `task-drawer-dirty-diff-button`, `diff-view-escape` and `diff-view-syntax`.
 
