@@ -52,3 +52,4 @@ Do not touch repoos.toml.
 - 2026-11-19T12:20:17Z · body
 - 2026-11-19T12:21:24Z · CTO nudge: held — handoff gate is running
 - 2026-11-19T12:23:23Z · note: ui verification failed: ui verification failed (2 issue(s)): [overflow] CLI reference: newly documented checks timings/slots, certify, migrate and rm sections: body scrollWidth 1594 > innerWidth 1024@1024px; [overflow] CLI reference: newly documented checks timings/slots, certify, migrate and rm sections: body scrollWidth 1282 > innerWidth 375@375px
+- 2026-11-19T12:23:23Z · message_queued at 2026-11-19T12:23:23.507Z
