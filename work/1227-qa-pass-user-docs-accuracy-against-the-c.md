@@ -2,14 +2,14 @@
 id: "1227"
 title: "QA pass: user-docs accuracy against the current UI and CLI"
 type: bug
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
 branch: ""
 created_at: "2026-11-19T09:47:43Z"
-updated_at: "2026-11-19T09:47:43Z"
+updated_at: "2026-11-19T09:47:47Z"
 ---
 ## Problem
 user-docs/ may describe screens, tab names, CLI flags and defaults that changed in recent releases.
@@ -25,3 +25,4 @@ Do not touch repoos.toml.
 ## Activity
 
 - 2026-11-19T09:47:43Z · created · t@t
+- 2026-11-19T09:47:47Z · status inbox→ready
