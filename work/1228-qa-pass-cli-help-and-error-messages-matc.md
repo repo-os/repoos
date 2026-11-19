@@ -1,4 +1,6 @@
 ---
+last_close_out_gate_ms: 323407
+last_close_out_gate_at: "2026-11-19T14:04:33.945Z"
 id: "1228"
 title: "QA pass: CLI help and error messages match the docs and read in plain English"
 type: bug
@@ -9,7 +11,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-cli-help-and-error-messages-matc
 created_at: "2026-11-19T11:47:39Z"
-updated_at: "2026-11-19T13:18:09Z"
+updated_at: "2026-11-19T14:04:33Z"
 review_passes: 2
 review_rounds: 1
 routing_switches: 1
@@ -78,3 +80,5 @@ Do not touch repoos.toml.
 - 2026-11-19T13:18:06Z · note: ui verification passed: 1 of 1 shot captured with clean console
 - 2026-11-19T13:18:08Z · note: review pass 2: good to go
 - 2026-11-19T13:18:09Z · message_queued at 2026-11-19T13:18:09.980Z
+- 2026-11-19T14:04:33Z · close-out gate completed in 323s
+
