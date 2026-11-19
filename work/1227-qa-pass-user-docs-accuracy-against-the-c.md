@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-19T13:25:30.704Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 updated_at: "2026-11-19T13:25:29Z"
 review_passes: 6
 id: "1227"
@@ -75,4 +77,5 @@ Do not touch repoos.toml.
 - 2026-11-19T13:23:33Z · note: shots: skipped — Docs site skipped: no docs shot declared
 - 2026-11-19T13:25:27Z · message_queued at 2026-11-19T13:25:27.638Z
 - 2026-11-19T13:25:28Z · note: review pass 6: good to go
+
 
