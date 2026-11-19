@@ -67,3 +67,4 @@ Do not touch repoos.toml.
 - 2026-11-19T04:04:33Z · body
 - 2026-11-19T04:05:53Z · body
 - 2026-11-19T04:07:05Z · status active→review
+- 2026-11-19T04:07:05Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
