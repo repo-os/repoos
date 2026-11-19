@@ -26,6 +26,7 @@ import WorkView from "../src/views/WorkView.vue";
 import StoriesView from "../src/views/StoriesView.vue";
 import { useConfigStore } from "../src/stores/config";
 import { useRepoStore } from "../src/stores/repo";
+import { router as appRouter } from "../src/router";
 import { makeTask } from "./component-test-helpers";
 import type { StoryDefinitionRecord } from "../src/types";
 
@@ -176,7 +177,8 @@ function inboxTasks(): ReturnType<typeof makeTask>[] {
       priority: n % 4 === 0 ? "p1" : "p2",
       updated_at: iso(n),
       areas: ["web"],
-      story: n % 9 === 0 ? `QA story ${String((n % STORIES_COUNT) + 1).padStart(2, "0")}` : undefined,
+      story:
+        n % 9 === 0 ? `QA story ${String((n % STORIES_COUNT) + 1).padStart(2, "0")}` : undefined,
     });
   });
 }
@@ -194,6 +196,13 @@ function makeAppRouter(): Router {
       { path: "/client-board", name: "client-board", component: div },
     ],
   });
+}
+
+/** True when an internal href resolves to a real app route. The app router's
+ *  catch-all sends unknown paths to `/`, so a dead link must not count as live. */
+function isLiveRoute(href: string): boolean {
+  const { matched } = appRouter.resolve(href);
+  return matched.length > 0 && !matched.some((record) => record.path === "/:pathMatch(.*)*");
 }
 
 function stubFetch(): void {
@@ -279,7 +288,10 @@ async function mountWorkView(
   return markup;
 }
 
-async function mountSearchMarkup(query: string, tasks: ReturnType<typeof makeTask>[]): Promise<string> {
+async function mountSearchMarkup(
+  query: string,
+  tasks: ReturnType<typeof makeTask>[],
+): Promise<string> {
   setActivePinia(createPinia());
   const repo = useRepoStore();
   repo.tasks = tasks;
@@ -346,8 +358,16 @@ describe.skipIf(!existsSync(webkit.executablePath()))(
     }
 
     /** Every visible element must sit inside the viewport, except content a
-     *  horizontal scroller legitimately clips or a closed <details> hides. */
-    async function audit(page: Page): Promise<{ documentWidth: number; overflowers: string[] }> {
+     *  horizontal scroller legitimately clips or a closed <details> hides.
+     *  Controls get a stricter rule: a button, link, select or input inside a
+     *  scroller (or any overflow-clipped box) must be fully visible in it, because
+     *  a clipped filter is a control the reader cannot find (#1237). */
+    async function audit(page: Page): Promise<{
+      documentWidth: number;
+      overflowers: string[];
+      clippedControls: string[];
+      links: string[];
+    }> {
       return page.evaluate(() => {
         const vw = window.innerWidth;
         const inHorizontalScroller = (start: Element | null): boolean => {
@@ -365,6 +385,8 @@ describe.skipIf(!existsSync(webkit.executablePath()))(
           const details = el.closest("details");
           return details !== null && !details.open;
         };
+        const describe = (el: Element): string =>
+          `${el.tagName.toLowerCase()}${el.className ? `.${String(el.className).split(" ").join(".")}` : ""}`;
         const overflowers: string[] = [];
         for (const el of document.body.querySelectorAll<HTMLElement>("*")) {
           const style = getComputedStyle(el);
@@ -376,20 +398,61 @@ describe.skipIf(!existsSync(webkit.executablePath()))(
           if (rect.width === 0 || rect.height === 0) continue;
           if (rect.right > vw + 1 || rect.left < -1) {
             overflowers.push(
-              `${el.tagName.toLowerCase()}${el.className ? `.${String(el.className).split(" ").join(".")}` : ""} at ${Math.round(rect.left)}..${Math.round(rect.right)}`,
+              `${describe(el)} at ${Math.round(rect.left)}..${Math.round(rect.right)}`,
             );
           }
         }
-        return { documentWidth: document.documentElement.scrollWidth, overflowers };
+        const clippedControls: string[] = [];
+        const controls = document.body.querySelectorAll<HTMLElement>(
+          "button, a[href], select, input, [role='combobox'], [role='button']",
+        );
+        for (const el of controls) {
+          const style = getComputedStyle(el);
+          if (style.display === "none" || style.visibility === "hidden") continue;
+          if (inClosedDetails(el)) continue;
+          if (!el.offsetParent && style.position !== "fixed") continue;
+          const rect = el.getBoundingClientRect();
+          if (rect.width === 0 || rect.height === 0) continue;
+          for (let p = el.parentElement; p; p = p.parentElement) {
+            const ps = getComputedStyle(p);
+            if (/(auto|scroll|hidden|clip)/.test(ps.overflowX)) {
+              const box = p.getBoundingClientRect();
+              if (rect.left < box.left - 1 || rect.right > box.right + 1) {
+                clippedControls.push(
+                  `${describe(el)} "${(el.textContent ?? "").trim().slice(0, 30)}" clipped by ${describe(p)}`,
+                );
+                break;
+              }
+            }
+            // A fixed box is laid out against the viewport, so no ancestor's
+            // scroll box clips it (the story and task drawers are fixed).
+            if (ps.position === "fixed") break;
+          }
+        }
+        const links = Array.from(
+          document.body.querySelectorAll("a[href^='/']"),
+          (a) => a.getAttribute("href") ?? "",
+        );
+        return {
+          documentWidth: document.documentElement.scrollWidth,
+          overflowers,
+          clippedControls,
+          links,
+        };
       });
     }
 
     async function expectFits(page: Page, what: string, width: number): Promise<void> {
       const result = await audit(page);
       expect(result.overflowers, `${what} at ${width}px has off-viewport elements`).toEqual([]);
+      expect(result.clippedControls, `${what} at ${width}px clips a control`).toEqual([]);
       expect(result.documentWidth, `${what} at ${width}px widens the document`).toBeLessThanOrEqual(
         width + 1,
       );
+      // A dead link lands on the catch-all redirect (`/`) rather than failing, so
+      // resolve each internal href and insist it matches a real route.
+      const dead = result.links.filter((href) => !isLiveRoute(href));
+      expect(dead, `${what} at ${width}px links to a route that does not exist`).toEqual([]);
     }
 
     /* ── 1. Stories list: 32 cards built from 256 tasks ──────────────────── */
@@ -407,8 +470,8 @@ describe.skipIf(!existsSync(webkit.executablePath()))(
             firstName: document.querySelector(".story-name")?.textContent ?? "",
             longestExcerpt: Math.max(
               0,
-              ...Array.from(document.querySelectorAll(".story-excerpt")).map((el) =>
-                (el.textContent ?? "").length,
+              ...Array.from(document.querySelectorAll(".story-excerpt")).map(
+                (el) => (el.textContent ?? "").length,
               ),
             ),
             chips: document.querySelectorAll(".story-chip").length,
@@ -461,11 +524,7 @@ describe.skipIf(!existsSync(webkit.executablePath()))(
         const completeMarkup = await mountStoriesView(doneTasks, storyDefinitions(), {
           hideCompleted: true,
         });
-        const pageComplete = await openFixturePage(
-          "stories-all-complete",
-          completeMarkup,
-          width,
-        );
+        const pageComplete = await openFixturePage("stories-all-complete", completeMarkup, width);
         try {
           await expectFits(pageComplete, "stories all-complete state", width);
           const text = await pageComplete.evaluate(() => document.body.textContent ?? "");
@@ -496,7 +555,8 @@ describe.skipIf(!existsSync(webkit.executablePath()))(
               open: panel !== null,
               text: panel?.textContent ?? "",
               tabs: panel?.querySelectorAll(".drawer-tabs .tab-btn").length ?? 0,
-              rows: panel?.querySelectorAll(".task-row, .story-task-row, [data-task-id]").length ?? 0,
+              rows:
+                panel?.querySelectorAll(".task-row, .story-task-row, [data-task-id]").length ?? 0,
             };
           });
           expect(state.open, "story panel must be open in the fixture").toBe(true);
@@ -558,17 +618,36 @@ describe.skipIf(!existsSync(webkit.executablePath()))(
       const page = await openFixturePage("inbox-phone", markup, 375, true);
       try {
         await expectFits(page, "inbox phone queue", 375);
-        const state = await page.evaluate(() => ({
-          count: document.querySelector('[data-testid="mobile-queue-count"]')?.textContent ?? "",
-          rows: document.querySelectorAll(".mobile-task-card").length,
-          search: document.querySelector('[data-testid="mobile-queue-search"]') !== null,
-          statusFilter:
-            document.querySelector('.mobile-status-filter [aria-label="Filter tasks by status"]') !==
-            null,
-        }));
+        const state = await page.evaluate(() => {
+          // Every quick filter must sit fully inside the phone viewport: a
+          // scrolled-off Area or Story select is a filter the reader cannot reach.
+          const inView = (selector: string): boolean => {
+            const el = document.querySelector(selector);
+            if (!el) return false;
+            const r = el.getBoundingClientRect();
+            return r.left >= 0 && r.right <= window.innerWidth;
+          };
+          return {
+            count: document.querySelector('[data-testid="mobile-queue-count"]')?.textContent ?? "",
+            rows: document.querySelectorAll(".mobile-task-card").length,
+            search: document.querySelector('[data-testid="mobile-queue-search"]') !== null,
+            statusFilter:
+              document.querySelector(
+                '.mobile-status-filter [aria-label="Filter tasks by status"]',
+              ) !== null,
+            areaFilterInView: inView('[aria-label="Filter tasks by area"]'),
+            storyFilterInView: inView('[aria-label="Filter tasks by story"]'),
+          };
+        });
         expect(state.count).toMatch(/of 220 tasks/);
         expect(state.search).toBe(true);
         expect(state.statusFilter).toBe(true);
+        expect(state.areaFilterInView, "Area filter is scrolled out of the phone viewport").toBe(
+          true,
+        );
+        expect(state.storyFilterInView, "Story filter is scrolled out of the phone viewport").toBe(
+          true,
+        );
         expect(state.rows).toBeGreaterThan(12);
       } finally {
         await page.close();
