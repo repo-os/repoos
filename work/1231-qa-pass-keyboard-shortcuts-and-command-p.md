@@ -3,19 +3,22 @@ id: "1231"
 title: "QA pass: keyboard shortcuts and command palette across pages"
 type: bug
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "OpenCode exited with an error. Open Raw CLI error for details. (CLI: ✗ Server finalization stopped at review: Engineering report must begin with ## TL;DR; remove any text before it.. The same worktree can be resumed and retried.)"
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-keyboard-shortcuts-and-command-p
 created_at: "2026-11-19T13:47:53Z"
-updated_at: "2026-11-19T15:49:36Z"
+updated_at: "2026-11-19T15:49:38Z"
 last_check_failure: "repoos check at 2026-11-19T15:37:14.041Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Command palette open over the work board (stacks above drawers, consumes Esc) (target \"default\"): loading state detected: loading indicator [aria-busy=\"true\"] on /work (http://127.0.0.1:43037/work)"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
 handoff_signal_retry_count: 2
-dev_error_count: 2
+dev_error_count: 3
 engineer_stall_resume_log: "[{\"at\":\"2026-11-19T14:18:11.944Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-19T15:02:12.103Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
 ## Problem
@@ -121,3 +124,4 @@ Do not touch repoos.toml.
 - 2026-11-19T15:48:14Z · message_delivered: 1 message(s)
 - 2026-11-19T15:49:36Z · note: stopped orphaned engineer pid 78856
 - 2026-11-19T15:49:36Z · note: stopped orphaned engineer pid 78856
+- 2026-11-19T15:49:38Z · agent exited with an error (opencode) · OpenCode exited with an error. Open Raw CLI error for details. (CLI: ✗ Server finalization stopped at review: Engineering report must begin with ## TL;DR; remove any text before it.. The same worktree can be resumed and retried.)
