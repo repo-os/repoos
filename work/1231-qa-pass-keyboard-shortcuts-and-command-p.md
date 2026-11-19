@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-keyboard-shortcuts-and-command-p
 created_at: "2026-11-19T13:47:53Z"
-updated_at: "2026-11-19T16:52:39Z"
+updated_at: "2026-11-19T16:59:35Z"
 last_close_out_gate_ms: 569488
 last_close_out_gate_at: "2026-11-19T16:52:11.809Z"
 check_retry_count: 1
@@ -169,3 +169,4 @@ Do not touch repoos.toml.
 - 2026-11-19T16:42:22Z · message_queued at 2026-11-19T16:42:22.978Z
 - 2026-11-19T16:52:11Z · close-out gate completed in 569s
 - 2026-11-19T16:52:39Z · status done→done, release:success
+- 2026-11-19T16:59:35Z · message_dropped: 1 queued message(s) discarded — task is done
