@@ -2,24 +2,26 @@
 
 ## Scope and method
 
-Reviewed the Agents, Checks and Releases views for first-load, empty and failed-load behavior. Used the existing UI fixtures and focused Vitest view tests in this worktree. No visible browser was opened. The focused suite completed with 123 tests passing across Agents, Checks, Releases and release status.
+Reviewed Agents, Checks and Releases for empty, first-load, and failed-load behavior. Used headless Playwright with deterministic API route fixtures against the managed task preview; no visible browser was opened. The focused UI suite covers the view state behavior.
 
-## Results
+## State results
 
-| Page | Empty | Loading | Error | Result |
-| --- | --- | --- | --- | --- |
-| Agents | `agents:empty` shows “No agents are set up for this project” and offers the built-in agent choices without changing saved config. | An unresolved config request keeps the page title and tabs usable and shows the card skeleton; secondary tabs wait for loaded config. | Per-CLI model lookup and model test failures show actionable inline guidance and retry paths. | Pass. Existing coverage exercises empty, loading and model-error cases. |
-| Checks | A valid zero-step plan gets the setup reminder; no recorded run has a neutral explanation. | The plan skeleton is shown only when there is no cached plan; a cached plan remains usable during refresh. | A refresh failure preserves cached plan content and reports “Refresh failed”. A first-load failure uses an alert role. | Pass. Added regression assertion for the cached refresh status role. |
-| Releases | Disabled release configuration explains how to enable the page. Empty distribution data does not create a misleading channel card. | The page and distribution channel cards use skeletons during first load; refresh retains current data. | Initial status failure uses an alert role; failed refreshes are announced while retaining loaded status. Distribution refresh failures remain inline. | Pass. Initial load alert semantics were made consistent with Checks. |
+| Page | Empty | Loading | Error and recovery |
+| --- | --- | --- | --- |
+| Agents | `agents:empty` explains that no agents are configured and offers built-in choices without changing saved config. | A pending `/api/config` keeps the page title, tabs, and card skeleton visible. | A failed `/api/config` now replaces the skeleton with an alert and Retry. The initial raw server detail is hidden from the page subtitle. |
+| Checks | An empty plan with `source: "empty"` and no steps shows “No checks configured”; no recorded run has its own neutral explanation. | A pending `/api/check-plan` shows the plan skeleton. Cached plan data remains visible on refresh. | A failed first load is announced as an alert; failed refreshes with cached content remain a status update. |
+| Releases | A disabled release configuration explains how to enable the page. | A pending `/api/release` shows the page skeleton. | Failed initial status is an alert; refresh failures retain loaded status and use a status announcement. |
 
-## Viewport review
+## Headless Playwright viewport review
 
-The requested widths are 375, 768 and 1280 CSS pixels. The changed-path RepoOS check passed its configured headless UI smoke test. Its output reports Checks tabs at 320, 390 and 1440 px in light and dark mode. It does not report runs at the requested 375, 768 and 1280 px, nor viewport results for Agents and Releases. The task worktree has no managed preview request, and its instructions prohibit launching `repoos serve`; I therefore do not claim those viewport checks were completed. No new layout styling was required by the state review.
+Captured all three states on all three pages at 375×900, 768×900, and 1280×900 CSS pixels: 27 viewport captures total. Pending fixtures held their primary API request open until capture; error fixtures returned a deterministic 503. The empty fixtures supplied no agent config, an empty valid check plan, and a disabled release status.
+
+All 27 expected state elements appeared. Playwright observed no uncaught page errors, and both `documentElement.scrollWidth` and `body.scrollWidth` were at or below the configured viewport width for every capture. I inspected representative mobile screenshots: Agents' retry card wraps cleanly; the Checks reminder remains in scrollable page content above the bottom navigation; and Releases' loading skeleton fits the viewport. Screenshots and machine-readable results are retained in the ignored `.repoos/qa-evidence/1216/` directory.
 
 ## Changes
 
-Initial load failures on Checks and Releases now carry `role="alert"`, matching the urgency of a page that could not load any usable content. Checks retains `role="status"` for a refresh failure because the cached plan remains available. The checks view regression test locks in that distinction. Agents already exposes its setup, loading and model failure states in plain language and remained unchanged.
+The viewport pass exposed an Agents bug: if initial `/api/config` loading failed, the view stayed on its skeleton with no recovery path. Agents now renders a plain-English alert with a Retry button and suppresses the raw initial config error from its subtitle. Checks and Releases initial load failures now carry `role="alert"`; refresh failures with cached data retain `role="status"`.
 
-## Follow-up
+## Limits
 
-If visual viewport evidence is needed, capture the three pages at 375, 768 and 1280 px through the managed headless preview workflow when requested. No live external service failure was simulated; API failures were deterministic test fixtures/stubs.
+The API failures above are simulated route fixtures, not live service failures. RepoOS's separate headless UI smoke test also passed, but the 27 captures above are the evidence for the requested page states and widths.

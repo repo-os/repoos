@@ -11058,6 +11058,32 @@
   border-radius: 12px;
   background: var(--panel);
 }
+.agents-load-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 14px;
+  padding: 13px 15px;
+  border: 1px solid var(--error-border, var(--border));
+  border-radius: 12px;
+  background: var(--panel);
+}
+.agents-load-error h2 {
+  margin: 0;
+  color: var(--txt);
+  font-size: 14px;
+}
+.agents-load-error p {
+  margin: 4px 0 0;
+  color: var(--txt-muted);
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+.agents-load-error button {
+  min-height: 42px;
+  flex: none;
+}
 .agents-first-run-copy {
   min-width: 0;
 }
@@ -11501,6 +11527,10 @@
     padding-bottom: var(--page-bottom-inset);
   }
   .agents-first-run {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+  .agents-load-error {
     align-items: flex-start;
     flex-wrap: wrap;
   }
