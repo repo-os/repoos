@@ -2,7 +2,7 @@
 id: "1236"
 title: "Easter eggs bundle: bound LoginView auth fetches (slow-server login spinner)"
 type: bug
-status: inbox
+status: ready
 paths: [src/ui-app/src/views/LoginView.vue]
 priority: p3
 area: web
@@ -11,7 +11,7 @@ assigned_to: ai
 created_by: t@t
 branch: ""
 created_at: "2026-11-19T16:18:14Z"
-updated_at: "2026-11-19T16:24:11Z"
+updated_at: "2026-11-19T16:47:31Z"
 ---
 ## Problem
 QA pass #1226 bounded the boot-gating fetches in the web app, but `LoginView.checkStatus` still issues its own unbounded `fetch("/api/auth/status")` and `/api/auth/me` with no `AbortSignal` — a stalled connection leaves the login page's spinner up until the browser's default timeout, the same unbounded-fetch class the pass fixed elsewhere.
@@ -35,3 +35,4 @@ When the server is slow or unreachable, the login page shows a plain-English sta
 - 2026-11-19T16:18:24Z · body: Problem (added); Desired UX (added); Acceptance criteria (added); Notes for AI (added)
 - 2026-11-19T16:18:24Z · needs_input
 - 2026-11-19T16:24:11Z · title
+- 2026-11-19T16:47:31Z · status inbox→ready
