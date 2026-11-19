@@ -23,22 +23,29 @@ function vueFiles(dir: string): string[] {
   });
 }
 
+/**
+ * One quote-aware tag body: any run of characters that ends at the first `>`
+ * outside a quoted attribute value, so `:disabled="i > 0"` or
+ * `v-if="count > 0"` never end a tag early. Used for every tag the scan reads.
+ */
+const TAG_BODY = `(?:[^>"']|"[^"]*"|'[^']*')*`;
+
 /** Returns `file:line` for each button/link that has no accessible name. */
 function unnamedIconControls(source: string, file: string): string[] {
   const offenders: string[] = [];
-  // The open tag is quote-aware, so a `>` inside an attribute value such as
-  // `:disabled="i > 0"` does not end the tag early.
-  const re = /<(button|a)\b((?:[^>"']|"[^"]*"|'[^']*')*)>([\s\S]*?)<\/\1>/g;
+  const controlRe = new RegExp(`<(button|a)\\b(${TAG_BODY})>([\\s\\S]*?)<\\/\\1>`, "g");
+  const tagRe = new RegExp(`<\\/?[A-Za-z]${TAG_BODY}>`, "g");
+  const imgRe = new RegExp(`<img\\b(${TAG_BODY})>`, "g");
   let match: RegExpExecArray | null;
-  while ((match = re.exec(source))) {
+  while ((match = controlRe.exec(source))) {
     const attrs = match[2];
     const body = match[3];
     if (/aria-label|aria-labelledby/.test(attrs)) continue;
     const text = body
       .replace(/<svg[\s\S]*?<\/svg>/g, "")
       .replace(/<!--[\s\S]*?-->/g, "")
-      .replace(/<img\b[^>]*\balt="[^"]+"[^>]*>/g, "x")
-      .replace(/<[^>]+>/g, "")
+      .replace(imgRe, (img, imgAttrs: string) => (/\balt="[^"]+"/.test(imgAttrs) ? "x" : img))
+      .replace(tagRe, "")
       .replace(/\{\{[\s\S]*?\}\}/g, "x")
       .trim();
     if (text.length) continue;
@@ -101,6 +108,18 @@ describe("icon-only controls have their own accessible name", () => {
     [
       "an empty img alt is not a name",
       '<button @click="x()"><img src="/a.webp" alt="" /></button>',
+    ],
+    [
+      "a > inside a child element's v-if does not hide an unnamed icon button",
+      '<button title="Next" @click="go()"><span v-if="count > 0"><ChevronRight /></span></button>',
+    ],
+    [
+      "a > inside a child element's :class ternary does not hide an unnamed icon button",
+      '<button title="Next" @click="go()"><span :class="i > 0 ? \'on\' : \'off\'"><ChevronRight /></span></button>',
+    ],
+    [
+      "a > inside a child img attribute does not hide an unnamed icon button",
+      '<button title="Next" @click="go()"><img v-if="n > 1" src="/a.webp" /></button>',
     ],
   ])("flags an unnamed icon control: %s", (_label, markup) => {
     expect(unnamedIconControls(markup, "fixture.vue")).toHaveLength(1);
