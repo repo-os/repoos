@@ -11,7 +11,7 @@ branch: feat/qa-pass-agents-page-failure-copy-after-t
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T20:07:21Z"
-updated_at: "2026-11-19T20:40:43Z"
+updated_at: "2026-11-19T20:55:38Z"
 ---
 ## Problem
 After switching model routing to Jev, the Agents page routing tab and decisions list need a check for the missing-key and provider-failure wording and a recent-decisions list that is empty or all failures.
@@ -46,3 +46,4 @@ Do not touch repoos.toml.
 - 2026-11-19T20:27:28Z · body
 - 2026-11-19T20:28:49Z · CTO nudge: held — handoff gate is running
 - 2026-11-19T20:40:43Z · CTO nudge: held — handoff gate is running
+- 2026-11-19T20:55:38Z · note: ui verification passed: 1 of 1 shot captured with clean console
