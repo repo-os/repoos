@@ -59,6 +59,10 @@ export const SHOT_PREVIEW_FIXTURE_IDS = [
   "work:empty",
   // #1183 — initial task-index request failed; show the recoverable error state.
   "work:failedLoad",
+  // #1226 — /api/config failed (offline, 500, slow); Agents and Settings show
+  // the shared plain-English load-error panel with Retry instead of a skeleton.
+  "agents:loadFailed",
+  "settings:loadFailed",
   // #1183 — Agents page with no configured built-in or custom roles.
   "agents:empty",
   // #1224 — Checks plan tab on a brand-new repo: genuinely empty, error-free

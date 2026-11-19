@@ -3019,6 +3019,9 @@ export function isShotPreviewConfigFixture(fixture: ShotPreviewFixtureId): boole
     fixture === "editor:unconfigured" ||
     fixture === "budget:paused" ||
     fixture === "settings:motionOff" ||
+    // #1226 — pins the store into the failed-load state the panels react to.
+    fixture === "agents:loadFailed" ||
+    fixture === "settings:loadFailed" ||
     fixture in SETTINGS_FIXTURE_STYLE
   );
 }
@@ -3027,6 +3030,14 @@ export function applyShotPreviewConfigFixture(
   config: ConfigStore,
   fixture: ShotPreviewFixtureId,
 ): void {
+  if (fixture === "agents:loadFailed" || fixture === "settings:loadFailed") {
+    // #1226 — pin the store into the state a failed `/api/config` leaves it
+    // in, so the capture shows the recoverable load-error panel, not a
+    // skeleton that would never resolve. Capture-only: nothing is persisted.
+    config.error = SERVER_UNREACHABLE_MESSAGE;
+    config.loaded = false;
+    return;
+  }
   if (fixture === "pages:scroll") {
     if (config.data) config.data.stories = { enabled: true };
     return;

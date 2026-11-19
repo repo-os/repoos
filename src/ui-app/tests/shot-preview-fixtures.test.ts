@@ -80,6 +80,21 @@ describe("shot preview board fixtures (#0743)", () => {
     expect(repo.boardLoadError).toBe(error);
   });
 
+  it.each(["agents:loadFailed", "settings:loadFailed"] as const)(
+    "seeds the %s recoverable load-error panel state (#1226)",
+    (fixture) => {
+      setActivePinia(createPinia());
+      const config = useConfigStore();
+      config.loaded = true;
+      config.error = "";
+      applyShotPreviewConfigFixture(config, fixture);
+      // Both panels render on `!config.loaded && config.error`; nothing is
+      // persisted, so a healthy reload clears it.
+      expect(config.loaded).toBe(false);
+      expect(config.error).toBe(SERVER_UNREACHABLE_MESSAGE);
+    },
+  );
+
   it("pins a newer-release payload for the release:updateAvailable dialog shot (#1073)", () => {
     setActivePinia(createPinia());
     const repo = useRepoStore();

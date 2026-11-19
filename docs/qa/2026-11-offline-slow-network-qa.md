@@ -54,8 +54,13 @@ when Playwright/WebKit is not installed, like the other browser gates.
    session and verified here). The tab strip rendered but the panel body waited
    on a config that would never arrive. It now shows "Couldn't load settings"
    with Retry and suppresses the skeleton once the failure is known; the same
-   panel is shared with Agents. Unit tests: `settings-load-error.test.ts`,
-   `agents-view-cards.test.ts`.
+   panel is shared with Agents (`.page-load-error`). Unit tests:
+   `settings-load-error.test.ts`, `agents-view-cards.test.ts`.
+
+For review, the two panels are captureable on a healthy preview via the new
+shot-state fixtures `settings:loadFailed` and `agents:loadFailed`
+(`src/core/shot-fixtures.ts`, capture-only and unpersisted); Work already had
+`work:failedLoad`.
 
 ## Matrix actually exercised
 
