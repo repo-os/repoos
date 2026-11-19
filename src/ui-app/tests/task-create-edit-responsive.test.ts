@@ -4,8 +4,6 @@ import { createPinia, setActivePinia } from "pinia";
 import { createMemoryHistory, createRouter } from "vue-router";
 import { defineComponent, h, nextTick, ref } from "vue";
 import TaskDrawer from "../src/components/TaskDrawer.vue";
-import AreaPicker from "../src/components/AreaPicker.vue";
-import Select from "../src/components/ui/select/root.vue";
 import TaskDependencyPicker from "../src/components/TaskDependencyPicker.vue";
 import { useConfigStore } from "../src/stores/config";
 import { useRepoStore } from "../src/stores/repo";
@@ -67,6 +65,19 @@ async function setViewport(width: number): Promise<void> {
   await nextTick();
 }
 
+function pointerDown(element: HTMLElement): void {
+  Object.defineProperties(element, {
+    hasPointerCapture: { configurable: true, value: () => false },
+    setPointerCapture: { configurable: true, value: () => {} },
+  });
+  element.dispatchEvent(new MouseEvent("pointerdown", { button: 0, bubbles: true }));
+}
+
+function pointerClick(element: HTMLElement): void {
+  pointerDown(element);
+  element.dispatchEvent(new MouseEvent("pointerup", { button: 0, bubbles: true }));
+}
+
 afterEach(() => {
   vi.unstubAllGlobals();
   document.body.innerHTML = "";
@@ -91,31 +102,67 @@ describe.each(VIEWPORTS)("task create/edit interactions at %i px", (width) => {
       expect(wrapper.find("#nt-body").exists()).toBe(true);
       expect(wrapper.find("#nt-dependencies").exists()).toBe(true);
       expect(wrapper.get(".btn-row button:last-child").attributes("disabled")).toBeUndefined();
-      ui.nt.dependsOn = ["0002"];
+      const prerequisite = wrapper
+        .findAll(".task-dependency-picker .dependency-option")
+        .find((option) => option.text().includes("Prerequisite"));
+      expect(prerequisite).toBeDefined();
+      await prerequisite!.trigger("click");
       expect(ui.nt.dependsOn).toEqual(["0002"]);
 
-      const areaTrigger = wrapper.get("#nt-area");
-      await areaTrigger.trigger("click");
+      await wrapper.get("#nt-area").trigger("click");
       await flush();
-      wrapper.findComponent(AreaPicker).vm.$emit("update:modelValue", ["web"]);
+      const docsOption = [...document.querySelectorAll('[role="option"]')].find(
+        (option) => option.textContent?.trim() === "docs",
+      );
+      expect(docsOption).toBeDefined();
+      docsOption!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
       await flush();
-      expect(ui.nt.area).toBe("web");
+      expect(ui.nt.area).toBe("web, docs");
+      await wrapper.get("#nt-area").trigger("click");
+      await flush();
 
-      wrapper
+      const priorityField = wrapper
         .findAll(".field")
-        .find((field) => field.text().includes("Priority"))!
-        .findComponent(Select)
-        .vm.$emit("update:modelValue", "p1");
+        .find((field) => field.text().includes("Priority"))!;
+      pointerClick(priorityField.get('[role="combobox"]').element as HTMLElement);
+      await flush();
+      const p1Option = [...document.querySelectorAll('[role="option"]')].find(
+        (option) => option.textContent?.trim() === "p1",
+      );
+      expect(p1Option).toBeDefined();
+      pointerClick(p1Option as HTMLElement);
       await flush();
       expect(ui.nt.priority).toBe("p1");
 
-      const shot = new File(["fixture image bytes"], "responsive.png", { type: "image/png" });
-      ui.pendingScreenshots.push({
-        name: shot.name,
-        mime: shot.type,
-        dataUrl: "data:image/png;base64,Zml4dHVyZQ==",
-        size: shot.size,
-      });
+      const shot = new File(
+        [
+          Uint8Array.from(
+            atob(
+              "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p1sAAAAASUVORK5CYII=",
+            ),
+            (c) => c.charCodeAt(0),
+          ),
+        ],
+        "responsive.png",
+        { type: "image/png" },
+      );
+      class FixtureFileReader {
+        result: string | ArrayBuffer | null = null;
+        onload: (() => void) | null = null;
+        readAsDataURL(file: Blob): void {
+          this.result = `data:${file.type};base64,fixture`;
+          queueMicrotask(() => this.onload?.());
+        }
+      }
+      vi.stubGlobal("FileReader", FixtureFileReader);
+      const screenshotInput = wrapper.get('.shot-dropzone input[type="file"]').element;
+      Object.defineProperty(screenshotInput, "files", { configurable: true, value: [shot] });
+      screenshotInput.dispatchEvent(new Event("change", { bubbles: true }));
+      for (let attempt = 0; attempt < 10 && !ui.pendingScreenshots.length; attempt++) {
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      }
+      await flush();
+      expect(wrapper.text()).toContain("responsive.png");
       expect(ui.pendingScreenshots.map((item) => item.name)).toContain("responsive.png");
       await wrapper.get(".btn-row button:last-child").trigger("click");
       await flush();
@@ -123,7 +170,7 @@ describe.each(VIEWPORTS)("task create/edit interactions at %i px", (width) => {
         expect.objectContaining({
           title: "Responsive fixture task",
           priority: "p1",
-          area: "web",
+          area: "web, docs",
           dependsOn: ["0002"],
         }),
       );
@@ -153,17 +200,29 @@ describe.each(VIEWPORTS)("task create/edit interactions at %i px", (width) => {
       // The standalone dependency-picker fixture exercises add/remove; seed
       // the edit draft here so save persists its selected prerequisite.
 
+      await wrapper.get(".task-dependency-picker .dependency-option").trigger("click");
       await wrapper.get("#et-area").trigger("click");
       await flush();
-      wrapper.findComponent(TaskDependencyPicker).vm.$emit("update:modelValue", ["0002"]);
-      wrapper.findComponent(AreaPicker).vm.$emit("update:modelValue", ["web", "docs"]);
+      const docsOption = [...document.querySelectorAll('[role="option"]')].find(
+        (option) => option.textContent?.trim() === "docs",
+      );
+      expect(docsOption).toBeDefined();
+      docsOption!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      await flush();
+      await wrapper.get("#et-area").trigger("click");
       await flush();
 
-      wrapper
+      const priorityField = wrapper
         .findAll(".field")
-        .find((field) => field.text().includes("Priority"))!
-        .findComponent(Select)
-        .vm.$emit("update:modelValue", "p0");
+        .find((field) => field.text().includes("Priority"))!;
+      pointerClick(priorityField.get('[role="combobox"]').element as HTMLElement);
+      await flush();
+      const p0Option = [...document.querySelectorAll('[role="option"]')].find(
+        (option) => option.textContent?.trim() === "p0",
+      );
+      expect(p0Option).toBeDefined();
+      pointerClick(p0Option as HTMLElement);
+      await flush();
       await wrapper.get(".save-bar button:last-child").trigger("click");
       await flush();
       expect(patch).toHaveBeenCalledWith(

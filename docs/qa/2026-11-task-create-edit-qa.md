@@ -2,22 +2,21 @@
 
 ## Scope and method
 
-The fixture-driven task drawer interaction suite runs at 375 px (phone), 768 px (tablet) and 1280 px (desktop). It mounts the real `TaskDrawer` component with Vue test utilities, sets each viewport width, stubs repository writes, and drives the manual create and details edit flows. A separate headless WebKit browser test checks dependency-picker overflow at each same width. No visible browser was opened.
+The fixture driven interaction suite mounts the production `TaskDrawer` component and runs its create and edit flows at 375 px, 768 px, and 1280 px. It drives the rendered title, priority, area, depends on, screenshot file input, and save controls while repository writes are fixture mocked. A separate headless WebKit test renders the actual drawer DOM captured from `TaskDrawer`, injects the Vite compiled global stylesheet and the Vue compiled `TaskDrawer` scoped stylesheet, and measures the drawer and visible controls at each width. No visible browser was opened.
 
 ## Checked
 
-- At each width, manual task creation starts with an empty title and a disabled Create action; entering a title enables it.
-- The create fixture renders title, optional body, type, priority, area, assignee, depends-on and screenshot controls. The form saves the selected title, priority, area and prerequisite fixture through the repository store.
-- The create fixture queues a pending PNG screenshot and verifies it is uploaded to the created task ID.
-- At each width, the details fixture saves priority, area and prerequisite changes for the open task.
-- At each width, the dependency-picker fixture selects and removes a prerequisite using the picker's visible option and remove buttons.
-- The headless WebKit overflow fixture checks long dependency titles stay inside the picker at all three widths.
-- Existing tests cover dependency filtering/self-exclusion, title edit keyboard save/cancel, priority/type validation, and screenshot dropzone file input behavior.
+- At all three widths, the manual create form requires a title before enabling Create, then saves the entered title, selected priority, selected area, and selected prerequisite through the repository store.
+- The area and priority values are chosen through the rendered picker triggers and options. The prerequisite is selected and removed through the task dependency picker.
+- The screenshot fixture is supplied through the rendered screenshot file input. The test waits for the file reader callback and verifies the queued image is sent to the created task ID.
+- At all three widths, the edit form changes priority, area, and prerequisite through rendered controls and verifies the task patch.
+- The WebKit geometry check uses the actual create and edit drawer markup and production styles. It measures drawer bounds, document/body overflow, and each visible control’s bounds against the viewport.
+- Existing tests continue to cover dependency filtering and self exclusion, keyboard title edit save/cancel, priority/type validation, and screenshot dropzone behavior.
 
 ## Findings and changes
 
-The earlier pass only added tablet coverage to the static picker overflow check. Review correctly identified that this did not cover create/edit flows. Added `task-create-edit-responsive.test.ts` with fixture-backed create, edit, field update, prerequisite selection/removal and screenshot upload assertions across all three target widths. The test uses component interactions and a mocked repository; it does not claim a live server or actual file upload.
+The initial responsive pass treated jsdom viewport properties as layout evidence and queued screenshots directly in the store. Those checks could prove component state transitions but not actual geometry or file input wiring. The updated interaction suite now uses the drawer’s visible area and priority pickers and sends its PNG fixture through the actual file input. The separate WebKit measurement is based on the production drawer component and compiled styles rather than a handcrafted form with copied picker CSS.
 
 ## Limits
 
-The create/edit interaction matrix is component-level with the viewport width set in the DOM test environment. The WebKit browser test measures actual rendered picker overflow, not the entire drawer layout. Screenshot upload is verified through the queued fixture and mocked store method. No physical device, authenticated live server or external upload service was used.
+The interaction suite uses mocked repository writes; it does not claim a live server or external upload service. WebKit validates the rendered drawer geometry and visible control bounds, while the component suite validates control interactions. No physical device or authenticated live service was used.
