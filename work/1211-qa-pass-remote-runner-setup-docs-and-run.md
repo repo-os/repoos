@@ -2,14 +2,14 @@
 id: "1211"
 title: "QA pass: remote runner setup docs and runner health screens vs real bee/thinkpad/mini behavior"
 type: bug
-status: active
+status: review
 priority: p2
 area: [web, docs]
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-remote-runner-setup-docs-and-run
 created_at: "2026-11-19T00:17:32Z"
-updated_at: "2026-11-19T02:15:45Z"
+updated_at: "2026-11-19T02:15:46Z"
 handoff_signal_retry_count: 1
 review_rounds: 2
 routing_switches: 1
@@ -77,3 +77,4 @@ Do not touch repoos.toml.
 - 2026-11-19T01:56:26Z · note: handoff requested (cli)
 - 2026-11-19T02:01:12Z · CTO nudge: held — handoff gate is running
 - 2026-11-19T02:15:45Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
+- 2026-11-19T02:15:46Z · status active→review
