@@ -1,5 +1,5 @@
 ---
-handoff_signal_retry_count: 1
+handoff_signal_retry_count: 2
 id: "1234"
 title: "QA pass: Stats, Dev and activity-log pages at all screen sizes"
 type: bug
@@ -35,4 +35,5 @@ Do not touch repoos.toml.
 - 2026-11-19T15:49:36Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
 - 2026-11-19T15:49:36Z · engineer crash recovery: resuming opencode + opencode-go/glm-5.3-flash (1/3 crashes in 30m) · the agent process exited with an error — open the task to see the full output. Open Raw CLI error for details. (CLI: the agent process exited with an error — open the task to see the full output)
 - 2026-11-19T15:49:42Z · needs_input
+
 
