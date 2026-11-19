@@ -2062,6 +2062,13 @@ export function printSystemSummary(system: StatsSystemView): void {
         )} · available ${fmtRatio(p.availableMemRatio)} · load ${p.loadPerCpu?.toFixed(1) ?? "—"}×/cpu (${p.source ?? "memory"})`,
       ),
     );
+    if (p.level === "warning") {
+      console.log(c.dim("    advisory only — warning signals do not hold new work"));
+    } else if (p.level === "critical") {
+      console.log(c.dim("    holding new work until blocking pressure signals ease"));
+    } else {
+      console.log(c.dim("    no pressure signal is holding new work"));
+    }
     if (p.reason) console.log(`    ${c.yellow(p.reason)}`);
   }
   const heavy = system.heavyJobs;
