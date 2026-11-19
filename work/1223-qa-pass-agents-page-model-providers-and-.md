@@ -1,5 +1,4 @@
 ---
-handoff_signal_retry_count: 2
 id: "1223"
 title: "QA pass: Agents page, model providers and routing tab at all screen sizes"
 type: bug
@@ -10,9 +9,11 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-agents-page-model-providers-and-
 created_at: "2026-11-19T07:47:39Z"
-updated_at: "2026-11-19T08:26:09Z"
+updated_at: "2026-11-19T08:33:07Z"
+handoff_signal_retry_count: 2
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\",\"at\":\"2026-11-19T08:22:29.659Z\",\"kind\":\"dev-error\"}]"
+engineer_stall_resume_log: "[{\"at\":\"2026-11-19T08:33:07.295Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
 ## Problem
 The Agents page (agent list, Model providers, Model routing tab) has not been QA-checked since the routing provider changed to Jev, including the missing-API-key state.
@@ -37,5 +38,4 @@ Do not touch repoos.toml.
 - 2026-11-19T08:22:36Z · needs_input
 - 2026-11-19T08:24:05Z · body
 - 2026-11-19T08:26:09Z · body
-
-
+- 2026-11-19T08:33:07Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 1/3
