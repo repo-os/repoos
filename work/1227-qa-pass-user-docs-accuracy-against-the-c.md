@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-user-docs-accuracy-against-the-c
 created_at: "2026-11-19T09:47:43Z"
-updated_at: "2026-11-19T13:25:44Z"
+updated_at: "2026-11-19T13:29:11Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-19T13:25:30.704Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_passes: 6
@@ -78,3 +78,4 @@ Do not touch repoos.toml.
 - 2026-11-19T13:25:27Z · message_queued at 2026-11-19T13:25:27.638Z
 - 2026-11-19T13:25:28Z · note: review pass 6: good to go
 - 2026-11-19T13:25:44Z · message_delivered: 1 message(s)
+- 2026-11-19T13:29:11Z · body
