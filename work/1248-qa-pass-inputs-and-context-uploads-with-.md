@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-19T22:21:41Z"
+review_passes: 1
 id: "1248"
 title: "QA pass: Inputs and Context uploads with large, wrong-type and failing files"
 type: bug
@@ -11,7 +13,6 @@ branch: feat/qa-pass-inputs-and-context-uploads-with-
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T21:26:57Z"
-updated_at: "2026-11-19T22:21:41Z"
 ---
 ## Problem
 Uploads on the Inputs and Context pages have not been checked with very large files, wrong types, duplicate names and failing uploads.
@@ -43,3 +44,4 @@ Do not touch repoos.toml.
 - 2026-11-19T22:19:05Z · status active→review
 - 2026-11-19T22:19:05Z · message_queued at 2026-11-19T22:19:05.414Z
 - 2026-11-19T22:21:41Z · note: review pass 1: good to go
+
