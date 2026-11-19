@@ -69,3 +69,4 @@ Do not touch repoos.toml.
 - 2026-11-19T08:59:20Z · watchdog: restarting engineer after 10m with no live process
 - 2026-11-19T09:05:04Z · body
 - 2026-11-19T09:09:31Z · note: ui verification failed: ui verification failed (1 issue(s)): [missing-target] Model providers: opencode Go usage without the spurious empty-state line (target "default"): highlight [data-provider-id="opencode-go"] matched nothing on /agents?tab=model-providers (http://127.0.0.1:36641/agents?tab=model-providers)
+- 2026-11-19T09:09:31Z · message_queued at 2026-11-19T09:09:31.440Z
