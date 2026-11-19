@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-every-settings-tab-saves-validat
 created_at: "2026-11-19T07:17:47Z"
-updated_at: "2026-11-19T08:15:58Z"
+updated_at: "2026-11-19T08:17:57Z"
 ---
 ## Problem
 The Settings pages have many toggles and fields; some may not persist, may accept invalid values, or may be unreachable on a phone.
@@ -68,3 +68,4 @@ Do not touch repoos.toml.
 - 2026-11-19T08:15:53Z · message_delivered: 1 message(s)
 - 2026-11-19T08:15:57Z · message_queued at 2026-11-19T08:15:57.732Z
 - 2026-11-19T08:15:58Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-19T08:17:57Z · CTO nudge: held — an undelivered message is already queued
