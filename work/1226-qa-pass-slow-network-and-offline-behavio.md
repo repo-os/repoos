@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-slow-network-and-offline-behavio
 created_at: "2026-11-19T09:47:34Z"
-updated_at: "2026-11-19T13:05:41Z"
+updated_at: "2026-11-19T13:06:24Z"
 handoff_signal_retry_count: 2
 dev_error_count: 1
 engineer_stall_resume_log: "[{\"at\":\"2026-11-19T10:00:44.011Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-19T12:54:47.309Z\",\"reason\":\"clean-exit-without-handoff\"}]"
@@ -29,18 +29,18 @@ Do not touch repoos.toml.
 ```json
 [
 {
-  "label": "Settings: plain-English load-error panel with Retry instead of endless skeleton",
-  "target": "default",
-  "route": "/settings",
-  "highlight": ".page-load-error",
-  "state": "settings:loadFailed"
+"label": "Settings: plain-English load-error panel with Retry instead of endless skeleton",
+"target": "default",
+"route": "/settings",
+"highlight": ".page-load-error",
+"state": "settings:loadFailed"
 },
 {
-  "label": "Agents: shared load-error panel with Retry",
-  "target": "default",
-  "route": "/agents",
-  "highlight": ".page-load-error",
-  "state": "agents:loadFailed"
+"label": "Agents: shared load-error panel with Retry",
+"target": "default",
+"route": "/agents",
+"highlight": ".page-load-error",
+"state": "agents:loadFailed"
 }
 ]
 ```
@@ -82,3 +82,4 @@ Do not touch repoos.toml.
 - 2026-11-19T13:04:32Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 130) · last assistant: The report draft is complete. Now let me run the scoped check to verify everything passes. · stderr: (empty)
 - 2026-11-19T13:04:32Z · message_delivered: 1 message(s)
 - 2026-11-19T13:05:41Z · body
+- 2026-11-19T13:06:24Z · message_queued at 2026-11-19T13:06:24.443Z
