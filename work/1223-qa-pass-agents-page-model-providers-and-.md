@@ -2,14 +2,14 @@
 id: "1223"
 title: "QA pass: Agents page, model providers and routing tab at all screen sizes"
 type: bug
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-agents-page-model-providers-and-
 created_at: "2026-11-19T07:47:39Z"
-updated_at: "2026-11-19T09:20:21Z"
+updated_at: "2026-11-19T09:32:35Z"
 last_check_failure: "repoos check at 2026-11-19T09:09:34.580Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Model providers: opencode Go usage without the spurious empty-state line (target \"default\"): highlight [data-provider-id=\"opencode-go\"] matched nothing on /agents?tab=model-providers (http://127.0.0.1:36641/agents?tab=model-providers)"
 handoff_signal_retry_count: 2
 dev_error_count: 1
@@ -80,3 +80,4 @@ Do not touch repoos.toml.
 - 2026-11-19T09:17:39Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-19T09:20:20Z · watchdog: restarting engineer because a queued message waited 3m with no live process
 - 2026-11-19T09:20:21Z · message_delivered: 1 message(s)
+- 2026-11-19T09:32:35Z · status active→review
