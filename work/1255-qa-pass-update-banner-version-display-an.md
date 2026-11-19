@@ -2,14 +2,14 @@
 id: "1255"
 title: "QA pass: update banner, version display and release notes modal at all screen sizes"
 type: bug
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
 branch: ""
 created_at: "2026-11-19T23:27:47Z"
-updated_at: "2026-11-19T23:27:47Z"
+updated_at: "2026-11-19T23:27:55Z"
 ---
 ## Problem
 The update-available banner, version display and release notes modal have not been checked since the restart fix.
@@ -25,3 +25,4 @@ Do not touch repoos.toml.
 ## Activity
 
 - 2026-11-19T23:27:47Z · created · t@t
+- 2026-11-19T23:27:55Z · status inbox→ready
