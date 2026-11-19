@@ -8,8 +8,10 @@ area: web
 assigned_to: ai
 created_by: t@t
 branch: ""
+cli_override: claude code
+model_override: haiku
 created_at: "2026-11-19T20:07:21Z"
-updated_at: "2026-11-19T20:07:25Z"
+updated_at: "2026-11-19T20:07:26Z"
 ---
 ## Problem
 After switching model routing to Jev, the Agents page routing tab and decisions list need a check for the missing-key and provider-failure wording and a recent-decisions list that is empty or all failures.
@@ -25,3 +27,4 @@ Do not touch repoos.toml.
 
 - 2026-11-19T20:07:21Z · created · t@t
 - 2026-11-19T20:07:25Z · status inbox→ready
+- 2026-11-19T20:07:26Z · cli_override, model_override
