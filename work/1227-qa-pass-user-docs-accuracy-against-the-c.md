@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-user-docs-accuracy-against-the-c
 created_at: "2026-11-19T09:47:43Z"
-updated_at: "2026-11-19T13:58:59Z"
+updated_at: "2026-11-19T14:04:56Z"
 last_close_out_gate_ms: 644041
 last_close_out_gate_at: "2026-11-19T13:58:21.394Z"
 check_retry_count: 1
@@ -85,3 +85,4 @@ Do not touch repoos.toml.
 - 2026-11-19T13:29:46Z · message_queued at 2026-11-19T13:29:46.588Z
 - 2026-11-19T13:58:21Z · close-out gate completed in 644s
 - 2026-11-19T13:58:59Z · status done→done, release:success
+- 2026-11-19T14:04:56Z · message_dropped: 1 queued message(s) discarded — task is done
