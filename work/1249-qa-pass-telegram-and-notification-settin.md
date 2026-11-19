@@ -11,7 +11,7 @@ branch: feat/qa-pass-telegram-and-notification-settin
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T21:46:55Z"
-updated_at: "2026-11-19T22:47:46Z"
+updated_at: "2026-11-19T22:47:47Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -54,3 +54,4 @@ Do not touch repoos.toml.
 - 2026-11-19T22:34:09Z · status review→active
 - 2026-11-19T22:41:53Z · body
 - 2026-11-19T22:47:46Z · message_queued at 2026-11-19T22:47:46.822Z
+- 2026-11-19T22:47:47Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
