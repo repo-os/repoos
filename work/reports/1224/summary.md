@@ -1,3 +1,14 @@
+---
+id: summary
+title: summary
+type: feature
+status: inbox
+priority: p2
+area: general
+assigned_to: ai
+created_by: ""
+branch: ""
+---
 ## TL;DR
 
 Task #1224 QA'd RepoOS's first-run experience — the empty Work, Agents and Checks pages — headlessly at 375, 768 and 1280 px against preview fixtures. Two real defects were found and fixed, both empty states sending mixed signals: the Checks plan tab showed a red "No plan configured" chip plus a redundant red error line directly above the amber "this is fine for now" reminder, and the mobile Work queue told a user with zero tasks "No matching tasks" when no filter was active. To make the Checks first-run state capturable at all, a new `checks:emptyPlan` preview fixture was added (the task forbade touching `repoos.toml`, and the preview board always shows this repo's real plan). Layout was clean at all three widths; all first-run actions worked. The commit included the fixes, two reusable QA scripts and the required report `docs/qa/2026-11-first-run-qa.md`. Review pass 1 returned **good to go**, close-out completed, and the task landed as `done` with release success (merge commit `1c971acbe30dd8c0f2d513a268611810e6d80b47`). The run was bumpy: the primary engineer model was out of quota, the first engineer process crashed and had to be recovered, and the full local test suite was flaky for environmental (memory-pressure) reasons unrelated to the diff.
@@ -19,11 +30,11 @@ Final verdict: review pass 1 — **good to go**, no bugs found, still relevant. 
 - **Created → done:** 2026-11-19T07:48:01Z → 2026-11-19T09:42:27Z = 1 h 54 min 26 s wall-clock.
 - **Engineering rounds:** 1 (recorded round 1). **Review passes:** 1.
 - **Agents and models:**
-  - Engineer: `opencode` on `opencode-go/glm-5.3-flash` — a fallback, because the primary `codex + gpt-6-luna` pair was paused out of provider usage at 07:48:23Z. The recorded engineer session ran 709 s, 66,431 tokens, $0.02312121, and ended with "the agent process exited with an error" (see below).
-  - Reviewer: `opencode` on `opencode-go/glm-5.3-flash`, 246 s, 69,965 tokens, $0.04807568.
-  - Debugger: `opencode-go/deepseek-v4.1-flash`, 10 s, no tokens or cost recorded (crash-recovery leg).
-  - Model router (jev): two 0 s routing sessions, model unknown, no token/cost data.
-  - Model swaps: 1 (the quota-driven fallback at task start). Restarted engineer legs: 1 crash recovery + 1 watchdog restart, neither with recorded token/cost figures.
+- Engineer: `opencode` on `opencode-go/glm-5.3-flash` — a fallback, because the primary `codex + gpt-6-luna` pair was paused out of provider usage at 07:48:23Z. The recorded engineer session ran 709 s, 66,431 tokens, $0.02312121, and ended with "the agent process exited with an error" (see below).
+- Reviewer: `opencode` on `opencode-go/glm-5.3-flash`, 246 s, 69,965 tokens, $0.04807568.
+- Debugger: `opencode-go/deepseek-v4.1-flash`, 10 s, no tokens or cost recorded (crash-recovery leg).
+- Model router (jev): two 0 s routing sessions, model unknown, no token/cost data.
+- Model swaps: 1 (the quota-driven fallback at task start). Restarted engineer legs: 1 crash recovery + 1 watchdog restart, neither with recorded token/cost figures.
 - **Tokens/cost totals where known:** 136,396 tokens and $0.07119689 across the two sessions that report them; the remaining sessions record none.
 - **Close-out gate:** completed in 489 s.
 

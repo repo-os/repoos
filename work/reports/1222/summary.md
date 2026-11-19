@@ -1,3 +1,14 @@
+---
+id: summary
+title: summary
+type: feature
+status: inbox
+priority: p2
+area: general
+assigned_to: ai
+created_by: ""
+branch: ""
+---
 ## TL;DR
 
 Task 1222 (round 2 of the Settings-tabs QA pass) is done and merged (commit `e8472b9`). The round was a verification pass: every Settings tab was walked headlessly at 375 / 768 / 1280 px (21/21 clean), 114 schema-backed controls were round-tripped through save → reload → verify, validated fields rejected invalid input with plain-English errors, and the raw-TOML, Notifications, Security, Import/Export and Support flows were exercised against throwaway fixtures. No product defects were found — the round-1 fixes held — so the shipped diff is the QA report plus seven reproducible walkers under `docs/qa/`, not code changes. The path was bumpy operationally: the primary fallback agent repeatedly ended turns (exit 130) to deliver queued CTO-nudge messages, one engineer crash needed recovery, and a watchdog restart was required before handoff.
@@ -14,10 +25,10 @@ Task 1222 (round 2 of the Settings-tabs QA pass) is done and merged (commit `e84
 - Created 2026-11-19T07:17:47Z → done 2026-11-19T09:33:57Z: **2 h 16 m 10 s** wall-clock start-to-done.
 - Engineering rounds: **1**. Review passes: **1** (`good to go`, reviewer 56 s).
 - Agents/models per role:
-  - Engineer: `opencode` on `opencode-go/glm-5.3-flash`. Assigned before start: `codex` + `gpt-6-luna`, but that agent was paused out of usage since 07:09:32Z (provider quota), so the runner fell back to opencode + glm-5.3-flash — one agent swap before work began, no restarts or swaps afterwards.
-  - Reviewer: `opencode` on `opencode-go/glm-5.3-flash` (34,691 tokens, $0.00890616, 56 s).
-  - Debugger: one session on `opencode-go/deepseek-v4.1-flash`, 7 s, started at the 08:22:32Z agent-exit; no tokens recorded.
-  - Routing (Model router, jev): two sessions, model not recorded.
+- Engineer: `opencode` on `opencode-go/glm-5.3-flash`. Assigned before start: `codex` + `gpt-6-luna`, but that agent was paused out of usage since 07:09:32Z (provider quota), so the runner fell back to opencode + glm-5.3-flash — one agent swap before work began, no restarts or swaps afterwards.
+- Reviewer: `opencode` on `opencode-go/glm-5.3-flash` (34,691 tokens, $0.00890616, 56 s).
+- Debugger: one session on `opencode-go/deepseek-v4.1-flash`, 7 s, started at the 08:22:32Z agent-exit; no tokens recorded.
+- Routing (Model router, jev): two sessions, model not recorded.
 - Tokens / cost (where recorded): engineer 151,498 tokens, $0.03335988 (session record shows 159 s elapsed, despite activity spanning the full window); reviewer 34,691 tokens, $0.00890616. Total where known: **186,189 tokens, $0.04226604**; debugger and routing sessions: not recorded.
 - Shots: skipped by the server — the diff touches no capture target's globs (no UI change).
 - Close-out gate: completed in 69 s.
