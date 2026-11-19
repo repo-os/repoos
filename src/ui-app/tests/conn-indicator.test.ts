@@ -70,10 +70,10 @@ describe("top-bar connection indicator", () => {
 
     expect(conn.exists()).toBe(true);
     expect(conn.classes()).toContain("offline");
-    expect(conn.text()).toBe("offline");
+    expect(conn.text()).toBe("reconnecting");
     expect(conn.attributes("role")).toBe("status");
-    expect(conn.attributes("aria-label")).toBe("Server is disconnected");
-    expect(conn.attributes("title")).toBe("Server is disconnected");
+    expect(conn.attributes("aria-label")).toBe("Reconnecting to the RepoOS server");
+    expect(conn.attributes("title")).toBe("Reconnecting to the RepoOS server");
   });
 
   it("styles the state it can render", async () => {

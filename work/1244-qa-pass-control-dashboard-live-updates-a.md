@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-19T21:02:39Z"
-review_passes: 1
 id: "1244"
 title: "QA pass: Control dashboard live updates and reconnect behavior"
 type: bug
@@ -13,6 +11,7 @@ branch: feat/qa-pass-control-dashboard-live-updates-a
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T20:07:32Z"
+updated_at: "2026-11-19T21:01:22Z"
 ---
 ## Problem
 The Control dashboard and Work board use live updates; behavior after a dropped connection, a server restart or a long idle tab has not been checked.
@@ -30,30 +29,4 @@ Do not touch repoos.toml.
 - 2026-11-19T20:07:36Z · status inbox→ready
 - 2026-11-19T20:07:37Z · cli_override, model_override
 - 2026-11-19T20:07:38Z · status ready→active, branch
-- 2026-11-19T20:23:50Z · message_queued at 2026-11-19T20:23:50.257Z
-- 2026-11-19T20:23:50Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-19T20:26:51Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
-- 2026-11-19T20:27:06Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code unknown) · last assistant: The scoped `repoos check` is still running on the remote runner, so I'm waiting on the monitor. Nothing is ready to hand off until it reports a pass. Where things stand: - **Fixed:** a failed board refresh after an SSE reconnect is now ret… · stderr: (empty)
-- 2026-11-19T20:27:06Z · message_delivered: 1 message(s)
-- 2026-11-19T20:28:49Z · message_queued at 2026-11-19T20:28:49.934Z
-- 2026-11-19T20:28:50Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-19T20:31:51Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
-- 2026-11-19T20:31:52Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: The check is re-running from scratch, and the wait is armed. I haven't handed off yet, because the earlier run has no completion record and I can't confirm it passed. - **Status of the earlier run:** the log stopped after UI smoke with no … · stderr: (empty)
-- 2026-11-19T20:31:52Z · message_delivered: 1 message(s)
-- 2026-11-19T20:33:49Z · message_queued at 2026-11-19T20:33:49.801Z
-- 2026-11-19T20:33:49Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-19T20:35:26Z · CTO nudge: held — an undelivered message is already queued
-- 2026-11-19T20:35:44Z · note: adopted orphaned engineer pid 77429
-- 2026-11-19T20:37:30Z · queued message undelivered for 4m and the engineer produced no output — ending the turn so it is delivered
-- 2026-11-19T20:37:45Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code unknown) · last assistant: The scoped check is still running, so I'm not handing off yet. It's on test 89 of 164 in its test step, after UI smoke and the rendered contrast audit. The earlier background-run "stopped" notices are about the wrapper monitors, not the ch… · stderr: (empty)
-- 2026-11-19T20:37:45Z · message_delivered: 1 message(s)
-- 2026-11-19T20:40:43Z · message_queued at 2026-11-19T20:40:43.928Z
-- 2026-11-19T20:40:44Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-19T20:45:43Z · CTO nudge: held — an undelivered message is already queued
-- 2026-11-19T20:47:05Z · body
-- 2026-11-19T20:50:43Z · CTO nudge: held — handoff gate is running
-- 2026-11-19T21:01:21Z · note: ui verification passed: 1 shot captured with clean console
 - 2026-11-19T21:01:22Z · status active→review
-- 2026-11-19T21:01:22Z · message_queued at 2026-11-19T21:01:22.918Z
-- 2026-11-19T21:02:39Z · note: review pass 1: good to go
-
