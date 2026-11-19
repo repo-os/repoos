@@ -142,7 +142,10 @@ describe.skipIf(!existsSync(webkit.executablePath()))(
         else if (url.pathname === "/api/local-check-slots") body = seed.slots;
         else if (url.pathname === "/api/remote-validation/status")
           body = { enabled: false, running: false, hosts: [], tailscaleHosts: [] };
-        else if (url.pathname.startsWith("/api/local-check-slots/") && route.request().method() === "POST") {
+        else if (
+          url.pathname.startsWith("/api/local-check-slots/") &&
+          route.request().method() === "POST"
+        ) {
           releaseCalls.push(url.pathname);
           if (options.releaseFails) {
             await route.fulfill({
@@ -166,35 +169,43 @@ describe.skipIf(!existsSync(webkit.executablePath()))(
       return page;
     }
 
-    it.each(WIDTHS)("keeps every live run state inside its boxes at %i px", async (width) => {
-      for (const liveState of LIVE_RUN_STATES) {
-        const page = await openPage(width, liveState, "now");
-        try {
-          await page.locator(".ck-page").waitFor();
-          await page.waitForTimeout(150);
-          const report = await page.evaluate(measureLayout, BOX_SELECTORS);
-          expect(report.docOverflow, `${liveState}: page overflows`).toBeLessThanOrEqual(1);
-          expect(report.problems, `${liveState}: boxes leak`).toEqual([]);
-        } finally {
-          await page.close();
+    it.each(WIDTHS)(
+      "keeps every live run state inside its boxes at %i px",
+      async (width) => {
+        for (const liveState of LIVE_RUN_STATES) {
+          const page = await openPage(width, liveState, "now");
+          try {
+            await page.locator(".ck-page").waitFor();
+            await page.waitForTimeout(150);
+            const report = await page.evaluate(measureLayout, BOX_SELECTORS);
+            expect(report.docOverflow, `${liveState}: page overflows`).toBeLessThanOrEqual(1);
+            expect(report.problems, `${liveState}: boxes leak`).toEqual([]);
+          } finally {
+            await page.close();
+          }
         }
-      }
-    }, 60_000);
+      },
+      60_000,
+    );
 
-    it.each(WIDTHS)("keeps the test suite output inside its box at %i px", async (width) => {
-      for (const liveState of ["running", "failed"] as const) {
-        const page = await openPage(width, liveState, "test-suite");
-        try {
-          await page.locator(".trp-log").waitFor();
-          await page.waitForTimeout(150);
-          const report = await page.evaluate(measureLayout, BOX_SELECTORS);
-          expect(report.docOverflow, `${liveState}: page overflows`).toBeLessThanOrEqual(1);
-          expect(report.problems, `${liveState}: output leaks`).toEqual([]);
-        } finally {
-          await page.close();
+    it.each(WIDTHS)(
+      "keeps the test suite output inside its box at %i px",
+      async (width) => {
+        for (const liveState of ["running", "failed"] as const) {
+          const page = await openPage(width, liveState, "test-suite");
+          try {
+            await page.locator(".trp-log").waitFor();
+            await page.waitForTimeout(150);
+            const report = await page.evaluate(measureLayout, BOX_SELECTORS);
+            expect(report.docOverflow, `${liveState}: page overflows`).toBeLessThanOrEqual(1);
+            expect(report.problems, `${liveState}: output leaks`).toEqual([]);
+          } finally {
+            await page.close();
+          }
         }
-      }
-    }, 60_000);
+      },
+      60_000,
+    );
 
     it("names each live run state in plain English", async () => {
       const expectations: Record<LiveRunState, RegExp[]> = {

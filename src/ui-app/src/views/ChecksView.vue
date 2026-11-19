@@ -181,7 +181,8 @@ async function confirmReleaseWedgedSlot(): Promise<void> {
     // The Now tab has no page-level error line, so the failure is shown here
     // once the dialog closes; a silent failure would look like a success.
     slotToRelease.value = null;
-    slotActionError.value = e instanceof Error ? e.message : "Could not release the local check slot.";
+    slotActionError.value =
+      e instanceof Error ? e.message : "Could not release the local check slot.";
   }
 }
 

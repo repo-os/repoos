@@ -149,7 +149,10 @@ export function liveRunSeed(state: string | null, now = Date.now()): LiveRunSeed
     case "failed":
       return {
         activeRuns: [],
-        slots: { holders: [{ slot: 0, ageMs: 0, heartbeatAgeMs: 0, wedged: false, dead: false }], queue: [] },
+        slots: {
+          holders: [{ slot: 0, ageMs: 0, heartbeatAgeMs: 0, wedged: false, dead: false }],
+          queue: [],
+        },
         integration: {
           empty: false,
           active: {
