@@ -12,7 +12,7 @@ branch: feat/qa-pass-task-cards-and-board-columns-wit
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T21:06:54Z"
-updated_at: "2026-11-19T21:42:17Z"
+updated_at: "2026-11-19T21:42:43Z"
 last_close_out_gate_ms: 809300
 last_close_out_gate_at: "2026-11-19T21:42:17.760Z"
 review_passes: 1
@@ -54,4 +54,4 @@ Do not touch repoos.toml.
 - 2026-11-19T21:19:11Z · message_queued at 2026-11-19T21:19:11.388Z
 - 2026-11-19T21:20:38Z · note: review pass 1: good to go
 - 2026-11-19T21:42:17Z · close-out gate completed in 809s
-
+- 2026-11-19T21:42:43Z · status done→done, release:success
