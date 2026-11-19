@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (appeared: src/ui-app/src/lib/shot-preview-fixtures.ts, src/ui-app/tests/mobile-work-queue.test.ts, src/ui-app/tests/remote-validation-drawer.test.ts, src/ui-app/tests/shot-preview-fixtures.test.ts, src/ui-app/tests/work-queue-visibility.test.ts) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
+last_handoff_failure_sha: 987e0e851e0df1a9a915aab143e4b54969778242
 id: "1212"
 title: "QA pass: Hub and web app copy review – wording, plain-English errors and consistent terminology"
 type: chore
@@ -77,3 +79,4 @@ Do not touch repoos.toml.
 - 2026-11-19T01:50:18Z · body
 - 2026-11-19T01:58:24Z · message_queued at 2026-11-19T01:58:24.873Z
 - 2026-11-19T01:58:25Z · handoff failed · task-file handoff failed at check · the worktree changed while the gate was running (appeared: src/ui-app/src/lib/shot-preview-fixtures.ts, src/ui-app/tests/mobile-work-queue.test.ts, src/ui-app/tests/remote-validation-drawer.test.ts, src/ui-app/tests/shot-preview-fixtures.test.ts, src/ui-app/tests/work-queue-visibility.test.ts) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
+
