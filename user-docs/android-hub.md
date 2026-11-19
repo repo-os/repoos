@@ -112,8 +112,8 @@ can also carry an APK; they are listed on the releases page but do not take the
   Capacitor bridge, so it cannot call native APIs or read another server's
   storage. Sign-in cookies stay in that isolated container.
 - **No network scanning.** The app does not scan your network, report usage, or
-  create a central account. You add a server by its exact HTTPS origin (loopback
-  HTTP is supported for local development). Optional **Find servers on my
+  create a central account. You add a server by its exact HTTPS origin; the Hub
+  does not connect over plain HTTP, not even to `localhost`. Optional **Find servers on my
   tailnet** asks one server you already saved for the RepoOS servers it can see;
   the phone itself never scans or broadcasts.
 - **Discovery results stay local.** Only the rows you explicitly select are
@@ -172,11 +172,10 @@ rename or re-zip the file.
 
 ### The app opens but a server won't connect
 
-The Hub requires HTTPS for remote servers; plain HTTP is accepted only for
-loopback addresses (`localhost`, `127.0.0.1`, `::1`). For a server on your own
-machine, use its loopback address, or publish it over HTTPS with a
-[tunnel](/tunnels). See [Troubleshooting](/troubleshooting) for server-side
-sign-in problems.
+The Hub connects only over HTTPS, so an `http://` address is refused, including
+`localhost`. Publish the server over HTTPS with a [tunnel](/tunnels), then add
+the `https://` address. The add form says which part of the address to change.
+See [Troubleshooting](/troubleshooting) for server-side sign-in problems.
 
 ### I want to remove the app and its data
 

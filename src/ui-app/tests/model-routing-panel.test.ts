@@ -667,6 +667,116 @@ describe("ModelRoutingPanel", () => {
     wrapper.unmount();
   });
 
+  it("says the status could not be checked, never 'Not set' or 'Not ready', when it fails", async () => {
+    seedConfig({ "model_routing.mode": "shadow", "model_routing.provider": "openrouter" });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        if (url.includes("/api/model-routing/status")) throw new TypeError("Failed to fetch");
+        if (url.includes("/api/model-routing/decisions")) return jsonResponse({ decisions: [] });
+        throw new Error(url);
+      }),
+    );
+    const wrapper = await mountPanel();
+    await flushPromises();
+
+    expect(wrapper.find("[data-testid='routing-status-error']").exists()).toBe(true);
+    expect(wrapper.find("[data-testid='routing-credential-status']").text()).toContain(
+      "Couldn't check",
+    );
+    expect(wrapper.find("[data-testid='routing-provider-ready']").text()).toContain(
+      "Couldn't check",
+    );
+    // The OpenRouter branch used to claim "Not set" here: a false missing-key claim.
+    expect(wrapper.find("[data-testid='routing-credential-status']").text()).not.toContain(
+      "Not set",
+    );
+    expect(wrapper.find("[data-testid='routing-provider-ready']").text()).not.toContain(
+      "Not ready",
+    );
+    expect(wrapper.find(".mr-issues").exists()).toBe(false);
+    wrapper.unmount();
+  });
+
+  it("reports the status as unknown while it loads, not as not set or not ready", async () => {
+    seedConfig({ "model_routing.mode": "shadow", "model_routing.provider": "openrouter" });
+    // Never resolves: the first render is the loading state.
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() => new Promise(() => {})),
+    );
+    const wrapper = await mountPanel();
+    await flushPromises();
+
+    expect(wrapper.find("[data-testid='routing-provider-ready']").text()).not.toContain(
+      "Not ready",
+    );
+    expect(wrapper.find("[data-testid='routing-credential-status']").text()).not.toContain(
+      "Not set",
+    );
+    wrapper.unmount();
+  });
+
+  it("explains a blocked decision with no recorded message, without printing a reason slug", async () => {
+    seedConfig({ "model_routing.mode": "shadow", "model_routing.provider": "jev" });
+    const blocked = [
+      decisionView({
+        id: "b1",
+        kind: "blocked",
+        applied: false,
+        message: "",
+        blockReason: "no-candidates",
+      }),
+      decisionView({
+        id: "b2",
+        kind: "blocked",
+        applied: false,
+        message: null,
+        blockReason: "no-eligible-fallback",
+      }),
+      decisionView({ id: "b3", kind: "blocked", applied: false, message: null, blockReason: null }),
+    ];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        if (url.includes("/api/model-routing/status")) return jsonResponse(jevStatus());
+        if (url.includes("/api/model-routing/decisions"))
+          return jsonResponse({ decisions: blocked });
+        throw new Error(url);
+      }),
+    );
+    const wrapper = await mountPanel();
+    await flushPromises();
+
+    const texts = wrapper.findAll("[data-testid='routing-decision-blocked']").map((n) => n.text());
+    expect(texts).toHaveLength(3);
+    expect(texts[0]).toContain("No coding agent and model was eligible");
+    expect(texts[1]).toContain("configured fallback is not eligible");
+    expect(texts[2]).toContain("blocked before a model was chosen");
+    for (const t of texts) {
+      expect(t).not.toMatch(/no-candidates|no-eligible-fallback|null|undefined/);
+    }
+    wrapper.unmount();
+  });
+
+  it("treats a decisions response with no list as an honest empty state, not an error", async () => {
+    seedConfig({ "model_routing.mode": "shadow", "model_routing.provider": "jev" });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        if (url.includes("/api/model-routing/status")) return jsonResponse(jevStatus());
+        if (url.includes("/api/model-routing/decisions")) return jsonResponse({});
+        throw new Error(url);
+      }),
+    );
+    const wrapper = await mountPanel();
+    await flushPromises();
+
+    expect(wrapper.find("[data-testid='routing-decisions-error']").exists()).toBe(false);
+    expect(wrapper.text()).toContain("Nothing recorded yet");
+    wrapper.unmount();
+  });
+
   it("keeps the real empty state when the decisions load succeeds with none", async () => {
     seedConfig({ "model_routing.mode": "shadow", "model_routing.provider": "jev" });
     vi.stubGlobal(

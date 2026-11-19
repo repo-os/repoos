@@ -27,6 +27,8 @@ not the geometry.
 | --- | --- | --- |
 | A failed decisions request showed "Nothing recorded yet." | `refreshDecisions` caught every error and set the list to `[]`, so an outage read as an empty history. | Fixed. A failed load now shows "Recent decisions could not be loaded. That is not the same as no decisions yet." with a Try again button (`routing-decisions-error`, `routing-decisions-retry`). A successful empty load keeps the original empty copy. Covered in `model-routing-panel.test.ts` (failure, retry, and the real empty state) and in WebKit at all three widths. |
 | A blocked decision exposed an internal reason code | The policy message read "Model routing could not decide (provider-failure) …", which put a slug into a user-facing note. | Fixed. The message now reads "Model routing could not pick a model because the decision model could not be reached, and the configured fallback is not eligible." The cause is mapped from the reason, and the next step is kept. Covered in `model-routing.test.ts`, which also asserts that no slug appears. |
+| A failed status check read as a missing key | `refreshStatus` swallowed every error and set the status to `null`. The key pill then said "Not set" for OpenRouter and "—" for Jev, and "Not ready" for provider readiness, with no notice, so a network failure looked like a missing key. | Fixed. A failed check shows "Couldn't check" for both the key and provider readiness, plus a notice that says the status could not be loaded and to reload. Before the first response the values read "—", never "Not set" or "Not ready". Covered in `model-routing-panel.test.ts` for the failure (OpenRouter branch) and for the loading state. |
+| A blocked decision with no recorded message printed a raw slug | The template printed `d.message \|\| d.blockReason`, so a blank message showed `no-candidates` or `no-eligible-fallback`. | Fixed. A blank message falls back to plain words for each block reason, and a final sentence covers a missing reason. Covered by a test that asserts no slug, `null` or `undefined` appears. |
 | The missing-key WebKit fixture used wording the server never returns | The fixture said "No TypeSafe Jev API key is saved yet — paste one below", but `modelRoutingStatus` returns "Save your TypeSafe Jev API key below (stored in .env only)." The render test was checking copy users would not see. | Fixed. The fixture and its assertion now use the server's exact wording. |
 
 ## Checked with no defect found
@@ -53,6 +55,9 @@ not the geometry.
 ## Not verified
 
 - Live provider behaviour with real keys. This pass used fixtures only, by design.
+- The failed-status state and the blocked-decision wording are covered by jsdom
+  tests only, not by a WebKit render. The status notice is a plain `ff-notice`
+  like the decisions notice, which does fit at all three widths.
 - The Model providers tab's own copy beyond the routing tab's cross-references.
 - Light theme, real devices and touch input.
 - The decisions list at more than ten entries. The panel requests `limit=10`.

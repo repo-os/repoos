@@ -63,6 +63,8 @@ const showsKeyForm = computed(() => provider.value === "jev");
 
 const status = ref<ModelRoutingStatusResponse | null>(null);
 const statusLoading = ref(false);
+/** True when the last status request failed; the key and readiness are then unknown, not missing. */
+const statusError = ref(false);
 const decisions = ref<RoutingDecisionView[]>([]);
 const decisionsLoading = ref(false);
 /** True when the last decisions request failed; an empty list then means "unknown", not "none". */
@@ -83,10 +85,13 @@ const keyFormOpen = ref(false);
 
 async function refreshStatus(): Promise<void> {
   statusLoading.value = true;
+  statusError.value = false;
   try {
     status.value = await api<ModelRoutingStatusResponse>("/api/model-routing/status");
   } catch {
+    // A failed status check is not a missing key: say it could not be checked.
     status.value = null;
+    statusError.value = true;
   } finally {
     statusLoading.value = false;
   }
@@ -356,18 +361,38 @@ const keySaveLabel = computed(() => "Save key");
 // A real placeholder so the empty masked field never looks broken (#0809).
 const keyPlaceholder = computed(() => "Paste API key — stored in .env only");
 
+/** Plain words for a blocked decision: the recorded message, else what the block means. */
+const BLOCKED_TEXT: Record<string, string> = {
+  "no-candidates":
+    "No coding agent and model was eligible for this role. Check the budget allowlist and installed agents.",
+  "no-eligible-fallback":
+    "The decision model did not answer, and the configured fallback is not eligible. Pick a model on the Agents page.",
+};
+
+function blockedText(d: RoutingDecisionView): string {
+  return (
+    d.message ||
+    BLOCKED_TEXT[d.blockReason ?? ""] ||
+    "This run was blocked before a model was chosen."
+  );
+}
+
 function credentialStatusText(): string {
   if (statusLoading.value) return "Checking…";
+  // An unknown status is never reported as "Not set": the key may well be saved.
+  if (statusError.value) return "Couldn't check";
   const label = status.value?.credentialLabel;
   if (label === "saved") return "Saved";
   if (label === "not_needed") return "Not needed";
   if (label === "not_set") return "Not set";
-  return usesOpenRouterKey.value ? "Not set" : "—";
+  return "—";
 }
 
 function providerReadyText(): string {
   if (mode.value === "off") return "—";
-  if (status.value?.providerReady) return "Ready";
+  if (statusError.value) return "Couldn't check";
+  if (!status.value) return "—";
+  if (status.value.providerReady) return "Ready";
   return "Not ready";
 }
 
@@ -566,6 +591,13 @@ onMounted(() => {
         </dd>
       </div>
     </dl>
+
+    <div v-if="statusError" class="ff-notice" role="status" data-testid="routing-status-error">
+      <p>
+        Routing status could not be loaded, so the key and provider readiness are unknown. Reload
+        this page to check again.
+      </p>
+    </div>
 
     <div v-if="status?.issues?.length && mode !== 'off'" class="ff-notice mr-issues" role="status">
       <ul>
@@ -856,7 +888,9 @@ onMounted(() => {
 
             <template v-if="d.kind === 'blocked'">
               <span class="mr-dec-k">Blocked</span>
-              <span class="mr-dec-v">{{ d.message || d.blockReason }}</span>
+              <span class="mr-dec-v" data-testid="routing-decision-blocked">{{
+                blockedText(d)
+              }}</span>
             </template>
 
             <template v-if="d.handback">

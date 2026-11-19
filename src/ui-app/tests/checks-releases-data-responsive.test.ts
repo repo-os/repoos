@@ -249,10 +249,14 @@ describe.skipIf(!existsSync(webkit.executablePath()))(
           expect(releases.deadCopyButtons).toBe(0);
 
           const refresh = page.getByRole("button", { name: "Check again" });
-          await expect.poll(() => refresh.isVisible()).toBe(true);
+          // Vitest's default poll timeout is 1 s; the fixture's delayed
+          // responses can outlast that on a loaded runner, so match the page's
+          // own 5 s budget instead of racing it.
+          const POLL = { timeout: 5000 };
+          await expect.poll(() => refresh.isVisible(), POLL).toBe(true);
           await refresh.click();
-          await expect.poll(() => distributionRequests).toBe(2);
-          await expect.poll(() => refresh.isEnabled()).toBe(true);
+          await expect.poll(() => distributionRequests, POLL).toBe(2);
+          await expect.poll(() => refresh.isEnabled(), POLL).toBe(true);
 
           // The declared shots rely on these two fixtures; render them through
           // the real views so a broken seed fails here, not at handoff.
