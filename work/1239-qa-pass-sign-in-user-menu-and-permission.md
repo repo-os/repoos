@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-19T19:19:15Z"
-review_passes: 2
 id: "1239"
 title: "QA pass: sign-in, user menu and permissions screens at all screen sizes"
 type: bug
@@ -16,6 +14,8 @@ branch: feat/qa-pass-sign-in-user-menu-and-permission
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T18:27:10Z"
+updated_at: "2026-11-19T19:19:16Z"
+review_passes: 2
 review_rounds: 1
 ---
 ## Problem
