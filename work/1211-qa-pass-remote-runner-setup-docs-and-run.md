@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-19T08:22:27Z"
-review_passes: 6
 id: "1211"
 title: "QA pass: remote runner setup docs and runner health screens vs real bee/thinkpad/mini behavior"
 type: bug
@@ -11,6 +9,8 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-remote-runner-setup-docs-and-run
 created_at: "2026-11-19T00:17:32Z"
+updated_at: "2026-11-19T08:22:28Z"
+review_passes: 6
 handoff_signal_retry_count: 1
 review_rounds: 2
 routing_switches: 1
