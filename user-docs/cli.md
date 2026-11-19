@@ -377,7 +377,9 @@ every entry and writes the fenced `## Shots` section itself, leaving the rest of
 the body (including the Activity log) untouched. `repoos new` accepts it too;
 `-` reads the JSON from stdin:
 
-    repoos update 0612 --shots '[{"target":"default","route":"/agents?tab=detected","label":"Detected tab","highlight":".detect-row"}]'
+```bash
+repoos update 0612 --shots '[{"target":"default","route":"/agents?tab=detected","label":"Detected tab","highlight":".detect-row"}]'
+```
 
 ### Attaching screenshots (`--screenshot`)
 
@@ -479,6 +481,7 @@ repoos story show 0007                                  # definition + member ta
 repoos story show "Project updates email" --json
 repoos story update 0007 --body "Rewritten scope."      # keeps the stable number
 repoos story update 0007 --name "Project update emails" # rename keeps the number
+```
 
 ### `repoos schedule list|run|enable|disable|new|update|preview|delete`
 
@@ -507,7 +510,6 @@ repoos schedule delete 0001 --yes
 | `delete` | `DELETE /api/schedules/:id` |
 | `run` | `POST /api/schedules/:id/run` |
 | `preview` | `POST /api/schedules/preview` |
-```
 
 `new` and `update` write and commit the definition under `storiesDir`, exactly
 like `repoos new` commits a task file, and print the story's number and path.
