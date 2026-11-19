@@ -201,6 +201,7 @@ describe("ChecksView default tab (#0738)", () => {
 
     await flushPromises();
     expect(wrapper.text()).toContain("Refresh failed");
+    expect(wrapper.find(".ck-err").attributes("role")).toBe("status");
     expect(wrapper.text()).toContain("Profile");
     expect(wrapper.find(".page-skeleton").exists()).toBe(false);
     wrapper.unmount();
