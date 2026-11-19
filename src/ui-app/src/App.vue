@@ -13,6 +13,7 @@ import TaskDrawer from "./components/TaskDrawer.vue";
 import TunnelDrawer from "./components/TunnelDrawer.vue";
 import RemoteValidationDrawer from "./components/RemoteValidationDrawer.vue";
 import ToastPanel from "./components/ToastPanel.vue";
+import CloseOutDialogs from "./components/CloseOutDialogs.vue";
 import FloatingHeads from "./components/FloatingHeads.vue";
 import NewInputPanel from "./components/NewInputPanel.vue";
 import UiRecoveryBanner from "./components/UiRecoveryBanner.vue";
@@ -208,6 +209,7 @@ onUnmounted(() => {
       <TunnelDrawer />
       <RemoteValidationDrawer />
       <ToastPanel />
+      <CloseOutDialogs />
       <CopyInspectorOverlay />
       <ReleaseUpdateNotification />
       <FloatingHeads />

@@ -19,8 +19,6 @@ import {
   needsInputDetailUsesLineClamp,
 } from "../lib/needs-input-ui";
 import RestartTaskDialog from "./RestartTaskDialog.vue";
-import DirtyCheckoutDialog from "./DirtyCheckoutDialog.vue";
-import WorktreeHandoffConflictDialog from "./WorktreeHandoffConflictDialog.vue";
 import ActivityIndicator from "./ActivityIndicator.vue";
 import DoneErrorCard from "./DoneErrorCard.vue";
 import CopyableNumber from "./CopyableNumber.vue";
@@ -1536,119 +1534,16 @@ async function runAction(): Promise<void> {
         break;
     }
   } catch (err) {
-    // A dirty-checkout guard (0204/#0512) pauses here: the confirmation modal
-    // is shown (files live in the store) and `busy` is reset so the card is
+    // The dirty-checkout (0204/#0512) and worktree-changed-after-handoff
+    // (#0598/#0834) guards pause here: the endpoint wrote their store record
+    // before throwing, and the app-level CloseOutDialogs owner renders it, so
+    // this card opens nothing itself (that used to stack a second overlay
+    // over the board-drag and drawer paths). `busy` resets so the card is
     // usable.
-    if (err instanceof Error && err.name === "DirtyCheckoutError") {
-      dirtyTask.value = props.task;
-      return;
-    }
-    if (err instanceof Error && err.name === "WorktreeHandoffConflictError") {
-      handoffConflictTask.value = props.task;
-      return;
-    }
     repo.onError(err);
   } finally {
     busy.value = false;
   }
-}
-
-/** Uncommitted-changes confirmation (0204/#0512): the task whose close-out
- *  needs the user to decide whether to commit a dirty `main` (it would abort
- *  the merge) or a dirty task worktree (close-out would delete it) first. */
-const dirtyTask = ref<Task | null>(null);
-const handoffConflictTask = ref<Task | null>(null);
-
-const dirtyFiles = computed(() => (dirtyTask.value ? repo.dirtyFilesFor(dirtyTask.value.id) : []));
-const handoffConflictMessage = computed(() =>
-  handoffConflictTask.value
-    ? (repo.worktreeHandoffConflictFor(handoffConflictTask.value.id)?.message ?? "")
-    : "",
-);
-const handoffConflictFiles = computed(() =>
-  handoffConflictTask.value
-    ? (repo.worktreeHandoffConflictFor(handoffConflictTask.value.id)?.files ?? [])
-    : [],
-);
-const handoffConflictFilesUnavailable = computed(
-  () =>
-    !!handoffConflictTask.value &&
-    !!repo.worktreeHandoffConflictFor(handoffConflictTask.value.id)?.filesUnavailable,
-);
-
-// A store-seeded conflict (the shot-preview fixture, #0810) opens the modal from
-// the card. Skip when this task's drawer is open — the drawer renders its own
-// modal, and two would stack.
-watch(
-  () => repo.worktreeHandoffConflictFor(props.task.id),
-  (conflict) => {
-    if (conflict && ui.active?.id !== props.task.id) handoffConflictTask.value = props.task;
-  },
-  { immediate: true },
-);
-const dirtyScope = computed(() =>
-  dirtyTask.value ? repo.dirtyScopeFor(dirtyTask.value.id) : ("main" as const),
-);
-
-async function confirmCommitDirty(): Promise<void> {
-  const t = dirtyTask.value;
-  dirtyTask.value = null;
-  if (!t) return;
-  busy.value = true;
-  try {
-    await repo.completeTask(t, { commitDirty: true });
-  } catch (err) {
-    if (err instanceof Error && err.name === "DirtyCheckoutError") {
-      dirtyTask.value = t;
-      return;
-    }
-    if (err instanceof Error && err.name === "WorktreeHandoffConflictError") {
-      handoffConflictTask.value = t;
-      return;
-    }
-    repo.onError(err);
-  } finally {
-    busy.value = false;
-  }
-}
-
-async function discardHandoffConflict(): Promise<void> {
-  const t = handoffConflictTask.value;
-  handoffConflictTask.value = null;
-  if (!t) return;
-  busy.value = true;
-  try {
-    await repo.discardWorktreeHandoffEdits(t);
-    repo.pushToast("Post-handoff edits discarded — retry Move to done when ready.", "info");
-  } catch (err) {
-    repo.onError(err);
-  } finally {
-    busy.value = false;
-  }
-}
-
-async function sendBackHandoffConflict(): Promise<void> {
-  const t = handoffConflictTask.value;
-  handoffConflictTask.value = null;
-  if (!t) return;
-  busy.value = true;
-  try {
-    await repo.sendBackFromHandoffConflict(t);
-  } catch (err) {
-    repo.onError(err);
-  } finally {
-    busy.value = false;
-  }
-}
-
-function cancelHandoffConflict(): void {
-  if (handoffConflictTask.value) repo.clearWorktreeHandoffConflict(handoffConflictTask.value.id);
-  handoffConflictTask.value = null;
-}
-
-function cancelDirty(): void {
-  if (dirtyTask.value) repo.clearDirtyCheckout(dirtyTask.value.id);
-  dirtyTask.value = null;
 }
 
 function onCardHintClick(): void {
@@ -2247,22 +2142,6 @@ async function openDebuggerFromError(): Promise<void> {
         restartOverrideDependencies = false;
       }
     "
-  />
-  <DirtyCheckoutDialog
-    :task="dirtyTask"
-    :files="dirtyFiles"
-    :scope="dirtyScope"
-    @commit="confirmCommitDirty"
-    @cancel="cancelDirty"
-  />
-  <WorktreeHandoffConflictDialog
-    :task="handoffConflictTask"
-    :message="handoffConflictMessage"
-    :files="handoffConflictFiles"
-    :files-unavailable="handoffConflictFilesUnavailable"
-    @discard="discardHandoffConflict"
-    @send-back="sendBackHandoffConflict"
-    @cancel="cancelHandoffConflict"
   />
   <AgentModelModal
     :open="assignmentModalOpen"

@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 796412
-last_close_out_gate_at: "2026-11-19T18:51:10.577Z"
 id: "1235"
 title: "QA pass: Work board drag, status moves and bulk actions with failures"
 type: bug
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: e22bfd2cb6581b46bc55d2b55449ed3dacb70928
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-work-board-drag-status-moves-and
 created_at: "2026-11-19T16:17:45Z"
 updated_at: "2026-11-19T18:51:10Z"
+last_close_out_gate_ms: 796412
+last_close_out_gate_at: "2026-11-19T18:51:10.577Z"
 review_passes: 2
 review_rounds: 1
 routing_switches: 1

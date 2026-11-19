@@ -117,8 +117,6 @@ import { bubbleRole, toDisplayRows, type DisplayRow } from "../lib/chat-rows";
 import { confirmDependencyOverride } from "../lib/task-dependencies";
 import DependencyChip from "./DependencyChip.vue";
 import RestartTaskDialog from "./RestartTaskDialog.vue";
-import DirtyCheckoutDialog from "./DirtyCheckoutDialog.vue";
-import WorktreeHandoffConflictDialog from "./WorktreeHandoffConflictDialog.vue";
 import HotfixConfirmDialog from "./HotfixConfirmDialog.vue";
 import HotfixBadge from "./HotfixBadge.vue";
 import { hotfixBannerText } from "../lib/hotfix";
@@ -2459,19 +2457,12 @@ async function moveToDone(reason?: unknown): Promise<void> {
     ui.close();
     ui.expandIntegrationBar();
   } catch (err) {
-    // Dirty-checkout guard (0204/#0512): pause and show the confirmation modal
-    // instead of an inline failure — the task stays in review until the user
-    // decides what happens to the uncommitted files.
-    if (err instanceof Error && err.name === "DirtyCheckoutError") {
-      dirtyTask.value = ui.active;
-      return;
-    }
-    if (err instanceof Error && err.name === "WorktreeHandoffConflictError") {
-      handoffConflictTask.value = ui.active;
-      return;
-    }
-    // The failure is rendered inline below the button via the store's
-    // per-task doneErrorFor; no global toast for this action.
+    // The dirty-checkout (0204/#0512) and worktree-changed-after-handoff
+    // (#0598/#0834) guards are answered by the app-level CloseOutDialogs
+    // owner from the store record the endpoint wrote before throwing — the
+    // drawer opens nothing itself, so a board drag or a card retry can't
+    // stack a second overlay. The failure is otherwise rendered inline below
+    // the button via the store's per-task doneErrorFor; no global toast.
     repo.onError(err);
   } finally {
     doingDone.value = false;
@@ -2514,116 +2505,6 @@ async function stopMtd(): Promise<void> {
   } finally {
     stoppingDone.value = false;
   }
-}
-
-/** Uncommitted-changes confirmation (0204/#0512): the task whose close-out is
- *  paused on a dirty checkout — `main` (the merge would abort) or the task's own
- *  worktree (close-out would delete the changes). `null` hides the modal. */
-const dirtyTask = ref<Task | null>(null);
-
-const dirtyFiles = computed(() => (dirtyTask.value ? repo.dirtyFilesFor(dirtyTask.value.id) : []));
-const dirtyScope = computed(() =>
-  dirtyTask.value ? repo.dirtyScopeFor(dirtyTask.value.id) : ("main" as const),
-);
-
-async function confirmCommitDirty(): Promise<void> {
-  const t = dirtyTask.value;
-  dirtyTask.value = null;
-  if (!t) return;
-  ui.saving = true;
-  doingDone.value = true;
-  startDoneTimer();
-  try {
-    await repo.completeTask(t, { commitDirty: true });
-    ui.close();
-    ui.expandIntegrationBar();
-  } catch (err) {
-    // Still dirty after commiting (e.g. a new file appeared) — keep asking.
-    if (err instanceof Error && err.name === "DirtyCheckoutError") {
-      dirtyTask.value = t;
-      return;
-    }
-    if (err instanceof Error && err.name === "WorktreeHandoffConflictError") {
-      handoffConflictTask.value = t;
-      return;
-    }
-    repo.onError(err);
-  } finally {
-    doingDone.value = false;
-    stopDoneTimer();
-    ui.saving = false;
-  }
-}
-
-const handoffConflictTask = ref<Task | null>(null);
-const handoffConflictMessage = computed(() =>
-  handoffConflictTask.value
-    ? (repo.worktreeHandoffConflictFor(handoffConflictTask.value.id)?.message ?? "")
-    : "",
-);
-const handoffConflictFiles = computed(() =>
-  handoffConflictTask.value
-    ? (repo.worktreeHandoffConflictFor(handoffConflictTask.value.id)?.files ?? [])
-    : [],
-);
-const handoffConflictFilesUnavailable = computed(
-  () =>
-    !!handoffConflictTask.value &&
-    !!repo.worktreeHandoffConflictFor(handoffConflictTask.value.id)?.filesUnavailable,
-);
-
-// A store-seeded conflict (the shot-preview fixture, #0810) must open the modal
-// without a real Move-to-done failure. On the normal path the failed call has
-// already set `handoffConflictTask` synchronously; this only adds the seeded case.
-watch(
-  () => (ui.active ? repo.worktreeHandoffConflictFor(ui.active.id) : null),
-  (conflict) => {
-    if (conflict && ui.active) handoffConflictTask.value = ui.active;
-  },
-  { immediate: true },
-);
-
-async function discardHandoffConflict(): Promise<void> {
-  const t = handoffConflictTask.value;
-  handoffConflictTask.value = null;
-  if (!t) return;
-  ui.saving = true;
-  try {
-    await repo.discardWorktreeHandoffEdits(t);
-    repo.pushToast("Post-handoff edits discarded — retry Move to done when ready.", "info");
-  } catch (err) {
-    repo.onError(err);
-  } finally {
-    ui.saving = false;
-  }
-}
-
-async function sendBackHandoffConflict(): Promise<void> {
-  const t = handoffConflictTask.value;
-  handoffConflictTask.value = null;
-  if (!t) return;
-  ui.saving = true;
-  try {
-    await repo.sendBackFromHandoffConflict(t);
-  } catch (err) {
-    repo.onError(err);
-  } finally {
-    ui.saving = false;
-  }
-}
-
-function cancelHandoffConflict(): void {
-  const id = handoffConflictTask.value?.id ?? ui.active?.id;
-  if (id) repo.clearWorktreeHandoffConflict(id);
-  handoffConflictTask.value = null;
-}
-
-function cancelDirty(): void {
-  // Use the captured task, not ui.active — the body-teleported dialog dismissed
-  // the drawer's modal, so ui.active may already be null here.
-  const id = dirtyTask.value?.id ?? ui.active?.id;
-  if (id) repo.clearDirtyCheckout(id);
-  dirtyTask.value = null;
 }
 
 interface TaskDraft {
@@ -8145,24 +8026,6 @@ watch(
       </div>
     </DialogContent>
   </Dialog>
-
-  <DirtyCheckoutDialog
-    :task="dirtyTask"
-    :files="dirtyFiles"
-    :scope="dirtyScope"
-    @commit="confirmCommitDirty"
-    @cancel="cancelDirty"
-  />
-
-  <WorktreeHandoffConflictDialog
-    :task="handoffConflictTask"
-    :message="handoffConflictMessage"
-    :files="handoffConflictFiles"
-    :files-unavailable="handoffConflictFilesUnavailable"
-    @discard="discardHandoffConflict"
-    @send-back="sendBackHandoffConflict"
-    @cancel="cancelHandoffConflict"
-  />
 
   <HotfixConfirmDialog
     :open="confirmHotfix"
