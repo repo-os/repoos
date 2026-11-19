@@ -68,7 +68,7 @@ function submit(): void {
           ><Button variant="outline" :disabled="busy">Cancel</Button></DialogClose
         >
         <Button variant="default" :disabled="busy" @click="submit">{{
-          busy ? "Holding…" : "Hold task"
+          busy ? "Holding…" : "Hold"
         }}</Button>
       </div>
     </DialogContent>

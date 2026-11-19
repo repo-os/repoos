@@ -57,7 +57,7 @@ describe("held task UI", () => {
     expect(wrapper.find("textarea.ff-textarea").exists()).toBe(true);
     expect(wrapper.find(".field input[type='date']").exists()).toBe(true);
     expect(wrapper.find(".cc-modal-actions").findAll("button")).toHaveLength(2);
-    const submit = wrapper.findAll("button").find((button) => button.text().includes("Hold task"))!;
+    const submit = wrapper.findAll("button").find((button) => button.text().trim() === "Hold")!;
     expect(submit.attributes("disabled")).toBeUndefined();
     await submit.trigger("click");
     expect(wrapper.emitted("hold")?.[0]?.[0]).toEqual({});

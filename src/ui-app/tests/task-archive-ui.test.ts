@@ -169,8 +169,9 @@ describe("archived task panel (#0657)", () => {
     // The lifecycle quickbar (status dropdown, Move to done, preview, …) is gone.
     expect(wrapper!.find(".drawer-quickbar").exists()).toBe(false);
     // Delete stays available.
-    expect(wrapper!.text()).toContain("Delete task");
+    expect(wrapper!.text()).toContain("Delete");
     // The archive affordance itself is gone for an already-archived task.
+    expect(wrapper!.find('[data-test-id="archive-task"]').exists()).toBe(false);
     expect(wrapper!.text()).not.toContain("Archive task");
   });
 

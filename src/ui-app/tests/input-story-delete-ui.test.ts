@@ -1,6 +1,6 @@
 /**
  * Delete input / Delete story panel buttons (#0634): destructive controls in
- * the same `.delete-zone` position as the task panel's Delete task, confirmed
+ * the same `.delete-zone` position as the task panel's Delete button, confirmed
  * through the shared DeleteConfirmDialog, wired to the DELETE routes through
  * the repo store. Radix dialogs teleport to `body`, so dialog assertions read
  * `document.body`.
