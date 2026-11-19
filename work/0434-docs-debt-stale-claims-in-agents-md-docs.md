@@ -11,7 +11,7 @@ assigned_to: unassigned
 created_by: docs-debt-agent
 branch: feat/docs-debt-stale-claims-in-agents-md-docs
 created_at: "2026-09-19T02:09:23.307Z"
-updated_at: "2026-11-19T01:46:31Z"
+updated_at: "2026-11-19T01:47:40Z"
 last_close_out_gate_ms: 153045
 last_close_out_gate_at: "2026-11-19T01:46:26.418Z"
 review_passes: 1
@@ -48,3 +48,4 @@ The Docs Debt Agent verified concrete claims in `AGENTS.md`/`docs/`/`user-docs/`
 - 2026-11-19T01:43:04Z · note: review pass 1: good to go
 - 2026-11-19T01:46:26Z · close-out gate completed in 153s
 - 2026-11-19T01:46:31Z · status done→done, release:success
+- 2026-11-19T01:47:40Z · message_dropped: 1 queued message(s) discarded — task is done
