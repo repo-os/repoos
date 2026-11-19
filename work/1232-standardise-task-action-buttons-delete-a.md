@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/easter-eggs-bundle-task-action-button-la
 created_at: "2026-11-19T13:54:07Z"
-updated_at: "2026-11-19T15:16:15Z"
+updated_at: "2026-11-19T15:16:56Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-19T15:14:43.458Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Task drawer footer actions with shortened labels (Delete, Archive, Hold) (target \"default\"): highlight .delete-zone matched nothing on /work?task=0001&tab=details (http://127.0.0.1:40237/work?task=0001&tab=details&shotState=drawer%3AstatusDetails)"
 dev_error_count: 1
@@ -29,11 +29,11 @@ Do not touch repoos.toml. Keep aria-labels descriptive (e.g. aria-label "Delete 
 ```json
 [
 {
-  "label": "Task drawer footer actions with shortened labels (Delete, Archive, Hold)",
-  "target": "default",
-  "route": "/work?task=9999&tab=details",
-  "highlight": ".delete-zone",
-  "state": "drawer:reviewWithBranch"
+"label": "Task drawer footer actions with shortened labels (Delete, Archive, Hold)",
+"target": "default",
+"route": "/work?task=9999&tab=details",
+"highlight": ".delete-zone",
+"state": "drawer:reviewWithBranch"
 }
 ]
 ```
@@ -58,3 +58,4 @@ Do not touch repoos.toml. Keep aria-labels descriptive (e.g. aria-label "Delete 
 - 2026-11-19T15:14:40Z · message_queued at 2026-11-19T15:14:40.346Z
 - 2026-11-19T15:14:43Z · message_delivered: 1 message(s)
 - 2026-11-19T15:16:15Z · body
+- 2026-11-19T15:16:56Z · CTO nudge: held — remote validation is running
