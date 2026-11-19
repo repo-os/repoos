@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-keyboard-shortcuts-and-command-p
 created_at: "2026-11-19T13:47:53Z"
-updated_at: "2026-11-19T16:17:43Z"
+updated_at: "2026-11-19T16:17:54Z"
 review_passes: 2
 last_check_failure: "repoos check at 2026-11-19T15:37:14.041Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Command palette open over the work board (stacks above drawers, consumes Esc) (target \"default\"): loading state detected: loading indicator [aria-busy=\"true\"] on /work (http://127.0.0.1:43037/work)"
 review_rounds: 1
@@ -145,3 +145,4 @@ Do not touch repoos.toml.
 - 2026-11-19T16:17:41Z · note: agent fallback: codex + gpt-6-luna is paused (out of usage since 2026-11-19T07:09:32.657Z: Codex hit a provider quota or rate limit. Wait for the provider limit to reset, then retry. (CLI: error: You’ve hit your usage limit. Upgrade to Pro (https://chatgpt.com/explore/pro), visit https://chatgpt.com/codex/settings/usage to purcha) — using opencode + opencode-go/glm-5.3-flash
 - 2026-11-19T16:17:43Z · message_delivered: 1 message(s)
 - 2026-11-19T16:17:43Z · message_queued at 2026-11-19T16:17:43.997Z
+- 2026-11-19T16:17:54Z · CTO nudge: held — an undelivered message is already queued
