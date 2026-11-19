@@ -23,12 +23,10 @@ describe.skipIf(!existsSync(webkit.executablePath()))(
       await browser?.close();
     });
 
-    it.each([375, 768, 1280])(
-      "keeps task create/edit controls usable at %i px",
-      async (width) => {
-        const page = await browser.newPage({ viewport: { width, height: 900 } });
-        try {
-          await page.setContent(`
+    it.each([375, 768, 1280])("keeps task create/edit controls usable at %i px", async (width) => {
+      const page = await browser.newPage({ viewport: { width, height: 900 } });
+      try {
+        await page.setContent(`
         <style>
           * { box-sizing: border-box; }
           body { margin: 0; padding: 16px; font: 14px sans-serif; }
@@ -65,68 +63,72 @@ describe.skipIf(!existsSync(webkit.executablePath()))(
         </script>
       `);
 
-          // Exercise validation, create fields, edit entry, dependency selection,
-          // priority/area changes and a fixture screenshot through real browser controls.
-          const drawer = page.locator("[aria-label='Task editor']");
-          expect(await drawer.isVisible()).toBe(true);
-          expect(await page.locator("#save").isDisabled()).toBe(true);
-          await page.locator("form").evaluate((form: HTMLFormElement) => {
-            form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
-          });
-          expect(await page.locator("#validation").isVisible()).toBe(true);
-          await page.locator("#title").fill("Responsive fixture task");
-          expect(await page.locator("#save").isEnabled()).toBe(true);
-          await page.locator("#priority").selectOption({ label: "p1" });
-          await page.locator("#area").selectOption({ label: "core" });
-          await page.locator(".dependency-option").click();
-          expect(await page.locator(".task-dependency-picker output").textContent()).toBe("Depends on #0101");
-          await page.locator("#edit").click();
-          expect(await page.locator("h1").textContent()).toBe("Edit task");
-          await page.locator("#title").fill("Edited fixture task");
-          await page.locator("#shot").setInputFiles({
-            name: "fixture.png",
-            mimeType: "image/png",
-            buffer: Buffer.from("fixture"),
-          });
-          expect(await page.locator("#shot-name").textContent()).toBe("fixture.png");
+        // Exercise validation, create fields, edit entry, dependency selection,
+        // priority/area changes and a fixture screenshot through real browser controls.
+        const drawer = page.locator("[aria-label='Task editor']");
+        expect(await drawer.isVisible()).toBe(true);
+        expect(await page.locator("#save").isDisabled()).toBe(true);
+        await page.locator("form").evaluate((form: HTMLFormElement) => {
+          form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+        });
+        expect(await page.locator("#validation").isVisible()).toBe(true);
+        await page.locator("#title").fill("Responsive fixture task");
+        expect(await page.locator("#save").isEnabled()).toBe(true);
+        await page.locator("#priority").selectOption({ label: "p1" });
+        await page.locator("#area").selectOption({ label: "core" });
+        await page.locator(".dependency-option").click();
+        expect(await page.locator(".task-dependency-picker output").textContent()).toBe(
+          "Depends on #0101",
+        );
+        await page.locator("#edit").click();
+        expect(await page.locator("h1").textContent()).toBe("Edit task");
+        await page.locator("#title").fill("Edited fixture task");
+        await page.locator("#shot").setInputFiles({
+          name: "fixture.png",
+          mimeType: "image/png",
+          buffer: Buffer.from("fixture"),
+        });
+        expect(await page.locator("#shot-name").textContent()).toBe("fixture.png");
 
-          const geometry = await page.locator(".dependency-options").evaluate((list) => {
-            const row = list.querySelector<HTMLElement>("li")!;
-            const button = row.querySelector<HTMLElement>("button")!;
-            const title = button.querySelector<HTMLElement>(".dependency-copy")!;
-            const rect = (element: HTMLElement) => {
-              const { width, right } = element.getBoundingClientRect();
-              return {
-                width,
-                right,
-                clientWidth: element.clientWidth,
-                scrollWidth: element.scrollWidth,
-              };
-            };
+        const geometry = await page.locator(".dependency-options").evaluate((list) => {
+          const row = list.querySelector<HTMLElement>("li")!;
+          const button = row.querySelector<HTMLElement>("button")!;
+          const title = button.querySelector<HTMLElement>(".dependency-copy")!;
+          const rect = (element: HTMLElement) => {
+            const { width, right } = element.getBoundingClientRect();
             return {
-              list: rect(list as HTMLElement),
-              row: rect(row),
-              button: rect(button),
-              title: rect(title),
+              width,
+              right,
+              clientWidth: element.clientWidth,
+              scrollWidth: element.scrollWidth,
             };
-          });
+          };
+          return {
+            list: rect(list as HTMLElement),
+            row: rect(row),
+            button: rect(button),
+            title: rect(title),
+          };
+        });
 
-          expect(geometry.list.scrollWidth).toBeLessThanOrEqual(geometry.list.clientWidth);
-          expect(geometry.row.right).toBeLessThanOrEqual(geometry.list.right + 1);
-          expect(geometry.button.scrollWidth).toBeLessThanOrEqual(geometry.button.clientWidth);
-          expect(geometry.title.scrollWidth).toBeGreaterThan(geometry.title.clientWidth);
+        expect(geometry.list.scrollWidth).toBeLessThanOrEqual(geometry.list.clientWidth);
+        expect(geometry.row.right).toBeLessThanOrEqual(geometry.list.right + 1);
+        expect(geometry.button.scrollWidth).toBeLessThanOrEqual(geometry.button.clientWidth);
+        expect(geometry.title.scrollWidth).toBeGreaterThan(geometry.title.clientWidth);
 
-          const unreachableControls = await drawer.locator("button, input, select, textarea").evaluateAll((controls) =>
-            controls.filter((control) => {
-              const rect = control.getBoundingClientRect();
-              return rect.width > 0 && (rect.left < 0 || rect.right > innerWidth);
-            }).length,
+        const unreachableControls = await drawer
+          .locator("button, input, select, textarea")
+          .evaluateAll(
+            (controls) =>
+              controls.filter((control) => {
+                const rect = control.getBoundingClientRect();
+                return rect.width > 0 && (rect.left < 0 || rect.right > innerWidth);
+              }).length,
           );
-          expect(unreachableControls).toBe(0);
-        } finally {
-          await page.close();
-        }
-      },
-    );
+        expect(unreachableControls).toBe(0);
+      } finally {
+        await page.close();
+      }
+    });
   },
 );
