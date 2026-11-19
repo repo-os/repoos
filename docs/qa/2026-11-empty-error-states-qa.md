@@ -14,7 +14,7 @@ Reviewed the Agents, Checks and Releases views for first-load, empty and failed-
 
 ## Viewport review
 
-The requested widths are 375, 768 and 1280 CSS pixels. The task worktree has no managed preview request, and its instructions prohibit launching `repoos serve`; therefore this pass did not claim a live-browser viewport measurement. The repository's changed-path RepoOS check includes its configured headless UI smoke test. That smoke test verifies serving/mount behavior, but it is not a substitute for visual review at all three widths. Existing page styles use responsive layouts and page-level scroll containers; no new layout styling was required by the state review.
+The requested widths are 375, 768 and 1280 CSS pixels. The changed-path RepoOS check passed its configured headless UI smoke test. Its output reports Checks tabs at 320, 390 and 1440 px in light and dark mode. It does not report runs at the requested 375, 768 and 1280 px, nor viewport results for Agents and Releases. The task worktree has no managed preview request, and its instructions prohibit launching `repoos serve`; I therefore do not claim those viewport checks were completed. No new layout styling was required by the state review.
 
 ## Changes
 
