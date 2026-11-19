@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 570761
-last_close_out_gate_at: "2026-11-19T16:23:35.248Z"
 id: "1226"
 title: "QA pass: slow network and offline behavior in the web app and Hub"
 type: bug
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: 483d054c2b90d905ecbe1897b55edf6f8230ba78
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-slow-network-and-offline-behavio
 created_at: "2026-11-19T09:47:34Z"
 updated_at: "2026-11-19T16:23:35Z"
+last_close_out_gate_ms: 570761
+last_close_out_gate_at: "2026-11-19T16:23:35.248Z"
 review_passes: 2
 review_rounds: 1
 routing_switches: 1

@@ -26,19 +26,40 @@ export interface SmokeResponse {
   status(): number;
   url(): string;
 }
+/**
+ * What an intercepted request can do before fulfilling (#1226): `abort`
+ * simulates a dead network, `fetch` + `fulfill({ response })` passes the real
+ * response through after a delay (slow-network). Structural only — the real
+ * Playwright `Route` satisfies both.
+ */
+export interface SmokeRoute {
+  /** The intercepted request (URL, method, post data) — used to branch handlers. */
+  request(): { url(): string };
+  fetch(): Promise<{
+    status(): number;
+    body(): Promise<Buffer | string>;
+    json(): Promise<unknown>;
+  }>;
+  abort(): Promise<void>;
+  fulfill(
+    options:
+      | { status: number; contentType: string; body: string }
+      | {
+          response: {
+            status(): number;
+            body(): Promise<Buffer | string>;
+            json(): Promise<unknown>;
+          };
+        },
+  ): Promise<void>;
+}
 export interface SmokePage {
   on(event: "console", handler: (msg: SmokeConsoleMessage) => void): void;
   on(event: "pageerror", handler: (err: Error) => void): void;
   on(event: "response", handler: (res: SmokeResponse) => void): void;
-  route(
-    url: string,
-    handler: (route: {
-      fetch(): Promise<{
-        json(): Promise<unknown>;
-      }>;
-      fulfill(options: { status: number; contentType: string; body: string }): Promise<void>;
-    }) => Promise<void>,
-  ): Promise<void>;
+  /** Remove a previously-registered interception (offline → recovery). */
+  unroute(url: string, handler?: unknown): Promise<void>;
+  route(url: string, handler: (route: SmokeRoute) => Promise<void>): Promise<void>;
   close(): Promise<void>;
   goto(url: string, options: { waitUntil: string; timeout: number }): Promise<unknown>;
   title(): Promise<string>;
@@ -64,13 +85,7 @@ export interface SmokePage {
     type(text: string): Promise<void>;
     press(key: string): Promise<void>;
   };
-  route(
-    url: string,
-    handler: (route: {
-      fetch(): Promise<{ json(): Promise<unknown> }>;
-      fulfill(options: { status: number; contentType: string; body: string }): Promise<void>;
-    }) => Promise<void>,
-  ): Promise<void>;
+  route(url: string, handler: (route: SmokeRoute) => Promise<void>): Promise<void>;
   close(): Promise<void>;
 }
 export interface SmokeBrowser {

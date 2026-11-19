@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  clearOfflineOnStreamBack,
   consumeRouteIntent,
   configureUiRecovery,
   dismissRecovery,
@@ -80,6 +81,26 @@ describe("stale UI recovery", () => {
     expect(uiRecoveryState().kind).toBe("offline");
     dismissRecovery();
     expect(uiRecoveryState().kind).toBeNull();
+  });
+
+  describe("clearOfflineOnStreamBack (#1226)", () => {
+    it("clears an offline banner once the SSE stream is demonstrably back", () => {
+      showOffline("Can't reach the RepoOS server.");
+      expect(uiRecoveryState().kind).toBe("offline");
+      clearOfflineOnStreamBack();
+      expect(uiRecoveryState().kind).toBeNull();
+      expect(uiRecoveryState().offlineReason).toBeNull();
+      expect(uiRecoveryState().message).toBe("");
+    });
+
+    it("is a no-op when no offline banner is showing", () => {
+      showStaleUi("/work");
+      clearOfflineOnStreamBack();
+      expect(uiRecoveryState().kind).toBe("stale");
+      dismissRecovery();
+      clearOfflineOnStreamBack();
+      expect(uiRecoveryState().kind).toBeNull();
+    });
   });
 
   it("clears the normal new-version notice whenever stale recovery starts", () => {
