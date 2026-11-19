@@ -2,14 +2,11 @@
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import { COLUMNS, sortTasks, useRepoStore } from "../stores/repo";
 import type { Column } from "../stores/repo";
-import { DirtyCheckoutError, WorktreeHandoffConflictError } from "../stores/repo";
 import type { Task } from "../types";
 import { useConfigStore } from "../stores/config";
 import TaskCard from "./TaskCard.vue";
 import RestartTaskDialog from "./RestartTaskDialog.vue";
 import ReviewConfirmDialog from "./ReviewConfirmDialog.vue";
-import DirtyCheckoutDialog from "./DirtyCheckoutDialog.vue";
-import WorktreeHandoffConflictDialog from "./WorktreeHandoffConflictDialog.vue";
 import { confirmDependencyOverride } from "../lib/task-dependencies";
 import {
   applyCollapseDefaults,
@@ -378,13 +375,13 @@ const closeOutBusy = ref(false);
 
 /**
  * A drop onto Done runs the close-out endpoint, whose two confirmation
- * rejections (0204/#0512 dirty checkout, #0834 worktree changed after handoff)
- * are answered through dialogs, not toasts — the same dialogs the card and
- * drawer open. `onError` deliberately swallows these error types, so without
- * this routing a rejected drag-to-done used to be completely silent. A generic
- * close-out failure stays with `repo.onError`: the endpoint records it as the
- * task's inline DoneErrorCard, which already carries the plain-English reason
- * and next step.
+ * rejections (0204/#0512 dirty checkout, #0598/#0834 worktree changed after
+ * handoff) are answered through dialogs, not toasts. The endpoint writes the
+ * store record before throwing, and the app-level `CloseOutDialogs` owner
+ * renders it — so this path opens nothing itself and never stacks a second
+ * overlay over the card's or drawer's. A generic close-out failure stays with
+ * `repo.onError`: the endpoint records it as the task's inline DoneErrorCard,
+ * which already carries the plain-English reason and next step.
  */
 async function moveDraggedToDone(task: Task): Promise<void> {
   if (closeOutBusy.value) return;
@@ -397,98 +394,12 @@ async function moveDraggedToDone(task: Task): Promise<void> {
 }
 
 function onDraggedMoveError(err: unknown): void {
-  if (err instanceof DirtyCheckoutError) {
-    dirtyTask.value = repo.tasks.find((t) => t.id === err.taskId) ?? null;
-    if (!dirtyTask.value) {
-      // The task is gone from the board (refresh raced the drop): fall back to
-      // the store's own surface instead of dropping the rejection silently.
-      repo.onError(err);
-    }
-    return;
-  }
-  if (err instanceof WorktreeHandoffConflictError) {
-    handoffConflictTask.value = repo.tasks.find((t) => t.id === err.taskId) ?? null;
-    if (!handoffConflictTask.value) repo.onError(err);
-    return;
-  }
+  // The two dialog-answered types are presented by CloseOutDialogs from the
+  // store record the endpoint wrote — including when the task has already
+  // left the board (a refresh raced the drop), where the presenter renders
+  // the dialog from a minimal id-only stand-in, so toasting here would
+  // duplicate it. Everything else reports normally.
   repo.onError(err);
-}
-
-/** Uncommitted-changes confirmation (0204/#0512) for a drag-to-done — the same
- *  modal TaskCard/TaskDrawer open on their own paths. */
-const dirtyTask = ref<Task | null>(null);
-const dirtyFiles = computed(() => (dirtyTask.value ? repo.dirtyFilesFor(dirtyTask.value.id) : []));
-const dirtyScope = computed(() =>
-  dirtyTask.value ? repo.dirtyScopeFor(dirtyTask.value.id) : ("main" as const),
-);
-const handoffConflictTask = ref<Task | null>(null);
-const handoffConflictMessage = computed(() =>
-  handoffConflictTask.value
-    ? (repo.worktreeHandoffConflictFor(handoffConflictTask.value.id)?.message ?? "")
-    : "",
-);
-const handoffConflictFiles = computed(() =>
-  handoffConflictTask.value
-    ? (repo.worktreeHandoffConflictFor(handoffConflictTask.value.id)?.files ?? [])
-    : [],
-);
-const handoffConflictFilesUnavailable = computed(
-  () =>
-    !!handoffConflictTask.value &&
-    !!repo.worktreeHandoffConflictFor(handoffConflictTask.value.id)?.filesUnavailable,
-);
-
-async function confirmCommitDirty(): Promise<void> {
-  const t = dirtyTask.value;
-  dirtyTask.value = null;
-  if (!t) return;
-  closeOutBusy.value = true;
-  try {
-    await repo.completeTask(t, { commitDirty: true });
-  } catch (err) {
-    onDraggedMoveError(err);
-  } finally {
-    closeOutBusy.value = false;
-  }
-}
-
-async function discardHandoffConflict(): Promise<void> {
-  const t = handoffConflictTask.value;
-  handoffConflictTask.value = null;
-  if (!t) return;
-  closeOutBusy.value = true;
-  try {
-    await repo.discardWorktreeHandoffEdits(t);
-    repo.pushToast("Post-handoff edits discarded — retry Move to done when ready.", "info");
-  } catch (err) {
-    repo.onError(err);
-  } finally {
-    closeOutBusy.value = false;
-  }
-}
-
-async function sendBackHandoffConflict(): Promise<void> {
-  const t = handoffConflictTask.value;
-  handoffConflictTask.value = null;
-  if (!t) return;
-  closeOutBusy.value = true;
-  try {
-    await repo.sendBackFromHandoffConflict(t);
-  } catch (err) {
-    repo.onError(err);
-  } finally {
-    closeOutBusy.value = false;
-  }
-}
-
-function cancelHandoffConflict(): void {
-  if (handoffConflictTask.value) repo.clearWorktreeHandoffConflict(handoffConflictTask.value.id);
-  handoffConflictTask.value = null;
-}
-
-function cancelDirty(): void {
-  if (dirtyTask.value) repo.clearDirtyCheckout(dirtyTask.value.id);
-  dirtyTask.value = null;
 }
 
 function clearDragOver(): void {
@@ -626,25 +537,5 @@ const unackedBadge = computed(() =>
     @update:open="(v) => (v ? undefined : closeReviewConfirm())"
     @run-checks="confirmReviewWith(true)"
     @skip-checks="confirmReviewWith(false)"
-  />
-
-  <!-- Rejections a drag-to-done pauses on (0204/#0512, #0598/#0834): the same
-       dialogs the card and drawer open for their own actions, so a rejected
-       board drag is answered by the UI instead of disappearing silently. -->
-  <DirtyCheckoutDialog
-    :task="dirtyTask"
-    :files="dirtyFiles"
-    :scope="dirtyScope"
-    @commit="confirmCommitDirty"
-    @cancel="cancelDirty"
-  />
-  <WorktreeHandoffConflictDialog
-    :task="handoffConflictTask"
-    :message="handoffConflictMessage"
-    :files="handoffConflictFiles"
-    :files-unavailable="handoffConflictFilesUnavailable"
-    @discard="discardHandoffConflict"
-    @send-back="sendBackHandoffConflict"
-    @cancel="cancelHandoffConflict"
   />
 </template>

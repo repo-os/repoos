@@ -23,6 +23,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest
 import BoardColumn from "../src/components/BoardColumn.vue";
 import TaskCard from "../src/components/TaskCard.vue";
 import DoneErrorCard from "../src/components/DoneErrorCard.vue";
+import CloseOutDialogs from "../src/components/CloseOutDialogs.vue";
 import ToastPanel from "../src/components/ToastPanel.vue";
 import MobileWorkQueue from "../src/components/MobileWorkQueue.vue";
 import { useRepoStore } from "../src/stores/repo";
@@ -101,8 +102,11 @@ describe("Work board move failures at 375/768/1280 (WebKit, fixtures)", () => {
     const shots = process.env.QA_SHOTS;
     if (shots) {
       mkdirSync(shots, { recursive: true });
+      // JPEG, not PNG: a 1280px PNG's zlib payload expands past the staged
+      // artifact guard's 4 MiB scan limit, and every committed QA shot dir in
+      // this repo uses .jpg.
       await page.screenshot({
-        path: resolve(shots, `${label}-${width}.png`),
+        path: resolve(shots, `${label}-${width}.jpg`),
         fullPage: true,
       });
     }
@@ -189,7 +193,7 @@ describe("Work board move failures at 375/768/1280 (WebKit, fixtures)", () => {
     } catch {
       scoped = "";
     }
-    return markup + "\n" + scoped;
+    return { markup, scoped };
   }
 
   const reviewTask = (id: string, over: Partial<Task> = {}): Task =>
@@ -198,16 +202,17 @@ describe("Work board move failures at 375/768/1280 (WebKit, fixtures)", () => {
   it.each(VIEWPORTS)(
     "a rejected status write leaves a toast, not a half-moved board, at %spx",
     async (width) => {
+      const fixture = await boardMarkup((repo) => {
+        repo.tasks = [reviewTask("1201"), makeTask({ id: "1202", status: "review" })];
+        repo.pushToast(
+          "Can't reach the RepoOS server — it may be offline. Start the server, then reload.",
+          "error",
+        );
+      });
       const page = await openFixturePage(
         "board-rejection-toast",
-        await boardMarkup((repo) => {
-          repo.tasks = [reviewTask("1201"), makeTask({ id: "1202", status: "review" })];
-          repo.pushToast(
-            "Can't reach the RepoOS server — it may be offline. Start the server, then reload.",
-            "error",
-          );
-        }),
-        "",
+        fixture.markup,
+        fixture.scoped,
         width,
       );
       try {
@@ -258,6 +263,10 @@ describe("Work board move failures at 375/768/1280 (WebKit, fixtures)", () => {
         props: { col: { id: "done", label: "Done", color: "#22c55e" } },
         global: { plugins: [pinia] },
       });
+      const dialogs = mount(CloseOutDialogs, {
+        attachTo: document.body,
+        global: { plugins: [pinia] },
+      });
       await flushPromises();
       // Drop the review card on Done; the close-out is refused with a dirty main.
       await column.find(".board-col").trigger("drop", {
@@ -265,9 +274,10 @@ describe("Work board move failures at 375/768/1280 (WebKit, fixtures)", () => {
       } as unknown as DragEvent);
       await flushPromises();
       // The dialog is body-teleported; serialize everything it opened.
-      expect(document.body.querySelector(".dirty-overlay")).toBeTruthy();
+      expect(document.body.querySelectorAll(".dirty-overlay")).toHaveLength(1);
       const markup = document.body.innerHTML;
       column.unmount();
+      dialogs.unmount();
       document.body.innerHTML = "";
       // .dirty-* styles live in the global stylesheet — no scoped CSS needed.
 
@@ -460,6 +470,12 @@ describe("Work board move failures (jsdom, mocked rejections)", () => {
     document.body.innerHTML = "";
   });
 
+  /** The app-level single presenter for the two close-out confirmation
+   *  rejections — mounted next to the column the way App.vue mounts it. */
+  function mountDialogs(pinia: ReturnType<typeof createPinia>): VueWrapper {
+    return mount(CloseOutDialogs, { attachTo: document.body, global: { plugins: [pinia] } });
+  }
+
   it("a blocked drag is announced on hover, refuses the drop, and says what to use instead", async () => {
     const pinia = createPinia();
     setActivePinia(pinia);
@@ -624,10 +640,11 @@ describe("Work board move failures (jsdom, mocked rejections)", () => {
     );
 
     const wrapper = mountColumn(pinia, { col: COL_DONE });
+    const dialogs = mountDialogs(pinia);
     fireDrag(wrapper.find(".board-col").element, "drop", task.id);
     await flush();
 
-    // The rejection is answered by the same dialog the card's button opens.
+    // The rejection is answered by the app-level dialog owner.
     const overlay = document.body.querySelector(".dirty-overlay");
     expect(overlay).toBeTruthy();
     const text = document.body.textContent ?? "";
@@ -648,6 +665,7 @@ describe("Work board move failures (jsdom, mocked rejections)", () => {
     expect(doneCalls).toBe(2);
     // Dialog closed after the retry succeeded.
     expect(document.body.querySelector(".dirty-overlay")).toBeNull();
+    dialogs.unmount();
   });
 
   it("a drag-to-done refused for a dirty task worktree names the worktree, not main", async () => {
@@ -672,6 +690,7 @@ describe("Work board move failures (jsdom, mocked rejections)", () => {
     );
 
     const wrapper = mountColumn(pinia, { col: COL_DONE });
+    const dialogs = mountDialogs(pinia);
     fireDrag(wrapper.find(".board-col").element, "drop", task.id);
     await flush();
 
@@ -679,6 +698,7 @@ describe("Work board move failures (jsdom, mocked rejections)", () => {
     expect(text).toContain("the task worktree has uncommitted changes");
     expect(text).toContain("close-out merge would not carry them");
     expect(text).toContain("work/0007-notes.md");
+    dialogs.unmount();
   });
 
   it("a worktree-changed-after-handoff conflict opens the discard-or-send-back dialog", async () => {
@@ -708,6 +728,7 @@ describe("Work board move failures (jsdom, mocked rejections)", () => {
     );
 
     const wrapper = mountColumn(pinia, { col: COL_DONE });
+    const dialogs = mountDialogs(pinia);
     fireDrag(wrapper.find(".board-col").element, "drop", task.id);
     await flush();
 
@@ -725,6 +746,8 @@ describe("Work board move failures (jsdom, mocked rejections)", () => {
     // Discard clears the conflict and offers the retry.
     expect(repo.worktreeHandoffConflictFor(task.id)).toBeNull();
     expect(repo.toasts.some((t) => t.message.includes("retry Move to done"))).toBe(true);
+    expect(document.body.querySelector(".dirty-overlay")).toBeNull();
+    dialogs.unmount();
   });
 
   it("cancelling the dirty dialog keeps the task in review and clears the guard", async () => {
@@ -749,6 +772,7 @@ describe("Work board move failures (jsdom, mocked rejections)", () => {
     );
 
     const wrapper = mountColumn(pinia, { col: COL_DONE });
+    const dialogs = mountDialogs(pinia);
     fireDrag(wrapper.find(".board-col").element, "drop", task.id);
     await flush();
     expect(document.body.querySelector(".dirty-overlay")).toBeTruthy();
@@ -762,6 +786,84 @@ describe("Work board move failures (jsdom, mocked rejections)", () => {
     // Cancel stays in review with nothing half-moved.
     expect(task.status).toBe("review");
     expect(repo.dirtyFilesFor(task.id)).toEqual([]);
+    dialogs.unmount();
+  });
+
+  it("a drag-to-done rejection opens exactly one dialog even with the real card mounted (no stacked overlays)", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const repo = useRepoStore();
+    const task = makeTask({ id: "0013", status: "review" });
+    repo.tasks = [task];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL) => {
+        if (String(input).includes("/done")) {
+          // The endpoint writes the store record BEFORE the 409 — the exact
+          // timing that used to trip the card's seeded watcher and the drag
+          // catch into stacking two body-teleported overlays.
+          return jsonResponse(409, {
+            ok: false,
+            worktreeChangedAfterHandoff: true,
+            error: "worktree changed after handoff",
+            files: [{ path: "src/ui-app/src/style.css", added: 4, removed: 1, taskFile: false }],
+          });
+        }
+        return jsonResponse(200, {});
+      }),
+    );
+
+    const column = mountColumn(pinia, { col: COL_DONE, stubTaskCard: false });
+    const dialogs = mountDialogs(pinia);
+    fireDrag(column.find(".board-col").element, "drop", task.id);
+    await flush();
+
+    // Exactly one overlay, owned by CloseOutDialogs; the card opens none.
+    expect(document.body.querySelectorAll(".dirty-overlay")).toHaveLength(1);
+    const text = document.body.textContent ?? "";
+    expect(text).toContain("Worktree changed after handoff");
+    // Escape (both dialogs listen on window) closes the one owner's dialog.
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+    await flush();
+    expect(document.body.querySelector(".dirty-overlay")).toBeNull();
+    expect(repo.worktreeHandoffConflictFor(task.id)).toBeNull();
+    dialogs.unmount();
+  });
+
+  it("Keep review & merge failures are answered by the dialog owner too (the silent-caller class)", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const repo = useRepoStore();
+    const task = makeTask({ id: "0014", status: "review" });
+    repo.tasks = [task];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input);
+        if (url.includes("/review/keep")) return jsonResponse(200, { ok: true });
+        if (url.includes("/done")) {
+          return jsonResponse(409, {
+            ok: false,
+            needsCommit: true,
+            dirtyFiles: ["repoos.toml"],
+            dirtyScope: "main",
+          });
+        }
+        return jsonResponse(200, {});
+      }),
+    );
+
+    const dialogs = mountDialogs(pinia);
+    // Every keepReviewAndMerge caller routes rejections to repo.onError, which
+    // swallows these types — the store record is what must carry the dialog.
+    await expect(repo.keepReviewAndMerge(task)).rejects.toMatchObject({
+      name: "DirtyCheckoutError",
+    });
+    expect(repo.dirtyFilesFor(task.id)).toEqual(["repoos.toml"]);
+    expect(document.body.querySelector(".dirty-overlay")).toBeTruthy();
+    expect(document.body.textContent ?? "").toContain("main has uncommitted changes");
+    expect(repo.toasts).toHaveLength(0);
+    dialogs.unmount();
   });
 
   it("a generic close-out failure lands inline on the card with cause and next step", async () => {

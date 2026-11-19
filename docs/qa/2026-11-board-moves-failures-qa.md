@@ -11,9 +11,11 @@ Playwright WebKit; no visible browser was opened, no real task was moved, and
 ## Method
 
 - Interaction assertions run on the real `BoardColumn`, `TaskCard`,
-  `ToastPanel`, `DirtyCheckoutDialog`, `WorktreeHandoffConflictDialog` and
-  store in jsdom with a stubbed `fetch`/`EventSource`
-  (`src/ui-app/tests/work-board-moves-qa-browser.test.ts`).
+  `CloseOutDialogs` (the single presenter for the close-out confirmation
+  rejections), `ToastPanel`, `DirtyCheckoutDialog`,
+  `WorktreeHandoffConflictDialog` and the store in jsdom with a stubbed
+  `fetch`/`EventSource` (`src/ui-app/tests/work-board-moves-qa-browser.test.ts`,
+  plus `close-out-dialogs.test.ts` for the record-driven dialog contract).
 - The same failing states are then serialized and rendered in headless WebKit
   with the real built global stylesheet inside a minimal app shell, and audited
   at 375, 768 and 1280 px: every visible element must stay inside the viewport,
@@ -26,25 +28,35 @@ Playwright WebKit; no visible browser was opened, no real task was moved, and
 
 ## Findings and fixes
 
-1. **A drag to Done refused for a dirty checkout was completely silent (fixed).**
-   `BoardColumn.onDrop` caught the rejection and called `repo.onError`, which
-   deliberately swallows `DirtyCheckoutError` and
-   `WorktreeHandoffConflictError` because the card and drawer answer them with
-   confirmation dialogs — but the board column mounted neither dialog, so a
-   drag-to-done that hit a dirty `main` (0204/#0512) or a
-   worktree-changed-after-handoff conflict (#0598/#0834) showed nothing at all:
-   no dialog, no toast, task still in Review. BoardColumn now opens the same
-   `DirtyCheckoutDialog` / `WorktreeHandoffConflictDialog` the card and drawer
-   open, with commit/discard/send-back/cancel handlers, a `closeOutBusy` guard
-   against double drops, and a fallback toast if the task left the board while
-   the request was in flight. Regression tests cover dirty `main`, dirty task
-   worktree, handoff conflict, commit-and-retry, and cancel-keeps-in-review.
-2. **A forced drop could bypass the dragover refusal (fixed).** The hover cue
-   (`dropCheck`) and the drop path duplicated but slightly diverged checks, so
-   a drop event that slipped past `dragover` (programmatic drops, drag-source
-   quirks) fell through to a bare `setStatus` and only the server's technical
-   400 surfaced. Both now share one `moveRejection(task, toColId)`; the drop
-   throws the same plain-English reason the cue shows, and the existing
+1. **A drag to Done refused for a dirty `main` was completely silent (fixed);
+   the same drag refused for a worktree conflict stacked two dialogs (fixed).**
+   The close-out endpoint writes its decision record before it throws, and
+   `repo.onError` deliberately swallows the two marker error types because they
+   are supposed to be answered by dialogs. Of the three Move-to-done surfaces,
+   TaskCard opened the handoff-conflict dialog from that record via a watcher,
+   but no surface watched dirty-checkout records — so a dirty-`main` drag to
+   Done showed nothing at all — and TaskCard's watcher never closed on a
+   cleared record, while BoardColumn's round-1 catch opened a second copy, so
+   the same rejection could stack two body-teleported overlays whose Escape
+   both closed at once. The fix removes per-surface presentation entirely:
+   **`CloseOutDialogs`** (mounted app-wide in `App.vue`, next to the toast
+   panel) is now the single presenter for both dialogs, derived from the store
+   records. This also covers every other caller of `completeTask` that routes
+   rejections to `repo.onError` — `Keep review & merge` on the card, the drawer
+   and the Debug panel, and the stalled-pipeline retry in the integration bar —
+   which were silent for the dirty-checkout type the same way. The records are
+   one-pending-decision-per-task (a new record supersedes the other type for
+   the same task), cleared on cancel/discard/send-back, on a successful retry,
+   and by the store when the task leaves `review`. The presenter covers even
+   the task-left-the-board case (a refresh raced the drop): it renders the
+   dialog from a minimal id-only stand-in so the retry actions still work,
+   instead of a duplicated toast alongside the dialog.
+2. **A forced drop could bypass the dragover refusal (fixed in round 1).** The
+   hover cue (`dropCheck`) and the drop path duplicated but slightly diverged
+   checks, so a drop event that slipped past `dragover` (programmatic drops,
+   drag-source quirks) fell through to a bare `setStatus` and only the server's
+   technical 400 surfaced. Both now share one `moveRejection(task, toColId)`;
+   the drop throws the same plain-English reason the cue shows, and the existing
    toasts-on-error path surfaces it.
 3. **Everything else already met the bar** and is now pinned by tests:
    - Blocked moves: hovering an invalid column toasts the reason the moment
@@ -101,6 +113,21 @@ exercise.
   documents the observable behavior; changing it (a client-side timeout for
   non-GET requests) would affect every mutating endpoint and is out of scope
   for this pass. Filed here as a note, not a defect claim.
+- Human-assignee drags are validated client-side by the permissive
+  `isValidHumanBoardMove` (any column to any column), mirroring the server's
+  own rule for human tasks; a server-side refusal toasts verbatim. Pre-existing
+  behavior, unchanged by this pass.
 - Real-device touch input and screen-reader output were not exercised; the
   touch path is covered as far as tap-to-open-drawer plus the shared failure
   paths.
+
+## Rendered evidence
+
+Screenshots of the failing states rendered by the WebKit pass are committed
+under `assets/board-moves-qa/` as `.jpg` (JPEG has no zlib stream, so the
+staged-artifact guard's 4 MiB decompression scan cannot trip on them;
+regenerate with
+`QA_SHOTS=docs/qa/assets/board-moves-qa bunx vitest run --config
+src/ui-app/vite.config.ts src/ui-app/tests/work-board-moves-qa-browser.test.ts`):
+the rejection toast over the board, the dirty-`main` dialog and the failed
+close-out card at 375 and 1280 px, plus the mobile queue at 375 px.
