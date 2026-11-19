@@ -17,6 +17,7 @@ import { useAuthStore } from "../stores/auth";
 import { readShotPreviewFixtureFromLocation } from "../lib/shot-preview-fixtures";
 import PageSkeleton from "../components/PageSkeleton.vue";
 import { invalidatePageData, refreshPageData } from "../composables/page-data-cache";
+import { deployFailureHint } from "../lib/deployment-failure";
 
 interface DeploymentRow {
   name: string;
@@ -85,6 +86,7 @@ const environmentHelpOpen = ref(false);
 const now = ref(Date.now());
 let tick: ReturnType<typeof setInterval> | null = null;
 
+const deployHint = computed(() => deployFailureHint(deployError.value));
 const confirmOpen = computed(() => confirmBranch.value !== null);
 const confirmTarget = computed(
   () => status.value?.branches.find((b) => b.branch === confirmBranch.value) ?? null,
@@ -367,7 +369,8 @@ onBeforeUnmount(() => {
 
     <div class="page-scroll-body">
       <PageSkeleton :loading="loading && !status" kind="deployments" />
-      <p v-if="error && !status" class="dep-err">{{ error }}</p>
+      <p v-if="error && !status" class="dep-err" role="alert">{{ error }}</p>
+      <p v-if="error && !status" class="dep-err-hint">Press Refresh to try again.</p>
       <p v-if="error && status" class="dep-err" role="status">Refresh failed: {{ error }}</p>
 
       <template v-if="status">
@@ -378,9 +381,18 @@ onBeforeUnmount(() => {
         </div>
 
         <template v-else>
+          <p v-if="!status.branches.length" class="dep-panel dep-empty dep-empty-targets">
+            No deployment targets yet. Add a <code>[[deployments]]</code> block to
+            <a href="/settings?tab=toml">repoos.toml</a> for each service and branch you deploy.
+          </p>
+
           <!-- Shared branch state, stated once per branch: pushing a branch
              deploys every service on it, so the action lives here, not on rows. -->
-          <section class="dep-branches" aria-label="Branch deploy state">
+          <section
+            v-if="status.branches.length"
+            class="dep-branches"
+            aria-label="Branch deploy state"
+          >
             <article
               v-for="(b, i) in status.branches"
               :key="b.branch"
@@ -433,7 +445,12 @@ onBeforeUnmount(() => {
           </p>
 
           <!-- Services × branches matrix: one row per service, one column per branch. -->
-          <section class="dep-matrix" role="table" aria-label="Deployment targets">
+          <section
+            v-if="status.branches.length"
+            class="dep-matrix"
+            role="table"
+            aria-label="Deployment targets"
+          >
             <div class="dep-matrix-row dep-matrix-head" role="row">
               <div role="columnheader">Service</div>
               <div
@@ -590,7 +607,7 @@ onBeforeUnmount(() => {
             </div>
           </section>
 
-          <div class="dep-legend">
+          <div v-if="status.branches.length" class="dep-legend">
             <span v-for="(b, i) in status.branches" :key="b.branch" :style="branchAccent(i)">
               <span class="dep-dot"></span>{{ b.branch }}
             </span>
@@ -618,7 +635,8 @@ onBeforeUnmount(() => {
             class="dep-outcome dep-outcome--fail"
             role="alert"
           >
-            {{ deployError }}
+            <p v-if="deployHint" class="dep-fail-hint">{{ deployHint }}</p>
+            <pre class="dep-fail-output">{{ deployError }}</pre>
           </section>
         </template>
       </template>
@@ -682,7 +700,8 @@ onBeforeUnmount(() => {
             <p v-if="confirmBehind" class="dep-modal-warn">{{ confirmBehind }}</p>
 
             <div v-if="deployError" class="dep-modal-error" role="alert">
-              <strong>{{ deployError }}</strong>
+              <p v-if="deployHint" class="dep-fail-hint">{{ deployHint }}</p>
+              <pre class="dep-fail-output">{{ deployError }}</pre>
             </div>
           </div>
           <div class="dep-modal-actions">
@@ -755,6 +774,17 @@ onBeforeUnmount(() => {
   color: var(--red);
   margin: 12px 0;
 }
+.dep-err {
+  color: var(--red);
+  font-size: 13px;
+  margin: 12px 0 4px;
+  overflow-wrap: anywhere;
+}
+.dep-err-hint {
+  color: var(--txt-dim);
+  font-size: 12.5px;
+  margin: 0 0 12px;
+}
 
 .dep-panel {
   border: 1px solid var(--border);
@@ -795,14 +825,18 @@ onBeforeUnmount(() => {
 }
 .dep-branch-top {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
+  min-width: 0;
 }
 .dep-branch-name {
   font-family: var(--mono);
   font-weight: 700;
   font-size: 15px;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 .dep-ff {
   font-size: 11px;
@@ -810,7 +844,8 @@ onBeforeUnmount(() => {
   border: 1px solid var(--border);
   border-radius: 999px;
   padding: 2px 9px;
-  white-space: nowrap;
+  max-width: 100%;
+  overflow-wrap: anywhere;
 }
 .dep-branch-meta {
   color: var(--txt-faint);
@@ -844,6 +879,11 @@ onBeforeUnmount(() => {
 .dep-branch button {
   align-self: flex-start;
   margin-top: 2px;
+  /* A long branch name is in the label: let it wrap inside the card. */
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-align: left;
 }
 
 .dep-dirty {
@@ -862,6 +902,9 @@ onBeforeUnmount(() => {
   background: var(--panel-gradient);
   border-radius: 14px;
   overflow: hidden;
+}
+.dep-matrix-row > * {
+  min-width: 0;
 }
 .dep-matrix-row {
   display: grid;
@@ -915,12 +958,14 @@ onBeforeUnmount(() => {
   color: var(--txt-dim);
   font-size: 11px;
   line-height: 1.4;
+  overflow-wrap: anywhere;
 }
 .dep-env-error {
   margin: 4px 0 8px;
   color: var(--amber);
   font-size: 11px;
   line-height: 1.4;
+  overflow-wrap: anywhere;
 }
 .dep-matrix-head {
   background: color-mix(in srgb, var(--border) 30%, transparent);
@@ -956,15 +1001,18 @@ onBeforeUnmount(() => {
 .dep-service-name {
   font-weight: 750;
   font-size: 14.5px;
+  overflow-wrap: anywhere;
 }
 .dep-service-type {
   font-size: 11.5px;
   color: var(--txt-faint);
   font-family: var(--mono);
   margin-top: 3px;
+  overflow-wrap: anywhere;
 }
 .dep-cell {
   position: relative;
+  min-width: 0;
   padding: 16px 16px 16px 19px;
   border-left: 1px solid var(--border);
   display: flex;
@@ -1011,6 +1059,7 @@ onBeforeUnmount(() => {
 .dep-fresh {
   color: var(--txt-faint);
   font-size: 12px;
+  overflow-wrap: anywhere;
 }
 .dep-fresh code {
   font-family: var(--mono);
@@ -1019,6 +1068,7 @@ onBeforeUnmount(() => {
 .dep-service-sync {
   color: var(--txt-faint);
   font-size: 11.5px;
+  overflow-wrap: anywhere;
 }
 .dep-cell-actions {
   display: flex;
