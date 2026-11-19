@@ -38,15 +38,15 @@ Do not touch repoos.toml.
 "route": "/",
 "highlight": ".search-overlay",
 "steps": [
-  {
-    "waitFor": ".stat-link"
-  },
-  {
-    "click": ".search-input"
-  },
-  {
-    "waitMs": 900
-  }
+{
+  "waitFor": ".stat-link"
+},
+{
+  "click": ".search-input"
+},
+{
+  "waitMs": 900
+}
 ]
 },
 {
@@ -55,15 +55,15 @@ Do not touch repoos.toml.
 "route": "/work",
 "highlight": ".search-overlay",
 "steps": [
-  {
-    "waitFor": ".task-card"
-  },
-  {
-    "click": ".search-input"
-  },
-  {
-    "waitMs": 900
-  }
+{
+  "waitFor": ".task-card"
+},
+{
+  "click": ".search-input"
+},
+{
+  "waitMs": 900
+}
 ],
 "state": "board:withReviewTask"
 }
@@ -148,3 +148,4 @@ Do not touch repoos.toml.
 - 2026-11-19T16:17:54Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-19T16:24:36Z · body
 - 2026-11-19T16:27:13Z · queued message undelivered for 9m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-19T16:27:13Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 130) · last assistant: Now the scoped check. This is the gate — build staleness, format/lint, scoped tests, smoke test: · stderr: (empty)
