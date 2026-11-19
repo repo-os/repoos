@@ -1,4 +1,6 @@
 ---
+last_close_out_gate_ms: 569488
+last_close_out_gate_at: "2026-11-19T16:52:11.809Z"
 id: "1231"
 title: "QA pass: keyboard shortcuts and command palette across pages"
 type: bug
@@ -9,7 +11,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-keyboard-shortcuts-and-command-p
 created_at: "2026-11-19T13:47:53Z"
-updated_at: "2026-11-19T16:42:22Z"
+updated_at: "2026-11-19T16:52:11Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-19T16:36:25.391Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_passes: 3
@@ -164,3 +166,5 @@ Do not touch repoos.toml.
 - 2026-11-19T16:36:25Z · message_delivered: 1 message(s)
 - 2026-11-19T16:41:43Z · body
 - 2026-11-19T16:42:22Z · message_queued at 2026-11-19T16:42:22.978Z
+- 2026-11-19T16:52:11Z · close-out gate completed in 569s
+
