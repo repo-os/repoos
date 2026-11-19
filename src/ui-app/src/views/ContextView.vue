@@ -247,7 +247,7 @@ async function refreshDocs(): Promise<void> {
   try {
     const ok = await docs.loadDocs();
     if (!ok) {
-      refreshError.value = "Could not refresh docs.";
+      refreshError.value = "Could not refresh docs. Try again in a moment.";
     } else {
       const counts = countDocRefresh(before, docList.value);
       showRefreshMessage(formatDocRefreshMessage(counts));
@@ -385,7 +385,10 @@ watch(
             <div>{{ docsLoadError }}</div>
             <Button variant="outline" size="sm" @click="refreshDocs">Retry</Button>
           </div>
-          <div v-else-if="!docList.length" class="ctx-empty">No docs found.</div>
+          <div v-else-if="!docList.length" class="ctx-empty">
+            No docs found. Add a Markdown file under <code>docs/</code>, then select the refresh
+            button above.
+          </div>
           <div v-else class="doc-tree">
             <div v-if="refreshError" class="ctx-refresh-error">{{ refreshError }}</div>
             <template v-for="node in flatDocTree" :key="node.key">
@@ -450,7 +453,10 @@ watch(
             />
             <span class="ctx-skill-search-hint">Type to filter skills</span>
           </div>
-          <div v-if="registryError" class="ctx-refresh-error">{{ registryError }}</div>
+          <div v-if="registryError" class="ctx-refresh-error" role="alert">
+            <span>{{ registryError }}</span>
+            <span class="ctx-error-next">Try again in a moment, or pick another skill.</span>
+          </div>
           <div v-else-if="registryLoading" class="ctx-empty">Loading Skills.sh…</div>
           <button
             v-for="skill in registrySkills"
@@ -709,6 +715,18 @@ watch(
   font-weight: 500;
 }
 
+.tree-dir,
+.tree-file {
+  min-width: 0;
+}
+
+.tree-dir > span,
+.tree-file > span,
+.dir-name {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
 .dir-name {
   font-weight: 500;
   color: var(--txt-primary);
@@ -728,5 +746,11 @@ watch(
   border: 1px solid var(--red-border-tint);
   color: var(--txt);
   font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.ctx-error-next {
+  display: block;
+  margin-top: 3px;
+  color: var(--txt-dim);
 }
 </style>

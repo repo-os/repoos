@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 770070
-last_close_out_gate_at: "2026-11-19T20:13:21.419Z"
 id: "1238"
 title: "QA pass: Deployments and Context pages with failures and long data at all screen sizes"
 type: bug
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: 54ba3c9186f9f5e0295115444a7542551449f7c2
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-deployments-and-context-pages-wi
@@ -14,6 +13,8 @@ cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T18:26:58Z"
 updated_at: "2026-11-19T20:13:21Z"
+last_close_out_gate_ms: 770070
+last_close_out_gate_at: "2026-11-19T20:13:21.419Z"
 review_passes: 1
 engineer_stall_resume_log: "[{\"at\":\"2026-11-19T19:26:11.959Z\",\"reason\":\"handoff-deferred\"}]"
 ---
