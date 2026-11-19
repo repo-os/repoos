@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-work-board-drag-status-moves-and
 created_at: "2026-11-19T16:17:45Z"
-updated_at: "2026-11-19T17:32:39Z"
+updated_at: "2026-11-19T17:34:15Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -47,3 +47,4 @@ Do not touch repoos.toml.
 - 2026-11-19T17:14:30Z · message_delivered: 1 message(s)
 - 2026-11-19T17:14:30Z · status review→active
 - 2026-11-19T17:32:39Z · message_queued at 2026-11-19T17:32:39.832Z
+- 2026-11-19T17:34:15Z · CTO nudge: held — an undelivered message is already queued
