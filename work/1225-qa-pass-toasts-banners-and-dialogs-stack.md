@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-toasts-banners-and-dialogs-stack
 created_at: "2026-11-19T09:17:32Z"
-updated_at: "2026-11-19T14:51:53Z"
+updated_at: "2026-11-19T14:52:01Z"
 last_close_out_gate_ms: 251181
 last_close_out_gate_at: "2026-11-19T14:51:28.579Z"
 review_passes: 1
@@ -141,3 +141,4 @@ Do not touch repoos.toml.
 - 2026-11-19T14:46:32Z · note: review pass 1: good to go
 - 2026-11-19T14:51:28Z · close-out gate completed in 251s
 - 2026-11-19T14:51:53Z · status done→done, release:success
+- 2026-11-19T14:52:01Z · message_dropped: 1 queued message(s) discarded — task is done
