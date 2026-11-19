@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-work-board-drag-status-moves-and
 created_at: "2026-11-19T16:17:45Z"
-updated_at: "2026-11-19T18:13:32Z"
+updated_at: "2026-11-19T18:13:33Z"
 review_rounds: 1
 routing_switches: 1
 routing_escalations: 1
