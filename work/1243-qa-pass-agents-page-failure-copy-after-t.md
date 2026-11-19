@@ -57,3 +57,4 @@ Do not touch repoos.toml.
 - 2026-11-19T20:57:01Z · CTO nudge: held — remote validation is running
 - 2026-11-19T20:57:12Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (3991ce606) during finalization (#0734)
 - 2026-11-19T21:05:43Z · message_queued at 2026-11-19T21:05:43.621Z
+- 2026-11-19T21:05:43Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
