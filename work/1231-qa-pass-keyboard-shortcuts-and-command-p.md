@@ -157,3 +157,4 @@ Do not touch repoos.toml.
 - 2026-11-19T16:32:03Z · body
 - 2026-11-19T16:33:01Z · status active→review
 - 2026-11-19T16:35:36Z · note: shots: failed — browser capture cancelled
+- 2026-11-19T16:35:36Z · handoff failed · task-file handoff failed at verify · ui verification failed: timed out waiting for the task's browser capture
