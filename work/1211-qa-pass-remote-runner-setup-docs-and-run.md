@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-remote-runner-setup-docs-and-run
 created_at: "2026-11-19T00:17:32Z"
-updated_at: "2026-11-19T01:13:09Z"
+updated_at: "2026-11-19T01:13:12Z"
 review_rounds: 2
 routing_switches: 1
 routing_escalations: 1
@@ -63,3 +63,4 @@ Do not touch repoos.toml.
 - 2026-11-19T01:13:08Z · note: review pass 2: needs some work
 - 2026-11-19T01:13:09Z · message_delivered: 2 message(s)
 - 2026-11-19T01:13:09Z · status review→active
+- 2026-11-19T01:13:12Z · CTO nudge: held — remote validation is running
