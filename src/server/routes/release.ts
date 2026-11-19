@@ -542,7 +542,9 @@ async function autoPublishChecks(ctx: NotesRunContext, requestedAt: string): Pro
     return;
   }
   if (await releaseTagExists(ctx.config, current.tag)) {
-    fail(`${current.tag} already exists, so nothing was published.`);
+    fail(
+      `${current.tag} already exists, so nothing was published. Pick a new version number and publish again.`,
+    );
     return;
   }
   // The draft's identity is its release-relevant commit context. A bookkeeping

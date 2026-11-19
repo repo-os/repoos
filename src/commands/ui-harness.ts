@@ -34,7 +34,7 @@ export interface SmokeResponse {
  */
 export interface SmokeRoute {
   /** The intercepted request (URL, method, post data) — used to branch handlers. */
-  request(): { url(): string };
+  request(): { url(): string; method(): string };
   fetch(): Promise<{
     status(): number;
     body(): Promise<Buffer | string>;
