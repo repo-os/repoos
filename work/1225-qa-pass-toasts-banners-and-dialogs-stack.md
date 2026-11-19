@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-19T14:29:14.920Z: repoos check failed: ui verification failed (2 issue(s)): [console] Failed to preconnect to https://fonts.googleapis.com/. Error: Error resolving “fonts.googleapis.com”: Name or service not known; [console] Failed to preconnect to https://fonts.gstatic.com/. Error: Error resolving “fonts.gstatic.com”: Name or service not known"
 id: "1225"
 title: "QA pass: toasts, banners and dialogs stacking and dismissal at all screen sizes"
 type: bug
@@ -10,7 +12,6 @@ created_by: t@t
 branch: feat/qa-pass-toasts-banners-and-dialogs-stack
 created_at: "2026-11-19T09:17:32Z"
 updated_at: "2026-11-19T14:29:14Z"
-last_check_failure: "repoos check at 2026-11-19T13:05:06.200Z: repoos check failed: check-fmt:check — Formatting failed — run `bun run fmt` to fix:"
 handoff_signal_retry_count: 2
 dev_error_count: 1
 engineer_stall_resume_log: "[{\"at\":\"2026-11-19T10:08:29.016Z\",\"reason\":\"clean-exit-without-handoff\"}]"
@@ -127,3 +128,4 @@ Do not touch repoos.toml.
 - 2026-11-19T14:29:11Z · message_queued at 2026-11-19T14:29:11.769Z
 - 2026-11-19T14:29:11Z · handoff failed · handoff recovery attempted · finalization failed
 - 2026-11-19T14:29:14Z · message_delivered: 1 message(s)
+
