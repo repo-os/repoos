@@ -2,14 +2,14 @@
 id: "1223"
 title: "QA pass: Agents page, model providers and routing tab at all screen sizes"
 type: bug
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
 branch: ""
 created_at: "2026-11-19T07:47:39Z"
-updated_at: "2026-11-19T07:47:39Z"
+updated_at: "2026-11-19T07:47:46Z"
 ---
 ## Problem
 The Agents page (agent list, Model providers, Model routing tab) has not been QA-checked since the routing provider changed to Jev, including the missing-API-key state.
@@ -25,3 +25,4 @@ Do not touch repoos.toml.
 ## Activity
 
 - 2026-11-19T07:47:39Z · created · t@t
+- 2026-11-19T07:47:46Z · status inbox→ready
