@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { SERVER_UNREACHABLE_MESSAGE } from "../src/api";
 import { createPinia, setActivePinia } from "pinia";
 import {
   SHOT_PREVIEW_APPLIED_ATTR,
@@ -66,7 +67,7 @@ describe("shot preview board fixtures (#0743)", () => {
 
   it.each([
     ["work:empty", null],
-    ["work:failedLoad", "Can't reach the RepoOS server — it may be down."],
+    ["work:failedLoad", SERVER_UNREACHABLE_MESSAGE],
   ] as const)("seeds the %s first-run Work state", (fixture, error) => {
     setActivePinia(createPinia());
     const repo = useRepoStore();

@@ -6,6 +6,7 @@ import WorkView from "../src/views/WorkView.vue";
 import { useRepoStore } from "../src/stores/repo";
 import { useUiStore } from "../src/stores/ui";
 import * as apiMod from "../src/api";
+import { SERVER_UNREACHABLE_MESSAGE } from "../src/api";
 import type { Task } from "../src/types";
 
 const routeState = vi.hoisted(() => ({
@@ -385,7 +386,7 @@ describe("mobile Work queue", () => {
   it("shows initial board-load failures and clears them after a successful retry", async () => {
     const repo = useRepoStore();
     repo.loading = false;
-    repo.boardLoadError = "Can't reach the RepoOS server — it may be down.";
+    repo.boardLoadError = SERVER_UNREACHABLE_MESSAGE;
     const wrapper = mountQueue();
     expect(wrapper.get("[data-testid='mobile-work-load-error']").text()).toContain(
       "Check that the RepoOS server is running, then retry.",
