@@ -2,14 +2,14 @@
 id: "1212"
 title: "QA pass: Hub and web app copy review – wording, plain-English errors and consistent terminology"
 type: chore
-status: inbox
+status: ready
 priority: p3
 area: [web, mobile, macos]
 assigned_to: ai
 created_by: t@t
 branch: ""
 created_at: "2026-11-19T00:47:39Z"
-updated_at: "2026-11-19T00:47:39Z"
+updated_at: "2026-11-19T00:47:42Z"
 ---
 ## Problem
 Wording across the web app and Hub apps may be inconsistent or jargon-heavy (infra terms in user-facing errors).
@@ -24,3 +24,4 @@ Do not touch repoos.toml.
 ## Activity
 
 - 2026-11-19T00:47:39Z · created · t@t
+- 2026-11-19T00:47:42Z · status inbox→ready
