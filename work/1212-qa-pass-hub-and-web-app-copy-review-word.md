@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-hub-and-web-app-copy-review-word
 created_at: "2026-11-19T00:47:39Z"
-updated_at: "2026-11-19T00:58:16Z"
+updated_at: "2026-11-19T00:59:00Z"
 ---
 ## Problem
 Wording across the web app and Hub apps may be inconsistent or jargon-heavy (infra terms in user-facing errors).
@@ -30,3 +30,4 @@ Do not touch repoos.toml.
 - 2026-11-19T00:58:15Z · note: ui verification passed: 1 shot captured with clean console
 - 2026-11-19T00:58:16Z · status active→review
 - 2026-11-19T00:58:16Z · message_queued at 2026-11-19T00:58:16.919Z
+- 2026-11-19T00:59:00Z · note: review pass 1: needs some work
