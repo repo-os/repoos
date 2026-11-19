@@ -1,6 +1,13 @@
 import { RepoOsApi } from "../cli/repoos-api.js";
 import { normalizeProjectEnvironmentConsumer } from "../core/project-environments.js";
 
+/** Printed on a bad invocation and asserted (against the banner) by secrets.test.ts. */
+export const SECRETS_USAGE =
+  "Usage: repoos secrets <list|add|replace|delete> <environment> [KEY] | bind <consumer> <environment> [KEY ...] | bindings (values come from stdin or a hidden prompt)";
+
+/** Every action `cmdSecrets` dispatches on — the source of truth the usage strings must cover. */
+export const SECRET_ACTIONS = ["list", "add", "replace", "delete", "bind", "bindings"] as const;
+
 export function assertSecretMutationAllowed(
   action: "add" | "replace" | "delete",
   row: { status: string; inherited?: boolean } | undefined,
@@ -90,9 +97,7 @@ export async function cmdSecrets(args: string[]): Promise<number> {
     }
   }
   if (!action || !environment || !["list", "add", "replace", "delete"].includes(action)) {
-    console.error(
-      "Usage: repoos secrets <list|add|replace|delete> <environment> [KEY] (values come from stdin or a hidden prompt)",
-    );
+    console.error(SECRETS_USAGE);
     return 2;
   }
   const api = new RepoOsApi();

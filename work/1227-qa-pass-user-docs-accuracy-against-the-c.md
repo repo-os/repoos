@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 644041
-last_close_out_gate_at: "2026-11-19T13:58:21.394Z"
 id: "1227"
 title: "QA pass: user-docs accuracy against the current UI and CLI"
 type: bug
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: dc68eb642174cb3eafae5a54d8b8a55ce3ef1cb9
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-user-docs-accuracy-against-the-c
 created_at: "2026-11-19T09:47:43Z"
 updated_at: "2026-11-19T13:58:21Z"
+last_close_out_gate_ms: 644041
+last_close_out_gate_at: "2026-11-19T13:58:21.394Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-19T13:25:30.704Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_passes: 6
