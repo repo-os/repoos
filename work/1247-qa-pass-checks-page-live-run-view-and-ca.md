@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-19T21:38:45Z"
-review_passes: 1
 id: "1247"
 title: "QA pass: Checks page live run view and cancel/retry controls"
 type: bug
@@ -13,6 +11,7 @@ branch: feat/qa-pass-checks-page-live-run-view-and-ca
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T21:07:03Z"
+updated_at: "2026-11-19T21:36:43Z"
 ---
 ## Problem
 The live check run view, cancel and retry controls have not been checked for running, queued, stalled and failed runs at phone widths.
@@ -30,12 +29,4 @@ Do not touch repoos.toml.
 - 2026-11-19T21:07:08Z · status inbox→ready
 - 2026-11-19T21:07:09Z · cli_override, model_override
 - 2026-11-19T21:07:10Z · status ready→active, branch
-- 2026-11-19T21:17:35Z · body
-- 2026-11-19T21:20:59Z · note: adopted orphaned engineer pid 30233
-- 2026-11-19T21:21:54Z · body
-- 2026-11-19T21:25:58Z · CTO nudge: held — handoff gate is running
-- 2026-11-19T21:36:42Z · note: ui verification passed: 1 shot captured with clean console
 - 2026-11-19T21:36:43Z · status active→review
-- 2026-11-19T21:36:43Z · message_queued at 2026-11-19T21:36:43.580Z
-- 2026-11-19T21:38:45Z · note: review pass 1: good to go
-
