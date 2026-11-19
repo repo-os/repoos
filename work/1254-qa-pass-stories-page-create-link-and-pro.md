@@ -2,14 +2,14 @@
 id: "1254"
 title: "QA pass: Stories page create, link and progress flows at all screen sizes"
 type: bug
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
 branch: ""
 created_at: "2026-11-19T23:27:29Z"
-updated_at: "2026-11-19T23:27:29Z"
+updated_at: "2026-11-19T23:27:36Z"
 ---
 ## Problem
 Creating a story, linking tasks to it and reading its progress have not been exercised end to end with edge cases.
@@ -25,3 +25,4 @@ Do not touch repoos.toml.
 ## Activity
 
 - 2026-11-19T23:27:29Z · created · t@t
+- 2026-11-19T23:27:36Z · status inbox→ready
