@@ -12,6 +12,7 @@ cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T18:26:58Z"
 updated_at: "2026-11-19T19:26:11Z"
+engineer_stall_resume_log: "[{\"at\":\"2026-11-19T19:26:11.959Z\",\"reason\":\"handoff-deferred\"}]"
 ---
 ## Problem
 The Deployments and Context pages have not been checked with failed deployments, long logs and missing data at phone, tablet and desktop widths.
@@ -51,3 +52,4 @@ Do not touch repoos.toml.
 - 2026-11-19T19:26:11Z · handoff failed · remote validation failed: test failure: tests/checks-releases-data-responsive.test.ts > Checks and Releases long data (WebKit) > renders real page components with long data at 375 px on thinkpad — fix it in the feature branch and re-run the gate
 - 2026-11-19T19:26:11Z · message_queued at 2026-11-19T19:26:11.677Z
 - 2026-11-19T19:26:11Z · handoff failed · handoff recovery attempted · finalization failed
+- 2026-11-19T19:26:11Z · watchdog: auto-resumed engineer to read a deferred handoff message · resume 1/3
