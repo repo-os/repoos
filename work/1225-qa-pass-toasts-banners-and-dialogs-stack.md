@@ -2,14 +2,14 @@
 id: "1225"
 title: "QA pass: toasts, banners and dialogs stacking and dismissal at all screen sizes"
 type: bug
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
 branch: ""
 created_at: "2026-11-19T09:17:32Z"
-updated_at: "2026-11-19T09:17:32Z"
+updated_at: "2026-11-19T09:17:35Z"
 ---
 ## Problem
 The Hub and web app have many toasts, banners and confirmation dialogs; they have not been checked together for stacking, dismissal and keyboard use at small sizes.
@@ -25,3 +25,4 @@ Do not touch repoos.toml.
 ## Activity
 
 - 2026-11-19T09:17:32Z · created · t@t
+- 2026-11-19T09:17:35Z · status inbox→ready
