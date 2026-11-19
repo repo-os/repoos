@@ -2,7 +2,7 @@
 id: "1242"
 title: "QA pass: Hub server picker and add-server flow copy and error states"
 type: bug
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/qa-pass-hub-server-picker-and-add-server
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T19:07:19Z"
-updated_at: "2026-11-19T19:45:16Z"
+updated_at: "2026-11-19T19:45:59Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -49,3 +49,4 @@ Do not touch repoos.toml.
 - 2026-11-19T19:44:05Z · body
 - 2026-11-19T19:45:15Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The handoff blocker is fixed. The engineering report draft is written, the scoped check passes, and the worktree has no uncommitted changes. **What I found:** Round 1's code already covers the review's findings. The discovery error paragra… · stderr: (empty)
 - 2026-11-19T19:45:16Z · note: handoff requested (cli)
+- 2026-11-19T19:45:59Z · status active→review
