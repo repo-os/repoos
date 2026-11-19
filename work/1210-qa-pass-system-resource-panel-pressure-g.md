@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-system-resource-panel-pressure-g
 created_at: "2026-11-18T23:47:41Z"
-updated_at: "2026-11-19T00:49:08Z"
+updated_at: "2026-11-19T00:49:09Z"
 ---
 ## Problem
 Resource and pressure displays (warning, critical, swap/compressor numbers) need a hands-on pass in all states.
@@ -32,3 +32,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-19T00:38:58Z · CTO nudge: held — handoff gate is running
 - 2026-11-19T00:49:07Z · note: ui verification passed: 1 shot captured with clean console
 - 2026-11-19T00:49:08Z · status active→review
+- 2026-11-19T00:49:09Z · message_queued at 2026-11-19T00:49:09.071Z
