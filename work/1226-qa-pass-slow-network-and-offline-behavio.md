@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-slow-network-and-offline-behavio
 created_at: "2026-11-19T09:47:34Z"
-updated_at: "2026-11-19T16:04:35Z"
+updated_at: "2026-11-19T16:07:43Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -165,3 +165,4 @@ Do not touch repoos.toml.
 - 2026-11-19T15:57:42Z · body
 - 2026-11-19T16:04:35Z · message_queued at 2026-11-19T16:04:35.617Z
 - 2026-11-19T16:04:35Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-19T16:07:43Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
