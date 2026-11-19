@@ -194,6 +194,40 @@ describe("DeploymentsView matrix (#0365)", () => {
     wrapper.unmount();
   });
 
+  it("renders a refused deployment in its open confirmation dialog fixture", async () => {
+    window.history.replaceState({}, "", "/deployments?shotState=deployments%3AdeployFailure");
+    const wrapper = await mountView();
+    expect(document.body.querySelector('[role="dialog"]')?.textContent).toContain("Deploy prod");
+    expect(document.body.querySelector('[role="alert"]')?.textContent).toContain(
+      "Push rejected: remote branch has diverged",
+    );
+    expect(api).not.toHaveBeenCalled();
+    wrapper.unmount();
+  });
+
+  it("keeps the deploy confirmation open and reports a refused push", async () => {
+    api.mockImplementation(async (path) => {
+      if (path === "/api/deployments") return status() as never;
+      if (path === "/api/project-environments") return { environments: [] } as never;
+      if (path === "/api/deployments/deploy")
+        throw new Error("Push rejected: remote branch has diverged");
+      throw new Error(`Unexpected API route: ${path}`);
+    });
+    const wrapper = await mountView();
+    await wrapper.find(".dep-branch button").trigger("click");
+    const dialog = document.body.querySelector('[role="dialog"]');
+    expect(dialog).not.toBeNull();
+    const dialogButtons = dialog!.querySelectorAll("button");
+    dialogButtons[1]!.click();
+    await flushPromises();
+
+    expect(document.body.querySelector('[role="dialog"]')?.textContent).toContain("Deploy prod");
+    expect(document.body.querySelector('[role="alert"]')?.textContent).toContain(
+      "Push rejected: remote branch has diverged",
+    );
+    wrapper.unmount();
+  });
+
   it("loads deployments for members without calling the admin-only environment route or exposing binding controls", async () => {
     api.mockImplementation(async (path) => {
       if (path === "/api/deployments")

@@ -4,6 +4,9 @@
  * on preview builds (`isPreviewBuild`).
  */
 export const SHOT_PREVIEW_FIXTURE_IDS = [
+  // #1208 — Login screen states for the auth-disabled managed preview.
+  "auth:login",
+  "auth:otp",
   // #0923 — Control dashboard Codebase data so worktree GC captures never
   // race the live resource sampler's loading state.
   "system:worktreeGc",
@@ -182,6 +185,9 @@ export const SHOT_PREVIEW_FIXTURE_IDS = [
   // #0931 — fake deployment target and environment metadata for a fresh
   // Deployments-page capture; never fetches project secrets or provider data.
   "deployments:environmentBinding",
+  // #1207 — open the deploy confirmation with a refused-push error so the
+  // recovery state can be reviewed without touching a remote.
+  "deployments:deployFailure",
   // #0950 — pin the Deployments first-load skeleton for deterministic shots.
   "deployments:loading",
   // #0805 — clears the configured editor so the fallback "Set editor in

@@ -2,6 +2,7 @@
 import { stripAnsi } from "./close-out-failure.js";
 
 export type AgentFailureReasonId =
+  | "missing-cli"
   | "auth"
   | "model-unavailable"
   | "out-of-credit"
@@ -16,6 +17,8 @@ export interface AgentFailureReason {
 
 const AUTH =
   /(?:not logged in|not authenticated|unauthenticated|authentication (?:failed|expired)|token expired|sign(?:ed)? out|please log in|oauth.*expired)/i;
+const MISSING_CLI =
+  /(?:\bENOENT\b|could not launch .+|command not found|no such file or directory)/i;
 const MODEL =
   /(?:cannot use this model|model.{0,40}(?:unavailable|not available|not found|unsupported)|unknown model)/i;
 const CREDIT =
@@ -99,6 +102,12 @@ function pickFallbackSummary(detail: string, cli: string): string {
 export function classifyAgentFailure(detail: string, cli = ""): AgentFailureReason | null {
   const text = stripAnsi(detail).trim();
   if (!text) return null;
+  if (MISSING_CLI.test(text))
+    return {
+      id: "missing-cli",
+      summary: `${cliName(cli)} CLI is not installed or could not be found.`,
+      fix: `Install ${cliName(cli)} and make sure its CLI is on this computer's PATH.`,
+    };
   if (/github copilot/i.test(cli) && /Reasoning effort .+ is not supported for model/i.test(text)) {
     return {
       id: "model-unavailable",

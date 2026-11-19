@@ -23,6 +23,7 @@ describe("classifyAgentFailure", () => {
   });
 
   it.each([
+    ["opencode", "Could not launch opencode: spawn opencode ENOENT", "missing-cli"],
     ["cursor", "Cannot use this model: composer-2.5", "model-unavailable"],
     ["Claude Code", "OAuth token expired; please log in again", "auth"],
     ["GitHub Copilot", "Auto preference balance is unavailable", "model-unavailable"],
@@ -30,6 +31,16 @@ describe("classifyAgentFailure", () => {
     ["opencode", "ENOTFOUND api.example.test", "network"],
   ])("classifies %s failure", (cli, text, id) => {
     expect(classifyAgentFailure(text, cli)?.id).toBe(id);
+  });
+
+  it("gives an install and PATH fix for a missing CLI", () => {
+    expect(
+      classifyAgentFailure("Could not launch opencode: spawn opencode ENOENT", "opencode"),
+    ).toEqual({
+      id: "missing-cli",
+      summary: "OpenCode CLI is not installed or could not be found.",
+      fix: "Install OpenCode and make sure its CLI is on this computer's PATH.",
+    });
   });
 
   it.each([
