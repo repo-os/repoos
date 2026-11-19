@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-19T14:46:32Z"
-review_passes: 1
 id: "1225"
 title: "QA pass: toasts, banners and dialogs stacking and dismissal at all screen sizes"
 type: bug
@@ -11,9 +9,10 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-toasts-banners-and-dialogs-stack
 created_at: "2026-11-19T09:17:32Z"
-last_check_failure: "repoos check at 2026-11-19T14:29:14.920Z: repoos check failed: ui verification failed (2 issue(s)): [console] Failed to preconnect to https://fonts.googleapis.com/. Error: Error resolving “fonts.googleapis.com”: Name or service not known; [console] Failed to preconnect to https://fonts.gstatic.com/. Error: Error resolving “fonts.gstatic.com”: Name or service not known"
+updated_at: "2026-11-19T14:44:04Z"
 handoff_signal_retry_count: 2
 dev_error_count: 1
+engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\",\"at\":\"2026-11-19T09:51:24.864Z\",\"kind\":\"dev-error\"}]"
 engineer_stall_resume_log: "[{\"at\":\"2026-11-19T10:08:29.016Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
 ## Problem
@@ -81,59 +80,4 @@ Do not touch repoos.toml.
 - 2026-11-19T12:26:24Z · message_queued at 2026-11-19T12:26:24.150Z
 - 2026-11-19T12:26:24Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-19T12:27:16Z · body
-- 2026-11-19T12:31:24Z · CTO nudge: held — an undelivered message is already queued
-- 2026-11-19T12:52:17Z · queued message undelivered for 26m and the engineer produced no output — ending the turn so it is delivered
-- 2026-11-19T12:52:17Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 130) · last assistant: Report draft is at ~1200 words. Now the final scoped check on the post-merge tree: · stderr: (empty)
-- 2026-11-19T12:52:17Z · message_delivered: 1 message(s)
-- 2026-11-19T12:52:59Z · CTO nudge: held — handoff gate is running
-- 2026-11-19T13:04:44Z · body
-- 2026-11-19T13:05:03Z · message_queued at 2026-11-19T13:05:03.043Z
-- 2026-11-19T13:05:06Z · message_delivered: 1 message(s)
-- 2026-11-19T13:06:24Z · message_queued at 2026-11-19T13:06:24.152Z
-- 2026-11-19T13:06:24Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-19T13:09:32Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
-- 2026-11-19T13:09:33Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 130) · last assistant: The server's check found unformatted files (likely the pre-format version from the checkpoint commit). Formatter has now fixed the working tree — re-run the scoped check: · stderr: (empty)
-- 2026-11-19T13:09:33Z · message_delivered: 1 message(s)
-- 2026-11-19T13:10:54Z · message_queued at 2026-11-19T13:10:54.733Z
-- 2026-11-19T13:10:55Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-19T13:11:24Z · CTO nudge: held — an undelivered message is already queued
-- 2026-11-19T13:14:02Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
-- 2026-11-19T13:14:02Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 130) · last assistant: The server's check found unformatted files (likely the pre-format version from the checkpoint commit). Formatter has now fixed the working tree — re-run the scoped check: · stderr: (empty)
-- 2026-11-19T13:14:03Z · message_delivered: 1 message(s)
-- 2026-11-19T13:16:24Z · message_queued at 2026-11-19T13:16:24.194Z
-- 2026-11-19T13:16:24Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-19T13:17:45Z · CTO nudge: held — an undelivered message is already queued
-- 2026-11-19T13:19:32Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
-- 2026-11-19T13:19:32Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 130) · last assistant: The server's check found unformatted files (likely the pre-format version from the checkpoint commit). Formatter has now fixed the working tree — re-run the scoped check: · stderr: (empty)
-- 2026-11-19T13:19:33Z · message_delivered: 1 message(s)
-- 2026-11-19T13:20:53Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The scoped check is now running in the background. Quick status for the check-in while it runs: - **Where things stand:** the handoff failed once at the format step (`check-fmt:check`) — the server's check saw a stale, unformatted copy of … · stderr: (empty)
-- 2026-11-19T13:20:54Z · orphaned run process stopped · pid 39827 · ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new -o ConnectTimeout=15 -o ServerAliveInterval · cpu 0s · age 14m
-- 2026-11-19T13:21:24Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-19T13:21:35Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The scoped `repoos check` is still running in the background (no step output yet — it prints as steps complete, and the test suite alone took ~7 minutes of the last green run). I'm letting it finish rather than stacking a second run on top… · stderr: (empty)
-- 2026-11-19T13:23:31Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-19T13:27:37Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: That explains the silence — the background command is `repoos check | tail -25`, and `tail` buffers everything until the check exits, so zero bytes is expected mid-run, not a hang. The check is still in progress (the earlier green run took… · stderr: (empty)
-- 2026-11-19T13:28:25Z · body
-- 2026-11-19T13:31:24Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-19T13:36:24Z · CTO nudge: held — handoff gate is running
-- 2026-11-19T13:41:38Z · body
-- 2026-11-19T13:45:27Z · note: ui verification passed: 2 of 2 shots captured with clean console
-- 2026-11-19T13:45:28Z · message_queued at 2026-11-19T13:45:28.275Z
-- 2026-11-19T13:46:24Z · CTO nudge: held — an undelivered message is already queued
-- 2026-11-19T13:47:41Z · note: agent fallback: codex + gpt-6-luna is paused (out of usage since 2026-11-19T07:09:32.657Z: Codex hit a provider quota or rate limit. Wait for the provider limit to reset, then retry. (CLI: error: You’ve hit your usage limit. Upgrade to Pro (https://chatgpt.com/explore/pro), visit https://chatgpt.com/codex/settings/usage to purcha) — using opencode + opencode-go/glm-5.3-flash
-- 2026-11-19T13:47:43Z · message_delivered: 1 message(s)
-- 2026-11-19T14:02:15Z · body
-- 2026-11-19T14:04:36Z · CTO nudge: held — handoff gate is running
-- 2026-11-19T14:09:51Z · CTO nudge: held — handoff gate is running
-- 2026-11-19T14:29:11Z · note: ui verification failed: ui verification failed (2 issue(s)): [console] Failed to preconnect to https://fonts.googleapis.com/. Error: Error resolving “fonts.googleapis.com”: Name or service not known; [console] Failed to preconnect to https://fonts.gstatic.com/. Error: Error resolving “fonts.gstatic.com”: Name or service not known
-- 2026-11-19T14:29:11Z · message_queued at 2026-11-19T14:29:11.769Z
-- 2026-11-19T14:29:11Z · handoff failed · handoff recovery attempted · finalization failed
-- 2026-11-19T14:29:14Z · message_delivered: 1 message(s)
-- 2026-11-19T14:31:19Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The scoped check is running in the background (log at `/tmp/repoos-check-1225.log`). Status for this cycle: - **Root cause of the verify failure:** not flaky timing and not caused by the UI itself. The handoff verify step failed my declare… · stderr: (empty)
-- 2026-11-19T14:34:51Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-19T14:35:06Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The check has run through the build and test steps (all green so far — 4.5 MB of output) and is now at the UI smoke step, queued for a Playwright slot (position 2 — the server's own verify capture is ahead of it). That's the documented nor… · stderr: (empty)
-- 2026-11-19T14:39:51Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-19T14:44:03Z · note: ui verification passed: 2 of 2 shots captured with clean console
 - 2026-11-19T14:44:04Z · status active→review
-- 2026-11-19T14:44:04Z · message_queued at 2026-11-19T14:44:04.871Z
-- 2026-11-19T14:46:32Z · note: review pass 1: good to go
-

@@ -1,10 +1,63 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, nextTick, onBeforeUnmount, ref, watch } from "vue";
 import { Copy, LoaderCircle, RotateCcw, WifiOff } from "lucide-vue-next";
-import { dismissRecovery, reloadNow, uiRecoveryState } from "../lib/uiRecovery";
+import {
+  dismissRecovery,
+  reloadNow,
+  setToastPanelDrop,
+  TOAST_PANEL_DROP_BANNER_VAR,
+  uiRecoveryState,
+} from "../lib/uiRecovery";
 import Button from "./ui/button.vue";
 
 const recovery = uiRecoveryState();
+
+// #1225 — while this banner is up it covers the top-right toast stack at phone
+// widths (the banner floats at z-index 1000, the toasts at 100), leaving the
+// toasts' dismiss buttons dead under it. Publish the banner's bottom edge as a
+// CSS var the toast panel takes as an extra drop, so the stack moves below the
+// banner while it is visible and returns when it is dismissed or unmounted.
+const bannerEl = ref<HTMLElement | null>(null);
+let toastTopObserver: ResizeObserver | undefined;
+
+function updateToastPanelTop(): void {
+  const el = bannerEl.value;
+  if (!el || !recovery.kind) {
+    setToastPanelDrop(TOAST_PANEL_DROP_BANNER_VAR, null);
+    return;
+  }
+  setToastPanelDrop(TOAST_PANEL_DROP_BANNER_VAR, el.getBoundingClientRect().bottom);
+}
+
+function startToastTopTracking(): void {
+  void nextTick(() => {
+    updateToastPanelTop();
+    if (typeof ResizeObserver !== "undefined" && bannerEl.value) {
+      toastTopObserver?.disconnect();
+      toastTopObserver = new ResizeObserver(updateToastPanelTop);
+      toastTopObserver.observe(bannerEl.value);
+    }
+  });
+}
+
+watch(
+  () => recovery.kind,
+  (kind) => {
+    if (kind) startToastTopTracking();
+    else {
+      toastTopObserver?.disconnect();
+      toastTopObserver = undefined;
+      setToastPanelDrop(TOAST_PANEL_DROP_BANNER_VAR, null);
+    }
+  },
+  { immediate: true },
+);
+onBeforeUnmount(() => {
+  toastTopObserver?.disconnect();
+  toastTopObserver = undefined;
+  setToastPanelDrop(TOAST_PANEL_DROP_BANNER_VAR, null);
+});
+
 const server = computed(() => {
   const name = recovery.projectName ? `${recovery.projectName} server` : "RepoOS server";
   return recovery.origin ? `${name} at ${recovery.origin}` : name;
@@ -56,7 +109,13 @@ const detail = computed(() => {
 
 <template>
   <Teleport to="body">
-    <div v-if="recovery.kind" class="ui-recovery-banner" data-overlay-layer="floating" role="alert">
+    <div
+      v-if="recovery.kind"
+      ref="bannerEl"
+      class="ui-recovery-banner"
+      data-overlay-layer="floating"
+      role="alert"
+    >
       <LoaderCircle v-if="recovery.reloading" class="ui-recovery-icon ui-recovery-spinner" />
       <WifiOff v-else-if="recovery.kind === 'offline'" class="ui-recovery-icon" />
       <RotateCcw v-else class="ui-recovery-icon" />

@@ -50,6 +50,68 @@ describe("page-browser-gate (#0680)", () => {
     expect(collector.drain()[0]?.message).toContain("Invalid layer");
   });
 
+  it("treats failed webfont preconnects as benign console errors (#1225)", () => {
+    const collector = createPageGateCollector();
+    const handlers: Record<string, Array<(arg: unknown) => void>> = {
+      console: [],
+      pageerror: [],
+      response: [],
+    };
+    const page = {
+      on(event: string, handler: (arg: unknown) => void) {
+        handlers[event]?.push(handler);
+      },
+      async evaluate<T>(fn: () => T): Promise<T> {
+        return fn();
+      },
+      async setViewportSize(): Promise<void> {},
+    } as unknown as PageGateListenerPage;
+    collector.attach(page);
+    // WebKit's console shape for a failed <link rel="preconnect"> on an
+    // offline capture host (both reported by the #1225 handoff verify step).
+    handlers.console[0]?.({
+      type: () => "error",
+      text: () =>
+        'Failed to preconnect to https://fonts.googleapis.com/. Error: Error resolving "fonts.googleapis.com": Name or service not known',
+      location: () => ({ url: "" }),
+    });
+    handlers.console[0]?.({
+      type: () => "error",
+      text: () =>
+        'Failed to preconnect to https://fonts.gstatic.com/. Error: Error resolving "fonts.gstatic.com": Name or service not known',
+      location: () => ({ url: "" }),
+    });
+    expect(collector.drain()).toHaveLength(0);
+  });
+
+  it("still records non-benign preconnect failures", () => {
+    const collector = createPageGateCollector();
+    const handlers: Record<string, Array<(arg: unknown) => void>> = {
+      console: [],
+      pageerror: [],
+      response: [],
+    };
+    const page = {
+      on(event: string, handler: (arg: unknown) => void) {
+        handlers[event]?.push(handler);
+      },
+      async evaluate<T>(fn: () => T): Promise<T> {
+        return fn();
+      },
+      async setViewportSize(): Promise<void> {},
+    } as unknown as PageGateListenerPage;
+    collector.attach(page);
+    handlers.console[0]?.({
+      type: () => "error",
+      text: () =>
+        'Failed to preconnect to https://evil.example/. Error: Error resolving "evil.example": Name or service not known',
+      location: () => ({ url: "" }),
+    });
+    const issues = collector.drain();
+    expect(issues).toHaveLength(1);
+    expect(issues[0]?.kind).toBe("console");
+  });
+
   it("ignores benign failed resource URLs", () => {
     expect(isBenignFailedResourceUrl("http://127.0.0.1:1/favicon.ico")).toBe(true);
     expect(isBenignFailedResourceUrl("http://127.0.0.1:1/app.js")).toBe(false);

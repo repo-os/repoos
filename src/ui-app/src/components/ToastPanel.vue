@@ -61,7 +61,14 @@ const COLORS: Record<string, { bg: string; border: string; icon: string }> = {
 <style scoped>
 .toast-panel {
   position: fixed;
-  top: calc(64px + var(--safe-top));
+  /* Floating surfaces that share this corner publish an extra drop while they
+     cover the stack (#1225): the recovery banner (top-centered, z-index 1000)
+     and the notice-bell popover. Each var is a calc relative to the default
+     top; the stack sits below whichever surface is up. */
+  top: calc(
+    64px + var(--safe-top) +
+      max(var(--toast-panel-drop-banner, 0px), var(--toast-panel-drop-notice, 0px))
+  );
   right: 14px;
   z-index: 100;
   display: flex;

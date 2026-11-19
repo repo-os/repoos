@@ -1331,6 +1331,30 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
         "info",
       );
       break;
+    case "toast:stack":
+      // #1225 — pin the maximum five-toast stack (mixed severities, one
+      // multi-line) *without* pushToast's 6s auto-expiry timers, so a capture
+      // or QA probe always sees the same stack. Seeded newest-first, the way
+      // pushToast's unshift would leave them.
+      repo.toasts.splice(
+        0,
+        repo.toasts.length,
+        {
+          id: 91005,
+          message: "Close-out for #1225 failed validation: branch not merged into main",
+          type: "error",
+        },
+        { id: 91004, message: "Recovered and committed 2 files after a reload", type: "success" },
+        {
+          id: 91003,
+          message:
+            "Preview is starting for #1225. The managed preview probes the server before it is recorded,\nand one preview at a time may evict another task's.",
+          type: "info",
+        },
+        { id: 91002, message: "Scheduled task created #9123", type: "info" },
+        { id: 91001, message: "Could not reach the RepoOS server", type: "error" },
+      );
+      break;
     case "release:emailSent":
     case "release:emailFailed":
       // ReleasesView reads this registered fixture and renders the email card
