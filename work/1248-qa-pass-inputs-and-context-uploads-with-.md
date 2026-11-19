@@ -12,7 +12,7 @@ branch: feat/qa-pass-inputs-and-context-uploads-with-
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T21:26:57Z"
-updated_at: "2026-11-19T22:38:00Z"
+updated_at: "2026-11-19T22:47:46Z"
 last_close_out_gate_ms: 836595
 last_close_out_gate_at: "2026-11-19T22:35:51.175Z"
 review_passes: 1
@@ -49,3 +49,4 @@ Do not touch repoos.toml.
 - 2026-11-19T22:21:41Z · note: review pass 1: good to go
 - 2026-11-19T22:35:51Z · close-out gate completed in 837s
 - 2026-11-19T22:38:00Z · status done→done, release:success
+- 2026-11-19T22:47:46Z · message_dropped: 1 queued message(s) discarded — task is done
