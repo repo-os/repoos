@@ -139,6 +139,25 @@ earlier runs:
   none outside the changelog.
 - Re-ran `REPOOS_CHECK_CHANGED=main repoos check`: all steps passed.
 
+## Review fix round (pass 2)
+
+Both review passes returned `good to go`; the suggestions below name the same
+drift class, and were fixed in the review round:
+
+- `src/commands/secrets.ts` printed its own usage string on a bad invocation,
+  omitting `bind` and `bindings` — the same banner/usage drift fixed in
+  `help.ts`. The string is now an exported `SECRETS_USAGE` constant, and a
+  table-driven test (`src/commands/secrets.test.ts`) pins **both** the
+  self-help banner (`commandUsage("secrets")`) and the error line to the full
+  implemented action set (`SECRET_ACTIONS`), so the next subcommand cannot
+  land without appearing in either surface.
+- `docs/agent-model-recommendations.md` still said "eight coding-agent
+  CLIs"; corrected to eleven to match `KNOWN_AGENTS` and the fixed
+  `user-docs/agents.md` table.
+- The reviewers' follow-up suggestion — reconciling the banner with
+  per-command `--help` for the remaining omissions (`check --fix/--step`,
+  `doctor --yes`) — is filed as task **#1229**.
+
 ## QA notes
 
 No new code bug was uncovered; the only code change is the one-line CLI help
