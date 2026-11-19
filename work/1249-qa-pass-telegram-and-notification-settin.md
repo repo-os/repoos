@@ -11,7 +11,7 @@ branch: feat/qa-pass-telegram-and-notification-settin
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T21:46:55Z"
-updated_at: "2026-11-19T22:13:06Z"
+updated_at: "2026-11-19T22:13:58Z"
 ---
 ## Problem
 The notification and Telegram settings screens and the messages they produce have not been checked for wording, error states and small-screen layout.
@@ -27,10 +27,10 @@ Do not touch repoos.toml.
 ```json
 [
 {
-  "label": "Notifications tab: ntfy topic row with the test-result line",
-  "target": "default",
-  "route": "/settings?tab=notifications",
-  "highlight": "#setting-ntfyTopic"
+"label": "Notifications tab: ntfy topic row with the test-result line",
+"target": "default",
+"route": "/settings?tab=notifications",
+"highlight": "#setting-ntfyTopic"
 }
 ]
 ```
@@ -43,3 +43,4 @@ Do not touch repoos.toml.
 - 2026-11-19T21:47:01Z · status ready→active, branch
 - 2026-11-19T22:12:05Z · body
 - 2026-11-19T22:13:06Z · body
+- 2026-11-19T22:13:58Z · CTO nudge: held — handoff gate is running
