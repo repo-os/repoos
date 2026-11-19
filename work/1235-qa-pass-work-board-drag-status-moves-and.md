@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-work-board-drag-status-moves-and
 created_at: "2026-11-19T16:17:45Z"
-updated_at: "2026-11-19T16:55:24Z"
+updated_at: "2026-11-19T16:59:35Z"
 ---
 ## Problem
 Status changes, drag/drop and bulk actions on the Work board have not been tested when the server rejects them (blocked move, dirty main, conflict).
@@ -36,3 +36,4 @@ Do not touch repoos.toml.
 - 2026-11-19T16:51:28Z · watchdog: restarting engineer because a queued message waited 3m with no live process
 - 2026-11-19T16:51:30Z · message_delivered: 1 message(s)
 - 2026-11-19T16:55:24Z · body
+- 2026-11-19T16:59:35Z · CTO nudge: held — handoff gate is running
