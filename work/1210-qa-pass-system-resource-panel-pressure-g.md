@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-system-resource-panel-pressure-g
 created_at: "2026-11-18T23:47:41Z"
-updated_at: "2026-11-19T02:01:12Z"
+updated_at: "2026-11-19T02:01:33Z"
 handoff_signal_retry_count: 1
 review_rounds: 1
 routing_switches: 1
@@ -129,3 +129,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-19T01:47:40Z · message_delivered: 1 message(s)
 - 2026-11-19T01:58:20Z · message_queued at 2026-11-19T01:58:20.824Z
 - 2026-11-19T02:01:12Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-19T02:01:33Z · watchdog: restarting engineer because a queued message waited 3m with no live process
