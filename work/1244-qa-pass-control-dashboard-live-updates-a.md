@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 1051180
-last_close_out_gate_at: "2026-11-19T21:20:34.435Z"
 id: "1244"
 title: "QA pass: Control dashboard live updates and reconnect behavior"
 type: bug
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: b43d7c912fec8dfea02d3a916ff982114d59a50b
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-control-dashboard-live-updates-a
@@ -14,6 +13,8 @@ cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T20:07:32Z"
 updated_at: "2026-11-19T21:20:34Z"
+last_close_out_gate_ms: 1051180
+last_close_out_gate_at: "2026-11-19T21:20:34.435Z"
 review_passes: 1
 ---
 ## Problem
