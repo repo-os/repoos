@@ -234,6 +234,8 @@ const renderedCount = computed(() =>
   sections.value.reduce((total, section) => total + section.visible.length, 0),
 );
 const countLabel = computed(() => {
+  // #1224: an empty project isn't a filter miss — nothing exists to match yet.
+  if (!repo.tasks.length) return "No tasks yet";
   if (!matchingCount.value) return "No matching tasks";
   const noun = matchingCount.value === 1 ? "task" : "tasks";
   if (renderedCount.value < matchingCount.value) {

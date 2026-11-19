@@ -194,6 +194,17 @@ let pinnedIntegration: IntegrationPipelineSnapshot | null = null;
 let pinnedCheckRuns: CheckRunRow[] | null = null;
 let pinnedTestCasesByRun: Map<number, import("../types").CheckRunTestCaseRow[]> | null = null;
 
+/**
+ * Check-plan payload pinned for the genuinely-empty plan capture (#1224): the
+ * Checks page consults this pin instead of `GET /api/check-plan`, which on the
+ * preview board reflects this repo's real committed plan, not a first-run repo.
+ */
+let pinnedCheckPlan: import("../types").CheckPlanView | null = null;
+
+export function shotFixturePinnedCheckPlan(): import("../types").CheckPlanView | null {
+  return pinnedCheckPlan;
+}
+
 export function shotFixturePinnedCheckRuns(): CheckRunRow[] | null {
   return pinnedCheckRuns;
 }
@@ -1190,6 +1201,7 @@ export function resetShotFixturePins(): void {
   pinnedSystemStats = null;
   pinnedCheckRuns = null;
   pinnedTestCasesByRun = null;
+  pinnedCheckPlan = null;
   pinnedRemoteStatus = null;
   pinnedGitStatus = null;
   pinnedWorkingDiff = null;
@@ -1223,6 +1235,21 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
     case "agents:empty":
       // AgentsView reads this capture-only fixture and suppresses configured
       // roles locally; no project configuration is changed or saved.
+      break;
+    case "checks:emptyPlan":
+      // ChecksView reads this pin instead of GET /api/check-plan, so a capture
+      // shows the first-run "no check plan" reminder without editing this
+      // repo's real repoos.toml (#1224).
+      pinnedCheckPlan = {
+        source: "empty",
+        defaultProfile: "full",
+        profile: "full",
+        profiles: ["full"],
+        warnings: [],
+        errors: [],
+        steps: [],
+        lastRun: null,
+      };
       break;
     case "toast:taskNeedsInput":
       // Model the create response locally so the toast can be reviewed without
