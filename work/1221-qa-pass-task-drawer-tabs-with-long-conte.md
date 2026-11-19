@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 872180
-last_close_out_gate_at: "2026-11-19T08:21:52.346Z"
 id: "1221"
 title: "QA pass: task drawer tabs with long content at all screen sizes"
 type: bug
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: 5a38fe1d68a6b25354a0ecfdbe725ff75c6f58ee
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-task-drawer-tabs-with-long-conte
 created_at: "2026-11-19T06:47:59Z"
 updated_at: "2026-11-19T08:21:52Z"
+last_close_out_gate_ms: 872180
+last_close_out_gate_at: "2026-11-19T08:21:52.346Z"
 review_passes: 2
 review_rounds: 1
 routing_switches: 1
