@@ -11,7 +11,7 @@ branch: feat/qa-pass-deployments-and-context-pages-wi
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T18:26:58Z"
-updated_at: "2026-11-19T18:47:28Z"
+updated_at: "2026-11-19T18:49:07Z"
 ---
 ## Problem
 The Deployments and Context pages have not been checked with failed deployments, long logs and missing data at phone, tablet and desktop widths.
@@ -24,6 +24,19 @@ Failures explain what happened in plain English with a next step, long content s
 ## Notes for AI
 Do not touch repoos.toml.
 
+## Shots
+```json
+[
+{
+  "label": "Refused push: plain-English next step above the git output in a scrolling box",
+  "target": "default",
+  "route": "/deployments",
+  "highlight": ".dep-modal-error",
+  "state": "deployments:deployFailure"
+}
+]
+```
+
 ## Activity
 
 - 2026-11-19T18:26:58Z · created · t@t
@@ -31,3 +44,4 @@ Do not touch repoos.toml.
 - 2026-11-19T18:27:04Z · cli_override, model_override
 - 2026-11-19T18:27:06Z · status ready→active, branch
 - 2026-11-19T18:47:28Z · body
+- 2026-11-19T18:49:07Z · body
