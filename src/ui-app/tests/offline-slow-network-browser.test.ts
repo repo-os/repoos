@@ -282,10 +282,13 @@ describeBrowser("slow network and offline QA (#1226)", () => {
   it("stalled server responses: plain-English 'did not respond in time' and a 'not responding' banner", async () => {
     const page = await openPage();
     try {
-      // Everything answers instantly except health and the board index, which
-      // stall past their client-side budgets (10 s probe / 15 s GET).
+      // Everything answers instantly except health, the board index and the
+      // SSE stream, which stall past their client-side budgets (10 s probe /
+      // 15 s GET). The stream is stalled too, so no "the server is back"
+      // signal can clear the recovery banner mid-test.
       await page.route("**/api/board", () => new Promise<void>(() => {}));
       await page.route("**/api/health", () => new Promise<void>(() => {}));
+      await page.route("**/api/events", () => new Promise<void>(() => {}));
       await page.goto(`${server!.url}/work`, { waitUntil: "load", timeout: 20_000 });
       await page.waitForFunction(
         () => document.querySelector('[data-testid="work-load-error"]') !== null,
@@ -295,11 +298,16 @@ describeBrowser("slow network and offline QA (#1226)", () => {
         () => document.querySelector('[data-testid="work-load-error"]')?.textContent ?? "",
       );
       expect(text).toContain("did not respond in time");
-      const banner = await page.evaluate(() => {
-        const el = document.querySelector(".ui-recovery-banner");
-        return el?.querySelector("strong")?.textContent ?? "";
-      });
-      expect(banner).toContain("is not responding");
+      // The banner's probe (10 s) and the board's own timeout (15 s) land
+      // within a second of each other; wait for the banner rather than
+      // reading it once — on a slow machine the panel can win the race.
+      await page.waitForFunction(
+        () =>
+          document.querySelector(".ui-recovery-banner strong")?.textContent?.includes(
+            "is not responding",
+          ) === true,
+        { timeout: 20_000 },
+      );
       expect(bootErrors).toEqual([]);
     } finally {
       await page.close();

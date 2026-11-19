@@ -157,7 +157,11 @@ describe("repo loading skeleton", () => {
       "utf8",
     );
     expect(GENERAL_FIELD_SECTIONS).toHaveLength(7);
-    expect(settings).toMatch(/kind="rows" :count="GENERAL_FIELD_SECTIONS\.length"/);
+    // #1226: the skeleton is suppressed once the config load has failed, so
+    // the loading binding carries the error condition too.
+    expect(settings).toMatch(
+      /:loading="!config\.loaded && !config\.error"[\s\S]{0,200}kind="rows"\s+:count="GENERAL_FIELD_SECTIONS\.length"/,
+    );
     for (const source of [
       agents,
       checks,
