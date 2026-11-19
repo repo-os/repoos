@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-11-19T22:48:40Z"
-review_passes: 4
+last_close_out_gate_ms: 838595
+last_close_out_gate_at: "2026-11-19T23:58:10.244Z"
 id: "1243"
 title: "QA pass: Agents page failure copy after the Jev routing switch and missing key"
 type: bug
@@ -13,6 +13,8 @@ branch: feat/qa-pass-agents-page-failure-copy-after-t
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T20:07:21Z"
+updated_at: "2026-11-19T23:58:10Z"
+review_passes: 4
 review_rounds: 1
 ---
 ## Problem
@@ -71,4 +73,5 @@ Do not touch repoos.toml.
 - 2026-11-19T22:07:40Z · note: review pass 3: good to go
 - 2026-11-19T22:47:45Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-19T22:48:40Z · note: review pass 4: good to go
+- 2026-11-19T23:58:10Z · close-out gate completed in 839s
 
