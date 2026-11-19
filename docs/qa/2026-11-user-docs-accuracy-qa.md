@@ -84,6 +84,34 @@ current UI labels, tabs and routes.
   `engineering-reports.md` (draft path, sections, word limits): spot-verified
   claims against code; no stale statements found.
 
+## Re-verification after crash recovery
+
+The engineer session crashed before handoff; the resumed session re-verified
+the report's load-bearing claims independently rather than taking them on
+faith:
+
+- Re-ran the configuration cross-check: all 167 `getConfigSchema()` fields and
+  every configuration-table row still resolve, and the two post-v0.5.89 schema
+  additions (`remoteValidation.command`, `remoteValidation.requiredTools`) are
+  documented with the right type, default and restart tier.
+- Re-captured `--help` for every command from this worktree's build and
+  re-checked the flags quoted in `user-docs/*.md` fenced blocks. The `secrets`
+  block in `user-docs/cli.md` matches the corrected help line; `check --fix` /
+  `--step` and `doctor --yes` are real in code (`src/commands/check.ts`,
+  `src/commands/doctor.ts`) even though the banner omits them — the docs are
+  more complete than the banner, not stale.
+- Confirmed the "eleven CLIs" count against the engine registry in
+  `src/server/agents.ts` (`opencode, claude, copilot, qwen, codex, kiro,
+  cursor, antigravity, crush, pi, muse`) and against `KNOWN_AGENTS` in
+  `src/core/detect.ts`; the compatibility table in
+  `user-docs/coding-harness-compatibility.md` matches
+  `src/core/agent-compatibility.json` row for row.
+- Confirmed the UI labels quoted by docs against `nav.ts`,
+  `settings-location.ts`, `SettingsView.vue`, `AuthSettingsPanel.vue`
+  ("Authentication & Users"), `AgentsView.vue` ("Build Your Team",
+  "Scheduled Tasks", "Reminders") and `TelegramSettingsPanel.vue`
+  ("Send a test message" section, "Send test" button).
+
 ## QA notes
 
 No new code bug was uncovered; the only code change is the one-line CLI help
