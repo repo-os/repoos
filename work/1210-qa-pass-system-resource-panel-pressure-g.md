@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-system-resource-panel-pressure-g
 created_at: "2026-11-18T23:47:41Z"
-updated_at: "2026-11-19T07:17:41Z"
+updated_at: "2026-11-19T07:18:59Z"
 review_passes: 4
 review_rounds: 2
 routing_switches: 1
@@ -186,3 +186,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-19T06:48:22Z · needs_input
 - 2026-11-19T06:48:24Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-19T07:17:41Z · needs_input (review-rounds-exhausted) cleared for review again by human
+- 2026-11-19T07:18:59Z · note: review pass 8: good to go
