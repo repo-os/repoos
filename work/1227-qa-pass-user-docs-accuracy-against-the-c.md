@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-user-docs-accuracy-against-the-c
 created_at: "2026-11-19T09:47:43Z"
-updated_at: "2026-11-19T13:17:45Z"
+updated_at: "2026-11-19T13:17:47Z"
 review_passes: 5
 handoff_signal_retry_count: 2
 dev_error_count: 1
