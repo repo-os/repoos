@@ -2,7 +2,7 @@
 id: "1244"
 title: "QA pass: Control dashboard live updates and reconnect behavior"
 type: bug
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/qa-pass-control-dashboard-live-updates-a
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T20:07:32Z"
-updated_at: "2026-11-19T21:01:21Z"
+updated_at: "2026-11-19T21:01:22Z"
 ---
 ## Problem
 The Control dashboard and Work board use live updates; behavior after a dropped connection, a server restart or a long idle tab has not been checked.
@@ -52,3 +52,4 @@ Do not touch repoos.toml.
 - 2026-11-19T20:47:05Z · body
 - 2026-11-19T20:50:43Z · CTO nudge: held — handoff gate is running
 - 2026-11-19T21:01:21Z · note: ui verification passed: 1 shot captured with clean console
+- 2026-11-19T21:01:22Z · status active→review
