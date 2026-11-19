@@ -11,7 +11,7 @@ branch: feat/qa-pass-update-banner-version-display-an
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T23:27:47Z"
-updated_at: "2026-11-19T23:43:30Z"
+updated_at: "2026-11-19T23:46:56Z"
 ---
 ## Problem
 The update-available banner, version display and release notes modal have not been checked since the restart fix.
@@ -28,25 +28,25 @@ Do not touch repoos.toml.
 ```json
 [
 {
-  "label": "Release notes modal with bullet markers",
-  "target": "default",
-  "route": "/work",
-  "highlight": ".release-update-modal",
-  "state": "release:updateAvailable"
+"label": "Release notes modal with bullet markers",
+"target": "default",
+"route": "/work",
+"highlight": ".release-update-modal",
+"state": "release:updateAvailable"
 },
 {
-  "label": "Installed restart notice (systemd)",
-  "target": "default",
-  "route": "/work",
-  "highlight": "[data-test-id=\"installed-restart-notice\"]",
-  "state": "release:restartPendingDark"
+"label": "Installed restart notice (systemd)",
+"target": "default",
+"route": "/work",
+"highlight": "[data-test-id=\"installed-restart-notice\"]",
+"state": "release:restartPendingDark"
 },
 {
-  "label": "Restart failure names the command to run",
-  "target": "default",
-  "route": "/work",
-  "highlight": "[data-test-id=\"installed-restart-notice\"] [role=\"alert\"]",
-  "state": "release:restartError"
+"label": "Restart failure names the command to run",
+"target": "default",
+"route": "/work",
+"highlight": "[data-test-id=\"installed-restart-notice\"] [role=\"alert\"]",
+"state": "release:restartError"
 }
 ]
 ```
@@ -59,3 +59,4 @@ Do not touch repoos.toml.
 - 2026-11-19T23:28:01Z · status ready→active, branch
 - 2026-11-19T23:41:42Z · body
 - 2026-11-19T23:43:30Z · body
+- 2026-11-19T23:46:56Z · note: ui verification passed: 3 of 3 shots captured with clean console
