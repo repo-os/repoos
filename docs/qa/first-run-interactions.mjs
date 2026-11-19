@@ -29,7 +29,7 @@ for (const width of widths) {
   const createBtn = page
     .locator('[data-testid="work-empty-state"] button, .mobile-queue-empty button')
     .first();
-  const createLabel = (await createBtn.textContent() ?? "").trim();
+  const createLabel = ((await createBtn.textContent()) ?? "").trim();
   await createBtn.click();
   await page.waitForTimeout(800);
   const drawer = await page.evaluate(() => {
@@ -50,7 +50,7 @@ for (const width of widths) {
     .waitForSelector('[data-testid="agents-empty-state"]', { timeout: 15000 })
     .catch((e) => errors.push("agents empty: " + e.message.slice(0, 120)));
   const chooseBtn = page.locator('[data-testid="agents-empty-state"] button').first();
-  const chooseLabel = (await chooseBtn.textContent() ?? "").trim();
+  const chooseLabel = ((await chooseBtn.textContent()) ?? "").trim();
   await chooseBtn.click();
   await page.waitForTimeout(600);
   const teamTab = await page.evaluate(() => {
@@ -70,10 +70,10 @@ for (const width of widths) {
     .waitForSelector(".ncpr", { timeout: 15000 })
     .catch((e) => errors.push("checks empty: " + e.message.slice(0, 120)));
   const copyBtn = page.locator(".ncpr-btn").nth(1);
-  const copyBefore = (await copyBtn.textContent() ?? "").trim();
+  const copyBefore = ((await copyBtn.textContent()) ?? "").trim();
   await copyBtn.click();
   await page.waitForTimeout(300);
-  const copyAfter = (await copyBtn.textContent() ?? "").trim();
+  const copyAfter = ((await copyBtn.textContent()) ?? "").trim();
   const redParagraph = await page.evaluate(() => {
     const els = [...document.querySelectorAll(".ck-err")];
     return els.map((el) => (el.textContent || "").replace(/\s+/g, " ").trim().slice(0, 80));

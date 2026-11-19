@@ -65,7 +65,10 @@ function stubFetch(opts: { failOnCheckPlan?: boolean } = {}): void {
         return jsonResponse({ ok: true, checkPlan: declaredPlan() });
       }
       if (path.includes("/api/integration/pipeline"))
-        return jsonResponse({ ok: true, pipeline: { empty: true, active: null, queue: [], at: "" } });
+        return jsonResponse({
+          ok: true,
+          pipeline: { empty: true, active: null, queue: [], at: "" },
+        });
       if (path.includes("/api/remote-validation/status"))
         return jsonResponse({
           enabled: true,
@@ -81,7 +84,8 @@ function stubFetch(opts: { failOnCheckPlan?: boolean } = {}): void {
         });
       if (path.includes("/api/local-check-slots")) return jsonResponse({ holders: [], queue: [] });
       if (path.includes("/api/health")) return jsonResponse({ ok: true, root: "/tmp" });
-      if (path.includes("/api/test-run")) return jsonResponse({ ok: true, running: false, output: "" });
+      if (path.includes("/api/test-run"))
+        return jsonResponse({ ok: true, running: false, output: "" });
       return jsonResponse({ ok: true });
     }),
   );
