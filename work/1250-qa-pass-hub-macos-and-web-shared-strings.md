@@ -2,7 +2,7 @@
 id: "1250"
 title: "QA pass: Hub macOS and web shared strings, tooltips and empty labels audit"
 type: bug
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/qa-pass-hub-macos-and-web-shared-strings
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T21:47:05Z"
-updated_at: "2026-11-19T22:25:14Z"
+updated_at: "2026-11-19T22:25:15Z"
 review_rounds: 2
 review_passes: 2
 ---
@@ -52,3 +52,4 @@ Do not touch repoos.toml.
 - 2026-11-19T22:21:31Z · body
 - 2026-11-19T22:22:45Z · CTO nudge: held — handoff gate is running
 - 2026-11-19T22:25:14Z · note: ui verification passed: 1 shot captured with clean console
+- 2026-11-19T22:25:15Z · status active→review
