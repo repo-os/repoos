@@ -10,8 +10,6 @@ created_by: t@t
 branch: feat/qa-pass-hub-and-web-app-copy-review-word
 created_at: "2026-11-19T00:47:39Z"
 updated_at: "2026-11-19T02:10:44Z"
-last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (appeared: src/ui-app/src/lib/shot-preview-fixtures.ts, src/ui-app/tests/mobile-work-queue.test.ts, src/ui-app/tests/remote-validation-drawer.test.ts, src/ui-app/tests/shot-preview-fixtures.test.ts, src/ui-app/tests/work-queue-visibility.test.ts) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
-last_handoff_failure_sha: 987e0e851e0df1a9a915aab143e4b54969778242
 last_check_failure: "repoos check at 2026-11-19T01:25:43.917Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_passes: 2
 review_rounds: 1
@@ -89,3 +87,4 @@ Do not touch repoos.toml.
 - 2026-11-19T02:10:43Z · status active→review
 - 2026-11-19T02:10:44Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
 - 2026-11-19T02:10:44Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
+
