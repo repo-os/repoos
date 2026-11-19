@@ -11,7 +11,7 @@ branch: feat/qa-pass-telegram-and-notification-settin
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T21:46:55Z"
-updated_at: "2026-11-19T22:34:09Z"
+updated_at: "2026-11-19T22:41:53Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -29,10 +29,10 @@ Do not touch repoos.toml.
 ```json
 [
 {
-"label": "Notifications tab: ntfy topic row with the test-result line",
-"target": "default",
-"route": "/settings?tab=notifications",
-"highlight": "#setting-ntfyTopic"
+  "label": "Notifications tab: ntfy topic row",
+  "target": "default",
+  "route": "/settings?tab=notifications",
+  "highlight": "#setting-ntfyTopic"
 }
 ]
 ```
@@ -52,3 +52,4 @@ Do not touch repoos.toml.
 - 2026-11-19T22:34:08Z · note: review pass 1: needs some work
 - 2026-11-19T22:34:08Z · message_delivered: 1 message(s)
 - 2026-11-19T22:34:09Z · status review→active
+- 2026-11-19T22:41:53Z · body
