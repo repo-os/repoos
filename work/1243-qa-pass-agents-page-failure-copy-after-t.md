@@ -2,7 +2,7 @@
 id: "1243"
 title: "QA pass: Agents page failure copy after the Jev routing switch and missing key"
 type: bug
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/qa-pass-agents-page-failure-copy-after-t
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T20:07:21Z"
-updated_at: "2026-11-19T21:41:07Z"
+updated_at: "2026-11-19T21:41:08Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -64,3 +64,4 @@ Do not touch repoos.toml.
 - 2026-11-19T21:21:04Z · orphaned run process stopped · pid 54220 · /Applications/Xcode.app/Contents/Developer/usr/bin/git bundle create /var/folders/0r/4_d4rftj7t57174 · cpu 0s · age 10s
 - 2026-11-19T21:25:58Z · CTO nudge: held — handoff gate is running
 - 2026-11-19T21:41:07Z · note: ui verification passed: 1 of 1 shot captured with clean console
+- 2026-11-19T21:41:08Z · status active→review
