@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-keyboard-shortcuts-and-command-p
 created_at: "2026-11-19T13:47:53Z"
-updated_at: "2026-11-19T15:54:28Z"
+updated_at: "2026-11-19T15:54:35Z"
 last_check_failure: "repoos check at 2026-11-19T15:37:14.041Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Command palette open over the work board (stacks above drawers, consumes Esc) (target \"default\"): loading state detected: loading indicator [aria-busy=\"true\"] on /work (http://127.0.0.1:43037/work)"
 review_rounds: 1
 routing_switches: 1
@@ -127,3 +127,4 @@ Do not touch repoos.toml.
 - 2026-11-19T15:49:38Z · note: handoff requested (cli)
 - 2026-11-19T15:49:43Z · needs_input
 - 2026-11-19T15:54:28Z · body
+- 2026-11-19T15:54:35Z · CTO nudge: held — handoff gate is running
