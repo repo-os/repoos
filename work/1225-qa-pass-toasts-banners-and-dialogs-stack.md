@@ -104,3 +104,4 @@ Do not touch repoos.toml.
 - 2026-11-19T13:16:24Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-19T13:17:45Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-19T13:19:32Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-19T13:19:32Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 130) · last assistant: The server's check found unformatted files (likely the pre-format version from the checkpoint commit). Formatter has now fixed the working tree — re-run the scoped check: · stderr: (empty)
