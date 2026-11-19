@@ -209,7 +209,7 @@ describe("AgentsView agent cards", () => {
     });
     await flush();
 
-    const error = wrapper.get(".agents-load-error");
+    const error = wrapper.get(".page-load-error");
     expect(error.attributes("role")).toBe("alert");
     expect(error.text()).toContain("Couldn’t load agents");
     expect(error.text()).toContain("Retry");

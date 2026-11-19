@@ -2,7 +2,13 @@ import { computed, reactive, ref } from "vue";
 import { defineStore } from "pinia";
 import { api, API_TIMEOUT_MS, ApiError, JSON_OPTS } from "../api";
 import type { DeclaredShot } from "../../../core/shot-plan.js";
-import { checkUiBuild, isstaleDismissed, showStaleUi, uiRecoveryState } from "../lib/uiRecovery";
+import {
+  checkUiBuild,
+  clearOfflineOnStreamBack,
+  isstaleDismissed,
+  showStaleUi,
+  uiRecoveryState,
+} from "../lib/uiRecovery";
 import {
   clearAttachmentUploadState,
   markAttachmentUploadFailed,
@@ -2551,6 +2557,10 @@ export const useRepoStore = defineStore("repo", () => {
       sseAttempt = 0;
       connected.value = true;
       markStreamHealthy();
+      // #1226: the stream is back, so the "server is offline" recovery banner
+      // is no longer true — drop it without waiting for a focus/navigation
+      // health probe.
+      clearOfflineOnStreamBack();
       // Events emitted while EventSource reconnects are not replayed. Refresh
       // the server-authoritative index on every open so a reviewer that
       // started, finished, or failed during that gap cannot leave a stale card
@@ -2651,6 +2661,11 @@ export const useRepoStore = defineStore("repo", () => {
       source.addEventListener(t, (ev: MessageEvent) => {
         connected.value = true;
         markStreamHealthy(); // a frame arrived — the stream is demonstrably up
+        // #1226 review round 1: frames prove the stream is back just as much
+        // as `onopen` does — and the offline banner can be up while frames
+        // still arrive (any api() timeout raises it). Clear it here too; the
+        // function is a no-op for stale banners and manual reloads.
+        clearOfflineOnStreamBack();
         try {
           applyEvent(JSON.parse(ev.data) as RepoEvent);
         } catch {
