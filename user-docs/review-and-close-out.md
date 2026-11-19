@@ -387,7 +387,7 @@ branch untouched, task still in `review` — but unlike Stop MTD it is recorded
 as a **retryable failure** with a `close-out timed out after …` reason and an
 error card, so a pathologically slow run is visible instead of silently
 disappearing. Retries and remote validation spend the same budget; see
-[docs/close-out-pipeline.md](../docs/close-out-pipeline.md) for the details.
+[docs/close-out-pipeline.md](https://github.com/repo-os/repoos/blob/main/docs/close-out-pipeline.md) for the details.
 
 ### Merge conflicts repair themselves
 

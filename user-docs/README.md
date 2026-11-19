@@ -39,9 +39,18 @@ cd user-docs
 bun install
 bun run dev      # defaults to port 5173, which repoos-ui-dev already uses —
                   # pass `-- --port 5175` (what just user-docs-dev does)
-bun run build    # static build to .vitepress/dist
+bun run build    # static build to .vitepress/dist, then the llms and link checks
 bun run preview  # serve the built site
+bun test scripts # unit tests, plus headless WebKit layout checks on a built site
 ```
+
+`bun run build` fails when an internal link does not resolve on the built site
+(`scripts/check-links.ts`). VitePress does not check relative links itself
+here, so link the repo's own files on GitHub, not with `../docs/` paths. The
+layout tests (`scripts/layout.test.ts`) need the build first; they cover page
+overflow, code-block labels, the sidebar and phone nav, and local search at
+375, 768 and 1280 px. The full sweep over every page is
+`docs/qa/measure-docs-site-widths.mjs`.
 
 `dev` has a `predev` step that runs `bun install --frozen-lockfile` for this
 standalone package. Task previews execute `bun run dev` in a fresh remote

@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-19T22:07:40Z"
+review_passes: 3
 id: "1243"
 title: "QA pass: Agents page failure copy after the Jev routing switch and missing key"
 type: bug
@@ -11,9 +13,7 @@ branch: feat/qa-pass-agents-page-failure-copy-after-t
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T20:07:21Z"
-updated_at: "2026-11-19T21:41:08Z"
 review_rounds: 1
-review_passes: 1
 ---
 ## Problem
 After switching model routing to Jev, the Agents page routing tab and decisions list need a check for the missing-key and provider-failure wording and a recent-decisions list that is empty or all failures.
@@ -56,4 +56,17 @@ Do not touch repoos.toml.
 - 2026-11-19T20:56:59Z · status review→active
 - 2026-11-19T20:57:01Z · CTO nudge: held — remote validation is running
 - 2026-11-19T20:57:12Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (3991ce606) during finalization (#0734)
+- 2026-11-19T21:05:43Z · message_queued at 2026-11-19T21:05:43.621Z
+- 2026-11-19T21:05:43Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-19T21:07:02Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-19T21:07:20Z · body
+- 2026-11-19T21:10:43Z · CTO nudge: held — handoff gate is running
+- 2026-11-19T21:21:04Z · orphaned run process stopped · pid 54220 · /Applications/Xcode.app/Contents/Developer/usr/bin/git bundle create /var/folders/0r/4_d4rftj7t57174 · cpu 0s · age 10s
+- 2026-11-19T21:25:58Z · CTO nudge: held — handoff gate is running
+- 2026-11-19T21:41:07Z · note: ui verification passed: 1 of 1 shot captured with clean console
 - 2026-11-19T21:41:08Z · status active→review
+- 2026-11-19T21:41:08Z · message_queued at 2026-11-19T21:41:08.710Z
+- 2026-11-19T21:42:00Z · note: review pass 2: good to go
+- 2026-11-19T21:42:29Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (b3940c000) during finalization (#0734)
+- 2026-11-19T22:07:40Z · note: review pass 3: good to go
+

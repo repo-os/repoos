@@ -36,7 +36,7 @@ describe("task card agent button placement", () => {
     await nextTick();
     const headerRobot = wrapper.find('[data-test-id="task-card-agent-btn"]');
     expect(headerRobot.exists()).toBe(true);
-    expect(headerRobot.element.closest(".flex.items-center.gap-\\[7px\\]")).toBeTruthy();
+    expect(headerRobot.element.closest(".flex.flex-wrap.items-center")).toBeTruthy();
     wrapper.unmount();
 
     repo.handoffSteps[task.id] = "check";

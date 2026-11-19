@@ -41,7 +41,7 @@ local child processes.
 
 The legacy root `.env` behavior above remains in effect for RepoOS configuration.
 Named project environments are a separate application-secret store. The storage foundation for that
-model is documented in [ADR 0010](../docs/adr/0010-named-project-environments-and-file-backed-secrets.md).
+model is documented in [ADR 0010](https://github.com/repo-os/repoos/blob/main/docs/adr/0010-named-project-environments-and-file-backed-secrets.md).
 Environment names and source files must be registered deliberately; RepoOS
 does not discover `.env*` files, infer names from filenames or `NODE_ENV`, or
 load these project values into its own provider/auth process environment.

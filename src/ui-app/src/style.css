@@ -427,6 +427,7 @@
 .conn {
   display: flex;
   align-items: center;
+  flex-shrink: 0;
   gap: 7px;
   font-size: 11px;
   padding: 6px 11px;
@@ -447,19 +448,12 @@
   box-shadow: var(--dot-glow);
 }
 @media (max-width: 719.98px) {
+  /* #1244: keep the word on phones. A dot alone, in the inherited header
+     colour, did not say "reconnecting" to anyone who could not hover it. */
   .conn {
-    padding: 0;
-    background: none;
-    border: none;
-    gap: 0;
-  }
-  .conn.offline {
-    background: none;
-    border: none;
-    color: inherit;
-  }
-  .conn-text {
-    display: none;
+    padding: 4px 8px;
+    gap: 5px;
+    font-size: 10px;
   }
   .conn .dot {
     width: 8px;
@@ -8531,6 +8525,16 @@
   height: 28px;
   padding: 0 8px;
   font-size: 11px;
+}
+/* A failed follow-up upload's "Dismiss <file name>" button carries the whole
+ * file name. The row is non-wrapping flex (.btn-row) aligned to the end, so a
+ * long unbroken name pushes the button past the left edge, where it cannot be
+ * scrolled to (#1248). Let the label wrap inside the panel instead. */
+.ff-upload-followup .btn-row > * {
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-align: left;
 }
 /* Captured preview shots, Changes → UI changes (#0611). Deliberately the same
  * row as the pending attachment lists above — thumb, text column, expand
@@ -17106,7 +17110,9 @@
  * area/dependency chips and the green file chip. */
 .tc-human-chip {
   display: inline-flex;
-  flex: none;
+  max-width: 100%;
+  min-width: 0;
+  overflow-wrap: anywhere;
   align-items: center;
   gap: 3px;
   padding: 2px 6px;

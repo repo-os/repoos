@@ -654,9 +654,8 @@ CI step:
 
 The step-by-step audit of which steps are genuinely generic versus still
 RepoOS-shaped lives in RepoOS's own build context:
-[the check-step genericity audit](../docs/audits/2026-09-check-step-genericity-audit.md)
-— a repo-relative link that ships in the RepoOS source checkout, not on this
-site. It's written for people working on RepoOS itself; #0446 implemented its
+[the check-step genericity audit](https://github.com/repo-os/repoos/blob/main/docs/audits/2026-09-check-step-genericity-audit.md).
+It's written for people working on RepoOS itself; #0446 implemented its
 recommendation, which is this declarative plan.
 
 ## Documentation and bookkeeping-only changes

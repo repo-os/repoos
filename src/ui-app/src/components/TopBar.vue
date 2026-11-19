@@ -484,10 +484,10 @@ watch(repoName, () => {
       v-if="connState === 'offline'"
       class="conn offline"
       role="status"
-      aria-label="Server is disconnected"
-      title="Server is disconnected"
+      aria-label="Reconnecting to the RepoOS server"
+      title="Reconnecting to the RepoOS server"
     >
-      <span class="dot"></span><span class="conn-text">offline</span>
+      <span class="dot"></span><span class="conn-text">reconnecting</span>
     </div>
   </div>
 </template>
