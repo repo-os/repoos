@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-system-resource-panel-pressure-g
 created_at: "2026-11-18T23:47:41Z"
-updated_at: "2026-11-19T05:08:45Z"
+updated_at: "2026-11-19T05:08:46Z"
 review_rounds: 2
 routing_switches: 1
 routing_escalations: 1
@@ -171,3 +171,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-19T04:42:04Z · body
 - 2026-11-19T04:52:51Z · CTO nudge: held — handoff gate is running
 - 2026-11-19T05:08:45Z · note: ui verification passed: 6 of 6 shots captured with clean console
+- 2026-11-19T05:08:46Z · message_queued at 2026-11-19T05:08:46.093Z
