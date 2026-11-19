@@ -12,7 +12,7 @@ branch: feat/qa-pass-hub-server-picker-and-add-server
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T19:07:19Z"
-updated_at: "2026-11-19T20:35:23Z"
+updated_at: "2026-11-19T20:35:42Z"
 last_close_out_gate_ms: 771104
 last_close_out_gate_at: "2026-11-19T20:35:23.410Z"
 review_passes: 2
@@ -57,4 +57,4 @@ Do not touch repoos.toml.
 - 2026-11-19T19:45:59Z · note: shots: skipped — Docs site skipped: no docs shot declared
 - 2026-11-19T19:46:55Z · note: review pass 2: good to go
 - 2026-11-19T20:35:23Z · close-out gate completed in 771s
-
+- 2026-11-19T20:35:42Z · status done→done, release:success
