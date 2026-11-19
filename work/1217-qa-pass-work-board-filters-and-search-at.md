@@ -41,3 +41,4 @@ Do not touch repoos.toml.
 - 2026-11-19T03:59:27Z · body
 - 2026-11-19T04:01:04Z · status active→review
 - 2026-11-19T04:01:04Z · message_queued at 2026-11-19T04:01:04.529Z
+- 2026-11-19T04:01:04Z · note: shots: skipped — the diff (6 changed paths) touches no capture target's globs — no UI change to capture
