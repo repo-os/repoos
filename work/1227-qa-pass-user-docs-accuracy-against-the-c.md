@@ -2,14 +2,14 @@
 id: "1227"
 title: "QA pass: user-docs accuracy against the current UI and CLI"
 type: bug
-status: review
+status: active
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-user-docs-accuracy-against-the-c
 created_at: "2026-11-19T09:47:43Z"
-updated_at: "2026-11-19T13:01:24Z"
+updated_at: "2026-11-19T13:17:43Z"
 review_passes: 5
 handoff_signal_retry_count: 2
 dev_error_count: 1
@@ -66,3 +66,4 @@ Do not touch repoos.toml.
 - 2026-11-19T12:18:17Z · note: review pass 4: good to go
 - 2026-11-19T12:48:16Z · note: review pass 5: good to go
 - 2026-11-19T13:01:24Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-19T13:17:43Z · status review→active
