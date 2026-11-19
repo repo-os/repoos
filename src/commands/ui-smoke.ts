@@ -312,12 +312,6 @@ async function runUISmokeTest(): Promise<void> {
       ["Releases", "/releases", "release:cutReady"],
       ["Task drawer", "/work?task=9999", "drawer:reviewWithBranch"],
     ] as const;
-    for (const [label, route, fixture] of responsivePages) {
-      for (const width of [375, 768, 1280]) {
-        await assertResponsiveLayout(label, route, fixture, width);
-      }
-    }
-
     await assertNoHorizontalOverflow("dashboard", server.url);
     await assertNoHorizontalOverflow("docs", `${server.url}/repo`);
     // #1133 — the Agents page replaced its header log with inline per-card
@@ -332,11 +326,6 @@ async function runUISmokeTest(): Promise<void> {
       throw new Error("Agents page still renders the removed last-runs block or toggle (#1133)");
     }
     await assertNoHorizontalOverflow("agents", `${server.url}/agents`);
-
-    // The viewport matrix ends on a synthetic drawer fixture. Reload the
-    // ordinary Work route so the interaction smoke below uses server tasks.
-    await page.goto(`${server.url}/work`, { waitUntil: "load", timeout: 20_000 });
-    await waitForWorkBoard(page);
 
     // Navigate to work page and click +New Task
     await page.setViewportSize({ width: 1280, height: 900 });
@@ -838,6 +827,13 @@ async function runUISmokeTest(): Promise<void> {
     }
     if (pageErrors.length > 0) {
       throw new Error("Page errors (" + pageErrors.length + "): " + pageErrors.join("; "));
+    }
+
+    // Run after the interaction flows so fixture routes cannot affect them.
+    for (const [label, route, fixture] of responsivePages) {
+      for (const width of [375, 768, 1280]) {
+        await assertResponsiveLayout(label, route, fixture, width);
+      }
     }
   } catch (err) {
     primaryError = { error: err };
