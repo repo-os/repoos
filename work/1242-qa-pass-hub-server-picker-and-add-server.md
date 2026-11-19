@@ -1,18 +1,21 @@
 ---
-updated_at: "2026-11-19T19:46:55Z"
-review_passes: 2
 id: "1242"
 title: "QA pass: Hub server picker and add-server flow copy and error states"
 type: bug
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: 0d2cc1b3d906fe234d4a17c1a16782097eba785e
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-hub-server-picker-and-add-server
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T19:07:19Z"
+updated_at: "2026-11-19T20:40:43Z"
+last_close_out_gate_ms: 771104
+last_close_out_gate_at: "2026-11-19T20:35:23.410Z"
+review_passes: 2
 review_rounds: 1
 ---
 ## Problem
@@ -53,4 +56,6 @@ Do not touch repoos.toml.
 - 2026-11-19T19:45:59Z · message_queued at 2026-11-19T19:45:59.395Z
 - 2026-11-19T19:45:59Z · note: shots: skipped — Docs site skipped: no docs shot declared
 - 2026-11-19T19:46:55Z · note: review pass 2: good to go
-
+- 2026-11-19T20:35:23Z · close-out gate completed in 771s
+- 2026-11-19T20:35:42Z · status done→done, release:success
+- 2026-11-19T20:40:43Z · message_dropped: 1 queued message(s) discarded — task is done

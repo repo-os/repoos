@@ -3,6 +3,9 @@ id: "1239"
 title: "QA pass: sign-in, user menu and permissions screens at all screen sizes"
 type: bug
 status: done
+needs_input: true
+needs_input_reason: needs-human-step
+needs_input_detail: "Acceptance criteria mention a real device, physical hardware, accounts, credentials, or third-party registration — split that verification into a separate human-only task. (matched: credentials or keys — \"never use or print real credentials.\")"
 priority: p2
 area: web
 merged_commit: 490aa926192954dada1f7338676cfeb59682152b
@@ -12,7 +15,7 @@ branch: feat/qa-pass-sign-in-user-menu-and-permission
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T18:27:10Z"
-updated_at: "2026-11-19T19:59:26Z"
+updated_at: "2026-11-19T20:23:49Z"
 last_close_out_gate_ms: 737850
 last_close_out_gate_at: "2026-11-19T19:59:09.211Z"
 review_passes: 2
@@ -73,3 +76,6 @@ Do not touch repoos.toml.
 - 2026-11-19T19:19:16Z · message_queued at 2026-11-19T19:19:16.294Z
 - 2026-11-19T19:59:09Z · close-out gate completed in 738s
 - 2026-11-19T19:59:26Z · status done→done, release:success
+- 2026-11-19T20:07:30Z · message_dropped: 1 queued message(s) discarded — task is done
+- 2026-11-19T20:13:51Z · needs_input
+- 2026-11-19T20:23:49Z · message_dropped: 1 queued message(s) discarded — task is done

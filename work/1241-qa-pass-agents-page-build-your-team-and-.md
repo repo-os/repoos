@@ -1,18 +1,21 @@
 ---
-updated_at: "2026-11-19T19:43:12Z"
-review_passes: 1
 id: "1241"
 title: "QA pass: Agents page Build Your Team and scheduled tasks with long lists"
 type: bug
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: 3d8b6d4b6cf968d41adeb5a55ff75434899da742
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-agents-page-build-your-team-and-
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T19:07:09Z"
+updated_at: "2026-11-19T20:23:50Z"
+last_close_out_gate_ms: 374650
+last_close_out_gate_at: "2026-11-19T20:21:09.311Z"
+review_passes: 1
 ---
 ## Problem
 Build Your Team, Scheduled Tasks and Reminders have not been checked with many entries and long names.
@@ -37,4 +40,6 @@ Do not touch repoos.toml.
 - 2026-11-19T19:41:19Z · status active→review
 - 2026-11-19T19:41:20Z · message_queued at 2026-11-19T19:41:20.099Z
 - 2026-11-19T19:43:12Z · note: review pass 1: good to go
-
+- 2026-11-19T20:21:09Z · close-out gate completed in 375s
+- 2026-11-19T20:21:27Z · status done→done, release:success
+- 2026-11-19T20:23:50Z · message_dropped: 1 queued message(s) discarded — task is done
