@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-system-resource-panel-pressure-g
 created_at: "2026-11-18T23:47:41Z"
-updated_at: "2026-11-19T02:46:12Z"
+updated_at: "2026-11-19T02:48:39Z"
 handoff_signal_retry_count: 2
 review_rounds: 1
 routing_switches: 1
@@ -135,3 +135,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-19T02:38:47Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: I couldn’t safely request handoff: the latest `REPOOS_CHECK_CHANGED=main repoos check` **failed at the tests step**. Static checks, build, contrast, and UI smoke passed. The failing test cases occurred during the high-load run; the debugge… · stderr: Reading additional input from stdin...
 - 2026-11-19T02:45:30Z · message_queued at 2026-11-19T02:45:30.413Z
 - 2026-11-19T02:46:12Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-19T02:48:39Z · watchdog: restarting engineer because a queued message waited 3m with no live process
