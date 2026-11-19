@@ -1,5 +1,4 @@
 ---
-handoff_signal_retry_count: 1
 id: "1210"
 title: "QA pass: system resource panel, pressure guard banners and Control stats under high load fixtures"
 type: bug
@@ -10,7 +9,8 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-system-resource-panel-pressure-g
 created_at: "2026-11-18T23:47:41Z"
-updated_at: "2026-11-19T00:55:03Z"
+updated_at: "2026-11-19T00:56:07Z"
+handoff_signal_retry_count: 1
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -41,4 +41,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-19T00:49:50Z · status review→active
 - 2026-11-19T00:49:52Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-19T00:55:03Z · message_queued at 2026-11-19T00:55:03.497Z
-
+- 2026-11-19T00:56:07Z · message_delivered: 1 message(s)
