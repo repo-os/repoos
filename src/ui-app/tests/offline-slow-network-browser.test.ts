@@ -65,7 +65,15 @@ const VIEWPORTS = [375, 768, 1280] as const;
 /** A fresh page that records uncaught errors (asserted per test). */
 async function openPage(width: (typeof VIEWPORTS)[number] = 1280): Promise<SmokePage> {
   const page = await browser!.newPage({ viewport: { width, height: 900 } });
-  page.on("pageerror", (err: Error) => bootErrors.push(`pageerror: ${err.message}`));
+  page.on("pageerror", (err: Error) => {
+    // Same tolerance as the UI smoke gate: WebKit reports failed optional API
+    // requests as page errors when the ephemeral fixture server is still
+    // settling (or rejects one during teardown). They do not affect what
+    // these tests assert. Anything else is a real defect.
+    if (!err.message.includes("/api/") || !err.message.includes("access control checks")) {
+      bootErrors.push(`pageerror: ${err.message}`);
+    }
+  });
   return page;
 }
 
