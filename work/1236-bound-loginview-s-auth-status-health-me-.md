@@ -3,9 +3,6 @@ id: "1236"
 title: "Bound LoginView's auth status/health/me fetches (follow-up from #1226 QA pass)"
 type: bug
 status: inbox
-needs_input: true
-needs_input_reason: underspecified
-needs_input_detail: "missing sections: Problem, Desired UX, Acceptance criteria, Notes for AI"
 paths: [src/ui-app/src/views/LoginView.vue]
 priority: p3
 area: web
@@ -36,3 +33,4 @@ When the server is slow or unreachable, the login page shows a plain-English sta
 - 2026-11-19T16:18:14Z · created · t@t
 - 2026-11-19T16:18:15Z · needs_input
 - 2026-11-19T16:18:24Z · body: Problem (added); Desired UX (added); Acceptance criteria (added); Notes for AI (added)
+- 2026-11-19T16:18:24Z · needs_input
