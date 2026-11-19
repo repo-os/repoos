@@ -2,7 +2,7 @@
 id: "1239"
 title: "QA pass: sign-in, user menu and permissions screens at all screen sizes"
 type: bug
-status: inbox
+status: ready
 needs_input: true
 needs_input_reason: needs-human-step
 needs_input_detail: "Acceptance criteria mention a real device, physical hardware, accounts, credentials, or third-party registration — split that verification into a separate human-only task. (matched: credentials or keys — \"never use or print real credentials.\")"
@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: t@t
 branch: ""
 created_at: "2026-11-19T18:27:10Z"
-updated_at: "2026-11-19T18:27:11Z"
+updated_at: "2026-11-19T18:27:15Z"
 ---
 ## Problem
 The sign-in flow, user menu and users/permissions settings have not been QA-checked together at phone, tablet and desktop widths since recent changes.
@@ -29,3 +29,4 @@ Do not touch repoos.toml.
 
 - 2026-11-19T18:27:10Z · created · t@t
 - 2026-11-19T18:27:11Z · needs_input
+- 2026-11-19T18:27:15Z · status inbox→ready
