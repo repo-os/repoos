@@ -69,3 +69,4 @@ Do not touch repoos.toml.
 - 2026-11-19T19:05:21Z · body
 - 2026-11-19T19:06:10Z · status active→review
 - 2026-11-19T19:19:15Z · note: ui verification passed: 2 of 2 shots captured with clean console
+- 2026-11-19T19:19:15Z · note: review pass 2: good to go
