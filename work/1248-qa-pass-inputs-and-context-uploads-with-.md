@@ -11,7 +11,7 @@ branch: feat/qa-pass-inputs-and-context-uploads-with-
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T21:26:57Z"
-updated_at: "2026-11-19T21:42:46Z"
+updated_at: "2026-11-19T21:47:01Z"
 ---
 ## Problem
 Uploads on the Inputs and Context pages have not been checked with very large files, wrong types, duplicate names and failing uploads.
@@ -31,3 +31,4 @@ Do not touch repoos.toml.
 - 2026-11-19T21:27:04Z · status ready→active, branch
 - 2026-11-19T21:42:30Z · body
 - 2026-11-19T21:42:46Z · note: adopted orphaned engineer pid 61756
+- 2026-11-19T21:47:01Z · CTO nudge: held — handoff gate is running
