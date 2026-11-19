@@ -7,7 +7,7 @@ const settingsView = readFileSync(join(repoRoot, "src/ui-app/src/views/SettingsV
 const styles = readFileSync(join(repoRoot, "src/ui-app/src/style.css"), "utf8");
 
 describe("Settings restart badge layout (#0911)", () => {
-  it("places each restart hint before its control and keeps its accessible explanation", () => {
+  it("places each restart hint before its control without a redundant native tooltip", () => {
     const badgeIndexes = [...settingsView.matchAll(/class="restart-badge"/g)].map(
       (match) => match.index!,
     );
@@ -18,8 +18,8 @@ describe("Settings restart badge layout (#0911)", () => {
     });
     expect(badges).toHaveLength(7);
     for (const badge of badges) {
-      expect(badge.source).toContain('title="Changes require restarting RepoOS"');
       expect(badge.source).toContain('aria-label="Restart required"');
+      expect(badge.source).not.toContain("title=");
       expect(
         settingsView.slice(
           badge.index + badge.source.length,

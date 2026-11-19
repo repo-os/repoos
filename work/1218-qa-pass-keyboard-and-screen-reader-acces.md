@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 126508
-last_close_out_gate_at: "2026-11-19T05:24:37.265Z"
 id: "1218"
 title: "QA pass: keyboard and screen-reader access on Settings, Agents and Releases"
 type: bug
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: 5fc95cf75d353f46efac6aa60bda11c6732257e6
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-keyboard-and-screen-reader-acces
 created_at: "2026-11-19T04:18:15Z"
 updated_at: "2026-11-19T05:24:37Z"
+last_close_out_gate_ms: 126508
+last_close_out_gate_at: "2026-11-19T05:24:37.265Z"
 review_passes: 1
 engineer_stall_resume_log: "[{\"at\":\"2026-11-19T05:06:49.249Z\",\"reason\":\"handoff-deferred\"}]"
 ---
