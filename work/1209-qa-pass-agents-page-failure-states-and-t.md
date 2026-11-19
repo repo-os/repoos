@@ -2,14 +2,14 @@
 id: "1209"
 title: "QA pass: Agents page failure states and Test button – missing CLI, signed-out agent, rate limit"
 type: bug
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-agents-page-failure-states-and-t
 created_at: "2026-11-18T23:17:32Z"
-updated_at: "2026-11-19T00:14:42Z"
+updated_at: "2026-11-19T00:14:43Z"
 ---
 ## Problem
 Agent failure states (signed out, missing CLI, rate limited) are common in practice and need verification.
@@ -42,3 +42,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T23:55:15Z · CTO nudge: held — handoff gate is running
 - 2026-11-19T00:02:46Z · CTO nudge: held — handoff gate is running
 - 2026-11-19T00:14:42Z · note: ui verification passed: 1 shot captured with clean console
+- 2026-11-19T00:14:43Z · status active→review
