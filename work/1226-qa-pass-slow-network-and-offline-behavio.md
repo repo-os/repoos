@@ -2,14 +2,14 @@
 id: "1226"
 title: "QA pass: slow network and offline behavior in the web app and Hub"
 type: bug
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-slow-network-and-offline-behavio
 created_at: "2026-11-19T09:47:34Z"
-updated_at: "2026-11-19T16:07:43Z"
+updated_at: "2026-11-19T16:07:57Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -170,3 +170,4 @@ Do not touch repoos.toml.
 - 2026-11-19T16:07:43Z · status active→review
 - 2026-11-19T16:07:43Z · message_delivered: 1 message(s)
 - 2026-11-19T16:07:43Z · note: handoff requested (cli)
+- 2026-11-19T16:07:57Z · status active→review
