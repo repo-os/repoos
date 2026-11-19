@@ -14,6 +14,7 @@ last_handoff_failure_fingerprint: "check|remote validation failed: test failure:
 last_handoff_failure_sha: a67cddcbf8aeff91bd457a9f80f9ac34d097c302
 review_passes: 1
 handoff_signal_retry_count: 1
+deferred_handoff_resume_count: 1
 ---
 ## Problem
 Task creation and editing (new task drawer, edit fields, attachments, screenshots) has not had a QA pass at phone, tablet and desktop widths.
