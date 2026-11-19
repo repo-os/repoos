@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-system-resource-panel-pressure-g
 created_at: "2026-11-18T23:47:41Z"
-updated_at: "2026-11-19T00:59:46Z"
+updated_at: "2026-11-19T01:12:01Z"
 handoff_signal_retry_count: 1
 review_rounds: 1
 routing_switches: 1
@@ -29,58 +29,58 @@ Do not touch repoos.toml. Never open a visible browser window.
 ```json
 [
 {
-  "label": "Normal pressure at 1280px",
-  "target": "default",
-  "route": "/",
-  "selector": ".resource-panel",
-  "state": "system:pressureNormal",
-  "viewportWidth": 1280,
-  "viewportHeight": 900
+"label": "Normal pressure at 1280px",
+"target": "default",
+"route": "/",
+"selector": ".resource-panel",
+"state": "system:pressureNormal",
+"viewportWidth": 1280,
+"viewportHeight": 900
 },
 {
-  "label": "Warning pressure at 1280px",
-  "target": "default",
-  "route": "/",
-  "selector": ".resource-panel",
-  "state": "system:pressureWarning",
-  "viewportWidth": 1280,
-  "viewportHeight": 900
+"label": "Warning pressure at 1280px",
+"target": "default",
+"route": "/",
+"selector": ".resource-panel",
+"state": "system:pressureWarning",
+"viewportWidth": 1280,
+"viewportHeight": 900
 },
 {
-  "label": "Critical pressure at 1280px",
-  "target": "default",
-  "route": "/",
-  "selector": ".resource-panel",
-  "state": "system:pressureCritical",
-  "viewportWidth": 1280,
-  "viewportHeight": 900
+"label": "Critical pressure at 1280px",
+"target": "default",
+"route": "/",
+"selector": ".resource-panel",
+"state": "system:pressureCritical",
+"viewportWidth": 1280,
+"viewportHeight": 900
 },
 {
-  "label": "Normal pressure panel at 375px",
-  "target": "default",
-  "route": "/",
-  "selector": ".resource-panel",
-  "state": "system:pressureNormal",
-  "viewportWidth": 375,
-  "viewportHeight": 900
+"label": "Normal pressure panel at 375px",
+"target": "default",
+"route": "/",
+"selector": ".resource-panel",
+"state": "system:pressureNormal",
+"viewportWidth": 375,
+"viewportHeight": 900
 },
 {
-  "label": "Warning pressure panel at 375px",
-  "target": "default",
-  "route": "/",
-  "selector": ".resource-panel",
-  "state": "system:pressureWarning",
-  "viewportWidth": 375,
-  "viewportHeight": 900
+"label": "Warning pressure panel at 375px",
+"target": "default",
+"route": "/",
+"selector": ".resource-panel",
+"state": "system:pressureWarning",
+"viewportWidth": 375,
+"viewportHeight": 900
 },
 {
-  "label": "Critical pressure panel at 375px",
-  "target": "default",
-  "route": "/",
-  "selector": ".resource-panel",
-  "state": "system:pressureCritical",
-  "viewportWidth": 375,
-  "viewportHeight": 900
+"label": "Critical pressure panel at 375px",
+"target": "default",
+"route": "/",
+"selector": ".resource-panel",
+"state": "system:pressureCritical",
+"viewportWidth": 375,
+"viewportHeight": 900
 }
 ]
 ```
@@ -105,3 +105,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-19T00:59:11Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The review found no code defects. It requires declared captures for normal, warning, and critical pressure at both 1280×900 and 375×900, with the mobile panel scrolled into view. I haven’t changed the source or re-handed off. `repoos updat… · stderr: 2026-11-19T00:58:28.070617Z ERROR codex_core::tools::router: error=failed to parse function arguments: unknown field `question`, expected `title` or `options` at line 1 column 137 2026-11-19T00:58:30.966130Z ERROR codex_core::tools::router: error=failed to parse function arguments: duplicate field `title` at line 1 co…
 - 2026-11-19T00:59:24Z · message_delivered: 1 message(s)
 - 2026-11-19T00:59:46Z · body
+- 2026-11-19T01:12:01Z · body
