@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-toasts-banners-and-dialogs-stack
 created_at: "2026-11-19T09:17:32Z"
-updated_at: "2026-11-19T13:11:24Z"
+updated_at: "2026-11-19T13:14:02Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-19T13:05:06.200Z: repoos check failed: check-fmt:check — Formatting failed — run `bun run fmt` to fix:"
 handoff_signal_retry_count: 2
@@ -97,3 +97,4 @@ Do not touch repoos.toml.
 - 2026-11-19T13:10:54Z · message_queued at 2026-11-19T13:10:54.733Z
 - 2026-11-19T13:10:55Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-19T13:11:24Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-19T13:14:02Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
