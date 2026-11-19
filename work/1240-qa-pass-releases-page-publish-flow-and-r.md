@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-19T18:50:02Z"
-review_passes: 1
 id: "1240"
 title: "QA pass: Releases page publish flow and release notes editor with failures"
 type: bug
@@ -13,6 +11,7 @@ branch: feat/qa-pass-releases-page-publish-flow-and-r
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T18:27:27Z"
+updated_at: "2026-11-19T18:47:38Z"
 ---
 ## Problem
 The Releases page publish flow and notes editor have not been tested for failures (CI failing, tag exists, long notes, offline).
@@ -31,11 +30,4 @@ Do not touch repoos.toml. Do not call the real release API.
 - 2026-11-19T18:27:32Z · status inbox→ready
 - 2026-11-19T18:27:34Z · cli_override, model_override
 - 2026-11-19T18:27:35Z · status ready→active, branch
-- 2026-11-19T18:36:51Z · note: adopted orphaned engineer pid 6052
-- 2026-11-19T18:44:15Z · body
-- 2026-11-19T18:46:49Z · CTO nudge: held — handoff gate is running
-- 2026-11-19T18:47:36Z · note: ui verification passed: 1 shot captured with clean console
 - 2026-11-19T18:47:38Z · status active→review
-- 2026-11-19T18:47:39Z · message_queued at 2026-11-19T18:47:39.279Z
-- 2026-11-19T18:50:02Z · note: review pass 1: good to go
-
