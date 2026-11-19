@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-first-run-onboarding-and-empty-p
 created_at: "2026-11-19T07:48:01Z"
-updated_at: "2026-11-19T09:42:27Z"
+updated_at: "2026-11-19T09:47:41Z"
 last_close_out_gate_ms: 488576
 last_close_out_gate_at: "2026-11-19T09:42:12.669Z"
 review_passes: 1
@@ -85,3 +85,4 @@ Do not touch repoos.toml.
 - 2026-11-19T09:32:46Z · note: review pass 1: good to go
 - 2026-11-19T09:42:12Z · close-out gate completed in 489s
 - 2026-11-19T09:42:27Z · status done→done, release:success
+- 2026-11-19T09:47:41Z · message_dropped: 1 queued message(s) discarded — task is done
