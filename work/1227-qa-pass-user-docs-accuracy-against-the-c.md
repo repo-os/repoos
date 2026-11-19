@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "1227"
 title: "QA pass: user-docs accuracy against the current UI and CLI"
 type: bug
@@ -35,3 +36,4 @@ Do not touch repoos.toml.
 - 2026-11-19T09:51:27Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
 - 2026-11-19T09:51:27Z · engineer crash recovery: resuming opencode + opencode-go/glm-5.3-flash (1/3 crashes in 30m) · the agent process exited with an error — open the task to see the full output. Open Raw CLI error for details. (CLI: the agent process exited with an error — open the task to see the full output)
 - 2026-11-19T09:51:29Z · needs_input
+
