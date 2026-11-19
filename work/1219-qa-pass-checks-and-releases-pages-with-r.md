@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-checks-and-releases-pages-with-r
 created_at: "2026-11-19T06:17:33Z"
-updated_at: "2026-11-19T07:07:54Z"
+updated_at: "2026-11-19T07:08:11Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-19T06:56:03.096Z: repoos check failed: rendered-contrast — · div#setting-model_routing.timeoutMs.setting-row > div.setting-info > div.setting-desc — #958ab0 on #ffffff = 3.21 (need ≥4.5, 11px) [settings] \"How long one routing decision may take before the configured\""
 review_rounds: 1
@@ -68,3 +68,4 @@ Do not touch repoos.toml.
 - 2026-11-19T06:56:02Z · message_delivered: 1 message(s)
 - 2026-11-19T07:07:54Z · message_queued at 2026-11-19T07:07:54.361Z
 - 2026-11-19T07:07:54Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-19T07:08:11Z · CTO nudge: held — an undelivered message is already queued
