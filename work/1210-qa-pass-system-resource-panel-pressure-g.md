@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 410673
-last_close_out_gate_at: "2026-11-19T07:26:50.253Z"
 id: "1210"
 title: "QA pass: system resource panel, pressure guard banners and Control stats under high load fixtures"
 type: bug
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: 83f0d973fd6d0955093e405cd783d8a7e2a0811a
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-system-resource-panel-pressure-g
 created_at: "2026-11-18T23:47:41Z"
 updated_at: "2026-11-19T07:26:50Z"
+last_close_out_gate_ms: 410673
+last_close_out_gate_at: "2026-11-19T07:26:50.253Z"
 review_passes: 5
 review_rounds: 2
 routing_switches: 1
