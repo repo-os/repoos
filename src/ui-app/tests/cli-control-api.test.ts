@@ -16,7 +16,9 @@ import {
   cmdApi,
   cmdConfig,
   cmdDone,
+  cmdAttention,
   cmdHandoffStatus,
+  cmdIntegration,
   cmdLandable,
   cmdMessage,
   cmdOverride,
@@ -459,6 +461,51 @@ describe("control API CLI", () => {
     log.mockRestore();
     health.mockRestore();
     request.mockRestore();
+  });
+
+  it("requestOk refuses an SPA-catch-all HTML body even with a 2xx status", async () => {
+    const api = new RepoOsApi();
+    const request = vi.spyOn(RepoOsApi.prototype, "request").mockResolvedValue({
+      status: 200,
+      body: nonJsonResponse("/api/typo", "<!DOCTYPE html><html><body>shell</body></html>"),
+    });
+    await expect(api.requestOk("GET", "/api/typo")).rejects.toThrow(/not a RepoOS API route/);
+    request.mockRestore();
+  });
+
+  // Class: a 200 HTML body (SPA fallback on a route the running server does
+  // not register) must never read as success. Fixed for cmdApi in #1228; these
+  // siblings classify by HTTP status alone, so they share the guard.
+  it("treats the SPA-catch-all 200 HTML body as a failure in every status-only consumer", async () => {
+    const cases: Array<[string, (args: string[]) => Promise<number>]> = [
+      ["review keep", (args) => cmdReview(["keep", "9999", ...args])],
+      ["review followup", (args) => cmdReview(["followup", "9999", ...args])],
+      ["integration list", (args) => cmdIntegration(["list", ...args])],
+      ["attention list", (args) => cmdAttention(["list", ...args])],
+      ["verify", (args) => cmdVerify(["9999", ...args])],
+      ["done --cancel", (args) => cmdDone(["9999", "--cancel", ...args])],
+    ];
+    for (const [label, run] of cases) {
+      const health = vi.spyOn(RepoOsApi.prototype, "health").mockResolvedValue(true);
+      const request = vi.spyOn(RepoOsApi.prototype, "request").mockResolvedValue({
+        status: 200,
+        body: nonJsonResponse("/api/typo", "<!DOCTYPE html><html><body>shell</body></html>"),
+      });
+      const err = vi.spyOn(console, "error").mockImplementation(() => {});
+      const log = vi.spyOn(console, "log").mockImplementation(() => {});
+      const code = await run([]);
+      const lines = err.mock.calls.map((c) => String(c[0])).join("\n");
+      const out = log.mock.calls.map((c) => String(c[0])).join("\n");
+      expect(code, `${label} must exit 1 on the HTML catch-all`).toBe(1);
+      expect(lines + out, `${label} must name the route, not print success`).toMatch(
+        /not a RepoOS API route/,
+      );
+      expect(out, `${label} must not print a green success line`).not.toMatch(/✓/);
+      err.mockRestore();
+      log.mockRestore();
+      health.mockRestore();
+      request.mockRestore();
+    }
   });
 
   it("api still prints the JSON body for real API replies", async () => {

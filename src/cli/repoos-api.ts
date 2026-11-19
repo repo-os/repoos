@@ -53,6 +53,9 @@ export function nonJsonResponse(path: string, text: string): ApiJson {
   // through to the single-page app, which answers 200 with its own HTML — the
   // common case is a typo'd path. Handing the page back as an "error" string
   // would dump the whole app shell into the terminal; say what happened instead.
+  // The 512-char prefix is a heuristic: the SPA shell's doctype sits in the
+  // first bytes, so nothing beyond it can change the verdict — a non-HTML
+  // body that merely fails JSON.parse still surfaces as raw text.
   const head = text.trimStart().slice(0, 512).toLowerCase();
   if (head.startsWith("<!doctype html") || head.startsWith("<html")) {
     return {
@@ -63,6 +66,19 @@ export function nonJsonResponse(path: string, text: string): ApiJson {
     };
   }
   return { error: text };
+}
+
+/**
+ * True when the response body came from the SPA catch-all (a 200 HTML page for
+ * an unknown /api/ route) rather than a real API answer. Every consumer that
+ * classifies success must treat this as a failure — the HTTP status alone lies.
+ */
+export function isHtmlResponse(body: unknown): boolean {
+  return (
+    body !== null &&
+    typeof body === "object" &&
+    (body as { htmlResponse?: unknown }).htmlResponse === true
+  );
 }
 
 export function resolveControlPlaneBase(opts: RepoOsApiOptions = {}): {
@@ -224,6 +240,11 @@ export class RepoOsApi {
     const allowed = allowedStatuses ?? [200];
     if (!allowed.includes(status)) {
       throw new RepoOsApiError(readApiError(data, status), status, data);
+    }
+    // A 200 that is really the SPA catch-all is not success — fail like any
+    // other non-JSON answer instead of returning a web page as the payload.
+    if (isHtmlResponse(data)) {
+      throw new RepoOsApiError(String(data.error), status, data);
     }
     return data;
   }

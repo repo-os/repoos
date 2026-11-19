@@ -28,9 +28,28 @@ nonexistent task id, an invalid flag value, or a GET request.
 | 4 | `repoos api GET /api/<typo>` hit the SPA catch-all, printed `"status": 200` and dumped the whole app shell HTML as an `error` string, and exited 0 | `RepoOsApi.request` now detects an HTML body and returns a one-line plain-English message plus an `htmlResponse` marker; `repoos api` prints the message to stderr and exits 1. Other CLI consumers get the same short message through `requestOk` |
 | 5 | `repoos config set bogus.key value` failed with the server's generic `No valid fields to update`, which neither named the key nor the fix | The CLI now rewrites that specific reply to `Unknown setting "bogus.key" — RepoOS has no config field with that name…` pointing at Settings and `repoos config get` |
 | 6 | Every unknown project environment answered the bare `Unknown project environment`, with no hint where the real ones are listed | The route answers `No project environment named "<id>". See the Secrets page…` (also used by the bindings PUT path) |
-| 8 | The `/cli` docs page itself overflowed horizontally at every viewport (body scrollWidth 1594 > 1024px, 1282 > 375px) — pre-existing, surfaced by the review shot. Two structural causes: the `repoos story` code block was never closed, so its fence swallowed the schedule section until a stray closing fence after the schedules table; and a 4-space-indented `repoos update 0612 --shots …` line rendered as a bare `<pre>` with no horizontal scroll container | Rebalanced the story/schedule fences and converted the indented line to a fenced block; the page now fits at 1024px and 375px with no non-scrollable element past the viewport |
-| 9 | A wrapped code span in this pass's own `certify` section made VitePress's Vue compiler fail ("Element is missing end tag"), aborting the docs build | Kept `--binary <path>` on one line. Lesson for future docs edits: VitePress treats a code span that wraps across lines as fatal, while the oxfmt/lint gates do not catch it |
-| 10 | Nothing stopped a new command from appearing in `--help` while missing from the docs again | New table-driven test `src/ui-app/tests/cli-help-docs-coverage.test.ts` asserts every command in the help table (`GROUPS`) is documented in `user-docs/cli.md`, so the next drift fails CI |
+| 7 | The `/cli` docs page itself overflowed horizontally at every viewport (body scrollWidth 1594 > 1024px, 1282 > 375px) — pre-existing, surfaced by the review shot. Two structural causes: the `repoos story` code block was never closed, so its fence swallowed the schedule section until a stray closing fence after the schedules table; and a 4-space-indented `repoos update 0612 --shots …` line rendered as a bare `<pre>` with no horizontal scroll container | Rebalanced the story/schedule fences and converted the indented line to a fenced block; the page now fits at 1024px and 375px with no non-scrollable element past the viewport |
+| 8 | A wrapped code span in this pass's own `certify` section made VitePress's Vue compiler fail ("Element is missing end tag"), aborting the docs build | Kept `--binary <path>` on one line. Lesson for future docs edits: VitePress treats a code span that wraps across lines as fatal, while the oxfmt/lint gates do not catch it |
+| 9 | Nothing stops a new command from appearing in `--help` while missing from the docs again | New table-driven test `src/ui-app/tests/cli-help-docs-coverage.test.ts` asserts every command in the help table (`GROUPS`) is documented in `user-docs/cli.md`, so the next drift fails CI |
+
+## Review round 1 follow-up
+
+The review found the SPA-fallback fix lived only in `repoos api`: every CLI
+command that classified success purely by HTTP status still treated the 200
+HTML catch-all body as success (`review keep`/`followup` printed a green ✓,
+`integration`/`attention` printed the body as JSON, `verify` reported
+"evidence refreshed", `done --cancel` printed `✓ … (HTTP 200)`). Centralized:
+
+- `RepoOsApi.requestOk` now refuses a body marked `htmlResponse` even when the
+  HTTP status is 2xx, so every `requestOk` consumer fails loudly.
+- The raw-`request` sites (`integration`, `attention`, `done --cancel`)
+  share an exported `isHtmlResponse()` guard; `review keep`/`followup` moved
+  onto `requestOk`. `review again`, `sync`, `summary` and `done`'s main path
+  already required a JSON `ok` field, so the HTML body already failed them.
+- A table-driven test drives all six previously-affected commands against a
+  mocked 200 HTML body and asserts exit 1, the plain message, and no green
+  success line; a server-side test pins the exact `No valid fields to update`
+  string the `config set` rewrite keys on.
 
 ## Verified unchanged (no action needed)
 

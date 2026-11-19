@@ -159,4 +159,14 @@ describe("PATCH /api/config writes repoos.toml without committing (#0819)", () =
     // Repeating the same value writes nothing new and never commits.
     expect(git(root, ["rev-parse", "HEAD"])).toBe(headBefore);
   });
+
+  // `repoos config set <unknown-key>` rewrites this exact server string into a
+  // plain-English message (`unknownConfigKeyMessage`); rewording it here would
+  // silently disable that rewrite, so pin it (#1228 review round 1).
+  it("rejects a patch with no recognized fields with the exact string the CLI rewrites", async () => {
+    const root = gitRepo(REORDERABLE);
+    const res = await patch(root, { "bogus.key": 1 });
+    expect(res.status).toBe(400);
+    expect(res.payload.error).toBe("No valid fields to update");
+  });
 });
