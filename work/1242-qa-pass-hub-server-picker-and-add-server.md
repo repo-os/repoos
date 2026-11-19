@@ -1,0 +1,27 @@
+---
+id: "1242"
+title: "QA pass: Hub server picker and add-server flow copy and error states"
+type: bug
+status: inbox
+priority: p2
+area: web
+assigned_to: ai
+created_by: t@t
+branch: ""
+created_at: "2026-11-19T19:07:19Z"
+updated_at: "2026-11-19T19:07:19Z"
+---
+## Problem
+The Hub server picker and add-server flow need a final check of wording and error states (bad URL, unreachable server, duplicate name, unsafe scheme) in the web preview of the shell.
+## Desired UX
+Every error says what is wrong and what to do next in plain English; the flow works at phone and tablet widths.
+## Acceptance criteria
+- Headless Playwright only against fixtures; never open a visible browser; no real servers contacted.
+- Cover bad URL, http/file/javascript schemes, duplicate, unreachable and slow servers; fix issues with tests.
+- Commit docs/qa/2026-11-hub-picker-qa.md.
+## Notes for AI
+Do not touch repoos.toml.
+
+## Activity
+
+- 2026-11-19T19:07:19Z · created · t@t
