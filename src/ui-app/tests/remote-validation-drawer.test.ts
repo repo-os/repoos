@@ -7,6 +7,7 @@ import { createPinia, setActivePinia } from "pinia";
 import RemoteValidationDrawer from "../src/components/RemoteValidationDrawer.vue";
 import { useUiStore } from "../src/stores/ui";
 import { useConfigStore } from "../src/stores/config";
+import { SERVER_UNREACHABLE_MESSAGE } from "../src/api";
 
 /**
  * Component tests for the RemoteValidationDrawer (Hetzner + Tailscale runner
@@ -574,7 +575,7 @@ describe("RemoteValidationDrawer", () => {
 
     it("surfaces a thrown network error as the failed output", async () => {
       const { wrapper } = await mountDrawer({
-        testError: new Error("Can't reach the RepoOS server — it may be down."),
+        testError: new Error(SERVER_UNREACHABLE_MESSAGE),
       });
 
       const section = wrapper.get(".rvr-test-section");

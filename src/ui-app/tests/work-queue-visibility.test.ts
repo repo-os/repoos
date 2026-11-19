@@ -14,6 +14,7 @@ import WorkView from "../src/views/WorkView.vue";
 import { useRepoStore } from "../src/stores/repo";
 import { EMPTY_COUNTS, flush, makeTask } from "./component-test-helpers";
 import type { Task } from "../src/types";
+import { SERVER_UNREACHABLE_MESSAGE } from "../src/api";
 
 function stubWideViewport(): void {
   vi.stubGlobal(
@@ -237,7 +238,7 @@ describe("Work board first-run and load-error placement (#1183 review)", () => {
     repo.loading = false;
     repo.tasks = [];
     repo.counts = { ...EMPTY_COUNTS };
-    repo.boardLoadError = "Can't reach the RepoOS server — it may be down.";
+    repo.boardLoadError = SERVER_UNREACHABLE_MESSAGE;
     const router = makeRouter();
     await router.push("/work?status=ready");
     wrapper = mount(WorkView, {
