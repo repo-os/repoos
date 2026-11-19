@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-cli-help-and-error-messages-matc
 created_at: "2026-11-19T11:47:39Z"
-updated_at: "2026-11-19T12:10:18Z"
+updated_at: "2026-11-19T12:18:43Z"
 ---
 ## Problem
 CLI commands, flags and error messages may be out of step with user-docs/cli.md and use jargon.
@@ -30,3 +30,4 @@ Do not touch repoos.toml.
 - 2026-11-19T11:47:44Z · note: agent fallback: codex + gpt-6-luna is paused (out of usage since 2026-11-19T07:09:32.657Z: Codex hit a provider quota or rate limit. Wait for the provider limit to reset, then retry. (CLI: error: You’ve hit your usage limit. Upgrade to Pro (https://chatgpt.com/explore/pro), visit https://chatgpt.com/codex/settings/usage to purcha) — using opencode + opencode-go/glm-5.3-flash
 - 2026-11-19T12:05:02Z · body
 - 2026-11-19T12:10:18Z · body
+- 2026-11-19T12:18:43Z · body
