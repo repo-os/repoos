@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-first-run-onboarding-and-empty-p
 created_at: "2026-11-19T07:48:01Z"
-updated_at: "2026-11-19T08:22:49Z"
+updated_at: "2026-11-19T08:24:35Z"
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\",\"at\":\"2026-11-19T08:22:31.911Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -38,3 +38,4 @@ Do not touch repoos.toml.
 - 2026-11-19T08:22:33Z · orphaned run process stopped · pid 94299 · just serve-noauth 7272 · cpu 0s · age 30m
 - 2026-11-19T08:22:39Z · needs_input
 - 2026-11-19T08:22:49Z · body
+- 2026-11-19T08:24:35Z · orphaned run process stopped · pid 2869 · just serve-noauth 7279 · cpu 0s · age 20s
