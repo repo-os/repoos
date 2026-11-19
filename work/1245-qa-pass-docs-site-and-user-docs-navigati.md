@@ -8,8 +8,10 @@ area: web
 assigned_to: ai
 created_by: t@t
 branch: ""
+cli_override: claude code
+model_override: haiku
 created_at: "2026-11-19T20:07:43Z"
-updated_at: "2026-11-19T20:07:49Z"
+updated_at: "2026-11-19T20:07:51Z"
 ---
 ## Problem
 The docs site pages, navigation and search have not been checked on phone widths since the latest docs changes.
@@ -26,3 +28,4 @@ Do not touch repoos.toml.
 
 - 2026-11-19T20:07:43Z · created · t@t
 - 2026-11-19T20:07:49Z · status inbox→ready
+- 2026-11-19T20:07:51Z · cli_override, model_override
