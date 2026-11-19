@@ -2,7 +2,7 @@
 id: "1250"
 title: "QA pass: Hub macOS and web shared strings, tooltips and empty labels audit"
 type: bug
-status: review
+status: active
 priority: p2
 area: web
 assigned_to: ai
@@ -12,8 +12,8 @@ cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T21:47:05Z"
 updated_at: "2026-11-19T22:15:04Z"
+review_rounds: 2
 review_passes: 2
-review_rounds: 1
 ---
 ## Problem
 Tooltips, aria-labels, placeholders and empty-state labels across the app may be missing, duplicated or inconsistent (for example native title tooltips, which are banned in new UI).
@@ -47,3 +47,4 @@ Do not touch repoos.toml.
 - 2026-11-19T22:13:56Z · message_queued at 2026-11-19T22:13:56.413Z
 - 2026-11-19T22:15:04Z · note: review pass 2: needs some work
 - 2026-11-19T22:15:04Z · message_delivered: 1 message(s)
+- 2026-11-19T22:15:04Z · status review→active
