@@ -1,5 +1,5 @@
 ---
-handoff_signal_retry_count: 1
+handoff_signal_retry_count: 2
 id: "1231"
 title: "QA pass: keyboard shortcuts and command palette across pages"
 type: bug
@@ -71,4 +71,5 @@ Do not touch repoos.toml.
 - 2026-11-19T14:04:57Z · needs_input
 - 2026-11-19T14:08:42Z · orphaned run process stopped · pid 22268 · /opt/homebrew/Cellar/bun/1.4.2/bin/bun --experimental-import-meta-resolve --require /Users/nick/code · cpu 3s · age 20s
 - 2026-11-19T14:10:34Z · body
+
 
