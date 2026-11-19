@@ -2,14 +2,14 @@
 id: "1227"
 title: "QA pass: user-docs accuracy against the current UI and CLI"
 type: bug
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-user-docs-accuracy-against-the-c
 created_at: "2026-11-19T09:47:43Z"
-updated_at: "2026-11-19T10:50:10Z"
+updated_at: "2026-11-19T10:50:58Z"
 handoff_signal_retry_count: 2
 dev_error_count: 1
 engineer_stall_resume_log: "[{\"at\":\"2026-11-19T09:58:29.630Z\",\"reason\":\"clean-exit-without-handoff\"}]"
@@ -48,3 +48,4 @@ Do not touch repoos.toml.
 - 2026-11-19T10:45:14Z · watchdog: restarting engineer because a queued message waited 3m with no live process
 - 2026-11-19T10:45:15Z · message_delivered: 1 message(s)
 - 2026-11-19T10:50:10Z · body
+- 2026-11-19T10:50:58Z · status active→review
