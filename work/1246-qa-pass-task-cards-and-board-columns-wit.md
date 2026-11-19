@@ -1,0 +1,27 @@
+---
+id: "1246"
+title: "QA pass: task cards and board columns with long titles, many labels and odd states"
+type: bug
+status: inbox
+priority: p2
+area: web
+assigned_to: ai
+created_by: t@t
+branch: ""
+created_at: "2026-11-19T21:06:54Z"
+updated_at: "2026-11-19T21:06:54Z"
+---
+## Problem
+Task cards and board columns have not been checked with very long titles, many labels, unusual statuses (held, paused, needs-input, archived) and missing fields.
+## Desired UX
+Every card state renders cleanly and consistently with no overlap or clipping at 375, 768 and 1280 px.
+## Acceptance criteria
+- Headless Playwright only against fixtures; never open a visible browser or steal focus.
+- Use fixtures for every state and extreme content; fix issues with tests.
+- Commit docs/qa/2026-11-task-cards-states-qa.md.
+## Notes for AI
+Do not touch repoos.toml.
+
+## Activity
+
+- 2026-11-19T21:06:54Z · created · t@t
