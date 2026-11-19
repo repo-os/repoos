@@ -1,6 +1,6 @@
 ---
 id: "1232"
-title: "Standardise task action buttons: Delete, Archive, Hold (drop the word task)"
+title: "Easter eggs bundle: task action button labels (Delete, Archive, Hold)"
 type: chore
 status: inbox
 priority: p3
@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: ""
 created_at: "2026-11-19T13:54:07Z"
-updated_at: "2026-11-19T13:54:07Z"
+updated_at: "2026-11-19T13:54:25Z"
 ---
 ## Problem
 The task drawer footer buttons read "Delete task", "Archive task" and "Hold". The word "task" is redundant (the drawer is already a task) and the three are inconsistent.
@@ -25,3 +25,4 @@ Do not touch repoos.toml. Keep aria-labels descriptive (e.g. aria-label "Delete 
 ## Activity
 
 - 2026-11-19T13:54:07Z · created · t@t
+- 2026-11-19T13:54:25Z · title
