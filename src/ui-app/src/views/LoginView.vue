@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref, onMounted, onUnmounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useAuthStore } from "../stores/auth";
+import { SERVER_UNREACHABLE_MESSAGE } from "../api";
 import RepoLogoMark from "../components/RepoLogoMark.vue";
 import { readHubShellSession, returnToHubServerPicker } from "../lib/hub-shell";
 import { readShotPreviewFixtureFromLocation } from "../lib/shot-preview-fixtures";
@@ -30,6 +31,8 @@ const hasGoogle = ref(false);
 const hasEmailProvider = ref(false);
 const repoName = ref("");
 const loading = ref(true);
+// Plain-English failure state for the initial status probe (#1236).
+const statusError = ref("");
 
 // OTP flow
 const step = ref<"email" | "otp" | "error">("email");
@@ -45,9 +48,35 @@ let resendInterval: ReturnType<typeof setInterval> | undefined;
 const bootstrapEmail = ref("");
 const bootstrapping = ref(false);
 
-async function checkStatus(): Promise<void> {
+/**
+ * #1236: every fetch on the login page is bounded, the same way the boot path
+ * was bounded in #1226. A stalled (but not refused) server used to hold the
+ * page's spinner up until the browser's own timeout; now a request that does
+ * not answer in time resolves to a plain-English failure state with a retry,
+ * and window-focus retries it on its own.
+ */
+const LOGIN_FETCH_TIMEOUT_MS = 6_000;
+
+async function fetchBounded(url: string, init?: RequestInit): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), LOGIN_FETCH_TIMEOUT_MS);
   try {
-    const res = await fetch("/api/auth/status");
+    return await fetch(url, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function checkStatus(): Promise<void> {
+  loading.value = true;
+  statusError.value = "";
+  try {
+    const res = await fetchBounded("/api/auth/status");
+    if (!res.ok) {
+      // A 500 or similar must not masquerade as "auth disabled" — say the
+      // server is unreachable instead.
+      throw new Error(`/api/auth/status answered HTTP ${res.status}`);
+    }
     const data = await res.json();
     authEnabled.value = data.enabled;
     bootstrapNeeded.value = data.bootstrapNeeded;
@@ -57,7 +86,7 @@ async function checkStatus(): Promise<void> {
     if (!data.enabled) {
       if (shotFixture === "auth:login" || shotFixture === "auth:otp") {
         try {
-          const healthRes = await fetch("/api/health");
+          const healthRes = await fetchBounded("/api/health");
           const health = await healthRes.json();
           if (health.isPreviewBuild) {
             // The managed preview disables auth. These preview-only fixtures
@@ -80,26 +109,50 @@ async function checkStatus(): Promise<void> {
       return;
     }
     // Check if already logged in
-    const meRes = await fetch("/api/auth/me");
-    const meData = await meRes.json();
-    if (meData.authenticated) {
-      // Sync the pinia auth store (App.vue's onMounted may have already
-      // cached a stale "not authenticated" snapshot from before this check
-      // resolved) so the router guard on the redirect target sees the
-      // current session instead of bouncing straight back here.
-      await auth.loadMe();
-      const redirect = (route.query.redirect as string) || "/";
-      router.replace(redirect);
-      return;
+    try {
+      const meRes = await fetchBounded("/api/auth/me");
+      if (meRes.ok) {
+        const meData = await meRes.json();
+        if (meData.authenticated) {
+          // Sync the pinia auth store (App.vue's onMounted may have already
+          // cached a stale "not authenticated" snapshot from before this check
+          // resolved) so the router guard on the redirect target sees the
+          // current session instead of bouncing straight back here.
+          await auth.loadMe();
+          const redirect = (route.query.redirect as string) || "/";
+          router.replace(redirect);
+          return;
+        }
+      }
+    } catch {
+      // A failed /api/auth/me means "not signed in (yet)" — the sign-in form
+      // is the usable state, and a retry or reload picks the real answer up.
     }
   } catch {
-    // Auth status endpoint might not be reachable yet
+    // Server unreachable, offline, or too slow: plain-English status, never an
+    // endless spinner.
+    statusError.value = SERVER_UNREACHABLE_MESSAGE;
   } finally {
     loading.value = false;
   }
 }
 
-onMounted(checkStatus);
+/**
+ * Tabbing back (or Wi-Fi reconnecting) retries the status probe on its own,
+ * the same recovery trigger the app-wide recovery banner uses.
+ */
+function onWindowFocus(): void {
+  if (!loading.value && statusError.value) void checkStatus();
+}
+
+onMounted(() => {
+  void checkStatus();
+  window.addEventListener("focus", onWindowFocus);
+});
+
+onUnmounted(() => {
+  window.removeEventListener("focus", onWindowFocus);
+});
 
 function startResendTimer(): void {
   resendTimer.value = 60;
@@ -117,7 +170,7 @@ async function requestOtp(): Promise<void> {
   sending.value = true;
   errorMsg.value = "";
   try {
-    const res = await fetch("/api/auth/request-otp", {
+    const res = await fetchBounded("/api/auth/request-otp", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email: email.value.trim().toLowerCase() }),
@@ -141,7 +194,7 @@ async function verifyOtp(): Promise<void> {
   verifying.value = true;
   errorMsg.value = "";
   try {
-    const res = await fetch("/api/auth/verify-otp", {
+    const res = await fetchBounded("/api/auth/verify-otp", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -172,7 +225,7 @@ async function doBootstrap(): Promise<void> {
   bootstrapping.value = true;
   errorMsg.value = "";
   try {
-    const res = await fetch("/api/auth/bootstrap-admin", {
+    const res = await fetchBounded("/api/auth/bootstrap-admin", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email: bootstrapEmail.value.trim().toLowerCase() }),
@@ -225,6 +278,19 @@ function googleLogin(): void {
       <!-- Loading -->
       <div v-if="loading" class="login-loading">
         <div class="spinner"></div>
+      </div>
+
+      <!-- Server unreachable / too slow (#1236): plain-English status + retry -->
+      <div v-else-if="statusError" class="login-body">
+        <h2>Can't reach the RepoOS server</h2>
+        <p class="login-status-error" role="alert" data-testid="login-status-error">
+          {{ statusError }}
+        </p>
+        <div class="login-form">
+          <button class="login-btn primary" data-testid="login-retry" @click="checkStatus">
+            Try again
+          </button>
+        </div>
       </div>
 
       <!-- Bootstrap admin -->
@@ -625,6 +691,14 @@ function googleLogin(): void {
   color: var(--red);
   font-size: 13px;
   margin-top: 8px;
+  text-align: center;
+}
+
+.login-status-error {
+  color: var(--red);
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 0 0 18px 0;
   text-align: center;
 }
 
