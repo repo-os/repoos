@@ -8,8 +8,10 @@ area: web
 assigned_to: ai
 created_by: t@t
 branch: ""
+cli_override: claude code
+model_override: haiku
 created_at: "2026-11-19T21:26:57Z"
-updated_at: "2026-11-19T21:27:01Z"
+updated_at: "2026-11-19T21:27:03Z"
 ---
 ## Problem
 Uploads on the Inputs and Context pages have not been checked with very large files, wrong types, duplicate names and failing uploads.
@@ -25,3 +27,4 @@ Do not touch repoos.toml.
 
 - 2026-11-19T21:26:57Z · created · t@t
 - 2026-11-19T21:27:01Z · status inbox→ready
+- 2026-11-19T21:27:03Z · cli_override, model_override
