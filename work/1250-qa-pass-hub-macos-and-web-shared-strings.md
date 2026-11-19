@@ -2,7 +2,7 @@
 id: "1250"
 title: "QA pass: Hub macOS and web shared strings, tooltips and empty labels audit"
 type: bug
-status: review
+status: active
 priority: p2
 area: web
 assigned_to: ai
@@ -12,6 +12,7 @@ cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T21:47:05Z"
 updated_at: "2026-11-19T22:01:09Z"
+review_rounds: 1
 review_passes: 1
 ---
 ## Problem
@@ -38,3 +39,4 @@ Do not touch repoos.toml.
 - 2026-11-19T21:59:25Z · message_queued at 2026-11-19T21:59:25.449Z
 - 2026-11-19T22:01:09Z · note: review pass 1: needs some work
 - 2026-11-19T22:01:09Z · message_delivered: 1 message(s)
+- 2026-11-19T22:01:09Z · status review→active
