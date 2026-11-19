@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-user-docs-accuracy-against-the-c
 created_at: "2026-11-19T09:47:43Z"
-updated_at: "2026-11-19T13:17:52Z"
+updated_at: "2026-11-19T13:22:22Z"
 review_passes: 5
 handoff_signal_retry_count: 2
 dev_error_count: 1
@@ -70,3 +70,4 @@ Do not touch repoos.toml.
 - 2026-11-19T13:17:45Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-19T13:17:49Z · note: agent fallback: codex + gpt-6-luna is paused (out of usage since 2026-11-19T07:09:32.657Z: Codex hit a provider quota or rate limit. Wait for the provider limit to reset, then retry. (CLI: error: You’ve hit your usage limit. Upgrade to Pro (https://chatgpt.com/explore/pro), visit https://chatgpt.com/codex/settings/usage to purcha) — using opencode + opencode-go/glm-5.3-flash
 - 2026-11-19T13:17:52Z · message_delivered: 1 message(s)
+- 2026-11-19T13:22:22Z · body
