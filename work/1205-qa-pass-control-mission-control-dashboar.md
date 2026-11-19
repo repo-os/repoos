@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-control-mission-control-dashboar
 created_at: "2026-11-18T21:47:29Z"
-updated_at: "2026-11-19T00:33:58Z"
+updated_at: "2026-11-19T00:42:54Z"
 close_out_repair_count: 1
 review_passes: 2
 last_handoff_failure_fingerprint: "check|repoos check failed: check-fmt:check — Formatting failed — run `bun run fmt` to fix:"
@@ -114,3 +114,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-19T00:17:42Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-19T00:28:33Z · CTO nudge: held — handoff gate is running
 - 2026-11-19T00:33:58Z · CTO nudge: held — handoff gate is running
+- 2026-11-19T00:42:54Z · note: ui verification passed: 2 of 2 shots captured with clean console
