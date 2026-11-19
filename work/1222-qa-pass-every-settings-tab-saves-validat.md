@@ -2,14 +2,14 @@
 id: "1222"
 title: "QA pass: every Settings tab saves, validates and fits small screens (round 2)"
 type: bug
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-every-settings-tab-saves-validat
 created_at: "2026-11-19T07:17:47Z"
-updated_at: "2026-11-19T09:11:51Z"
+updated_at: "2026-11-19T09:15:08Z"
 handoff_signal_retry_count: 1
 dev_error_count: 1
 ---
@@ -88,3 +88,4 @@ Do not touch repoos.toml.
 - 2026-11-19T09:10:19Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-19T09:11:50Z · watchdog: restarting engineer because a queued message waited 3m with no live process
 - 2026-11-19T09:11:51Z · message_delivered: 1 message(s)
+- 2026-11-19T09:15:08Z · status active→review
