@@ -11,7 +11,7 @@ branch: feat/qa-pass-hub-macos-and-web-shared-strings
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T21:47:05Z"
-updated_at: "2026-11-19T22:15:07Z"
+updated_at: "2026-11-19T22:21:31Z"
 review_rounds: 2
 review_passes: 2
 ---
@@ -49,3 +49,4 @@ Do not touch repoos.toml.
 - 2026-11-19T22:15:04Z · message_delivered: 1 message(s)
 - 2026-11-19T22:15:04Z · status review→active
 - 2026-11-19T22:15:07Z · CTO nudge: held — remote validation is running
+- 2026-11-19T22:21:31Z · body
