@@ -1,6 +1,4 @@
 ---
-check_retry_count: 1
-last_check_failure: "repoos check at 2026-11-19T09:09:34.580Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Model providers: opencode Go usage without the spurious empty-state line (target \"default\"): highlight [data-provider-id=\"opencode-go\"] matched nothing on /agents?tab=model-providers (http://127.0.0.1:36641/agents?tab=model-providers)"
 id: "1223"
 title: "QA pass: Agents page, model providers and routing tab at all screen sizes"
 type: bug
@@ -11,7 +9,9 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-agents-page-model-providers-and-
 created_at: "2026-11-19T07:47:39Z"
-updated_at: "2026-11-19T09:09:34Z"
+updated_at: "2026-11-19T09:10:20Z"
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-19T09:09:34.580Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Model providers: opencode Go usage without the spurious empty-state line (target \"default\"): highlight [data-provider-id=\"opencode-go\"] matched nothing on /agents?tab=model-providers (http://127.0.0.1:36641/agents?tab=model-providers)"
 handoff_signal_retry_count: 2
 dev_error_count: 1
 engineer_stall_resume_log: "[{\"at\":\"2026-11-19T08:33:07.295Z\",\"reason\":\"clean-exit-without-handoff\"}]"
@@ -31,22 +31,22 @@ Do not touch repoos.toml.
 ```json
 [
 {
-"label": "Agents page: switch pill intact and agent list fits",
-"target": "default",
-"route": "/agents",
-"highlight": ".agents-page [role=\"switch\"]"
+  "label": "Agents page: switch pill intact and agent list fits",
+  "target": "default",
+  "route": "/agents",
+  "highlight": ".agents-page [role=\"switch\"]"
 },
 {
-"label": "Model providers: opencode Go usage without the spurious empty-state line",
-"target": "default",
-"route": "/agents?tab=model-providers",
-"highlight": "[data-provider-id=\"opencode-go\"]"
+  "label": "Model providers: opencode Go usage without the spurious empty-state line",
+  "target": "default",
+  "route": "/agents?tab=providers",
+  "highlight": "[data-provider-id=\"opencode-go\"]"
 },
 {
-"label": "Model routing: stacked field labels, missing-key notice and masked key form",
-"target": "default",
-"route": "/agents?tab=model-routing",
-"highlight": "[data-testid=\"model-routing-panel\"]"
+  "label": "Model routing: stacked field labels, missing-key notice and masked key form",
+  "target": "default",
+  "route": "/agents?tab=model-routing",
+  "highlight": "[data-testid=\"model-routing-panel\"]"
 }
 ]
 ```
@@ -73,4 +73,4 @@ Do not touch repoos.toml.
 - 2026-11-19T09:09:31Z · note: ui verification failed: ui verification failed (1 issue(s)): [missing-target] Model providers: opencode Go usage without the spurious empty-state line (target "default"): highlight [data-provider-id="opencode-go"] matched nothing on /agents?tab=model-providers (http://127.0.0.1:36641/agents?tab=model-providers)
 - 2026-11-19T09:09:31Z · message_queued at 2026-11-19T09:09:31.440Z
 - 2026-11-19T09:09:34Z · message_delivered: 1 message(s)
-
+- 2026-11-19T09:10:20Z · body
