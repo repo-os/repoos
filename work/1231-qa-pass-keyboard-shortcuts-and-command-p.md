@@ -1,5 +1,4 @@
 ---
-handoff_signal_retry_count: 2
 id: "1231"
 title: "QA pass: keyboard shortcuts and command palette across pages"
 type: bug
@@ -10,9 +9,11 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-keyboard-shortcuts-and-command-p
 created_at: "2026-11-19T13:47:53Z"
-updated_at: "2026-11-19T14:10:34Z"
+updated_at: "2026-11-19T14:18:11Z"
+handoff_signal_retry_count: 2
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\",\"at\":\"2026-11-19T14:04:52.658Z\",\"kind\":\"dev-error\"}]"
+engineer_stall_resume_log: "[{\"at\":\"2026-11-19T14:18:11.944Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
 ## Problem
 Keyboard shortcuts and any command palette or search shortcut have not been checked for conflicts, discoverability or touch/small-screen behavior.
@@ -29,32 +30,32 @@ Do not touch repoos.toml.
 ```json
 [
 {
-  "label": "Command palette open over the dashboard",
-  "target": "default",
-  "route": "/",
-  "highlight": ".search-overlay",
-  "steps": [
-    {
-      "click": ".search-input"
-    },
-    {
-      "waitMs": 300
-    }
-  ]
+"label": "Command palette open over the dashboard",
+"target": "default",
+"route": "/",
+"highlight": ".search-overlay",
+"steps": [
+  {
+    "click": ".search-input"
+  },
+  {
+    "waitMs": 300
+  }
+]
 },
 {
-  "label": "Command palette open above the Work board",
-  "target": "default",
-  "route": "/work",
-  "highlight": ".search-overlay",
-  "steps": [
-    {
-      "click": ".search-input"
-    },
-    {
-      "waitMs": 300
-    }
-  ]
+"label": "Command palette open above the Work board",
+"target": "default",
+"route": "/work",
+"highlight": ".search-overlay",
+"steps": [
+  {
+    "click": ".search-input"
+  },
+  {
+    "waitMs": 300
+  }
+]
 }
 ]
 ```
@@ -71,5 +72,4 @@ Do not touch repoos.toml.
 - 2026-11-19T14:04:57Z · needs_input
 - 2026-11-19T14:08:42Z · orphaned run process stopped · pid 22268 · /opt/homebrew/Cellar/bun/1.4.2/bin/bun --experimental-import-meta-resolve --require /Users/nick/code · cpu 3s · age 20s
 - 2026-11-19T14:10:34Z · body
-
-
+- 2026-11-19T14:18:11Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 1/3
