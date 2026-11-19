@@ -1,6 +1,4 @@
 ---
-check_retry_count: 1
-last_check_failure: "repoos check at 2026-11-19T01:25:43.917Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 id: "1212"
 title: "QA pass: Hub and web app copy review – wording, plain-English errors and consistent terminology"
 type: chore
@@ -11,7 +9,9 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-hub-and-web-app-copy-review-word
 created_at: "2026-11-19T00:47:39Z"
-updated_at: "2026-11-19T01:25:43Z"
+updated_at: "2026-11-19T01:26:14Z"
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-19T01:25:43.917Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_passes: 2
 review_rounds: 1
 routing_switches: 1
@@ -53,4 +53,4 @@ Do not touch repoos.toml.
 - 2026-11-19T01:25:40Z · note: shots: failed — browser capture cancelled
 - 2026-11-19T01:25:41Z · note: review pass 2: needs some work
 - 2026-11-19T01:25:43Z · message_delivered: 1 message(s)
-
+- 2026-11-19T01:26:14Z · note: adopted orphaned engineer pid 18646
