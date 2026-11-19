@@ -11,7 +11,7 @@ branch: feat/qa-pass-control-dashboard-live-updates-a
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T20:07:32Z"
-updated_at: "2026-11-19T20:23:50Z"
+updated_at: "2026-11-19T20:26:51Z"
 ---
 ## Problem
 The Control dashboard and Work board use live updates; behavior after a dropped connection, a server restart or a long idle tab has not been checked.
@@ -31,3 +31,4 @@ Do not touch repoos.toml.
 - 2026-11-19T20:07:38Z · status ready→active, branch
 - 2026-11-19T20:23:50Z · message_queued at 2026-11-19T20:23:50.257Z
 - 2026-11-19T20:23:50Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-19T20:26:51Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
