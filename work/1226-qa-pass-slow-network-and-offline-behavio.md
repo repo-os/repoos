@@ -181,3 +181,4 @@ Do not touch repoos.toml.
 - 2026-11-19T16:23:35Z · close-out gate completed in 571s
 - 2026-11-19T16:24:08Z · status done→done, release:success
 - 2026-11-19T16:24:27Z · message_queued at 2026-11-19T16:24:27.617Z
+- 2026-11-19T16:24:27Z · handoff failed · task-file handoff failed at check · repoos check failed: could not resolve task branch for check-gate lock
