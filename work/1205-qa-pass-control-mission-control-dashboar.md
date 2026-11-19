@@ -2,14 +2,14 @@
 id: "1205"
 title: "QA pass: Control (Mission Control) dashboard – every card, chart and empty state at desktop and 375px"
 type: bug
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-control-mission-control-dashboar
 created_at: "2026-11-18T21:47:29Z"
-updated_at: "2026-11-19T01:22:14Z"
+updated_at: "2026-11-19T01:22:15Z"
 review_passes: 3
 close_out_repair_count: 1
 handoff_signal_retry_count: 1
@@ -128,3 +128,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-19T01:17:46Z · body
 - 2026-11-19T01:18:58Z · CTO nudge: held — handoff gate is running
 - 2026-11-19T01:22:14Z · note: ui verification passed: 2 of 2 shots captured with clean console
+- 2026-11-19T01:22:15Z · status active→review
