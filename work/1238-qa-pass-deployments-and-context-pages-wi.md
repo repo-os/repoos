@@ -11,7 +11,7 @@ branch: feat/qa-pass-deployments-and-context-pages-wi
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T18:26:58Z"
-updated_at: "2026-11-19T18:27:06Z"
+updated_at: "2026-11-19T18:47:28Z"
 ---
 ## Problem
 The Deployments and Context pages have not been checked with failed deployments, long logs and missing data at phone, tablet and desktop widths.
@@ -30,3 +30,4 @@ Do not touch repoos.toml.
 - 2026-11-19T18:27:03Z · status inbox→ready
 - 2026-11-19T18:27:04Z · cli_override, model_override
 - 2026-11-19T18:27:06Z · status ready→active, branch
+- 2026-11-19T18:47:28Z · body
