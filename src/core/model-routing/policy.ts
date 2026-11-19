@@ -118,6 +118,13 @@ function failureReason(err: RoutingProviderError | null): PolicyFallbackReason {
     : "provider-failure";
 }
 
+/** Plain words for why the decision model did not answer, for a blocked decision. */
+const FALLBACK_CAUSE: Record<PolicyFallbackReason, string> = {
+  "provider-failure": "the decision model could not be reached",
+  "malformed-response": "the decision model's answer could not be used",
+  "insufficient-evidence": "the model was not confident enough",
+};
+
 /** Use the fallback when it is eligible; otherwise block with a clear reason. */
 function fallbackOrBlock(input: PolicyInput, reason: PolicyFallbackReason): PolicyOutcome {
   const fb = input.fallback;
@@ -128,8 +135,9 @@ function fallbackOrBlock(input: PolicyInput, reason: PolicyFallbackReason): Poli
     kind: "blocked",
     reason: "no-eligible-fallback",
     message:
-      `Model routing could not decide (${reason}) and the configured fallback ` +
-      `is not eligible. Pick a model on the Agents page or widen the budget allowlist.`,
+      `Model routing could not pick a model because ${FALLBACK_CAUSE[reason]}, ` +
+      `and the configured fallback is not eligible. ` +
+      `Pick a model on the Agents page or widen the budget allowlist.`,
   };
 }
 

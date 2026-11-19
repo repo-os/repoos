@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 838595
-last_close_out_gate_at: "2026-11-19T23:58:10.244Z"
 id: "1243"
 title: "QA pass: Agents page failure copy after the Jev routing switch and missing key"
 type: bug
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: b24e0e012a26a8712ee61f5e3d147437db770954
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-agents-page-failure-copy-after-t
@@ -14,6 +13,8 @@ cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T20:07:21Z"
 updated_at: "2026-11-19T23:58:10Z"
+last_close_out_gate_ms: 838595
+last_close_out_gate_at: "2026-11-19T23:58:10.244Z"
 review_passes: 4
 review_rounds: 1
 ---
