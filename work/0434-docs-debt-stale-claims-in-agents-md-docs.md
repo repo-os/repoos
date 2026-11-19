@@ -40,3 +40,4 @@ The Docs Debt Agent verified concrete claims in `AGENTS.md`/`docs/`/`user-docs/`
 - 2026-11-19T01:42:43Z · status active→review
 - 2026-11-19T01:42:43Z · note: Task body is underspecified: missing sections: Problem, Acceptance criteria, Notes for AI
 - 2026-11-19T01:42:43Z · message_queued at 2026-11-19T01:42:43.488Z
+- 2026-11-19T01:42:43Z · note: shots: skipped — the diff (3 changed paths) touches no capture target's globs — no UI change to capture
