@@ -2,7 +2,7 @@
 id: "1245"
 title: "QA pass: docs site and user-docs navigation, search and links at all screen sizes"
 type: bug
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/qa-pass-docs-site-and-user-docs-navigati
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T20:07:43Z"
-updated_at: "2026-11-19T21:00:36Z"
+updated_at: "2026-11-19T21:00:37Z"
 ---
 ## Problem
 The docs site pages, navigation and search have not been checked on phone widths since the latest docs changes.
@@ -35,3 +35,4 @@ Do not touch repoos.toml.
 - 2026-11-19T20:45:08Z · body
 - 2026-11-19T20:50:43Z · CTO nudge: held — handoff gate is running
 - 2026-11-19T21:00:36Z · note: ui verification passed: 1 shot captured with clean console
+- 2026-11-19T21:00:37Z · status active→review
