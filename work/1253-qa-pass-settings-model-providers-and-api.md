@@ -2,16 +2,16 @@
 id: "1253"
 title: "QA pass: Settings model providers and API key screens (masked values, save, errors)"
 type: bug
-status: ready
+status: active
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
-branch: ""
+branch: feat/qa-pass-settings-model-providers-and-api
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T23:27:11Z"
-updated_at: "2026-11-19T23:27:21Z"
+updated_at: "2026-11-19T23:27:22Z"
 ---
 ## Problem
 The model providers and API key screens have not had a recent check for masked values, saving, wrong keys and offline errors.
@@ -28,3 +28,4 @@ Do not touch repoos.toml. Follow docs/api-keys.md.
 - 2026-11-19T23:27:11Z · created · t@t
 - 2026-11-19T23:27:18Z · status inbox→ready
 - 2026-11-19T23:27:21Z · cli_override, model_override
+- 2026-11-19T23:27:22Z · status ready→active, branch
