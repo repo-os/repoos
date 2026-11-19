@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-keyboard-shortcuts-and-command-p
 created_at: "2026-11-19T13:47:53Z"
-updated_at: "2026-11-19T15:07:33Z"
+updated_at: "2026-11-19T15:11:26Z"
 handoff_signal_retry_count: 2
 dev_error_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-11-19T14:18:11.944Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-19T15:02:12.103Z\",\"reason\":\"clean-exit-without-handoff\"}]"
@@ -77,3 +77,4 @@ Do not touch repoos.toml.
 - 2026-11-19T14:56:36Z · body
 - 2026-11-19T15:02:12Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 2/3
 - 2026-11-19T15:07:33Z · body
+- 2026-11-19T15:11:26Z · note: ui verification passed: 1 of 1 shot captured with clean console
