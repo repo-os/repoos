@@ -64,3 +64,4 @@ Do not touch repoos.toml.
 - 2026-11-19T08:07:57Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-19T08:08:41Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-19T08:11:31Z · queued message undelivered for 4m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-19T08:11:31Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 130) · last assistant: All 27 controls so far restore correctly and show proper range errors. The audit needs a few more minutes — I'll let the background completion notification resume me. · stderr: (empty)
