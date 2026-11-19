@@ -3,16 +3,13 @@ id: "1211"
 title: "QA pass: remote runner setup docs and runner health screens vs real bee/thinkpad/mini behavior"
 type: bug
 status: active
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: `needs some work` — the recorded SSH probe violated the task’s explicit no-SSH requirement.
 priority: p2
 area: [web, docs]
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-remote-runner-setup-docs-and-run
 created_at: "2026-11-19T00:17:32Z"
-updated_at: "2026-11-19T04:18:00Z"
+updated_at: "2026-11-19T04:18:01Z"
 review_passes: 4
 handoff_signal_retry_count: 1
 review_rounds: 2
@@ -98,3 +95,4 @@ Do not touch repoos.toml.
 - 2026-11-19T03:42:42Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-19T04:17:54Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-19T04:18:00Z · status review→active
+- 2026-11-19T04:18:01Z · needs_input
