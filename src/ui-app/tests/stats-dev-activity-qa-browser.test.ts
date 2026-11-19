@@ -41,11 +41,7 @@ import { useConfigStore } from "../src/stores/config";
 import { invalidatePageData } from "../src/composables/page-data-cache";
 import type { HistoryCommit } from "../src/lib/repo-history";
 import { json } from "./component-test-helpers";
-import type {
-  BoardUsageStats,
-  DevTargetView,
-  SystemStats,
-} from "../src/types.js";
+import type { BoardUsageStats, DevTargetView, SystemStats } from "../src/types.js";
 
 vi.mock("vue-router", () => ({
   useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
@@ -273,9 +269,7 @@ describe("Stats, Dev and activity-log pages QA at 375/768/1280 (WebKit, fixtures
         cpuIdlePercent: 8,
         source: "memory",
         reasons: [],
-        warnings: [
-          "Swap and compressor use are elevated; occupancy alone does not hold new work.",
-        ],
+        warnings: ["Swap and compressor use are elevated; occupancy alone does not hold new work."],
         reason: null,
       },
       topProcesses: {
@@ -488,8 +482,8 @@ describe("Stats, Dev and activity-log pages QA at 375/768/1280 (WebKit, fixtures
         // The GC preview names long worktree paths; every line stays inside.
         expect(await textOf(page, ".gc-preview")).toContain("long-integration-branch-name");
         const gcLines = await page.evaluate(() =>
-          [...document.querySelectorAll<HTMLElement>(".gc-preview span")].map(
-            (el) => Math.round(el.getBoundingClientRect().right),
+          [...document.querySelectorAll<HTMLElement>(".gc-preview span")].map((el) =>
+            Math.round(el.getBoundingClientRect().right),
           ),
         );
         for (const right of gcLines) expect(right).toBeLessThanOrEqual(width + 1);
@@ -505,8 +499,7 @@ describe("Stats, Dev and activity-log pages QA at 375/768/1280 (WebKit, fixtures
   /* ── 2. AI usage panel (stats tables + recent failures) ────────────────── */
 
   function usageFixture(): BoardUsageStats {
-    const iso = (minutesAgo: number) =>
-      new Date(Date.now() - minutesAgo * 60_000).toISOString();
+    const iso = (minutesAgo: number) => new Date(Date.now() - minutesAgo * 60_000).toISOString();
     return {
       totalSessions: 214,
       totalElapsedMs: 61 * 3600_000,
@@ -924,20 +917,20 @@ describe("Stats, Dev and activity-log pages QA at 375/768/1280 (WebKit, fixtures
         // All three cards render, the failed one with its expanded log.
         expect(await page.locator(".dev-card").count()).toBe(3);
         const logs = await page.evaluate(() =>
-          [...document.querySelectorAll<HTMLElement>(".dev-log-body")].filter(
-            (el) => el.offsetParent !== null,
-          ).map((el) => {
-            const box = el.getBoundingClientRect();
-            const code = el.querySelector("code")!;
-            return {
-              width: Math.round(box.width),
-              right: Math.round(box.right),
-              scroll: el.scrollWidth,
-              client: el.clientWidth,
-              codeScroll: code.scrollWidth,
-              codeClient: code.clientWidth,
-            };
-          }),
+          [...document.querySelectorAll<HTMLElement>(".dev-log-body")]
+            .filter((el) => el.offsetParent !== null)
+            .map((el) => {
+              const box = el.getBoundingClientRect();
+              const code = el.querySelector("code")!;
+              return {
+                width: Math.round(box.width),
+                right: Math.round(box.right),
+                scroll: el.scrollWidth,
+                client: el.clientWidth,
+                codeScroll: code.scrollWidth,
+                codeClient: code.clientWidth,
+              };
+            }),
         );
         // The running target's log, its service log and the failed target's
         // log are all open.
