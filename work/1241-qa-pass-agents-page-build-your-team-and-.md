@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 374650
-last_close_out_gate_at: "2026-11-19T20:21:09.311Z"
 id: "1241"
 title: "QA pass: Agents page Build Your Team and scheduled tasks with long lists"
 type: bug
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: 3d8b6d4b6cf968d41adeb5a55ff75434899da742
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-agents-page-build-your-team-and-
@@ -14,6 +13,8 @@ cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T19:07:09Z"
 updated_at: "2026-11-19T20:21:09Z"
+last_close_out_gate_ms: 374650
+last_close_out_gate_at: "2026-11-19T20:21:09.311Z"
 review_passes: 1
 ---
 ## Problem
