@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-remote-runner-setup-docs-and-run
 created_at: "2026-11-19T00:17:32Z"
-updated_at: "2026-11-19T04:30:02Z"
+updated_at: "2026-11-19T04:30:03Z"
 review_passes: 4
 handoff_signal_retry_count: 1
 review_rounds: 2
@@ -113,3 +113,4 @@ Do not touch repoos.toml.
 - 2026-11-19T04:26:41Z · needs_input
 - 2026-11-19T04:30:02Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
 - 2026-11-19T04:30:02Z · message_queued at 2026-11-19T04:30:02.693Z
+- 2026-11-19T04:30:03Z · handoff failed · task-file handoff failed at review · Engineering report draft is missing: .repoos/engineering-report-drafts/1211.md
