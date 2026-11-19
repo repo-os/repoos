@@ -11,7 +11,7 @@ branch: feat/qa-pass-agents-page-failure-copy-after-t
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T20:07:21Z"
-updated_at: "2026-11-19T20:26:33Z"
+updated_at: "2026-11-19T20:27:28Z"
 ---
 ## Problem
 After switching model routing to Jev, the Agents page routing tab and decisions list need a check for the missing-key and provider-failure wording and a recent-decisions list that is empty or all failures.
@@ -23,6 +23,19 @@ A missing key or failing provider is explained in plain English with the next st
 ## Notes for AI
 Do not touch repoos.toml.
 
+## Shots
+```json
+[
+{
+  "label": "Routing tab recent decisions list (failed-load notice is covered by WebKit fixture, not this board)",
+  "target": "default",
+  "route": "/agents?tab=model-routing",
+  "selector": ".mr-decisions",
+  "highlight": ".mr-decisions"
+}
+]
+```
+
 ## Activity
 
 - 2026-11-19T20:07:21Z · created · t@t
@@ -30,3 +43,4 @@ Do not touch repoos.toml.
 - 2026-11-19T20:07:26Z · cli_override, model_override
 - 2026-11-19T20:07:27Z · status ready→active, branch
 - 2026-11-19T20:26:33Z · body
+- 2026-11-19T20:27:28Z · body
