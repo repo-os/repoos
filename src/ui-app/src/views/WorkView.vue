@@ -25,6 +25,7 @@ import {
 } from "../lib/boardCollapse";
 import BoardColumn from "../components/BoardColumn.vue";
 import PipelineView from "../components/PipelineView.vue";
+import RouteNotice from "../components/RouteNotice.vue";
 import Button from "../components/ui/button.vue";
 import Select from "../components/ui/select/root.vue";
 import SelectContent from "../components/ui/select/content.vue";
@@ -126,11 +127,18 @@ watch(
  * stale task or leave the phone detail stuck on its loading shell.
  */
 let taskOpenRequest = 0;
+/**
+ * The `?task=` id that could not be loaded (deleted, never existed, or the
+ * server refused it). Drives the desktop "isn't on this board" notice; the
+ * phone shell has its own "Task unavailable" surface.
+ */
+const missingTaskId = ref<string | null>(null);
 watch(
   () => route.query.task,
   (v, previous) => {
     if (typeof v !== "string" || !v) {
       taskOpenRequest++;
+      missingTaskId.value = null;
       ui.activeDetailLoading = false;
       if (isNarrow.value && typeof previous === "string" && !ui.isNew) ui.close();
       return;
@@ -164,6 +172,7 @@ async function returnToQueue(): Promise<void> {
 
 async function openFromTaskParam(raw: string): Promise<void> {
   const request = ++taskOpenRequest;
+  missingTaskId.value = null;
   if (raw === "new") {
     ui.openNewTask();
     return;
@@ -200,8 +209,10 @@ async function openFromTaskParam(raw: string): Promise<void> {
     } catch {
       // Unknown id — leave the param in place so the broken link stays
       // inspectable, and let the phone shell offer Return to Work instead of a
-      // blank page. The request token keeps a stale failure from clearing a
-      // newer request's loading state.
+      // blank page. Desktop gets the same way back through `missingTaskId`.
+      // The request token keeps a stale failure from clearing a newer
+      // request's loading state.
+      if (request === taskOpenRequest) missingTaskId.value = id;
       return;
     } finally {
       if (request === taskOpenRequest) ui.activeDetailLoading = false;
@@ -499,6 +510,14 @@ function openHeld(task: Task): void {
     </main>
   </template>
   <div v-else class="work-page">
+    <RouteNotice
+      v-if="missingTaskId"
+      title="This task isn't on the board"
+      :message="`Task #${missingTaskId} could not be found. It may have been deleted, or the link may be mistyped.`"
+      data-testid="work-task-missing"
+    >
+      <Button variant="outline" @click="returnToQueue">Back to Work</Button>
+    </RouteNotice>
     <div class="work-header">
       <div class="work-header-copy">
         <div class="page-title">Work Queue</div>

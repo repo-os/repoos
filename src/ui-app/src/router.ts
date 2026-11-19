@@ -64,7 +64,13 @@ export const router = createRouter({
       component: () => import("./views/DiffView.vue"),
       meta: { fullscreen: true },
     },
-    { path: "/:pathMatch(.*)*", redirect: "/" },
+    // Unknown paths get a plain "page doesn't exist" view with a way back, not
+    // a silent jump to the dashboard that hides the bad link.
+    {
+      path: "/:pathMatch(.*)*",
+      name: "not-found",
+      component: () => import("./views/NotFoundView.vue"),
+    },
   ],
 });
 
