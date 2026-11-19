@@ -1,5 +1,4 @@
 ---
-handoff_signal_retry_count: 2
 id: "1227"
 title: "QA pass: user-docs accuracy against the current UI and CLI"
 type: bug
@@ -10,9 +9,11 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-user-docs-accuracy-against-the-c
 created_at: "2026-11-19T09:47:43Z"
-updated_at: "2026-11-19T09:51:29Z"
+updated_at: "2026-11-19T09:58:29Z"
+handoff_signal_retry_count: 2
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\",\"at\":\"2026-11-19T09:51:27.279Z\",\"kind\":\"dev-error\"}]"
+engineer_stall_resume_log: "[{\"at\":\"2026-11-19T09:58:29.630Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
 ## Problem
 user-docs/ may describe screens, tab names, CLI flags and defaults that changed in recent releases.
@@ -36,5 +37,4 @@ Do not touch repoos.toml.
 - 2026-11-19T09:51:27Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
 - 2026-11-19T09:51:27Z · engineer crash recovery: resuming opencode + opencode-go/glm-5.3-flash (1/3 crashes in 30m) · the agent process exited with an error — open the task to see the full output. Open Raw CLI error for details. (CLI: the agent process exited with an error — open the task to see the full output)
 - 2026-11-19T09:51:29Z · needs_input
-
-
+- 2026-11-19T09:58:29Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 1/3
