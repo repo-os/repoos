@@ -11,7 +11,7 @@ branch: feat/qa-pass-control-dashboard-live-updates-a
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T20:07:32Z"
-updated_at: "2026-11-19T20:37:45Z"
+updated_at: "2026-11-19T20:40:43Z"
 ---
 ## Problem
 The Control dashboard and Work board use live updates; behavior after a dropped connection, a server restart or a long idle tab has not been checked.
@@ -46,3 +46,4 @@ Do not touch repoos.toml.
 - 2026-11-19T20:37:30Z · queued message undelivered for 4m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-19T20:37:45Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code unknown) · last assistant: The scoped check is still running, so I'm not handing off yet. It's on test 89 of 164 in its test step, after UI smoke and the rendered contrast audit. The earlier background-run "stopped" notices are about the wrapper monitors, not the ch… · stderr: (empty)
 - 2026-11-19T20:37:45Z · message_delivered: 1 message(s)
+- 2026-11-19T20:40:43Z · message_queued at 2026-11-19T20:40:43.928Z
