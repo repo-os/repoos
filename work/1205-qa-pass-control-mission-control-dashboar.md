@@ -1,16 +1,16 @@
 ---
-close_out_repair_count: 1
 id: "1205"
 title: "QA pass: Control (Mission Control) dashboard – every card, chart and empty state at desktop and 375px"
 type: bug
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-control-mission-control-dashboar
 created_at: "2026-11-18T21:47:29Z"
-updated_at: "2026-11-18T23:42:18Z"
+updated_at: "2026-11-19T00:42:55Z"
+close_out_repair_count: 1
 review_passes: 2
 last_handoff_failure_fingerprint: "check|repoos check failed: check-fmt:check — Formatting failed — run `bun run fmt` to fix:"
 last_handoff_failure_sha: c23e5318dc07620af19c3b6c3d71f3368ce6a9f8
@@ -92,4 +92,4 @@ Do not touch repoos.toml. Never open a visible browser window.
 - 2026-11-18T23:42:18Z · status review→active
 - 2026-11-18T23:42:18Z · note: close-out repair: gate-failure
 - 2026-11-18T23:42:18Z · message_delivered: 1 message(s)
-
+- 2026-11-19T00:42:55Z · status active→review
