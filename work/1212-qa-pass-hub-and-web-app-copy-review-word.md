@@ -48,3 +48,4 @@ Do not touch repoos.toml.
 - 2026-11-19T01:23:39Z · body
 - 2026-11-19T01:24:50Z · status active→review
 - 2026-11-19T01:25:40Z · message_queued at 2026-11-19T01:25:40.805Z
+- 2026-11-19T01:25:40Z · note: shots: failed — browser capture cancelled
