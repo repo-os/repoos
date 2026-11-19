@@ -2,14 +2,14 @@
 id: "1226"
 title: "QA pass: slow network and offline behavior in the web app and Hub"
 type: bug
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
 branch: ""
 created_at: "2026-11-19T09:47:34Z"
-updated_at: "2026-11-19T09:47:34Z"
+updated_at: "2026-11-19T09:47:37Z"
 ---
 ## Problem
 The web app and Hub have not been checked for slow, failing or dropped connections.
@@ -25,3 +25,4 @@ Do not touch repoos.toml.
 ## Activity
 
 - 2026-11-19T09:47:34Z · created · t@t
+- 2026-11-19T09:47:37Z · status inbox→ready
