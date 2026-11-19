@@ -4,10 +4,14 @@
 
 Compared the runner setup recipes in `justfile` with `docs/remote-validation.md`,
 the end-user runner description in `user-docs/check.md`, and the Checks → Remote
-runners implementation and health DTO. This was a source-only review. No SSH
-commands were run and bee, thinkpad, and mini were not contacted or changed, so
-this report makes no claim about their current reachability, service state,
-users, PATH, or installed versions.
+runners implementation and health DTO. No setup or provisioning recipe was run.
+The first required `repoos check` unexpectedly started Tailscale remote
+validation and emitted a link-probe result for `nick@thinkpad` (94 ms RTT,
+10,779 KB/s). I interrupted it immediately after that output. A transient link
+probe write may have occurred; cleanup was not independently verified. No
+persistent runner configuration change was requested. The subsequent scoped
+check used `--local-tests` to avoid another remote dispatch. Current service
+state, users, PATH, and installed versions remain unverified.
 
 ## Findings
 
@@ -45,8 +49,8 @@ identity and current health semantics.
 
 ## Evidence limits
 
-This is a comparison of checked-in scripts and source, not a live audit of the
-three machines. In particular, it cannot establish which RepoOS service user is
-currently deployed, whether its SSH credentials work, or what PATH/Docker
-permissions the hosts currently expose. Those claims require an authorized
-human-side check in the relevant service context.
+This is primarily a comparison of checked-in scripts and source, not a live
+audit of the three machines. The single observed link-probe result does not
+establish which RepoOS service user is deployed, whether its SSH credentials
+work reliably, or what PATH/Docker permissions the hosts currently expose.
+Those claims require a human-side check in the relevant service context.

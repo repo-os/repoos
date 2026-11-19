@@ -2,7 +2,10 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-const setupDocs = readFileSync(new URL("../../../docs/remote-validation.md", import.meta.url), "utf8");
+const setupDocs = readFileSync(
+  new URL("../../../docs/remote-validation.md", import.meta.url),
+  "utf8",
+);
 const checkDocs = readFileSync(new URL("../../../user-docs/check.md", import.meta.url), "utf8");
 const justfile = readFileSync(new URL("../../../justfile", import.meta.url), "utf8");
 
