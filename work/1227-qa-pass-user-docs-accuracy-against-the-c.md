@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-user-docs-accuracy-against-the-c
 created_at: "2026-11-19T09:47:43Z"
-updated_at: "2026-11-19T11:47:36Z"
+updated_at: "2026-11-19T11:47:37Z"
 review_passes: 2
 handoff_signal_retry_count: 2
 dev_error_count: 1
@@ -55,3 +55,4 @@ Do not touch repoos.toml.
 - 2026-11-19T10:52:10Z · note: review pass 1: good to go
 - 2026-11-19T11:18:49Z · note: review pass 2: good to go
 - 2026-11-19T11:47:36Z · status review→active
+- 2026-11-19T11:47:37Z · message_delivered: 1 message(s)
