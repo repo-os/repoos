@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-remote-runner-setup-docs-and-run
 created_at: "2026-11-19T00:17:32Z"
-updated_at: "2026-11-19T00:49:12Z"
+updated_at: "2026-11-19T00:54:25Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -23,6 +23,19 @@ Docs and runner health screens match reality, including the case where a server 
 - Fix stale docs and UI wording with tests; commit docs/qa/2026-11-runner-docs.md.
 ## Notes for AI
 Do not touch repoos.toml.
+
+## Shots
+```json
+[
+{
+  "label": "Remote runner identity note",
+  "target": "default",
+  "route": "/checks?tab=now",
+  "highlight": "[data-test-id=\"runner-identity-note\"]",
+  "state": "runners:queued"
+}
+]
+```
 
 ## Activity
 
@@ -38,3 +51,4 @@ Do not touch repoos.toml.
 - 2026-11-19T00:42:03Z · message_delivered: 1 message(s)
 - 2026-11-19T00:42:03Z · status review→active
 - 2026-11-19T00:49:12Z · CTO action: restart-stalled-agent (fresh) · agent exited without emitting the handoff signal
+- 2026-11-19T00:54:25Z · body
