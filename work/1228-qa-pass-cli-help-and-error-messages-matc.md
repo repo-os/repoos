@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 323407
-last_close_out_gate_at: "2026-11-19T14:04:33.945Z"
 id: "1228"
 title: "QA pass: CLI help and error messages match the docs and read in plain English"
 type: bug
-status: review
+status: done
 priority: p2
 area: core
+merged_commit: 6147bd156629bf23af10a886ff2f694c7ec20ed3
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-cli-help-and-error-messages-matc
 created_at: "2026-11-19T11:47:39Z"
 updated_at: "2026-11-19T14:04:33Z"
+last_close_out_gate_ms: 323407
+last_close_out_gate_at: "2026-11-19T14:04:33.945Z"
 review_passes: 2
 review_rounds: 1
 routing_switches: 1

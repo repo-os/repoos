@@ -13,9 +13,12 @@ import { clearCliSession } from "../../cli/cli-session";
 import { SUMMARY_PENDING_STALE_MS } from "../../core/task-summary";
 import {
   cmdAgentsRunning,
+  cmdApi,
   cmdConfig,
   cmdDone,
+  cmdAttention,
   cmdHandoffStatus,
+  cmdIntegration,
   cmdLandable,
   cmdMessage,
   cmdOverride,
@@ -36,7 +39,7 @@ import {
   waitForReviewHandoff,
   type TaskSummaryState,
 } from "../../commands/control-api";
-import { RepoOsApi } from "../../cli/repoos-api";
+import { RepoOsApi, nonJsonResponse } from "../../cli/repoos-api";
 import { beginHandoffStatus, finishHandoffStatus } from "../../server/handoff-status";
 import type { RepoOSConfig } from "../../core/types";
 const tmpRoots: string[] = [];
@@ -417,6 +420,110 @@ describe("control API CLI", () => {
       expect(loadConfig(root).maxConcurrentAgents).toBe(4);
       expect(readFileSync(join(root, "repoos.toml"), "utf8")).toContain("maxConcurrentAgents = 4");
     });
+  });
+
+  it("config set on an unknown key names the key instead of the server's generic reply", async () => {
+    const root = tmpDir();
+    await withServer(root, async (s) => {
+      const port = Number(new URL(s.url).port);
+      const err = vi.spyOn(console, "error").mockImplementation(() => {});
+      const log = vi.spyOn(console, "log").mockImplementation(() => {});
+      const code = await cmdConfig(["set", "bogus.key", "1", "--port", String(port)]);
+      expect(code).toBe(1);
+      const lines = err.mock.calls.map((c) => String(c[0])).join("\n");
+      expect(lines).toContain('Unknown setting "bogus.key"');
+      expect(lines).toContain("Settings");
+      expect(lines).not.toContain("No valid fields to update");
+      err.mockRestore();
+      log.mockRestore();
+    });
+  });
+
+  it("api on a non-JSON HTML reply reports the failure in plain English", async () => {
+    const health = vi.spyOn(RepoOsApi.prototype, "health").mockResolvedValue(true);
+    const request = vi.spyOn(RepoOsApi.prototype, "request").mockResolvedValue({
+      status: 200,
+      body: nonJsonResponse(
+        "/api/definitely-not-a-route",
+        "<!DOCTYPE html><html><body>x</body></html>",
+      ),
+    });
+    const err = vi.spyOn(console, "error").mockImplementation(() => {});
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    const code = await cmdApi(["GET", "/api/definitely-not-a-route"]);
+    expect(code).toBe(1);
+    const lines = err.mock.calls.map((c) => String(c[0])).join("\n");
+    expect(lines).toContain("/api/definitely-not-a-route");
+    expect(lines).toContain("not a RepoOS API route");
+    expect(lines).not.toContain("<!DOCTYPE");
+    expect(log.mock.calls.length).toBe(0);
+    err.mockRestore();
+    log.mockRestore();
+    health.mockRestore();
+    request.mockRestore();
+  });
+
+  it("requestOk refuses an SPA-catch-all HTML body even with a 2xx status", async () => {
+    const api = new RepoOsApi();
+    const request = vi.spyOn(RepoOsApi.prototype, "request").mockResolvedValue({
+      status: 200,
+      body: nonJsonResponse("/api/typo", "<!DOCTYPE html><html><body>shell</body></html>"),
+    });
+    await expect(api.requestOk("GET", "/api/typo")).rejects.toThrow(/not a RepoOS API route/);
+    request.mockRestore();
+  });
+
+  // Class: a 200 HTML body (SPA fallback on a route the running server does
+  // not register) must never read as success. Fixed for cmdApi in #1228; these
+  // siblings classify by HTTP status alone, so they share the guard.
+  it("treats the SPA-catch-all 200 HTML body as a failure in every status-only consumer", async () => {
+    const cases: Array<[string, (args: string[]) => Promise<number>]> = [
+      ["review keep", (args) => cmdReview(["keep", "9999", ...args])],
+      ["review followup", (args) => cmdReview(["followup", "9999", ...args])],
+      ["integration list", (args) => cmdIntegration(["list", ...args])],
+      ["attention list", (args) => cmdAttention(["list", ...args])],
+      ["verify", (args) => cmdVerify(["9999", ...args])],
+      ["done --cancel", (args) => cmdDone(["9999", "--cancel", ...args])],
+    ];
+    for (const [label, run] of cases) {
+      const health = vi.spyOn(RepoOsApi.prototype, "health").mockResolvedValue(true);
+      const request = vi.spyOn(RepoOsApi.prototype, "request").mockResolvedValue({
+        status: 200,
+        body: nonJsonResponse("/api/typo", "<!DOCTYPE html><html><body>shell</body></html>"),
+      });
+      const err = vi.spyOn(console, "error").mockImplementation(() => {});
+      const log = vi.spyOn(console, "log").mockImplementation(() => {});
+      const code = await run([]);
+      const lines = err.mock.calls.map((c) => String(c[0])).join("\n");
+      const out = log.mock.calls.map((c) => String(c[0])).join("\n");
+      expect(code, `${label} must exit 1 on the HTML catch-all`).toBe(1);
+      expect(lines + out, `${label} must name the route, not print success`).toMatch(
+        /not a RepoOS API route/,
+      );
+      expect(out, `${label} must not print a green success line`).not.toMatch(/✓/);
+      err.mockRestore();
+      log.mockRestore();
+      health.mockRestore();
+      request.mockRestore();
+    }
+  });
+
+  it("api still prints the JSON body for real API replies", async () => {
+    const health = vi.spyOn(RepoOsApi.prototype, "health").mockResolvedValue(true);
+    const request = vi.spyOn(RepoOsApi.prototype, "request").mockResolvedValue({
+      status: 400,
+      body: { error: "title is required" },
+    });
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    const err = vi.spyOn(console, "error").mockImplementation(() => {});
+    const code = await cmdApi(["POST", "/api/tasks"]);
+    expect(code).toBe(1);
+    const printed = JSON.parse(String(log.mock.calls[0]?.[0]));
+    expect(printed).toEqual({ status: 400, error: "title is required" });
+    log.mockRestore();
+    err.mockRestore();
+    health.mockRestore();
+    request.mockRestore();
   });
 
   it("runners --json", async () => {

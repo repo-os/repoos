@@ -7,6 +7,7 @@ import {
   pollUntil,
   RepoOsApi,
   RepoOsApiError,
+  isHtmlResponse,
   resolveControlPlaneBase,
   type ApiJson,
 } from "../cli/repoos-api.js";
@@ -497,14 +498,8 @@ export async function cmdReview(args: string[]): Promise<number> {
     try {
       const api = new RepoOsApi({ port: opts.port });
       await ensureServer(api);
-      const res = await api.request("POST", `/api/tasks/${id}/review/keep`, {});
-      if (res.status < 200 || res.status >= 300)
-        throw new RepoOsApiError(
-          String(res.body.error ?? "keep review verdict refused"),
-          res.status,
-          res.body,
-        );
-      if (opts.json) printJson(res.body);
+      const res = await api.requestOk("POST", `/api/tasks/${id}/review/keep`, {});
+      if (opts.json) printJson(res);
       else console.log(c.green("  ✓ ") + c.dim(`kept review verdict for #${id}`));
       return 0;
     } catch (e) {
@@ -522,14 +517,8 @@ export async function cmdReview(args: string[]): Promise<number> {
     try {
       const api = new RepoOsApi({ port: opts.port });
       await ensureServer(api);
-      const res = await api.request("POST", `/api/tasks/${id}/review/followup`, {});
-      if (res.status < 200 || res.status >= 300)
-        throw new RepoOsApiError(
-          String(res.body.error ?? "follow-up creation failed"),
-          res.status,
-          res.body,
-        );
-      if (opts.json) printJson(res.body);
+      const res = await api.requestOk("POST", `/api/tasks/${id}/review/followup`, {});
+      if (opts.json) printJson(res);
       else console.log(c.green("  ✓ ") + c.dim(`created follow-up for #${id}`));
       return 0;
     } catch (e) {
@@ -702,6 +691,11 @@ export async function cmdIntegration(args: string[]): Promise<number> {
       path,
       action === "retry" || action === "refresh-install" ? {} : undefined,
     );
+    // A 200 whose body is the SPA catch-all HTML is not success — say so.
+    if (isHtmlResponse(result.body)) {
+      printErr(String(result.body.error ?? `HTTP ${result.status}`));
+      return 1;
+    }
     if (opts.json) printJson({ status: result.status, ...result.body });
     else if (result.status >= 200 && result.status < 300) printJson(result.body);
     else printErr(result.body.error ?? `HTTP ${result.status}`);
@@ -728,6 +722,11 @@ export async function cmdAttention(args: string[]): Promise<number> {
       result = await api.request("POST", `/api/tasks/${rest[1]}/needs-input/dismiss`, {});
     else {
       printErr("Usage: repoos attention list|dismiss <task-id> [--json] [--port N]");
+      return 1;
+    }
+    // A 200 whose body is the SPA catch-all HTML is not success — say so.
+    if (isHtmlResponse(result.body)) {
+      printErr(String(result.body.error ?? `HTTP ${result.status}`));
       return 1;
     }
     if (opts.json) printJson({ status: result.status, ...result.body });
@@ -850,6 +849,10 @@ export async function cmdDone(args: string[]): Promise<number> {
     await ensureServer(api);
     if (cancel) {
       const result = await api.request("POST", `/api/tasks/${id}/done/cancel`, {});
+      if (isHtmlResponse(result.body)) {
+        printErr(String(result.body.error ?? `HTTP ${result.status}`));
+        return 1;
+      }
       const message =
         result.body.error ??
         (result.status === 409
@@ -998,6 +1001,12 @@ export async function cmdApi(args: string[]): Promise<number> {
     const api = new RepoOsApi({ port });
     await ensureServer(api);
     const result = await api.request(method, path, body);
+    // An HTML body is the SPA catch-all answering a wrong /api/ path with 200 —
+    // report it as the failure it is, not as a successful JSON payload.
+    if ((result.body as { htmlResponse?: boolean }).htmlResponse) {
+      printErr(String((result.body as { error?: string }).error ?? "Non-JSON response"));
+      return 1;
+    }
     printJson({ status: result.status, ...result.body });
     return result.status >= 200 && result.status < 300 ? 0 : 1;
   } catch (e) {
@@ -1325,10 +1334,20 @@ export async function cmdConfig(args: string[]): Promise<number> {
       return 1;
     }
     const patch = { [key]: parseSetValue(valueRaw) };
-    const data = await api.requestOk("PATCH", "/api/config", patch);
-    if (opts.json) printJson(data);
-    else console.log(c.green("  ✓ ") + c.dim(`set ${key}`));
-    return 0;
+    try {
+      const data = await api.requestOk("PATCH", "/api/config", patch);
+      if (opts.json) printJson(data);
+      else console.log(c.green("  ✓ ") + c.dim(`set ${key}`));
+      return 0;
+    } catch (e) {
+      // The server rejects a patch with no recognized fields — from this
+      // command that always means the key name is not a RepoOS setting.
+      if (e instanceof RepoOsApiError && e.message === "No valid fields to update") {
+        printErr(unknownConfigKeyMessage(key));
+        return 1;
+      }
+      throw e;
+    }
   } catch (e) {
     printErr((e as RepoOsApiError).message);
     return 1;
@@ -2356,6 +2375,18 @@ export async function cmdSummary(args: string[]): Promise<number> {
     printErr((e as RepoOsApiError).message);
     return 1;
   }
+}
+
+/**
+ * Plain-English rewrite of the server's generic "No valid fields to update"
+ * reply: `repoos config set <key> <value>` with a key that is not a RepoOS
+ * setting. Names the key and where valid keys are listed.
+ */
+export function unknownConfigKeyMessage(key: string): string {
+  return (
+    `Unknown setting "${key}" — RepoOS has no config field with that name. ` +
+    "Open Settings in the web UI to see the valid keys, or check an existing one with `repoos config get <key>`."
+  );
 }
 
 /** Shared server-down check for tests. */

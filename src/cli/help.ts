@@ -38,7 +38,8 @@ export const SELF_HELP_COMMANDS = new Set([
   "bundle",
 ]);
 
-const GROUPS: readonly CommandGroup[] = [
+/** The command table itself, exported for the docs-coverage QA test. */
+export const GROUPS: readonly CommandGroup[] = [
   {
     name: "Setup",
     commands: [
@@ -359,9 +360,11 @@ const GROUPS: readonly CommandGroup[] = [
       },
       {
         name: "check",
-        usage: "check [--profile <name>] [--changed <ref>] [--print-plan] [--local-tests]",
+        usage:
+          "check [--profile <name>] [--changed <ref>] [--print-plan] [--fix] [--step <name>] [--local-tests]",
         desc: "Definition-of-done gate: runs the plan declared in repoos.toml",
-        flags: "--profile <name> · --changed <ref> · --print-plan · --local-tests",
+        flags:
+          "--profile <name> · --changed <ref> · --print-plan · --fix · --step <name> · --local-tests",
       },
       {
         name: "checks timings",
@@ -378,9 +381,9 @@ const GROUPS: readonly CommandGroup[] = [
       },
       {
         name: "doctor",
-        usage: "doctor [--json] [--verbose] [--probe <cli>] [--binary <path>]",
+        usage: "doctor [--json] [--verbose] [--probe <cli> [--model <id>]] [--binary <path>]",
         desc: "Readiness preflight: config, layout, tools, server and secrets",
-        flags: "--json · --verbose · --probe <cli> · --binary <path>",
+        flags: "--json · --verbose · --probe <cli> · --model <id> · --binary <path>",
       },
       {
         name: "secrets",

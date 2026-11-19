@@ -98,7 +98,7 @@ describe("renderHelp", () => {
 describe("commandUsage / printCommandHelp", () => {
   it("returns the full usage line for a known command", () => {
     expect(commandUsage("doctor")).toBe(
-      "doctor [--json] [--verbose] [--probe <cli>] [--binary <path>]",
+      "doctor [--json] [--verbose] [--probe <cli> [--model <id>]] [--binary <path>]",
     );
     expect(commandUsage("nope")).toBeNull();
   });
