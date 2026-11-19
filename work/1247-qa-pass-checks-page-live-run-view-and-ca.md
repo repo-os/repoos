@@ -12,7 +12,7 @@ branch: feat/qa-pass-checks-page-live-run-view-and-ca
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T21:07:03Z"
-updated_at: "2026-11-19T22:02:16Z"
+updated_at: "2026-11-19T22:04:03Z"
 last_close_out_gate_ms: 1070526
 last_close_out_gate_at: "2026-11-19T22:01:40.594Z"
 review_passes: 1
@@ -43,3 +43,4 @@ Do not touch repoos.toml.
 - 2026-11-19T21:38:45Z · note: review pass 1: good to go
 - 2026-11-19T22:01:40Z · close-out gate completed in 1071s
 - 2026-11-19T22:02:16Z · status done→done, release:success
+- 2026-11-19T22:04:03Z · message_dropped: 1 queued message(s) discarded — task is done
