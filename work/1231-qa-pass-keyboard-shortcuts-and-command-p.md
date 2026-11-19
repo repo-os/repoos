@@ -140,4 +140,4 @@ Do not touch repoos.toml.
 - 2026-11-19T16:08:10Z · status active→review
 - 2026-11-19T16:13:09Z · note: ui verification passed: 2 of 2 shots captured with clean console
 - 2026-11-19T16:13:11Z · note: review pass 2: needs some work — clamped by automated verification: browser verification: Handoff browser verification recorded 1 blocking issue(s): [missing-target] Command palette open over the dashboard (target "default"): loading state detected: loading indicator [aria-busy="true"] on /
-
+- 2026-11-19T16:13:11Z · message_queued at 2026-11-19T16:13:11.860Z
