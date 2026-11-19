@@ -2,16 +2,16 @@
 id: "1246"
 title: "QA pass: task cards and board columns with long titles, many labels and odd states"
 type: bug
-status: ready
+status: active
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
-branch: ""
+branch: feat/qa-pass-task-cards-and-board-columns-wit
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T21:06:54Z"
-updated_at: "2026-11-19T21:06:58Z"
+updated_at: "2026-11-19T21:06:59Z"
 ---
 ## Problem
 Task cards and board columns have not been checked with very long titles, many labels, unusual statuses (held, paused, needs-input, archived) and missing fields.
@@ -29,3 +29,4 @@ Do not touch repoos.toml.
 - 2026-11-19T21:06:54Z · created · t@t
 - 2026-11-19T21:06:57Z · status inbox→ready
 - 2026-11-19T21:06:58Z · cli_override, model_override
+- 2026-11-19T21:06:59Z · status ready→active, branch
