@@ -11,7 +11,7 @@ branch: feat/qa-pass-control-dashboard-live-updates-a
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T20:07:32Z"
-updated_at: "2026-11-19T20:31:51Z"
+updated_at: "2026-11-19T20:31:52Z"
 ---
 ## Problem
 The Control dashboard and Work board use live updates; behavior after a dropped connection, a server restart or a long idle tab has not been checked.
@@ -37,3 +37,4 @@ Do not touch repoos.toml.
 - 2026-11-19T20:28:49Z · message_queued at 2026-11-19T20:28:49.934Z
 - 2026-11-19T20:28:50Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-19T20:31:51Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-19T20:31:52Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: The check is re-running from scratch, and the wait is armed. I haven't handed off yet, because the earlier run has no completion record and I can't confirm it passed. - **Status of the earlier run:** the log stopped after UI smoke with no … · stderr: (empty)
