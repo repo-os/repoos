@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-toasts-banners-and-dialogs-stack
 created_at: "2026-11-19T09:17:32Z"
-updated_at: "2026-11-19T09:51:26Z"
+updated_at: "2026-11-19T10:01:32Z"
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\",\"at\":\"2026-11-19T09:51:24.864Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -24,6 +24,33 @@ Toasts, banners and dialogs never overlap important controls, can be dismissed b
 ## Notes for AI
 Do not touch repoos.toml.
 
+## Shots
+```json
+[
+{
+  "label": "Five-toast stack pinned by the new toast:stack fixture",
+  "target": "default",
+  "route": "/work",
+  "highlight": ".toast-panel",
+  "state": "toast:stack"
+},
+{
+  "label": "Release-update dialog fits 375px and dismisses via Escape and Close",
+  "target": "default",
+  "route": "/releases",
+  "highlight": ".release-update-modal",
+  "state": "release:updateAvailable"
+},
+{
+  "label": "Task drawer over the board: drawer close control stays live above the toast stack",
+  "target": "default",
+  "route": "/work?task=9999",
+  "highlight": ".drawer-wrap.drawer",
+  "state": "drawer:statusDetails"
+}
+]
+```
+
 ## Activity
 
 - 2026-11-19T09:17:32Z · created · t@t
@@ -34,3 +61,4 @@ Do not touch repoos.toml.
 - 2026-11-19T09:51:24Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
 - 2026-11-19T09:51:24Z · engineer crash recovery: resuming opencode + opencode-go/glm-5.3-flash (1/3 crashes in 30m) · the agent process exited with an error — open the task to see the full output. Open Raw CLI error for details. (CLI: the agent process exited with an error — open the task to see the full output)
 - 2026-11-19T09:51:26Z · needs_input
+- 2026-11-19T10:01:32Z · body
