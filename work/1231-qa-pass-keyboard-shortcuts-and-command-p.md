@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-keyboard-shortcuts-and-command-p
 created_at: "2026-11-19T13:47:53Z"
-updated_at: "2026-11-19T15:11:28Z"
+updated_at: "2026-11-19T15:14:57Z"
 handoff_signal_retry_count: 2
 dev_error_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-11-19T14:18:11.944Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-19T15:02:12.103Z\",\"reason\":\"clean-exit-without-handoff\"}]"
@@ -80,3 +80,4 @@ Do not touch repoos.toml.
 - 2026-11-19T15:11:26Z · note: ui verification passed: 1 of 1 shot captured with clean console
 - 2026-11-19T15:11:27Z · status active→review
 - 2026-11-19T15:11:28Z · message_queued at 2026-11-19T15:11:28.037Z
+- 2026-11-19T15:14:57Z · note: review pass 1: needs some work
