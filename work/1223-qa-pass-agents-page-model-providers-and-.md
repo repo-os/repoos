@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-agents-page-model-providers-and-
 created_at: "2026-11-19T07:47:39Z"
-updated_at: "2026-11-19T08:36:56Z"
+updated_at: "2026-11-19T08:47:09Z"
 handoff_signal_retry_count: 2
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\",\"at\":\"2026-11-19T08:22:29.659Z\",\"kind\":\"dev-error\"}]"
@@ -74,3 +74,4 @@ Do not touch repoos.toml.
 - 2026-11-19T08:33:07Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 1/3
 - 2026-11-19T08:33:15Z · watchdog: automatic resume failed — This worktree already has a recorded live engineer for task #1223 (pid 97162)
 - 2026-11-19T08:36:56Z · body
+- 2026-11-19T08:47:09Z · body
