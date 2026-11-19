@@ -832,7 +832,7 @@ describe("feature releases", () => {
     expect(releaseUpdateNotificationSource).not.toMatch(/#0214/);
     expect(releaseUpdateNotificationSource).toMatch(/>Read more on GitHub<\/a>\./);
     expect(releaseUpdateNotificationSource).toMatch(
-      /restart it\s+with the same settings and port\s+it was started with/,
+      /restart it\s+with the same settings\s+and\s+port\s+it was started with/,
     );
   });
 
