@@ -1354,7 +1354,7 @@ onUnmounted(() => {
          skeleton that would spin forever (#1226). -->
     <section v-if="!config.loaded && config.error" class="page-load-error" role="alert">
       <div>
-        <h2>Couldn't load settings</h2>
+        <h2>Couldn’t load settings</h2>
         <p>Check your connection to the RepoOS server, then try again.</p>
       </div>
       <Button variant="outline" @click="config.load()">Retry</Button>

@@ -45,19 +45,22 @@ try {
 const describeBrowser = browser && !unavailable ? describe : describe.skip;
 
 afterAll(async () => {
-  if (!browser || !server || !fixtureRoot) {
-    if (fixtureRoot) rmSync(fixtureRoot, { recursive: true, force: true });
-    return;
-  }
+  // #1226 review round 1: close each artifact that exists, even when an
+  // earlier boot step failed (launchWebkit throwing after startPreviewServer
+  // must still close the server) and never let one close skip the rest —
+  // teardownUiHarness already tolerates partial inputs and folds failures.
   try {
     await teardownUiHarness({
-      browser,
-      server,
-      removeFixture: () => rmSync(fixtureRoot!, { recursive: true, force: true }),
+      browser: browser ?? undefined,
+      server: server ?? undefined,
+      removeFixture: () => {
+        if (fixtureRoot) rmSync(fixtureRoot, { recursive: true, force: true });
+      },
     });
   } catch (err) {
     console.error((err as Error).message);
   }
+  fixtureRoot = null;
 });
 
 const VIEWPORTS = [375, 768, 1280] as const;
@@ -169,7 +172,7 @@ describeBrowser("slow network and offline QA (#1226)", () => {
       await goOffline(page);
       for (const [route, heading] of [
         ["/agents", "Couldn’t load agents"],
-        ["/settings", "Couldn't load settings"],
+        ["/settings", "Couldn’t load settings"],
       ] as const) {
         await page.goto(`${server!.url}${route}`, { waitUntil: "load", timeout: 20_000 });
         await page.waitForFunction(() => document.querySelector(".page-load-error") !== null, {
@@ -227,7 +230,6 @@ describeBrowser("slow network and offline QA (#1226)", () => {
   it("HTTP 500 on task data: the drawer still opens with content", async () => {
     const page = await openPage();
     try {
-      // Everything boots fine; only per-task endpoints fail.
       // Everything the app boot needs answers normally; only per-task
       // endpoints (handoff status, checks, logs, task records) fail.
       const PASS = ["/api/auth/me", "/api/health", "/api/config", "/api/board", "/api/events"];

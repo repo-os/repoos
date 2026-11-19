@@ -2661,6 +2661,11 @@ export const useRepoStore = defineStore("repo", () => {
       source.addEventListener(t, (ev: MessageEvent) => {
         connected.value = true;
         markStreamHealthy(); // a frame arrived — the stream is demonstrably up
+        // #1226 review round 1: frames prove the stream is back just as much
+        // as `onopen` does — and the offline banner can be up while frames
+        // still arrive (any api() timeout raises it). Clear it here too; the
+        // function is a no-op for stale banners and manual reloads.
+        clearOfflineOnStreamBack();
         try {
           applyEvent(JSON.parse(ev.data) as RepoEvent);
         } catch {

@@ -72,7 +72,7 @@ describe("SettingsView failed config load (#1226)", () => {
 
     const error = wrapper.get(".page-load-error");
     expect(error.attributes("role")).toBe("alert");
-    expect(error.text()).toContain("Couldn't load settings");
+    expect(error.text()).toContain("Couldn’t load settings");
     expect(error.text()).toContain("Check your connection to the RepoOS server, then try again.");
     expect(error.text()).toContain("Retry");
     // The endless skeleton must be gone.
