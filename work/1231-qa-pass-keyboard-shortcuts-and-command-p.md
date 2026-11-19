@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-keyboard-shortcuts-and-command-p
 created_at: "2026-11-19T13:47:53Z"
-updated_at: "2026-11-19T15:29:32Z"
+updated_at: "2026-11-19T15:32:30Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -88,3 +88,4 @@ Do not touch repoos.toml.
 - 2026-11-19T15:14:58Z · status review→active
 - 2026-11-19T15:26:27Z · body
 - 2026-11-19T15:29:32Z · body
+- 2026-11-19T15:32:30Z · body
