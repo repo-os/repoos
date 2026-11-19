@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-review-and-move-to-done-flow-at-
 created_at: "2026-11-19T02:18:22Z"
-updated_at: "2026-11-19T02:58:40Z"
+updated_at: "2026-11-19T02:58:49Z"
 last_close_out_gate_ms: 305147
 last_close_out_gate_at: "2026-11-19T02:58:40.726Z"
 review_passes: 1
@@ -40,4 +40,4 @@ Do not touch repoos.toml.
 - 2026-11-19T02:51:50Z · note: shots: skipped — the diff (3 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-19T02:52:26Z · note: review pass 1: good to go
 - 2026-11-19T02:58:40Z · close-out gate completed in 305s
-
+- 2026-11-19T02:58:49Z · status done→done, release:success
