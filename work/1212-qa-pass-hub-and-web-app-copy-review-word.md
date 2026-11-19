@@ -16,6 +16,7 @@ last_check_failure: "repoos check at 2026-11-19T01:25:43.917Z: repoos check fail
 review_passes: 2
 review_rounds: 1
 routing_switches: 1
+deferred_handoff_resume_count: 1
 ---
 ## Problem
 Wording across the web app and Hub apps may be inconsistent or jargon-heavy (infra terms in user-facing errors).
