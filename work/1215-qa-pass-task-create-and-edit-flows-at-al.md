@@ -2,14 +2,14 @@
 id: "1215"
 title: "QA pass: task create and edit flows at all screen sizes"
 type: bug
-status: review
+status: active
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-task-create-and-edit-flows-at-al
 created_at: "2026-11-19T03:17:33Z"
-updated_at: "2026-11-19T05:46:52Z"
+updated_at: "2026-11-19T05:46:53Z"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/task-create-edit-responsive.test.ts > task create/edit interactions at 375 px > selects and removes the prerequisite from the fixture picker, tests/task-create-edit-responsive.test.ts > task create/edit interactions at 768 px > selects and removes the prerequisite from the fixture picker, tests/task-create-edit-responsive.test.ts > task create/edit interactions at 1280 px > selects and removes the prerequisite from the fixture picker on thinkpad — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: a67cddcbf8aeff91bd457a9f80f9ac34d097c302
 review_passes: 1
