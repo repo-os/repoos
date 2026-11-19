@@ -64,3 +64,4 @@ Do not touch repoos.toml.
 - 2026-11-19T05:16:24Z · note: handoff requested (cli)
 - 2026-11-19T05:17:51Z · CTO nudge: held — handoff gate is running
 - 2026-11-19T05:33:24Z · message_queued at 2026-11-19T05:33:24.261Z
+- 2026-11-19T05:33:24Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: tests/task-create-edit-responsive.test.ts > task create/edit interactions at 375 px > selects and removes the prerequisite from the fixture picker, tests/task-create-edit-responsive.test.ts > task create/edit interactions at 768 px > selects and removes the prerequisite from the fixture picker, tests/task-create-edit-responsive.test.ts > task create/edit interactions at 1280 px > selects and removes the prerequisite from the fixture picker on thinkpad — fix it in the feature branch and re-run the gate
