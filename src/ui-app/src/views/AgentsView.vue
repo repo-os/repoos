@@ -740,7 +740,9 @@ onUnmounted(() => {
         <div class="page-desc">
           The AI agents that work this repo
           <span v-if="config.saving"> · Saving…</span>
-          <span v-else-if="config.loaded && config.error" class="save-msg err"> · {{ config.error }}</span>
+          <span v-else-if="config.loaded && config.error" class="save-msg err">
+            · {{ config.error }}</span
+          >
           <span v-else-if="config.msg" class="save-msg ok"> · Saved</span>
         </div>
       </div>
