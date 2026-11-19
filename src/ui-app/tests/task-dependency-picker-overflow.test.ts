@@ -23,7 +23,7 @@ describe.skipIf(!existsSync(webkit.executablePath()))(
       await browser?.close();
     });
 
-    it.each([375, 1280])("keeps long task titles inside the picker at %i px", async (width) => {
+    it.each([375, 768, 1280])("keeps long task titles inside the picker at %i px", async (width) => {
       const page = await browser.newPage({ viewport: { width, height: 900 } });
       try {
         await page.setContent(`
