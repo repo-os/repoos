@@ -9,10 +9,10 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-slow-network-and-offline-behavio
 created_at: "2026-11-19T09:47:34Z"
-updated_at: "2026-11-19T14:09:42Z"
+updated_at: "2026-11-19T14:15:26Z"
 handoff_signal_retry_count: 2
 dev_error_count: 2
-engineer_stall_resume_log: "[{\"at\":\"2026-11-19T10:00:44.011Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-19T12:54:47.309Z\",\"reason\":\"clean-exit-without-handoff\"}]"
+engineer_stall_resume_log: "[{\"at\":\"2026-11-19T10:00:44.011Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-19T12:54:47.309Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-19T14:15:26.925Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\",\"at\":\"2026-11-19T14:04:52.169Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
@@ -130,3 +130,4 @@ Do not touch repoos.toml.
 - 2026-11-19T14:04:56Z · needs_input
 - 2026-11-19T14:08:27Z · orphaned run process stopped · pid 3992 · ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new -o ConnectTimeout=15 -o ServerAliveInterval · cpu 0s · age 9m
 - 2026-11-19T14:09:42Z · body
+- 2026-11-19T14:15:26Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 3/3
