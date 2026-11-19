@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-hub-and-web-app-copy-review-word
 created_at: "2026-11-19T00:47:39Z"
-updated_at: "2026-11-19T01:24:50Z"
+updated_at: "2026-11-19T01:25:40Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -47,3 +47,4 @@ Do not touch repoos.toml.
 - 2026-11-19T01:16:02Z · message_delivered: 1 message(s)
 - 2026-11-19T01:23:39Z · body
 - 2026-11-19T01:24:50Z · status active→review
+- 2026-11-19T01:25:40Z · message_queued at 2026-11-19T01:25:40.805Z
