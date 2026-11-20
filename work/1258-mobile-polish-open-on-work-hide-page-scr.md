@@ -11,7 +11,7 @@ branch: feat/mobile-polish-open-on-work-hide-page-scr
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T00:15:33Z"
-updated_at: "2026-11-20T00:33:31Z"
+updated_at: "2026-11-20T00:36:54Z"
 ---
 ## Problem
 On a phone (seen on the Android Hub app, Mission Control page):
@@ -35,10 +35,10 @@ Screenshot attached shows the current mobile header and Mission Control. Do not 
 ```json
 [
 {
-  "label": "Work is the home page; header row controls share one height",
-  "target": "default",
-  "route": "/work",
-  "highlight": ".topbar"
+"label": "Work is the home page; header row controls share one height",
+"target": "default",
+"route": "/work",
+"highlight": ".topbar"
 }
 ]
 ```
@@ -56,3 +56,4 @@ Screenshot attached shows the current mobile header and Mission Control. Do not 
 - 2026-11-20T00:16:03Z · status ready→active, branch
 - 2026-11-20T00:17:11Z · note: adopted orphaned engineer pid 86874
 - 2026-11-20T00:33:31Z · body
+- 2026-11-20T00:36:54Z · note: ui verification passed: 1 of 1 shot captured with clean console
