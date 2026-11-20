@@ -54,6 +54,12 @@ export function taskAreaNames(task: Task): string[] {
   return parseTaskAreas(task.areas?.length ? task.areas : task.area);
 }
 
+/** The search needle: trimmed, lower-case, with one leading `#` dropped. A
+ *  query that is only `#` (or blank) is an empty needle, so it filters nothing. */
+export function searchNeedle(query: string): string {
+  return query.trim().toLowerCase().replace(/^#/, "").trim();
+}
+
 /** Search matches id, title or area: the three things a user scans a card by. */
 function matchesSearch(task: Task, needle: string): boolean {
   if (task.id.toLowerCase().includes(needle)) return true;
@@ -71,13 +77,13 @@ export function matchesWorkQueueFilters(task: Task, filters: WorkQueueFilters): 
     return false;
   }
   if (filters.mine && task.assignee !== "human") return false;
-  const needle = filters.query.trim().toLowerCase().replace(/^#/, "");
+  const needle = searchNeedle(filters.query);
   return !needle || matchesSearch(task, needle);
 }
 
 export function hasActiveWorkQueueFilters(filters: WorkQueueFilters): boolean {
   return (
-    filters.query.trim() !== "" ||
+    searchNeedle(filters.query) !== "" ||
     filters.priority !== "" ||
     (filters.area !== "any" && filters.area !== "") ||
     (filters.story !== "any" && filters.story !== "") ||
@@ -95,7 +101,9 @@ export interface WorkQueueFilterChip {
 /** One chip per filter that is set, in the order the controls appear. */
 export function workQueueFilterChips(filters: WorkQueueFilters): WorkQueueFilterChip[] {
   const chips: WorkQueueFilterChip[] = [];
-  if (filters.query.trim()) chips.push({ key: "q", label: `Search: ${filters.query.trim()}` });
+  if (searchNeedle(filters.query)) {
+    chips.push({ key: "q", label: `Search: ${filters.query.trim()}` });
+  }
   if (filters.priority)
     chips.push({ key: "priority", label: `Priority: ${filters.priority.toUpperCase()}` });
   if (filters.area !== "any" && filters.area !== "") {
@@ -117,11 +125,11 @@ export function ignoredWorkQueueFilterChips(query: Record<string, unknown>): Wor
   const chips: WorkQueueFilterChip[] = [];
   const priority = firstString(query.priority);
   if (priority && !(PRIORITY_IDS as readonly string[]).includes(priority)) {
-    chips.push({ key: "priority", label: `Ignored priority: ${priority}`, ignored: true });
+    chips.push({ key: "priority", label: `Ignored filter: priority=${priority}`, ignored: true });
   }
   const mine = firstString(query.mine);
   if (mine && mine !== "1") {
-    chips.push({ key: "mine", label: `Ignored assigned filter: ${mine}`, ignored: true });
+    chips.push({ key: "mine", label: `Ignored filter: mine=${mine}`, ignored: true });
   }
   return chips;
 }

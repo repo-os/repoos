@@ -7,6 +7,7 @@ import { useUiStore } from "../stores/ui";
 import { relTime } from "../lib/time";
 import {
   matchesWorkQueueFilters,
+  searchNeedle,
   taskAreaNames,
   type WorkQueueFilters,
 } from "../lib/workQueueFilters";
@@ -237,7 +238,7 @@ const filtersActive = computed(
   () =>
     status.value !== "attention" ||
     sort.value !== "newest" ||
-    query.value.trim() !== "" ||
+    searchNeedle(query.value) !== "" ||
     priority.value !== "" ||
     area.value !== "any" ||
     story.value !== "any" ||

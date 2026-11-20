@@ -1,0 +1,39 @@
+---
+id: "1260"
+title: "Work board: apply the queue sort and make mobile-only status values visible"
+type: bug
+status: ready
+priority: p3
+area: web
+depends_on: ["1257"]
+assigned_to: ai
+created_by: t@t
+branch: ""
+cli_override: claude code
+model_override: haiku
+created_at: "2026-11-20T00:57:33Z"
+updated_at: "2026-11-20T01:42:26Z"
+---
+## Problem
+Two gaps from #1257 (docs/qa/2026-11-filter-persistence-qa.md):
+- The board ignores the queue sort (sort=oldest from the phone queue).
+- Mobile-only status values in the URL (attention, held, archived, human, all) show every task on the board with no chip.
+
+## Desired UX
+Either apply these values on the board or show a chip that says they are not applied, the way the ignored-value notices work.
+
+## Acceptance criteria
+- Each URL value is either applied or shown with a notice; none is silently dropped.
+- Covered by headless WebKit fixtures at 375, 768 and 1280 px.
+
+## Notes for AI
+Headless Playwright only, against fixtures. Do not touch repoos.toml. Keep the ignored-value notice path in src/ui-app/src/lib/workQueueFilters.ts.
+
+## Activity
+
+- 2026-11-20T00:57:33Z · created · t@t
+- 2026-11-20T00:57:34Z · needs_input
+- 2026-11-20T00:57:44Z · body: Notes for AI (added)
+- 2026-11-20T00:57:44Z · needs_input
+- 2026-11-20T01:42:23Z · status inbox→ready
+- 2026-11-20T01:42:26Z · cli_override, model_override

@@ -212,7 +212,7 @@ describe("Work board queue filters on desktop (768 / 1280 px)", () => {
     await flushPromises();
     expect(visibleIds(wrapper).sort()).toEqual(["0001", "0002", "0003"]);
     const ignored = wrapper.find('.board-queue-filters [data-filter-key="priority"]');
-    expect(ignored.text()).toBe("Ignored priority: p9");
+    expect(ignored.text()).toBe("Ignored filter: priority=p9");
     expect(ignored.classes()).toContain("filter-chip-ignored");
     await wrapper.find(".board-queue-filters .filter-clear").trigger("click");
     expect(routeState.router.replace).toHaveBeenCalledWith({ query: { task: "0001" } });
@@ -401,7 +401,7 @@ describe("Board filter chip bar at 375 / 768 / 1280 px (WebKit, fixtures)", () =
         ignored: [
           {
             key: "priority",
-            label: "Ignored priority: a-very-long-unusable-value-0123456789abcdefghij",
+            label: "Ignored filter: priority=a-very-long-unusable-value-0123456789abcdefghij",
             ignored: true,
           },
         ],

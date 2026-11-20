@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from "vue";
 import { api } from "../api";
 import Button from "../components/ui/button.vue";
+import ConfirmDialog from "./ConfirmDialog.vue";
 import Card from "../components/ui/card.vue";
 import Switch from "../components/ui/switch.vue";
 
@@ -119,11 +120,11 @@ async function toggleAutoStart(checked: boolean): Promise<void> {
   }
 }
 
+/** Whether the remove dialog is open (replaces native confirm()). */
+const removeConfirmOpen = ref(false);
+
 async function remove(): Promise<void> {
-  if (
-    !window.confirm("Remove the background service? This stops it and deletes all service files.")
-  )
-    return;
+  removeConfirmOpen.value = false;
   actionPending.value = "remove";
   errorMsg.value = "";
   try {
@@ -299,7 +300,12 @@ onMounted(() => {
               <Button size="sm" variant="ghost" :disabled="isBusy" @click="runHealthCheck">
                 {{ actionPending === "health" ? "Checking…" : "Health check" }}
               </Button>
-              <Button size="sm" variant="destructive" :disabled="isBusy" @click="remove">
+              <Button
+                size="sm"
+                variant="destructive"
+                :disabled="isBusy"
+                @click="removeConfirmOpen = true"
+              >
                 {{ actionPending === "remove" ? "Removing…" : "Remove service" }}
               </Button>
             </div>
@@ -326,6 +332,15 @@ onMounted(() => {
         </div>
       </template>
     </div>
+    <ConfirmDialog
+      :open="removeConfirmOpen"
+      title="Remove the background service?"
+      confirm-label="Remove service"
+      @update:open="(v) => (removeConfirmOpen = v)"
+      @confirm="remove"
+    >
+      This stops the service and deletes all of its service files.
+    </ConfirmDialog>
   </Card>
 </template>
 

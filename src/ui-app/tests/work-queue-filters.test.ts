@@ -72,11 +72,23 @@ describe("work queue filters", () => {
 
   it("reports ignored priority and assigned values as notices, not filters", () => {
     expect(ignoredWorkQueueFilterChips({ priority: "p9", mine: "2" })).toEqual([
-      { key: "priority", label: "Ignored priority: p9", ignored: true },
-      { key: "mine", label: "Ignored assigned filter: 2", ignored: true },
+      { key: "priority", label: "Ignored filter: priority=p9", ignored: true },
+      { key: "mine", label: "Ignored filter: mine=2", ignored: true },
     ]);
     expect(ignoredWorkQueueFilterChips({ priority: "p1", mine: "1" })).toEqual([]);
     expect(hasActiveWorkQueueFilters(readWorkQueueFilters({ priority: "p9" }))).toBe(false);
+  });
+
+  it("a search of only # is inactive: no chip, and it matches every task", () => {
+    for (const q of ["#", " # ", ""]) {
+      const filters = readWorkQueueFilters({ q });
+      expect(hasActiveWorkQueueFilters(filters)).toBe(false);
+      expect(workQueueFilterChips(filters)).toEqual([]);
+      expect(matchesWorkQueueFilters(task({}), filters)).toBe(true);
+    }
+    expect(workQueueFilterChips(readWorkQueueFilters({ q: "#0001" }))[0]?.label).toBe(
+      "Search: #0001",
+    );
   });
 
   it("clear keeps null and repeated values of keys it does not own", () => {
