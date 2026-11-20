@@ -44,9 +44,9 @@ function isSessionGateReply(body: unknown): boolean {
  * the login page say why). The caller still gets its ApiError as before.
  */
 function redirectToSignIn(): void {
-  if (typeof window === "undefined" || window.location.pathname === "/login") return;
-  const here = window.location.pathname + window.location.search;
-  window.location.assign(`/login?expired=1&redirect=${encodeURIComponent(here)}`);
+  if (typeof location === "undefined" || location.pathname === "/login") return;
+  const here = location.pathname + location.search;
+  location.assign(`/login?expired=1&redirect=${encodeURIComponent(here)}`);
 }
 
 export async function api<T = unknown>(path: string, opts?: ApiRequestInit): Promise<T> {
