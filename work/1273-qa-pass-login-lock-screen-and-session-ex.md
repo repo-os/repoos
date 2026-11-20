@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "1273"
 title: "QA pass: login, lock screen and session expiry flows"
 type: feature
@@ -81,3 +82,4 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser. Never
 - 2026-11-20T09:15:20Z · message_queued at 2026-11-20T09:15:20.449Z
 - 2026-11-20T09:17:31Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-20T09:22:46Z · message_queued at 2026-11-20T09:22:46.311Z
+
