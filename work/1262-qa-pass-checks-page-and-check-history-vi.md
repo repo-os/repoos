@@ -70,3 +70,4 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 - 2026-11-20T03:28:33Z · message_delivered: 1 message(s)
 - 2026-11-20T03:31:20Z · queued message undelivered for 4m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-20T03:31:21Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: The merge is in and the rebuild passed. The fresh scoped check is running in the background, queued behind the pressure guard if needed. I'll request handoff only after it passes. **Status:** The handoff failed twice with "reused check inp… · stderr: (empty)
+- 2026-11-20T03:31:21Z · message_delivered: 1 message(s)
