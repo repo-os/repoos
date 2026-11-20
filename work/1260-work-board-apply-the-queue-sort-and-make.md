@@ -2,7 +2,7 @@
 id: "1260"
 title: "Work board: apply the queue sort and make mobile-only status values visible"
 type: bug
-status: review
+status: active
 priority: p3
 area: web
 depends_on: ["1257"]
@@ -12,7 +12,7 @@ branch: feat/work-board-apply-the-queue-sort-and-make
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T00:57:33Z"
-updated_at: "2026-11-20T10:18:36Z"
+updated_at: "2026-11-20T10:18:37Z"
 close_out_repair_count: 1
 review_passes: 2
 review_rounds: 1
