@@ -11,7 +11,7 @@ branch: feat/close-out-validation-log-should-show-liv
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T07:42:21Z"
-updated_at: "2026-11-20T15:46:51Z"
+updated_at: "2026-11-20T15:46:54Z"
 review_failed_report_retries: 2
 review_rounds: 2
 review_passes: 2
@@ -89,3 +89,4 @@ Related: #1272 (timer should count from validation start). Never touch repoos.to
 - 2026-11-20T15:23:12Z · note: review pass 5: failed — no usable report
 - 2026-11-20T15:23:12Z · needs_input
 - 2026-11-20T15:46:51Z · needs_input (review-failed) cleared for review again by human
+- 2026-11-20T15:46:54Z · note: review pass 6: failed — no usable report
