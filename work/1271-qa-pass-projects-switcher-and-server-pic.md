@@ -11,7 +11,7 @@ branch: feat/qa-pass-projects-switcher-and-server-pic
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T06:07:22Z"
-updated_at: "2026-11-20T13:11:38Z"
+updated_at: "2026-11-20T13:13:33Z"
 last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
 last_handoff_failure_sha: f4e6a04ec83ffe923a2a8afb52f1db6ef9ae75bf
 handoff_signal_retry_count: 2
@@ -77,3 +77,4 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 - 2026-11-20T12:33:42Z · CTO action: restart-stalled-agent (resume) · agent crashed or was interrupted mid-turn — task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
 - 2026-11-20T13:06:37Z · body
 - 2026-11-20T13:11:38Z · body
+- 2026-11-20T13:13:33Z · CTO nudge: held — handoff gate is running
