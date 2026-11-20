@@ -32,6 +32,23 @@ export const SERVER_UNREACHABLE_MESSAGE =
 
 export type ApiRequestInit = RequestInit & { timeoutMs?: number };
 
+/** The server's session gate answers every API route with this exact 401 body. */
+function isSessionGateReply(body: unknown): boolean {
+  return (body as { error?: unknown } | null)?.error === "Authentication required";
+}
+
+/**
+ * A session that expires while the app is open answers API calls with 401, and
+ * nothing else notices: the router guard only runs on client navigation. Send
+ * the visitor to sign-in with a way back to where they were (`expired=1` lets
+ * the login page say why). The caller still gets its ApiError as before.
+ */
+function redirectToSignIn(): void {
+  if (typeof window === "undefined" || window.location.pathname === "/login") return;
+  const here = window.location.pathname + window.location.search;
+  window.location.assign(`/login?expired=1&redirect=${encodeURIComponent(here)}`);
+}
+
 export async function api<T = unknown>(path: string, opts?: ApiRequestInit): Promise<T> {
   let r: Response;
   const controller = new AbortController();
@@ -89,6 +106,7 @@ export async function api<T = unknown>(path: string, opts?: ApiRequestInit): Pro
     } catch {
       /* keep statusText */
     }
+    if (r.status === 401 && isSessionGateReply(body)) redirectToSignIn();
     throw new ApiError(message, r.status, body);
   }
   try {
