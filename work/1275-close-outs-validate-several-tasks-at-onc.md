@@ -11,7 +11,7 @@ branch: feat/close-outs-validate-several-tasks-at-onc
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T07:42:13Z"
-updated_at: "2026-11-20T09:13:45Z"
+updated_at: "2026-11-20T09:14:00Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-20T09:04:46.665Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 handoff_signal_retry_count: 2
@@ -66,3 +66,4 @@ Read docs/close-out-pipeline.md and docs/remote-validation.md first. Never touch
 - 2026-11-20T09:13:27Z · message_delivered: 1 message(s)
 - 2026-11-20T09:13:37Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: I'm stopping here without emitting the handoff signal, because the check still hasn't passed. **Blocker:** `repoos check` for #1275 can't finish inside a session on this machine. The server-side finalization hit its deadline, and my two lo… · stderr: (empty)
 - 2026-11-20T09:13:45Z · orphaned run process stopped · pid 66754 · /opt/homebrew/bin/bun /Users/nick/.bun/bin/repoos check · cpu 4s · age 9m
+- 2026-11-20T09:14:00Z · orphaned run process stopped · pid 71013 · ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new -o ConnectTimeout=15 -o ServerAliveInterval · cpu 0s · age 8m
