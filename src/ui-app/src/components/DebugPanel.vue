@@ -913,7 +913,7 @@ watch([() => ui.debugCheckFocus, () => repo.taskChecks[props.task.id]], applyDeb
   background: var(--green-tint, transparent);
 }
 .debug-status-check.is-warn .debug-status-check-badge {
-  color: var(--amber, #e6b450);
+  color: var(--amber);
   background: var(--amber-tint, transparent);
 }
 .debug-status-check.is-fail .debug-status-check-badge {
