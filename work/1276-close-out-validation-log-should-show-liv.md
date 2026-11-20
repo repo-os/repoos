@@ -42,3 +42,4 @@ Related: #1272 (timer should count from validation start). Never touch repoos.to
 - 2026-11-20T10:02:36Z · CTO nudge: held — handoff gate is running
 - 2026-11-20T10:05:12Z · note: ui verification passed: 1 shot captured with clean console
 - 2026-11-20T10:05:13Z · status active→review
+- 2026-11-20T10:05:13Z · message_queued at 2026-11-20T10:05:13.796Z
