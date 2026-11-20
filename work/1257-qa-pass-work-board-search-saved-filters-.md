@@ -11,7 +11,7 @@ branch: feat/qa-pass-work-board-search-saved-filters-
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T00:07:29Z"
-updated_at: "2026-11-20T01:18:24Z"
+updated_at: "2026-11-20T01:18:33Z"
 handoff_signal_retry_count: 1
 review_rounds: 1
 review_passes: 1
@@ -64,3 +64,4 @@ Do not touch repoos.toml.
 - 2026-11-20T00:56:30Z · message_delivered: 1 message(s)
 - 2026-11-20T00:57:58Z · body
 - 2026-11-20T01:18:24Z · queued message undelivered for 22m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-20T01:18:33Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: The UI smoke run is still going in the background, and a monitor will notify me when it exits. Once it finishes I'll decide whether the failure is environmental or needs a code change. Until then, the round 2 fixes and scoped tests are don… · stderr: (empty)
