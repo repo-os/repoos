@@ -91,3 +91,4 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 - 2026-11-20T06:09:53Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The scoped `repoos check` is still running, so I'm not handing off yet. I'll wait for its completion notice before I report the result or send the handoff signal. · stderr: (empty)
 - 2026-11-20T06:09:53Z · status active→review
 - 2026-11-20T06:09:54Z · message_delivered: 2 message(s)
+- 2026-11-20T06:09:54Z · note: handoff requested (cli)
