@@ -2,7 +2,7 @@
 id: "1262"
 title: "QA pass: Checks page and check history views"
 type: feature
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/qa-pass-checks-page-and-check-history-vi
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T02:26:53Z"
-updated_at: "2026-11-20T03:31:21Z"
+updated_at: "2026-11-20T04:16:18Z"
 handoff_signal_retry_count: 1
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-11-20T03:19:36.092Z: repoos check failed: reused check inputs changed during handoff — run the check again"
@@ -71,3 +71,4 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 - 2026-11-20T03:31:20Z · queued message undelivered for 4m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-20T03:31:21Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: The merge is in and the rebuild passed. The fresh scoped check is running in the background, queued behind the pressure guard if needed. I'll request handoff only after it passes. **Status:** The handoff failed twice with "reused check inp… · stderr: (empty)
 - 2026-11-20T03:31:21Z · message_delivered: 1 message(s)
+- 2026-11-20T04:16:18Z · status active→review
