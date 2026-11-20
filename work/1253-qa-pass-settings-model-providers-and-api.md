@@ -12,7 +12,7 @@ branch: feat/qa-pass-settings-model-providers-and-api
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T23:27:11Z"
-updated_at: "2026-11-20T02:17:16Z"
+updated_at: "2026-11-20T02:17:44Z"
 last_close_out_gate_ms: 679279
 last_close_out_gate_at: "2026-11-20T02:17:16.785Z"
 review_passes: 1
@@ -53,4 +53,4 @@ Do not touch repoos.toml. Follow docs/api-keys.md.
 - 2026-11-19T23:49:03Z · note: review pass 1: good to go
 - 2026-11-20T00:49:35Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-20T02:17:16Z · close-out gate completed in 679s
-
+- 2026-11-20T02:17:44Z · status done→done, release:success
