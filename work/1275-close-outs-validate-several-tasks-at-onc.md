@@ -11,7 +11,7 @@ branch: feat/close-outs-validate-several-tasks-at-onc
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T07:42:13Z"
-updated_at: "2026-11-20T09:10:24Z"
+updated_at: "2026-11-20T09:13:26Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-20T09:04:46.665Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 handoff_signal_retry_count: 2
@@ -61,3 +61,4 @@ Read docs/close-out-pipeline.md and docs/remote-validation.md first. Never touch
 - 2026-11-20T09:07:31Z · message_queued at 2026-11-20T09:07:31.572Z
 - 2026-11-20T09:07:31Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-20T09:10:24Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-20T09:13:26Z · queued message undelivered for 6m and the engineer produced no output — ending the turn so it is delivered
