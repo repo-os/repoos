@@ -11,8 +11,10 @@ branch: feat/close-out-validation-log-should-show-liv
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T07:42:21Z"
-updated_at: "2026-11-20T09:25:20Z"
-handoff_signal_retry_count: 1
+updated_at: "2026-11-20T10:53:29Z"
+handoff_signal_retry_count: 2
+review_rounds: 1
+review_passes: 1
 ---
 ## Problem
 During a close-out the integration log (.repoos/logs/integration/<id>-<n>.log) is not written for the running attempt: #1258's log was last modified hours earlier while its job had been validating for ~55 minutes. Drivers and the UI cannot tell whether a close-out is running, waiting for a host slot, retrying after a timeout, or stuck. The card timer also appears to count from an earlier start.
@@ -37,3 +39,21 @@ Related: #1272 (timer should count from validation start). Never touch repoos.to
 - 2026-11-20T07:46:53Z · status ready→active, branch
 - 2026-11-20T09:01:37Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The close-out progress feature is implemented, but the task is **not ready to hand off**: the scoped gate is still red, so I've left the task `active` and not emitted the handoff signal. **Why the gate is red** - Three remote runs each fai… · stderr: (empty)
 - 2026-11-20T09:25:20Z · body
+- 2026-11-20T09:36:55Z · body
+- 2026-11-20T10:01:23Z · body
+- 2026-11-20T10:02:36Z · CTO nudge: held — handoff gate is running
+- 2026-11-20T10:05:12Z · note: ui verification passed: 1 shot captured with clean console
+- 2026-11-20T10:05:13Z · status active→review
+- 2026-11-20T10:05:13Z · message_queued at 2026-11-20T10:05:13.796Z
+- 2026-11-20T10:10:42Z · note: review pass 1: needs some work
+- 2026-11-20T10:10:43Z · status review→active
+- 2026-11-20T10:10:45Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-20T10:15:52Z · message_queued at 2026-11-20T10:15:52.688Z
+- 2026-11-20T10:21:05Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-11-20T10:21:08Z · note: handoff requested (cli)
+- 2026-11-20T10:22:36Z · CTO nudge: held — handoff gate is running
+- 2026-11-20T10:48:38Z · note: ui verification passed: 1 shot captured with clean console
+- 2026-11-20T10:48:39Z · message_queued at 2026-11-20T10:48:39.327Z
+- 2026-11-20T10:48:40Z · handoff failed · task-file handoff failed at review · Engineering report draft is missing: .repoos/engineering-report-drafts/1276.md
+- 2026-11-20T10:51:23Z · message_delivered: 1 message(s)
+- 2026-11-20T10:53:29Z · CTO nudge: held — an undelivered message is already queued
