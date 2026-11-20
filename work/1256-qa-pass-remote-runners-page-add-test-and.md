@@ -2,7 +2,7 @@
 id: "1256"
 title: "QA pass: remote runners page add, test and remove flows with failures"
 type: bug
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/qa-pass-remote-runners-page-add-test-and
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T00:07:05Z"
-updated_at: "2026-11-20T00:40:51Z"
+updated_at: "2026-11-20T00:40:57Z"
 ---
 ## Problem
 Adding, testing and removing a remote runner has not been checked for unreachable hosts, wrong users, missing CLIs and slow responses.
@@ -33,3 +33,4 @@ Do not touch repoos.toml.
 - 2026-11-20T00:24:04Z · body
 - 2026-11-20T00:27:07Z · CTO nudge: held — handoff gate is running
 - 2026-11-20T00:40:51Z · note: ui verification passed: 1 shot captured with clean console
+- 2026-11-20T00:40:57Z · status active→review
