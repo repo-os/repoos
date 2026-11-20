@@ -2,14 +2,14 @@
 id: "1268"
 title: "QA pass: Stories and Docs pages reading experience"
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: web
-assigned_to: ""
+assigned_to: ai
 created_by: t@t
 branch: ""
 created_at: "2026-11-20T05:07:07Z"
-updated_at: "2026-11-20T05:07:07Z"
+updated_at: "2026-11-20T05:07:33Z"
 ---
 ## Problem
 Sweep the Docs and Story detail pages for layout, long-text wrapping, link and wording bugs.
@@ -28,3 +28,4 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 ## Activity
 
 - 2026-11-20T05:07:07Z · created · t@t
+- 2026-11-20T05:07:33Z · status inbox→ready
