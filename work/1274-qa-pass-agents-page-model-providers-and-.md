@@ -12,7 +12,7 @@ branch: feat/qa-pass-agents-page-model-providers-and-
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T07:26:57Z"
-updated_at: "2026-11-20T13:04:52Z"
+updated_at: "2026-11-20T13:05:02Z"
 last_close_out_gate_ms: 540216
 last_close_out_gate_at: "2026-11-20T13:04:52.907Z"
 review_passes: 1
@@ -46,4 +46,4 @@ Keep changes small. Never touch repoos.toml. Never show real keys.
 - 2026-11-20T07:43:41Z · note: review pass 1: good to go
 - 2026-11-20T08:54:36Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-20T13:04:52Z · close-out gate completed in 540s
-
+- 2026-11-20T13:05:02Z · message_dropped: 1 queued message(s) discarded — task is done
