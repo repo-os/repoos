@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-20T14:30:35Z"
+review_passes: 3
 id: "1260"
 title: "Work board: apply the queue sort and make mobile-only status values visible"
 type: bug
@@ -12,10 +14,8 @@ branch: feat/work-board-apply-the-queue-sort-and-make
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T00:57:33Z"
-updated_at: "2026-11-20T14:30:34Z"
 last_check_failure: "repoos check at 2026-11-20T12:49:08.292Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 close_out_repair_count: 1
-review_passes: 2
 review_rounds: 1
 ---
 ## Problem
@@ -116,3 +116,4 @@ Headless Playwright only, against fixtures. Do not touch repoos.toml. Keep the i
 - 2026-11-20T14:07:42Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (42ae779ce) during finalization (#0734)
 - 2026-11-20T14:30:29Z · note: ui verification passed: 1 of 1 shot captured with clean console
 - 2026-11-20T14:30:34Z · note: review pass 3: good to go
+
