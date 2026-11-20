@@ -11,7 +11,7 @@ branch: feat/qa-pass-activity-and-insights-pages
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T03:07:06Z"
-updated_at: "2026-11-20T03:54:44Z"
+updated_at: "2026-11-20T04:00:47Z"
 ---
 ## Problem
 Sweep the Activity and Insights pages for layout, wording and state bugs.
@@ -38,3 +38,4 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 - 2026-11-20T03:54:43Z · orphaned run process stopped · pid 83792 · /opt/homebrew/Cellar/bun/1.4.2/bin/bun /Users/nick/code/nick/repoos-worktrees/feat/qa-pass-activity- · cpu 1s · age 20s
 - 2026-11-20T03:54:43Z · status active→review
 - 2026-11-20T03:54:44Z · message_queued at 2026-11-20T03:54:44.956Z
+- 2026-11-20T04:00:47Z · note: review pass 1: good to go
