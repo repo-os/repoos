@@ -68,3 +68,4 @@ Reproduce with bun run test on a scoped path while watching ps for git-worker-en
 - 2026-11-20T15:56:15Z · CTO nudge: held — handoff gate is running
 - 2026-11-20T16:06:02Z · status active→review
 - 2026-11-20T16:06:03Z · message_queued at 2026-11-20T16:06:03.051Z
+- 2026-11-20T16:06:03Z · note: shots: skipped — the diff (6 changed paths) touches no capture target's globs — no UI change to capture
