@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 486241
-last_close_out_gate_at: "2026-11-20T08:52:18.104Z"
 id: "1266"
 title: "QA pass: Activity and Insights pages"
 type: feature
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: 90f95d88cbdead9fd0d3163374b06b580e4edab1
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-activity-and-insights-pages
@@ -14,6 +13,8 @@ cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T03:07:06Z"
 updated_at: "2026-11-20T08:52:18Z"
+last_close_out_gate_ms: 486241
+last_close_out_gate_at: "2026-11-20T08:52:18.104Z"
 review_passes: 1
 ---
 ## Problem
