@@ -14,6 +14,7 @@ created_at: "2026-11-19T23:27:47Z"
 updated_at: "2026-11-20T02:02:50Z"
 review_passes: 4
 review_rounds: 2
+deferred_handoff_resume_count: 1
 ---
 ## Problem
 The update-available banner, version display and release notes modal have not been checked since the restart fix.
