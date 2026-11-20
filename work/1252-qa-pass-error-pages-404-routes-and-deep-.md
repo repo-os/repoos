@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-19T23:21:22Z"
-review_passes: 1
 id: "1252"
 title: "QA pass: error pages, 404 routes and deep links to tasks, tabs and settings"
 type: bug
@@ -13,6 +11,8 @@ branch: feat/qa-pass-error-pages-404-routes-and-deep-
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T22:27:09Z"
+updated_at: "2026-11-20T00:27:11Z"
+review_passes: 1
 ---
 ## Problem
 Unknown routes, deleted or archived task links and deep links to tabs and settings sections have not been checked.
@@ -37,4 +37,4 @@ Do not touch repoos.toml.
 - 2026-11-19T23:19:22Z · status active→review
 - 2026-11-19T23:19:23Z · message_queued at 2026-11-19T23:19:23.047Z
 - 2026-11-19T23:21:22Z · note: review pass 1: good to go
-
+- 2026-11-20T00:27:11Z · message_overdue: still queued after 60m without being delivered
