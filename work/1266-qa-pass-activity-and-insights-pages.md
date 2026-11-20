@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-20T04:00:48Z"
-review_passes: 1
 id: "1266"
 title: "QA pass: Activity and Insights pages"
 type: feature
@@ -13,6 +11,8 @@ branch: feat/qa-pass-activity-and-insights-pages
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T03:07:06Z"
+updated_at: "2026-11-20T04:55:04Z"
+review_passes: 1
 ---
 ## Problem
 Sweep the Activity and Insights pages for layout, wording and state bugs.
@@ -40,4 +40,4 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 - 2026-11-20T03:54:43Z · status active→review
 - 2026-11-20T03:54:44Z · message_queued at 2026-11-20T03:54:44.956Z
 - 2026-11-20T04:00:47Z · note: review pass 1: good to go
-
+- 2026-11-20T04:55:04Z · message_overdue: still queued after 60m without being delivered
