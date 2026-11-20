@@ -2,14 +2,14 @@
 id: "1257"
 title: "QA pass: Work board search, saved filters and sort persistence across reloads"
 type: bug
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
 branch: ""
 created_at: "2026-11-20T00:07:29Z"
-updated_at: "2026-11-20T00:07:29Z"
+updated_at: "2026-11-20T00:07:38Z"
 ---
 ## Problem
 Search text, filters and sort on the Work board may not persist or reset correctly across reloads, tabs and projects.
@@ -25,3 +25,4 @@ Do not touch repoos.toml.
 ## Activity
 
 - 2026-11-20T00:07:29Z · created · t@t
+- 2026-11-20T00:07:38Z · status inbox→ready
