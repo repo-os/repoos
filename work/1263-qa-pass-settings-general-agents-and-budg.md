@@ -2,14 +2,14 @@
 id: "1263"
 title: "QA pass: Settings general, agents and budget tabs"
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: web
-assigned_to: ""
+assigned_to: ai
 created_by: t@t
 branch: ""
 created_at: "2026-11-20T02:27:07Z"
-updated_at: "2026-11-20T02:27:07Z"
+updated_at: "2026-11-20T02:27:12Z"
 ---
 ## Problem
 Sweep the Settings general, agents and budget tabs for layout, wording, save and validation bugs.
@@ -28,3 +28,4 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 ## Activity
 
 - 2026-11-20T02:27:07Z · created · t@t
+- 2026-11-20T02:27:12Z · status inbox→ready
