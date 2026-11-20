@@ -2,7 +2,7 @@
 id: "1260"
 title: "Work board: apply the queue sort and make mobile-only status values visible"
 type: bug
-status: active
+status: review
 priority: p3
 area: web
 depends_on: ["1257"]
@@ -12,7 +12,7 @@ branch: feat/work-board-apply-the-queue-sort-and-make
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T00:57:33Z"
-updated_at: "2026-11-20T05:47:33Z"
+updated_at: "2026-11-20T05:47:37Z"
 ---
 ## Problem
 Two gaps from #1257 (docs/qa/2026-11-filter-persistence-qa.md):
@@ -61,3 +61,4 @@ Headless Playwright only, against fixtures. Do not touch repoos.toml. Keep the i
 - 2026-11-20T05:01:02Z · body
 - 2026-11-20T05:43:28Z · CTO nudge: held — handoff gate is running
 - 2026-11-20T05:47:33Z · note: ui verification passed: 1 of 1 shot captured with clean console
+- 2026-11-20T05:47:37Z · status active→review
