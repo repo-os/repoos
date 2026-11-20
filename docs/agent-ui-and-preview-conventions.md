@@ -157,10 +157,12 @@ Long-form versions of the conventions `AGENTS.md` summarises (moved verbatim on
   `board:withReviewTask`) for conditional UI, optional ordered `steps`
   (`click`/`fill`+`text`/`waitFor`/`waitMs`, plain CSS selectors), an
   optional `highlight` CSS selector outlining what changed, and a human
+  `viewport` (`phone`/`tablet`/`desktop`, #1267), and a human
   `label` naming the change), usually 1–3 entries showing the changed
   screens. Prefer routes and `state` fixtures over brittle `waitFor` steps on
   an empty preview board. Every shot is captioned with why it exists
-  (`declared: <label>` / `auto: matched <glob>`); a docs-wording-only diff
+  (`declared: <label>` / `auto: matched <glob>`) and, for a web shot, the size
+  it was taken at (`· phone 390x844`, `· desktop 1280x800`, #1267); a docs-wording-only diff
   captures nothing without a declared route (#0603). **Shot hygiene (#0613,
   #0830):** on a **declared** shot, a missing `highlight`/`selector`/step
   target (`click`, `fill`, `waitFor`, `hover`) **fails handoff** with a
@@ -198,6 +200,19 @@ Long-form versions of the conventions `AGENTS.md` summarises (moved verbatim on
   Problem / Desired UX / Acceptance criteria / Notes for AI is refused unless
   `--force` is passed. Manual `repoos shot` remains the tool for checking
   your own work; an engineer-made capture pre-empts the automatic one.
+- **Viewports and capture time (#1267).** A web shot is captured at one of three
+  presets: `phone` (390x844), `tablet` (820x1180) or `desktop` (1280x800). A
+  declared shot picks one with `viewport`; `viewportWidth`/`viewportHeight` still
+  work, and a mismatch with the preset is rejected. An unknown name is rejected
+  with the list of valid names. A declared shot with no size keeps the desktop
+  1280x800 capture. An automatic (undeclared) capture fans out to **phone and
+  desktop** for each touched web target, so a mobile QA pass sees a phone frame
+  next to the desktop one; **tablet is never automatic**. Declared shots do not
+  fan out. Cost: each touched web target is loaded twice in the automatic pass
+  (one page load per size) instead of once. The count is bounded by the number
+  of touched targets, so the list stays short. The `repoos shot --viewport WxH`
+  flag pins the automatic capture to one size. Command targets have no
+  viewport and keep one capture each.
 - **Previews are server-owned — never run `repoos serve` yourself.** RepoOS owns
   the control-plane port and every preview port. Preview requests are the
   human's to make: the human requests a preview manually from the UI when they

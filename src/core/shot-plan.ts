@@ -73,6 +73,39 @@ export interface ShotAssertion {
   label?: string;
 }
 
+/**
+ * Named viewport presets a declared shot picks with `viewport` (#1267). `desktop`
+ * is the long-standing 1280x800 capture size; `tablet` is captured only when a
+ * shot declares it, never automatically.
+ */
+export const SHOT_VIEWPORT_PRESETS = {
+  phone: { width: 390, height: 844 },
+  tablet: { width: 820, height: 1180 },
+  desktop: { width: 1280, height: 800 },
+} as const;
+export type ShotViewportPreset = keyof typeof SHOT_VIEWPORT_PRESETS;
+export const SHOT_VIEWPORT_PRESET_NAMES = Object.keys(
+  SHOT_VIEWPORT_PRESETS,
+) as ShotViewportPreset[];
+/** The size a web capture gets when neither the shot nor the caller names one. */
+export const DEFAULT_SHOT_VIEWPORT: { width: number; height: number } =
+  SHOT_VIEWPORT_PRESETS.desktop;
+/** The presets an automatic capture fans out to for each touched web target (#1267). */
+export const AUTO_SHOT_VIEWPORT_PRESETS: ShotViewportPreset[] = ["phone", "desktop"];
+
+function isShotViewportPreset(value: string): value is ShotViewportPreset {
+  return (SHOT_VIEWPORT_PRESET_NAMES as string[]).includes(value);
+}
+
+/** `phone 390x844` for a preset size, else the bare `390x844`: a capture's size caption (#1267). */
+export function describeShotViewport(width: number, height: number): string {
+  const preset = SHOT_VIEWPORT_PRESET_NAMES.find(
+    (name) =>
+      SHOT_VIEWPORT_PRESETS[name].width === width && SHOT_VIEWPORT_PRESETS[name].height === height,
+  );
+  return preset ? `${preset} ${width}x${height}` : `${width}x${height}`;
+}
+
 /** One entry of the task's `## Shots` list. */
 export interface DeclaredShot {
   /** Human label captioning the shot in the drawer (default: the route). */
@@ -105,6 +138,12 @@ export interface DeclaredShot {
    * theme before the screenshot. Absent means the preview's current theme.
    */
   theme?: "light" | "dark";
+  /**
+   * Named viewport for this capture (#1267): `phone` (390x844), `tablet`
+   * (820x1180) or `desktop` (1280x800). Sets `viewportWidth`/`viewportHeight`
+   * to the preset size; a shot that also gives a mismatching size is rejected.
+   */
+  viewport?: ShotViewportPreset;
   /**
    * Viewport width in px for this capture (#0787). Use a narrow width (e.g.
    * 390) to show constrained board layouts.
@@ -203,18 +242,26 @@ export interface CaptureEntry {
    * ("auto: matched src/ui-app/**") — never blank. `globs` may be absent when
    * the caller cannot attribute a match (e.g. a CLI-captured arbitrary URL).
    */
-  provenance: { kind: "declared"; label?: string } | { kind: "auto"; globs?: string[] };
+  provenance:
+    | { kind: "declared"; label?: string; viewport?: string }
+    | { kind: "auto"; globs?: string[]; viewport?: string };
 }
 
-/** The rendered provenance caption for one capture, as stored and shown (#0603). */
+/**
+ * The rendered provenance caption for one capture, as stored and shown (#0603).
+ * A web capture also names its size (`· phone 390x844`, #1267) so a reviewer
+ * can tell the phone and desktop captures of one target apart.
+ */
 export function provenanceCaption(provenance: CaptureEntry["provenance"]): string {
-  return provenance.kind === "declared"
-    ? provenance.label
-      ? `declared: ${provenance.label}`
-      : "declared"
-    : provenance.globs?.length
-      ? `auto: matched ${provenance.globs.join(", ")}`
-      : "auto";
+  const base =
+    provenance.kind === "declared"
+      ? provenance.label
+        ? `declared: ${provenance.label}`
+        : "declared"
+      : provenance.globs?.length
+        ? `auto: matched ${provenance.globs.join(", ")}`
+        : "auto";
+  return provenance.viewport ? `${base} · ${provenance.viewport}` : base;
 }
 
 /** Find a `## Shots` heading's body: the lines until the next `#` heading. */
@@ -442,6 +489,29 @@ function parseShot(
       return { error: `${where}: "viewportHeight" expects a number between 320 and 2160` };
     }
     shot.viewportHeight = Math.floor(h);
+  }
+  if (r.viewport !== undefined) {
+    if (typeof r.viewport !== "string" || !isShotViewportPreset(r.viewport)) {
+      return {
+        error:
+          `${where}: unknown "viewport" ${JSON.stringify(r.viewport)} — use one of: ` +
+          SHOT_VIEWPORT_PRESET_NAMES.join(", "),
+      };
+    }
+    const size = SHOT_VIEWPORT_PRESETS[r.viewport];
+    if (
+      (shot.viewportWidth ?? size.width) !== size.width ||
+      (shot.viewportHeight ?? size.height) !== size.height
+    ) {
+      return {
+        error:
+          `${where}: "viewport" ${r.viewport} is ${size.width}x${size.height}; ` +
+          'drop "viewportWidth"/"viewportHeight" or make them match',
+      };
+    }
+    shot.viewport = r.viewport;
+    shot.viewportWidth = size.width;
+    shot.viewportHeight = size.height;
   }
   if (r.reducedMotion !== undefined) {
     if (typeof r.reducedMotion !== "boolean") {
@@ -816,6 +886,17 @@ export interface CapturePlanOptions {
    */
   env?: Record<string, string>;
   glob?: string;
+  /**
+   * Viewport sizes the automatic capture fans out to for each web target
+   * (#1267). Default: phone and desktop. A caller that pins one size (the CLI's
+   * `--viewport`) passes just that one. Declared shots never fan out.
+   */
+  viewports?: ReadonlyArray<{ width: number; height: number }>;
+  /**
+   * Size a web capture uses when neither its shot nor the caller names one
+   * (#1267). Default: desktop 1280x800. The caption reports this size.
+   */
+  defaultViewport?: { width: number; height: number };
 }
 
 /** A caller-supplied route normalized for capture (always root-relative). */
@@ -838,6 +919,10 @@ export function buildCapturePlan(
   // compute its own entries from these and then discard them, so a typed route
   // lost to the `/` fallback below; the fallback honors it instead.
   const requestedRoute = options.route ? normalizeRoute(options.route) : undefined;
+  const defaultViewport = options.defaultViewport ?? DEFAULT_SHOT_VIEWPORT;
+  const fallbackViewports = options.viewports?.length
+    ? options.viewports
+    : AUTO_SHOT_VIEWPORT_PRESETS.map((name) => SHOT_VIEWPORT_PRESETS[name]);
   if (declared.length === 0) {
     if (targets.length === 0) {
       return {
@@ -866,34 +951,45 @@ export function buildCapturePlan(
     if (capturable.length === 0) {
       return { entries: [], errors, blockingErrors, autoSkips, collapsed: [] };
     }
+    // One automatic entry per web target and fallback viewport (#1267): a
+    // touched target gets its phone and desktop captures. A command target
+    // renders its own image at no size, so it gets exactly one entry.
+    const fallbackEntry = (target: string, size?: { width: number; height: number }) => {
+      const globs = options.matchedGlobs?.get(target);
+      const sized = size && !isCommand(target) ? size : undefined;
+      const provenance: CaptureEntry["provenance"] = {
+        kind: "auto",
+        ...(globs ? { globs } : {}),
+        ...(sized ? { viewport: describeShotViewport(sized.width, sized.height) } : {}),
+      };
+      return {
+        target,
+        // A command target has no route: the command itself produces the
+        // image. `/` would be meaningless and the UI/CLI branches on it.
+        ...(isCommand(target) ? {} : { route: requestedRoute ?? "/" }),
+        ...(sized ? { viewportWidth: sized.width, viewportHeight: sized.height } : {}),
+        // #0610: a caller-requested selector narrows the capture just as it
+        // does for a declared entry. Never for a command target.
+        ...(options.selector && !isCommand(target) ? { selector: options.selector } : {}),
+        // #0769: `--env`/`--glob` on `repoos shot` select what a command
+        // target renders. Only ever a command target — a web target has no
+        // command to pass them to.
+        ...(isCommand(target) && options.env && Object.keys(options.env).length
+          ? { env: options.env }
+          : {}),
+        ...(isCommand(target) && options.glob ? { glob: options.glob } : {}),
+        // #0603: the fallback must always set a label — the provenance
+        // caption ("auto: matched src/ui-app/**"), not a bare target name.
+        label: provenanceCaption(provenance),
+        provenance,
+      } satisfies CaptureEntry;
+    };
     return {
-      entries: capturable.map((target) => {
-        const globs = options.matchedGlobs?.get(target);
-        const provenance: CaptureEntry["provenance"] = {
-          kind: "auto",
-          ...(globs ? { globs } : {}),
-        };
-        return {
-          target,
-          // A command target has no route: the command itself produces the
-          // image. `/` would be meaningless and the UI/CLI branches on it.
-          ...(isCommand(target) ? {} : { route: requestedRoute ?? "/" }),
-          // #0610: a caller-requested selector narrows the capture just as it
-          // does for a declared entry. Never for a command target.
-          ...(options.selector && !isCommand(target) ? { selector: options.selector } : {}),
-          // #0769: `--env`/`--glob` on `repoos shot` select what a command
-          // target renders. Only ever a command target — a web target has no
-          // command to pass them to.
-          ...(isCommand(target) && options.env && Object.keys(options.env).length
-            ? { env: options.env }
-            : {}),
-          ...(isCommand(target) && options.glob ? { glob: options.glob } : {}),
-          // #0603: the fallback must always set a label — the provenance
-          // caption ("auto: matched src/ui-app/**"), not a bare target name.
-          label: provenanceCaption(provenance),
-          provenance,
-        };
-      }),
+      entries: capturable.flatMap((target) =>
+        isCommand(target)
+          ? [fallbackEntry(target)]
+          : fallbackViewports.map((size) => fallbackEntry(target, size)),
+      ),
       errors,
       blockingErrors,
       autoSkips,
@@ -960,7 +1056,20 @@ export function buildCapturePlan(
         : {}),
       ...(isCommand(resolved.target) && shot.args?.length ? { args: shot.args } : {}),
       ...(isCommand(resolved.target) && shot.glob ? { glob: shot.glob } : {}),
-      provenance: { kind: "declared", ...(shot.label ? { label: shot.label } : {}) },
+      provenance: {
+        kind: "declared",
+        ...(shot.label ? { label: shot.label } : {}),
+        // #1267: the size a web capture really gets — the shot's own, else the
+        // caller's default — so the caption always names the width.
+        ...(!isCommand(resolved.target)
+          ? {
+              viewport: describeShotViewport(
+                shot.viewportWidth ?? defaultViewport.width,
+                shot.viewportHeight ?? defaultViewport.height,
+              ),
+            }
+          : {}),
+      },
     });
   }
   // A docs-content target NO declared entry even mentioned (the declarations

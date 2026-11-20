@@ -24,6 +24,7 @@ import { basename, extname, join } from "node:path";
 import { rmSync, readFileSync, existsSync } from "node:fs";
 import {
   buildCapturePlan,
+  DEFAULT_SHOT_VIEWPORT,
   parseShotPlan,
   provenanceCaption,
   shotPlanFingerprint,
@@ -69,7 +70,6 @@ export interface ShotCaptureResult {
 
 const INSTALL_ADVICE = "Install: bun add -d @playwright/test && bunx playwright install webkit";
 const AUTO_SETTLE_MS = 900;
-const AUTO_VIEWPORT = { width: 1280, height: 800 };
 
 /** The per-task log line signature the capture writes one entry with. */
 type TaskLog = (taskId: string, level: LogLevel, message: string) => void;
@@ -104,8 +104,8 @@ export async function captureEntryPage(
   const blockingWarnings: string[] = [];
   const page = (await context.newPage()) as unknown as ShotDriverPage;
   try {
-    const width = entry.viewportWidth ?? AUTO_VIEWPORT.width;
-    const height = entry.viewportHeight ?? AUTO_VIEWPORT.height;
+    const width = entry.viewportWidth ?? DEFAULT_SHOT_VIEWPORT.width;
+    const height = entry.viewportHeight ?? DEFAULT_SHOT_VIEWPORT.height;
     await page.setViewportSize({ width, height });
     const png = await captureShotPage(
       page,

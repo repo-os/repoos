@@ -381,6 +381,13 @@ the body (including the Activity log) untouched. `repoos new` accepts it too;
 repoos update 0612 --shots '[{"target":"default","route":"/agents?tab=detected","label":"Detected tab","highlight":".detect-row"}]'
 ```
 
+A shot may set `viewport` to `phone` (390x844), `tablet` (820x1180) or
+`desktop` (1280x800) to choose the width it is captured at. Any other name is
+rejected, and the error lists the valid ones. Without `viewport` a declared
+shot is captured at desktop 1280x800. Undeclared shots are captured at phone and
+desktop automatically; tablet is only captured when a shot declares it. Every
+web shot's caption names its size.
+
 ### Attaching screenshots (`--screenshot`)
 
 When you have the actual image files — an agent handed a human's screenshots in
