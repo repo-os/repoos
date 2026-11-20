@@ -3,6 +3,9 @@ id: "1255"
 title: "QA pass: update banner, version display and release notes modal at all screen sizes"
 type: bug
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: "`needs some work` — the td/guide marker fix and supervised waiting-row fix are real, but the rewritten guard test silently stopped covering…"
 priority: p2
 area: web
 assigned_to: ai
@@ -95,3 +98,4 @@ Do not touch repoos.toml.
 - 2026-11-20T01:04:14Z · note: ui verification passed: 3 of 3 shots captured with clean console
 - 2026-11-20T01:04:17Z · message_queued at 2026-11-20T01:04:17.775Z
 - 2026-11-20T01:04:18Z · note: review pass 4: needs some work
+- 2026-11-20T01:04:18Z · needs_input
