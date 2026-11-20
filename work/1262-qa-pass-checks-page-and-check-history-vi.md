@@ -1,6 +1,4 @@
 ---
-check_retry_count: 1
-last_check_failure: "repoos check at 2026-11-20T02:48:42.662Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 id: "1262"
 title: "QA pass: Checks page and check history views"
 type: feature
@@ -13,7 +11,9 @@ branch: feat/qa-pass-checks-page-and-check-history-vi
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T02:26:53Z"
-updated_at: "2026-11-20T02:48:41Z"
+updated_at: "2026-11-20T02:58:38Z"
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-20T02:48:42.662Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 ---
 ## Problem
 Sweep the Checks page (local and remote tabs, history, failure details) for layout, wording and state bugs.
@@ -60,4 +60,4 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 - 2026-11-20T02:46:57Z · CTO nudge: held — handoff gate is running
 - 2026-11-20T02:48:38Z · message_queued at 2026-11-20T02:48:38.576Z
 - 2026-11-20T02:48:41Z · message_delivered: 1 message(s)
-
+- 2026-11-20T02:58:38Z · body
