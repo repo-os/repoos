@@ -1812,6 +1812,12 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
         startedAt,
         nowIso(),
       );
+      repo.integration.active = {
+        ...repo.integration.active!,
+        step: "running tests",
+        host: "thinkpad",
+        attempt: 1,
+      };
       pinnedIntegration = repo.integration;
       break;
     }

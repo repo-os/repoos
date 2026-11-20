@@ -686,7 +686,7 @@ describe("shot preview board fixtures (#0743)", () => {
     expect(integrationPipelineStalled(repo.integration, now)).toBe(false);
     const copy = integrationActiveCopy(repo.integration!, now);
     expect(copy.stalled).toBe(false);
-    expect(copy.label).toBe("integrating · remote tests");
+    expect(copy.label).toBe("integrating · running tests · remote tests · on thinkpad · attempt 1");
     // Elapsed close-out time moved to the hover popover (#1058).
     expect(copy.elapsedTip).toMatch(/Close-out running \d+m/);
   });
