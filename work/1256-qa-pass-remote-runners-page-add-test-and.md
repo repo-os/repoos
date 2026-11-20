@@ -11,7 +11,7 @@ branch: feat/qa-pass-remote-runners-page-add-test-and
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T00:07:05Z"
-updated_at: "2026-11-20T00:07:19Z"
+updated_at: "2026-11-20T00:17:10Z"
 ---
 ## Problem
 Adding, testing and removing a remote runner has not been checked for unreachable hosts, wrong users, missing CLIs and slow responses.
@@ -29,3 +29,4 @@ Do not touch repoos.toml.
 - 2026-11-20T00:07:14Z · status inbox→ready
 - 2026-11-20T00:07:18Z · cli_override, model_override
 - 2026-11-20T00:07:19Z · status ready→active, branch
+- 2026-11-20T00:17:10Z · note: adopted orphaned engineer pid 44870
