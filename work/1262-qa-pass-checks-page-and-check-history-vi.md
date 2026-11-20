@@ -11,7 +11,7 @@ branch: feat/qa-pass-checks-page-and-check-history-vi
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T02:26:53Z"
-updated_at: "2026-11-20T04:42:06Z"
+updated_at: "2026-11-20T04:43:56Z"
 review_rounds: 1
 review_passes: 1
 handoff_signal_retry_count: 2
@@ -35,18 +35,18 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 ```json
 [
 {
-  "label": "Check plan with long step names and commands wrapping inside their cards",
-  "target": "default",
-  "route": "/checks?tab=plan",
-  "highlight": ".ck-steps",
-  "state": "checks:longData"
+"label": "Check plan with long step names and commands wrapping inside their cards",
+"target": "default",
+"route": "/checks?tab=plan",
+"highlight": ".ck-steps",
+"state": "checks:longData"
 },
 {
-  "label": "Now tab: local slots and close-out pipeline share one divider and label style",
-  "target": "default",
-  "route": "/checks?tab=now",
-  "highlight": ".ips-local-slots",
-  "state": "checks:progress"
+"label": "Now tab: local slots and close-out pipeline share one divider and label style",
+"target": "default",
+"route": "/checks?tab=now",
+"highlight": ".ips-local-slots",
+"state": "checks:progress"
 }
 ]
 ```
@@ -89,3 +89,4 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 - 2026-11-20T04:27:17Z · CTO nudge: held — handoff gate is running
 - 2026-11-20T04:41:17Z · message_delivered: 1 message(s)
 - 2026-11-20T04:42:06Z · body
+- 2026-11-20T04:43:56Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: I've stopped here rather than work around the lock. Here's where things stand. **Review round 2 fixes are made but not yet verified or handed off.** The worktree is locked against edits, so I can't finish them. **What I changed (on disk, n… · stderr: (empty)
