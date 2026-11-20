@@ -1,3 +1,14 @@
+---
+id: summary
+title: summary
+type: feature
+status: inbox
+priority: p2
+area: general
+assigned_to: ai
+created_by: ""
+branch: ""
+---
 ## TL;DR
 
 The Work board now honors the phone queue's `sort` URL parameter (`newest`/`oldest` are applied, with a visible "Sort: Oldest updated" chip) and shows a dashed "Ignored filter" chip for every phone-only `status` value (`attention`, `held`, `archived`, `human`, `all`, plus unknown/repeated/bare values), so no URL value is silently dropped on desktop. The phone queue at 375 px keeps owning these values, where they are genuinely applied. Coverage is jsdom unit tests plus headless WebKit fixtures at 375, 768 and 1280 px. The task shipped after 4 engineering rounds and 4 review passes, with the final verdict `good to go` and a successful close-out (gate completed in 702s). Getting there was rough: two watchdog restarts, three failed handoffs (a remote test failure, an unconcluded merge, and a missing report draft), two overdue queued messages, and machine-pressure holds.
@@ -26,9 +37,9 @@ Two gaps from the #1257 QA pass (`docs/qa/2026-11-filter-persistence-qa.md`) are
 ## What went wrong
 
 - **Handoff failed 3× (04:52:14Z, 10:18:58Z, 13:26:22Z).**
-  1. *04:52:14Z — remote validation failed: test failure, gate exit 1 on the mini runner.* The handoff status gave no failing test name and the remote log was not visible, so it could not be reproduced locally. Resolved by fixing locally and re-running the gate; handoff succeeded at 05:47:37Z.
-  2. *10:18:58Z — "git commit failed: fatal: cannot do a partial commit during a merge."* A merge of main into the branch had been resolved in the index but never concluded, so RepoOS's task-file commit step refused. Round 3 diagnosed this via `MERGE_HEAD` and did not hand-conclude the merge per runner rules; the merge was later completed properly (merge commit `68400159c`, round 4).
-  3. *13:26:22Z — "Engineering report draft is missing: .repoos/engineering-report-drafts/1260.md."* RepoOS consumes the draft during a handoff attempt, so a draft needs rewriting for each request; the engineer rewrote it and handoff succeeded at 14:01:06Z.
+1. *04:52:14Z — remote validation failed: test failure, gate exit 1 on the mini runner.* The handoff status gave no failing test name and the remote log was not visible, so it could not be reproduced locally. Resolved by fixing locally and re-running the gate; handoff succeeded at 05:47:37Z.
+2. *10:18:58Z — "git commit failed: fatal: cannot do a partial commit during a merge."* A merge of main into the branch had been resolved in the index but never concluded, so RepoOS's task-file commit step refused. Round 3 diagnosed this via `MERGE_HEAD` and did not hand-conclude the merge per runner rules; the merge was later completed properly (merge commit `68400159c`, round 4).
+3. *13:26:22Z — "Engineering report draft is missing: .repoos/engineering-report-drafts/1260.md."* RepoOS consumes the draft during a handoff attempt, so a draft needs rewriting for each request; the engineer rewrote it and handoff succeeded at 14:01:06Z.
 - **Review round 1 found a real defect:** the board's Sort dropdown was bound to the store's order while the columns followed the URL, so the two controls visibly disagreed. Fixed in round 2 along with three edge-case findings (repeated/bare `status` silently dropped via `firstString`; an ignored sort sticking until Clear; the pipeline-view note not covering sort).
 - **Watchdog restarts and message delays.** Two restarts ("queued message waited 3m with no live process", 04:55Z and 10:13Z). Two messages went overdue after 60 m undelivered (07:07Z, 11:20Z). One turn was deliberately ended (exit 143) so a queued message could be delivered.
 - **Load-dependent test flakes.** Across local and scoped-gate runs, different 30–90 s timeouts appeared each run (`agent-review`, `debugger-integration`, `preview-request`, `task-watchdog`, `worktree-gc`, and several WebKit browser cases). Every failing file passed when run alone, and none touched the changed code, so they were read as parallel-load timing flakes — but this was never proven on an idle machine; the remote/post-merge scoped check passing in full is the real confirmation.
