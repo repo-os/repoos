@@ -13,7 +13,7 @@ assigned_to: ai
 created_by: t@t
 branch: ""
 created_at: "2026-11-20T00:57:33Z"
-updated_at: "2026-11-20T00:57:34Z"
+updated_at: "2026-11-20T00:57:44Z"
 ---
 ## Problem
 Two gaps from #1257 (docs/qa/2026-11-filter-persistence-qa.md):
@@ -27,7 +27,11 @@ Either apply these values on the board or show a chip that says they are not app
 - Each URL value is either applied or shown with a notice; none is silently dropped.
 - Covered by headless WebKit fixtures at 375, 768 and 1280 px.
 
+## Notes for AI
+Headless Playwright only, against fixtures. Do not touch repoos.toml. Keep the ignored-value notice path in src/ui-app/src/lib/workQueueFilters.ts.
+
 ## Activity
 
 - 2026-11-20T00:57:33Z · created · t@t
 - 2026-11-20T00:57:34Z · needs_input
+- 2026-11-20T00:57:44Z · body: Notes for AI (added)
