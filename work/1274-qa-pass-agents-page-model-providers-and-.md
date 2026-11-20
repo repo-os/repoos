@@ -11,7 +11,7 @@ branch: feat/qa-pass-agents-page-model-providers-and-
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T07:26:57Z"
-updated_at: "2026-11-20T07:41:44Z"
+updated_at: "2026-11-20T07:43:41Z"
 ---
 ## Problem
 Sweep the Agents settings tab (agent list, model providers, routing mode and status text) for layout, wording and state bugs, including the key-missing and paused states.
@@ -39,3 +39,4 @@ Keep changes small. Never touch repoos.toml. Never show real keys.
 - 2026-11-20T07:41:43Z · note: ui verification passed: 1 shot captured with clean console
 - 2026-11-20T07:41:43Z · status active→review
 - 2026-11-20T07:41:44Z · message_queued at 2026-11-20T07:41:44.096Z
+- 2026-11-20T07:43:41Z · note: review pass 1: good to go
