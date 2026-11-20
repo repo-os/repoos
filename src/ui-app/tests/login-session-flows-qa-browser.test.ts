@@ -17,7 +17,7 @@
  * Skips cleanly when Playwright/WebKit is not installed.
  */
 import { rmSync } from "node:fs";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { makeSmokeFixture } from "../../commands/ui-smoke.js";
 import {
   isPlaywrightUnavailable,
@@ -29,6 +29,10 @@ import {
   type SmokePage,
   type SmokeRoute,
 } from "../../commands/ui-harness.js";
+
+// Full-suite runs share the machine with other browser suites, so a page load can
+// take well over the default 30s test budget; the 30s navigation timeouts in this file allow for it.
+vi.setConfig({ testTimeout: 90_000 });
 
 let browser: SmokeBrowser | null = null;
 let server: PreviewServer | null = null;
@@ -176,7 +180,7 @@ describeBrowser("login and session-expiry flows QA (#1273)", () => {
           name: "email",
           setup: async (page) => {
             await routeAuth(page);
-            await page.goto(`${server!.url}/login`, { waitUntil: "load", timeout: 15_000 });
+            await page.goto(`${server!.url}/login`, { waitUntil: "load", timeout: 30_000 });
             await waitUntil("the email field", () =>
               exists(page, 'input[aria-label="Email address"]'),
             );
@@ -188,7 +192,7 @@ describeBrowser("login and session-expiry flows QA (#1273)", () => {
             await routeAuth(page, {
               verifyOtp: { status: 401, body: { error: "Invalid or expired code" } },
             });
-            await page.goto(`${server!.url}/login`, { waitUntil: "load", timeout: 15_000 });
+            await page.goto(`${server!.url}/login`, { waitUntil: "load", timeout: 30_000 });
             await requestCode(page);
             await typeCode(page, "123456");
             await page.click(".login-btn.primary");
@@ -199,7 +203,7 @@ describeBrowser("login and session-expiry flows QA (#1273)", () => {
           name: "status error",
           setup: async (page) => {
             await routeAuth(page, { status: "abort" });
-            await page.goto(`${server!.url}/login`, { waitUntil: "load", timeout: 15_000 });
+            await page.goto(`${server!.url}/login`, { waitUntil: "load", timeout: 30_000 });
             await waitUntil("the status error", () =>
               exists(page, '[data-testid="login-status-error"]'),
             );
@@ -209,7 +213,7 @@ describeBrowser("login and session-expiry flows QA (#1273)", () => {
           name: "bootstrap admin",
           setup: async (page) => {
             await routeAuth(page, { status: { ...STATUS, bootstrapNeeded: true } });
-            await page.goto(`${server!.url}/login`, { waitUntil: "load", timeout: 15_000 });
+            await page.goto(`${server!.url}/login`, { waitUntil: "load", timeout: 30_000 });
             await waitUntil("the admin field", () =>
               exists(page, 'input[aria-label="Administrator email"]'),
             );
@@ -219,7 +223,7 @@ describeBrowser("login and session-expiry flows QA (#1273)", () => {
           name: "email with Google",
           setup: async (page) => {
             await routeAuth(page, { status: { ...STATUS, hasGoogle: true } });
-            await page.goto(`${server!.url}/login`, { waitUntil: "load", timeout: 15_000 });
+            await page.goto(`${server!.url}/login`, { waitUntil: "load", timeout: 30_000 });
             await waitUntil("the Google button", () => exists(page, ".login-btn.google"));
           },
         },
@@ -229,7 +233,7 @@ describeBrowser("login and session-expiry flows QA (#1273)", () => {
             await routeAuth(page);
             await page.goto(`${server!.url}/login?expired=1`, {
               waitUntil: "load",
-              timeout: 15_000,
+              timeout: 30_000,
             });
             await waitUntil("the expired notice", () =>
               exists(page, '[data-testid="login-session-expired"]'),
@@ -250,7 +254,7 @@ describeBrowser("login and session-expiry flows QA (#1273)", () => {
       const pageErrors: string[] = [];
       const page = await openPage(width, pageErrors);
       await routeAuth(page);
-      await page.goto(`${server!.url}/login`, { waitUntil: "load", timeout: 15_000 });
+      await page.goto(`${server!.url}/login`, { waitUntil: "load", timeout: 30_000 });
       await requestCode(page);
       const heights = await page.evaluate(() =>
         [...document.querySelectorAll(".login-link")].map(
@@ -266,7 +270,7 @@ describeBrowser("login and session-expiry flows QA (#1273)", () => {
       const pageErrors: string[] = [];
       const page = await openPage(width, pageErrors);
       await routeAuth(page);
-      await page.goto(`${server!.url}/login`, { waitUntil: "load", timeout: 15_000 });
+      await page.goto(`${server!.url}/login`, { waitUntil: "load", timeout: 30_000 });
       await waitUntil("the email field", () => exists(page, 'input[aria-label="Email address"]'));
       await page.click(".login-page");
       await page.keyboard.press("Tab");
@@ -290,7 +294,7 @@ describeBrowser("login and session-expiry flows QA (#1273)", () => {
       await routeAuth(page, {
         verifyOtp: { status: 401, body: { error: "Invalid or expired code" } },
       });
-      await page.goto(`${server!.url}/login`, { waitUntil: "load", timeout: 15_000 });
+      await page.goto(`${server!.url}/login`, { waitUntil: "load", timeout: 30_000 });
       await requestCode(page);
       await typeCode(page, "123456");
       await page.click(".login-btn.primary");
