@@ -2,7 +2,7 @@
 id: "1276"
 title: Close-out validation log should show live progress
 type: feature
-status: review
+status: active
 priority: p1
 area: [server, core]
 assigned_to: ai
@@ -12,9 +12,9 @@ cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T07:42:21Z"
 updated_at: "2026-11-20T13:20:33Z"
+review_rounds: 2
 review_passes: 2
 handoff_signal_retry_count: 2
-review_rounds: 1
 ---
 ## Problem
 During a close-out the integration log (.repoos/logs/integration/<id>-<n>.log) is not written for the running attempt: #1258's log was last modified hours earlier while its job had been validating for ~55 minutes. Drivers and the UI cannot tell whether a close-out is running, waiting for a host slot, retrying after a timeout, or stuck. The card timer also appears to count from an earlier start.
@@ -71,3 +71,4 @@ Related: #1272 (timer should count from validation start). Never touch repoos.to
 - 2026-11-20T13:18:54Z · message_queued at 2026-11-20T13:18:54.663Z
 - 2026-11-20T13:20:32Z · note: review pass 2: needs some work
 - 2026-11-20T13:20:33Z · message_delivered: 1 message(s)
+- 2026-11-20T13:20:33Z · status review→active
