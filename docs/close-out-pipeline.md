@@ -226,7 +226,8 @@ without reading the server log.
   card, status bar and drawer tooltip show the same reason as "Attempt 2 — attempt 1
   failed: …".
 - **Steps.** `queued for host slot` (waiting for a runner slot), `bundling and
-  uploading`, `running tests` (remote run), `building candidate`, `syncing with
+  uploading`, `building candidate`, `running tests` (with remote done/total test
+  file progress when available), `syncing with
   main`, `running checks · <step>` (local gate), `publishing to main`,
   `cleaning up`, and `remote validation` when the runner's stage is not yet known.
   A job waiting in the close-out queue has no running attempt yet, so its `step` and
@@ -245,7 +246,9 @@ without reading the server log.
   one failed.
 - **Live push.** A step or host change emits the pipeline snapshot at once, so the UI
   does not wait for the next stage event. A finished attempt's record is final: the
-  recorder never writes to a `done` or `failed` job. A cancelled attempt does not set `previousFailure`.
+  recorder never writes to a `done` or `failed` job. Failed log or job-record writes
+  are reported to the integration logger, and do not advance the saved heartbeat;
+  the close-out itself continues. A cancelled attempt does not set `previousFailure`.
 
 Helpers: `src/server/close-out-progress.ts` (recorder, step names, stale rule);
 the orchestrator reports steps through `reportStep` and the recorder wraps each

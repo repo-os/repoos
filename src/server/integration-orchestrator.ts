@@ -1583,9 +1583,13 @@ export class CloseOutOrchestrator {
       persist: (patch) => {
         // A terminal record is final: a late heartbeat must not stamp a
         // `failed` or `done` job with a live step or a fresh timestamp (#1276).
-        if (!progressWritable(this.coordinator.getJob(job.taskId)?.phase)) return;
-        this.coordinator.updateJob(job.taskId, patch, attempt);
+        if (!progressWritable(this.coordinator.getJob(job.taskId)?.phase)) return false;
+        return !!this.coordinator.updateJob(job.taskId, patch, attempt);
       },
+      onWriteError: (error) =>
+        this.logger?.integration(job.taskId, "warn", "close-out progress write failed", {
+          error: String(error),
+        }),
       remoteRun: () =>
         this.remoteValidator?.activeRemoteRuns?.().find((run) => run.taskId === job.taskId),
       onChange: () => this.onAttemptProgress?.(job.taskId),

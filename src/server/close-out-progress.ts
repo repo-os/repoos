@@ -59,10 +59,23 @@ export function stepForRemoteStage(stage: string | null | undefined): string | n
     case "run":
     case "install":
     case "test":
+    case "tests":
       return CLOSE_OUT_STEP.runningTests;
+    case "build":
+      return CLOSE_OUT_STEP.building;
     default:
       return null;
   }
+}
+
+/** Include structured remote test-file progress in both the log and API step. */
+export function stepForRemoteRun(run: ActiveRemoteRunInfo): string {
+  const step = stepForRemoteStage(run.stage) ?? CLOSE_OUT_STEP.remote;
+  const progress = run.testProgress;
+  if (step === CLOSE_OUT_STEP.runningTests && progress && progress.total > 0) {
+    return `${step} (${progress.done}/${progress.total})`;
+  }
+  return step;
 }
 
 /** Repo-relative path of one attempt's progress log. */
@@ -108,7 +121,9 @@ export interface CloseOutProgressOptions {
   taskId: string;
   attempt: number;
   /** Persists a patch onto this attempt's job record (scoped to the attempt). */
-  persist: (patch: CloseOutProgressPatch) => void;
+  persist: (patch: CloseOutProgressPatch) => boolean | void;
+  /** Reports observability write failures without changing close-out behavior. */
+  onWriteError?: (error: unknown) => void;
   /** The task's live remote run, if one is in flight (host + stage). */
   remoteRun?: () => ActiveRemoteRunInfo | undefined;
   /**
@@ -176,7 +191,7 @@ export class CloseOutProgressRecorder {
     if (this.stopped) return;
     const run = this.remoteRunSafely();
     if (run) {
-      this.setStep(stepForRemoteStage(run.stage) ?? CLOSE_OUT_STEP.remote, run.host);
+      this.setStep(stepForRemoteRun(run), run.host);
     }
     const heartbeatMs = this.opts.heartbeatMs ?? PROGRESS_HEARTBEAT_MS;
     if (this.now() - this.lastWriteMs >= heartbeatMs) {
@@ -208,21 +223,37 @@ export class CloseOutProgressRecorder {
   /** Append a line to the log and persist a patch stamped with the same instant. */
   private record(line: string, patch: CloseOutProgressPatch): void {
     const nowMs = this.now();
-    this.lastWriteMs = nowMs;
-    this.appendLine(line, nowMs);
+    const logWritten = this.appendLine(line, nowMs);
+    let recordWritten = false;
     try {
-      this.opts.persist({ ...patch, lastProgressAt: new Date(nowMs).toISOString() });
-    } catch {
-      /* a progress write must never disturb the close-out */
+      recordWritten =
+        this.opts.persist({
+          ...patch,
+          lastProgressAt: new Date(nowMs).toISOString(),
+        }) !== false;
+    } catch (error) {
+      try {
+        this.opts.onWriteError?.(error);
+      } catch {
+        /* observer only */
+      }
     }
+    if (logWritten && recordWritten) this.lastWriteMs = nowMs;
+    if (!logWritten)
+      try {
+        this.opts.onWriteError?.(new Error(`Could not append ${this.logPath}`));
+      } catch {
+        /* observer only */
+      }
   }
 
-  private appendLine(line: string, nowMs: number = this.now()): void {
+  private appendLine(line: string, nowMs: number = this.now()): boolean {
     try {
       mkdirSync(dirname(this.absPath), { recursive: true });
       appendFileSync(this.absPath, `${new Date(nowMs).toISOString()}  ${line}\n`);
+      return true;
     } catch {
-      /* best effort: the job record still carries the live step */
+      return false;
     }
   }
 }

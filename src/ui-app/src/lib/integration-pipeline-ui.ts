@@ -202,15 +202,14 @@ export function integrationProgressCardLabel(label: string): string {
 
 /**
  * "on <host> · attempt N" for the active attempt (#1276). Host is named when it
- * is a remote runner; attempt is named only on a retry (attempt > 1). Empty when
- * there is nothing to add, so existing labels stay unchanged.
+ * is a remote runner; every attempt is identified, including attempt one.
  */
 export function integrationAttemptContext(
   active: NonNullable<IntegrationPipelineSnapshot["active"]>,
 ): string {
   const parts: string[] = [];
   if (active.host) parts.push(active.host === "local" ? "local" : `on ${active.host}`);
-  if (active.attempt && active.attempt > 1) parts.push(`attempt ${active.attempt}`);
+  if (active.attempt) parts.push(`attempt ${active.attempt}`);
   return parts.join(" · ");
 }
 
@@ -260,14 +259,16 @@ function integrationActiveCopyBase(
     };
   }
   const stage = integrationStageLabel(active.stage);
+  const step = active.step ?? stage;
+  const retry = integrationRetryNote(active);
   const elapsed = integrationElapsedMs(active.startedAt, nowMs);
   const elapsedTip = elapsed !== null ? integrationCloseOutElapsedTip(active, elapsed) : undefined;
   const detail = active.detail?.trim();
-  if (detail) {
+  if (detail && detail !== step && !detail.includes(step)) {
     return {
       // A live in-stage detail line — the #0782 bundle upload or a #0799
       // heartbeat naming the current long stage (e.g. "remote tests").
-      label: withCtx(`integrating · ${detail}`),
+      label: withCtx(`integrating · ${step} · ${detail}${retry ? ` · ${retry}` : ""}`),
       title:
         "Close-out is working — the detail line shows the current step. Progress refreshes every few seconds; the job is only flagged stalled when nothing arrives for a while.",
       stalled: false,
@@ -276,7 +277,7 @@ function integrationActiveCopyBase(
   }
   return {
     // The live step (#1276) names the work more precisely than the coarse stage.
-    label: withCtx(`integrating · ${active.step ?? stage}`),
+    label: withCtx(`integrating · ${step}${retry ? ` · ${retry}` : ""}`),
     title:
       active.stage === "resolve-conflict"
         ? "Resolving an integration conflict against current main in an isolated candidate — the original review is preserved and only the resolution delta is reviewed."

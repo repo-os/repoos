@@ -18,6 +18,7 @@ import {
   progressLogPathFor,
   progressWritable,
   stepForRemoteStage,
+  stepForRemoteRun,
   type CloseOutProgressPatch,
 } from "../../server/close-out-progress.js";
 import { createJobCoordinator } from "../../server/integration-job.js";
@@ -57,10 +58,20 @@ describe("stepForRemoteStage (#1276)", () => {
     ["run", CLOSE_OUT_STEP.runningTests],
     ["install", CLOSE_OUT_STEP.runningTests],
     ["test", CLOSE_OUT_STEP.runningTests],
+    ["tests", CLOSE_OUT_STEP.runningTests],
+    ["build", CLOSE_OUT_STEP.building],
     ["something-new", null],
     [null, null],
   ])("maps stage %s to %s", (stage, step) => {
     expect(stepForRemoteStage(stage)).toBe(step);
+  });
+});
+
+describe("remote test progress (#1276)", () => {
+  it("includes done/total in the active tests step", () => {
+    expect(
+      stepForRemoteRun(remoteRun({ stage: "tests", testProgress: { done: 27, total: 84 } })),
+    ).toBe("running tests (27/84)");
   });
 });
 
@@ -234,6 +245,28 @@ describe("CloseOutProgressRecorder (#1276)", () => {
       rec.stop("done");
     }).not.toThrow();
     expect(logLines().at(-1)).toContain("ended");
+  });
+
+  it("does not advance the persisted heartbeat when the job-record write fails", () => {
+    let fail = false;
+    const rec = new CloseOutProgressRecorder({
+      root,
+      taskId: "1276",
+      attempt: 2,
+      now: () => clock,
+      persist: (patch) => {
+        if (fail) throw new Error("disk full");
+        writes.push(patch);
+      },
+    });
+    rec.start();
+    const first = writes.at(-1)?.lastProgressAt;
+    fail = true;
+    clock += 20_000;
+    rec.tick();
+    expect(writes.at(-1)?.lastProgressAt).toBe(first);
+    expect(logLines().at(-1)).toContain("heartbeat");
+    rec.stop();
   });
 
   it("creates the log directory on demand", () => {

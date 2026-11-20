@@ -663,6 +663,8 @@ export interface ActiveRemoteRunInfo {
   lastProgressAt?: string;
   /** e.g. `bundle`, `upload`, `queue`, `lock`, `run`, `install`, `test`. */
   stage: string | null;
+  /** Live test-file progress parsed from RepoOS check telemetry. */
+  testProgress?: { done: number; total: number };
   uploadBytes: number | null;
   uploadSeconds: number | null;
   /** What the job belongs to (#0897). Absent on older callers → `checks`. */
@@ -733,6 +735,25 @@ export class ActiveRemoteRunRegistry {
   touch(taskId: string): void {
     const run = this.runs.get(taskId);
     if (run) run.lastProgressAt = new Date().toISOString();
+  }
+
+  setTestProgress(taskId: string, done: number, total: number): void {
+    const run = this.runs.get(taskId);
+    if (run) run.testProgress = { done, total };
+  }
+}
+
+/** Parse the structured progress marker emitted by the RepoOS test wrapper. */
+function parseTestProgress(output: string): { done: number; total: number } | null {
+  const matches = [...output.matchAll(/::repoos-check-progress::(\{[^\n]+\})/g)];
+  const raw = matches.at(-1)?.[1];
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw) as { testsDone?: unknown; testsTotal?: unknown };
+    if (typeof parsed.testsDone !== "number" || typeof parsed.testsTotal !== "number") return null;
+    return { done: parsed.testsDone, total: parsed.testsTotal };
+  } catch {
+    return null;
   }
 }
 
@@ -4015,6 +4036,9 @@ export class RemoteValidationRunner implements RemoteValidator {
       this.activeRunRegistry.touch(opts.taskId);
       pushTimingOutputChunk(s, fileTimingCollector, caseTimingCollector);
       validateStreamBuf += s;
+      const testProgress = parseTestProgress(validateStreamBuf);
+      if (testProgress)
+        this.activeRunRegistry.setTestProgress(opts.taskId, testProgress.done, testProgress.total);
       recordValidateStartupReapedCaptures(this.config.root, validateStreamBuf, validateReapSeen, {
         host: emitHost.ip || undefined,
         defaultTaskId: opts.taskId,
@@ -7487,6 +7511,13 @@ export class TailscaleRunner implements RemoteValidator {
         const emitStream = (s: string): void => {
           this.activeRunRegistry.touch(opts.taskId);
           streamBuf += s;
+          const testProgress = parseTestProgress(streamBuf);
+          if (testProgress)
+            this.activeRunRegistry.setTestProgress(
+              opts.taskId,
+              testProgress.done,
+              testProgress.total,
+            );
           recordValidateStartupReapedCaptures(this.config.root, streamBuf, validateReapSeen, {
             host: host.ip,
             defaultTaskId: opts.taskId,
