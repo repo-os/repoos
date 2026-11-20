@@ -127,9 +127,14 @@ const projectA = (): Task[] => [
   task("0003", { priority: "p1", area: "web", title: "Billing export" }),
 ];
 
+/** Every wrapper mounted in a case, unmounted after it so no board outlives its test. */
+const mounted: { unmount: () => void }[] = [];
+
 function mountDesktop(query: Record<string, string | string[]>) {
   routeState.query = query;
-  return mount(WorkView, { global: { stubs: workViewStubs() } });
+  const wrapper = mount(WorkView, { global: { stubs: workViewStubs() } });
+  mounted.push(wrapper);
+  return wrapper;
 }
 
 function visibleIds(wrapper: ReturnType<typeof mountDesktop>): string[] {
@@ -156,6 +161,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  for (const wrapper of mounted.splice(0)) wrapper.unmount();
   api.mockReset();
   vi.unstubAllGlobals();
   document.body.innerHTML = "";
@@ -228,7 +234,7 @@ describe("Work board queue filters on desktop (768 / 1280 px)", () => {
 describe("Work queue filters on the phone queue (375 px)", () => {
   function mountQueue(query: Record<string, string | string[]>) {
     routeState.query = query;
-    return mount(MobileWorkQueue, {
+    const wrapper = mount(MobileWorkQueue, {
       global: {
         stubs: {
           Button: buttonStub,
@@ -241,6 +247,8 @@ describe("Work queue filters on the phone queue (375 px)", () => {
         },
       },
     });
+    mounted.push(wrapper);
+    return wrapper;
   }
 
   it("reload restores the search from the URL", async () => {

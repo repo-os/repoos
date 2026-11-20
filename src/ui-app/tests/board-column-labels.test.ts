@@ -200,6 +200,7 @@ describe("WorkView board column labels", () => {
     expect(boardCols[0].props("col").label).toBe("Ideas");
     const inboxCol = boardCols.find((c) => c.props("col").id === "inbox");
     expect(inboxCol?.props("col").label).toBe("Backlog");
+    wrapper.unmount();
   });
 
   it("uses default labels when no config", async () => {
@@ -213,6 +214,7 @@ describe("WorkView board column labels", () => {
     expect(boardCols[0].props("col").label).toBe("Draft");
     const inboxCol = boardCols.find((c) => c.props("col").id === "inbox");
     expect(inboxCol?.props("col").label).toBe("Inbox");
+    wrapper.unmount();
   });
 
   it("uses the same dash for an empty Draft column in board and filtered views", async () => {
