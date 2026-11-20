@@ -34,7 +34,8 @@ describe("router auth guard", () => {
     await router.push("/");
     await router.isReady();
     expect(router.currentRoute.value.path).toBe("/login");
-    expect(router.currentRoute.value.query.redirect).toBe("/");
+    // "/" now redirects to Work (#1258), so the return path is Work.
+    expect(router.currentRoute.value.query.redirect).toBe("/work");
   });
 
   it("redirects an unauthenticated visitor away from /settings too", async () => {

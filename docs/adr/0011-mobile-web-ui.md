@@ -87,7 +87,7 @@ desktop and 768 px tablet behavior.
 
 The current UI was captured through `repoos shot` at **390×844** and
 **768×1024** for Work, task detail, Settings, Releases and the dashboard's
-Live activity feed (`/`, since Activity has no standalone route). The captures
+Live activity feed (`/control` since #1258 moved Mission Control off `/`, which now redirects to Work; Activity has no standalone route). The captures
 are stored with task #1110 as the baseline for the follow-up slices. These
 screens share the following concrete design constraints and risks:
 
