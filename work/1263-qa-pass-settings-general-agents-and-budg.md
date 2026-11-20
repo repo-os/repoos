@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-20T13:23:35Z"
+review_passes: 5
 id: "1263"
 title: "QA pass: Settings general, agents and budget tabs"
 type: feature
@@ -11,8 +13,6 @@ branch: feat/qa-pass-settings-general-agents-and-budg
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T02:27:07Z"
-updated_at: "2026-11-20T13:23:35Z"
-review_passes: 4
 review_rounds: 2
 ---
 ## Problem
@@ -109,3 +109,4 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 - 2026-11-20T07:25:00Z · message_queued at 2026-11-20T07:25:00.019Z
 - 2026-11-20T08:27:31Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-20T13:23:35Z · note: review pass 5: good to go
+
