@@ -12,7 +12,7 @@ branch: ""
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T00:57:33Z"
-updated_at: "2026-11-20T01:42:26Z"
+updated_at: "2026-11-20T04:07:50Z"
 ---
 ## Problem
 Two gaps from #1257 (docs/qa/2026-11-filter-persistence-qa.md):
