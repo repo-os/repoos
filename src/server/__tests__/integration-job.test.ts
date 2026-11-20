@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { mkdirSync, rmSync, writeFileSync, readFileSync } from "node:fs";
+import { mkdirSync, rmSync, writeFileSync, readFileSync, utimesSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { execSync } from "node:child_process";
@@ -131,12 +131,15 @@ describe("integration jobs (0118)", () => {
     const lock = createRepositoryLock(testRepo);
 
     // Write a stale lock file (>60 seconds old)
+    mkdirSync(join(testRepo, ".repoos"), { recursive: true });
     const lockPath = join(testRepo, ".repoos/close-out.lock");
     const staleTime = new Date(Date.now() - 70_000); // 70 seconds ago
     writeFileSync(
       lockPath,
       JSON.stringify({ taskId: "stale", acquiredAt: staleTime.toISOString() }),
     );
+    // The lock ages by file mtime, not the recorded timestamp, so backdate the file.
+    utimesSync(lockPath, staleTime, staleTime);
 
     // Should be able to acquire even though file exists (it's stale)
     expect(lock.acquire("task1")).toBe(true);
