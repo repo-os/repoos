@@ -2,7 +2,7 @@
 id: "1260"
 title: "Work board: apply the queue sort and make mobile-only status values visible"
 type: bug
-status: active
+status: review
 priority: p3
 area: web
 depends_on: ["1257"]
@@ -12,7 +12,7 @@ branch: feat/work-board-apply-the-queue-sort-and-make
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T00:57:33Z"
-updated_at: "2026-11-20T13:26:42Z"
+updated_at: "2026-11-20T14:07:42Z"
 last_check_failure: "repoos check at 2026-11-20T12:49:08.292Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 close_out_repair_count: 1
 review_passes: 2
@@ -107,3 +107,10 @@ Headless Playwright only, against fixtures. Do not touch repoos.toml. Keep the i
 - 2026-11-20T13:26:22Z · message_queued at 2026-11-20T13:26:22.375Z
 - 2026-11-20T13:26:22Z · handoff failed · task-file handoff failed at review · Engineering report draft is missing: .repoos/engineering-report-drafts/1260.md
 - 2026-11-20T13:26:42Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-20T13:29:22Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-20T13:29:25Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: The server handoff for #1260 is still running. It has moved from the `check` step to `verify` (as of 13:22 UTC), so the retry is progressing. I'll check it again in about 15 minutes. I'm not starting a local check while the server run is l… · stderr: (empty)
+- 2026-11-20T13:40:37Z · message_delivered: 1 message(s)
+- 2026-11-20T13:44:47Z · body
+- 2026-11-20T13:53:34Z · CTO nudge: held — machine under pressure (CPU idle is 0% (below 5%) — holding new work until the machine has idle CPU)
+- 2026-11-20T14:01:06Z · status active→review
+- 2026-11-20T14:07:42Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (42ae779ce) during finalization (#0734)
