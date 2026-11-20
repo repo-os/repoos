@@ -1,4 +1,6 @@
 ---
+last_close_out_gate_ms: 562167
+last_close_out_gate_at: "2026-11-20T12:52:32.222Z"
 id: "1272"
 title: Close-out timer should count from when validation actually starts
 type: feature
@@ -11,7 +13,7 @@ branch: feat/close-out-timer-should-count-from-when-v
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T06:08:31Z"
-updated_at: "2026-11-20T08:54:36Z"
+updated_at: "2026-11-20T12:52:32Z"
 review_passes: 1
 ---
 ## Problem
@@ -47,3 +49,5 @@ Never touch repoos.toml. Headless Playwright only.
 - 2026-11-20T07:40:40Z · message_queued at 2026-11-20T07:40:40.353Z
 - 2026-11-20T07:42:23Z · note: review pass 1: good to go
 - 2026-11-20T08:54:36Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-20T12:52:32Z · close-out gate completed in 562s
+
