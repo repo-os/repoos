@@ -11,7 +11,7 @@ branch: feat/qa-pass-stories-and-docs-pages-reading-e
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T05:07:07Z"
-updated_at: "2026-11-20T05:08:03Z"
+updated_at: "2026-11-20T05:13:24Z"
 ---
 ## Problem
 Sweep the Docs and Story detail pages for layout, long-text wrapping, link and wording bugs.
@@ -33,3 +33,4 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 - 2026-11-20T05:07:33Z · status inbox→ready
 - 2026-11-20T05:07:45Z · cli_override, model_override
 - 2026-11-20T05:08:03Z · status ready→active, branch
+- 2026-11-20T05:13:24Z · message_queued at 2026-11-20T05:13:24.153Z
