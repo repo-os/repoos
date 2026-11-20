@@ -2,7 +2,7 @@
 id: "1267"
 title: "Shots: capture UI changes at phone and desktop widths, and let a shot declare its viewport"
 type: feature
-status: active
+status: review
 priority: p2
 area: [web, core]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/shots-capture-ui-changes-at-phone-and-de
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T03:17:57Z"
-updated_at: "2026-11-20T03:18:44Z"
+updated_at: "2026-11-20T04:53:08Z"
 ---
 ## Problem
 Declared and automatic UI shots are only captured at 1280x800. Mobile-focused tasks (the recent QA passes) show only desktop shots, so reviewers cannot see the mobile result. The CLI already accepts --viewport WIDTHxHEIGHT, but the Shots entries engineers declare have no width field.
@@ -36,3 +36,4 @@ Start from src/commands/shot.ts (VIEWPORT, --viewport) and the handoff shot capt
 - 2026-11-20T03:18:22Z · status inbox→ready
 - 2026-11-20T03:18:33Z · cli_override, model_override
 - 2026-11-20T03:18:44Z · status ready→active, branch
+- 2026-11-20T04:53:08Z · status active→review
