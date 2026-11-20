@@ -11,7 +11,7 @@ branch: feat/qa-pass-stories-page-create-link-and-pro
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T23:27:29Z"
-updated_at: "2026-11-20T00:39:56Z"
+updated_at: "2026-11-20T00:40:04Z"
 ---
 ## Problem
 Creating a story, linking tasks to it and reading its progress have not been exercised end to end with edge cases.
@@ -39,3 +39,4 @@ Do not touch repoos.toml.
 - 2026-11-20T00:36:52Z · handoff failed · handoff recovery attempted · finalization failed
 - 2026-11-20T00:37:00Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-20T00:39:56Z · watchdog: restarting engineer because a queued message waited 3m with no live process
+- 2026-11-20T00:40:04Z · message_delivered: 1 message(s)
