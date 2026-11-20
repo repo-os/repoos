@@ -11,7 +11,7 @@ branch: feat/close-out-validation-log-should-show-liv
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T07:42:21Z"
-updated_at: "2026-11-20T10:10:43Z"
+updated_at: "2026-11-20T10:10:45Z"
 review_rounds: 1
 review_passes: 1
 handoff_signal_retry_count: 1
@@ -47,3 +47,4 @@ Related: #1272 (timer should count from validation start). Never touch repoos.to
 - 2026-11-20T10:05:13Z · message_queued at 2026-11-20T10:05:13.796Z
 - 2026-11-20T10:10:42Z · note: review pass 1: needs some work
 - 2026-11-20T10:10:43Z · status review→active
+- 2026-11-20T10:10:45Z · CTO nudge: held — an undelivered message is already queued
