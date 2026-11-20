@@ -11,7 +11,7 @@ branch: feat/qa-pass-settings-general-agents-and-budg
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T02:27:07Z"
-updated_at: "2026-11-20T03:57:15Z"
+updated_at: "2026-11-20T04:00:50Z"
 review_rounds: 2
 review_passes: 2
 ---
@@ -80,3 +80,4 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 - 2026-11-20T03:55:28Z · body
 - 2026-11-20T03:57:14Z · message_queued at 2026-11-20T03:57:14.888Z
 - 2026-11-20T03:57:15Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-20T04:00:50Z · queued message undelivered for 4m and the engineer produced no output — ending the turn so it is delivered
