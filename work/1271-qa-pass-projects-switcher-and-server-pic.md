@@ -3,6 +3,9 @@ id: "1271"
 title: "QA pass: Projects switcher and server picker flows"
 type: feature
 status: active
+needs_input: true
+needs_input_reason: check-wait
+needs_input_detail: "waiting: waiting for serialized local fallback (1 ahead, position 2); slot holder 49112 is dead for 16m"
 priority: p2
 area: web
 assigned_to: ai
@@ -11,7 +14,9 @@ branch: feat/qa-pass-projects-switcher-and-server-pic
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T06:07:22Z"
-updated_at: "2026-11-20T10:30:55Z"
+updated_at: "2026-11-20T10:38:08Z"
+last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
+last_handoff_failure_sha: f4e6a04ec83ffe923a2a8afb52f1db6ef9ae75bf
 handoff_signal_retry_count: 2
 close_out_repair_count: 1
 review_passes: 1
@@ -54,3 +59,5 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 - 2026-11-20T10:02:37Z · CTO nudge: held — handoff gate is running
 - 2026-11-20T10:30:53Z · message_queued at 2026-11-20T10:30:53.432Z
 - 2026-11-20T10:30:55Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
+- 2026-11-20T10:37:05Z · watchdog: check wait escalated · waiting: waiting for serialized local fallback (1 ahead, position 2); slot holder 49112 is dead for 16m · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-11-20T10:38:08Z · CTO nudge: held — an undelivered message is already queued
