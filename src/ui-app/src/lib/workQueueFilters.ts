@@ -88,6 +88,8 @@ export function hasActiveWorkQueueFilters(filters: WorkQueueFilters): boolean {
 export interface WorkQueueFilterChip {
   key: (typeof WORK_QUEUE_FILTER_KEYS)[number];
   label: string;
+  /** True for a URL value that was not applied. */
+  ignored?: boolean;
 }
 
 /** One chip per filter that is set, in the order the controls appear. */
@@ -106,17 +108,33 @@ export function workQueueFilterChips(filters: WorkQueueFilters): WorkQueueFilter
   return chips;
 }
 
-/** A copy of the route query with every filter key removed; other keys stay. */
-export function clearWorkQueueFilterQuery(
-  query: Record<string, unknown>,
-): Record<string, string | string[]> {
-  const next: Record<string, string | string[]> = {};
+/**
+ * Present URL values the reader cannot use: a priority that is not p0-p3, or a
+ * `mine` other than `1`. They are not applied, so each one gets a notice chip
+ * and Clear filters removes it, instead of the board silently ignoring it.
+ */
+export function ignoredWorkQueueFilterChips(query: Record<string, unknown>): WorkQueueFilterChip[] {
+  const chips: WorkQueueFilterChip[] = [];
+  const priority = firstString(query.priority);
+  if (priority && !(PRIORITY_IDS as readonly string[]).includes(priority)) {
+    chips.push({ key: "priority", label: `Ignored priority: ${priority}`, ignored: true });
+  }
+  const mine = firstString(query.mine);
+  if (mine && mine !== "1") {
+    chips.push({ key: "mine", label: `Ignored assigned filter: ${mine}`, ignored: true });
+  }
+  return chips;
+}
+
+/**
+ * A copy of the route query with only the queue filter keys removed. Every
+ * other entry, including null (bare `?key`) and repeated values, is kept as-is.
+ */
+export function clearWorkQueueFilterQuery(query: Record<string, unknown>): Record<string, unknown> {
+  const next: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(query)) {
     if ((WORK_QUEUE_FILTER_KEYS as readonly string[]).includes(key)) continue;
-    if (typeof value === "string") next[key] = value;
-    else if (Array.isArray(value)) {
-      next[key] = value.filter((v): v is string => typeof v === "string");
-    }
+    next[key] = value;
   }
   return next;
 }

@@ -197,6 +197,27 @@ describe("Work board queue filters on desktop (768 / 1280 px)", () => {
     expect(chipKeys(reloaded)).toEqual(["q", "area"]);
   });
 
+  it("pipeline shows the active filters with a note that it does not apply them", async () => {
+    window.localStorage.setItem("repoos.work.view-mode", "pipeline");
+    const wrapper = mountDesktop({ q: "login" });
+    await flushPromises();
+    const bar = wrapper.find(".board-queue-filters");
+    expect(bar.exists()).toBe(true);
+    expect(chipKeys(wrapper)).toEqual(["q"]);
+    expect(bar.find(".board-queue-filter-note").exists()).toBe(true);
+  });
+
+  it("an unusable URL value shows an ignored chip and Clear removes it", async () => {
+    const wrapper = mountDesktop({ priority: "p9", task: "0001" });
+    await flushPromises();
+    expect(visibleIds(wrapper).sort()).toEqual(["0001", "0002", "0003"]);
+    const ignored = wrapper.find('.board-queue-filters [data-filter-key="priority"]');
+    expect(ignored.text()).toBe("Ignored priority: p9");
+    expect(ignored.classes()).toContain("filter-chip-ignored");
+    await wrapper.find(".board-queue-filters .filter-clear").trigger("click");
+    expect(routeState.router.replace).toHaveBeenCalledWith({ query: { task: "0001" } });
+  });
+
   it("clear-all removes only the queue filter keys and keeps the drawer and status", async () => {
     const wrapper = mountDesktop({
       q: "login",
@@ -314,8 +335,9 @@ describe("Board filter chip bar at 375 / 768 / 1280 px (WebKit, fixtures)", () =
     filters: WorkQueueFilters,
     width: number,
     label: string,
+    extra: { ignored?: { key: string; label: string; ignored: boolean }[]; applied?: boolean } = {},
   ): Promise<Page> {
-    const wrapper = mount(BoardQueueFilters, { props: { filters } });
+    const wrapper = mount(BoardQueueFilters, { props: { filters, ...extra } });
     const markup = wrapper.html();
     wrapper.unmount();
     const page = await browser.newPage({ viewport: { width, height: 900 } });
@@ -368,6 +390,39 @@ describe("Board filter chip bar at 375 / 768 / 1280 px (WebKit, fixtures)", () =
         expect(result.off, `chips off-viewport at ${width}px`).toEqual([]);
         expect(await page.locator(".board-queue-filters .filter-clear").isVisible()).toBe(true);
         expect(await page.locator(".board-queue-filters [data-filter-key]").count()).toBe(5);
+      } finally {
+        await page.close();
+      }
+    });
+
+    it(`keeps the pipeline note and an ignored chip inside ${width}px`, async () => {
+      const page = await openChipBar(longFilters, width, "pipeline-note", {
+        applied: false,
+        ignored: [
+          {
+            key: "priority",
+            label: "Ignored priority: a-very-long-unusable-value-0123456789abcdefghij",
+            ignored: true,
+          },
+        ],
+      });
+      try {
+        const result = await page.evaluate(() => {
+          const off: string[] = [];
+          const limit = window.innerWidth;
+          for (const el of Array.from(document.querySelectorAll(".board-queue-filters *"))) {
+            const r = (el as HTMLElement).getBoundingClientRect();
+            if (r.width === 0 && r.height === 0) continue;
+            if (r.left < -0.5 || r.right > limit + 0.5) off.push(el.className || el.tagName);
+          }
+          return { scrollWidth: document.documentElement.scrollWidth, limit, off };
+        });
+        expect(result.scrollWidth, `document overflows at ${width}px`).toBeLessThanOrEqual(
+          result.limit,
+        );
+        expect(result.off, `pipeline note or ignored chip off-viewport at ${width}px`).toEqual([]);
+        expect(await page.locator(".board-queue-filter-note").isVisible()).toBe(true);
+        expect(await page.locator(".filter-chip-ignored").count()).toBe(1);
       } finally {
         await page.close();
       }

@@ -52,7 +52,7 @@ by `src/ui-app/tests/work-queue-filters.test.ts`.
 
 ¹ The desktop jsdom cases stub the viewport at 1280 px, so they cover the board at that width only. The 768 px board layout is covered by the WebKit chip-bar rows.
 
-Totals in this run: 14 browser-suite cases and 4 pure-logic cases, all passing.
+Totals in this run: 19 browser-suite cases and 6 pure-logic cases, all passing.
 No case was skipped.
 
 ## Defects found and fixed
@@ -70,23 +70,36 @@ No case was skipped.
    Moved it into `lib/workQueueFilters.ts`, so the queue and the board cannot
    drift apart. The queue's behavior is unchanged, and its existing tests pass.
 
-## Gaps not fixed (need a decision)
+## Behavior on the board, pipeline and unusable values
+
+- **Pipeline** does not filter. The chip bar still appears above it, with a
+  note that the view doesn't apply these filters, so a filtered link never
+  looks like a full list.
+- **Unusable URL values** (`priority` other than p0-p3, `mine` other than `1`)
+  are not applied. Each one shows a dashed "Ignored" chip, and Clear filters
+  removes it. Mobile-only values in the phone queue are unchanged.
+- **Clear filters** removes only the five queue keys. Every other query entry
+  is kept as it was, including bare `?key` (null) values and repeated values.
+
+## Gaps not fixed (follow-up tasks filed)
 
 - **Sort and the human/held toggles are global, not per project.** They persist
   under the single localStorage keys `repoos.board.sortOrder`,
   `repoos.work.humanVisible` and `repoos.work.heldVisible`. Each project is
   served from its own origin, so storage is already separated per project in
   practice. A same-origin project switch would share these keys. Namespacing
-  them by `health.projectName` would need a read after health loads, which is a
-  larger change. Not changed here.
-- **No search input at 720 px and up.** The board can only receive queue
-  filters from the URL, so a user cannot set one on a wide screen. Adding a
-  desktop search control is a product decision. Not added here.
-- **Mobile-only status values are ignored on the board.** `?status=attention`,
-  `held`, `archived`, `human` and `all` are not board columns, so the board
-  shows every task with no chip. The phone queue needs them. Not changed here.
-- **Desktop does not apply the queue sort.** `sort=oldest` from the phone
-  queue is not applied on the board, which keeps its own sort control.
+  them by `health.projectName` needs a read after health loads. Not changed.
+- **No search input at 720 px and up.** Filed as #1259.
+- **Mobile-only status values and the queue sort on the board.** Filed as
+  #1260. Until then, `?status=attention|held|archived|human|all` shows every
+  task with no chip, and `sort=oldest` is not applied on the board.
+
+## Not covered by a test
+
+- **Reload race.** A pending `router.replace` could overwrite a keystroke in the
+  phone search when the URL write lands late. The reasoning is that a later
+  replace supersedes the earlier one, so the input settles on the latest value.
+  jsdom did not reproduce it, and no test covers it.
 
 ## What a human still has to check
 

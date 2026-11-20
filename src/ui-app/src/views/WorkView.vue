@@ -38,6 +38,7 @@ import BoardQueueFilters from "../components/BoardQueueFilters.vue";
 import {
   clearWorkQueueFilterQuery,
   hasActiveWorkQueueFilters,
+  ignoredWorkQueueFilterChips,
   matchesWorkQueueFilters,
   readWorkQueueFilters,
 } from "../lib/workQueueFilters";
@@ -284,6 +285,11 @@ const hiddenTaskIds = computed<ReadonlySet<string>>(() => {
 // control. At 720px and up no search input is rendered here.
 const queueFilters = computed(() => readWorkQueueFilters(route.query));
 const queueFiltersActive = computed(() => hasActiveWorkQueueFilters(queueFilters.value));
+const ignoredQueueFilters = computed(() => ignoredWorkQueueFilterChips(route.query));
+/** The bar shows for an applied filter or a URL value that was not applied. */
+const queueBarVisible = computed(
+  () => queueFiltersActive.value || ignoredQueueFilters.value.length > 0,
+);
 function clearQueueFilters(): void {
   void router.replace({ query: clearWorkQueueFilterQuery(route.query) });
 }
@@ -655,8 +661,10 @@ function openHeld(task: Task): void {
     </div>
 
     <BoardQueueFilters
-      v-if="queueFiltersActive && effectiveView === 'board'"
+      v-if="queueBarVisible"
       :filters="queueFilters"
+      :ignored="ignoredQueueFilters"
+      :applied="effectiveView === 'board'"
       @clear="clearQueueFilters"
     />
 

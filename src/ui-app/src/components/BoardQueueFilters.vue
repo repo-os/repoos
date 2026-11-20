@@ -1,23 +1,44 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import { workQueueFilterChips, type WorkQueueFilters } from "../lib/workQueueFilters";
+import {
+  workQueueFilterChips,
+  type WorkQueueFilterChip,
+  type WorkQueueFilters,
+} from "../lib/workQueueFilters";
 
-const props = defineProps<{ filters: WorkQueueFilters }>();
+const props = withDefaults(
+  defineProps<{
+    filters: WorkQueueFilters;
+    /** URL values that were present but not usable. */
+    ignored?: WorkQueueFilterChip[];
+    /** False on a view that does not filter (the pipeline), so the bar says so. */
+    applied?: boolean;
+  }>(),
+  { ignored: () => [], applied: true },
+);
 const emit = defineEmits<{ clear: [] }>();
 
-const chips = computed(() => workQueueFilterChips(props.filters));
+const chips = computed(() => [...workQueueFilterChips(props.filters), ...props.ignored]);
 </script>
 
 <template>
-  <!-- Shown on the desktop board whenever a search or quick filter is in the
-       URL, so the board never silently hides tasks. Clear removes only the
-       queue filter keys; status and sort stay as they are. -->
+  <!-- Shown whenever a search or quick filter is in the URL, so no view hides
+       tasks silently. Clear removes only the queue filter keys; status and sort
+       stay as they are. -->
   <div class="filter-bar board-queue-filters" role="group" aria-label="Active board filters">
     <ul class="board-queue-filter-chips">
-      <li v-for="chip in chips" :key="chip.key">
-        <span class="filter-chip" :data-filter-key="chip.key">{{ chip.label }}</span>
+      <li v-for="chip in chips" :key="`${chip.key}-${chip.label}`">
+        <span
+          class="filter-chip"
+          :class="{ 'filter-chip-ignored': chip.ignored }"
+          :data-filter-key="chip.key"
+          >{{ chip.label }}</span
+        >
       </li>
     </ul>
+    <p v-if="!applied" class="board-queue-filter-note">
+      This view doesn't apply these filters. Switch to Board to filter tasks.
+    </p>
     <button type="button" class="filter-clear" @click="emit('clear')">Clear filters</button>
   </div>
 </template>
@@ -39,6 +60,16 @@ const chips = computed(() => workQueueFilterChips(props.filters));
 .board-queue-filter-chips .filter-chip {
   max-width: 100%;
   overflow-wrap: anywhere;
+}
+.board-queue-filter-note {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: 12px;
+  color: var(--txt-dim);
+}
+.filter-chip-ignored {
+  color: var(--txt-dim);
+  border-style: dashed;
 }
 .board-queue-filters .filter-clear {
   background: none;

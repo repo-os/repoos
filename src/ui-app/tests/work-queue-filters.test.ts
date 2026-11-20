@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   clearWorkQueueFilterQuery,
   hasActiveWorkQueueFilters,
+  ignoredWorkQueueFilterChips,
   matchesWorkQueueFilters,
   NO_WORK_QUEUE_FILTERS,
   readWorkQueueFilters,
@@ -67,6 +68,20 @@ describe("work queue filters", () => {
       "story",
       "mine",
     ]);
+  });
+
+  it("reports ignored priority and assigned values as notices, not filters", () => {
+    expect(ignoredWorkQueueFilterChips({ priority: "p9", mine: "2" })).toEqual([
+      { key: "priority", label: "Ignored priority: p9", ignored: true },
+      { key: "mine", label: "Ignored assigned filter: 2", ignored: true },
+    ]);
+    expect(ignoredWorkQueueFilterChips({ priority: "p1", mine: "1" })).toEqual([]);
+    expect(hasActiveWorkQueueFilters(readWorkQueueFilters({ priority: "p9" }))).toBe(false);
+  });
+
+  it("clear keeps null and repeated values of keys it does not own", () => {
+    const next = clearWorkQueueFilterQuery({ q: "x", flag: null, tab: ["a", "b"] });
+    expect(next).toEqual({ flag: null, tab: ["a", "b"] });
   });
 
   it("clear removes only the queue filter keys and keeps everything else", () => {
