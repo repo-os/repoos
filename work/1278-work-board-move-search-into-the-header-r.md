@@ -72,3 +72,4 @@ Start from src/ui-app/src/components/BoardQueueSearch.vue and the Work view head
 - 2026-11-20T16:06:05Z · CTO nudge: held — handoff gate is running
 - 2026-11-20T16:21:45Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
 - 2026-11-20T16:21:47Z · status active→review
+- 2026-11-20T16:21:47Z · message_queued at 2026-11-20T16:21:47.986Z
