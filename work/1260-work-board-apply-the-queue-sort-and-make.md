@@ -105,3 +105,4 @@ Headless Playwright only, against fixtures. Do not touch repoos.toml. Keep the i
 - 2026-11-20T13:08:35Z · CTO nudge: held — handoff gate is running
 - 2026-11-20T13:26:20Z · note: ui verification passed: 1 of 1 shot captured with clean console
 - 2026-11-20T13:26:22Z · message_queued at 2026-11-20T13:26:22.375Z
+- 2026-11-20T13:26:22Z · handoff failed · task-file handoff failed at review · Engineering report draft is missing: .repoos/engineering-report-drafts/1260.md
