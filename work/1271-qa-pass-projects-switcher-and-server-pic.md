@@ -2,7 +2,7 @@
 id: "1271"
 title: "QA pass: Projects switcher and server picker flows"
 type: feature
-status: review
+status: active
 priority: p2
 area: web
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/qa-pass-projects-switcher-and-server-pic
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T06:07:22Z"
-updated_at: "2026-11-20T10:00:44Z"
+updated_at: "2026-11-20T10:00:45Z"
 handoff_signal_retry_count: 2
 close_out_repair_count: 1
 review_passes: 1
