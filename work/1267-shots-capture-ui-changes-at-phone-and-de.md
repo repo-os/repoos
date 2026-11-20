@@ -12,7 +12,7 @@ branch: feat/shots-capture-ui-changes-at-phone-and-de
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T03:17:57Z"
-updated_at: "2026-11-20T09:11:10Z"
+updated_at: "2026-11-20T09:14:23Z"
 last_close_out_gate_ms: 1022406
 last_close_out_gate_at: "2026-11-20T09:10:18.993Z"
 review_passes: 1
@@ -55,3 +55,4 @@ Start from src/commands/shot.ts (VIEWPORT, --viewport) and the handoff shot capt
 - 2026-11-20T05:59:43Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-20T09:10:18Z · close-out gate completed in 1022s
 - 2026-11-20T09:11:10Z · status done→done, release:success
+- 2026-11-20T09:14:23Z · message_dropped: 1 queued message(s) discarded — task is done
