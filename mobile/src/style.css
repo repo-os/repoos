@@ -767,6 +767,9 @@ select {
 .field input:focus {
   outline: none;
   border-color: var(--ring, var(--primary, var(--cyan)));
+  /* The outline is removed, so a 1px border colour shift is the only cue.
+     A second 1px ring makes the focused field a clear 2px edge. */
+  box-shadow: 0 0 0 1px var(--ring, var(--primary, var(--cyan)));
 }
 
 .form-error {
