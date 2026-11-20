@@ -11,7 +11,7 @@ branch: feat/qa-pass-settings-general-agents-and-budg
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T02:27:07Z"
-updated_at: "2026-11-20T07:10:49Z"
+updated_at: "2026-11-20T07:12:31Z"
 review_passes: 3
 review_rounds: 2
 ---
@@ -102,3 +102,4 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 - 2026-11-20T07:10:48Z · status active→review
 - 2026-11-20T07:10:48Z · message_delivered: 1 message(s)
 - 2026-11-20T07:10:49Z · note: handoff requested (cli)
+- 2026-11-20T07:12:31Z · CTO nudge: held — handoff gate is running
