@@ -3,6 +3,9 @@ id: "1258"
 title: "Mobile polish: open on Work, hide page scrollbar, even-height header row"
 type: bug
 status: review
+needs_input: true
+needs_input_reason: review-failed
+needs_input_detail: "the opencode agent exited without output: error: OpenCode Go usage limit reached (monthly, resets in 1d 14h). To keep going now, turn on Extra Usage at https://opencode.ai/console/wrk_01KQ7ZAG4V1XEK1E46TJF13DFZ/go."
 priority: p2
 area: [web, mobile]
 assigned_to: ai
@@ -11,7 +14,7 @@ branch: feat/mobile-polish-open-on-work-hide-page-scr
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T00:15:33Z"
-updated_at: "2026-11-20T16:21:55Z"
+updated_at: "2026-11-20T16:21:56Z"
 review_failed_report_retries: 2
 last_check_failure: "repoos check at 2026-11-20T09:49:11.145Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Work is the home page; header row controls share one height (target \"default\"): loading state detected: loading indicator [aria-busy=\"true\"] on /work (http://127.0.0.1:34337/work)"
 review_rounds: 2
@@ -143,3 +146,4 @@ Screenshot attached shows the current mobile header and Mission Control. Do not 
 - 2026-11-20T16:21:34Z · note: review pass 4: failed — no usable report
 - 2026-11-20T16:21:43Z · note: review pass 5: failed — no usable report
 - 2026-11-20T16:21:55Z · note: review pass 6: failed — no usable report
+- 2026-11-20T16:21:56Z · needs_input
