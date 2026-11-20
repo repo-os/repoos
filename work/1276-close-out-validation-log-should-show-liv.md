@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/close-out-validation-log-should-show-liv
 created_at: "2026-11-20T07:42:21Z"
-updated_at: "2026-11-20T20:07:15Z"
+updated_at: "2026-11-20T20:53:22Z"
 review_passes: 3
 review_failed_report_retries: 0
 review_rounds: 2
@@ -99,3 +99,4 @@ Related: #1272 (timer should count from validation start). Never touch repoos.to
 - 2026-11-20T20:07:10Z · watchdog: restarting engineer because a queued message waited 285m with no live process
 - 2026-11-20T20:07:11Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-20T20:07:15Z · message_delivered: 1 message(s)
+- 2026-11-20T20:53:22Z · body
