@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-20T00:16:15Z"
-review_passes: 2
 id: "1255"
 title: "QA pass: update banner, version display and release notes modal at all screen sizes"
 type: bug
@@ -13,6 +11,8 @@ branch: feat/qa-pass-update-banner-version-display-an
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T23:27:47Z"
+updated_at: "2026-11-20T00:16:15Z"
+review_passes: 2
 review_rounds: 1
 ---
 ## Problem
@@ -72,4 +72,4 @@ Do not touch repoos.toml.
 - 2026-11-20T00:01:35Z · status active→review
 - 2026-11-20T00:16:12Z · note: ui verification passed: 3 of 3 shots captured with clean console
 - 2026-11-20T00:16:14Z · note: review pass 2: needs some work
-
+- 2026-11-20T00:16:15Z · message_queued at 2026-11-20T00:16:15.353Z
