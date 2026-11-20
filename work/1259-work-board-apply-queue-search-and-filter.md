@@ -12,7 +12,7 @@ branch: feat/work-board-apply-queue-search-and-filter
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T00:57:29Z"
-updated_at: "2026-11-20T04:59:33Z"
+updated_at: "2026-11-20T05:05:53Z"
 ---
 ## Problem
 Search and quick filters only exist on the phone queue (below 720 px). The desktop board at 720 px and up can only receive them from a URL, so a user cannot set one on a wide screen (#1257 gap).
@@ -44,3 +44,4 @@ Headless Playwright only, against fixtures. Do not touch repoos.toml. Reuse the 
 - 2026-11-20T04:57:27Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-20T04:59:32Z · watchdog: restarting engineer because a queued message waited 3m with no live process
 - 2026-11-20T04:59:33Z · message_delivered: 1 message(s)
+- 2026-11-20T05:05:53Z · body
