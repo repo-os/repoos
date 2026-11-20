@@ -430,7 +430,7 @@ describe("fetchOpenRouterSpend", () => {
     expect(spend.keyError).toBeNull();
   });
 
-  it("surfaces the upstream message on a rejected key", async () => {
+  it("explains a rejected key in plain English with the next step", async () => {
     stubFetch({
       "/credits": { status: 401, body: { error: { code: 401, message: "Invalid key" } } },
       "/key": { status: 401, body: { error: { code: 401, message: "Invalid key" } } },
@@ -438,8 +438,10 @@ describe("fetchOpenRouterSpend", () => {
     const spend = await fetchOpenRouterSpend("bad-key");
     expect(spend.credits).toBeNull();
     expect(spend.key).toBeNull();
-    expect(spend.creditsError).toBe("Invalid key");
-    expect(spend.keyError).toBe("Invalid key");
+    const rejected =
+      "OpenRouter rejected the API key. Check the key was copied in full, then use Replace key to paste it again.";
+    expect(spend.creditsError).toBe(rejected);
+    expect(spend.keyError).toBe(rejected);
   });
 });
 
@@ -471,7 +473,9 @@ describe("fetchOpenCodeGoUsage", () => {
 
   it("throws a clean message when the key is rejected", async () => {
     stubOnce(401, { type: "error", error: { type: "AuthError", message: "Missing API key." } });
-    await expect(fetchOpenCodeGoUsage("bad")).rejects.toThrow("Missing API key.");
+    await expect(fetchOpenCodeGoUsage("bad")).rejects.toThrow(
+      "opencode rejected the API key. Check the key was copied in full, then use Replace key to paste it again.",
+    );
   });
 
   it("throws on upstream errors and non-JSON responses", async () => {
@@ -493,7 +497,7 @@ describe("fetchOpenCodeGoUsage", () => {
       vi.fn(async () => Promise.reject(new Error("ECONNREFUSED"))),
     );
     await expect(fetchOpenCodeGoUsage("k")).rejects.toThrow(
-      "Could not reach the opencode Go usage API.",
+      "The opencode Go usage API could not be reached. Check your internet connection, then press Retry.",
     );
   });
 });

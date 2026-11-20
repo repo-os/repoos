@@ -140,13 +140,24 @@ export const setModelProviderKey: RouteHandler = async (ctx, req, res, params) =
   }
   const key = body.key.trim();
   if (key.length > MAX_KEY_LEN) {
-    return json(res, 400, { error: "That API key is too long to be valid." });
+    return json(res, 400, {
+      error: `That doesn't look like a valid ${row.label} key — it is too long. Paste only the key itself.`,
+    });
+  }
+  if (/[\r\n]/.test(key)) {
+    return json(res, 400, {
+      error: `That doesn't look like a valid ${row.label} key — it spans more than one line. Paste the key again as a single line.`,
+    });
   }
   try {
     setDotEnvSecret(ctx.config.root, row.envVar, key);
-  } catch (err) {
-    const reason = err instanceof Error ? err.message : String(err);
-    return json(res, 400, { error: `Could not save the key: ${reason}` });
+  } catch {
+    // The reason stays out of the response: it names the .env path, and the
+    // only user action is the same one for any write failure.
+    return json(res, 500, {
+      error:
+        "Could not write the key to .env. Check that the repo folder is writable, then try again.",
+    });
   }
   // Deliberately no logging anywhere in this handler, and no echo of the
   // value — the response carries only the resulting hasKey boolean.
