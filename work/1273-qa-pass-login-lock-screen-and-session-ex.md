@@ -11,7 +11,7 @@ branch: feat/qa-pass-login-lock-screen-and-session-ex
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T07:06:52Z"
-updated_at: "2026-11-20T12:16:03Z"
+updated_at: "2026-11-20T12:18:33Z"
 handoff_signal_retry_count: 2
 last_check_failure: "repoos check at 2026-11-20T09:15:23.483Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 ---
@@ -105,3 +105,4 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser. Never
 - 2026-11-20T11:58:33Z · CTO nudge: held — handoff gate is running
 - 2026-11-20T12:16:02Z · handoff failed · remote validation failed: test failure: tests/notifications-settings-qa-browser.test.ts > notification and Telegram settings QA (#1249) > at 375px > connects a bot: the token is accepted and never echoed into the page, tests/notifications-settings-qa-browser.test.ts > notification and Telegram settings QA (#1249) > at 768px > connects a bot: the token is accepted and never echoed into the page, tests/notifications-settings-qa-browser.test.ts > notification and Telegram settings QA (#1249) > at 1280px > connects a bot: the token is accepted and never echoed into the page on bee — fix it in the feature branch and re-run the gate
 - 2026-11-20T12:16:03Z · message_queued at 2026-11-20T12:16:03.610Z
+- 2026-11-20T12:18:33Z · CTO nudge: held — an undelivered message is already queued
