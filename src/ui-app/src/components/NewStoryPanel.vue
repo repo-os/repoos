@@ -466,6 +466,8 @@ function onOpenAutoFocus(e: Event): void {
             — your description will be saved as-is.
           </div>
           <div v-if="formError" class="ff-error">{{ formError }}</div>
+          <!-- Say why Create is off: a disabled button with no reason reads as broken. -->
+          <p v-if="!description.trim()" class="ff-hint">Add a description to create the story.</p>
           <div class="btn-row" style="margin-top: 20px">
             <Button variant="outline" @click="ui.close()">Cancel</Button>
             <Button

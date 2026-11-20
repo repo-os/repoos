@@ -804,6 +804,11 @@ onMounted(() => {
   padding: 0;
   background: none;
 }
+.playground-markdown :deep(ul),
+.playground-markdown :deep(ol) {
+  margin: 5px 0;
+  padding-left: 17px;
+}
 .playground-send-error {
   align-self: center;
   font-size: 11px;

@@ -39,7 +39,11 @@ async function runTest(): Promise<void> {
   try {
     const res = await api("/api/remote-validation/test", { method: "POST" });
     testState.value = res.ok ? "ok" : "fail";
-    testOutput.value = res.ok ? (res.output ?? "") : (res.error ?? "Unknown error");
+    // On failure keep both the headline and the per-host details: the server
+    // names each failing host and its next step in `output`.
+    testOutput.value = res.ok
+      ? (res.output ?? "")
+      : [res.error ?? "Unknown error", res.output].filter(Boolean).join("\n\n");
   } catch (e) {
     testState.value = "fail";
     testOutput.value = (e as Error).message;
@@ -189,7 +193,11 @@ function syncHostsInput(): void {
   hostsInput.value = hosts.join(", ");
 }
 
-async function saveHosts(): Promise<void> {
+// Hosts the pool currently has that the edited list drops. Saving them is a
+// removal, so it waits for an explicit confirm (#1256).
+const pendingRemoval = ref<string[]>([]);
+
+async function saveHosts(confirmedRemoval = false): Promise<void> {
   const list = hostsInput.value
     .split(",")
     .map((s) => s.trim())
@@ -199,6 +207,19 @@ async function saveHosts(): Promise<void> {
       "Nothing to save — add at least one host. To remove every host, edit repoos.toml.";
     return;
   }
+  // Without a loaded pool we cannot tell a removal from an edit, so refuse
+  // rather than save past the confirmation (#1256 review).
+  if (!status.value) {
+    hostsMsg.value = "The host pool has not loaded yet. Refresh, then save again.";
+    return;
+  }
+  const current: string[] = status.value.tailscaleHosts ?? [];
+  const removed = current.filter((h) => !list.includes(h));
+  if (removed.length && !confirmedRemoval) {
+    pendingRemoval.value = removed;
+    return;
+  }
+  pendingRemoval.value = [];
   hostsSaving.value = true;
   hostsMsg.value = "";
   try {
@@ -222,6 +243,12 @@ async function saveHosts(): Promise<void> {
   } finally {
     hostsSaving.value = false;
   }
+}
+
+function cancelRemoval(): void {
+  pendingRemoval.value = [];
+  syncHostsInput();
+  hostsMsg.value = "Not removed. The host pool is unchanged.";
 }
 
 async function copy(text: string): Promise<void> {
@@ -646,9 +673,10 @@ const hetznerSteps: { label: string; body: string; cmd?: string }[] = [
             <input
               id="rvr-hosts-input"
               v-model="hostsInput"
+              @input="pendingRemoval = []"
               type="text"
               placeholder="bee, mac1"
-              @keydown.enter.prevent="saveHosts"
+              @keydown.enter.prevent="saveHosts()"
             />
           </div>
           <div class="btn-row">
@@ -657,11 +685,42 @@ const hetznerSteps: { label: string; body: string; cmd?: string }[] = [
               size="sm"
               :disabled="hostsSaving"
               data-testid="save-hosts"
-              @click="saveHosts"
+              @click="saveHosts()"
             >
               Save hosts
             </Button>
             <span v-if="hostsMsg" class="tunnel-help">{{ hostsMsg }}</span>
+          </div>
+          <div
+            v-if="pendingRemoval.length"
+            class="rvr-remove-confirm"
+            role="group"
+            aria-labelledby="rvr-remove-title"
+            data-testid="remove-hosts-confirm"
+          >
+            <p id="rvr-remove-title" class="rvr-remove-text">
+              Remove {{ pendingRemoval.join(", ") }} from the host pool? New jobs will stop going to
+              {{ pendingRemoval.length === 1 ? "it" : "them" }}. A job already running there will
+              finish.
+            </p>
+            <div class="btn-row">
+              <Button
+                variant="destructive"
+                size="sm"
+                data-testid="confirm-remove-hosts"
+                @click="saveHosts(true)"
+              >
+                Remove {{ pendingRemoval.length === 1 ? "host" : "hosts" }}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                data-testid="cancel-remove-hosts"
+                @click="cancelRemoval"
+              >
+                Keep {{ pendingRemoval.length === 1 ? "it" : "them" }}
+              </Button>
+            </div>
           </div>
         </div>
 
@@ -700,6 +759,9 @@ const hetznerSteps: { label: string; body: string; cmd?: string }[] = [
             <template v-else>
               Verifies the Hetzner API token is valid and can list servers.
             </template>
+          </p>
+          <p v-if="testState === 'running' && provider === 'tailscale'" class="tunnel-help">
+            Checking each host over SSH. A host that does not answer is reported after 15 seconds.
           </p>
           <div
             v-if="testOutput"
@@ -880,6 +942,23 @@ const hetznerSteps: { label: string; body: string; cmd?: string }[] = [
 }
 .rvr-test-section {
   margin-top: 4px;
+}
+.rvr-remove-confirm {
+  margin-top: 8px;
+  padding: 10px 12px;
+  /* hardcode-ok: var() fallback for a theme token — renders only when that token is undefined */
+  border: 1px solid var(--red-border-tint, #5a2a2a);
+  border-radius: 8px;
+  /* hardcode-ok: var() fallback for a theme token — renders only when that token is undefined */
+  background: var(--red-tint, rgba(224, 92, 92, 0.08));
+}
+.rvr-remove-text {
+  margin: 0 0 8px;
+  font-size: 13px;
+  line-height: 1.5;
+  /* hardcode-ok: var() fallback for a theme token — renders only when that token is undefined */
+  color: var(--txt, inherit);
+  overflow-wrap: anywhere;
 }
 .rvr-hosts {
   margin-top: 6px;
