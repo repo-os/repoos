@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 1399876
-last_close_out_gate_at: "2026-11-20T03:13:52.600Z"
 id: "1255"
 title: "QA pass: update banner, version display and release notes modal at all screen sizes"
 type: bug
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: 65f6c7a2e16abadb6d49111e9ba4cd197b4bb73a
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-update-banner-version-display-an
@@ -14,6 +13,8 @@ cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T23:27:47Z"
 updated_at: "2026-11-20T03:13:52Z"
+last_close_out_gate_ms: 1399876
+last_close_out_gate_at: "2026-11-20T03:13:52.600Z"
 review_passes: 5
 review_rounds: 2
 ---
