@@ -2,12 +2,12 @@
 id: "1276"
 title: Close-out validation log should show live progress
 type: feature
-status: ready
+status: active
 priority: p1
 area: [server, core]
 assigned_to: ai
 created_by: t@t
-branch: ""
+branch: feat/close-out-validation-log-should-show-liv
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T07:42:21Z"
@@ -33,3 +33,4 @@ Related: #1272 (timer should count from validation start). Never touch repoos.to
 - 2026-11-20T07:42:21Z · created · t@t
 - 2026-11-20T07:42:27Z · status inbox→ready
 - 2026-11-20T07:46:53Z · cli_override, model_override
+- 2026-11-20T07:46:53Z · status ready→active, branch
