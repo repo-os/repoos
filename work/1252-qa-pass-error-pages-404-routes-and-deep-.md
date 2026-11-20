@@ -12,7 +12,7 @@ branch: feat/qa-pass-error-pages-404-routes-and-deep-
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T22:27:09Z"
-updated_at: "2026-11-20T01:05:17Z"
+updated_at: "2026-11-20T01:13:17Z"
 last_close_out_gate_ms: 1077226
 last_close_out_gate_at: "2026-11-20T01:04:28.427Z"
 review_passes: 1
@@ -43,3 +43,4 @@ Do not touch repoos.toml.
 - 2026-11-20T00:27:11Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-20T01:04:28Z · close-out gate completed in 1077s
 - 2026-11-20T01:05:17Z · status done→done, release:success
+- 2026-11-20T01:13:17Z · message_dropped: 1 queued message(s) discarded — task is done
