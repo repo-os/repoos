@@ -1,0 +1,32 @@
+---
+id: "1259"
+title: "Work board: apply queue search and filters on wide screens, with a search input"
+type: feature
+status: inbox
+needs_input: true
+needs_input_reason: underspecified
+needs_input_detail: "missing sections: Notes for AI"
+priority: p2
+area: web
+depends_on: ["1257"]
+assigned_to: ai
+created_by: t@t
+branch: ""
+created_at: "2026-11-20T00:57:29Z"
+updated_at: "2026-11-20T00:57:30Z"
+---
+## Problem
+Search and quick filters only exist on the phone queue (below 720 px). The desktop board at 720 px and up can only receive them from a URL, so a user cannot set one on a wide screen (#1257 gap).
+
+## Desired UX
+A search control on the desktop board that uses the same predicate and URL keys as the phone queue (lib/workQueueFilters.ts), with the same chip bar and Clear filters.
+
+## Acceptance criteria
+- A search input on the desktop board filters columns and writes q/priority/area/story/mine to the URL.
+- Chips, Clear filters and reload behave as in docs/qa/2026-11-filter-persistence-qa.md.
+- Covered by headless WebKit fixtures at 375, 768 and 1280 px.
+
+## Activity
+
+- 2026-11-20T00:57:29Z · created · t@t
+- 2026-11-20T00:57:30Z · needs_input
