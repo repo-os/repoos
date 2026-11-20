@@ -11,7 +11,7 @@ branch: feat/qa-pass-stories-page-create-link-and-pro
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T23:27:29Z"
-updated_at: "2026-11-19T23:52:46Z"
+updated_at: "2026-11-20T00:01:37Z"
 ---
 ## Problem
 Creating a story, linking tasks to it and reading its progress have not been exercised end to end with edge cases.
@@ -32,3 +32,4 @@ Do not touch repoos.toml.
 - 2026-11-19T23:27:40Z · status ready→active, branch
 - 2026-11-19T23:45:11Z · body
 - 2026-11-19T23:52:46Z · CTO nudge: held — handoff gate is running
+- 2026-11-20T00:01:37Z · CTO nudge: held — handoff gate is running
