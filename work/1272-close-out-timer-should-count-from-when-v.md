@@ -12,7 +12,7 @@ branch: feat/close-out-timer-should-count-from-when-v
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T06:08:31Z"
-updated_at: "2026-11-20T12:52:46Z"
+updated_at: "2026-11-20T12:55:18Z"
 last_close_out_gate_ms: 562167
 last_close_out_gate_at: "2026-11-20T12:52:32.222Z"
 review_passes: 1
@@ -52,3 +52,4 @@ Never touch repoos.toml. Headless Playwright only.
 - 2026-11-20T08:54:36Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-20T12:52:32Z · close-out gate completed in 562s
 - 2026-11-20T12:52:46Z · message_dropped: 1 queued message(s) discarded — task is done
+- 2026-11-20T12:55:18Z · status done→done, release:success
