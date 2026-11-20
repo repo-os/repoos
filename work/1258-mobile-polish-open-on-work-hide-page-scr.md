@@ -11,7 +11,7 @@ branch: feat/mobile-polish-open-on-work-hide-page-scr
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T00:15:33Z"
-updated_at: "2026-11-20T00:17:11Z"
+updated_at: "2026-11-20T00:33:31Z"
 ---
 ## Problem
 On a phone (seen on the Android Hub app, Mission Control page):
@@ -31,6 +31,18 @@ On a phone (seen on the Android Hub app, Mission Control page):
 ## Notes for AI
 Screenshot attached shows the current mobile header and Mission Control. Do not touch repoos.toml. Follow AGENTS.md conventions (full-width pages, no native title tooltips). This is a small UI fix; keep it to these three items.
 
+## Shots
+```json
+[
+{
+  "label": "Work is the home page; header row controls share one height",
+  "target": "default",
+  "route": "/work",
+  "highlight": ".topbar"
+}
+]
+```
+
 ## Screenshots
 
 ![Mobile Mission Control: scrollbar on the right, tall repo chip](/api/tasks/1258/attachments/att_ec508aac-926b-4ad8-8020-060dbcfc4ca0.png)
@@ -43,3 +55,4 @@ Screenshot attached shows the current mobile header and Mission Control. Do not 
 - 2026-11-20T00:16:00Z · cli_override, model_override
 - 2026-11-20T00:16:03Z · status ready→active, branch
 - 2026-11-20T00:17:11Z · note: adopted orphaned engineer pid 86874
+- 2026-11-20T00:33:31Z · body
