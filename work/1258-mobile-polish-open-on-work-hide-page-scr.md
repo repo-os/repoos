@@ -2,14 +2,14 @@
 id: "1258"
 title: "Mobile polish: open on Work, hide page scrollbar, even-height header row"
 type: bug
-status: inbox
+status: ready
 priority: p2
 area: [web, mobile]
 assigned_to: ai
 created_by: t@t
 branch: ""
 created_at: "2026-11-20T00:15:33Z"
-updated_at: "2026-11-20T00:15:36Z"
+updated_at: "2026-11-20T00:15:56Z"
 ---
 ## Problem
 On a phone (seen on the Android Hub app, Mission Control page):
@@ -37,3 +37,4 @@ Screenshot attached shows the current mobile header and Mission Control. Do not 
 
 - 2026-11-20T00:15:33Z · created · t@t
 - 2026-11-20T00:15:36Z · screenshots
+- 2026-11-20T00:15:56Z · status inbox→ready
