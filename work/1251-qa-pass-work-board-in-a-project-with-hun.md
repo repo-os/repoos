@@ -12,7 +12,7 @@ branch: feat/qa-pass-work-board-in-a-project-with-hun
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T22:26:56Z"
-updated_at: "2026-11-20T00:43:09Z"
+updated_at: "2026-11-20T00:45:17Z"
 last_close_out_gate_ms: 1494269
 last_close_out_gate_at: "2026-11-20T00:43:09.234Z"
 review_passes: 1
@@ -43,4 +43,4 @@ Do not touch repoos.toml.
 - 2026-11-19T23:23:59Z · note: review pass 1: good to go
 - 2026-11-20T00:27:11Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-20T00:43:09Z · close-out gate completed in 1494s
-
+- 2026-11-20T00:45:17Z · status done→done, release:success
