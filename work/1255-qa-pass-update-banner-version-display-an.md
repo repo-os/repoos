@@ -1,4 +1,6 @@
 ---
+last_close_out_gate_ms: 1399876
+last_close_out_gate_at: "2026-11-20T03:13:52.600Z"
 id: "1255"
 title: "QA pass: update banner, version display and release notes modal at all screen sizes"
 type: bug
@@ -11,7 +13,7 @@ branch: feat/qa-pass-update-banner-version-display-an
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T23:27:47Z"
-updated_at: "2026-11-20T03:09:27Z"
+updated_at: "2026-11-20T03:13:52Z"
 review_passes: 5
 review_rounds: 2
 ---
@@ -115,3 +117,5 @@ Do not touch repoos.toml.
 - 2026-11-20T02:08:33Z · message_queued at 2026-11-20T02:08:33.517Z
 - 2026-11-20T02:11:45Z · note: review pass 5: good to go
 - 2026-11-20T03:09:27Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-20T03:13:52Z · close-out gate completed in 1400s
+
