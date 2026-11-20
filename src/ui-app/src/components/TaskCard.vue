@@ -2037,7 +2037,7 @@ async function openDebuggerFromError(): Promise<void> {
         v-if="stalledCheck"
         type="button"
         data-test-id="task-card-cancel-stalled-check"
-        class="tc-card-footer-action flex w-full items-center justify-center gap-2 border-t px-4 py-[9px] font-mono text-xs font-semibold text-[var(--warning)] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--border-bright)]"
+        class="tc-card-footer-action flex w-full items-center justify-center gap-2 border-t px-4 py-[9px] font-mono text-xs font-semibold text-[var(--amber)] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--border-bright)]"
         :disabled="cancelCheckBusy || busy"
         title="Explicitly cancel this stalled check; RepoOS verifies process exit before enabling pause or restart."
         @click.stop="askCancelStalledCheck"
