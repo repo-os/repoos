@@ -2,14 +2,14 @@
 id: "1277"
 title: Hide the stale-evidence prompt once a task is queued or moving to done
 type: feature
-status: inbox
+status: ready
 priority: p3
 area: web
 assigned_to: ai
 created_by: t@t
 branch: ""
 created_at: "2026-11-20T08:26:19Z"
-updated_at: "2026-11-20T08:26:22Z"
+updated_at: "2026-11-20T08:26:34Z"
 ---
 ## Problem
 A review card that is already queued for close-out (Moving to done, queued #N) still shows 'Stale evidence is the only finding · repoos verify <id>' and a Refresh evidence button. Once close-out is queued or running the evidence prompt is noise, and clicking it would start a new review on a task that is mid-close-out.
@@ -33,3 +33,4 @@ Never touch repoos.toml. Headless Playwright only.
 
 - 2026-11-20T08:26:19Z · created · t@t
 - 2026-11-20T08:26:22Z · screenshots
+- 2026-11-20T08:26:34Z · status inbox→ready
