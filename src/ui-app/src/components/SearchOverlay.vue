@@ -56,7 +56,7 @@ const activeOptionId = computed(() =>
 /** Focus before the palette opened; restored on dismiss when no caller gave one. */
 let lastFocused: HTMLElement | null = null;
 const loadingBodies = ref(false);
-let bodyLoadSeq = 0;
+let bodyLoadsInFlight = 0;
 
 const settingLocation = computed(() => ({
   inspectorAvailable: repo.health?.copyInspectorAvailable === true,
@@ -224,14 +224,15 @@ async function loadSearchBodies(): Promise<void> {
     props.scope === "context"
       ? [...docList.value.map((d) => d.path), ...skillList.value.map((s) => s.path)]
       : docList.value.map((d) => d.path);
-  // Only the newest load may clear the flag: an older load finishing while a
-  // newer one is still fetching must not show "No results" mid-load.
-  const seq = ++bodyLoadSeq;
+  // Count loads in flight rather than tracking the newest one: the flag stays up
+  // until every fetch has settled, whichever finishes first.
+  bodyLoadsInFlight++;
   loadingBodies.value = true;
   try {
     await ensurePaths(paths);
   } finally {
-    if (seq === bodyLoadSeq) loadingBodies.value = false;
+    bodyLoadsInFlight--;
+    loadingBodies.value = bodyLoadsInFlight > 0;
   }
 }
 
@@ -295,22 +296,24 @@ async function navigateToSetting(
 /** `fallbackFocus` is where focus goes when the caller gave no `returnFocusEl`.
  *  Dismissals (Esc, ✕, backdrop) pass the element focused before opening;
  *  opening a result passes null so it does not pull focus back from the drawer. */
+/** The element focused before opening, unless it is gone or was just `body`
+ *  (⌘K with nothing focused); then the header pill, the one global trigger. */
 function rememberedFocus(): HTMLElement | null {
-  // The trigger may have unmounted while the palette was open; focus() on a
-  // detached node is a silent no-op, so fall back to the header pill instead.
-  if (lastFocused?.isConnected) return lastFocused;
+  if (lastFocused?.isConnected && lastFocused !== document.body) return lastFocused;
   return document.querySelector<HTMLElement>(".search-input");
 }
 
 /** `restoreFocus` is false when the palette hands focus to something it opens
- *  (a task drawer). A caller's `returnFocusEl` still wins either way. */
+ *  (a task drawer). The target is resolved after the timeout, not now: a
+ *  result's router.push may still be unmounting the caller's trigger. */
 function closeOverlay(restoreFocus = true): void {
   emit("update:open", false);
   query.value = "";
-  const el = props.returnFocusEl ?? (restoreFocus ? rememberedFocus() : null);
-  if (el) {
-    setTimeout(() => el.focus(), 0);
-  }
+  setTimeout(() => {
+    const caller = props.returnFocusEl;
+    const el = caller?.isConnected ? caller : restoreFocus ? rememberedFocus() : null;
+    el?.focus();
+  }, 0);
 }
 
 function openResult(r: SearchResult): void {

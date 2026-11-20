@@ -61,8 +61,11 @@ const SCOPES: { scope: SearchScope; query: string }[] = [
   { scope: "context", query: "" },
 ];
 
-function mountPalette(open: boolean, scope: SearchScope) {
-  return mount(SearchOverlay, { props: { open, scope }, attachTo: document.body });
+function mountPalette(open: boolean, scope: SearchScope, returnFocusEl: HTMLElement | null = null) {
+  return mount(SearchOverlay, {
+    props: { open, scope, returnFocusEl },
+    attachTo: document.body,
+  });
 }
 
 function openPalette(scope: SearchScope) {
@@ -292,6 +295,82 @@ describe("palette keyboard movement and state", () => {
       await nextTick();
       expect(document.querySelector(".search-status")?.textContent).toBe("Loading results…");
       pending[1]();
+      await wait(10);
+      await nextTick();
+      expect(document.querySelector(".search-status")?.textContent).toBe(
+        "No results for “zzz-nothing”",
+      );
+    } finally {
+      wrapper.unmount();
+      docs.docs = [];
+    }
+  });
+
+  it("falls back to the header pill when the caller's trigger was unmounted", async () => {
+    const pill = document.createElement("button");
+    pill.className = "search-input";
+    document.body.appendChild(pill);
+    const caller = document.createElement("button");
+    // Never attached: the caller's trigger unmounted before the palette closed.
+    const wrapper = mountPalette(false, "context", caller);
+    try {
+      await setOpen(wrapper, true);
+      await wait(10);
+      const input = document.querySelector<HTMLInputElement>(".search-overlay-input")!;
+      keydown(input, "Escape");
+      await wait(10);
+      expect(document.activeElement).toBe(pill);
+    } finally {
+      wrapper.unmount();
+      pill.remove();
+    }
+  });
+
+  it("falls back to the header pill when nothing was focused before opening", async () => {
+    const pill = document.createElement("button");
+    pill.className = "search-input";
+    document.body.appendChild(pill);
+    (document.activeElement as HTMLElement | null)?.blur();
+    const wrapper = mountPalette(false, "all");
+    try {
+      await setOpen(wrapper, true);
+      await wait(10);
+      const input = document.querySelector<HTMLInputElement>(".search-overlay-input")!;
+      keydown(input, "Escape");
+      await wait(10);
+      expect(document.activeElement).toBe(pill);
+    } finally {
+      wrapper.unmount();
+      pill.remove();
+    }
+  });
+
+  it("keeps the loading state until the older load settles, even if the newer one finishes first", async () => {
+    const pending: (() => void)[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(
+        () =>
+          new Promise((resolve) => {
+            pending.push(() => resolve({ ok: true, text: async () => "" }));
+          }),
+      ),
+    );
+    const docs = useDocsStore();
+    docs.docs = [{ path: "docs/inverse-a.md", title: "A", mtimeMs: 0 }];
+    const wrapper = mountPalette(false, "all");
+    try {
+      await setOpen(wrapper, true);
+      const input = document.querySelector<HTMLInputElement>(".search-overlay-input")!;
+      typeQuery(input, "zzz-nothing");
+      await wait(250);
+      docs.docs = [{ path: "docs/inverse-b.md", title: "B", mtimeMs: 0 }];
+      await wait(250);
+      pending[1](); // newer load settles first
+      await wait(10);
+      await nextTick();
+      expect(document.querySelector(".search-status")?.textContent).toBe("Loading results…");
+      pending[0](); // older load settles last
       await wait(10);
       await nextTick();
       expect(document.querySelector(".search-status")?.textContent).toBe(
