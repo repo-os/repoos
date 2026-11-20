@@ -11,7 +11,7 @@ branch: feat/work-board-move-search-into-the-header-r
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T08:46:27Z"
-updated_at: "2026-11-20T15:07:04Z"
+updated_at: "2026-11-20T15:46:14Z"
 ---
 ## Problem
 The new desktop board search (#1259) sits on its own row below the page title, takes a lot of width, and shows a redundant 'Search: web' chip under it while typing.
@@ -43,3 +43,4 @@ Start from src/ui-app/src/components/BoardQueueSearch.vue and the Work view head
 - 2026-11-20T08:46:44Z · status inbox→ready
 - 2026-11-20T15:06:49Z · cli_override, model_override
 - 2026-11-20T15:07:04Z · status ready→active, branch
+- 2026-11-20T15:46:14Z · message_queued at 2026-11-20T15:46:14.989Z
