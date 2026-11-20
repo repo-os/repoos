@@ -12,7 +12,7 @@ branch: feat/work-board-apply-the-queue-sort-and-make
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T00:57:33Z"
-updated_at: "2026-11-20T10:18:58Z"
+updated_at: "2026-11-20T11:09:48Z"
 close_out_repair_count: 1
 review_passes: 2
 review_rounds: 1
@@ -88,3 +88,5 @@ Headless Playwright only, against fixtures. Do not touch repoos.toml. Keep the i
 - 2026-11-20T10:18:39Z · note: handoff requested (cli)
 - 2026-11-20T10:18:57Z · message_queued at 2026-11-20T10:18:57.888Z
 - 2026-11-20T10:18:58Z · handoff failed · task-file handoff failed at commit · git commit failed: fatal: cannot do a partial commit during a merge.
+- 2026-11-20T10:43:52Z · watchdog: check wait escalated · waiting: system load is high (5.5× per CPU, limit 3×) — waiting for headroom before starting more work; wait exceeds the handoff deadline for 30m · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-11-20T11:09:48Z · needs_input
