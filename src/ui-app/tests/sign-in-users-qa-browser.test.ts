@@ -174,19 +174,29 @@ async function exists(page: SmokePage, selector: string): Promise<boolean> {
   return page.evaluate((sel: string) => document.querySelector(sel) !== null, selector);
 }
 
-async function textOf(page: SmokePage, selector: string): Promise<string> {
-  await waitUntil(`${selector} to have text`, async () => {
-    return (
-      (await page.evaluate(
-        (sel: string) => document.querySelector(sel)?.textContent?.trim() ?? "",
-        selector,
-      )) !== ""
+/**
+ * The element's trimmed text. With `expected`, waits until the text matches it:
+ * a message that appears first and is replaced a moment later must not satisfy
+ * the assertion that follows, so the wait targets the value being asserted.
+ */
+async function textOf(
+  page: SmokePage,
+  selector: string,
+  expected?: string | RegExp,
+): Promise<string> {
+  const read = () =>
+    page.evaluate(
+      (sel: string) => document.querySelector(sel)?.textContent?.trim() ?? "",
+      selector,
     );
-  });
-  return page.evaluate(
-    (sel: string) => document.querySelector(sel)?.textContent?.trim() ?? "",
-    selector,
+  const matches = (text: string): boolean => {
+    if (expected === undefined) return text !== "";
+    return typeof expected === "string" ? text.includes(expected) : expected.test(text);
+  };
+  await waitUntil(`${selector} to say ${expected ?? "something"}`, async () =>
+    matches(await read()),
   );
+  return read();
 }
 
 async function expectNoHorizontalOverflow(page: SmokePage, width: number): Promise<void> {
@@ -271,7 +281,9 @@ describeBrowser("sign-in, users and user menu QA (#1239)", () => {
       await requestCode(page);
       await typeCode(page, "123456");
       await page.click(".login-btn.primary");
-      expect(await textOf(page, ".login-error")).toBe("Invalid or expired code");
+      expect(await textOf(page, ".login-error", "Invalid or expired code")).toBe(
+        "Invalid or expired code",
+      );
       expect(
         await page.evaluate(() => document.querySelector(".login-error")?.getAttribute("role")),
       ).toBe("alert");
@@ -305,7 +317,9 @@ describeBrowser("sign-in, users and user menu QA (#1239)", () => {
       await requestCode(page);
       await typeCode(page, "654321");
       await page.click(".login-btn.primary");
-      expect(await textOf(page, ".login-error")).toContain("Too many failed attempts");
+      expect(await textOf(page, ".login-error", "Too many failed attempts")).toContain(
+        "Too many failed attempts",
+      );
       await expectNoHorizontalOverflow(page, width);
       expect(pageErrors).toEqual([]);
       await page.close();
@@ -363,7 +377,9 @@ describeBrowser("sign-in, users and user menu QA (#1239)", () => {
       const page = await openPage(width, pageErrors);
       await routeApi(page, { ...SIGNED_OUT, "GET /api/auth/status": "abort" }, calls);
       await page.goto(`${server!.url}/login`, { waitUntil: "load", timeout: 15_000 });
-      expect(await textOf(page, '[data-testid="login-status-error"]')).toMatch(/server/i);
+      expect(await textOf(page, '[data-testid="login-status-error"]', /server/i)).toMatch(
+        /server/i,
+      );
       expect(await exists(page, '[data-testid="login-retry"]')).toBe(true);
       await expectNoHorizontalOverflow(page, width);
       await page.close();
@@ -379,7 +395,9 @@ describeBrowser("sign-in, users and user menu QA (#1239)", () => {
       await page.click('input[aria-label="Email address"]');
       await page.keyboard.type(QA_MEMBER);
       await page.keyboard.press("Enter");
-      expect(await textOf(page, ".login-error")).toBe("Network error — try again");
+      expect(await textOf(page, ".login-error", "Network error — try again")).toBe(
+        "Network error — try again",
+      );
       await page.close();
     });
 
@@ -422,7 +440,9 @@ describeBrowser("sign-in, users and user menu QA (#1239)", () => {
       });
       await page.click(".auth-user-row:nth-child(2) .auth-action.danger");
       await waitUntil("the removal dialog", () => exists(page, '[role="dialog"]'));
-      expect(await textOf(page, '[role="dialog"]')).toContain(`Remove ${QA_MEMBER}?`);
+      expect(await textOf(page, '[role="dialog"]', `Remove ${QA_MEMBER}?`)).toContain(
+        `Remove ${QA_MEMBER}?`,
+      );
       await page.evaluate(() => {
         const confirm = [...document.querySelectorAll('[role="dialog"] button')].find(
           (b) => b.textContent?.trim() === "Remove user",
@@ -455,7 +475,9 @@ describeBrowser("sign-in, users and user menu QA (#1239)", () => {
       await spyOnConfirm(page);
       await page.click(".tg-link-row .auth-action.danger");
       await waitUntil("the unbind dialog", () => exists(page, '[role="dialog"]'));
-      expect(await textOf(page, '[role="dialog"]')).toContain("Unbind Telegram @qa_member from");
+      expect(await textOf(page, '[role="dialog"]', "Unbind Telegram @qa_member from")).toContain(
+        "Unbind Telegram @qa_member from",
+      );
       await clickDialogButton(page, "Unbind");
       await waitUntil("the unbind request", async () =>
         calls.includes("DELETE /api/auth/telegram/links/42"),
@@ -466,9 +488,9 @@ describeBrowser("sign-in, users and user menu QA (#1239)", () => {
       );
       await page.click(".tg-disconnect-row .auth-action.danger");
       await waitUntil("the disconnect dialog", () => exists(page, '[role="dialog"]'));
-      expect(await textOf(page, '[role="dialog"]')).toContain(
-        "Disconnect Telegram for this repository?",
-      );
+      expect(
+        await textOf(page, '[role="dialog"]', "Disconnect Telegram for this repository?"),
+      ).toContain("Disconnect Telegram for this repository?");
       await clickDialogButton(page, "Disconnect");
       await waitUntil("the disconnect request", async () =>
         calls.includes("POST /api/auth/telegram/disconnect"),
@@ -492,7 +514,7 @@ describeBrowser("sign-in, users and user menu QA (#1239)", () => {
         timeout: 15_000,
       });
       await waitUntil("the Telegram error", () => exists(page, ".auth-error"));
-      expect(await textOf(page, ".auth-error")).toMatch(/Telegram accounts/);
+      expect(await textOf(page, ".auth-error", /Telegram accounts/)).toMatch(/Telegram accounts/);
       expect(
         await page.evaluate(() =>
           document.body.innerText.includes("No Telegram accounts bound yet."),
@@ -500,7 +522,7 @@ describeBrowser("sign-in, users and user menu QA (#1239)", () => {
       ).toBe(false);
       await page.click(".auth-audit-toggle .auth-link");
       await waitUntil("the audit error", () => exists(page, ".auth-audit .auth-error"));
-      expect(await textOf(page, ".auth-audit .auth-error")).toMatch(/audit log/);
+      expect(await textOf(page, ".auth-audit .auth-error", /audit log/)).toMatch(/audit log/);
       expect(
         await page.evaluate(() => document.body.innerText.includes("No audit entries yet.")),
       ).toBe(false);
@@ -540,7 +562,9 @@ describeBrowser("sign-in, users and user menu QA (#1239)", () => {
         async () => !(await exists(page, ".auth-loading")),
       );
       expect(await exists(page, ".auth-empty")).toBe(false);
-      expect(await textOf(page, ".auth-error")).toMatch(/couldn.t load users/i);
+      expect(await textOf(page, ".auth-error", /couldn.t load users/i)).toMatch(
+        /couldn.t load users/i,
+      );
       await page.close();
     }, 30_000);
 
