@@ -64,6 +64,32 @@ release soak), a few patterns recur. Full CLI table and incident notes:
   `git checkout main -- repoos.toml`. Implement commits and engineer WIP checkpoints
   never stage `repoos.toml` unless the task explicitly scoped config work.
 
+## Queueing several close-outs
+
+When several tasks are green at once, queue every one of them right away. Do not
+wait for one close-out to finish before queueing the next.
+
+- **Which tasks:** each one that `repoos landable <id>` reports as ready to merge,
+  once the human has approved landing it (AGENTS.md, Review and sign-off).
+- **Queue them:** run `repoos done <id>` for each task back to back, without
+  `--wait`. Each call returns once its job is queued. Each task is its own
+  integration job, and the queue runs the jobs in order.
+- **Check the queue:** `GET /api/tasks/<id>/integration-job` returns
+  `queuePosition` (0 runs next, `-1` once the job is no longer queued) and
+  `queueLength`. `repoos driver brief` shows the same positions under
+  "Close-out queue". Observed 2026-11-20: six close-outs queued together showed
+  `queuePosition` 0..5 and ran in that order.
+- **Speed comes from machine load, not click timing.** Waiting in the queue does
+  not spend the close-out budget: `closeOut.timeoutMs` starts when a job leaves
+  the queue. A slow gate or a loaded machine slows the queue, so queueing the
+  rest early is what keeps it busy.
+- **When one fails:** a failed job moves to `failed` with a `reason` and drops
+  out of the queue. The jobs behind it keep running. Read the reason. If the
+  branch needs work (a merge conflict or a failing check), fix it on the same
+  branch, confirm `repoos landable <id>` again, and queue the task again. If the
+  failure is environmental (a timeout, a lock, a server reload), queue the task
+  again without changing the branch.
+
 ## Merge-readiness checks: `repoos landable <id>` (#0867)
 
 Before approving a task in `review` and before pressing **Move to done**, run
