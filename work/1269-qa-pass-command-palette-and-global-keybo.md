@@ -2,7 +2,7 @@
 id: "1269"
 title: "QA pass: command palette and global keyboard shortcuts"
 type: feature
-status: review
+status: active
 priority: p2
 area: web
 assigned_to: ai
