@@ -2,7 +2,7 @@
 id: "1260"
 title: "Work board: apply the queue sort and make mobile-only status values visible"
 type: bug
-status: review
+status: active
 priority: p3
 area: web
 depends_on: ["1257"]
@@ -13,6 +13,7 @@ cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T00:57:33Z"
 updated_at: "2026-11-20T05:49:25Z"
+review_rounds: 1
 review_passes: 1
 ---
 ## Problem
@@ -66,3 +67,4 @@ Headless Playwright only, against fixtures. Do not touch repoos.toml. Keep the i
 - 2026-11-20T05:47:38Z · message_queued at 2026-11-20T05:47:38.246Z
 - 2026-11-20T05:49:24Z · note: review pass 1: needs some work
 - 2026-11-20T05:49:25Z · message_delivered: 1 message(s)
+- 2026-11-20T05:49:25Z · status review→active
