@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 858497
-last_close_out_gate_at: "2026-11-20T11:15:11.869Z"
 id: "1269"
 title: "QA pass: command palette and global keyboard shortcuts"
 type: feature
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: 086cae63bd2a5f53d4805f2bfb09dab9bc2e02d1
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-command-palette-and-global-keybo
@@ -14,6 +13,8 @@ cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T05:08:53Z"
 updated_at: "2026-11-20T11:15:11Z"
+last_close_out_gate_ms: 858497
+last_close_out_gate_at: "2026-11-20T11:15:11.869Z"
 review_passes: 3
 review_rounds: 2
 ---
