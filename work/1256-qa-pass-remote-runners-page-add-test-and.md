@@ -2,14 +2,14 @@
 id: "1256"
 title: "QA pass: remote runners page add, test and remove flows with failures"
 type: bug
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
 branch: ""
 created_at: "2026-11-20T00:07:05Z"
-updated_at: "2026-11-20T00:07:05Z"
+updated_at: "2026-11-20T00:07:14Z"
 ---
 ## Problem
 Adding, testing and removing a remote runner has not been checked for unreachable hosts, wrong users, missing CLIs and slow responses.
@@ -24,3 +24,4 @@ Do not touch repoos.toml.
 ## Activity
 
 - 2026-11-20T00:07:05Z · created · t@t
+- 2026-11-20T00:07:14Z · status inbox→ready
