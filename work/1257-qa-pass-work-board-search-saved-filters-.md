@@ -11,7 +11,7 @@ branch: feat/qa-pass-work-board-search-saved-filters-
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T00:07:29Z"
-updated_at: "2026-11-20T01:32:05Z"
+updated_at: "2026-11-20T01:32:06Z"
 handoff_signal_retry_count: 1
 review_rounds: 1
 review_passes: 1
@@ -68,3 +68,4 @@ Do not touch repoos.toml.
 - 2026-11-20T01:20:36Z · message_delivered: 1 message(s)
 - 2026-11-20T01:26:56Z · body
 - 2026-11-20T01:32:05Z · note: ui verification failed: ui verification failed (1 issue(s)): [missing-target] Pipeline with filter chip bar and the not-applied note (target "default"): highlight .board-queue-filter-note matched nothing on /work?tab=pipeline&q=login (http://127.0.0.1:45181/work?tab=pipeline&q=login)
+- 2026-11-20T01:32:06Z · message_queued at 2026-11-20T01:32:06.072Z
