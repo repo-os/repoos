@@ -68,6 +68,20 @@
   --txt-secondary: var(--txt-dim);
   --txt-primary: var(--txt);
   --bg-secondary: var(--panel);
+  /* #1268: the Docs, history, new-doc and task surfaces used these names
+     without declaring them, so hover, selected and badge backgrounds and the
+     focus outlines silently computed to nothing. Same approach as #1231. */
+  --bg-overlay: var(--nav-hover-bg);
+  --bg-accent-soft: var(--cyan-dim);
+  --bg-elev: var(--panel-solid);
+  --surface-1: var(--panel-solid);
+  --surface-2: var(--bg-2);
+  --info: var(--cyan);
+  --info-alpha: var(--cyan-dim);
+  --red-alpha: var(--red-tint);
+  --focus: var(--border-focus);
+  --yellow: var(--amber);
+  --warning: var(--amber);
   --border-focus: var(--border-bright);
   --cyan-tint: color-mix(in srgb, var(--cyan) 12%, transparent);
   --cyan-border-tint: color-mix(in srgb, var(--cyan) 25%, transparent);
@@ -5618,16 +5632,27 @@
   background: var(--doc-row-sel-bg);
   color: var(--doc-row-sel-color);
 }
+/* Skill rows are buttons (#1268): reset the UA button look, and ring the row
+   when keyboard focus lands on it. */
 .skill-row {
   display: flex;
   flex-direction: column;
   gap: 3px;
+  width: 100%;
   padding: 8px 10px;
+  border: 0;
   border-radius: 9px;
+  background: transparent;
   cursor: pointer;
   color: var(--txt-dim);
+  font-family: inherit;
   font-size: 12.5px;
+  text-align: left;
   transition: 0.12s;
+}
+.skill-row:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: -2px;
 }
 .skill-row:hover {
   background: var(--nav-hover-bg);
@@ -7690,7 +7715,9 @@
   border: 1px solid var(--border);
   border-radius: 5px;
   padding: 1px 5px;
-  white-space: nowrap;
+  /* #1268: nowrap let a long inline token run 876px wide at phone width.
+     Wrap it instead; fenced blocks keep `white-space: pre` in `pre code`. */
+  white-space: normal;
   overflow-wrap: anywhere;
 }
 .md-rendered pre {
