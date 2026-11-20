@@ -142,10 +142,9 @@ describe("mobile web polish (#1139)", () => {
     expect(css).toMatch(
       /@media \(min-width: 720px\) and \(max-width: 900px\)\s*\{[\s\S]*?\.page-header\s*\{[^}]*flex-wrap:\s*wrap/s,
     );
-    // Agents sub-tabs wrap on phones/tablets instead of scrolling off-screen.
-    expect(css).toMatch(
-      /@media \(max-width: 900px\)\s*\{[\s\S]*?\.agent-tabs\s*\{[^}]*flex-wrap:\s*wrap;[^}]*overflow-x:\s*visible/s,
-    );
+    // Agents sub-tabs wrap at every width instead of scrolling off-screen (#1263).
+    expect(css).toMatch(/\.agent-tabs\s*\{[^}]*flex-wrap:\s*wrap;/s);
+    expect(css).not.toMatch(/\.agent-tabs\s*\{[^}]*overflow-x:\s*auto/s);
     expect(agentsView).toContain('class="agent-tabs"');
   });
 

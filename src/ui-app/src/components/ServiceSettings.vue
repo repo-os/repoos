@@ -279,6 +279,7 @@ onMounted(() => {
             </div>
             <div class="setting-input">
               <Switch
+                aria-label="Start at login"
                 :checked="service.autoStart"
                 :disabled="isBusy"
                 @update:checked="toggleAutoStart"
@@ -318,7 +319,7 @@ onMounted(() => {
           class="setting-row"
         >
           <div class="setting-info">
-            <div class="setting-label" style="color: var(--yellow)">⚠ Linger not enabled</div>
+            <div class="setting-label" style="color: var(--amber)">⚠ Linger not enabled</div>
             <div class="setting-desc">
               Systemd user services stop on logout unless lingering is enabled. To keep this service
               running after you close your terminal or log out:

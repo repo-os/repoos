@@ -2,17 +2,20 @@
 id: "1263"
 title: "QA pass: Settings general, agents and budget tabs"
 type: feature
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: f31d5a34316eb1f72eb0a5051816d26dd4fc3d33
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-settings-general-agents-and-budg
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T02:27:07Z"
-updated_at: "2026-11-20T08:27:31Z"
-review_passes: 4
+updated_at: "2026-11-20T14:35:01Z"
+last_close_out_gate_ms: 946330
+last_close_out_gate_at: "2026-11-20T14:34:05.719Z"
+review_passes: 5
 review_rounds: 2
 ---
 ## Problem
@@ -108,3 +111,7 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 - 2026-11-20T07:24:59Z · note: review pass 4: needs some work — clamped by automated verification: browser verification: Handoff browser verification recorded 2 blocking issue(s): [missing-target] Settings General with every setting control named (target "default"): loading state detected: loading indicator [aria-busy="true"] on /settings?tab=general; [missing-target] Agents Budget Controls tab with named controls (target "default"): loading state detected: loading indicator [aria-busy="true"] on /agents?tab=budget-controls
 - 2026-11-20T07:25:00Z · message_queued at 2026-11-20T07:25:00.019Z
 - 2026-11-20T08:27:31Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-20T13:23:35Z · note: review pass 5: good to go
+- 2026-11-20T14:34:05Z · close-out gate completed in 946s
+- 2026-11-20T14:34:14Z · message_dropped: 1 queued message(s) discarded — task is done
+- 2026-11-20T14:35:01Z · status done→done, release:success

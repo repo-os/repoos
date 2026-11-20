@@ -324,7 +324,7 @@ function outcomeLabel(r: CheckRunRow): string {
         Skipped steps and older runs without timings are excluded from duration and failure samples.
         Machines and scopes are combined.
       </p>
-      <div v-if="stepStats.length" class="cr-table-wrap">
+      <div v-if="stepStats.length" class="cr-table-wrap" tabindex="0">
         <table class="cr-table">
           <thead>
             <tr>
@@ -358,12 +358,13 @@ function outcomeLabel(r: CheckRunRow): string {
       </p>
     </section>
 
-    <div v-if="!loading && runs.length === 0" class="cr-empty">
+    <!-- A failed first load is an error, not an empty history: say only the former. -->
+    <div v-if="!loading && !error && runs.length === 0" class="cr-empty">
       No recorded runs yet. Every <code>repoos check</code> — handoff, close-out, release, or a bare
       CLI run — lands here once it finishes.
     </div>
 
-    <div v-else-if="runs.length" class="cr-table-wrap">
+    <div v-else-if="runs.length" class="cr-table-wrap" tabindex="0">
       <table class="cr-table">
         <thead>
           <tr>

@@ -123,6 +123,8 @@ describe("Stop MTD cancellation (#0459)", () => {
       // filesystem readdir order, which is not stable.
       coordinator.updateJob("0003", { enqueuedAt: "2026-01-01T00:00:00.000Z" });
       coordinator.updateJob("0004", { enqueuedAt: "2026-01-01T00:00:01.000Z" });
+      // 0003 has left the queue (validation started); 0004 is still waiting.
+      coordinator.updateJob("0003", { phase: "syncing", startedAt: "2026-01-01T00:00:02.000Z" });
       const before = buildIntegrationSnapshot(coordinator, {});
       expect(before.active?.taskId).toBe("0003");
       expect(before.queue).toEqual(["0004"]);
@@ -130,8 +132,11 @@ describe("Stop MTD cancellation (#0459)", () => {
       coordinator.requestCancel("0003");
       const after = buildIntegrationSnapshot(coordinator, {});
 
-      expect(after.active?.taskId).toBe("0004");
-      expect(after.queue).toEqual([]);
+      // The cancelled job is hidden at once; the next job is queued, not active,
+      // until it actually starts (#1272).
+      expect(after.active).toBeNull();
+      expect(after.queue).toEqual(["0004"]);
+      expect(after.queueDetail?.[0]).toMatchObject({ taskId: "0004", position: 1 });
       expect(after.empty).toBe(false);
     } finally {
       clean();
