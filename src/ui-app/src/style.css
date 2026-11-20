@@ -8876,32 +8876,23 @@
   white-space: nowrap;
   flex: none;
 }
+/* #1139: the Agents sub-tab strip ("Agents / Build Your Team / Scheduled
+   Tasks…") was horizontally clipped. Its scrollbar is hidden, so a clipped
+   tab can't be reached. Let it wrap onto further rows at every width (#1263:
+   "Model routing" was clipped at 1280px). */
 .agent-tabs {
   display: flex;
   gap: 4px;
-  flex-wrap: nowrap;
-  overflow-x: auto;
+  flex-wrap: wrap;
   margin: 0 0 16px;
   padding: 0 18px;
   border-bottom: 1px solid var(--border);
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
-.agent-tabs::-webkit-scrollbar {
-  display: none;
 }
 .agent-tabs .tab-btn {
   white-space: nowrap;
   padding: 10px 14px;
 }
-/* #1139: the Agents sub-tab strip ("Agents / Build Your Team / Scheduled
-   Tasks…") was horizontally clipped on phones and landscape tablets. Let it
-   wrap onto a second row instead of hiding destinations off-screen. */
 @media (max-width: 900px) {
-  .agent-tabs {
-    flex-wrap: wrap;
-    overflow-x: visible;
-  }
   .agent-tabs .tab-btn {
     white-space: normal;
     min-height: 44px;

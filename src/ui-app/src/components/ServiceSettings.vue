@@ -279,6 +279,7 @@ onMounted(() => {
             </div>
             <div class="setting-input">
               <Switch
+                aria-label="Start at login"
                 :checked="service.autoStart"
                 :disabled="isBusy"
                 @update:checked="toggleAutoStart"

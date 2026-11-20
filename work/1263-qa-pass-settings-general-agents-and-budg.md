@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 946330
-last_close_out_gate_at: "2026-11-20T14:34:05.719Z"
 id: "1263"
 title: "QA pass: Settings general, agents and budget tabs"
 type: feature
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: f31d5a34316eb1f72eb0a5051816d26dd4fc3d33
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-settings-general-agents-and-budg
@@ -14,6 +13,8 @@ cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T02:27:07Z"
 updated_at: "2026-11-20T14:34:05Z"
+last_close_out_gate_ms: 946330
+last_close_out_gate_at: "2026-11-20T14:34:05.719Z"
 review_passes: 5
 review_rounds: 2
 ---
