@@ -78,3 +78,4 @@ Headless Playwright only, against fixtures. Do not touch repoos.toml. Keep the i
 - 2026-11-20T07:07:02Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-20T09:14:42Z · status review→active
 - 2026-11-20T09:14:42Z · note: close-out repair: merge-conflict
+- 2026-11-20T09:14:42Z · message_delivered: 1 message(s)
