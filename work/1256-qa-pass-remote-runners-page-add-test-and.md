@@ -8,8 +8,10 @@ area: web
 assigned_to: ai
 created_by: t@t
 branch: ""
+cli_override: claude code
+model_override: haiku
 created_at: "2026-11-20T00:07:05Z"
-updated_at: "2026-11-20T00:07:14Z"
+updated_at: "2026-11-20T00:07:18Z"
 ---
 ## Problem
 Adding, testing and removing a remote runner has not been checked for unreachable hosts, wrong users, missing CLIs and slow responses.
@@ -25,3 +27,4 @@ Do not touch repoos.toml.
 
 - 2026-11-20T00:07:05Z · created · t@t
 - 2026-11-20T00:07:14Z · status inbox→ready
+- 2026-11-20T00:07:18Z · cli_override, model_override
