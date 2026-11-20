@@ -3,16 +3,13 @@ id: "1276"
 title: Close-out validation log should show live progress
 type: feature
 status: active
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: `needs some work` — progress reporting and presentation have correctness gaps.
 priority: p1
 area: [server, core]
 assigned_to: ai
 created_by: t@t
 branch: feat/close-out-validation-log-should-show-liv
 created_at: "2026-11-20T07:42:21Z"
-updated_at: "2026-11-20T20:07:07Z"
+updated_at: "2026-11-20T20:07:10Z"
 review_passes: 3
 review_failed_report_retries: 0
 review_rounds: 2
@@ -99,3 +96,4 @@ Related: #1272 (timer should count from validation start). Never touch repoos.to
 - 2026-11-20T20:06:59Z · cli_override, model_override
 - 2026-11-20T20:07:00Z · model_override
 - 2026-11-20T20:07:07Z · status review→active
+- 2026-11-20T20:07:10Z · watchdog: restarting engineer because a queued message waited 285m with no live process
