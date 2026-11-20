@@ -11,7 +11,7 @@ branch: feat/mobile-polish-open-on-work-hide-page-scr
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T00:15:33Z"
-updated_at: "2026-11-20T15:32:25Z"
+updated_at: "2026-11-20T15:32:52Z"
 last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
 last_handoff_failure_sha: bedc3455e991267a2057dbbd535a6d9f46966f62
 check_retry_count: 1
@@ -133,3 +133,4 @@ Screenshot attached shows the current mobile header and Mission Control. Do not 
 - 2026-11-20T14:56:22Z · CTO action: restart-stalled-agent (fresh) · agent crashed or was interrupted mid-turn — task-file handoff failed at check · remote validation failed: test failure: tests/mobile-touch-affordances.test.ts > mobile web polish (#1139) > gives top-bar controls a 44px touch target and keeps the project name visible, tests/mobile-touch-affordances.test.ts > mobile web polish (#1139) > turns search into a compact accessible icon button on phones, tests/shot-target-support-0866.test.ts > app target resolution (#0866) > keeps APP_ROUTE_PREFIXES in sync with the UI router on mini — fix it in the feature branch and re-run the gate
 - 2026-11-20T15:20:08Z · CTO nudge: held — machine under pressure (CPU idle is 0% (below 5%) — holding new work until the machine has idle CPU)
 - 2026-11-20T15:32:25Z · message_queued at 2026-11-20T15:32:25.802Z
+- 2026-11-20T15:32:52Z · CTO nudge: held — an undelivered message is already queued
