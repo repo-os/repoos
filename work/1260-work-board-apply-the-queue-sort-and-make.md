@@ -1,9 +1,8 @@
 ---
-close_out_repair_count: 1
 id: "1260"
 title: "Work board: apply the queue sort and make mobile-only status values visible"
 type: bug
-status: active
+status: review
 priority: p3
 area: web
 depends_on: ["1257"]
@@ -13,7 +12,8 @@ branch: feat/work-board-apply-the-queue-sort-and-make
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T00:57:33Z"
-updated_at: "2026-11-20T09:14:42Z"
+updated_at: "2026-11-20T13:05:28Z"
+close_out_repair_count: 1
 review_passes: 2
 review_rounds: 1
 ---
@@ -80,4 +80,4 @@ Headless Playwright only, against fixtures. Do not touch repoos.toml. Keep the i
 - 2026-11-20T09:14:42Z · status review→active
 - 2026-11-20T09:14:42Z · note: close-out repair: merge-conflict
 - 2026-11-20T09:14:42Z · message_delivered: 1 message(s)
-
+- 2026-11-20T13:05:28Z · status active→review
