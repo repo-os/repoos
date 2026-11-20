@@ -2,7 +2,7 @@
 id: "1259"
 title: "Work board: apply queue search and filters on wide screens, with a search input"
 type: feature
-status: active
+status: review
 priority: p2
 area: web
 depends_on: ["1257"]
@@ -12,7 +12,7 @@ branch: feat/work-board-apply-queue-search-and-filter
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T00:57:29Z"
-updated_at: "2026-11-20T05:09:24Z"
+updated_at: "2026-11-20T05:24:20Z"
 ---
 ## Problem
 Search and quick filters only exist on the phone queue (below 720 px). The desktop board at 720 px and up can only receive them from a URL, so a user cannot set one on a wide screen (#1257 gap).
@@ -46,3 +46,4 @@ Headless Playwright only, against fixtures. Do not touch repoos.toml. Reuse the 
 - 2026-11-20T04:59:33Z · message_delivered: 1 message(s)
 - 2026-11-20T05:05:53Z · body
 - 2026-11-20T05:09:24Z · CTO nudge: held — handoff gate is running
+- 2026-11-20T05:24:20Z · status active→review
