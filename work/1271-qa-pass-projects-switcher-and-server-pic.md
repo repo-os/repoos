@@ -11,7 +11,7 @@ branch: feat/qa-pass-projects-switcher-and-server-pic
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T06:07:22Z"
-updated_at: "2026-11-20T13:40:27Z"
+updated_at: "2026-11-20T13:54:14Z"
 review_rounds: 1
 review_passes: 2
 handoff_signal_retry_count: 2
@@ -87,3 +87,4 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 - 2026-11-20T13:34:03Z · note: handoff requested (cli)
 - 2026-11-20T13:38:33Z · CTO nudge: held — handoff gate is running
 - 2026-11-20T13:40:27Z · message_delivered: 1 message(s)
+- 2026-11-20T13:54:14Z · handoff failed · task-file handoff failed at check · the worktree changed while the gate was running (appeared: mobile/src/App.vue, mobile/src/components/BottomSheet.vue, mobile/src/style.css, mobile/src/components/DevUpdateDialog.vue, mobile/src/modal-focus.ts, src/ui-app/tests/mobile-update-dialog-focus.test.ts) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
