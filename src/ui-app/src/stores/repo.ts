@@ -998,6 +998,19 @@ export const useRepoStore = defineStore("repo", () => {
   >({});
   /** Full patch diffs per task. */
   const diffs = ref<Record<string, { patch: string; truncated: boolean } | null>>({});
+  /**
+   * Drawer loads that failed, keyed `<kind>:<taskId>`. The loaders below stay
+   * best-effort so one endpoint can't break the board, but without this record
+   * the drawer can't tell "still loading" from "failed", and a failed load sat
+   * on its spinner or empty-state copy forever (#1264).
+   */
+  const drawerLoadFailed = ref<Record<string, boolean>>({});
+  type DrawerLoadKind = "diff" | "diff-stats" | "review" | "usage";
+  function setDrawerLoad(kind: DrawerLoadKind, id: string, failed: boolean): void {
+    drawerLoadFailed.value = { ...drawerLoadFailed.value, [`${kind}:${id}`]: failed };
+  }
+  const drawerLoadFailedFor = (kind: DrawerLoadKind, id: string): boolean =>
+    drawerLoadFailed.value[`${kind}:${id}`] === true;
   /** Live merge conflict (task branch vs main) per task; undefined until first load. */
   const mergeConflicts = ref<Record<string, MergeConflictReport | undefined>>({});
   /** Landing pre-checks (#0867) per task; undefined until first load. */
@@ -3434,7 +3447,10 @@ export const useRepoStore = defineStore("repo", () => {
         history?: ReviewState["history"];
         lines?: AgentOutputEntry[];
       }>(`/api/tasks/${id}/review`);
-      if (!r.ok) return;
+      if (!r.ok) {
+        setDrawerLoad("review", id, true);
+        return;
+      }
       reviews.value = {
         ...reviews.value,
         [id]: {
@@ -3446,8 +3462,10 @@ export const useRepoStore = defineStore("repo", () => {
           lines: r.lines ?? [],
         },
       };
+      setDrawerLoad("review", id, false);
     } catch {
       /* endpoint unavailable — the review is advisory, never blocking */
+      setDrawerLoad("review", id, true);
     }
   }
 
@@ -3500,6 +3518,7 @@ export const useRepoStore = defineStore("repo", () => {
         noBranch?: boolean;
         noWorktree?: boolean;
       }>(`/api/tasks/${id}/diff-stats`);
+      setDrawerLoad("diff-stats", id, !r.ok);
       if (r.ok) {
         diffStats.value = {
           ...diffStats.value,
@@ -3508,6 +3527,7 @@ export const useRepoStore = defineStore("repo", () => {
       }
     } catch {
       /* endpoint unavailable — diff stats are nice-to-have */
+      setDrawerLoad("diff-stats", id, true);
     }
   }
 
@@ -3602,9 +3622,11 @@ export const useRepoStore = defineStore("repo", () => {
   async function loadTaskUsage(id: string): Promise<void> {
     try {
       const r = await api<{ ok: boolean; stats: TaskUsageStats | null }>(`/api/tasks/${id}/stats`);
+      setDrawerLoad("usage", id, !r.ok);
       if (r.ok) taskUsage.value = { ...taskUsage.value, [id]: r.stats ?? null };
     } catch {
       /* endpoint unavailable — usage is nice-to-have */
+      setDrawerLoad("usage", id, true);
     }
   }
 
@@ -3652,6 +3674,7 @@ export const useRepoStore = defineStore("repo", () => {
         noBranch?: boolean;
         noWorktree?: boolean;
       }>(`/api/tasks/${id}/diff`);
+      setDrawerLoad("diff", id, !r.ok);
       if (r.ok) {
         diffs.value = {
           ...diffs.value,
@@ -3660,6 +3683,7 @@ export const useRepoStore = defineStore("repo", () => {
       }
     } catch {
       /* endpoint unavailable — diff is nice-to-have */
+      setDrawerLoad("diff", id, true);
     }
   }
 
@@ -4803,6 +4827,7 @@ export const useRepoStore = defineStore("repo", () => {
     loadBoardUsage,
     loadDiff,
     diffFor,
+    drawerLoadFailedFor,
     loadMergeConflict,
     mergeConflicts,
     loadLandable,
