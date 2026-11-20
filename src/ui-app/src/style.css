@@ -7640,6 +7640,33 @@
 .md-rendered ol:last-child {
   margin-bottom: 0;
 }
+/* Preflight resets every list to `list-style: none`, which drops the markers
+   while keeping the indent. One shared rule restores them on every rendered-
+   markdown surface. src/ui-app/tests/markdown-list-markers.test.ts checks every
+   v-html in a file that imports renderMarkdown/renderChatMarkdown, including
+   computed names such as `v-html="specHtml"`, and fails if its container class
+   is missing here. Markdown rendered by a child component is not scanned, so
+   add new surfaces to this list by hand (#1255 review). */
+.md-rendered ul,
+.pm-markdown ul,
+.cto-markdown ul,
+.debugger-markdown ul,
+.td-markdown ul,
+.guide-markdown ul,
+.playground-markdown ul,
+.release-update-markdown ul {
+  list-style: disc;
+}
+.md-rendered ol,
+.pm-markdown ol,
+.cto-markdown ol,
+.debugger-markdown ol,
+.td-markdown ol,
+.guide-markdown ol,
+.playground-markdown ol,
+.release-update-markdown ol {
+  list-style: decimal;
+}
 .md-rendered a {
   color: var(--cyan);
   text-decoration: none;

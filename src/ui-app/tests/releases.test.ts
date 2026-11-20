@@ -803,10 +803,10 @@ describe("feature releases", () => {
   });
 
   it.each([
-    { agents: 2, checks: 1, expected: "2 agents and 1 check running" },
-    { agents: 1, checks: 2, expected: "1 agent and 2 checks running" },
-    { agents: 1, checks: 1, expected: "1 agent and 1 check running" },
-    { agents: 0, checks: 0, expected: "0 agents and 0 checks running" },
+    { agents: 2, checks: 1, expected: "2 agents and 1 check are running" },
+    { agents: 1, checks: 2, expected: "1 agent and 2 checks are running" },
+    { agents: 1, checks: 1, expected: "1 agent and 1 check are running" },
+    { agents: 0, checks: 0, expected: "0 agents and 0 checks are running" },
   ])("pluralizes active work counts: $expected", async ({ agents, checks, expected }) => {
     vi.stubGlobal(
       "fetch",
@@ -824,6 +824,59 @@ describe("feature releases", () => {
     } finally {
       wrapper.unmount();
       vi.unstubAllGlobals();
+    }
+  });
+
+  it("words the restart notice in plain English, without internal jargon (#1255)", () => {
+    expect(releaseUpdateNotificationSource).not.toMatch(/serve flags/);
+    expect(releaseUpdateNotificationSource).not.toMatch(/#0214/);
+    expect(releaseUpdateNotificationSource).toMatch(/>Read more on GitHub<\/a>\./);
+    expect(releaseUpdateNotificationSource).toMatch(
+      /restart it\s+with the same settings\s+and\s+port\s+it was started with/,
+    );
+  });
+
+  it("gives the waiting line the muted size on its own row (#1255)", () => {
+    expect(releaseUpdateNotificationSource).toMatch(
+      /<p\s+v-if="restartStatus\.restartWhenIdlePending"\s+class="release-update-muted release-update-status"\s+role="status"/,
+    );
+    // Supervised (inside Cancel's row) and hand-run (manual block) both render the line.
+    const waitingLines = releaseUpdateNotificationSource.match(
+      /class="release-update-muted release-update-status"\s+role="status"/g,
+    );
+    expect(waitingLines).toHaveLength(2);
+    expect(releaseUpdateNotificationSource).toMatch(
+      /\.release-update-status\s*\{[^}]*flex:\s*1 0 100%/s,
+    );
+  });
+
+  it("names the command to run in the restart failure fixture (#1255)", async () => {
+    const original = window.location.href;
+    window.history.replaceState({}, "", "/work?shotState=release:restartError");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockImplementation(() =>
+        Promise.resolve(
+          new Response(JSON.stringify({ state: "idle", phase: null }), {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          }),
+        ),
+      ),
+    );
+    const wrapper = mount(ReleaseUpdateNotification, { attachTo: document.body });
+    try {
+      await flushPromises();
+      const alert = document.body.querySelector(
+        '[data-test-id="installed-restart-notice"] [role="alert"]',
+      );
+      expect(alert?.textContent?.replace(/\s+/g, " ")).toMatch(
+        /Restart failed: The service manager could not restart this server\. Run repoos restart --root \/fake\/project --port 7123 in a terminal\./,
+      );
+    } finally {
+      wrapper.unmount();
+      vi.unstubAllGlobals();
+      window.history.replaceState({}, "", original);
     }
   });
 

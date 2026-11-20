@@ -141,6 +141,7 @@ onMounted(async () => {
       supervised: true,
       supervisorKind: "systemd",
       supervisorPlatform: "systemd",
+      restartCommand: "repoos restart --root /fake/project --port 7123",
     };
     if (fixtureState === "release:restartProgress") {
       restartPendingAction.value = true;
@@ -343,9 +344,9 @@ onUnmounted(() => {
           {{ restartStatus.activeWork.agents }}
           {{ restartStatus.activeWork.agents === 1 ? "agent" : "agents" }} and
           {{ restartStatus.activeWork.checks }}
-          {{ restartStatus.activeWork.checks === 1 ? "check" : "checks" }} running. Restart now
-          briefly interrupts agents and checks; the agents resume after the new server starts. See
-          <a href="https://github.com/repo-os/repoos/issues/214">#0214</a> for details.
+          {{ restartStatus.activeWork.checks === 1 ? "check" : "checks" }} are running. Restart now
+          briefly interrupts agents and checks; the agents resume after the new server starts.
+          <a href="https://github.com/repo-os/repoos/issues/214">Read more on GitHub</a>.
         </DialogDescription>
         <div class="release-update-actions">
           <template v-if="restartStatus.supervisorKind === 'uncertain'">
@@ -370,9 +371,10 @@ onUnmounted(() => {
               >
             </template>
             <template v-else
-              ><span role="status"
-                >Restart is waiting for agents, reviews and checks to finish.</span
-              ><Button
+              ><p class="release-update-muted release-update-status" role="status">
+                Restart is waiting for agents, reviews and checks to finish.
+              </p>
+              <Button
                 size="sm"
                 variant="ghost"
                 :disabled="restartPendingAction"
@@ -386,12 +388,16 @@ onUnmounted(() => {
             class="release-update-manual"
           >
             <p class="release-update-muted">
-              This server was started by hand. RepoOS will relaunch it with the recorded serve flags
-              and port.
+              This server was started by hand. RepoOS will restart it with the same settings and
+              port it was started with.
             </p>
-            <span v-if="restartStatus.restartWhenIdlePending" role="status">
+            <p
+              v-if="restartStatus.restartWhenIdlePending"
+              class="release-update-muted release-update-status"
+              role="status"
+            >
               Restart is waiting for agents, reviews and checks to finish.
-            </span>
+            </p>
             <Button
               size="sm"
               :disabled="restartPendingAction || restartStatus.restartWhenIdlePending"
@@ -724,6 +730,12 @@ onUnmounted(() => {
 .release-update-muted {
   color: var(--txt-dim);
   font-size: 12px;
+}
+/* The waiting line sits beside Cancel (supervised) or in the manual block
+   (hand-run); its own row works in both layouts, as the alert does. */
+.release-update-status {
+  flex: 1 0 100%;
+  margin: 0;
 }
 .release-update-actions {
   display: flex;
