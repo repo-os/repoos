@@ -8,8 +8,10 @@ area: [server, core]
 assigned_to: ai
 created_by: t@t
 branch: ""
+cli_override: claude code
+model_override: haiku
 created_at: "2026-11-20T07:42:21Z"
-updated_at: "2026-11-20T07:42:27Z"
+updated_at: "2026-11-20T07:46:53Z"
 ---
 ## Problem
 During a close-out the integration log (.repoos/logs/integration/<id>-<n>.log) is not written for the running attempt: #1258's log was last modified hours earlier while its job had been validating for ~55 minutes. Drivers and the UI cannot tell whether a close-out is running, waiting for a host slot, retrying after a timeout, or stuck. The card timer also appears to count from an earlier start.
@@ -30,3 +32,4 @@ Related: #1272 (timer should count from validation start). Never touch repoos.to
 
 - 2026-11-20T07:42:21Z · created · t@t
 - 2026-11-20T07:42:27Z · status inbox→ready
+- 2026-11-20T07:46:53Z · cli_override, model_override
