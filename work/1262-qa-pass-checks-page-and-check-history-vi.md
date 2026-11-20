@@ -11,7 +11,7 @@ branch: feat/qa-pass-checks-page-and-check-history-vi
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T02:26:53Z"
-updated_at: "2026-11-20T02:27:01Z"
+updated_at: "2026-11-20T02:43:33Z"
 ---
 ## Problem
 Sweep the Checks page (local and remote tabs, history, failure details) for layout, wording and state bugs.
@@ -33,3 +33,4 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 - 2026-11-20T02:26:58Z · status inbox→ready
 - 2026-11-20T02:26:59Z · cli_override, model_override
 - 2026-11-20T02:27:01Z · status ready→active, branch
+- 2026-11-20T02:43:33Z · body
