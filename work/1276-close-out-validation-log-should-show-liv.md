@@ -2,7 +2,7 @@
 id: "1276"
 title: Close-out validation log should show live progress
 type: feature
-status: review
+status: active
 priority: p1
 area: [server, core]
 assigned_to: ai
