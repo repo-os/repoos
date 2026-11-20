@@ -11,7 +11,7 @@ branch: feat/close-out-validation-log-should-show-liv
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T07:42:21Z"
-updated_at: "2026-11-20T12:54:42Z"
+updated_at: "2026-11-20T12:58:33Z"
 handoff_signal_retry_count: 2
 review_rounds: 1
 review_passes: 1
@@ -65,3 +65,4 @@ Related: #1272 (timer should count from validation start). Never touch repoos.to
 - 2026-11-20T11:20:51Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: Now the full scoped gate on the round-2 tree, run in the background since it takes about 20 minutes. · stderr: (empty)
 - 2026-11-20T11:40:20Z · message_delivered: 3 message(s)
 - 2026-11-20T12:54:42Z · body
+- 2026-11-20T12:58:33Z · CTO nudge: held — handoff gate is running
