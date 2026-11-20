@@ -1,8 +1,10 @@
 ---
+updated_at: "2026-11-20T03:42:11Z"
+review_passes: 1
 id: "1264"
 title: "QA pass: task drawer tabs (changes, activity, reports)"
 type: feature
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -11,7 +13,6 @@ branch: feat/qa-pass-task-drawer-tabs-changes-activit
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T02:27:21Z"
-updated_at: "2026-11-20T03:18:54Z"
 last_check_failure: "repoos check at 2026-11-20T02:47:20.639Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 ---
 ## Problem
@@ -40,4 +41,8 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 - 2026-11-20T02:47:27Z · message_delivered: 1 message(s)
 - 2026-11-20T03:07:12Z · body
 - 2026-11-20T03:18:54Z · CTO nudge: held — handoff gate is running
+- 2026-11-20T03:37:58Z · note: ui verification passed: 1 shot captured with clean console
+- 2026-11-20T03:38:02Z · status active→review
+- 2026-11-20T03:38:02Z · message_queued at 2026-11-20T03:38:02.412Z
+- 2026-11-20T03:42:11Z · note: review pass 1: good to go
 
