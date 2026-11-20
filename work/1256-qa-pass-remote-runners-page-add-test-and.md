@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 823357
-last_close_out_gate_at: "2026-11-20T02:46:47.659Z"
 id: "1256"
 title: "QA pass: remote runners page add, test and remove flows with failures"
 type: bug
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: 30bd3f95ebb440709f066c307acfae1a79e55377
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-remote-runners-page-add-test-and
@@ -14,6 +13,8 @@ cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T00:07:05Z"
 updated_at: "2026-11-20T02:46:47Z"
+last_close_out_gate_ms: 823357
+last_close_out_gate_at: "2026-11-20T02:46:47.659Z"
 review_passes: 2
 last_check_failure: "repoos check at 2026-11-20T01:13:20.950Z: repoos check failed: tests — Test Files 1 failed | 163 passed (164)"
 review_rounds: 1
