@@ -11,12 +11,11 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { flushPromises, mount, type VueWrapper } from "@vue/test-utils";
 import DevUpdateDialog from "../../../mobile/src/components/DevUpdateDialog.vue";
-import type { DevUpdateManifest } from "../../../mobile/src/dev-updates";
 
-const UPDATE: DevUpdateManifest = {
+const UPDATE = {
   commit: "abcdef1234567",
   notes: ["Fix the picker"],
-} as DevUpdateManifest;
+};
 
 let wrapper: VueWrapper | null = null;
 
@@ -31,11 +30,12 @@ function mountDialog() {
   trigger.textContent = "Servers";
   document.body.appendChild(trigger);
   trigger.focus();
-  wrapper = mount(DevUpdateDialog, {
+  const dialog = mount(DevUpdateDialog, {
     props: { update: UPDATE },
     attachTo: document.body,
   });
-  return { trigger, dialog: wrapper };
+  wrapper = dialog;
+  return { trigger, dialog };
 }
 
 function activeLabel(): string {

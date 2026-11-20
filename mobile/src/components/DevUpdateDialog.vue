@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { ref } from "vue";
-import type { DevUpdateManifest } from "../dev-updates";
 import { useModalFocus } from "../modal-focus";
 
+// Only the fields the dialog shows. Typed structurally rather than importing
+// DevUpdateManifest, so the root type check (which includes the UI tests) does
+// not pull in dev-updates.ts and its @capacitor imports.
 defineProps<{
-  update: DevUpdateManifest;
+  update: { commit: string; notes: string[] };
 }>();
 
 const emit = defineEmits<{

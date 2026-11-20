@@ -24,14 +24,15 @@ function mountSheet() {
   trigger.textContent = "Edit dev";
   document.body.appendChild(trigger);
   trigger.focus();
-  wrapper = mount(BottomSheet, {
+  const sheet = mount(BottomSheet, {
     props: { title: "Edit server", open: false },
     slots: {
       default: '<input aria-label="Display name" /><button>Delete</button><button>Save</button>',
     },
     attachTo: document.body,
   });
-  return { trigger, sheet: wrapper };
+  wrapper = sheet;
+  return { trigger, sheet };
 }
 
 function activeLabel(): string {
