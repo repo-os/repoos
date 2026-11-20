@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 562167
-last_close_out_gate_at: "2026-11-20T12:52:32.222Z"
 id: "1272"
 title: Close-out timer should count from when validation actually starts
 type: feature
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: b470a939f4f31eef5b0e0b5d669537713f4abf84
 assigned_to: ai
 created_by: t@t
 branch: feat/close-out-timer-should-count-from-when-v
@@ -14,6 +13,8 @@ cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T06:08:31Z"
 updated_at: "2026-11-20T12:52:32Z"
+last_close_out_gate_ms: 562167
+last_close_out_gate_at: "2026-11-20T12:52:32.222Z"
 review_passes: 1
 ---
 ## Problem
