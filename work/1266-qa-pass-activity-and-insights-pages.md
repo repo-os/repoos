@@ -2,14 +2,14 @@
 id: "1266"
 title: "QA pass: Activity and Insights pages"
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: web
-assigned_to: ""
+assigned_to: ai
 created_by: t@t
 branch: ""
 created_at: "2026-11-20T03:07:06Z"
-updated_at: "2026-11-20T03:07:06Z"
+updated_at: "2026-11-20T03:07:38Z"
 ---
 ## Problem
 Sweep the Activity and Insights pages for layout, wording and state bugs.
@@ -28,3 +28,4 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 ## Activity
 
 - 2026-11-20T03:07:06Z · created · t@t
+- 2026-11-20T03:07:38Z · status inbox→ready
