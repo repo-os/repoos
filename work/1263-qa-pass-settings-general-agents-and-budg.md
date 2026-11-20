@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-11-20T03:38:20Z"
-review_passes: 2
 id: "1263"
 title: "QA pass: Settings general, agents and budget tabs"
 type: feature
-status: review
+status: active
 priority: p2
 area: web
 assigned_to: ai
@@ -13,7 +11,9 @@ branch: feat/qa-pass-settings-general-agents-and-budg
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T02:27:07Z"
-review_rounds: 1
+updated_at: "2026-11-20T03:38:20Z"
+review_rounds: 2
+review_passes: 2
 ---
 ## Problem
 Sweep the Settings general, agents and budget tabs for layout, wording, save and validation bugs.
@@ -68,4 +68,4 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 - 2026-11-20T03:36:07Z · status active→review
 - 2026-11-20T03:36:07Z · message_queued at 2026-11-20T03:36:07.561Z
 - 2026-11-20T03:38:19Z · note: review pass 2: needs some work
-
+- 2026-11-20T03:38:20Z · status review→active
