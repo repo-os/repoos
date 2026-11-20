@@ -12,7 +12,7 @@ branch: feat/tests-leak-git-worker-processes-one-vite
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T11:47:41Z"
-updated_at: "2026-11-20T21:10:24Z"
+updated_at: "2026-11-20T21:10:58Z"
 last_close_out_gate_ms: 213144
 last_close_out_gate_at: "2026-11-20T21:10:21.538Z"
 review_passes: 2
@@ -92,3 +92,4 @@ Reproduce with bun run test on a scoped path while watching ps for git-worker-en
 - 2026-11-20T21:04:54Z · note: review pass 5: good to go
 - 2026-11-20T21:10:21Z · close-out gate completed in 213s
 - 2026-11-20T21:10:24Z · message_dropped: 1 queued message(s) discarded — task is done
+- 2026-11-20T21:10:58Z · status done→done, release:success
