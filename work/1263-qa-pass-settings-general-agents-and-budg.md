@@ -2,7 +2,7 @@
 id: "1263"
 title: "QA pass: Settings general, agents and budget tabs"
 type: feature
-status: review
+status: active
 priority: p2
 area: web
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/qa-pass-settings-general-agents-and-budg
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T02:27:07Z"
-updated_at: "2026-11-20T05:42:27Z"
+updated_at: "2026-11-20T06:46:30Z"
 review_passes: 3
 review_rounds: 2
 ---
@@ -93,3 +93,4 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 - 2026-11-20T04:29:40Z · handoff failed · remote validation failed: test failure: tests/settings-agents-budget-qa-browser.test.ts > Settings General, Agents and Budget Controls QA (#1263) > Agents → Model routing at 1280px: no overflow, named controls, visible focus on bee — fix it in the feature branch and re-run the gate
 - 2026-11-20T04:29:42Z · message_queued at 2026-11-20T04:29:42.757Z
 - 2026-11-20T05:42:27Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-20T06:46:30Z · status review→active
