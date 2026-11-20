@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/close-out-validation-log-should-show-liv
 created_at: "2026-11-20T07:42:21Z"
-updated_at: "2026-11-20T21:25:59Z"
+updated_at: "2026-11-20T21:29:59Z"
 last_check_failure: "repoos check at 2026-11-20T21:01:31.328Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Close-out drawer with live step, host, and attempt (target \"default\"): loading state detected: loading text \"Loading changes…\" on /work?task=9999&tab=changes (http://127.0.0.1:43237/work?task=9999&tab=changes&shotState=drawer%3AcloseOutRemoteTests)"
 review_passes: 3
 review_failed_report_retries: 0
@@ -129,4 +129,4 @@ Related: #1272 (timer should count from validation start). Never touch repoos.to
 - 2026-11-20T21:16:02Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-20T21:21:02Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-20T21:25:59Z · body
-
+- 2026-11-20T21:29:59Z · note: ui verification passed: 1 of 1 shot captured with clean console
