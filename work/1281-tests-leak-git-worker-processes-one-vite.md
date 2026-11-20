@@ -42,3 +42,4 @@ Reproduce with bun run test on a scoped path while watching ps for git-worker-en
 - 2026-11-20T15:31:15Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-20T15:31:35Z · message_delivered: 1 message(s)
 - 2026-11-20T15:32:53Z · message_queued at 2026-11-20T15:32:53.315Z
+- 2026-11-20T15:32:53Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
