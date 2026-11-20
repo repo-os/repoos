@@ -8,8 +8,10 @@ area: [web, mobile]
 assigned_to: ai
 created_by: t@t
 branch: ""
+cli_override: claude code
+model_override: haiku
 created_at: "2026-11-20T00:15:33Z"
-updated_at: "2026-11-20T00:15:56Z"
+updated_at: "2026-11-20T00:16:00Z"
 ---
 ## Problem
 On a phone (seen on the Android Hub app, Mission Control page):
@@ -38,3 +40,4 @@ Screenshot attached shows the current mobile header and Mission Control. Do not 
 - 2026-11-20T00:15:33Z · created · t@t
 - 2026-11-20T00:15:36Z · screenshots
 - 2026-11-20T00:15:56Z · status inbox→ready
+- 2026-11-20T00:16:00Z · cli_override, model_override
