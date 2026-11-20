@@ -93,3 +93,4 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 - 2026-11-20T04:45:33Z · note: ui verification passed: 2 of 2 shots captured with clean console
 - 2026-11-20T04:45:35Z · message_queued at 2026-11-20T04:45:35.528Z
 - 2026-11-20T04:45:36Z · handoff failed · task-file handoff failed at review · Engineering report draft is missing: .repoos/engineering-report-drafts/1262.md
+- 2026-11-20T04:45:36Z · message_delivered: 1 message(s)
