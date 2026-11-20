@@ -11,7 +11,7 @@ branch: feat/work-board-move-search-into-the-header-r
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T08:46:27Z"
-updated_at: "2026-11-20T19:50:50Z"
+updated_at: "2026-11-20T20:01:37Z"
 review_rounds: 1
 review_passes: 1
 review_failed_report_retries: 0
@@ -86,3 +86,4 @@ Start from src/ui-app/src/components/BoardQueueSearch.vue and the Work view head
 - 2026-11-20T19:50:35Z · status review→active
 - 2026-11-20T19:50:37Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-20T19:50:50Z · message_delivered: 1 message(s)
+- 2026-11-20T20:01:37Z · message_queued at 2026-11-20T20:01:37.962Z
