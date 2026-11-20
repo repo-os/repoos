@@ -12,7 +12,7 @@ branch: feat/qa-pass-telegram-and-notification-settin
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T21:46:55Z"
-updated_at: "2026-11-20T00:16:02Z"
+updated_at: "2026-11-20T00:16:09Z"
 last_close_out_gate_ms: 543730
 last_close_out_gate_at: "2026-11-20T00:16:02.859Z"
 review_passes: 2
@@ -68,4 +68,4 @@ Do not touch repoos.toml.
 - 2026-11-19T23:30:46Z · note: review pass 2: good to go
 - 2026-11-19T23:30:49Z · message_queued at 2026-11-19T23:30:49.238Z
 - 2026-11-20T00:16:02Z · close-out gate completed in 544s
-
+- 2026-11-20T00:16:09Z · message_dropped: 1 queued message(s) discarded — task is done
