@@ -11,7 +11,7 @@ branch: feat/qa-pass-settings-general-agents-and-budg
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T02:27:07Z"
-updated_at: "2026-11-20T06:46:30Z"
+updated_at: "2026-11-20T06:46:32Z"
 review_passes: 3
 review_rounds: 2
 ---
