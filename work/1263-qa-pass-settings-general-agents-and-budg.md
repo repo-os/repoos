@@ -100,3 +100,4 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 - 2026-11-20T07:10:47Z · queued message undelivered for 24m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-20T07:10:48Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: The re-run is in progress. I'll wait for its completion notification before deciding anything about the `WebKit internal error`. · stderr: (empty)
 - 2026-11-20T07:10:48Z · status active→review
+- 2026-11-20T07:10:48Z · message_delivered: 1 message(s)
