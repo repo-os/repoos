@@ -237,7 +237,12 @@ describe("Inbox and Review at 375/768/1280 (WebKit, fixtures)", () => {
       },
       ["inbox", "review"],
     );
-    const page = await openFixturePage("columns-long-titles", fixture.markup, fixture.scoped, width);
+    const page = await openFixturePage(
+      "columns-long-titles",
+      fixture.markup,
+      fixture.scoped,
+      width,
+    );
     try {
       await expectFits(page, "Inbox and Review columns", width);
       expect(await page.locator('[data-board-column="inbox"] .task-card').count()).toBe(1);
