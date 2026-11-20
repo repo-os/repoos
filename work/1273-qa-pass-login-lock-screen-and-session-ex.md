@@ -43,3 +43,4 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser. Never
 - 2026-11-20T07:46:52Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-20T07:46:56Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-20T07:50:03Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-20T07:50:03Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: The scoped check is running again from the start, and the Monitor will report when it exits. Once it passes I'll declare the UI shots and hand off. · stderr: (empty)
