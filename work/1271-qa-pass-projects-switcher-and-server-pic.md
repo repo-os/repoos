@@ -11,7 +11,7 @@ branch: feat/qa-pass-projects-switcher-and-server-pic
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T06:07:22Z"
-updated_at: "2026-11-20T06:25:44Z"
+updated_at: "2026-11-20T06:27:03Z"
 ---
 ## Problem
 Sweep the project switcher and server picker (add, switch, offline and error states) for layout, wording and state bugs.
@@ -34,3 +34,4 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 - 2026-11-20T06:07:29Z · cli_override, model_override
 - 2026-11-20T06:07:30Z · status ready→active, branch
 - 2026-11-20T06:25:44Z · body
+- 2026-11-20T06:27:03Z · CTO nudge: held — handoff gate is running
