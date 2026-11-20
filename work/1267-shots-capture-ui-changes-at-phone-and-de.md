@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 1022406
-last_close_out_gate_at: "2026-11-20T09:10:18.993Z"
 id: "1267"
 title: "Shots: capture UI changes at phone and desktop widths, and let a shot declare its viewport"
 type: feature
-status: review
+status: done
 priority: p2
 area: [web, core]
+merged_commit: 1f220ea2a6d5ab9e9825d155a4d767d912601d44
 assigned_to: ai
 created_by: t@t
 branch: feat/shots-capture-ui-changes-at-phone-and-de
@@ -14,6 +13,8 @@ cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T03:17:57Z"
 updated_at: "2026-11-20T09:10:18Z"
+last_close_out_gate_ms: 1022406
+last_close_out_gate_at: "2026-11-20T09:10:18.993Z"
 review_passes: 1
 ---
 ## Problem
