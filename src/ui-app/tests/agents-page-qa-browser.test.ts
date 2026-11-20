@@ -26,6 +26,7 @@ import ModelProvidersPanel from "../src/components/ModelProvidersPanel.vue";
 import ModelRoutingPanel from "../src/components/ModelRoutingPanel.vue";
 import RemindersPanel from "../src/components/RemindersPanel.vue";
 import ScheduledTasksPanel from "../src/components/ScheduledTasksPanel.vue";
+import BudgetControlsPanel from "../src/components/BudgetControlsPanel.vue";
 import { useConfigStore } from "../src/stores/config";
 import { FakeEventSource, json } from "./component-test-helpers";
 import type {
@@ -888,6 +889,7 @@ describe("Agents page QA at 375/768/1280 (WebKit, fixtures)", () => {
   async function snapshotPanel(
     component: Component,
     pinia: ReturnType<typeof createPinia>,
+    extraStubs: Record<string, boolean> = {},
   ): Promise<{ wrapper: VueWrapper; markup: string }> {
     const router = createRouter({
       history: createMemoryHistory(),
@@ -899,7 +901,7 @@ describe("Agents page QA at 375/768/1280 (WebKit, fixtures)", () => {
       attachTo: document.body,
       global: {
         plugins: [pinia, router],
-        stubs: { teleport: true, Transition: true, PageSkeleton: true },
+        stubs: { teleport: true, Transition: true, PageSkeleton: true, ...extraStubs },
       },
     });
     await flushPromises();
@@ -1125,6 +1127,94 @@ describe("Agents page QA at 375/768/1280 (WebKit, fixtures)", () => {
       try {
         await expectFits(page, "reminder editor with a missing date", width);
         expect(await textOf(page, ".ff-error")).toContain("Choose a valid date and time");
+      } finally {
+        await page.close();
+      }
+    },
+  );
+
+  it.each(VIEWPORTS)(
+    "budget allowlist with a paused agent and model fits at %spx, and no chip covers a button",
+    async (width) => {
+      const pausedUntil = new Date(Date.now() + 2 * 24 * 60 * 60_000).toISOString();
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(async () => json({})),
+      );
+      const pinia = createPinia();
+      setActivePinia(pinia);
+      const config = useConfigStore();
+      config.agentsMeta = {
+        clis: ["claude code", "opencode", "codex"],
+        models: ["default", "big pickle", "deepseek v4"],
+        defaults: [],
+        skills: [],
+      };
+      config.data = {
+        "budget.allowlist": [
+          {
+            cli: "claude code",
+            models: ["sonnet", "opus"],
+            paused: true,
+            pausedUntil,
+            pausedReason:
+              "Usage limit reached on this subscription. It resumes automatically when the window resets.",
+          },
+          {
+            cli: "opencode",
+            models: ["big pickle", "deepseek v4"],
+            pausedModels: [
+              {
+                model: "deepseek v4",
+                pausedUntil,
+                pausedReason: "The provider returned repeated errors",
+              },
+            ],
+          },
+          { cli: "codex", models: ["gpt-5"] },
+        ],
+      };
+      config.loaded = true;
+      const { wrapper } = await snapshotPanel(BudgetControlsPanel, pinia, {
+        AgentModelControl: true,
+      });
+      await wrapper.find('[data-testid="budget-row-opencode"]').trigger("click");
+      await flushPromises();
+      const markup = document.body.innerHTML;
+      wrapper.unmount();
+      document.body.innerHTML = "";
+
+      const page = await openFixturePage(
+        "budget-allowlist-paused",
+        markup,
+        scopedCss(markup, "budget-list", "BudgetControlsPanel"),
+        width,
+      );
+      try {
+        await expectFits(page, "budget allowlist with paused rows", width);
+        await expectInsideCards(page, ".budget-row", ".budget-paused-chip", "paused chip", width);
+        const covered = await page.evaluate(() => {
+          const hits: string[] = [];
+          const overlap = (a: DOMRect, b: DOMRect) =>
+            a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
+          for (const row of document.querySelectorAll<HTMLElement>(".budget-row")) {
+            const chips = row.querySelectorAll<HTMLElement>(".budget-paused-chip");
+            for (const chip of chips) {
+              const chipBox = chip.getBoundingClientRect();
+              for (const button of row.querySelectorAll<HTMLElement>("button")) {
+                if (button.contains(chip)) continue;
+                if (overlap(chipBox, button.getBoundingClientRect()))
+                  hits.push(
+                    `${(chip.textContent ?? "").trim().slice(0, 30)} over "${(button.textContent ?? "").trim()}"`,
+                  );
+              }
+            }
+          }
+          return hits;
+        });
+        expect(covered, `paused chip covers a button at ${width}px`).toEqual([]);
+        expect(await page.locator('[data-testid="budget-paused-chip"]').count()).toBe(1);
+        expect(await page.locator('[data-testid="budget-model-paused-chip"]').count()).toBe(1);
       } finally {
         await page.close();
       }
