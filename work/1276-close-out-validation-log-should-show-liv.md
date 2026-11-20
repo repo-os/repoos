@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/close-out-validation-log-should-show-liv
 created_at: "2026-11-20T07:42:21Z"
-updated_at: "2026-11-20T21:01:15Z"
+updated_at: "2026-11-20T21:01:28Z"
 review_passes: 3
 review_failed_report_retries: 0
 review_rounds: 2
@@ -115,3 +115,4 @@ Related: #1272 (timer should count from validation start). Never touch repoos.to
 - 2026-11-20T20:53:22Z · body
 - 2026-11-20T20:55:12Z · body
 - 2026-11-20T21:01:15Z · CTO nudge: held — handoff gate is running
+- 2026-11-20T21:01:28Z · note: ui verification failed: ui verification failed (1 issue(s)): [missing-target] Close-out drawer with live step, host, and attempt (target "default"): loading state detected: loading text "Loading changes…" on /work?task=9999&tab=changes (http://127.0.0.1:43237/work?task=9999&tab=changes&shotState=drawer%3AcloseOutRemoteTests)
