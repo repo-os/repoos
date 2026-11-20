@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-20T00:18:25Z"
+review_passes: 3
 id: "1255"
 title: "QA pass: update banner, version display and release notes modal at all screen sizes"
 type: bug
@@ -14,9 +16,7 @@ branch: feat/qa-pass-update-banner-version-display-an
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T23:27:47Z"
-updated_at: "2026-11-20T00:18:25Z"
 review_rounds: 2
-review_passes: 2
 ---
 ## Problem
 The update-available banner, version display and release notes modal have not been checked since the restart fix.
@@ -81,3 +81,4 @@ Do not touch repoos.toml.
 - 2026-11-20T00:16:16Z · message_queued at 2026-11-20T00:16:16.871Z
 - 2026-11-20T00:18:25Z · note: review pass 3: needs some work
 - 2026-11-20T00:18:25Z · needs_input
+
