@@ -2,14 +2,14 @@
 id: "1278"
 title: "Work board: move search into the header row, half width, drop the search chip"
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
 branch: ""
 created_at: "2026-11-20T08:46:27Z"
-updated_at: "2026-11-20T08:46:30Z"
+updated_at: "2026-11-20T08:46:44Z"
 ---
 ## Problem
 The new desktop board search (#1259) sits on its own row below the page title, takes a lot of width, and shows a redundant 'Search: web' chip under it while typing.
@@ -38,3 +38,4 @@ Start from src/ui-app/src/components/BoardQueueSearch.vue and the Work view head
 
 - 2026-11-20T08:46:27Z · created · t@t
 - 2026-11-20T08:46:30Z · screenshots
+- 2026-11-20T08:46:44Z · status inbox→ready
