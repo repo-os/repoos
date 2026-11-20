@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 540216
-last_close_out_gate_at: "2026-11-20T13:04:52.907Z"
 id: "1274"
 title: "QA pass: Agents page model providers and routing status copy"
 type: feature
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: bde8a1882645d5d578d1f152ef00dc5a9b9379d4
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-agents-page-model-providers-and-
@@ -14,6 +13,8 @@ cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T07:26:57Z"
 updated_at: "2026-11-20T13:04:52Z"
+last_close_out_gate_ms: 540216
+last_close_out_gate_at: "2026-11-20T13:04:52.907Z"
 review_passes: 1
 ---
 ## Problem
