@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "1275"
 title: "Close-outs: validate several tasks at once on different runner machines"
 type: feature
@@ -47,3 +48,4 @@ Read docs/close-out-pipeline.md and docs/remote-validation.md first. Never touch
 - 2026-11-20T08:10:04Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-20T08:10:05Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: The scoped `repoos check` is running again in the background, and the monitor will report its exit line and any failures. The earlier run was stopped when the session ended, so it gave no result. Once this run reports, I'll hand off if it … · stderr: (empty)
 - 2026-11-20T08:15:22Z · message_queued at 2026-11-20T08:15:22.880Z
+
