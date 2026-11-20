@@ -11,7 +11,7 @@ branch: feat/qa-pass-remote-runners-page-add-test-and
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T00:07:05Z"
-updated_at: "2026-11-20T00:42:38Z"
+updated_at: "2026-11-20T00:42:41Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -39,3 +39,4 @@ Do not touch repoos.toml.
 - 2026-11-20T00:40:59Z · message_queued at 2026-11-20T00:40:59.181Z
 - 2026-11-20T00:42:37Z · note: review pass 1: needs some work
 - 2026-11-20T00:42:38Z · status review→active
+- 2026-11-20T00:42:41Z · CTO nudge: held — an undelivered message is already queued
