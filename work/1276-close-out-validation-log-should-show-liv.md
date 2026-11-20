@@ -11,7 +11,7 @@ branch: feat/close-out-validation-log-should-show-liv
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T07:42:21Z"
-updated_at: "2026-11-20T10:48:39Z"
+updated_at: "2026-11-20T10:48:40Z"
 handoff_signal_retry_count: 2
 review_rounds: 1
 review_passes: 1
@@ -54,3 +54,4 @@ Related: #1272 (timer should count from validation start). Never touch repoos.to
 - 2026-11-20T10:22:36Z · CTO nudge: held — handoff gate is running
 - 2026-11-20T10:48:38Z · note: ui verification passed: 1 shot captured with clean console
 - 2026-11-20T10:48:39Z · message_queued at 2026-11-20T10:48:39.327Z
+- 2026-11-20T10:48:40Z · handoff failed · task-file handoff failed at review · Engineering report draft is missing: .repoos/engineering-report-drafts/1276.md
