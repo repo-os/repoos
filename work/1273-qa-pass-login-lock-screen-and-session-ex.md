@@ -14,7 +14,7 @@ created_at: "2026-11-20T07:06:52Z"
 updated_at: "2026-11-20T11:20:58Z"
 handoff_signal_retry_count: 2
 last_check_failure: "repoos check at 2026-11-20T09:15:23.483Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
-deferred_handoff_resume_count: 1
+deferred_handoff_resume_count: 2
 ---
 ## Problem
 Sweep sign-in, lock screen and session-expiry flows (code entry, errors, expired session, offline) for layout, wording and state bugs.
