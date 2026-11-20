@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-20T09:04:46.665Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 id: "1275"
 title: "Close-outs: validate several tasks at once on different runner machines"
 type: feature
@@ -56,3 +58,4 @@ Read docs/close-out-pipeline.md and docs/remote-validation.md first. Never touch
 - 2026-11-20T08:34:57Z · CTO nudge: held — handoff gate is running
 - 2026-11-20T09:04:43Z · message_queued at 2026-11-20T09:04:43.435Z
 - 2026-11-20T09:04:46Z · message_delivered: 1 message(s)
+
