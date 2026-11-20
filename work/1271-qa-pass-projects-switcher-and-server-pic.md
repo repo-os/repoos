@@ -1,5 +1,4 @@
 ---
-close_out_repair_count: 1
 id: "1271"
 title: "QA pass: Projects switcher and server picker flows"
 type: feature
@@ -12,7 +11,8 @@ branch: feat/qa-pass-projects-switcher-and-server-pic
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T06:07:22Z"
-updated_at: "2026-11-20T09:44:54Z"
+updated_at: "2026-11-20T09:45:01Z"
+close_out_repair_count: 1
 review_passes: 1
 ---
 ## Problem
@@ -44,4 +44,4 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 - 2026-11-20T07:40:40Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-20T09:44:54Z · status review→active
 - 2026-11-20T09:44:54Z · note: close-out repair: gate-failure
-
+- 2026-11-20T09:45:01Z · CTO nudge: held — an undelivered message is already queued
