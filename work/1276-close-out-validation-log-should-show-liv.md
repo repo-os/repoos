@@ -11,7 +11,7 @@ branch: feat/close-out-validation-log-should-show-liv
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T07:42:21Z"
-updated_at: "2026-11-20T12:58:33Z"
+updated_at: "2026-11-20T13:18:52Z"
 handoff_signal_retry_count: 2
 review_rounds: 1
 review_passes: 1
@@ -66,3 +66,4 @@ Related: #1272 (timer should count from validation start). Never touch repoos.to
 - 2026-11-20T11:40:20Z · message_delivered: 3 message(s)
 - 2026-11-20T12:54:42Z · body
 - 2026-11-20T12:58:33Z · CTO nudge: held — handoff gate is running
+- 2026-11-20T13:18:52Z · note: ui verification passed: 1 shot captured with clean console
