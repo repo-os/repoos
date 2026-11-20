@@ -3,9 +3,6 @@ id: "1276"
 title: Close-out validation log should show live progress
 type: feature
 status: review
-needs_input: true
-needs_input_reason: review-failed
-needs_input_detail: "the opencode agent exited without output: error: OpenCode Go usage limit reached (monthly, resets in 1d 15h). To keep going now, turn on Extra Usage at https://opencode.ai/console/wrk_01KQ7ZAG4V1XEK1E46TJF13DFZ/go."
 priority: p1
 area: [server, core]
 assigned_to: ai
@@ -14,7 +11,7 @@ branch: feat/close-out-validation-log-should-show-liv
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T07:42:21Z"
-updated_at: "2026-11-20T15:23:12Z"
+updated_at: "2026-11-20T15:46:51Z"
 review_failed_report_retries: 2
 review_rounds: 2
 review_passes: 2
@@ -91,3 +88,4 @@ Related: #1272 (timer should count from validation start). Never touch repoos.to
 - 2026-11-20T15:23:03Z · note: review pass 4: failed — no usable report
 - 2026-11-20T15:23:12Z · note: review pass 5: failed — no usable report
 - 2026-11-20T15:23:12Z · needs_input
+- 2026-11-20T15:46:51Z · needs_input (review-failed) cleared for review again by human
