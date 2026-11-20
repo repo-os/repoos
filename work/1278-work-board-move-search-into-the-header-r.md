@@ -11,7 +11,7 @@ branch: feat/work-board-move-search-into-the-header-r
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T08:46:27Z"
-updated_at: "2026-11-20T20:45:35Z"
+updated_at: "2026-11-20T20:46:03Z"
 handoff_signal_retry_count: 2
 review_rounds: 1
 review_passes: 1
@@ -104,3 +104,4 @@ Start from src/ui-app/src/components/BoardQueueSearch.vue and the Work view head
 - 2026-11-20T20:45:34Z · ↻ resuming engineer to read queued message
 - 2026-11-20T20:45:35Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The scoped gate passes in this state, and the rendered-contrast audit passes too. The draft on disk is out of date: it says the audit fails and that the layout wasn't changed this turn. Both are wrong. I'll replace it with an accurate acco… · stderr: (empty)
 - 2026-11-20T20:45:35Z · message_delivered: 4 message(s)
+- 2026-11-20T20:46:03Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: I'm stopping here without emitting the handoff signal, because the handoff is blocked on a step this session isn't allowed to take. **Why the handoff keeps failing** - The commit step fails with "cannot do a partial commit during a merge".… · stderr: (empty)
