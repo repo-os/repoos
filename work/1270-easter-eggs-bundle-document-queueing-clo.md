@@ -12,7 +12,7 @@ branch: feat/easter-eggs-bundle-document-queueing-clo
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T05:43:15Z"
-updated_at: "2026-11-20T09:14:17Z"
+updated_at: "2026-11-20T09:14:22Z"
 last_close_out_gate_ms: 163957
 last_close_out_gate_at: "2026-11-20T09:14:17.247Z"
 review_passes: 1
@@ -45,4 +45,4 @@ Docs-only. Never touch repoos.toml. Observed 2026-11-20: six close-outs queued t
 - 2026-11-20T05:49:03Z · note: review pass 1: good to go
 - 2026-11-20T07:07:02Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-20T09:14:17Z · close-out gate completed in 164s
-
+- 2026-11-20T09:14:22Z · status done→done, release:success
