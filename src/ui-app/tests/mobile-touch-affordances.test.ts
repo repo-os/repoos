@@ -52,19 +52,21 @@ describe("mobile touch affordances", () => {
 
 describe("mobile web polish (#1139)", () => {
   it("gives top-bar controls a 44px touch target and keeps the project name visible", () => {
-    // Global controls (theme toggle, search pill, repo pill) size up together.
+    // One header token (#1258): 44px at 900px and below, and every header
+    // control reads it, so the touch targets grow together.
     expect(css).toMatch(
-      /@media \(max-width: 900px\)\s*\{[\s\S]*?\.theme-toggle\s*\{[^}]*width:\s*44px;[^}]*height:\s*44px/s,
+      /@media \(max-width: 900px\)\s*\{\s*\.topbar\s*\{\s*--topbar-control-h:\s*44px/s,
     );
     expect(css).toMatch(
-      /@media \(max-width: 900px\)\s*\{[\s\S]*?\.repo-pill\s*\{[^}]*min-height:\s*44px/s,
+      /\.theme-toggle\s*\{[^}]*width:\s*var\(--topbar-control-h\);[^}]*height:\s*var\(--topbar-control-h\)/s,
     );
-    expect(css).toMatch(
-      /@media \(max-width: 900px\)\s*\{[\s\S]*?\.search-input\s*\{[^}]*min-height:\s*44px/s,
-    );
-    // Scoped TopBar controls need their own rule to beat the scoped originals.
+    expect(css).toMatch(/\.repo-pill\s*\{[^}]*height:\s*var\(--topbar-control-h\)/s);
+    expect(css).toMatch(/\.search-input\s*\{[^}]*height:\s*var\(--topbar-control-h\)/s);
     expect(topBar).toMatch(
-      /@media \(max-width: 900px\)\s*\{[\s\S]*?\.help-menu-trigger,[\s\S]*?\.user-menu-trigger\s*\{[^}]*width:\s*44px;[^}]*height:\s*44px/s,
+      /\.help-menu-trigger\s*\{[^}]*width:\s*var\(--topbar-control-h\);[^}]*height:\s*var\(--topbar-control-h\)/s,
+    );
+    expect(topBar).toMatch(
+      /\.user-menu-trigger\s*\{[^}]*width:\s*var\(--topbar-control-h\);[^}]*height:\s*var\(--topbar-control-h\)/s,
     );
     // #1152: the phone bar shows the current project name instead of an
     // icon-only colour swatch; long names ellipsize instead of overflowing.
@@ -79,7 +81,7 @@ describe("mobile web polish (#1139)", () => {
     );
     expect(topBar).toContain(':aria-label="`Repo colour');
     expect(noticeBell).toMatch(
-      /@media \(max-width: 900px\)\s*\{[\s\S]*?\.notice-bell-trigger\s*\{[^}]*width:\s*44px;[^}]*height:\s*44px/s,
+      /\.notice-bell-trigger\s*\{[^}]*width:\s*var\(--topbar-control-h\);[^}]*height:\s*var\(--topbar-control-h\)/s,
     );
   });
 
@@ -93,7 +95,7 @@ describe("mobile web polish (#1139)", () => {
 
   it("turns search into a compact accessible icon button on phones", () => {
     expect(css).toMatch(
-      /@media \(max-width: 719\.98px\)\s*\{[\s\S]*?\.search-wrap\s*\{[^}]*flex:\s*0 0 44px;[\s\S]*?width:\s*44px/s,
+      /@media \(max-width: 719\.98px\)\s*\{[\s\S]*?\.search-wrap\s*\{[^}]*flex:\s*0 0 var\(--topbar-control-h\);[\s\S]*?width:\s*var\(--topbar-control-h\)/s,
     );
     expect(css).toMatch(
       /@media \(max-width: 719\.98px\)\s*\{[\s\S]*?\.search-placeholder,[\s\S]*?\.search-input kbd\s*\{[^}]*display:\s*none/s,

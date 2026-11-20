@@ -67,7 +67,7 @@ export const router = createRouter({
       component: () => import("./views/DiffView.vue"),
       meta: { fullscreen: true },
     },
-    { path: "/:pathMatch(.*)*", redirect: "/" },
+    { path: "/:pathMatch(.*)*", redirect: "/work" },
   ],
 });
 
