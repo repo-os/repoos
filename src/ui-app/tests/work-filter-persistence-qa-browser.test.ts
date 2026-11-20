@@ -173,8 +173,11 @@ describe("Work board queue filters on desktop (768 / 1280 px)", () => {
     const wrapper = mountDesktop({ q: "login", priority: "p1" });
     await flushPromises();
     expect(visibleIds(wrapper)).toEqual(["0001"]);
-    expect(chipKeys(wrapper)).toEqual(["q", "priority"]);
-    expect(wrapper.find(".board-queue-filters").text()).toContain("Search: login");
+    expect(chipKeys(wrapper)).toEqual(["priority"]);
+    expect((wrapper.find('[data-testid="board-queue-search"]').element as HTMLInputElement).value).toBe(
+      "login",
+    );
+    expect(wrapper.find(".board-queue-filters").text()).not.toContain("Search:");
     expect(wrapper.find(".board-queue-filters").text()).toContain("Priority: P1");
   });
 
@@ -195,7 +198,7 @@ describe("Work board queue filters on desktop (768 / 1280 px)", () => {
     await flushPromises();
     expect(visibleIds(reloaded)).toEqual(before);
     expect(before).toEqual(["0003"]);
-    expect(chipKeys(reloaded)).toEqual(["q", "area"]);
+    expect(chipKeys(reloaded)).toEqual(["area"]);
   });
 
   it("pipeline shows the active filters with a note that it does not apply them", async () => {
@@ -204,8 +207,9 @@ describe("Work board queue filters on desktop (768 / 1280 px)", () => {
     await flushPromises();
     const bar = wrapper.find(".board-queue-filters");
     expect(bar.exists()).toBe(true);
-    expect(chipKeys(wrapper)).toEqual(["q"]);
+    expect(chipKeys(wrapper)).toEqual([]);
     expect(bar.find(".board-queue-filter-note").exists()).toBe(true);
+    expect(bar.find(".filter-clear").exists()).toBe(true);
   });
 
   it("an unusable URL value shows an ignored chip and Clear removes it", async () => {
@@ -426,7 +430,8 @@ describe("Board filter chip bar at 375 / 768 / 1280 px (WebKit, fixtures)", () =
         );
         expect(result.off, `chips off-viewport at ${width}px`).toEqual([]);
         expect(await page.locator(".board-queue-filters .filter-clear").isVisible()).toBe(true);
-        expect(await page.locator(".board-queue-filters [data-filter-key]").count()).toBe(5);
+        // Four quick-filter chips: the search has no chip (#1278).
+        expect(await page.locator(".board-queue-filters [data-filter-key]").count()).toBe(4);
       } finally {
         await page.close();
       }
@@ -468,7 +473,21 @@ describe("Board filter chip bar at 375 / 768 / 1280 px (WebKit, fixtures)", () =
     it(`shows the short set of chips at ${width}px without wrapping the clear control away`, async () => {
       const page = await openChipBar(shortFilters, width, "short-filters");
       try {
-        expect(await page.locator(".board-queue-filters [data-filter-key]").count()).toBe(2);
+        expect(await page.locator(".board-queue-filters [data-filter-key]").count()).toBe(1);
+        expect(await page.locator(".board-queue-filters .filter-clear").isVisible()).toBe(true);
+      } finally {
+        await page.close();
+      }
+    });
+
+    it(`shows Clear filters and no chip when only the search is set at ${width}px`, async () => {
+      const page = await openChipBar(
+        { query: "login", priority: "", area: "any", story: "any", mine: false },
+        width,
+        "search-only",
+      );
+      try {
+        expect(await page.locator(".board-queue-filters [data-filter-key]").count()).toBe(0);
         expect(await page.locator(".board-queue-filters .filter-clear").isVisible()).toBe(true);
       } finally {
         await page.close();
@@ -538,6 +557,108 @@ describe("Board filter chip bar at 375 / 768 / 1280 px (WebKit, fixtures)", () =
       try {
         expect(await page.locator('[data-testid="board-queue-search"]').isVisible()).toBe(true);
         expect(await page.locator('[data-testid="board-queue-search-clear"]').count()).toBe(0);
+      } finally {
+        await page.close();
+      }
+    });
+  }
+
+  /** The scoped `<style>` blocks of one SFC, compiled under the scope id its markup carries. */
+  function scopedStyles(component: string, scopeId: string): string {
+    const source = readFileSync(resolve(uiRoot, component), "utf8");
+    const blocks = parse(source, { filename: component }).descriptor.styles.filter((s) => s.scoped);
+    return blocks
+      .map((block) => {
+        const compiled = compileStyle({ filename: component, id: scopeId, source: block.content });
+        if (compiled.errors.length) throw compiled.errors[0]!;
+        return compiled.code;
+      })
+      .join("\n");
+  }
+
+  /** The scope id an element carries, e.g. `data-v-1a2b3c`. */
+  function scopeIdOf(wrapper: ReturnType<typeof mountDesktop>, selector: string): string {
+    const el = wrapper.get(selector).element;
+    const id = Array.from(el.attributes)
+      .map((attr) => attr.name)
+      .find((name) => name.startsWith("data-v-"));
+    if (!id) throw new Error(`${selector} has no scope ID`);
+    return id;
+  }
+
+  // #1278: the search sits in the header row beside the toggles. At these widths
+  // the header copy, search, toggles, sort, view switch and New task must not
+  // overflow the page or collide with each other.
+  for (const width of [720, 768, 900, 1000]) {
+    it(`keeps the Work header row free of overflow and collisions at ${width}px`, async () => {
+      const wrapper = mountDesktop({ q: "login" });
+      await flushPromises();
+      const markup = wrapper.get(".work-header").html();
+      const workScope = scopeIdOf(wrapper, ".work-header");
+      const searchScope = scopeIdOf(wrapper, ".board-queue-search");
+      const css = [
+        scopedStyles("src/views/WorkView.vue", workScope),
+        scopedStyles("src/components/BoardQueueSearch.vue", searchScope),
+      ].join("\n");
+      wrapper.unmount();
+
+      const page = await browser.newPage({ viewport: { width, height: 900 } });
+      try {
+        await page.setContent(
+          `<meta name="viewport" content="width=device-width, initial-scale=1.0">` +
+            `<style>${globalCss}</style><style>${css}</style>` +
+            `<style>html, body { width: 100%; margin: 0; } *, *::before, *::after { animation: none !important; transition: none !important; }</style>` +
+            `<div class="main" style="padding: 16px">${markup}</div>`,
+        );
+        const shots = process.env.QA_SHOTS;
+        if (shots) {
+          mkdirSync(shots, { recursive: true });
+          await page.screenshot({ path: resolve(shots, `work-header-${width}.jpg`), fullPage: true });
+        }
+        const result = await page.evaluate(() => {
+          const header = document.querySelector(".work-header");
+          const parts = [
+            ...Array.from(document.querySelectorAll(".work-header-copy")),
+            ...Array.from(document.querySelectorAll(".work-header-actions > *")),
+          ]
+            .map((el) => ({ name: el.className || el.tagName, rect: el.getBoundingClientRect() }))
+            .filter((p) => p.rect.width > 0 && p.rect.height > 0);
+          const limit = window.innerWidth;
+          const off = parts
+            .filter((p) => p.rect.left < -0.5 || p.rect.right > limit + 0.5)
+            .map((p) => String(p.name));
+          const collisions: string[] = [];
+          for (let i = 0; i < parts.length; i += 1) {
+            for (let j = i + 1; j < parts.length; j += 1) {
+              const a = parts[i]!.rect;
+              const b = parts[j]!.rect;
+              const overlapX = Math.min(a.right, b.right) - Math.max(a.left, b.left);
+              const overlapY = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
+              if (overlapX > 0.5 && overlapY > 0.5) {
+                collisions.push(`${parts[i]!.name} x ${parts[j]!.name}`);
+              }
+            }
+          }
+          const search = document.querySelector<HTMLElement>(".board-queue-search");
+          return {
+            scrollWidth: document.documentElement.scrollWidth,
+            limit,
+            headerExists: header !== null,
+            off,
+            collisions,
+            searchWidth: search?.getBoundingClientRect().width ?? 0,
+          };
+        });
+        expect(result.headerExists).toBe(true);
+        expect(result.scrollWidth, `document overflows at ${width}px`).toBeLessThanOrEqual(
+          result.limit,
+        );
+        expect(result.off, `header item off-viewport at ${width}px`).toEqual([]);
+        expect(result.collisions, `header items collide at ${width}px`).toEqual([]);
+        // Half of the old 420px search, so about 210px (#1278).
+        expect(result.searchWidth, `search not half width at ${width}px`).toBeLessThanOrEqual(210);
+        expect(result.searchWidth, `search too narrow at ${width}px`).toBeGreaterThan(150);
+        expect(await page.locator(".client-board-link").count()).toBe(0);
       } finally {
         await page.close();
       }

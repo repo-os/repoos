@@ -314,6 +314,9 @@ function clearQueueFilters(): void {
 function setQueueSearch(text: string): void {
   void router.replace({ query: withWorkQueueSearch(route.query, text) });
 }
+/** #1278: the Client board link is hidden on this page for now. The
+ *  /client-board route and its page are untouched; set this to true to show it. */
+const showClientBoardLink = false;
 
 /** The board's per-status task list with the queue filters and the hidden
  *  categories removed. */
@@ -565,7 +568,17 @@ function openHeld(task: Task): void {
         </div>
       </div>
       <div class="work-header-actions">
-        <RouterLink to="/client-board" class="client-board-link">Client board</RouterLink>
+        <BoardQueueSearch
+          v-if="effectiveView === 'board'"
+          :model-value="queueFilters.query"
+          @update:model-value="setQueueSearch"
+        />
+        <RouterLink
+          v-if="showClientBoardLink"
+          to="/client-board"
+          class="client-board-link"
+          >Client board</RouterLink
+        >
         <div
           v-if="effectiveView === 'board'"
           class="view-toggle queue-visibility"
@@ -687,12 +700,6 @@ function openHeld(task: Task): void {
       </span>
       <router-link to="/work" class="filter-clear">Show all statuses</router-link>
     </div>
-
-    <BoardQueueSearch
-      v-if="effectiveView === 'board'"
-      :model-value="queueFilters.query"
-      @update:model-value="setQueueSearch"
-    />
 
     <BoardQueueFilters
       v-if="queueBarVisible"

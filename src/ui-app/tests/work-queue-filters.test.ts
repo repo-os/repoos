@@ -52,7 +52,7 @@ describe("work queue filters", () => {
     ).toBe(true);
   });
 
-  it("reports active filters and one chip per set filter", () => {
+  it("reports active filters and one chip per set filter, with no chip for the search (#1278)", () => {
     expect(hasActiveWorkQueueFilters(NO_WORK_QUEUE_FILTERS)).toBe(false);
     const filters = {
       query: " login ",
@@ -63,7 +63,6 @@ describe("work queue filters", () => {
     };
     expect(hasActiveWorkQueueFilters(filters)).toBe(true);
     expect(workQueueFilterChips(filters).map((chip) => chip.key)).toEqual([
-      "q",
       "priority",
       "area",
       "story",
@@ -101,9 +100,10 @@ describe("work queue filters", () => {
       expect(workQueueFilterChips(filters)).toEqual([]);
       expect(matchesWorkQueueFilters(task({}), filters)).toBe(true);
     }
-    expect(workQueueFilterChips(readWorkQueueFilters({ q: "#0001" }))[0]?.label).toBe(
-      "Search: #0001",
-    );
+    // An active search is still a filter (Clear filters removes it), but it has no chip.
+    const search = readWorkQueueFilters({ q: "#0001" });
+    expect(hasActiveWorkQueueFilters(search)).toBe(true);
+    expect(workQueueFilterChips(search)).toEqual([]);
   });
 
   it("clear keeps null and repeated values of keys it does not own", () => {

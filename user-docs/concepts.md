@@ -96,7 +96,7 @@ consistent. Use `repoos mv`, `repoos update`, `repoos note`, or the UI.
 
 ## Client board
 
-Open **Client board** from the Work Queue for a read-only view of the project. Planned includes inbox and ready work, Building shows active work, and Reviewed shows work awaiting review. Completed, draft and archived tasks are omitted. The board uses the same sign-in as the rest of the app; it does not create a client account or change permissions.
+The Client board is a read-only view of the project at `/client-board`. The Work Queue doesn't link to it for now (#1278), so open it by address. Planned includes inbox and ready work, Building shows active work, and Reviewed shows work awaiting review. Completed, draft and archived tasks are omitted. The board uses the same sign-in as the rest of the app; it does not create a client account or change permissions.
 
 ## Pipeline view
 

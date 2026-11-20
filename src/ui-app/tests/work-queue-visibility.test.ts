@@ -102,19 +102,21 @@ describe("Work Queue category visibility (#1141)", () => {
   const aiReady = makeTask({ id: "0102", status: "ready" });
   const heldActive = makeTask({ id: "0103", status: "active", isHeld: true });
 
-  it("places both controls between Client board and the collapse toggle", async () => {
+  it("places the search, then both controls, before the collapse toggle; no Client board link (#1278)", async () => {
     wrapper = mountWork([aiReady]);
     await flush();
 
     const actions = wrapper.get(".work-header-actions").element;
     const children = Array.from(actions.children);
-    const linkIndex = children.findIndex((el) => el.classList.contains("client-board-link"));
+    expect(wrapper.find(".client-board-link").exists()).toBe(false);
+    const searchIndex = children.findIndex((el) => el.classList.contains("board-queue-search"));
     const visibilityIndex = children.findIndex((el) => el.classList.contains("queue-visibility"));
     const collapseIndex = children.findIndex(
       (el) => el.tagName === "BUTTON" && el.getAttribute("aria-label")?.includes("columns"),
     );
 
-    expect(visibilityIndex).toBeGreaterThan(linkIndex);
+    expect(searchIndex).toBe(0);
+    expect(visibilityIndex).toBeGreaterThan(searchIndex);
     expect(collapseIndex).toBeGreaterThan(visibilityIndex);
     expect(wrapper.findAll(".queue-visibility .queue-visibility-btn")).toHaveLength(2);
   });

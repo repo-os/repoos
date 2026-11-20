@@ -56,8 +56,9 @@ function update(value: string): void {
 </template>
 
 <style scoped>
+/* Half the old 420px width so it fits the header row beside the toggles (#1278). */
 .board-queue-search {
-  width: min(100%, 420px);
+  width: min(100%, 210px);
 }
 .board-search-row {
   display: flex;

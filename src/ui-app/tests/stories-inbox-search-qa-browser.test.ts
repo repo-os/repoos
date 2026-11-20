@@ -583,6 +583,7 @@ describe.skipIf(!existsSync(webkit.executablePath()))(
           const state = await page.evaluate(() => ({
             chip: document.querySelector(".filter-chip")?.textContent ?? "",
             clear: document.querySelector("a.filter-clear")?.getAttribute("href") ?? "",
+            // The Client board link is hidden on the Work page (#1278).
             boardLink: document.querySelector("a.client-board-link")?.getAttribute("href") ?? "",
             cards: document.querySelectorAll(".task-card").length,
             colLabel: document.querySelector(".col-label")?.textContent ?? "",
@@ -590,7 +591,7 @@ describe.skipIf(!existsSync(webkit.executablePath()))(
           expect(state.chip.replace(/\s+/g, " ")).toContain(`Inbox · ${INBOX_COUNT}`);
           // Links on the filtered view stay live, not dead.
           expect(state.clear).toBe("/work");
-          expect(state.boardLink).toBe("/client-board");
+          expect(state.boardLink).toBe("");
           expect(state.cards).toBe(INBOX_COUNT);
           expect(state.colLabel).toContain("Inbox");
         } finally {

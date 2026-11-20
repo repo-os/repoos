@@ -98,12 +98,13 @@ export interface WorkQueueFilterChip {
   ignored?: boolean;
 }
 
-/** One chip per filter that is set, in the order the controls appear. */
+/**
+ * One chip per quick filter that is set, in the order the controls appear. The
+ * search has no chip (#1278): the search box in the board header shows it, and
+ * Clear filters still removes it.
+ */
 export function workQueueFilterChips(filters: WorkQueueFilters): WorkQueueFilterChip[] {
   const chips: WorkQueueFilterChip[] = [];
-  if (searchNeedle(filters.query)) {
-    chips.push({ key: "q", label: `Search: ${filters.query.trim()}` });
-  }
   if (filters.priority)
     chips.push({ key: "priority", label: `Priority: ${filters.priority.toUpperCase()}` });
   if (filters.area !== "any" && filters.area !== "") {
