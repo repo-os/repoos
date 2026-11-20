@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
+last_handoff_failure_sha: bedc3455e991267a2057dbbd535a6d9f46966f62
 id: "1258"
 title: "Mobile polish: open on Work, hide page scrollbar, even-height header row"
 type: bug
@@ -16,8 +18,6 @@ check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-20T09:49:11.145Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Work is the home page; header row controls share one height (target \"default\"): loading state detected: loading indicator [aria-busy=\"true\"] on /work (http://127.0.0.1:34337/work)"
 review_rounds: 2
 review_passes: 3
-last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/mobile-touch-affordances.test.ts > mobile web polish (#1139) > gives top-bar controls a 44px touch target and keeps the project name visible, tests/mobile-touch-affordances.test.ts > mobile web polish (#1139) > turns search into a compact accessible icon button on phones, tests/shot-target-support-0866.test.ts > app target resolution (#0866) > keeps APP_ROUTE_PREFIXES in sync with the UI router on mini — fix it in the feature branch and re-run the gate"
-last_handoff_failure_sha: 8c93e75b7ecddde45a3b16dc5cb0ed89d01739d1
 ---
 ## Problem
 On a phone (seen on the Android Hub app, Mission Control page):
@@ -102,3 +102,4 @@ Screenshot attached shows the current mobile header and Mission Control. Do not 
 - 2026-11-20T09:57:36Z · CTO nudge: held — handoff gate is running
 - 2026-11-20T10:24:18Z · message_queued at 2026-11-20T10:24:18.808Z
 - 2026-11-20T10:24:19Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
+
