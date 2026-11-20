@@ -1,3 +1,14 @@
+---
+id: summary
+title: summary
+type: feature
+status: inbox
+priority: p2
+area: general
+assigned_to: ai
+created_by: ""
+branch: ""
+---
 ## TL;DR
 
 Task 1272 fixed the close-out timer on task cards so it counts only from when validation actually starts (`startedAt`), not from when the job was queued. The root cause was a fallback in `src/server/integration-status.ts` that used a queued job's `enqueuedAt` when `startedAt` was null, making a queued job look like the active close-out with a clock already running. The fix classifies a job as active only once it has left the queue, lists unstarted jobs with their queue position, and stops any timer from counting before that point. One engineering round, one review pass (verdict `good to go`), merged and released successfully.
@@ -20,9 +31,9 @@ One honest caveat, flagged by both engineer and reviewer: the screenshot's "Chec
 - **Rounds:** 1 engineering round (haiku, via Claude Code); 1 review pass (`good to go`, opencode, model `opencode-go/glm-5.3-flash`). No restarts or model swaps recorded; one `cli_override`/`model_override` event is logged at 2026-11-20T06:26:58Z, details not recorded.
 - **Wall-clock, created → done:** 6h 46m 47s (2026-11-20T06:08:31Z → 12:55:18Z). Most of that was the reviewed task waiting in the close-out queue: review verdict at 07:42:23Z, close-out gate completed at 12:52:32Z (562s gate run), status done at 12:55:18Z.
 - **Sessions:**
-  - engineer — haiku, started 06:27:03.681Z, elapsed 4256s (1h 10m 56s), 62,458 tokens, $0.50147667
-  - reviewer — opencode-go/glm-5.3-flash, elapsed 102s, 51,053 tokens, $0.02034646
-  - routing — Model router (jev), elapsed 0s, tokens and cost not recorded
+- engineer — haiku, started 06:27:03.681Z, elapsed 4256s (1h 10m 56s), 62,458 tokens, $0.50147667
+- reviewer — opencode-go/glm-5.3-flash, elapsed 102s, 51,053 tokens, $0.02034646
+- routing — Model router (jev), elapsed 0s, tokens and cost not recorded
 - **Totals (sum of the two recorded sessions):** 113,511 tokens, $0.52182313.
 
 ## What went wrong

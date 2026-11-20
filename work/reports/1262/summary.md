@@ -1,3 +1,14 @@
+---
+id: summary
+title: summary
+type: feature
+status: inbox
+priority: p2
+area: general
+assigned_to: ai
+created_by: ""
+branch: ""
+---
 ## TL;DR
 
 Task 1262 was a QA sweep of the Checks page (Now/Runs tabs, check plan, history, failure details) at 375/768/1280 px. One engineering round shipped a new headless-WebKit overflow audit plus fixes for the real defects, which turned out to be in error/empty states rather than layout: a failed local-slots load reading as "no slots in use", a failed plan load with no retry, a failed history load claiming "No recorded runs yet", keyboard-unreachable scrollers, and a mis-styled pipeline slot block. Review pass 1 found a CSS-specificity bug in the new error line; it was fixed and verified with computed-style assertions. Review passes 2 and 3 returned `good to go` (both flagged stale handoff captures), the branch merged as `f2dd45a7b595b3b563f0c4fc3baba00f8602aa1f`, and the task closed as `done` with `release:success`. Total wall-clock from creation to done was 7h 6m 13s. The run was rocky: three engineer turns ended without handoff, one flaky rendered-contrast audit, a watchdog intervention, one failed handoff for a missing engineering-report draft, and a review message stuck queued for over 60 minutes.
@@ -23,18 +34,18 @@ Final verdict: review pass 3 `good to go`; task `done`, `release:success`, merge
 - **Review passes:** 3 — pass 1 `needs some work` (2026-11-20T04:18:45Z), pass 2 `good to go` (04:55:00Z), pass 3 `good to go` (06:08:15Z). Two successful handoffs to review (04:16:19Z, 04:53:15Z).
 - **Wall-clock:** created 2026-11-20T02:26:53Z → done 09:33:06Z = 7h 6m 13s. Close-out gate itself completed in 998s (09:31:20Z). The log records no activity between 06:08:15Z (pass 3) and 09:31:20Z (gate completed); the reason for that gap is not recorded.
 - **Agents and models:**
-  - Engineer: `haiku` via Claude Code — one session, started 02:27:05Z, elapsed 5513s (1h 31m 53s), 73,003 tokens, cost 7.1882942. No restarts or model swaps recorded (a `cli_override, model_override` event is logged at creation time 02:26:59Z, but its details are not recorded).
-  - Reviewer: `opencode-go/glm-5.3-flash` — three sessions: 137s / 59,556 tokens / 0.03336406 (pass 1); 88s / 48,678 tokens / 0.0197895 (pass 2); 52s / 38,694 tokens / 0.01269983 (pass 3).
-  - Routing: "Model router (jev)", model unknown, 3 sessions, 0s each, no tokens/costs recorded.
+- Engineer: `haiku` via Claude Code — one session, started 02:27:05Z, elapsed 5513s (1h 31m 53s), 73,003 tokens, cost 7.1882942. No restarts or model swaps recorded (a `cli_override, model_override` event is logged at creation time 02:26:59Z, but its details are not recorded).
+- Reviewer: `opencode-go/glm-5.3-flash` — three sessions: 137s / 59,556 tokens / 0.03336406 (pass 1); 88s / 48,678 tokens / 0.0197895 (pass 2); 52s / 38,694 tokens / 0.01269983 (pass 3).
+- Routing: "Model router (jev)", model unknown, 3 sessions, 0s each, no tokens/costs recorded.
 - **Token/cost totals** (sum of the recorded figures above): 219,931 tokens; cost 7.25414759 — of which the engineer session accounted for 73,003 tokens and 7.1882942, and the three reviewer sessions together 146,928 tokens and 0.06585339.
 
 ## What went wrong
 
 - **Flaky rendered-contrast audit.** The scoped check failed across three runs on two different Settings descriptions, passing on one re-run with nothing changed. The engineer treated it as a flake rather than a code defect and kept working; the task was handed off at 04:16:19Z after a passing run. Root cause was not diagnosed and is not recorded.
 - **Three engineer turns ended without a handoff signal:**
-  - 03:31:21Z — ended deliberately (exit code 143) to let a queued message be delivered; the turn's last message also records that handoff had failed twice with an error beginning "reused check inp…" (truncated in the log; full text not recorded).
-  - 03:52:53Z — clean exit while the scoped check was failing (the contrast flake above).
-  - 04:43:56Z — clean exit; round-2 fixes were on disk but unverified because the worktree was locked against edits mid-review. The engineer stopped rather than working around the lock.
+- 03:31:21Z — ended deliberately (exit code 143) to let a queued message be delivered; the turn's last message also records that handoff had failed twice with an error beginning "reused check inp…" (truncated in the log; full text not recorded).
+- 03:52:53Z — clean exit while the scoped check was failing (the contrast flake above).
+- 04:43:56Z — clean exit; round-2 fixes were on disk but unverified because the worktree was locked against edits mid-review. The engineer stopped rather than working around the lock.
 - **Watchdog intervention.** At 04:24:01Z the watchdog auto-surfaced the stuck task (agent exited without emitting `::repoos-handoff-ready::`); handoff was requested via CLI at 04:24:06Z.
 - **Orphaned run process** stopped at 04:16:26Z (pid 70143, bun, ~47s old, cpu 1s).
 - **Failed handoff at 04:45:36Z:** "Engineering report draft is missing: `.repoos/engineering-report-drafts/1262.md`". The task then moved to review at 04:53:15Z.

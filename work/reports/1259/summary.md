@@ -1,3 +1,14 @@
+---
+id: summary
+title: summary
+type: feature
+status: inbox
+priority: p2
+area: general
+assigned_to: ai
+created_by: ""
+branch: ""
+---
 ## TL;DR
 
 Task #1259 added the missing desktop half of the work-board queue search: a search input on the board (720 px and up) that writes `q` to the URL using the same shared predicate and URL helpers as the phone queue (`src/ui-app/src/lib/workQueueFilters.ts`), with the existing chip bar and Clear filters behaviour unchanged. One engineering round and one review pass; the review verdict was `good to go` and the task landed as `done` with `release:success`. The main friction was a handoff-gate failure caused by an unrelated load-dependent flake in `agent-review.test.ts`, which passed in isolation and was left untouched.
@@ -23,9 +34,9 @@ Final verdict: review pass 1 returned `good to go`; the close-out gate completed
 - Agent/model overrides: `cli_override` and `model_override` recorded at 01:42:10Z (details not recorded beyond the event names).
 - Watchdog restarts: 1 (engineer restarted at 04:59:32Z). One orphaned run process stopped (pid 78960, age 30s) at 05:24:31Z.
 - Sessions (from the recorded table):
-  - engineer · haiku · started 2026-11-20T04:07:45Z · elapsed 2563s · 43,172 tokens · cost 0.27354906 · finished
-  - reviewer · opencode-go/glm-5.3-flash · started 2026-11-20T05:24:42Z · elapsed 79s · 44,401 tokens · cost 0.01614646 · finished
-  - routing · Model router (jev) · model unknown · elapsed 0s · tokens/cost not recorded
+- engineer · haiku · started 2026-11-20T04:07:45Z · elapsed 2563s · 43,172 tokens · cost 0.27354906 · finished
+- reviewer · opencode-go/glm-5.3-flash · started 2026-11-20T05:24:42Z · elapsed 79s · 44,401 tokens · cost 0.01614646 · finished
+- routing · Model router (jev) · model unknown · elapsed 0s · tokens/cost not recorded
 - Token total (engineer + reviewer): 87,573. Cost total (engineer + reviewer): 0.28969552. Any cost outside these two sessions was not recorded.
 - Close-out gate: completed in 193s at 08:02:35Z.
 

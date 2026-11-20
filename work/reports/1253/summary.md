@@ -1,3 +1,14 @@
+---
+id: summary
+title: summary
+type: feature
+status: inbox
+priority: p2
+area: general
+assigned_to: ai
+created_by: ""
+branch: ""
+---
 ## TL;DR
 
 Task 1253 was a QA pass over the model providers panel and the API key save path. It found and fixed one data-loss bug (an empty Save could delete a stored key), a hidden failure mode on Clear, a missing Saved / Not set indicator, four error messages without a next step (one leaking the `.env` path), and a 375 px layout overlap. All fixes are pinned by tests, including a new 15-test headless WebKit suite at 375 / 768 / 1280 px, and the QA record is committed at `docs/qa/2026-11-api-key-screens-qa.md`. One engineering round, one review pass (`good to go`), merged cleanly with `release:success`.
@@ -39,10 +50,10 @@ What shipped, on branch `feat/qa-pass-settings-model-providers-and-api`, merged 
 - **Long gap between review and close-out.** Review pass 1 finished at 23:49:02Z but the close-out gate only completed at 02:17:16Z (~2 h 28 m later). The cause is not recorded.
 - **Merge conflict on the task's own file.** The reviewer noted the server preflight showed only this task's `work/1253-*.md` conflicting with main, which close-out resolves from main; no action was needed.
 - **Test-authoring friction inside round 1** (all resolved in the same round):
-  - The first WebKit harness copied a stub sidebar that overflowed at 768 px and failed the audit; the fixture shell, not the product, was at fault, so the stub was removed.
-  - The placeholder assertion failed because placeholders are attributes, not text; the assertion was fixed.
-  - Existing tests pinned the old wording (401 upstream text, "Could not reach", the newline error) and had to be updated deliberately, change by change.
-  - `vitest` must run with `--config src/ui-app/vite.config.ts`; from the repo root it fails with a Vue SFC import error.
+- The first WebKit harness copied a stub sidebar that overflowed at 768 px and failed the audit; the fixture shell, not the product, was at fault, so the stub was removed.
+- The placeholder assertion failed because placeholders are attributes, not text; the assertion was fixed.
+- Existing tests pinned the old wording (401 upstream text, "Could not reach", the newline error) and had to be updated deliberately, change by change.
+- `vitest` must run with `--config src/ui-app/vite.config.ts`; from the repo root it fails with a Vue SFC import error.
 - No crashes, failed gates or flaky checks are recorded.
 
 ## Learnings

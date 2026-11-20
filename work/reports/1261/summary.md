@@ -1,3 +1,14 @@
+---
+id: summary
+title: summary
+type: feature
+status: inbox
+priority: p2
+area: general
+assigned_to: ai
+created_by: ""
+branch: ""
+---
 ## TL;DR
 
 A QA sweep of the Inbox and Review pages at 375, 768 and 1280 px found exactly one defect: empty status columns rendered a bare "—" instead of meaningful copy. The fix added a plain-English empty-state map covering all five non-draft status columns, plus the status-filter view, verified by a new headless WebKit width-walk test. One engineering round, one review pass (good to go), closed out successfully.
@@ -18,9 +29,9 @@ The review's final verdict was **good to go** on the first pass, and the task cl
 - **Review passes:** 1 (Pass 1, 2026-11-20T02:15:26Z, verdict "good to go"). No restarts or model swaps recorded; the review found no bugs.
 - **Wall-clock, creation to done:** 2026-11-20T01:42:34Z → 2026-11-20T04:32:07Z, i.e. 2 h 49 min 33 s (difference of the two recorded timestamps). Most of that was close-out: the close-out gate alone ran 727 s, and the task sat in review from 02:14:17Z to done.
 - **Agents and models:**
-  - Engineer: agent `engineer`, model `haiku` (Claude Code harness per the round header), started 01:43:36Z, elapsed 1417 s, 371 tokens, $0.18604678.
-  - Reviewer: agent `reviewer`, model `opencode-go/glm-5.3-flash` (OpenCode harness), started 02:14:19Z, elapsed 67 s, 43,942 tokens, $0.01665671.
-  - Routing: Model router (jev), model recorded as unknown, elapsed 0 s, tokens and cost not recorded.
+- Engineer: agent `engineer`, model `haiku` (Claude Code harness per the round header), started 01:43:36Z, elapsed 1417 s, 371 tokens, $0.18604678.
+- Reviewer: agent `reviewer`, model `opencode-go/glm-5.3-flash` (OpenCode harness), started 02:14:19Z, elapsed 67 s, 43,942 tokens, $0.01665671.
+- Routing: Model router (jev), model recorded as unknown, elapsed 0 s, tokens and cost not recorded.
 - **Recorded token total (engineer + reviewer):** 44,313 tokens; recorded cost total: $0.20270349 (sums of the per-session figures above; the routing session contributes no recorded values).
 
 ## What went wrong

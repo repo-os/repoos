@@ -1,11 +1,19 @@
 ---
+id: review-3
+title: review-3
+type: feature
+status: inbox
+priority: p2
+area: general
+assigned_to: ai
+created_by: ""
+branch: feat/qa-pass-update-banner-version-display-an
 task: "1255"
 pass: 3
 at: "2026-11-20T00:18:24.945Z"
 agent: reviewer
 cli: opencode
 model: opencode-go/glm-5.3-flash
-branch: feat/qa-pass-update-banner-version-display-an
 state: ok
 tree_identity: "bde1aa6c5:bde1aa6c5b"
 ---
@@ -24,9 +32,9 @@ None — all three captures (release-notes modal with bullets, systemd restart n
 ## Bugs
 
 - **Class: missing-list-style-declaration (Tailwind preflight strips list markers)** — the shared rule at `src/ui-app/src/style.css:7645-7662` and `MARKDOWN_SURFACES` in `src/ui-app/tests/markdown-list-markers.test.ts` cover six surfaces but omit the two chat surfaces that render assistant messages via `renderChatMarkdown()` with `padding-left: 17px` and no `list-style` anywhere (checked both SFC style blocks — only `p`/`code`/`pre`/`a` are styled):
-  - `.td-markdown :deep(ul/ol)` — `src/ui-app/src/components/TaskDebuggerChat.vue:494` (assistant bubbles, line 261).
-  - `.guide-markdown :deep(ul/ol)` — `src/ui-app/src/components/RepoGuideChat.vue:445` (assistant bubbles, line 258).
-  Agent replies containing lists in the task-debugger and repo-guide chat panels render indented without bullets — the exact defect round 2's shared rule was meant to close, and the round-2 report/QA doc describe coverage that does not include these two files.
+- `.td-markdown :deep(ul/ol)` — `src/ui-app/src/components/TaskDebuggerChat.vue:494` (assistant bubbles, line 261).
+- `.guide-markdown :deep(ul/ol)` — `src/ui-app/src/components/RepoGuideChat.vue:445` (assistant bubbles, line 258).
+Agent replies containing lists in the task-debugger and repo-guide chat panels render indented without bullets — the exact defect round 2's shared rule was meant to close, and the round-2 report/QA doc describe coverage that does not include these two files.
 
 No further findings of this class were found after grepping: every `renderMarkdown()`/`renderChatMarkdown()` call site in `src/ui-app/src`, all `*-markdown` container classes and their `list-style`/`:deep(ul/ol)` rules in `style.css` and component style blocks, the `MARKDOWN_SURFACES` test table, the QA doc's surface list, and `docs/qa/measure-update-banner.mjs` for bare `node`/`npm`/`npx` (none; shebang is `bun`, `node:` imports are builtins only).
 

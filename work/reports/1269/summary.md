@@ -1,3 +1,14 @@
+---
+id: summary
+title: summary
+type: feature
+status: inbox
+priority: p2
+area: general
+assigned_to: ai
+created_by: ""
+branch: ""
+---
 ## TL;DR
 
 Task 1269 was a QA sweep of the command palette (`SearchOverlay.vue`) and global keyboard shortcuts. The palette is shared by three callers (header ⌘K pill, settings palette, context palette), so fixes were made once in the component: focus restore on dismissal (with a connected-check fallback chain), full combobox ARIA wiring, scroll-into-view for the highlighted option, accurate empty/loading copy, and a fix for duplicate-row keys. Three engineering rounds and three review passes were needed; review verdict moved `needs some work` → `needs some work` → `good to go`, and the task landed as `done` (release:success) on 2026-11-20 at 11:17:04Z, merged as commit `086cae6`. Total recorded spend: 157,596 tokens / $2.67.
@@ -20,10 +31,10 @@ Final verdict: review pass 3, `good to go`; status `done→done, release:success
 - **Engineering rounds**: 3 (handoffs at 05:46:25, 06:01:58, 06:25:52Z).
 - **Review passes**: 3 — pass 1 `needs some work` (05:49:05), pass 2 `needs some work` (06:03:55), pass 3 `good to go` (06:23:51).
 - **Agents / models**:
-  - Engineer: `claude code · haiku`. One engineer session is recorded in the sessions table (started 05:10:14Z, elapsed 3532 s, 12,950 tokens, $2.6091829), with status "finished (the agent process exited with an error)" — the activity log records the same turn exiting cleanly with code 0 but without requesting review. Only one engineer session is listed despite three rounds; per-round session splits are not recorded.
-  - Reviewer: `opencode · opencode-go/glm-5.3-flash`, three sessions (153 s / 49,343 tokens / $0.02173379; 115 s / 44,559 tokens / $0.01391086; 108 s / 50,744 tokens / $0.0234033).
-  - Routing: "Model router (jev)", model `unknown`, three 0 s sessions, no tokens/cost recorded.
-  - No restarts or model swaps are recorded. `cli_override` and `model_override` events are logged at 05:09:31 (agent/model selection at start; the overridden values are not recorded).
+- Engineer: `claude code · haiku`. One engineer session is recorded in the sessions table (started 05:10:14Z, elapsed 3532 s, 12,950 tokens, $2.6091829), with status "finished (the agent process exited with an error)" — the activity log records the same turn exiting cleanly with code 0 but without requesting review. Only one engineer session is listed despite three rounds; per-round session splits are not recorded.
+- Reviewer: `opencode · opencode-go/glm-5.3-flash`, three sessions (153 s / 49,343 tokens / $0.02173379; 115 s / 44,559 tokens / $0.01391086; 108 s / 50,744 tokens / $0.0234033).
+- Routing: "Model router (jev)", model `unknown`, three 0 s sessions, no tokens/cost recorded.
+- No restarts or model swaps are recorded. `cli_override` and `model_override` events are logged at 05:09:31 (agent/model selection at start; the overridden values are not recorded).
 - **Token / cost totals**: engineer 12,950 tokens / $2.6091829; reviewers 144,646 tokens / $0.05904795; **overall 157,596 tokens / $2.66823085**.
 - **Close-out gate**: completed in 858 s (~14.3 min) at 11:15:11Z.
 

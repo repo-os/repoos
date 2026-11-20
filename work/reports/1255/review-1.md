@@ -1,11 +1,19 @@
 ---
+id: review-1
+title: review-1
+type: feature
+status: inbox
+priority: p2
+area: general
+assigned_to: ai
+created_by: ""
+branch: feat/qa-pass-update-banner-version-display-an
 task: "1255"
 pass: 1
 at: "2026-11-19T23:50:24.217Z"
 agent: reviewer
 cli: opencode
 model: opencode-go/glm-5.3-flash
-branch: feat/qa-pass-update-banner-version-display-an
 state: ok
 tree_identity: "f2c1be984:e5bc092e85"
 ---
@@ -24,11 +32,11 @@ None — all three captures (release-notes modal with bullets, systemd restart n
 ## Bugs
 
 - **Class: missing-list-style-declaration (Tailwind preflight strips list markers)** — `docs/qa/2026-11-update-banner-qa.md` fixed the release-notes surface by adding `list-style: disc/decimal` to `.release-update-markdown`, but the same preflight reset still strips markers from every other `renderMarkdown()`/`renderChatMarkdown()` surface, all of which set `padding-left` (indentation without markers — the exact defect class fixed here):
-  - `.md-rendered ul/ol` (`src/ui-app/src/style.css:7631`) — used by `StoryPanel.vue` (story bodies), `TaskDrawer.vue` (review reports), `ContextView.vue`, `InputsView.vue`.
-  - `.pm-markdown ul/ol` (`src/ui-app/src/style.css:16626`) — `PmChatSurface.vue`.
-  - `.cto-markdown :deep(ul/ol)` — `src/ui-app/src/components/CTOPanel.vue:342`.
-  - `.debugger-markdown :deep(ul/ol)` — `src/ui-app/src/components/DebuggerChat.vue:543`.
-  - `.playground-markdown` — `src/ui-app/src/components/ModelPlaygroundPanel.vue` (no `ul` rule at all).
+- `.md-rendered ul/ol` (`src/ui-app/src/style.css:7631`) — used by `StoryPanel.vue` (story bodies), `TaskDrawer.vue` (review reports), `ContextView.vue`, `InputsView.vue`.
+- `.pm-markdown ul/ol` (`src/ui-app/src/style.css:16626`) — `PmChatSurface.vue`.
+- `.cto-markdown :deep(ul/ol)` — `src/ui-app/src/components/CTOPanel.vue:342`.
+- `.debugger-markdown :deep(ul/ol)` — `src/ui-app/src/components/DebuggerChat.vue:543`.
+- `.playground-markdown` — `src/ui-app/src/components/ModelPlaygroundPanel.vue` (no `ul` rule at all).
 
 No further findings of this class were found after grepping: all `list-style` declarations in `src/ui-app/src/style.css` and `src/ui-app/src/components/*.vue`, all `renderMarkdown`/`renderChatMarkdown` call sites, `::marker` usage, bare `node`/`npm`/`npx` invocations in the new script, docs and package scripts, and `repoos.toml` (untouched, per the task note).
 

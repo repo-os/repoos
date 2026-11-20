@@ -1,3 +1,14 @@
+---
+id: summary
+title: summary
+type: feature
+status: inbox
+priority: p2
+area: general
+assigned_to: ai
+created_by: ""
+branch: ""
+---
 ## TL;DR
 
 Task 1266 was a QA sweep of the Activity and Insights pages. No Insights page exists in the UI, so the sweep covered the Control dashboard (`/`) — labelled "Activity" in the mobile More sheet — and its live activity feed. The headless Playwright walk at 375, 768 and 1280 px found no overflow, page errors or missing focus rings, but uncovered two real bugs in the feed's data path: free text interpolated unescaped into `v-html` feed messages at eight `pushFeed` call sites, and seven server event types that had store handlers but were never subscribed, making those branches dead code. Both were fixed with table-driven tests, a QA note was added under `docs/qa/`, and review returned `good to go`. The task landed as merged commit `90f95d8`.
@@ -21,10 +32,10 @@ Diff: 1 new file, 2 modified files (+142 / −11).
 - **Review passes:** 1, verdict `good to go` at 2026-11-20T04:00:47Z.
 - **Wall-clock, created → done:** 2026-11-20T03:07:06Z → 2026-11-20T08:52:55Z = 5 h 45 m 49 s. Of that, active work was 2026-11-20T03:08:12Z → 03:54:43Z (≈46.5 min to handoff) and close-out took 486 s (gate completed 08:52:18Z). The long tail was review-approval to close-out (≈4 h 52 m), during which a queued message sat overdue.
 - **Agents and models:**
-  - Engineer: haiku (Claude Code) — 1525 s, 41,274 tokens, $0.3136.
-  - Reviewer: opencode-go/glm-5.3-flash — 351 s, 53,708 tokens, $0.02743.
-  - Routing: Model router (jev) — 0 s, tokens/cost not recorded.
-  - Restarts or swaps: none recorded.
+- Engineer: haiku (Claude Code) — 1525 s, 41,274 tokens, $0.3136.
+- Reviewer: opencode-go/glm-5.3-flash — 351 s, 53,708 tokens, $0.02743.
+- Routing: Model router (jev) — 0 s, tokens/cost not recorded.
+- Restarts or swaps: none recorded.
 - **Total recorded cost:** $0.3411 (sum of the two known figures).
 - **Linked tasks:** none recorded.
 

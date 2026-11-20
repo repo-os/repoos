@@ -1,11 +1,19 @@
 ---
+id: review-1
+title: review-1
+type: feature
+status: inbox
+priority: p2
+area: general
+assigned_to: ai
+created_by: ""
+branch: feat/qa-pass-settings-general-agents-and-budg
 task: "1263"
 pass: 1
 at: "2026-11-20T03:09:22.561Z"
 agent: reviewer
 cli: opencode
 model: opencode-go/glm-5.3-flash
-branch: feat/qa-pass-settings-general-agents-and-budg
 state: ok
 tree_identity: "7b1227c01:d264ce4068"
 ---
@@ -20,14 +28,14 @@ None
 
 ## Bugs
 - **Class: unnamed setting controls (missing accessible name)** — the diff adds `aria-label`/`:aria-label` to the config-driven rows and most hand-written switches, but several sibling instances of the exact same pattern were left unnamed (`setting-label` is a plain `div`, so the control has no name):
-  - `src/ui-app/src/views/SettingsView.vue` ~2606 — `boardColumnFields` loop `Input`s (Advanced tab): the sibling `advancedGuardedFields` loop (~2518–2567) got `:aria-label="f.label"`, this loop did not.
-  - `SettingsView.vue` ~2641 — "Explain dev failures with AI" `Switch` (`dev.failureSummary.ai`, Advanced tab): no label.
-  - `SettingsView.vue` ~2152 — ntfy topic `Input` (Notifications tab): the ntfy switch got a label, the topic field next to it did not.
-  - `SettingsView.vue` ~2251 — spend alert threshold `Input` (Notifications tab): no label.
-  - `SettingsView.vue` ~2417 — session duration `Input` (Security tab): no label.
-  - `src/ui-app/src/components/ServiceSettings.vue` ~281 — auto-start `Switch`: no label.
-  - `src/ui-app/src/components/SettingsImportExport.vue` ~279 — per-section export `Switch`es: no label.
-  These are outside the three walked tabs, but the implementer chose to fix the class there (named the Notifications/Security switches), so the remaining instances are incomplete class coverage; each fails the same probe assertion if that tab is walked.
+- `src/ui-app/src/views/SettingsView.vue` ~2606 — `boardColumnFields` loop `Input`s (Advanced tab): the sibling `advancedGuardedFields` loop (~2518–2567) got `:aria-label="f.label"`, this loop did not.
+- `SettingsView.vue` ~2641 — "Explain dev failures with AI" `Switch` (`dev.failureSummary.ai`, Advanced tab): no label.
+- `SettingsView.vue` ~2152 — ntfy topic `Input` (Notifications tab): the ntfy switch got a label, the topic field next to it did not.
+- `SettingsView.vue` ~2251 — spend alert threshold `Input` (Notifications tab): no label.
+- `SettingsView.vue` ~2417 — session duration `Input` (Security tab): no label.
+- `src/ui-app/src/components/ServiceSettings.vue` ~281 — auto-start `Switch`: no label.
+- `src/ui-app/src/components/SettingsImportExport.vue` ~279 — per-section export `Switch`es: no label.
+These are outside the three walked tabs, but the implementer chose to fix the class there (named the Notifications/Security switches), so the remaining instances are incomplete class coverage; each fails the same probe assertion if that tab is walked.
 
 No further findings of this class were found after grepping: SettingsView.vue (all Switch/Input/SelectTrigger sites), ServiceSettings.vue, TelegramChatNotificationsSettings.vue (already labelled), SettingsImportExport.vue, BudgetControlsPanel.vue (label-wrapped), AgentsView.vue, DevTargetsSettings, and the new test file.
 
