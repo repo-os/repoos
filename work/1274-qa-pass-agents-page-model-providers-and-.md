@@ -2,14 +2,14 @@
 id: "1274"
 title: "QA pass: Agents page model providers and routing status copy"
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: web
-assigned_to: ""
+assigned_to: ai
 created_by: t@t
 branch: ""
 created_at: "2026-11-20T07:26:57Z"
-updated_at: "2026-11-20T07:26:57Z"
+updated_at: "2026-11-20T07:27:02Z"
 ---
 ## Problem
 Sweep the Agents settings tab (agent list, model providers, routing mode and status text) for layout, wording and state bugs, including the key-missing and paused states.
@@ -29,3 +29,4 @@ Keep changes small. Never touch repoos.toml. Never show real keys.
 ## Activity
 
 - 2026-11-20T07:26:57Z · created · t@t
+- 2026-11-20T07:27:02Z · status inbox→ready
