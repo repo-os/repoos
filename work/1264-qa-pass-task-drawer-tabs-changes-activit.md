@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 2367746
-last_close_out_gate_at: "2026-11-20T08:42:34.098Z"
 id: "1264"
 title: "QA pass: task drawer tabs (changes, activity, reports)"
 type: feature
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: c2b7fa03eacefd72ff3ac1696d9ba8df32f9bf72
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-task-drawer-tabs-changes-activit
@@ -14,6 +13,8 @@ cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T02:27:21Z"
 updated_at: "2026-11-20T08:42:34Z"
+last_close_out_gate_ms: 2367746
+last_close_out_gate_at: "2026-11-20T08:42:34.098Z"
 review_passes: 1
 last_check_failure: "repoos check at 2026-11-20T02:47:20.639Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 ---
