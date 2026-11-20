@@ -1,0 +1,30 @@
+---
+id: "1264"
+title: "QA pass: task drawer tabs (changes, activity, reports)"
+type: feature
+status: inbox
+priority: p2
+area: web
+assigned_to: ""
+created_by: t@t
+branch: ""
+created_at: "2026-11-20T02:27:21Z"
+updated_at: "2026-11-20T02:27:21Z"
+---
+## Problem
+Sweep the task drawer tabs for layout, wording, loading and empty-state bugs.
+
+## Desired UX
+Pages look and behave correctly at 375, 768 and 1280 widths: no overflow, clear labels, sensible empty, loading and error states, visible keyboard focus.
+
+## Acceptance criteria
+- Walked headlessly (Playwright only, never a visible browser) at the three widths.
+- Every issue found is fixed, covering the whole class of the problem.
+- Scoped check passes once, then hand off.
+
+## Notes for AI
+Keep changes small. Never touch repoos.toml. Never open a visible browser.
+
+## Activity
+
+- 2026-11-20T02:27:21Z · created · t@t
