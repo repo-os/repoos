@@ -11,7 +11,7 @@ branch: feat/close-out-validation-log-should-show-liv
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T07:42:21Z"
-updated_at: "2026-11-20T11:20:49Z"
+updated_at: "2026-11-20T11:20:50Z"
 handoff_signal_retry_count: 2
 review_rounds: 1
 review_passes: 1
@@ -60,3 +60,4 @@ Related: #1272 (timer should count from validation start). Never touch repoos.to
 - 2026-11-20T11:16:19Z · body
 - 2026-11-20T11:18:34Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-20T11:20:49Z · handoff_deferred: 2 queued message(s) must be read before review
+- 2026-11-20T11:20:50Z · message_queued at 2026-11-20T11:20:50.639Z
