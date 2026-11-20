@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 679279
-last_close_out_gate_at: "2026-11-20T02:17:16.785Z"
 id: "1253"
 title: "QA pass: Settings model providers and API key screens (masked values, save, errors)"
 type: bug
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: 4d054e1b0b4e830430b05397121a50a6f0f39ea5
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-settings-model-providers-and-api
@@ -14,6 +13,8 @@ cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T23:27:11Z"
 updated_at: "2026-11-20T02:17:16Z"
+last_close_out_gate_ms: 679279
+last_close_out_gate_at: "2026-11-20T02:17:16.785Z"
 review_passes: 1
 ---
 ## Problem

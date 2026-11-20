@@ -399,6 +399,12 @@ function providerReadyText(): string {
 async function saveKey(): Promise<void> {
   const id = status.value?.keyProviderId;
   if (!id || keySaving.value) return;
+  // An empty key clears the saved one on the server, so refuse a Save with
+  // nothing pasted instead of deleting the key by accident.
+  if (!keyDraft.value.trim()) {
+    keyError.value = "Paste the API key to save it.";
+    return;
+  }
   keySaving.value = true;
   keyError.value = "";
   try {
