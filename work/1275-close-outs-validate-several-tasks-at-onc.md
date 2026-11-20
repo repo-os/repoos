@@ -63,3 +63,4 @@ Read docs/close-out-pipeline.md and docs/remote-validation.md first. Never touch
 - 2026-11-20T09:10:24Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-20T09:13:26Z · queued message undelivered for 6m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-20T09:13:27Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: The scoped `repoos check` is running again, and the monitor will report its exit line and any failures or deadline messages. I'm holding the handoff until that result is in. · stderr: (empty)
+- 2026-11-20T09:13:27Z · message_delivered: 1 message(s)
