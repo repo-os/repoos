@@ -2,14 +2,14 @@
 id: "1262"
 title: "QA pass: Checks page and check history views"
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: web
-assigned_to: ""
+assigned_to: ai
 created_by: t@t
 branch: ""
 created_at: "2026-11-20T02:26:53Z"
-updated_at: "2026-11-20T02:26:53Z"
+updated_at: "2026-11-20T02:26:58Z"
 ---
 ## Problem
 Sweep the Checks page (local and remote tabs, history, failure details) for layout, wording and state bugs.
@@ -28,3 +28,4 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 ## Activity
 
 - 2026-11-20T02:26:53Z · created · t@t
+- 2026-11-20T02:26:58Z · status inbox→ready
