@@ -229,16 +229,92 @@ function renderSoftLines(lines: string[]): string {
     .join("");
 }
 
+type ListItem = {
+  checked: boolean | null;
+  /** The item's own paragraph: its first line plus any continuation lines. */
+  lines: string[];
+  /** Blocks nested under the item (sub-lists, further paragraphs). */
+  children: Block[];
+};
+
 type Block =
   | { kind: "heading"; level: number; text: string }
   | { kind: "code"; lang: string; lines: string[] }
   | { kind: "mermaid"; lines: string[] }
-  | { kind: "ul"; items: { checked: boolean | null; text: string }[] }
-  | { kind: "ol"; items: string[] }
+  | { kind: "ul"; items: ListItem[] }
+  | { kind: "ol"; items: ListItem[] }
   | { kind: "quote"; lines: string[] }
   | { kind: "hr" }
   | { kind: "table"; rows: string[][] }
   | { kind: "p"; lines: string[] };
+
+const UL_MARKER_RE = /^\s*[-*+]\s+/;
+const OL_MARKER_RE = /^\s*\d+[.)]\s+/;
+/** Lines that start a new block, so they can never be a lazy continuation. */
+const BLOCK_START_RE =
+  /^(?:`{3,}|~{3,})|^#{1,6}\s|^\s*(?:-{3,}|\*{3,}|_{3,})\s*$|^>|^\s*[-*+]\s+|^\s*\d+[.)]\s+/;
+
+const leadingSpaces = (s: string): number => s.match(/^ */)![0].length;
+
+/**
+ * Collects one list item that starts at `lines[start]`. Indented lines are the
+ * item's body and unindented text continues its paragraph (CommonMark lazy
+ * continuation), so a wrapped bullet stays one item. The body is parsed as
+ * blocks, which keeps nested sub-lists nested instead of flattening them.
+ */
+function parseListItem(
+  lines: string[],
+  start: number,
+  marker: RegExp,
+  tasks: boolean,
+): { item: ListItem; next: number } {
+  const indent = lines[start]!.match(marker)![0].length;
+  let first = lines[start]!.slice(indent);
+  let checked: boolean | null = null;
+  if (tasks) {
+    const cb = first.match(/^\[([ xX])\]\s+(.*)$/);
+    if (cb) {
+      checked = cb[1] !== " ";
+      first = cb[2]!;
+    }
+  }
+  const body: string[] = [];
+  let i = start + 1;
+  while (i < lines.length) {
+    const line = lines[i]!;
+    if (isBlankDisplayLine(line)) {
+      let k = i + 1;
+      while (k < lines.length && isBlankDisplayLine(lines[k]!)) k++;
+      if (k >= lines.length || leadingSpaces(lines[k]!) < indent) break;
+      body.push("");
+    } else if (leadingSpaces(line) >= indent) {
+      body.push(line.slice(indent));
+    } else if (
+      !BLOCK_START_RE.test(line) &&
+      (body.length ? body[body.length - 1] !== "" : first !== "")
+    ) {
+      body.push(line.trim());
+    } else {
+      break;
+    }
+    i++;
+  }
+  const children = parseBlocks(body.join("\n"));
+  const head = children[0];
+  const itemLines = [first];
+  if (head?.kind === "p") {
+    itemLines.push(...head.lines);
+    children.shift();
+  }
+  return { item: { checked, lines: itemLines, children }, next: i };
+}
+
+/** After a blank line, a loose list keeps going if the next line is a marker. */
+function nextItemAfterBlanks(lines: string[], i: number, marker: RegExp): number {
+  let k = i;
+  while (k < lines.length && isBlankDisplayLine(lines[k]!)) k++;
+  return k > i && k < lines.length && marker.test(lines[k]!) ? k : i;
+}
 
 function parseBlocks(src: string): Block[] {
   const lines = src.replace(/\r\n?/g, "\n").split("\n");
@@ -319,37 +395,47 @@ function parseBlocks(src: string): Block[] {
     // blockquote
     if (/^>\s?/.test(line)) {
       const q: string[] = [];
-      while (i < lines.length && /^>\s?/.test(lines[i]!)) {
-        q.push(lines[i]!.replace(/^>\s?/, ""));
+      while (i < lines.length) {
+        const L = lines[i]!;
+        if (/^>\s?/.test(L)) {
+          q.push(L.replace(/^>\s?/, ""));
+        } else if (
+          !isBlankDisplayLine(L) &&
+          !BLOCK_START_RE.test(L) &&
+          q.length &&
+          q[q.length - 1] !== ""
+        ) {
+          // lazy continuation: an unmarked line keeps the quote's paragraph open
+          q.push(L.trim());
+        } else {
+          break;
+        }
         i++;
       }
       blocks.push({ kind: "quote", lines: q });
       continue;
     }
 
-    // unordered list (incl. task checkboxes)
-    if (/^\s*[-*+]\s+/.test(line)) {
-      const items: { checked: boolean | null; text: string }[] = [];
-      while (i < lines.length && /^\s*[-*+]\s+/.test(lines[i]!)) {
-        const raw = lines[i]!.replace(/^\s*[-*+]\s+/, "");
-        const cb = raw.match(/^\[([ xX])\]\s+(.*)$/);
-        if (cb) {
-          items.push({ checked: cb[1] !== " ", text: cb[2]! });
-        } else {
-          items.push({ checked: null, text: raw });
-        }
-        i++;
+    // unordered list (incl. task checkboxes). Items keep their wrapped text and
+    // nested blocks; blank lines between items keep it one loose list.
+    if (UL_MARKER_RE.test(line)) {
+      const items: ListItem[] = [];
+      while (i < lines.length && UL_MARKER_RE.test(lines[i]!)) {
+        const parsed = parseListItem(lines, i, UL_MARKER_RE, true);
+        items.push(parsed.item);
+        i = nextItemAfterBlanks(lines, parsed.next, UL_MARKER_RE);
       }
       blocks.push({ kind: "ul", items });
       continue;
     }
 
     // ordered list
-    if (/^\s*\d+[.)]\s+/.test(line)) {
-      const items: string[] = [];
-      while (i < lines.length && /^\s*\d+[.)]\s+/.test(lines[i]!)) {
-        items.push(lines[i]!.replace(/^\s*\d+[.)]\s+/, ""));
-        i++;
+    if (OL_MARKER_RE.test(line)) {
+      const items: ListItem[] = [];
+      while (i < lines.length && OL_MARKER_RE.test(lines[i]!)) {
+        const parsed = parseListItem(lines, i, OL_MARKER_RE, false);
+        items.push(parsed.item);
+        i = nextItemAfterBlanks(lines, parsed.next, OL_MARKER_RE);
       }
       blocks.push({ kind: "ol", items });
       continue;
@@ -369,10 +455,21 @@ function parseBlocks(src: string): Block[] {
       p.push(L);
       i++;
     }
-    if (p.length) blocks.push({ kind: "p", lines: p });
+    // A first line that breaks the paragraph but opened no block of its own
+    // (e.g. a bare `# `) is still text. Taking it keeps the loop advancing.
+    if (!p.length) {
+      p.push(line);
+      i++;
+    }
+    blocks.push({ kind: "p", lines: p });
   }
 
   return blocks;
+}
+
+/** An item's wrapped paragraph followed by any blocks nested under it. */
+function renderItemBody(it: ListItem): string {
+  return renderSoftLines(it.lines) + it.children.map(renderBlock).join("");
 }
 
 function renderBlock(b: Block): string {
@@ -402,17 +499,17 @@ function renderBlock(b: Block): string {
       const items = b.items
         .map((it) => {
           if (it.checked === null) {
-            return `<li>${inline(escapeHtml(it.text))}</li>`;
+            return `<li>${renderItemBody(it)}</li>`;
           }
           const mark = it.checked ? "checked" : "unchecked";
           const box = it.checked ? "☑" : "☐";
-          return `<li class="md-task md-task-${mark}"><span class="md-task-box" aria-hidden="true">${box}</span><span class="md-task-text">${inline(escapeHtml(it.text))}</span></li>`;
+          return `<li class="md-task md-task-${mark}"><span class="md-task-box" aria-hidden="true">${box}</span><span class="md-task-text">${renderItemBody(it)}</span></li>`;
         })
         .join("");
       return `<ul>${items}</ul>`;
     }
     case "ol": {
-      const items = b.items.map((t) => `<li>${inline(escapeHtml(t))}</li>`).join("");
+      const items = b.items.map((it) => `<li>${renderItemBody(it)}</li>`).join("");
       return `<ol>${items}</ol>`;
     }
     case "table": {

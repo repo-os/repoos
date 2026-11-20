@@ -11,13 +11,11 @@ branch: feat/mobile-polish-open-on-work-hide-page-scr
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T00:15:33Z"
-updated_at: "2026-11-20T20:07:45Z"
-last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
-last_handoff_failure_sha: bedc3455e991267a2057dbbd535a6d9f46966f62
-check_retry_count: 1
+updated_at: "2026-11-20T21:03:26Z"
+review_passes: 4
+review_failed_report_retries: 0
 last_check_failure: "repoos check at 2026-11-20T09:49:11.145Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Work is the home page; header row controls share one height (target \"default\"): loading state detected: loading indicator [aria-busy=\"true\"] on /work (http://127.0.0.1:34337/work)"
 review_rounds: 2
-review_passes: 3
 ---
 ## Problem
 On a phone (seen on the Android Hub app, Mission Control page):
@@ -47,7 +45,7 @@ Screenshot attached shows the current mobile header and Mission Control. Do not 
 "highlight": ".topbar",
 "steps": [
 {
-"waitMs": 3000
+"waitMs": 6000
 }
 ],
 "state": "board:withReviewTask"
@@ -131,5 +129,31 @@ Screenshot attached shows the current mobile header and Mission Control. Do not 
 - 2026-11-20T14:43:36Z · CTO nudge: held — machine under pressure (CPU idle is 1% (below 5%) — holding new work until the machine has idle CPU)
 - 2026-11-20T14:47:13Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: I have not handed off. The scoped gate is still red, so I'm leaving #1258 active and not emitting the handoff-ready signal. **What's fixed and verified** - The two tests named in the crash signal (`mobile-touch-affordances.test.ts`, 10/10,… · stderr: (empty)
 - 2026-11-20T14:56:22Z · CTO action: restart-stalled-agent (fresh) · agent crashed or was interrupted mid-turn — task-file handoff failed at check · remote validation failed: test failure: tests/mobile-touch-affordances.test.ts > mobile web polish (#1139) > gives top-bar controls a 44px touch target and keeps the project name visible, tests/mobile-touch-affordances.test.ts > mobile web polish (#1139) > turns search into a compact accessible icon button on phones, tests/shot-target-support-0866.test.ts > app target resolution (#0866) > keeps APP_ROUTE_PREFIXES in sync with the UI router on mini — fix it in the feature branch and re-run the gate
-- 2026-11-20T16:21:27Z · status active→review
-- 2026-11-20T20:07:45Z · status review→active
+- 2026-11-20T15:20:08Z · CTO nudge: held — machine under pressure (CPU idle is 0% (below 5%) — holding new work until the machine has idle CPU)
+- 2026-11-20T15:32:25Z · message_queued at 2026-11-20T15:32:25.802Z
+- 2026-11-20T15:32:52Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-20T15:41:17Z · message_delivered: 1 message(s)
+- 2026-11-20T15:41:18Z · CTO action: restart-stalled-agent (fresh) · agent crashed or was interrupted mid-turn — task-file handoff failed at check · remote validation failed: test failure: tests/mobile-touch-affordances.test.ts > mobile web polish (#1139) > gives top-bar controls a 44px touch target and keeps the project name visible, tests/mobile-touch-affordances.test.ts > mobile web polish (#1139) > turns search into a compact accessible icon button on phones, tests/shot-target-support-0866.test.ts > app target resolution (#0866) > keeps APP_ROUTE_PREFIXES in sync with the UI router on mini — fix it in the feature branch and re-run the gate
+- 2026-11-20T15:58:35Z · body
+- 2026-11-20T16:02:18Z · body
+- 2026-11-20T16:06:05Z · CTO nudge: held — handoff gate is running
+- 2026-11-20T16:21:25Z · note: ui verification passed: 1 of 1 shot captured with clean console
+- 2026-11-20T16:21:28Z · status active→review
+- 2026-11-20T16:21:28Z · message_queued at 2026-11-20T16:21:28.760Z
+- 2026-11-20T16:21:34Z · note: review pass 4: failed — no usable report
+- 2026-11-20T16:21:43Z · note: review pass 5: failed — no usable report
+- 2026-11-20T16:21:55Z · note: review pass 6: failed — no usable report
+- 2026-11-20T16:21:56Z · needs_input
+- 2026-11-20T17:26:15Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-20T19:49:20Z · needs_input (review-failed) cleared for review again by hello@repoos.org
+- 2026-11-20T19:51:05Z · note: review pass 7: needs some work
+- 2026-11-20T19:51:06Z · needs_input
+- 2026-11-20T20:07:43Z · status review→active
+- 2026-11-20T20:07:48Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-20T20:10:29Z · message_delivered: 1 message(s)
+- 2026-11-20T20:43:19Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: #1258 is not ready to hand off. The scoped check has not passed, so I haven't requested handoff. **Where it stands:** - **Reviewer's finding is fixed.** The foreign-file conflicts came from a branch base 640 commits behind main. I merged m… · stderr: (empty)
+- 2026-11-20T20:53:23Z · watchdog: restarting engineer after 10m with no live process
+- 2026-11-20T21:00:13Z · message_queued at 2026-11-20T21:00:13.671Z
+- 2026-11-20T21:01:16Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-20T21:03:23Z · watchdog: restarting engineer because a queued message waited 3m with no live process
+- 2026-11-20T21:03:26Z · message_delivered: 1 message(s)

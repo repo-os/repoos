@@ -371,6 +371,7 @@ function formatDate(iso: string): string {
         <Input
           v-model="newEmail"
           type="email"
+          aria-label="Email of the user to add"
           placeholder="user@example.com"
           style="flex: 1; max-width: 280px"
           @keyup.enter="addUser"

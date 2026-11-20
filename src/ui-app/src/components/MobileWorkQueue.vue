@@ -8,6 +8,7 @@ import { relTime } from "../lib/time";
 import {
   matchesWorkQueueFilters,
   searchNeedle,
+  sortWorkQueueTasks,
   taskAreaNames,
   type WorkQueueFilters,
 } from "../lib/workQueueFilters";
@@ -165,14 +166,12 @@ const filters = computed<WorkQueueFilters>(() => ({
   mine: mine.value,
 }));
 
-const filtered = computed<Task[]>(() => {
-  return basePool.value
-    .filter((task) => matchesWorkQueueFilters(task, filters.value))
-    .sort((a, b) => {
-      const order = (a.updated_at ?? "").localeCompare(b.updated_at ?? "");
-      return sort.value === "newest" ? -order : order;
-    });
-});
+const filtered = computed<Task[]>(() =>
+  sortWorkQueueTasks(
+    basePool.value.filter((task) => matchesWorkQueueFilters(task, filters.value)),
+    sort.value,
+  ),
+);
 
 interface QueueSection {
   id: string;

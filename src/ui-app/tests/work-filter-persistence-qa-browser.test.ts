@@ -27,7 +27,13 @@ import WorkView from "../src/views/WorkView.vue";
 import { useRepoStore } from "../src/stores/repo";
 import * as apiMod from "../src/api";
 import type { Task } from "../src/types";
-import type { WorkQueueFilters } from "../src/lib/workQueueFilters";
+import {
+  ignoredWorkQueueFilterChips,
+  NO_WORK_QUEUE_FILTERS,
+  type WorkQueueFilterChip,
+  type WorkQueueFilters,
+  type WorkQueueSort,
+} from "../src/lib/workQueueFilters";
 
 const uiRoot = resolve(__dirname, "..");
 
@@ -290,6 +296,108 @@ describe("Work board queue filters on desktop (768 / 1280 px)", () => {
   });
 });
 
+// #1260: the board applies the queue sort and shows phone-only status values
+// as ignored notices, so no URL value on a board width is dropped silently.
+describe("Work board applies the queue sort and notices phone-only status (#1260)", () => {
+  /** Dated fixtures so the sort has a visible order: 0003 is oldest, 0002 newest. */
+  function datedTasks(): void {
+    useRepoStore().tasks = [
+      task("0001", { updated_at: "2026-11-02T00:00:00Z" }),
+      task("0002", { updated_at: "2026-11-03T00:00:00Z" }),
+      task("0003", { updated_at: "2026-11-01T00:00:00Z" }),
+    ];
+  }
+
+  for (const width of [768, 1280]) {
+    it(`applies sort=oldest on the board at ${width}px and shows it as a chip`, async () => {
+      stubViewport(width);
+      datedTasks();
+      const wrapper = mountDesktop({ sort: "oldest" });
+      await flushPromises();
+      expect(visibleIds(wrapper)).toEqual(["0003", "0001", "0002"]);
+      expect(chipKeys(wrapper)).toEqual(["sort"]);
+      expect(wrapper.find(".board-queue-filters").text()).toContain("Sort: Oldest updated");
+    });
+
+    it(`shows a notice for a phone-only status and keeps every task at ${width}px`, async () => {
+      stubViewport(width);
+      datedTasks();
+      const wrapper = mountDesktop({ status: "held" });
+      await flushPromises();
+      expect(visibleIds(wrapper).sort()).toEqual(["0001", "0002", "0003"]);
+      const notice = wrapper.find('.board-queue-filters [data-filter-key="status"]');
+      expect(notice.text()).toBe("Ignored filter: status=held (not a board column)");
+      expect(notice.classes()).toContain("filter-chip-ignored");
+    });
+  }
+
+  it("Clear removes the applied sort and the ignored status, and keeps the drawer", async () => {
+    datedTasks();
+    const wrapper = mountDesktop({ sort: "oldest", status: "held", task: "0001" });
+    await flushPromises();
+    expect(chipKeys(wrapper)).toEqual(["sort", "status"]);
+    await wrapper.find(".board-queue-filters .filter-clear").trigger("click");
+    expect(routeState.router.replace).toHaveBeenCalledWith({ query: { task: "0001" } });
+  });
+
+  it("the Sort control shows the URL sort, not the stored order, while the URL sets one", async () => {
+    datedTasks();
+    useRepoStore().setSortOrder("recent");
+    routeState.query = { sort: "oldest" };
+    const wrapper = mount(WorkView, {
+      global: {
+        stubs: {
+          ...workViewStubs(),
+          Select: {
+            props: ["modelValue"],
+            template: "<div class='sort-select' :data-model='String(modelValue)'><slot /></div>",
+          },
+        },
+      },
+    });
+    mounted.push(wrapper);
+    await flushPromises();
+    expect(wrapper.find(".sort-select").attributes("data-model")).toBe("null");
+    expect(visibleIds(wrapper)).toEqual(["0003", "0001", "0002"]);
+  });
+
+  it("a board status column is applied and keeps its own bar, not a notice", async () => {
+    datedTasks();
+    const wrapper = mountDesktop({ status: "ready" });
+    await flushPromises();
+    expect(wrapper.find(".board-queue-filters").exists()).toBe(false);
+    expect(wrapper.find(".filter-bar").text()).toContain("Ready");
+  });
+
+  it("the phone queue owns sort and status at 375px, so the board bar is not rendered", async () => {
+    stubViewport(375);
+    datedTasks();
+    const wrapper = mountDesktop({ sort: "oldest", status: "held" });
+    await flushPromises();
+    expect(wrapper.find(".board-queue-filters").exists()).toBe(false);
+  });
+
+  it("the phone queue applies sort=oldest and labels it", async () => {
+    routeState.query = { sort: "oldest" };
+    const wrapper = mount(MobileWorkQueue, {
+      global: {
+        stubs: {
+          Button: buttonStub,
+          Select: selectStub,
+          SelectTrigger: selectStub,
+          SelectContent: selectStub,
+          SelectItem: selectStub,
+          SelectViewport: selectStub,
+          SelectValue: selectStub,
+        },
+      },
+    });
+    mounted.push(wrapper);
+    await flushPromises();
+    expect(wrapper.find(".mobile-sort").text()).toContain("Oldest");
+  });
+});
+
 describe("Work queue filters on the phone queue (375 px)", () => {
   function mountQueue(query: Record<string, string | string[]>) {
     routeState.query = query;
@@ -372,7 +480,11 @@ describe("Board filter chip bar at 375 / 768 / 1280 px (WebKit, fixtures)", () =
     filters: WorkQueueFilters,
     width: number,
     label: string,
-    extra: { ignored?: { key: string; label: string; ignored: boolean }[]; applied?: boolean } = {},
+    extra: {
+      ignored?: WorkQueueFilterChip[];
+      applied?: boolean;
+      sort?: WorkQueueSort | null;
+    } = {},
   ): Promise<Page> {
     const wrapper = mount(BoardQueueFilters, { props: { filters, ...extra } });
     const markup = wrapper.html();
@@ -408,6 +520,38 @@ describe("Board filter chip bar at 375 / 768 / 1280 px (WebKit, fixtures)", () =
   };
 
   for (const width of [375, 768, 1280]) {
+    it(`shows the applied sort and the status notice inside ${width}px (#1260)`, async () => {
+      const page = await openChipBar(NO_WORK_QUEUE_FILTERS, width, "sort-and-status", {
+        sort: "oldest",
+        ignored: ignoredWorkQueueFilterChips({ status: "held" }),
+      });
+      try {
+        const labels = await page
+          .locator(".board-queue-filters [data-filter-key]")
+          .allTextContents();
+        expect(labels).toEqual([
+          "Sort: Oldest updated",
+          "Ignored filter: status=held (not a board column)",
+        ]);
+        expect(
+          await page
+            .locator(".board-queue-filters [data-filter-key='status']")
+            .getAttribute("class"),
+        ).toContain("filter-chip-ignored");
+        const off = await page.evaluate(() => {
+          const limit = window.innerWidth;
+          return Array.from(document.querySelectorAll(".board-queue-filters *"))
+            .map((el) => ({ el, r: (el as HTMLElement).getBoundingClientRect() }))
+            .filter(({ r }) => !(r.width === 0 && r.height === 0))
+            .filter(({ r }) => r.left < -0.5 || r.right > limit + 0.5)
+            .map(({ el }) => el.className || el.tagName);
+        });
+        expect(off, `chips off-viewport at ${width}px`).toEqual([]);
+      } finally {
+        await page.close();
+      }
+    });
+
     it(`keeps every chip and Clear filters inside ${width}px`, async () => {
       const page = await openChipBar(longFilters, width, "long-filters");
       try {

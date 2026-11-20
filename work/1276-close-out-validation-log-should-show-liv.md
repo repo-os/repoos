@@ -2,22 +2,19 @@
 id: "1276"
 title: Close-out validation log should show live progress
 type: feature
-status: review
-needs_input: true
-needs_input_reason: review-failed
-needs_input_detail: "the opencode agent exited without output: error: OpenCode Go usage limit reached (monthly, resets in 1d 14h). To keep going now, turn on Extra Usage at https://opencode.ai/console/wrk_01KQ7ZAG4V1XEK1E46TJF13DFZ/go."
+status: active
 priority: p1
 area: [server, core]
 assigned_to: ai
 created_by: t@t
 branch: feat/close-out-validation-log-should-show-liv
-cli_override: claude code
-model_override: haiku
 created_at: "2026-11-20T07:42:21Z"
-updated_at: "2026-11-20T15:46:55Z"
-review_failed_report_retries: 2
+updated_at: "2026-11-20T21:02:17Z"
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-20T21:01:31.328Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Close-out drawer with live step, host, and attempt (target \"default\"): loading state detected: loading text \"Loading changes…\" on /work?task=9999&tab=changes (http://127.0.0.1:43237/work?task=9999&tab=changes&shotState=drawer%3AcloseOutRemoteTests)"
+review_passes: 3
+review_failed_report_retries: 0
 review_rounds: 2
-review_passes: 2
 handoff_signal_retry_count: 2
 ---
 ## Problem
@@ -34,6 +31,19 @@ The running attempt streams its check progress to a log and to the integration-j
 
 ## Notes for AI
 Related: #1272 (timer should count from validation start). Never touch repoos.toml.
+
+## Shots
+```json
+[
+{
+  "label": "Close-out drawer with live step, host, and attempt",
+  "target": "default",
+  "route": "/work?task=9999&tab=details",
+  "highlight": "[data-task-id=\"9999\"]",
+  "state": "drawer:closeOutRemoteTests"
+}
+]
+```
 
 ## Activity
 
@@ -94,3 +104,20 @@ Related: #1272 (timer should count from validation start). Never touch repoos.to
 - 2026-11-20T15:46:51Z · needs_input (review-failed) cleared for review again by human
 - 2026-11-20T15:46:54Z · note: review pass 6: failed — no usable report
 - 2026-11-20T15:46:55Z · needs_input
+- 2026-11-20T16:26:14Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-20T19:49:36Z · needs_input (review-failed) cleared for review again by hello@repoos.org
+- 2026-11-20T19:51:12Z · note: review pass 7: needs some work
+- 2026-11-20T19:51:13Z · needs_input
+- 2026-11-20T20:06:59Z · cli_override, model_override
+- 2026-11-20T20:07:00Z · model_override
+- 2026-11-20T20:07:07Z · status review→active
+- 2026-11-20T20:07:10Z · watchdog: restarting engineer because a queued message waited 285m with no live process
+- 2026-11-20T20:07:11Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-20T20:07:15Z · message_delivered: 1 message(s)
+- 2026-11-20T20:53:22Z · body
+- 2026-11-20T20:55:12Z · body
+- 2026-11-20T21:01:15Z · CTO nudge: held — handoff gate is running
+- 2026-11-20T21:01:28Z · note: ui verification failed: ui verification failed (1 issue(s)): [missing-target] Close-out drawer with live step, host, and attempt (target "default"): loading state detected: loading text "Loading changes…" on /work?task=9999&tab=changes (http://127.0.0.1:43237/work?task=9999&tab=changes&shotState=drawer%3AcloseOutRemoteTests)
+- 2026-11-20T21:01:28Z · message_queued at 2026-11-20T21:01:28.200Z
+- 2026-11-20T21:01:31Z · message_delivered: 1 message(s)
+- 2026-11-20T21:02:17Z · body

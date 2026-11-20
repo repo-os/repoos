@@ -6,8 +6,11 @@ import {
   matchesWorkQueueFilters,
   NO_WORK_QUEUE_FILTERS,
   readWorkQueueFilters,
+  readWorkQueueSort,
+  sortWorkQueueTasks,
   withWorkQueueSearch,
   workQueueFilterChips,
+  workQueueSortChip,
 } from "../src/lib/workQueueFilters";
 import type { Task } from "../src/types";
 
@@ -121,6 +124,81 @@ describe("work queue filters", () => {
       tab: ["review", "changes"],
     });
     expect(next).toEqual({ status: "review", task: "0001", tab: ["review", "changes"] });
+  });
+
+  it("a status that is not a board column is an ignored notice, for every phone-only view", () => {
+    for (const status of ["attention", "all", "needs", "held", "archived", "human", "bogus"]) {
+      expect(ignoredWorkQueueFilterChips({ status })).toEqual([
+        {
+          key: "status",
+          label: `Ignored filter: status=${status} (not a board column)`,
+          ignored: true,
+        },
+      ]);
+    }
+  });
+
+  it("a board status column is applied, not a notice", () => {
+    for (const status of ["draft", "inbox", "ready", "active", "review", "done"]) {
+      expect(ignoredWorkQueueFilterChips({ status })).toEqual([]);
+    }
+  });
+
+  it("a bare, empty or repeated status is a notice, never silently dropped", () => {
+    expect(ignoredWorkQueueFilterChips({ status: "" })).toEqual([
+      { key: "status", label: "Ignored filter: status= (not a board column)", ignored: true },
+    ]);
+    expect(ignoredWorkQueueFilterChips({ status: null })).toEqual([
+      { key: "status", label: "Ignored filter: status= (not a board column)", ignored: true },
+    ]);
+    expect(ignoredWorkQueueFilterChips({ status: ["ready", "held"] })).toEqual([
+      {
+        key: "status",
+        label: "Ignored filter: status=ready, held (use one status)",
+        ignored: true,
+      },
+    ]);
+    expect(clearWorkQueueFilterQuery({ status: ["ready", "held"], task: "0001" })).toEqual({
+      task: "0001",
+    });
+  });
+
+  it("sort=newest or oldest is applied as a chip, and any other sort is a notice", () => {
+    expect(readWorkQueueSort({ sort: "oldest" })).toBe("oldest");
+    expect(readWorkQueueSort({ sort: "newest" })).toBe("newest");
+    expect(readWorkQueueSort({})).toBeNull();
+    expect(workQueueSortChip("oldest")).toEqual({ key: "sort", label: "Sort: Oldest updated" });
+    expect(workQueueSortChip("newest")).toEqual({ key: "sort", label: "Sort: Newest updated" });
+    expect(workQueueSortChip(null)).toBeNull();
+    expect(ignoredWorkQueueFilterChips({ sort: "priority" })).toEqual([
+      {
+        key: "sort",
+        label: "Ignored filter: sort=priority (only newest or oldest applies)",
+        ignored: true,
+      },
+    ]);
+    expect(ignoredWorkQueueFilterChips({ sort: "oldest" })).toEqual([]);
+  });
+
+  it("sorts by last update, newest or oldest first, without changing the input", () => {
+    const tasks = [
+      task({ id: "0001", updated_at: "2026-11-02T00:00:00Z" }),
+      task({ id: "0002", updated_at: "2026-11-03T00:00:00Z" }),
+      task({ id: "0003", updated_at: "2026-11-01T00:00:00Z" }),
+    ];
+    expect(sortWorkQueueTasks(tasks, "newest").map((t) => t.id)).toEqual(["0002", "0001", "0003"]);
+    expect(sortWorkQueueTasks(tasks, "oldest").map((t) => t.id)).toEqual(["0003", "0001", "0002"]);
+    expect(tasks.map((t) => t.id)).toEqual(["0001", "0002", "0003"]);
+  });
+
+  it("clear removes the board sort and an ignored status, and keeps a board status", () => {
+    expect(clearWorkQueueFilterQuery({ sort: "oldest", status: "held", task: "0001" })).toEqual({
+      task: "0001",
+    });
+    expect(clearWorkQueueFilterQuery({ sort: "newest", status: "ready" })).toEqual({
+      status: "ready",
+    });
+    expect(clearWorkQueueFilterQuery({ sort: "oldest", status: "held" })).toEqual({});
   });
 
   it("search writes q and keeps the other queue keys and the drawer params", () => {
