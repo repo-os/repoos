@@ -11,7 +11,7 @@ branch: feat/qa-pass-login-lock-screen-and-session-ex
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T07:06:52Z"
-updated_at: "2026-11-20T11:07:05Z"
+updated_at: "2026-11-20T11:07:06Z"
 handoff_signal_retry_count: 2
 last_check_failure: "repoos check at 2026-11-20T09:15:23.483Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 deferred_handoff_resume_count: 1
@@ -94,3 +94,4 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser. Never
 - 2026-11-20T10:53:22Z · note: handoff requested (cli)
 - 2026-11-20T10:53:34Z · CTO nudge: held — handoff gate is running
 - 2026-11-20T11:07:05Z · message_queued at 2026-11-20T11:07:05.980Z
+- 2026-11-20T11:07:06Z · handoff failed · task-file handoff failed at review · Engineering report narrative is 1259 words; the hard limit is 1,200 words of narrative. Shorten it and request handoff again.
