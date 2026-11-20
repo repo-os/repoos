@@ -1151,8 +1151,9 @@ async function resumeModel(cli: string, model: string): Promise<void> {
   gap: 8px;
   width: 100%;
   padding: 9px 12px;
-  /* Leave room for the Pause/Resume and Remove agent buttons pinned in the corner. */
-  padding-right: 188px;
+  /* Leave room for the Pause/Resume and Remove agent buttons pinned in the corner
+     (Pause/Resume sits 96px in and is ~100px wide, so it needs ~200px). */
+  padding-right: 212px;
   background: none;
   border: none;
   color: var(--txt);
@@ -1183,10 +1184,14 @@ async function resumeModel(cli: string, model: string): Promise<void> {
   color: var(--txt-dim);
   font-size: 12px;
 }
+/* The chip wraps inside its row (max-width: 100%) instead of running past the
+   header's content box under the pinned Pause/Resume button or the card edge.
+   The reason is never ellipsised: the resume date after it must stay readable. */
 .budget-paused-chip {
   display: inline-flex;
   align-items: center;
   gap: 5px;
+  max-width: 100%;
   padding: 2px 8px;
   border-radius: 999px;
   border: 1px solid var(--amber-border-tint);
@@ -1194,16 +1199,14 @@ async function resumeModel(cli: string, model: string): Promise<void> {
   color: var(--txt);
   font-size: 11px;
   font-weight: 600;
-  white-space: nowrap;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 .budget-paused-chip-small {
   padding: 1px 6px;
   font-size: 10.5px;
 }
 .budget-paused-detail {
-  max-width: 44ch;
-  overflow: hidden;
-  text-overflow: ellipsis;
   font-weight: 400;
   color: var(--txt-dim);
 }
@@ -1277,6 +1280,21 @@ async function resumeModel(cli: string, model: string): Promise<void> {
   border-radius: 5px;
   font-size: 11.5px;
   text-decoration: underline;
+}
+/* On phones the header has no room beside a fixed corner reserve: the chip and
+   reason would squeeze into a column a few letters wide. The row actions drop
+   under the header instead, in normal flow, and the header keeps full width. */
+@media (max-width: 719.98px) {
+  .budget-row-head {
+    padding-right: 12px;
+  }
+  .budget-agent-pause,
+  .budget-agent-resume,
+  .budget-agent-remove {
+    position: static;
+    display: inline-block;
+    margin: 0 6px 8px 34px;
+  }
 }
 .budget-model-remove:focus-visible,
 .budget-agent-remove:focus-visible,
