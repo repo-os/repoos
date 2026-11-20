@@ -12,7 +12,7 @@ branch: feat/qa-pass-command-palette-and-global-keybo
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T05:08:53Z"
-updated_at: "2026-11-20T11:15:11Z"
+updated_at: "2026-11-20T11:15:29Z"
 last_close_out_gate_ms: 858497
 last_close_out_gate_at: "2026-11-20T11:15:11.869Z"
 review_passes: 3
@@ -106,4 +106,4 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 - 2026-11-20T10:37:05Z · watchdog: check wait escalated · waiting: waiting for serialized local fallback (1 ahead, position 2); slot holder 49112 is dead for 16m · next step: investigate the abnormal wait; the flag clears when the check starts
 - 2026-11-20T10:42:06Z · watchdog: check wait ended or recovered — cleared needs_input
 - 2026-11-20T11:15:11Z · close-out gate completed in 858s
-
+- 2026-11-20T11:15:29Z · message_dropped: 1 queued message(s) discarded — task is done
