@@ -4075,60 +4075,90 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         if (!hosts.length)
           return json(res, 400, {
             ok: false,
-            error: "remoteValidation.tailscaleHost is not configured.",
+            error: "No host is configured. Add one under Host pool, then Test again.",
           });
         const sshKeyEnv = process.env.REPOOS_REMOTE_SSH_KEY;
         const keyPath = sshKeyEnv && existsSync(sshKeyEnv) ? sshKeyEnv : undefined;
-        const { defaultRemoteExec, prereqProbeCommand, PREREQ_OK_TOKEN } =
+        const { defaultRemoteExec, describeHostProbeFailure, prereqProbeCommand, PREREQ_OK_TOKEN } =
           await import("./remote-validation.js");
         const exec = defaultRemoteExec();
         // Same per-host prerequisite check the pool runs (#0521), so the
         // button reports every misconfigured host instead of only the first.
+        // Hosts are probed in parallel: an unreachable host costs one 15s
+        // timeout, not one per host.
+        const probes = await Promise.all(
+          hosts.map(async (h) => {
+            let probeOutput = "";
+            const probeRes = await exec.runRemote(
+              { ip: h.host, user: remoteHostUser(rv, h), keyPath },
+              prereqProbeCommand(
+                hostRunner(h),
+                rv.containerImage ?? "repoos-ci",
+                rv.requiredTools,
+                Boolean(rv.command),
+              ),
+              (chunk) => {
+                probeOutput += chunk;
+              },
+              15_000,
+            );
+            const ok = probeRes.code === 0 && probeOutput.includes(PREREQ_OK_TOKEN);
+            return { h, ok, probeRes, probeOutput: probeOutput.trim() };
+          }),
+        );
         const reports: string[] = [];
-        let allOk = true;
-        for (const h of hosts) {
-          let probeOutput = "";
-          const probeRes = await exec.runRemote(
-            { ip: h.host, user: remoteHostUser(rv, h), keyPath },
-            prereqProbeCommand(
-              hostRunner(h),
-              rv.containerImage ?? "repoos-ci",
-              rv.requiredTools,
-              Boolean(rv.command),
-            ),
-            (chunk) => {
-              probeOutput += chunk;
-            },
-            15_000,
+        const failed: string[] = [];
+        for (const { h, ok, probeRes, probeOutput } of probes) {
+          const label = `── ${h.host}${h.os ? ` (${h.os})` : ""} ──`;
+          if (ok) {
+            reports.push(`${label}\n${probeOutput || "ok"}`);
+            continue;
+          }
+          failed.push(h.host);
+          const { cause, next } = describeHostProbeFailure(
+            { code: probeRes.code, output: probeOutput, timedOut: probeRes.timedOut },
+            { host: h.host, user: remoteHostUser(rv, h) },
           );
-          const ok = probeRes.code === 0 && probeOutput.includes(PREREQ_OK_TOKEN);
-          if (!ok) allOk = false;
           reports.push(
-            `── ${h.host}${h.os ? ` (${h.os})` : ""} ──\n` +
-              (ok
-                ? probeOutput.trim() || "ok"
-                : `FAILED (exit ${probeRes.code}): ${probeOutput.trim() || "no output"}`),
+            `${label}\n${cause} ${next}` + (probeOutput ? `\n\nDetails:\n${probeOutput}` : ""),
           );
         }
         output = reports.join("\n\n");
-        if (allOk) return json(res, 200, { ok: true, output });
+        if (!failed.length) return json(res, 200, { ok: true, output });
+        const headline =
+          failed.length === 1
+            ? `${failed[0]} failed the setup check.`
+            : `${failed.length} of ${hosts.length} hosts failed the setup check: ${failed.join(", ")}.`;
         return json(res, 200, {
           ok: false,
-          error: "One or more hosts failed the prerequisite check.",
+          error: `${headline} Fix the problem listed under each host, then Test again.`,
           output,
         });
       } else {
         // Hetzner: just verify the API token and that provider config is present
         if (!process.env.HETZNER_API_TOKEN)
-          return json(res, 200, { ok: false, error: "HETZNER_API_TOKEN is not set." });
+          return json(res, 200, {
+            ok: false,
+            error:
+              "HETZNER_API_TOKEN is not set. Add it to .env (never repoos.toml), restart the server, then Test again.",
+          });
         if (!rv.snapshotId)
           return json(res, 200, {
             ok: false,
-            error: "remoteValidation.snapshotId is not configured.",
+            error:
+              "remoteValidation.snapshotId is not set. Add the snapshot ID in repoos.toml, then Test again.",
           });
         const { createHetznerClient } = await import("./hetzner.js");
         const client = createHetznerClient(process.env.HETZNER_API_TOKEN);
-        const servers = await client.listServers("repoos-ci=1");
+        let servers: Awaited<ReturnType<typeof client.listServers>>;
+        try {
+          servers = await client.listServers("repoos-ci=1");
+        } catch (e) {
+          return json(res, 200, {
+            ok: false,
+            error: `Hetzner did not list runner VMs (${(e as Error).message}). Check the token is still valid and the internet connection works, then Test again.`,
+          });
+        }
         output = `API token valid. ${servers.length} runner VM(s) currently running.`;
         return json(res, 200, { ok: true, output });
       }

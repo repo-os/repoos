@@ -2426,6 +2426,113 @@ export function prereqProbeCommand(
  * that as a transient "another check is running" infra failure, never as a
  * red gate.
  */
+/**
+ * Plain-English cause and next step for one host that failed the Test
+ * connection probe (#1256). The probe's own fixed messages and ssh's stderr are
+ * matched; anything unrecognised falls back to a generic line, and the raw
+ * output stays under "Details" so nothing is hidden.
+ */
+export function describeHostProbeFailure(
+  run: { code: number | null; output: string; timedOut?: boolean },
+  host: { host: string; user: string },
+): { cause: string; next: string } {
+  const { output } = run;
+  const name = host.host;
+  if (run.timedOut) {
+    return {
+      cause: `${name} did not answer within 15 seconds.`,
+      next: "Check the machine is awake and connected to Tailscale, then Test again.",
+    };
+  }
+  // The probe's own fixed messages come first: they are printed by commands on
+  // the host after ssh has logged in, so a stray "Permission denied" from a
+  // remote command (e.g. an unwritable cache) must not be read as a login failure.
+  if (/docker daemon not reachable/i.test(output)) {
+    return {
+      cause: `Docker is installed on ${name} but is not running.`,
+      next: "Start Docker on that machine, then Test again.",
+    };
+  }
+  const missingOnPath = output.match(/([\w.-]+) not found on (?:login )?PATH/);
+  if (missingOnPath) {
+    const tool = missingOnPath[1];
+    return {
+      cause:
+        tool === "docker"
+          ? `Docker is not installed on ${name}.`
+          : `${tool} is not installed on ${name}, or is not on its login PATH.`,
+      next: `Install ${tool} on that machine (or add its folder to the login PATH), then Test again.`,
+    };
+  }
+  if (/image '.*' not found/.test(output)) {
+    return {
+      cause: `The runner image is not on ${name}.`,
+      next: "Build the runner image on that machine, or point remoteValidation.containerImage at an image it has. Then Test again.",
+    };
+  }
+  if (/runner image login PATH|unavailable in runner image/.test(output)) {
+    return {
+      cause: `The runner image on ${name} is missing a required tool.`,
+      next: "Rebuild the runner image with that tool included, then Test again.",
+    };
+  }
+  if (/is not writable/.test(output)) {
+    return {
+      cause: `The Bun cache on ${name} is not writable.`,
+      next: "Fix the permissions on that machine's ~/.cache or free up its disk, then Test again.",
+    };
+  }
+  if (/missing runner script/.test(output)) {
+    return {
+      cause: `The runner script is not installed on ${name}.`,
+      next: "Run the per-host install for the runner script (docs/remote-validation.md), then Test again.",
+    };
+  }
+  if (/outdated runner script/.test(output)) {
+    return {
+      cause: `The runner script on ${name} is out of date.`,
+      next: "Re-run the per-host install to update the runner script, then Test again.",
+    };
+  }
+  // ssh's own login refusal has the shape `user@host: Permission denied (publickey,…)`.
+  // Anchored to that shape so remote-side "Permission denied" output is not
+  // mistaken for a login failure.
+  if (
+    /(?:^|\n)\S+@\S+: Permission denied \((?:publickey|password|keyboard-interactive)/.test(output)
+  ) {
+    return {
+      cause: `SSH refused the login as ${host.user}@${name}.`,
+      next: `Check the SSH user for ${name} in repoos.toml, and that its public key is in that user's authorized_keys on the machine. Then Test again.`,
+    };
+  }
+  if (/Could not resolve hostname/i.test(output)) {
+    return {
+      cause: `${name} is not a name this machine can resolve.`,
+      next: "Check the spelling in Host pool, or use the host's 100.x.x.x Tailscale address. Then Test again.",
+    };
+  }
+  if (
+    /Connection (?:refused|timed out|closed)|timed out|No route to host|Network is unreachable|kex_exchange_identification/i.test(
+      output,
+    )
+  ) {
+    return {
+      cause: `${name} did not accept an SSH connection.`,
+      next: "Check the machine is on, connected to Tailscale, and running SSH. Then Test again.",
+    };
+  }
+  if (run.code === 255) {
+    return {
+      cause: `SSH to ${name} failed.`,
+      next: "Check the machine is on, reachable over Tailscale, and that the SSH user is right. Then Test again.",
+    };
+  }
+  return {
+    cause: `The setup check failed on ${name}.`,
+    next: "Read the details below. Each line names the missing piece. Then Test again.",
+  };
+}
+
 export function hostLockShell(opts: {
   slots: number;
   waitSecs: number;
