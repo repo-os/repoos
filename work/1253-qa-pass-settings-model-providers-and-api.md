@@ -1,4 +1,6 @@
 ---
+last_close_out_gate_ms: 679279
+last_close_out_gate_at: "2026-11-20T02:17:16.785Z"
 id: "1253"
 title: "QA pass: Settings model providers and API key screens (masked values, save, errors)"
 type: bug
@@ -11,7 +13,7 @@ branch: feat/qa-pass-settings-model-providers-and-api
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T23:27:11Z"
-updated_at: "2026-11-20T00:49:35Z"
+updated_at: "2026-11-20T02:17:16Z"
 review_passes: 1
 ---
 ## Problem
@@ -49,3 +51,5 @@ Do not touch repoos.toml. Follow docs/api-keys.md.
 - 2026-11-19T23:47:27Z · message_queued at 2026-11-19T23:47:27.097Z
 - 2026-11-19T23:49:03Z · note: review pass 1: good to go
 - 2026-11-20T00:49:35Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-20T02:17:16Z · close-out gate completed in 679s
+
