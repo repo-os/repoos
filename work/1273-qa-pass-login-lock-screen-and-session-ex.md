@@ -11,7 +11,7 @@ branch: feat/qa-pass-login-lock-screen-and-session-ex
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T07:06:52Z"
-updated_at: "2026-11-20T08:26:21Z"
+updated_at: "2026-11-20T08:26:31Z"
 ---
 ## Problem
 Sweep sign-in, lock screen and session-expiry flows (code entry, errors, expired session, offline) for layout, wording and state bugs.
@@ -31,18 +31,18 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser. Never
 ```json
 [
 {
-  "label": "Code step: 44px resend and change-email links, Verify spinner area",
-  "target": "default",
-  "route": "/login",
-  "highlight": ".login-actions",
-  "state": "auth:otp"
+"label": "Code step: 44px resend and change-email links, Verify spinner area",
+"target": "default",
+"route": "/login",
+"highlight": ".login-actions",
+"state": "auth:otp"
 },
 {
-  "label": "Email step: keyboard focus ring on the email input",
-  "target": "default",
-  "route": "/login",
-  "highlight": ".login-input",
-  "state": "auth:login"
+"label": "Email step: keyboard focus ring on the email input",
+"target": "default",
+"route": "/login",
+"highlight": ".login-input",
+"state": "auth:login"
 }
 ]
 ```
@@ -69,3 +69,4 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser. Never
 - 2026-11-20T07:52:31Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-20T07:57:31Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-20T08:26:21Z · body
+- 2026-11-20T08:26:31Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: I'm not handing off. The scoped `repoos check` fails at the `ui-smoke` step, so the task stays `active` and I have not emitted the handoff signal. **Blocker:** the UI smoke test fails on three console errors, none of them from this diff. T… · stderr: (empty)
