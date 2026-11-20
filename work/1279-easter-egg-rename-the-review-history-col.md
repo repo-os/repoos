@@ -1,6 +1,6 @@
 ---
 id: "1279"
-title: "Easter egg: rename the review history column Finding classes to Issues"
+title: "Easter eggs bundle: rename review history column to Issues"
 type: feature
 status: ready
 priority: p3
@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: ""
 created_at: "2026-11-20T10:35:33Z"
-updated_at: "2026-11-20T10:37:42Z"
+updated_at: "2026-11-20T10:38:55Z"
 ---
 ## Problem
 The review pass history table in the task drawer has a column headed 'finding classes', which means little to a reader. It is useful as a quick view of what is wrong when a pass is not good to go.
@@ -34,3 +34,4 @@ Copy change only. Never touch repoos.toml. Headless Playwright only.
 - 2026-11-20T10:35:33Z · created · t@t
 - 2026-11-20T10:36:08Z · screenshots
 - 2026-11-20T10:37:42Z · status inbox→ready
+- 2026-11-20T10:38:55Z · title
