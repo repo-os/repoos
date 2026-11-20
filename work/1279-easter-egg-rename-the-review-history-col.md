@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: t@t
 branch: ""
 created_at: "2026-11-20T10:35:33Z"
-updated_at: "2026-11-20T10:46:10Z"
+updated_at: "2026-11-20T10:46:24Z"
 ---
 ## Problem
 The review pass history table in the task drawer has a column headed 'finding classes', which means little to a reader. It is useful as a quick view of what is wrong when a pass is not good to go.
@@ -24,7 +24,7 @@ The review pass history table in the task drawer has a column headed 'finding cl
 
 ## Acceptance criteria
 - Header in TaskDrawer.vue (finding classes th, around line 7069) reads Issues; user-docs wording that says finding classes is reworded to match; internal names unchanged.
-- Board card top line uses the plain task number as in the pipeline card, and stays on one line at phone, tablet and desktop widths, including long ids and p1 badges; 'feature' becomes 'feat' only when needed to fit.
+- Board card top line uses the plain task number as in the pipeline card, and stays on one line at 375, 768 and 1280 px widths, including long ids and p1 badges; 'feature' becomes 'feat' only when needed to fit.
 - Tests asserting the old header text or the old chip are updated; headless fixtures at 375, 768 and 1280.
 
 ## Notes for AI
@@ -47,3 +47,4 @@ Copy change only. Never touch repoos.toml. Headless Playwright only.
 - 2026-11-20T10:45:44Z · needs_input
 - 2026-11-20T10:45:58Z · screenshots
 - 2026-11-20T10:46:10Z · screenshots
+- 2026-11-20T10:46:24Z · body: Acceptance criteria (added 1, removed 1)
