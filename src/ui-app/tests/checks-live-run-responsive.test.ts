@@ -43,6 +43,23 @@ const BOX_SELECTORS = [
   ".trp-failures",
 ];
 
+/**
+ * Measure once the layout has stopped moving: two consecutive reports must
+ * agree. A fixed sleep before measuring raced the render on a loaded runner, so
+ * this waits for the layout itself. It still returns the last report when the
+ * layout never settles, so a real overflow is asserted rather than skipped.
+ */
+async function settledLayout(page: Page): Promise<LayoutReport> {
+  let previous = await page.evaluate(measureLayout, BOX_SELECTORS);
+  for (let attempt = 0; attempt < 20; attempt++) {
+    await page.waitForTimeout(100);
+    const next = await page.evaluate(measureLayout, BOX_SELECTORS);
+    if (JSON.stringify(next) === JSON.stringify(previous)) return next;
+    previous = next;
+  }
+  return previous;
+}
+
 function measureLayout(boxSelectors: string[]): LayoutReport {
   const problems: BoxProblem[] = [];
   const text = (el: Element) => (el.textContent ?? "").replace(/\s+/g, " ").trim().slice(0, 60);
@@ -176,8 +193,7 @@ describe.skipIf(!existsSync(webkit.executablePath()))(
           const page = await openPage(width, liveState, "now");
           try {
             await page.locator(".ck-page").waitFor();
-            await page.waitForTimeout(150);
-            const report = await page.evaluate(measureLayout, BOX_SELECTORS);
+            const report = await settledLayout(page);
             expect(report.docOverflow, `${liveState}: page overflows`).toBeLessThanOrEqual(1);
             expect(report.problems, `${liveState}: boxes leak`).toEqual([]);
           } finally {
@@ -195,8 +211,7 @@ describe.skipIf(!existsSync(webkit.executablePath()))(
           const page = await openPage(width, liveState, "test-suite");
           try {
             await page.locator(".trp-log").waitFor();
-            await page.waitForTimeout(150);
-            const report = await page.evaluate(measureLayout, BOX_SELECTORS);
+            const report = await settledLayout(page);
             expect(report.docOverflow, `${liveState}: page overflows`).toBeLessThanOrEqual(1);
             expect(report.problems, `${liveState}: output leaks`).toEqual([]);
           } finally {
