@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-20T01:04:18Z"
-review_passes: 4
 id: "1255"
 title: "QA pass: update banner, version display and release notes modal at all screen sizes"
 type: bug
@@ -16,6 +14,8 @@ branch: feat/qa-pass-update-banner-version-display-an
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T23:27:47Z"
+updated_at: "2026-11-20T01:04:20Z"
+review_passes: 4
 review_rounds: 2
 ---
 ## Problem
