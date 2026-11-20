@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-11-20T21:04:54Z"
-review_passes: 2
+last_close_out_gate_ms: 213144
+last_close_out_gate_at: "2026-11-20T21:10:21.538Z"
 id: "1281"
 title: "Tests leak git worker processes: one vitest run left 48 git-worker-entry processes"
 type: feature
@@ -13,6 +13,8 @@ branch: feat/tests-leak-git-worker-processes-one-vite
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T11:47:41Z"
+updated_at: "2026-11-20T21:10:21Z"
+review_passes: 2
 review_rounds: 1
 review_failed_report_retries: 0
 ---
@@ -87,4 +89,5 @@ Reproduce with bun run test on a scoped path while watching ps for git-worker-en
 - 2026-11-20T21:03:16Z · message_queued at 2026-11-20T21:03:16.983Z
 - 2026-11-20T21:03:17Z · note: shots: skipped — the diff (12 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-20T21:04:54Z · note: review pass 5: good to go
+- 2026-11-20T21:10:21Z · close-out gate completed in 213s
 
