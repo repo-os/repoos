@@ -129,7 +129,12 @@ export function ignoredWorkQueueFilterChips(query: Record<string, unknown>): Wor
   }
   const mine = firstString(query.mine);
   if (mine && mine !== "1") {
-    chips.push({ key: "mine", label: `Ignored filter: mine=${mine}`, ignored: true });
+    // Say which value applies: a bare "0" reads as "not mine", which is not what is ignored.
+    chips.push({
+      key: "mine",
+      label: `Ignored filter: mine=${mine} (only mine=1 applies)`,
+      ignored: true,
+    });
   }
   return chips;
 }

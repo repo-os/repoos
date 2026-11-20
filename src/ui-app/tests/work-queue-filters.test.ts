@@ -73,10 +73,24 @@ describe("work queue filters", () => {
   it("reports ignored priority and assigned values as notices, not filters", () => {
     expect(ignoredWorkQueueFilterChips({ priority: "p9", mine: "2" })).toEqual([
       { key: "priority", label: "Ignored filter: priority=p9", ignored: true },
-      { key: "mine", label: "Ignored filter: mine=2", ignored: true },
+      { key: "mine", label: "Ignored filter: mine=2 (only mine=1 applies)", ignored: true },
     ]);
     expect(ignoredWorkQueueFilterChips({ priority: "p1", mine: "1" })).toEqual([]);
     expect(hasActiveWorkQueueFilters(readWorkQueueFilters({ priority: "p9" }))).toBe(false);
+  });
+
+  it("a mine value other than 1 is a notice that names the accepted value", () => {
+    for (const mine of ["0", "2", "true", "yes"]) {
+      const chips = ignoredWorkQueueFilterChips({ mine });
+      expect(chips).toEqual([
+        {
+          key: "mine",
+          label: `Ignored filter: mine=${mine} (only mine=1 applies)`,
+          ignored: true,
+        },
+      ]);
+      expect(hasActiveWorkQueueFilters(readWorkQueueFilters({ mine }))).toBe(false);
+    }
   });
 
   it("a search of only # is inactive: no chip, and it matches every task", () => {
