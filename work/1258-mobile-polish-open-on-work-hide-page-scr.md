@@ -11,7 +11,7 @@ branch: feat/mobile-polish-open-on-work-hide-page-scr
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T00:15:33Z"
-updated_at: "2026-11-20T21:00:13Z"
+updated_at: "2026-11-20T21:01:16Z"
 review_passes: 4
 review_failed_report_retries: 0
 last_check_failure: "repoos check at 2026-11-20T09:49:11.145Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Work is the home page; header row controls share one height (target \"default\"): loading state detected: loading indicator [aria-busy=\"true\"] on /work (http://127.0.0.1:34337/work)"
@@ -154,3 +154,4 @@ Screenshot attached shows the current mobile header and Mission Control. Do not 
 - 2026-11-20T20:43:19Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: #1258 is not ready to hand off. The scoped check has not passed, so I haven't requested handoff. **Where it stands:** - **Reviewer's finding is fixed.** The foreign-file conflicts came from a branch base 640 commits behind main. I merged m… · stderr: (empty)
 - 2026-11-20T20:53:23Z · watchdog: restarting engineer after 10m with no live process
 - 2026-11-20T21:00:13Z · message_queued at 2026-11-20T21:00:13.671Z
+- 2026-11-20T21:01:16Z · CTO nudge: held — an undelivered message is already queued
