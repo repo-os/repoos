@@ -89,7 +89,8 @@ approval/merge instead of RepoOS, unless the human explicitly asks for that.
 - On human approval use **Move to done**, `repoos done <id>` or
   `POST /api/tasks/:id/done`. It builds a candidate from current main, merges the
   branch, validates, publishes under a lock and records completion. See
-  `docs/close-out-pipeline.md`, `user-docs/review-and-close-out.md`.
+  `docs/close-out-pipeline.md`, `user-docs/review-and-close-out.md`. To land
+  several green tasks, queue them all at once: [Queueing several close-outs](docs/close-out-pipeline.md#queueing-several-close-outs).
 - **`repoos mv <id> done` is NOT this pipeline** — it only flips metadata and
   never merges. Never use it to land a branch or as an approval mechanism.
 - **Check landability first:** `repoos landable <id>` (read-only; same list as

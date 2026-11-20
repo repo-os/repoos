@@ -480,7 +480,10 @@ especially if the interesting state is inside a drawer or modal that `/` does
 not show; a `highlight` selector outlines what changed). The capture is
 conservative by design (#0603): every shot is captioned with why it exists —
 `declared: <label>` for a declared shot, `auto: matched <glob>` for the
-rare fallback — test-only and task-note diffs capture nothing, and docs
+rare fallback, plus the width it was taken at (`· phone 390x844`,
+`· desktop 1280x800`). A touched web target is captured at phone and desktop
+by default, so the review shows the mobile result next to the desktop one;
+a declared shot can set `viewport` to `tablet` as well. Test-only and task-note diffs capture nothing, and docs
 targets need a declared route. So a `shots: skipped` note (tests-only or
 docs-wording-only diff, missing Playwright, a preview that would not boot)
 is information, not an error: it is recorded as a visible note in the task

@@ -11,9 +11,9 @@ branch: feat/qa-pass-settings-general-agents-and-budg
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T02:27:07Z"
-updated_at: "2026-11-20T04:03:19Z"
+updated_at: "2026-11-20T08:27:31Z"
+review_passes: 4
 review_rounds: 2
-review_passes: 2
 ---
 ## Problem
 Sweep the Settings general, agents and budget tabs for layout, wording, save and validation bugs.
@@ -86,3 +86,25 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 - 2026-11-20T04:02:14Z · CTO nudge: held — handoff gate is running
 - 2026-11-20T04:02:44Z · message_delivered: 1 message(s)
 - 2026-11-20T04:03:19Z · status active→review
+- 2026-11-20T04:13:42Z · note: ui verification failed (2 issue(s)): [missing-target] Settings General with every setting control named (target "default"): loading state detected: loading indicator [aria-busy="true"] on /settings?tab=general (http://127.0.0.1:63011/settings?tab=general); [missing-target] Agents Budget Controls tab with named controls (target "default"): loading state detected: loading indicator [aria-busy="true"] on /agents?tab=budget-controls (http://127.0.0.1:63011/agents?tab=budget-controls)
+- 2026-11-20T04:13:43Z · handoff failed · task-file handoff failed at verify · ui verification failed (2 issue(s)): [missing-target] Settings General with every setting control named (target "default"): loading state detected: loading indicator [aria-busy="true"] on /settings?tab=general (http://127.0.0.1:63011/settings?tab=general); [missing-target] Agents Budget Controls tab with named controls (target "default"): loading state detected: loading indicator [aria-busy="true"] on /agents?tab=budget-controls (http://127.0.0.1:63011/agents?tab=budget-controls)
+- 2026-11-20T04:13:45Z · note: review pass 3: good to go
+- 2026-11-20T04:13:57Z · orphaned run process stopped · pid 61702 · /opt/homebrew/Cellar/bun/1.4.2/bin/bun /Users/nick/code/nick/repoos-worktrees/feat/qa-pass-settings- · cpu 1s · age 42s
+- 2026-11-20T04:29:40Z · handoff failed · remote validation failed: test failure: tests/settings-agents-budget-qa-browser.test.ts > Settings General, Agents and Budget Controls QA (#1263) > Agents → Model routing at 1280px: no overflow, named controls, visible focus on bee — fix it in the feature branch and re-run the gate
+- 2026-11-20T04:29:42Z · message_queued at 2026-11-20T04:29:42.757Z
+- 2026-11-20T05:42:27Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-20T06:46:30Z · status review→active
+- 2026-11-20T06:46:34Z · message_delivered: 1 message(s)
+- 2026-11-20T06:46:35Z · message_queued at 2026-11-20T06:46:35.398Z
+- 2026-11-20T06:46:48Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-20T07:10:47Z · queued message undelivered for 24m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-20T07:10:48Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: The re-run is in progress. I'll wait for its completion notification before deciding anything about the `WebKit internal error`. · stderr: (empty)
+- 2026-11-20T07:10:48Z · status active→review
+- 2026-11-20T07:10:48Z · message_delivered: 1 message(s)
+- 2026-11-20T07:10:49Z · note: handoff requested (cli)
+- 2026-11-20T07:12:31Z · CTO nudge: held — handoff gate is running
+- 2026-11-20T07:18:32Z · status active→review
+- 2026-11-20T07:24:58Z · note: ui verification passed: 2 of 2 shots captured with clean console
+- 2026-11-20T07:24:59Z · note: review pass 4: needs some work — clamped by automated verification: browser verification: Handoff browser verification recorded 2 blocking issue(s): [missing-target] Settings General with every setting control named (target "default"): loading state detected: loading indicator [aria-busy="true"] on /settings?tab=general; [missing-target] Agents Budget Controls tab with named controls (target "default"): loading state detected: loading indicator [aria-busy="true"] on /agents?tab=budget-controls
+- 2026-11-20T07:25:00Z · message_queued at 2026-11-20T07:25:00.019Z
+- 2026-11-20T08:27:31Z · message_overdue: still queued after 60m without being delivered

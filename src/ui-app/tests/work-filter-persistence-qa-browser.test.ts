@@ -21,6 +21,7 @@ import { flushPromises, mount } from "@vue/test-utils";
 import { createPinia, setActivePinia } from "pinia";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import BoardQueueFilters from "../src/components/BoardQueueFilters.vue";
+import BoardQueueSearch from "../src/components/BoardQueueSearch.vue";
 import MobileWorkQueue from "../src/components/MobileWorkQueue.vue";
 import WorkView from "../src/views/WorkView.vue";
 import { useRepoStore } from "../src/stores/repo";
@@ -243,6 +244,43 @@ describe("Work board queue filters on desktop (768 / 1280 px)", () => {
     });
   });
 
+  it("the board search box shows the URL query and writes q, keeping the other keys", async () => {
+    const wrapper = mountDesktop({ priority: "p1", task: "0001" });
+    await flushPromises();
+    const input = wrapper.find('[data-testid="board-queue-search"]');
+    expect((input.element as HTMLInputElement).value).toBe("");
+    await input.setValue("login");
+    expect(routeState.router.replace).toHaveBeenCalledTimes(1);
+    expect(routeState.router.replace).toHaveBeenCalledWith({
+      query: { priority: "p1", task: "0001", q: "login" },
+    });
+  });
+
+  it("the board search box reflects a q that arrives from the URL", async () => {
+    const wrapper = mountDesktop({ q: "billing" });
+    await flushPromises();
+    const input = wrapper.find('[data-testid="board-queue-search"]');
+    expect((input.element as HTMLInputElement).value).toBe("billing");
+    expect(visibleIds(wrapper).sort()).toEqual(["0002", "0003"]);
+  });
+
+  it("the board search clear button removes only q", async () => {
+    const wrapper = mountDesktop({ q: "login", area: "web", status: "ready" });
+    await flushPromises();
+    await wrapper.find('[data-testid="board-queue-search-clear"]').trigger("click");
+    expect(routeState.router.replace).toHaveBeenCalledWith({
+      query: { area: "web", status: "ready" },
+    });
+  });
+
+  it("the board search box is not shown on the pipeline, which does not filter", async () => {
+    window.localStorage.setItem("repoos.work.view-mode", "pipeline");
+    const wrapper = mountDesktop({ q: "login" });
+    await flushPromises();
+    expect(wrapper.find('[data-testid="board-queue-search"]').exists()).toBe(false);
+    expect(wrapper.find(".board-queue-filters").exists()).toBe(true);
+  });
+
   it("a fresh project (new origin, no URL filters) starts unfiltered", async () => {
     const wrapper = mountDesktop({ q: "login" });
     await flushPromises();
@@ -424,14 +462,13 @@ describe("Board filter chip bar at 375 / 768 / 1280 px (WebKit, fixtures)", () =
   });
 
   /** Compiled scoped CSS for BoardQueueFilters and the scope id its markup carries. */
-  function scopedCss(markup: string): string {
-    const source = readFileSync(resolve(uiRoot, "src/components/BoardQueueFilters.vue"), "utf8");
-    const style =
-      parse(source, { filename: "BoardQueueFilters.vue" }).descriptor.styles[0]?.content ?? "";
+  function scopedCss(markup: string, component = "BoardQueueFilters.vue"): string {
+    const source = readFileSync(resolve(uiRoot, "src/components", component), "utf8");
+    const style = parse(source, { filename: component }).descriptor.styles[0]?.content ?? "";
     const scopeId = markup.match(/data-v-[a-f0-9]+/)?.[0];
-    if (!scopeId) throw new Error("BoardQueueFilters scope ID was not present");
+    if (!scopeId) throw new Error(`${component} scope ID was not present`);
     const compiled = compileStyle({
-      filename: "BoardQueueFilters.vue",
+      filename: component,
       id: scopeId,
       source: style,
     });
@@ -577,6 +614,74 @@ describe("Board filter chip bar at 375 / 768 / 1280 px (WebKit, fixtures)", () =
       try {
         expect(await page.locator(".board-queue-filters [data-filter-key]").count()).toBe(2);
         expect(await page.locator(".board-queue-filters .filter-clear").isVisible()).toBe(true);
+      } finally {
+        await page.close();
+      }
+    });
+  }
+
+  /** The desktop board's search box, rendered the same way as the chip bar. */
+  async function openSearchBox(value: string, width: number, label: string): Promise<Page> {
+    const wrapper = mount(BoardQueueSearch, { props: { modelValue: value } });
+    const markup = wrapper.html();
+    wrapper.unmount();
+    const page = await browser.newPage({ viewport: { width, height: 900 } });
+    await page.setContent(
+      `<meta name="viewport" content="width=device-width, initial-scale=1.0">` +
+        `<style>${globalCss}</style><style>${scopedCss(markup, "BoardQueueSearch.vue")}</style>` +
+        `<style>html, body { width: 100%; margin: 0; } *, *::before, *::after { animation: none !important; transition: none !important; }</style>` +
+        `<div class="main" style="padding: 16px">${markup}</div>`,
+    );
+    const shots = process.env.QA_SHOTS;
+    if (shots) {
+      mkdirSync(shots, { recursive: true });
+      await page.screenshot({ path: resolve(shots, `${label}-${width}.jpg`), fullPage: true });
+    }
+    return page;
+  }
+
+  for (const width of [375, 768, 1280]) {
+    it(`keeps the board search box and its clear control inside ${width}px`, async () => {
+      const page = await openSearchBox(
+        "retry the billing webhook for the nightly export job across every region",
+        width,
+        "search-long",
+      );
+      try {
+        const result = await page.evaluate(() => {
+          const off: string[] = [];
+          const limit = window.innerWidth;
+          for (const el of Array.from(document.querySelectorAll(".board-queue-search *"))) {
+            const r = (el as HTMLElement).getBoundingClientRect();
+            if (r.width === 0 && r.height === 0) continue;
+            if (r.left < -0.5 || r.right > limit + 0.5) off.push(el.className || el.tagName);
+          }
+          const input = document.querySelector<HTMLElement>('[data-testid="board-queue-search"]');
+          return {
+            scrollWidth: document.documentElement.scrollWidth,
+            limit,
+            off,
+            inputWidth: input?.getBoundingClientRect().width ?? 0,
+          };
+        });
+        expect(result.scrollWidth, `document overflows at ${width}px`).toBeLessThanOrEqual(
+          result.limit,
+        );
+        expect(result.off, `search box off-viewport at ${width}px`).toEqual([]);
+        expect(result.inputWidth, `search input too narrow at ${width}px`).toBeGreaterThan(120);
+        expect(await page.locator('[data-testid="board-queue-search-clear"]').isVisible()).toBe(
+          true,
+        );
+      } finally {
+        await page.close();
+      }
+    });
+
+    it(`shows the search box with no clear control when empty at ${width}px`, async () => {
+      const page = await openSearchBox("", width, "search-empty");
+      try {
+        expect(await page.locator('[data-testid="board-queue-search"]').isVisible()).toBe(true);
+        expect(await page.locator('[data-testid="board-queue-search-clear"]').count()).toBe(0);
       } finally {
         await page.close();
       }
