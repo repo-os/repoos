@@ -12,7 +12,7 @@ branch: feat/work-board-apply-the-queue-sort-and-make
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T00:57:33Z"
-updated_at: "2026-11-20T04:52:14Z"
+updated_at: "2026-11-20T04:52:15Z"
 ---
 ## Problem
 Two gaps from #1257 (docs/qa/2026-11-filter-persistence-qa.md):
@@ -54,3 +54,4 @@ Headless Playwright only, against fixtures. Do not touch repoos.toml. Keep the i
 - 2026-11-20T04:36:19Z · body
 - 2026-11-20T04:37:23Z · CTO nudge: held — handoff gate is running
 - 2026-11-20T04:52:14Z · handoff failed · remote validation failed: test failure: gate exit 1 on mini — fix it in the feature branch and re-run the gate
+- 2026-11-20T04:52:15Z · message_queued at 2026-11-20T04:52:15.184Z
