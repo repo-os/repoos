@@ -11,7 +11,7 @@ branch: feat/qa-pass-stories-and-docs-pages-reading-e
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T05:07:07Z"
-updated_at: "2026-11-20T05:47:40Z"
+updated_at: "2026-11-20T05:51:24Z"
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -57,3 +57,4 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 - 2026-11-20T05:47:27Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The shot is recorded on the task. Before handing off I'll check for a prior review report on this task, since the instructions say to fix every item in one. · stderr: (empty)
 - 2026-11-20T05:47:28Z · message_delivered: 2 message(s)
 - 2026-11-20T05:47:40Z · CTO nudge: held — handoff gate is running
+- 2026-11-20T05:51:24Z · note: ui verification failed: ui verification failed (1 issue(s)): [missing-target] Docs reader: doc tree rows are buttons with a selected row, long doc title wraps (target "default"): highlight .tree-file.sel matched nothing on /repo?doc=docs/agent-ui-and-preview-conventions.md (http://127.0.0.1:33211/repo?doc=docs/agent-ui-and-preview-conventions.md)
