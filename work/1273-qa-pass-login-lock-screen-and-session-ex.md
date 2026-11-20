@@ -11,7 +11,7 @@ branch: feat/qa-pass-login-lock-screen-and-session-ex
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T07:06:52Z"
-updated_at: "2026-11-20T08:26:31Z"
+updated_at: "2026-11-20T08:27:28Z"
 ---
 ## Problem
 Sweep sign-in, lock screen and session-expiry flows (code entry, errors, expired session, offline) for layout, wording and state bugs.
@@ -70,3 +70,4 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser. Never
 - 2026-11-20T07:57:31Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-20T08:26:21Z · body
 - 2026-11-20T08:26:31Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: I'm not handing off. The scoped `repoos check` fails at the `ui-smoke` step, so the task stays `active` and I have not emitted the handoff signal. **Blocker:** the UI smoke test fails on three console errors, none of them from this diff. T… · stderr: (empty)
+- 2026-11-20T08:27:28Z · message_delivered: 1 message(s)
