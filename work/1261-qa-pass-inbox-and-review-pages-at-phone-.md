@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-20T02:15:26Z"
-review_passes: 1
 id: "1261"
 title: "QA pass: Inbox and Review pages at phone, tablet and desktop widths"
 type: feature
@@ -13,6 +11,8 @@ branch: feat/qa-pass-inbox-and-review-pages-at-phone-
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T01:42:34Z"
+updated_at: "2026-11-20T03:19:27Z"
+review_passes: 1
 ---
 ## Problem
 Final sweep of the Inbox and Review views for layout, wording and state bugs at different screen sizes.
@@ -44,4 +44,4 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 - 2026-11-20T02:14:17Z · status active→review
 - 2026-11-20T02:14:17Z · message_queued at 2026-11-20T02:14:17.260Z
 - 2026-11-20T02:15:26Z · note: review pass 1: good to go
-
+- 2026-11-20T03:19:27Z · message_overdue: still queued after 60m without being delivered
