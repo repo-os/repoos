@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { nextTick, ref, watch } from "vue";
+import { ref } from "vue";
 import { X } from "lucide-vue-next";
+import { useModalFocus } from "../modal-focus";
 
 const props = defineProps<{
   title: string;
@@ -11,51 +12,14 @@ const emit = defineEmits<{
   close: [];
 }>();
 
-const FOCUSABLE = "button:not([disabled]), input:not([disabled]), select, textarea, [href]";
 const panelEl = ref<HTMLElement | null>(null);
-/** The control that had focus before the sheet opened, so closing returns to it. */
-let returnFocusTo: HTMLElement | null = null;
-
 // A sheet is modal: focus moves into it on open and comes back on close, so a
 // keyboard user never tabs into the page hidden behind the scrim.
-watch(
-  () => props.open,
-  async (open) => {
-    if (open) {
-      returnFocusTo = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-      await nextTick();
-      panelEl.value?.focus();
-    } else {
-      returnFocusTo?.focus();
-      returnFocusTo = null;
-    }
-  },
-);
-
-function onKeydown(ev: KeyboardEvent) {
-  if (ev.key === "Escape") {
-    ev.preventDefault();
-    emit("close");
-    return;
-  }
-  if (ev.key !== "Tab" || !panelEl.value) return;
-  // Tab cycles inside the panel only; the scrim is not part of the tab order.
-  const items = Array.from(panelEl.value.querySelectorAll<HTMLElement>(FOCUSABLE));
-  const first = items[0];
-  const last = items[items.length - 1];
-  const active = document.activeElement;
-  if (!first || !last) {
-    ev.preventDefault();
-    return;
-  }
-  if (ev.shiftKey && (active === first || active === panelEl.value)) {
-    ev.preventDefault();
-    last.focus();
-  } else if (!ev.shiftKey && active === last) {
-    ev.preventDefault();
-    first.focus();
-  }
-}
+const { onKeydown } = useModalFocus({
+  active: () => props.open,
+  panel: panelEl,
+  onEscape: () => emit("close"),
+});
 </script>
 
 <template>

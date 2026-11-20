@@ -899,6 +899,11 @@ select {
   padding: 24px;
   background: rgb(0 0 0 / 56%);
 }
+/* Focus lands on the dialog container on open; it is not a control. */
+.update-dialog:focus {
+  outline: none;
+}
+
 .update-dialog {
   width: min(100%, 420px);
   padding: 24px;
