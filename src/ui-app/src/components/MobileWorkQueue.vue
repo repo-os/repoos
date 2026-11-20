@@ -5,7 +5,12 @@ import { Plus, RotateCw, Search, X } from "lucide-vue-next";
 import { useRepoStore } from "../stores/repo";
 import { useUiStore } from "../stores/ui";
 import { relTime } from "../lib/time";
-import { parseTaskAreas } from "../../../core/areas.js";
+import {
+  matchesWorkQueueFilters,
+  searchNeedle,
+  taskAreaNames,
+  type WorkQueueFilters,
+} from "../lib/workQueueFilters";
 import type { Task } from "../types";
 import Button from "./ui/button.vue";
 import Select from "./ui/select/root.vue";
@@ -94,18 +99,6 @@ const refreshing = ref(false);
 /** Per-section "Show more" page count, reset whenever the filters change. */
 const page = ref<Record<string, number>>({});
 
-function taskAreaNames(task: Task): string[] {
-  return parseTaskAreas(task.areas?.length ? task.areas : task.area);
-}
-
-/** Shared queue search (#1138): id, title and area, the three things a phone
- *  user scans a card by. Uses the same canonical area parser as global search. */
-function matchesQuery(task: Task, needle: string): boolean {
-  if (task.id.toLowerCase().includes(needle)) return true;
-  if (task.title.toLowerCase().includes(needle)) return true;
-  return taskAreaNames(task).some((name) => name.toLowerCase().includes(needle));
-}
-
 /** Reuse the board's selectors instead of re-deriving held/human membership. */
 const heldIds = computed(() => new Set(repo.heldTasks.map((task) => task.id)));
 
@@ -164,20 +157,17 @@ const storyOptions = computed(() => {
   return [...names].sort((a, b) => a.localeCompare(b));
 });
 
+const filters = computed<WorkQueueFilters>(() => ({
+  query: query.value,
+  priority: priority.value,
+  area: area.value,
+  story: story.value,
+  mine: mine.value,
+}));
+
 const filtered = computed<Task[]>(() => {
-  const needle = query.value.trim().toLowerCase().replace(/^#/, "");
-  const wantedArea = area.value.toLowerCase();
-  const wantedStory = story.value;
   return basePool.value
-    .filter((task) => {
-      if (priority.value && task.priority !== priority.value) return false;
-      if (wantedArea && wantedArea !== "any") {
-        if (!taskAreaNames(task).some((name) => name.toLowerCase() === wantedArea)) return false;
-      }
-      if (wantedStory && wantedStory !== "any" && (task.story ?? "") !== wantedStory) return false;
-      if (mine.value && task.assignee !== "human") return false;
-      return !needle || matchesQuery(task, needle);
-    })
+    .filter((task) => matchesWorkQueueFilters(task, filters.value))
     .sort((a, b) => {
       const order = (a.updated_at ?? "").localeCompare(b.updated_at ?? "");
       return sort.value === "newest" ? -order : order;
@@ -248,7 +238,7 @@ const filtersActive = computed(
   () =>
     status.value !== "attention" ||
     sort.value !== "newest" ||
-    query.value.trim() !== "" ||
+    searchNeedle(query.value) !== "" ||
     priority.value !== "" ||
     area.value !== "any" ||
     story.value !== "any" ||
