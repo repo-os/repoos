@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-20T04:55:08.051Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 id: "1262"
 title: "QA pass: Checks page and check history views"
 type: feature
@@ -11,10 +13,10 @@ branch: feat/qa-pass-checks-page-and-check-history-vi
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T02:26:53Z"
-updated_at: "2026-11-20T04:16:18Z"
-handoff_signal_retry_count: 1
-check_retry_count: 2
-last_check_failure: "repoos check at 2026-11-20T03:19:36.092Z: repoos check failed: reused check inputs changed during handoff — run the check again"
+updated_at: "2026-11-20T04:55:07Z"
+review_passes: 2
+review_rounds: 1
+handoff_signal_retry_count: 2
 ---
 ## Problem
 Sweep the Checks page (local and remote tabs, history, failure details) for layout, wording and state bugs.
@@ -34,7 +36,7 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 ```json
 [
 {
-"label": "Check plan at phone width: long step names and commands wrap or scroll inside their cards",
+"label": "Check plan with long step names and commands wrapping inside their cards",
 "target": "default",
 "route": "/checks?tab=plan",
 "highlight": ".ck-steps",
@@ -71,4 +73,32 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 - 2026-11-20T03:31:20Z · queued message undelivered for 4m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-20T03:31:21Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: The merge is in and the rebuild passed. The fresh scoped check is running in the background, queued behind the pressure guard if needed. I'll request handoff only after it passes. **Status:** The handoff failed twice with "reused check inp… · stderr: (empty)
 - 2026-11-20T03:31:21Z · message_delivered: 1 message(s)
-- 2026-11-20T04:16:18Z · status active→review
+- 2026-11-20T03:37:41Z · body
+- 2026-11-20T03:43:32Z · body
+- 2026-11-20T03:51:09Z · body
+- 2026-11-20T03:52:53Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The scoped check failed again, and this time on a different Settings element. The rendered-contrast audit has now failed on two different Settings descriptions across three runs and passed on one re-run, with nothing changed in between. My… · stderr: (empty)
+- 2026-11-20T04:02:31Z · body
+- 2026-11-20T04:08:19Z · CTO nudge: held — handoff gate is running
+- 2026-11-20T04:16:19Z · status active→review
+- 2026-11-20T04:16:20Z · message_queued at 2026-11-20T04:16:20.254Z
+- 2026-11-20T04:16:26Z · orphaned run process stopped · pid 70143 · /opt/homebrew/Cellar/bun/1.4.2/bin/bun /Users/nick/code/nick/repoos-worktrees/feat/qa-pass-checks-pa · cpu 1s · age 47s
+- 2026-11-20T04:18:46Z · note: review pass 1: needs some work
+- 2026-11-20T04:18:48Z · status review→active
+- 2026-11-20T04:18:52Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-20T04:24:01Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-11-20T04:24:06Z · note: handoff requested (cli)
+- 2026-11-20T04:27:17Z · CTO nudge: held — handoff gate is running
+- 2026-11-20T04:41:17Z · message_delivered: 1 message(s)
+- 2026-11-20T04:42:06Z · body
+- 2026-11-20T04:43:56Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: I've stopped here rather than work around the lock. Here's where things stand. **Review round 2 fixes are made but not yet verified or handed off.** The worktree is locked against edits, so I can't finish them. **What I changed (on disk, n… · stderr: (empty)
+- 2026-11-20T04:45:33Z · note: ui verification passed: 2 of 2 shots captured with clean console
+- 2026-11-20T04:45:35Z · message_queued at 2026-11-20T04:45:35.528Z
+- 2026-11-20T04:45:36Z · handoff failed · task-file handoff failed at review · Engineering report draft is missing: .repoos/engineering-report-drafts/1262.md
+- 2026-11-20T04:45:36Z · message_delivered: 1 message(s)
+- 2026-11-20T04:50:23Z · body
+- 2026-11-20T04:53:15Z · status active→review
+- 2026-11-20T04:55:04Z · message_queued at 2026-11-20T04:55:04.845Z
+- 2026-11-20T04:55:05Z · note: shots: failed — browser capture cancelled
+- 2026-11-20T04:55:05Z · note: review pass 2: good to go
+- 2026-11-20T04:55:07Z · message_delivered: 1 message(s)
+
