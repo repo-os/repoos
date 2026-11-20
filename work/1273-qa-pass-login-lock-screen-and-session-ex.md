@@ -11,7 +11,7 @@ branch: feat/qa-pass-login-lock-screen-and-session-ex
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T07:06:52Z"
-updated_at: "2026-11-20T10:48:14Z"
+updated_at: "2026-11-20T10:48:17Z"
 handoff_signal_retry_count: 2
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-20T09:15:23.483Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
@@ -89,3 +89,4 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser. Never
 - 2026-11-20T10:32:33Z · body
 - 2026-11-20T10:48:14Z · handoff_deferred: 2 queued message(s) must be read before review
 - 2026-11-20T10:48:14Z · message_queued at 2026-11-20T10:48:14.724Z
+- 2026-11-20T10:48:17Z · ↻ resuming engineer to read queued message
