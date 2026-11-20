@@ -8,8 +8,10 @@ area: web
 assigned_to: ai
 created_by: t@t
 branch: ""
+cli_override: claude code
+model_override: haiku
 created_at: "2026-11-20T00:07:29Z"
-updated_at: "2026-11-20T00:07:38Z"
+updated_at: "2026-11-20T00:07:41Z"
 ---
 ## Problem
 Search text, filters and sort on the Work board may not persist or reset correctly across reloads, tabs and projects.
@@ -26,3 +28,4 @@ Do not touch repoos.toml.
 
 - 2026-11-20T00:07:29Z · created · t@t
 - 2026-11-20T00:07:38Z · status inbox→ready
+- 2026-11-20T00:07:41Z · cli_override, model_override
