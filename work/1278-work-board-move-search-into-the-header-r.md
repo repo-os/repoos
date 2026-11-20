@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 2
 id: "1278"
 title: "Work board: move search into the header row, half width, drop the search chip"
 type: feature
@@ -12,7 +13,6 @@ cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T08:46:27Z"
 updated_at: "2026-11-20T20:26:27Z"
-handoff_signal_retry_count: 1
 review_rounds: 1
 review_passes: 1
 review_failed_report_retries: 0
@@ -95,3 +95,4 @@ Start from src/ui-app/src/components/BoardQueueSearch.vue and the Work view head
 - 2026-11-20T20:16:38Z · message_queued at 2026-11-20T20:16:38.681Z
 - 2026-11-20T20:21:15Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-20T20:26:27Z · message_queued at 2026-11-20T20:26:27.710Z
+
