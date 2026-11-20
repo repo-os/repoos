@@ -2,7 +2,7 @@
 id: "1258"
 title: "Mobile polish: open on Work, hide page scrollbar, even-height header row"
 type: bug
-status: active
+status: review
 priority: p2
 area: [web, mobile]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/mobile-polish-open-on-work-hide-page-scr
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T00:15:33Z"
-updated_at: "2026-11-20T16:21:25Z"
+updated_at: "2026-11-20T16:21:28Z"
 last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
 last_handoff_failure_sha: bedc3455e991267a2057dbbd535a6d9f46966f62
 last_check_failure: "repoos check at 2026-11-20T09:49:11.145Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Work is the home page; header row controls share one height (target \"default\"): loading state detected: loading indicator [aria-busy=\"true\"] on /work (http://127.0.0.1:34337/work)"
@@ -46,7 +46,7 @@ Screenshot attached shows the current mobile header and Mission Control. Do not 
 "highlight": ".topbar",
 "steps": [
 {
-  "waitMs": 6000
+"waitMs": 6000
 }
 ],
 "state": "board:withReviewTask"
@@ -139,3 +139,4 @@ Screenshot attached shows the current mobile header and Mission Control. Do not 
 - 2026-11-20T16:02:18Z · body
 - 2026-11-20T16:06:05Z · CTO nudge: held — handoff gate is running
 - 2026-11-20T16:21:25Z · note: ui verification passed: 1 of 1 shot captured with clean console
+- 2026-11-20T16:21:28Z · status active→review
