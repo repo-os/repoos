@@ -69,6 +69,13 @@ function openPalette(scope: SearchScope) {
   return mountPalette(true, scope);
 }
 
+/** setProps is typed from the .vue shim, which omits `open`; cast to the real prop. */
+function setOpen(wrapper: ReturnType<typeof mountPalette>, open: boolean): Promise<void> {
+  return (wrapper as unknown as { setProps(p: { open: boolean }): Promise<void> }).setProps({
+    open,
+  });
+}
+
 function typeQuery(input: HTMLInputElement, q: string): void {
   input.value = q;
   input.dispatchEvent(new Event("input"));
@@ -131,7 +138,7 @@ describe.each(SCOPES)("palette focus restore ($scope scope, no returnFocusEl)", 
 
     const wrapper = mountPalette(false, scope);
     try {
-      await wrapper.setProps({ open: true });
+      await setOpen(wrapper, true);
       await wait(10);
       const input = document.querySelector<HTMLInputElement>(".search-overlay-input")!;
       expect(document.activeElement).toBe(input);
@@ -210,7 +217,7 @@ describe("palette keyboard movement and state", () => {
     // scheduled by the open watcher, which does not fire for an initial prop.
     const wrapper = mountPalette(false, "all");
     try {
-      await wrapper.setProps({ open: true });
+      await setOpen(wrapper, true);
       const input = document.querySelector<HTMLInputElement>(".search-overlay-input")!;
       typeQuery(input, "zzz-nothing");
       await wait(250);
