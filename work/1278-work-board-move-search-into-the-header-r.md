@@ -1,5 +1,4 @@
 ---
-handoff_signal_retry_count: 1
 id: "1278"
 title: "Work board: move search into the header row, half width, drop the search chip"
 type: feature
@@ -12,7 +11,8 @@ branch: feat/work-board-move-search-into-the-header-r
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T08:46:27Z"
-updated_at: "2026-11-20T20:16:38Z"
+updated_at: "2026-11-20T20:21:15Z"
+handoff_signal_retry_count: 1
 review_rounds: 1
 review_passes: 1
 review_failed_report_retries: 0
@@ -93,4 +93,4 @@ Start from src/ui-app/src/components/BoardQueueSearch.vue and the Work view head
 - 2026-11-20T20:10:25Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: 1278 isn't ready to hand off. Two things block it, and I've left the handoff signal out on purpose. **Blockers** 1. **The `main` merge is still open.** `.git/MERGE_HEAD` exists. The conflicts are resolved in the index: `workQueueFilters.ts… · stderr: (empty)
 - 2026-11-20T20:11:18Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-20T20:16:38Z · message_queued at 2026-11-20T20:16:38.681Z
-
+- 2026-11-20T20:21:15Z · CTO nudge: held — an undelivered message is already queued
