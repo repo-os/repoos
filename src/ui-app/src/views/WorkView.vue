@@ -573,10 +573,7 @@ function openHeld(task: Task): void {
           :model-value="queueFilters.query"
           @update:model-value="setQueueSearch"
         />
-        <RouterLink
-          v-if="showClientBoardLink"
-          to="/client-board"
-          class="client-board-link"
+        <RouterLink v-if="showClientBoardLink" to="/client-board" class="client-board-link"
           >Client board</RouterLink
         >
         <div

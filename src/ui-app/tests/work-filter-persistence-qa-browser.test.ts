@@ -174,9 +174,9 @@ describe("Work board queue filters on desktop (768 / 1280 px)", () => {
     await flushPromises();
     expect(visibleIds(wrapper)).toEqual(["0001"]);
     expect(chipKeys(wrapper)).toEqual(["priority"]);
-    expect((wrapper.find('[data-testid="board-queue-search"]').element as HTMLInputElement).value).toBe(
-      "login",
-    );
+    expect(
+      (wrapper.find('[data-testid="board-queue-search"]').element as HTMLInputElement).value,
+    ).toBe("login");
     expect(wrapper.find(".board-queue-filters").text()).not.toContain("Search:");
     expect(wrapper.find(".board-queue-filters").text()).toContain("Priority: P1");
   });
@@ -613,7 +613,10 @@ describe("Board filter chip bar at 375 / 768 / 1280 px (WebKit, fixtures)", () =
         const shots = process.env.QA_SHOTS;
         if (shots) {
           mkdirSync(shots, { recursive: true });
-          await page.screenshot({ path: resolve(shots, `work-header-${width}.jpg`), fullPage: true });
+          await page.screenshot({
+            path: resolve(shots, `work-header-${width}.jpg`),
+            fullPage: true,
+          });
         }
         const result = await page.evaluate(() => {
           const header = document.querySelector(".work-header");
