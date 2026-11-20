@@ -2,7 +2,7 @@
 id: "1271"
 title: "QA pass: Projects switcher and server picker flows"
 type: feature
-status: review
+status: active
 priority: p2
 area: web
 assigned_to: ai
