@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-20T04:18:47Z"
+review_passes: 1
 id: "1262"
 title: "QA pass: Checks page and check history views"
 type: feature
@@ -11,7 +13,6 @@ branch: feat/qa-pass-checks-page-and-check-history-vi
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T02:26:53Z"
-updated_at: "2026-11-20T04:18:46Z"
 handoff_signal_retry_count: 2
 last_check_failure: "repoos check at 2026-11-20T03:19:36.092Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 ---
@@ -80,3 +81,4 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 - 2026-11-20T04:16:20Z · message_queued at 2026-11-20T04:16:20.254Z
 - 2026-11-20T04:16:26Z · orphaned run process stopped · pid 70143 · /opt/homebrew/Cellar/bun/1.4.2/bin/bun /Users/nick/code/nick/repoos-worktrees/feat/qa-pass-checks-pa · cpu 1s · age 47s
 - 2026-11-20T04:18:46Z · note: review pass 1: needs some work
+
