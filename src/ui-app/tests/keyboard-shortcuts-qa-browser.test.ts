@@ -32,8 +32,8 @@ vi.mock("vue-router", () => ({
   useRouter: () => ({ push: vi.fn(), currentRoute: { value: { name: "work", query: {} } } }),
 }));
 
-/** Real palette markup, rendered open with one live task result. */
-async function paletteMarkup(): Promise<string> {
+/** Real palette markup, rendered open with the given query typed in. */
+async function paletteMarkup(query = "QA pass"): Promise<string> {
   setActivePinia(createPinia());
   const repo = useRepoStore();
   repo.tasks = [makeTask({ id: "1231", title: "QA pass: keyboard shortcuts" })];
@@ -42,7 +42,7 @@ async function paletteMarkup(): Promise<string> {
     attachTo: document.body,
   });
   const input = document.querySelector(".search-overlay-input") as HTMLInputElement;
-  input.value = "QA pass";
+  input.value = query;
   input.dispatchEvent(new Event("input"));
   // The palette debounces doc-body loads by 200ms; give the render time to settle.
   await new Promise((r) => setTimeout(r, 250));
@@ -68,6 +68,7 @@ describe.skipIf(!existsSync(webkit.executablePath()))(
     let browser: Browser;
     let globalCss: string;
     let palette: string;
+    let paletteEmpty: string;
     let pill: string;
 
     beforeAll(async () => {
@@ -77,13 +78,18 @@ describe.skipIf(!existsSync(webkit.executablePath()))(
         "",
       );
       palette = await paletteMarkup();
+      paletteEmpty = await paletteMarkup("zzz-nothing");
       pill = pillMarkup();
     });
     afterAll(async () => {
       await browser?.close();
     });
 
-    async function openFixturePage(label: string, width: number): Promise<Page> {
+    async function openFixturePage(
+      label: string,
+      width: number,
+      paletteHtml: string = palette,
+    ): Promise<Page> {
       const page = await browser.newPage({ viewport: { width, height: 900 } });
       await page.setViewportSize({ width, height: 900 });
       await page.setContent(
@@ -91,7 +97,7 @@ describe.skipIf(!existsSync(webkit.executablePath()))(
           `<style>${globalCss}</style>` +
           `<style>html, body { width: 100%; margin: 0; } *, *::before, *::after { animation: none !important; transition: none !important; }</style>` +
           `<div class="app-shell"><div class="topbar"><div class="spacer"></div>${pill}<div class="spacer"></div></div></div>` +
-          palette,
+          paletteHtml,
       );
       const shots = process.env.QA_SHOTS;
       if (shots) {
@@ -100,6 +106,21 @@ describe.skipIf(!existsSync(webkit.executablePath()))(
       }
       return page;
     }
+
+    it.each(VIEWPORTS)("empty-result message names the query and fits at %spx", async (width) => {
+      const page = await openFixturePage("palette-empty", width, paletteEmpty);
+      try {
+        const result = await audit(page);
+        expect(result.overflowers, `empty palette at ${width}px overflows`).toEqual([]);
+        expect(result.documentWidth).toBeLessThanOrEqual(width + 1);
+        const message = await page.evaluate(
+          () => document.querySelector(".search-empty")?.textContent ?? "",
+        );
+        expect(message).toBe("No results for “zzz-nothing”");
+      } finally {
+        await page.close();
+      }
+    });
 
     /** Every visible element must sit inside the viewport horizontally,
      *  except content a horizontal scroller legitimately clips. */

@@ -8,6 +8,7 @@
  * each task by the close-out orchestrator.
  */
 import {
+  attemptIsExecuting,
   jobAttempt,
   type IntegrationJob,
   type IntegrationPhaseTiming,
@@ -181,7 +182,13 @@ export function buildIntegrationSnapshot(
   const live = coordinator
     .allJobs()
     .filter((job) => !job.cancelled && job.phase !== "done" && job.phase !== "failed");
-  const inFlight = live[0] ?? null;
+  // The active job is the one that has left the queue: `startedAt` is set when
+  // its validation starts (queued → syncing in the orchestrator). A job still
+  // waiting has no start, so it is listed in the queue with its position and
+  // never shown as active with a clock running from its enqueue time (#1272).
+  const inFlight =
+    live.find((job): job is IntegrationJob & { startedAt: string } => attemptIsExecuting(job)) ??
+    null;
   const queue: string[] = [];
   const queueEnqueuedAt: Record<string, string> = {};
   const queuedJobs: IntegrationJob[] = [];
@@ -193,33 +200,9 @@ export function buildIntegrationSnapshot(
     queuedJobs.push(job);
   }
 
-  if (!inFlight) {
-    return {
-      empty: queue.length === 0,
-      active: null,
-      queue,
-      queueEnqueuedAt: queue.length ? queueEnqueuedAt : undefined,
-      checkPlan,
-      at,
-    };
-  }
-
-  const failed = inFlight.phase === "failed";
-  const startedAt = inFlight.startedAt ?? inFlight.enqueuedAt;
-  // The newest of the stage events and the attempt's own progress writes is the
-  // real "last seen alive" (#1276). Staleness is only judged once the recorder
-  // has written, so a legacy record without progress is not flagged.
-  const lastProgressAt =
-    latestIso(reportedAt[inFlight.taskId], inFlight.lastProgressAt) ?? startedAt;
-  const progressStale =
-    inFlight.lastProgressAt !== undefined && progressIsStale(lastProgressAt, Date.parse(at));
-  const activePhaseStartedAt = inFlight.phaseStartedAt ?? startedAt;
   const nowMs = Date.parse(at);
-  const activeElapsed = Number.isFinite(nowMs) ? nowMs - Date.parse(activePhaseStartedAt) : null;
-  const blockerStartedAt = startedAt;
-  const blockerElapsedMs = Number.isFinite(nowMs)
-    ? Math.max(0, nowMs - Date.parse(blockerStartedAt))
-    : null;
+  const blockerElapsedMs =
+    inFlight && Number.isFinite(nowMs) ? Math.max(0, nowMs - Date.parse(inFlight.startedAt)) : null;
   const queueDetail = queuedJobs.map((job, i) => {
     const enqueuedMs = Date.parse(job.enqueuedAt);
     return {
@@ -228,12 +211,34 @@ export function buildIntegrationSnapshot(
       enqueuedAt: job.enqueuedAt,
       waitedMs: Number.isFinite(nowMs) && Number.isFinite(enqueuedMs) ? nowMs - enqueuedMs : 0,
       // The active job holds the single close-out pipeline slot; every queued
-      // job waits on it, not on the ones behind it (#0897).
-      blockerTaskId: inFlight.taskId,
-      blockerPhase: inFlight.phase,
+      // job waits on it, not on the ones behind it (#0897). With no active job
+      // yet there is no blocker clock either (#1272).
+      blockerTaskId: inFlight?.taskId ?? null,
+      blockerPhase: inFlight?.phase ?? null,
       blockerElapsedMs,
     };
   });
+  const queueFields = {
+    queue,
+    queueEnqueuedAt: queue.length ? queueEnqueuedAt : undefined,
+    queueDetail: queueDetail.length ? queueDetail : undefined,
+  };
+
+  if (!inFlight) {
+    return { empty: queue.length === 0, active: null, ...queueFields, checkPlan, at };
+  }
+
+  const failed = inFlight.phase === "failed";
+  const startedAt = inFlight.startedAt;
+  // The newest of the stage events and the attempt's own progress writes is the
+  // real "last seen alive" (#1276). Staleness is only judged once the recorder
+  // has written, so a legacy record without progress is not flagged.
+  const lastProgressAt =
+    latestIso(reportedAt[inFlight.taskId], inFlight.lastProgressAt) ?? startedAt;
+  const progressStale =
+    inFlight.lastProgressAt !== undefined && progressIsStale(lastProgressAt, nowMs);
+  const activePhaseStartedAt = inFlight.phaseStartedAt ?? startedAt;
+  const activeElapsed = Number.isFinite(nowMs) ? nowMs - Date.parse(activePhaseStartedAt) : null;
   return {
     empty: false,
     active: {
@@ -254,9 +259,7 @@ export function buildIntegrationSnapshot(
       progressStale,
       previousFailure: inFlight.previousFailure ?? null,
     },
-    queue,
-    queueEnqueuedAt: queue.length ? queueEnqueuedAt : undefined,
-    queueDetail: queueDetail.length ? queueDetail : undefined,
+    ...queueFields,
     checkPlan,
     at,
   };

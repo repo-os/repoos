@@ -636,8 +636,8 @@ onMounted(() => {
   margin-left: 8px;
   font-size: 11px;
   font-weight: 600;
-  color: var(--warn, var(--status-warn));
-  border: 1px solid color-mix(in srgb, var(--warn, var(--status-warn)) 45%, transparent);
+  color: var(--amber);
+  border: 1px solid color-mix(in srgb, var(--amber) 45%, transparent);
   border-radius: 999px;
   padding: 1px 8px;
   vertical-align: middle;

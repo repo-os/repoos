@@ -392,8 +392,9 @@ watch(
           <div v-else class="doc-tree">
             <div v-if="refreshError" class="ctx-refresh-error">{{ refreshError }}</div>
             <template v-for="node in flatDocTree" :key="node.key">
-              <div
+              <button
                 v-if="node.isFile"
+                type="button"
                 class="tree-item tree-file"
                 :class="{ sel: selDoc === node.path }"
                 :style="rowStyle(node.depth)"
@@ -401,17 +402,19 @@ watch(
               >
                 <File class="size-4" />
                 <span>{{ node.name }}</span>
-              </div>
-              <div
+              </button>
+              <button
                 v-else
+                type="button"
                 class="tree-item tree-dir"
+                :aria-expanded="expandedNodes.has(node.key)"
                 :style="rowStyle(node.depth)"
                 @click="toggleNode(node.key)"
               >
                 <ChevronDown v-if="expandedNodes.has(node.key)" class="size-4 chevron" />
                 <ChevronRight v-else class="size-4 chevron" />
                 <span class="dir-name">{{ node.name }}</span>
-              </div>
+              </button>
             </template>
           </div>
         </template>
@@ -420,9 +423,10 @@ watch(
           <div v-if="!skills.length" class="ctx-empty">
             No skills yet — add a <code>skills/&lt;name&gt;/SKILL.md</code>.
           </div>
-          <div
+          <button
             v-for="s in skills"
             :key="s.path"
+            type="button"
             class="skill-row"
             :class="{ sel: selSkill === s.path }"
             @click="docs.loadSkill(s.path)"
@@ -439,7 +443,7 @@ watch(
               {{ s.name }}
             </span>
             <span v-if="s.description" class="skill-desc">{{ s.description }}</span>
-          </div>
+          </button>
         </template>
         <template v-else>
           <div class="ctx-discover-head">
@@ -554,7 +558,7 @@ watch(
               <pre
                 v-for="file in selectedCatalogSkill.files"
                 :key="file.path"
-              ><strong>{{ file.path }}</strong>\n{{ file.contents }}</pre>
+              ><strong>{{ file.path }}</strong>{{ "\n" }}{{ file.contents }}</pre>
             </details>
             <label v-if="!installedNames.has(selectedCatalogSkill.slug)" class="ctx-review-check">
               <input v-model="filesReviewed" type="checkbox" />
@@ -612,6 +616,17 @@ watch(
 
 .ctx-refresh-btn {
   margin-left: auto;
+}
+
+/* The doc title takes the free width and the editor hint wraps below it
+   (#1268). Without this a narrow reader set the title one letter per line. */
+.doc-view-head {
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+.doc-view-head > div:first-child {
+  flex: 1 1 200px;
+  min-width: 0;
 }
 
 .ctx-discover-head {
@@ -693,12 +708,20 @@ watch(
   user-select: none;
 }
 
+/* The rows are buttons (#1268), so reset the UA button look here and keep
+   the row layout. Hover and selected backgrounds are more specific below. */
 .tree-dir,
 .tree-file {
   display: flex;
   align-items: center;
   gap: 8px;
+  width: 100%;
   padding: 6px 8px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-family: inherit;
+  text-align: left;
   cursor: pointer;
   border-radius: 4px;
   font-size: 13px;
@@ -713,6 +736,12 @@ watch(
 .tree-file.sel {
   background-color: var(--bg-accent-soft);
   font-weight: 500;
+}
+
+.tree-dir:focus-visible,
+.tree-file:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: -2px;
 }
 
 .tree-dir,

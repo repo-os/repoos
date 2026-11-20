@@ -11,7 +11,8 @@ project switches and clear-all, at 375, 768 and 1280 px.
   `mine`, `sort`, `status`), so a reload restores it.
 - Widths of 720 px and up render the **desktop board**. Before this pass it
   ignored those URL filters silently. It now applies them and shows them in a
-  chip bar with a clear control (`BoardQueueFilters`).
+  chip bar with a clear control (`BoardQueueFilters`). #1259 adds a search
+  box above that bar (`BoardQueueSearch`) that writes `q` to the same URL key.
 
 Every check runs against fixtures in
 `src/ui-app/tests/work-filter-persistence-qa-browser.test.ts`:
@@ -89,7 +90,9 @@ No case was skipped.
   served from its own origin, so storage is already separated per project in
   practice. A same-origin project switch would share these keys. Namespacing
   them by `health.projectName` needs a read after health loads. Not changed.
-- **No search input at 720 px and up.** Filed as #1259.
+- **Quick-filter controls on the board.** The board's search box (#1259)
+  writes `q` only. `priority`, `area`, `story` and `mine` are still set from
+  the phone queue or a link, and the board shows them as chips.
 - **Mobile-only status values and the queue sort on the board.** Filed as
   #1260. Until then, `?status=attention|held|archived|human|all` shows every
   task with no chip, and `sort=oldest` is not applied on the board.
