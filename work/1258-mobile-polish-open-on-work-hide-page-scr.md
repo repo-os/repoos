@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-20T09:49:11.145Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Work is the home page; header row controls share one height (target \"default\"): loading state detected: loading indicator [aria-busy=\"true\"] on /work (http://127.0.0.1:34337/work)"
 id: "1258"
 title: "Mobile polish: open on Work, hide page scrollbar, even-height header row"
 type: bug
@@ -94,3 +96,4 @@ Screenshot attached shows the current mobile header and Mission Control. Do not 
 - 2026-11-20T09:49:08Z · note: review pass 3: needs some work
 - 2026-11-20T09:49:09Z · status review→active
 - 2026-11-20T09:49:10Z · message_queued at 2026-11-20T09:49:10.963Z
+
