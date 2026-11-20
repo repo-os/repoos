@@ -2,7 +2,7 @@
 id: "1271"
 title: "QA pass: Projects switcher and server picker flows"
 type: feature
-status: review
+status: active
 priority: p2
 area: web
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/qa-pass-projects-switcher-and-server-pic
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T06:07:22Z"
-updated_at: "2026-11-20T07:40:40Z"
+updated_at: "2026-11-20T09:44:54Z"
 review_passes: 1
 ---
 ## Problem
@@ -41,3 +41,5 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 - 2026-11-20T06:27:25Z · note: shots: skipped — the diff (4 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-20T06:27:56Z · note: review pass 1: good to go
 - 2026-11-20T07:40:40Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-20T09:44:54Z · status review→active
+- 2026-11-20T09:44:54Z · note: close-out repair: gate-failure
