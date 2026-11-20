@@ -41,14 +41,16 @@ by `src/ui-app/tests/work-queue-filters.test.ts`.
 | Check | 375 px | 768 px | 1280 px |
 | --- | --- | --- | --- |
 | Reload restores the search from the URL (queue) | pass | n/a | n/a |
-| Reload keeps the same filters and visible tasks (board) | n/a | pass | pass |
-| Chip bar shows each set filter (board) | n/a | pass | pass |
+| Reload keeps the same filters and visible tasks (board) | n/a | not run¹ | pass |
+| Chip bar shows each set filter (board) | n/a | not run¹ | pass |
 | Chip bar: every chip and Clear filters inside the viewport, long values | pass | pass | pass |
 | Chip bar: short set of chips, Clear filters visible | pass | pass | pass |
-| Clear-all removes only queue keys; drawer (`task`, `tab`) and `status` kept (board) | n/a | pass | pass |
+| Clear-all removes only queue keys; drawer (`task`, `tab`) and `status` kept (board) | n/a | not run¹ | pass |
 | Reset clears every queue key, including `sort` and `status` (queue) | pass | n/a | n/a |
 | Reset is disabled with no filters (queue) | pass | n/a | n/a |
-| Project switch lands unfiltered (no carried query) | n/a | pass | pass |
+| Project switch lands unfiltered (no carried query) | n/a | not run¹ | pass |
+
+¹ The desktop jsdom cases stub the viewport at 1280 px, so they cover the board at that width only. The 768 px board layout is covered by the WebKit chip-bar rows.
 
 Totals in this run: 14 browser-suite cases and 4 pure-logic cases, all passing.
 No case was skipped.
