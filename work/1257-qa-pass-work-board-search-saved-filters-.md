@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "1257"
 title: "QA pass: Work board search, saved filters and sort persistence across reloads"
 type: bug
@@ -42,3 +43,4 @@ Do not touch repoos.toml.
 - 2026-11-20T00:51:06Z · status review→active
 - 2026-11-20T00:51:08Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-20T00:56:18Z · message_queued at 2026-11-20T00:56:18.444Z
+
