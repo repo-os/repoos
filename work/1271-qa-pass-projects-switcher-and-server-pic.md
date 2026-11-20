@@ -11,12 +11,13 @@ branch: feat/qa-pass-projects-switcher-and-server-pic
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T06:07:22Z"
-updated_at: "2026-11-20T12:33:42Z"
-last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
-last_handoff_failure_sha: f4e6a04ec83ffe923a2a8afb52f1db6ef9ae75bf
+updated_at: "2026-11-20T14:01:13Z"
+last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (appeared: mobile/src/App.vue, mobile/src/components/BottomSheet.vue, mobile/src/style.css, mobile/src/components/DevUpdateDialog.vue, mobile/src/modal-focus.ts, src/ui-app/tests/mobile-update-dialog-focus.test.ts) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
+last_handoff_failure_sha: f9ff295b43cac150ac1de4268f97155c4992d986
+review_rounds: 1
+review_passes: 2
 handoff_signal_retry_count: 2
 close_out_repair_count: 1
-review_passes: 1
 ---
 ## Problem
 Sweep the project switcher and server picker (add, switch, offline and error states) for layout, wording and state bugs.
@@ -75,3 +76,20 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 - 2026-11-20T12:22:29Z · body
 - 2026-11-20T12:24:03Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: I haven't handed this off. The scoped `repoos check` fails, and the failure comes from `main`, not from this branch. **What's blocking handoff** - `rendered-contrast` fails on the Settings page. The muted text (`#686e76` on `#161b23`, 3.36… · stderr: (empty)
 - 2026-11-20T12:33:42Z · CTO action: restart-stalled-agent (resume) · agent crashed or was interrupted mid-turn — task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
+- 2026-11-20T13:06:37Z · body
+- 2026-11-20T13:11:38Z · body
+- 2026-11-20T13:13:33Z · CTO nudge: held — handoff gate is running
+- 2026-11-20T13:26:08Z · status active→review
+- 2026-11-20T13:26:10Z · message_queued at 2026-11-20T13:26:10.161Z
+- 2026-11-20T13:26:11Z · note: shots: skipped — the diff (10 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-11-20T13:28:39Z · note: review pass 2: needs some work
+- 2026-11-20T13:28:43Z · status review→active
+- 2026-11-20T13:28:49Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-20T13:34:02Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — task-file handoff failed at check · server-side finalization timed out (deadline exceeded) · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-11-20T13:34:03Z · note: handoff requested (cli)
+- 2026-11-20T13:38:33Z · CTO nudge: held — handoff gate is running
+- 2026-11-20T13:40:27Z · message_delivered: 1 message(s)
+- 2026-11-20T13:54:14Z · handoff failed · task-file handoff failed at check · the worktree changed while the gate was running (appeared: mobile/src/App.vue, mobile/src/components/BottomSheet.vue, mobile/src/style.css, mobile/src/components/DevUpdateDialog.vue, mobile/src/modal-focus.ts, src/ui-app/tests/mobile-update-dialog-focus.test.ts) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
+- 2026-11-20T13:59:06Z · handoff failed · remote validation failed: test failure: gate exit 2 on thinkpad — fix it in the feature branch and re-run the gate
+- 2026-11-20T13:59:07Z · message_queued at 2026-11-20T13:59:07.712Z
+- 2026-11-20T14:01:13Z · CTO nudge: held — an undelivered message is already queued
