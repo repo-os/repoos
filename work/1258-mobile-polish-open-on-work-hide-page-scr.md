@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: ""
 created_at: "2026-11-20T00:15:33Z"
-updated_at: "2026-11-20T00:15:33Z"
+updated_at: "2026-11-20T00:15:36Z"
 ---
 ## Problem
 On a phone (seen on the Android Hub app, Mission Control page):
@@ -29,6 +29,11 @@ On a phone (seen on the Android Hub app, Mission Control page):
 ## Notes for AI
 Screenshot attached shows the current mobile header and Mission Control. Do not touch repoos.toml. Follow AGENTS.md conventions (full-width pages, no native title tooltips). This is a small UI fix; keep it to these three items.
 
+## Screenshots
+
+![Mobile Mission Control: scrollbar on the right, tall repo chip](/api/tasks/1258/attachments/att_ec508aac-926b-4ad8-8020-060dbcfc4ca0.png)
+
 ## Activity
 
 - 2026-11-20T00:15:33Z · created · t@t
+- 2026-11-20T00:15:36Z · screenshots
