@@ -302,6 +302,27 @@ describe("Work board applies the queue sort and notices phone-only status (#1260
     expect(routeState.router.replace).toHaveBeenCalledWith({ query: { task: "0001" } });
   });
 
+  it("the Sort control shows the URL sort, not the stored order, while the URL sets one", async () => {
+    datedTasks();
+    useRepoStore().setSortOrder("recent");
+    routeState.query = { sort: "oldest" };
+    const wrapper = mount(WorkView, {
+      global: {
+        stubs: {
+          ...workViewStubs(),
+          Select: {
+            props: ["modelValue"],
+            template: "<div class='sort-select' :data-model='String(modelValue)'><slot /></div>",
+          },
+        },
+      },
+    });
+    mounted.push(wrapper);
+    await flushPromises();
+    expect(wrapper.find(".sort-select").attributes("data-model")).toBe("null");
+    expect(visibleIds(wrapper)).toEqual(["0003", "0001", "0002"]);
+  });
+
   it("a board status column is applied and keeps its own bar, not a notice", async () => {
     datedTasks();
     const wrapper = mountDesktop({ status: "ready" });

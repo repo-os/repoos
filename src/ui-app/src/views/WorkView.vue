@@ -46,6 +46,7 @@ import {
   readWorkQueueFilters,
   readWorkQueueSort,
   sortWorkQueueTasks,
+  workQueueSortLabel,
 } from "../lib/workQueueFilters";
 import {
   applyShotPreviewFixture,
@@ -317,10 +318,13 @@ const queueBarVisible = computed(
 function clearQueueFilters(): void {
   void router.replace({ query: clearWorkQueueFilterQuery(route.query) });
 }
-/** A URL sort overrides the Sort control, so picking a sort here drops the URL's. */
+/** A URL sort, applied or ignored, overrides the Sort control, so picking a sort
+ *  here drops the URL's and the control takes effect. */
 function setBoardSortOrder(order: SortOrder): void {
   repo.setSortOrder(order);
-  if (boardQueueSort.value) void router.replace({ query: { ...route.query, sort: undefined } });
+  if (route.query.sort !== undefined) {
+    void router.replace({ query: { ...route.query, sort: undefined } });
+  }
 }
 
 /** The board's per-status task list with the queue filters, the URL sort and the
@@ -640,11 +644,14 @@ function openHeld(task: Task): void {
         </Button>
         <Select
           v-if="effectiveView === 'board'"
-          :model-value="repo.sortOrder"
+          :model-value="boardQueueSort ? null : repo.sortOrder"
           @update:model-value="(v) => setBoardSortOrder(v as SortOrder)"
         >
           <SelectTrigger class="h-[34px] w-[210px] rounded-[9px] px-[11px]">
-            <SelectValue />
+            <!-- A URL sort is not one of the store's options, so the control shows it as its placeholder. -->
+            <SelectValue
+              :placeholder="boardQueueSort ? workQueueSortLabel(boardQueueSort) : undefined"
+            />
           </SelectTrigger>
           <SelectContent position="popper">
             <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">

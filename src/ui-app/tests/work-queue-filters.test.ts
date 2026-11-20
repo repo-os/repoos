@@ -141,7 +141,25 @@ describe("work queue filters", () => {
     for (const status of ["draft", "inbox", "ready", "active", "review", "done"]) {
       expect(ignoredWorkQueueFilterChips({ status })).toEqual([]);
     }
-    expect(ignoredWorkQueueFilterChips({ status: "" })).toEqual([]);
+  });
+
+  it("a bare, empty or repeated status is a notice, never silently dropped", () => {
+    expect(ignoredWorkQueueFilterChips({ status: "" })).toEqual([
+      { key: "status", label: "Ignored filter: status= (not a board column)", ignored: true },
+    ]);
+    expect(ignoredWorkQueueFilterChips({ status: null })).toEqual([
+      { key: "status", label: "Ignored filter: status= (not a board column)", ignored: true },
+    ]);
+    expect(ignoredWorkQueueFilterChips({ status: ["ready", "held"] })).toEqual([
+      {
+        key: "status",
+        label: "Ignored filter: status=ready, held (use one status)",
+        ignored: true,
+      },
+    ]);
+    expect(clearWorkQueueFilterQuery({ status: ["ready", "held"], task: "0001" })).toEqual({
+      task: "0001",
+    });
   });
 
   it("sort=newest or oldest is applied as a chip, and any other sort is a notice", () => {

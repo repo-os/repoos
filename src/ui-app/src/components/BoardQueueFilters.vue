@@ -47,7 +47,7 @@ const chips = computed(() => [
       </li>
     </ul>
     <p v-if="!applied" class="board-queue-filter-note">
-      This view doesn't apply these filters. Switch to Board to filter tasks.
+      This view doesn't apply these filters or sort. Switch to Board to apply them.
     </p>
     <button type="button" class="filter-clear" @click="emit('clear')">Clear filters</button>
   </div>

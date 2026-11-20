@@ -131,13 +131,15 @@ export interface WorkQueueFilterChip {
   ignored?: boolean;
 }
 
+/** The label for a URL sort, shared by the chip and the Sort control's placeholder. */
+export function workQueueSortLabel(sort: WorkQueueSort): string {
+  return sort === "oldest" ? "Sort: Oldest updated" : "Sort: Newest updated";
+}
+
 /** A chip for the board's applied sort, so a sorted board never looks like the default. */
 export function workQueueSortChip(sort: WorkQueueSort | null): WorkQueueFilterChip | null {
   if (!sort) return null;
-  return {
-    key: "sort",
-    label: sort === "oldest" ? "Sort: Oldest updated" : "Sort: Newest updated",
-  };
+  return { key: "sort", label: workQueueSortLabel(sort) };
 }
 
 /** One chip per filter that is set, in the order the controls appear. */
@@ -179,11 +181,12 @@ export function ignoredWorkQueueFilterChips(query: Record<string, unknown>): Wor
       ignored: true,
     });
   }
-  const status = firstString(query.status);
-  if (isIgnoredStatus(status)) {
+  const status = ignoredStatusText(query.status);
+  if (status !== null) {
+    const reason = Array.isArray(query.status) ? "use one status" : "not a board column";
     chips.push({
       key: "status",
-      label: `Ignored filter: status=${status} (not a board column)`,
+      label: `Ignored filter: status=${status} (${reason})`,
       ignored: true,
     });
   }
@@ -198,24 +201,30 @@ export function ignoredWorkQueueFilterChips(query: Record<string, unknown>): Wor
   return chips;
 }
 
-/** A status the board cannot show as a column. A board column stays in the URL
- *  and keeps its own filter bar, so Clear never removes it. */
-function isIgnoredStatus(status: string): boolean {
-  return status !== "" && !isBoardStatus(status);
+/**
+ * The `status` text the board cannot apply, or null when it applies one. The
+ * board filters only by a single board column, so a bare or empty key, an
+ * unknown value and a repeated key are all notices, never silent.
+ */
+function ignoredStatusText(raw: unknown): string | null {
+  if (raw === undefined) return null;
+  if (typeof raw === "string" && isBoardStatus(raw)) return null;
+  if (Array.isArray(raw)) return raw.map((value) => value ?? "").join(", ");
+  return raw === null ? "" : String(raw);
 }
 
 /**
  * A copy of the route query with the queue filter keys removed, plus the board's
  * `sort` and any status the board ignores (those are shown in the same bar). A
  * board status column, and every other entry, including null (bare `?key`) and
- * repeated values, is kept as-is.
+ * other repeated values, is kept as-is.
  */
 export function clearWorkQueueFilterQuery(query: Record<string, unknown>): Record<string, unknown> {
   const next: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(query)) {
     if ((WORK_QUEUE_FILTER_KEYS as readonly string[]).includes(key)) continue;
     if (key === "sort") continue;
-    if (key === "status" && isIgnoredStatus(firstString(value))) continue;
+    if (key === "status" && ignoredStatusText(value) !== null) continue;
     next[key] = value;
   }
   return next;

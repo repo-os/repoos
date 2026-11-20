@@ -76,7 +76,8 @@ No case was skipped.
   note that the view doesn't apply these filters, so a filtered link never
   looks like a full list.
 - **Unusable URL values** (`priority` other than p0-p3, `mine` other than `1`,
-  a `status` that is not a board column, a `sort` other than newest or oldest)
+  a `status` that is not a single board column, including a bare or repeated
+  `status`, a `sort` other than newest or oldest)
   are not applied. Each one shows a dashed "Ignored" chip, and Clear filters
   removes it. Phone-only statuses (`attention`, `held`, `archived`, `human`,
   `all`) get that notice on the board, so none is dropped silently (#1260).
