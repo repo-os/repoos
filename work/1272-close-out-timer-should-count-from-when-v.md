@@ -2,7 +2,7 @@
 id: "1272"
 title: Close-out timer should count from when validation actually starts
 type: feature
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/close-out-timer-should-count-from-when-v
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T06:08:31Z"
-updated_at: "2026-11-20T07:40:39Z"
+updated_at: "2026-11-20T07:40:40Z"
 ---
 ## Problem
 After Move to done on a green review task, the card shows a Checks timer (e.g. 20m 29s) that appears to have started long before the close-out began. It looks like the clock counts from when the task was clicked or queued (or from an earlier attempt), not from when validation actually started. Seen with a queue of close-outs (see screenshot): the running task shows a large elapsed time, and the queued one shows no clear state.
@@ -42,3 +42,4 @@ Never touch repoos.toml. Headless Playwright only.
 - 2026-11-20T06:26:59Z · status ready→active, branch
 - 2026-11-20T07:30:43Z · body
 - 2026-11-20T07:40:39Z · note: ui verification passed: 1 shot captured with clean console
+- 2026-11-20T07:40:40Z · status active→review
