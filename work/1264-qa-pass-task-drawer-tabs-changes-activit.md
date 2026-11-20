@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-20T02:47:20.639Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 id: "1264"
 title: "QA pass: task drawer tabs (changes, activity, reports)"
 type: feature
@@ -36,3 +38,4 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 - 2026-11-20T02:41:16Z · body
 - 2026-11-20T02:46:58Z · CTO nudge: held — handoff gate is running
 - 2026-11-20T02:47:19Z · message_queued at 2026-11-20T02:47:19.130Z
+
