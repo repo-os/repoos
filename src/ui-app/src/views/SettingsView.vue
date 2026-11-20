@@ -21,6 +21,7 @@ import {
 } from "../lib/storage-status";
 import Button from "../components/ui/button.vue";
 import Card from "../components/ui/card.vue";
+import ConfirmDialog from "../components/ConfirmDialog.vue";
 import PageSkeleton from "../components/PageSkeleton.vue";
 import Input from "../components/ui/input.vue";
 import Switch from "../components/ui/switch.vue";
@@ -460,13 +461,19 @@ function syncRawScroll(): void {
   pre.scrollLeft = ta.scrollLeft;
 }
 
+/** Whether the discard-and-reload dialog is open (replaces native confirm()). */
+const reloadRawConfirmOpen = ref(false);
+
 function reloadRaw(): void {
-  if (
-    config.rawDirty &&
-    !window.confirm("Discard your unsaved repoos.toml changes and reload from disk?")
-  ) {
+  if (config.rawDirty) {
+    reloadRawConfirmOpen.value = true;
     return;
   }
+  void config.loadRaw();
+}
+
+function confirmReloadRaw(): void {
+  reloadRawConfirmOpen.value = false;
   void config.loadRaw();
 }
 
@@ -477,14 +484,26 @@ function saveRaw(): void {
 const testState = ref<"idle" | "sending" | "sent" | "failed">("idle");
 let testStateTimer: ReturnType<typeof setTimeout> | undefined;
 
+/** Plain-English result under the ntfy topic row; stays until the next attempt. */
+const ntfyTestMessage = ref<{ ok: boolean; text: string } | null>(null);
+
 async function sendTestNotification(): Promise<void> {
   testState.value = "sending";
+  ntfyTestMessage.value = null;
   clearTimeout(testStateTimer);
   try {
     await api("/api/ntfy/test", { method: "POST" });
     testState.value = "sent";
+    ntfyTestMessage.value = {
+      ok: true,
+      text: "Test sent. If nothing arrives in your ntfy app, check that the topic matches exactly.",
+    };
   } catch {
     testState.value = "failed";
+    ntfyTestMessage.value = {
+      ok: false,
+      text: "Couldn't send the test notification. Check that the topic matches the one your ntfy app is subscribed to, then try again.",
+    };
   }
   testStateTimer = setTimeout(() => {
     testState.value = "idle";
@@ -2133,6 +2152,21 @@ onUnmounted(() => {
                         }}
                       </Button>
                     </div>
+                    <div
+                      v-if="!form.ntfyEnabled || !String(form.ntfyTopic ?? '').trim()"
+                      class="setting-desc"
+                      style="width: 100%"
+                    >
+                      Turn on ntfy and enter a topic to send a test.
+                    </div>
+                    <div
+                      v-if="ntfyTestMessage"
+                      :class="ntfyTestMessage.ok ? 'ntfy-test-ok' : 'ff-error'"
+                      role="status"
+                      style="width: 100%"
+                    >
+                      {{ ntfyTestMessage.text }}
+                    </div>
                   </div>
                 </div>
                 <aside class="ntfy-info">
@@ -3011,6 +3045,15 @@ onUnmounted(() => {
                     @click="saveRaw"
                     >{{ config.rawSaving ? "Saving…" : "Save" }}</Button
                   >
+                  <ConfirmDialog
+                    :open="reloadRawConfirmOpen"
+                    title="Discard unsaved repoos.toml changes?"
+                    confirm-label="Discard and reload"
+                    @update:open="(v) => (reloadRawConfirmOpen = v)"
+                    @confirm="confirmReloadRaw"
+                  >
+                    Your edits that aren't saved yet are lost. The file is reloaded from disk.
+                  </ConfirmDialog>
                 </div>
               </div>
               <div class="toml-editor">

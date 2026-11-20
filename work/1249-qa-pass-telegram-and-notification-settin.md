@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 543730
-last_close_out_gate_at: "2026-11-20T00:16:02.859Z"
 id: "1249"
 title: "QA pass: Telegram and notification settings screens and their messages"
 type: bug
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: 9eb46fa5ffc07b72270e482f73a03f2011ec351c
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-telegram-and-notification-settin
@@ -14,6 +13,8 @@ cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T21:46:55Z"
 updated_at: "2026-11-20T00:16:02Z"
+last_close_out_gate_ms: 543730
+last_close_out_gate_at: "2026-11-20T00:16:02.859Z"
 review_passes: 2
 review_rounds: 1
 ---
