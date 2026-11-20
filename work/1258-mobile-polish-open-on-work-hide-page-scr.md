@@ -11,7 +11,7 @@ branch: feat/mobile-polish-open-on-work-hide-page-scr
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T00:15:33Z"
-updated_at: "2026-11-20T08:57:39Z"
+updated_at: "2026-11-20T08:57:40Z"
 review_rounds: 1
 review_passes: 2
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/mobile-touch-affordances.test.ts > mobile web polish (#1139) > gives top-bar controls a 44px touch target and keeps the project name visible, tests/mobile-touch-affordances.test.ts > mobile web polish (#1139) > turns search into a compact accessible icon button on phones, tests/shot-target-support-0866.test.ts > app target resolution (#0866) > keeps APP_ROUTE_PREFIXES in sync with the UI router on mini — fix it in the feature branch and re-run the gate"
@@ -86,3 +86,4 @@ Screenshot attached shows the current mobile header and Mission Control. Do not 
 - 2026-11-20T08:54:36Z · message_queued at 2026-11-20T08:54:36.589Z
 - 2026-11-20T08:57:31Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-20T08:57:39Z · watchdog: restarting engineer because a queued message waited 3m with no live process
+- 2026-11-20T08:57:40Z · message_delivered: 1 message(s)
