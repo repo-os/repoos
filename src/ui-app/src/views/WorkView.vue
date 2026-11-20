@@ -14,6 +14,7 @@ import {
 import type { Column, SortOrder } from "../stores/repo";
 import { useUiStore } from "../stores/ui";
 import { useConfigStore } from "../stores/config";
+import { keepSameIds, withoutHiddenTasks } from "../lib/boardVisibility";
 import { useBoardKeyboardNav } from "../composables/useBoardKeyboardNav";
 import { useResponsiveLayout } from "../composables/useResponsiveLayout";
 import {
@@ -263,18 +264,19 @@ function toggleHeldVisible(): void {
  *  would show. The categories are independent: each toggle only adds its own
  *  ids, and an overlap (a human task that is also held) hides until the task is
  *  visible in both categories again. */
+let hiddenIds: ReadonlySet<string> = new Set();
 const hiddenTaskIds = computed<ReadonlySet<string>>(() => {
   const ids = new Set<string>();
   if (!humanVisible.value) for (const t of repo.humanTasks) ids.add(t.id);
   if (!heldVisible.value) for (const t of repo.heldTasks) ids.add(t.id);
-  return ids;
+  // Same ids as last time: return the old Set so the board does not re-render.
+  hiddenIds = keepSameIds(ids, hiddenIds);
+  return hiddenIds;
 });
 
 /** The board's per-status task list with the hidden categories removed. */
 function visibleByStatus(status: string): Task[] {
-  const hidden = hiddenTaskIds.value;
-  const tasks = repo.byStatus(status);
-  return hidden.size ? tasks.filter((t) => !hidden.has(t.id)) : tasks;
+  return withoutHiddenTasks(repo.byStatus(status), hiddenTaskIds.value);
 }
 
 // ── #0290 Keyboard navigation over the board ─────────────────────────────
