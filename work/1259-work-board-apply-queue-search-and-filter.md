@@ -9,8 +9,10 @@ depends_on: ["1257"]
 assigned_to: ai
 created_by: t@t
 branch: ""
+cli_override: claude code
+model_override: haiku
 created_at: "2026-11-20T00:57:29Z"
-updated_at: "2026-11-20T01:42:04Z"
+updated_at: "2026-11-20T01:42:10Z"
 ---
 ## Problem
 Search and quick filters only exist on the phone queue (below 720 px). The desktop board at 720 px and up can only receive them from a URL, so a user cannot set one on a wide screen (#1257 gap).
@@ -33,3 +35,4 @@ Headless Playwright only, against fixtures. Do not touch repoos.toml. Reuse the 
 - 2026-11-20T00:57:41Z · body: Desired UX (added 1, removed 1); Notes for AI (added)
 - 2026-11-20T00:57:41Z · needs_input
 - 2026-11-20T01:42:04Z · status inbox→ready
+- 2026-11-20T01:42:10Z · cli_override, model_override
