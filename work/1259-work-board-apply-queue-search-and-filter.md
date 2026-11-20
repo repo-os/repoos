@@ -1,13 +1,12 @@
 ---
-last_close_out_gate_ms: 193409
-last_close_out_gate_at: "2026-11-20T08:02:35.403Z"
 id: "1259"
 title: "Work board: apply queue search and filters on wide screens, with a search input"
 type: feature
-status: review
+status: done
 priority: p2
 area: web
 depends_on: ["1257"]
+merged_commit: e6ce5bb400dd1c81dc0604701d2350fe31c79eb3
 assigned_to: ai
 created_by: t@t
 branch: feat/work-board-apply-queue-search-and-filter
@@ -15,6 +14,8 @@ cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T00:57:29Z"
 updated_at: "2026-11-20T08:02:35Z"
+last_close_out_gate_ms: 193409
+last_close_out_gate_at: "2026-11-20T08:02:35.403Z"
 review_passes: 1
 ---
 ## Problem

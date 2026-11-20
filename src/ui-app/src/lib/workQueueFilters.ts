@@ -151,3 +151,18 @@ export function clearWorkQueueFilterQuery(query: Record<string, unknown>): Recor
   }
   return next;
 }
+
+/**
+ * A copy of the route query with `q` set to the search text, or removed when the
+ * text is empty. The board's search box writes through this so typing never
+ * drops a quick filter or the drawer params that sit beside it.
+ */
+export function withWorkQueueSearch(
+  query: Record<string, unknown>,
+  search: string,
+): Record<string, unknown> {
+  const next: Record<string, unknown> = { ...query };
+  if (search) next.q = search;
+  else delete next.q;
+  return next;
+}
