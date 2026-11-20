@@ -1,5 +1,6 @@
 ---
 updated_at: "2026-11-20T19:50:35Z"
+review_passes: 1
 review_failed_report_retries: 0
 id: "1278"
 title: "Work board: move search into the header row, half width, drop the search chip"
@@ -81,4 +82,5 @@ Start from src/ui-app/src/components/BoardQueueSearch.vue and the Work view head
 - 2026-11-20T17:26:15Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-20T19:49:26Z · needs_input (review-failed) cleared for review again by hello@repoos.org
 - 2026-11-20T19:50:34Z · note: review pass 4: needs some work
+
 
