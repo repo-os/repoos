@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-20T08:34:53Z"
-review_passes: 2
 id: "1258"
 title: "Mobile polish: open on Work, hide page scrollbar, even-height header row"
 type: bug
@@ -13,6 +11,8 @@ branch: feat/mobile-polish-open-on-work-hide-page-scr
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T00:15:33Z"
+updated_at: "2026-11-20T08:34:53Z"
+review_passes: 2
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/mobile-touch-affordances.test.ts > mobile web polish (#1139) > gives top-bar controls a 44px touch target and keeps the project name visible, tests/mobile-touch-affordances.test.ts > mobile web polish (#1139) > turns search into a compact accessible icon button on phones, tests/shot-target-support-0866.test.ts > app target resolution (#0866) > keeps APP_ROUTE_PREFIXES in sync with the UI router on mini — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: 8c93e75b7ecddde45a3b16dc5cb0ed89d01739d1
 ---
@@ -78,4 +78,4 @@ Screenshot attached shows the current mobile header and Mission Control. Do not 
 - 2026-11-20T08:34:52Z · message_queued at 2026-11-20T08:34:52.007Z
 - 2026-11-20T08:34:52Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: tests/mobile-touch-affordances.test.ts > mobile web polish (#1139) > gives top-bar controls a 44px touch target and keeps the project name visible, tests/mobile-touch-affordances.test.ts > mobile web polish (#1139) > turns search into a compact accessible icon button on phones, tests/shot-target-support-0866.test.ts > app target resolution (#0866) > keeps APP_ROUTE_PREFIXES in sync with the UI router on mini — fix it in the feature branch and re-run the gate
 - 2026-11-20T08:34:53Z · note: review pass 2: needs some work
-
+- 2026-11-20T08:34:53Z · message_delivered: 1 message(s)
