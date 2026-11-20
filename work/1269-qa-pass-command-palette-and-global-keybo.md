@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-20T06:03:55Z"
-review_passes: 2
 id: "1269"
 title: "QA pass: command palette and global keyboard shortcuts"
 type: feature
@@ -13,6 +11,8 @@ branch: feat/qa-pass-command-palette-and-global-keybo
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T05:08:53Z"
+updated_at: "2026-11-20T06:03:55Z"
+review_passes: 2
 review_rounds: 1
 ---
 ## Problem
@@ -79,4 +79,4 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 - 2026-11-20T06:01:58Z · status active→review
 - 2026-11-20T06:01:58Z · message_queued at 2026-11-20T06:01:58.620Z
 - 2026-11-20T06:03:55Z · note: review pass 2: needs some work
-
+- 2026-11-20T06:03:55Z · message_delivered: 1 message(s)
