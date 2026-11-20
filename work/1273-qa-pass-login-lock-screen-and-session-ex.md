@@ -87,3 +87,4 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser. Never
 - 2026-11-20T10:24:17Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-20T10:32:33Z · body
 - 2026-11-20T10:48:14Z · handoff_deferred: 2 queued message(s) must be read before review
+- 2026-11-20T10:48:14Z · message_queued at 2026-11-20T10:48:14.724Z
