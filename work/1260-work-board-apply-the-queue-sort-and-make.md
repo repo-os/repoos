@@ -73,3 +73,4 @@ Headless Playwright only, against fixtures. Do not touch repoos.toml. Keep the i
 - 2026-11-20T05:57:30Z · CTO nudge: held — handoff gate is running
 - 2026-11-20T05:59:40Z · note: ui verification passed: 1 of 1 shot captured with clean console
 - 2026-11-20T05:59:43Z · status active→review
+- 2026-11-20T05:59:43Z · message_queued at 2026-11-20T05:59:43.561Z
