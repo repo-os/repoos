@@ -101,3 +101,4 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser. Never
 - 2026-11-20T11:20:58Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-20T11:20:58Z · message_queued at 2026-11-20T11:20:58.958Z
 - 2026-11-20T11:20:59Z · ↻ resuming engineer to read queued message
+- 2026-11-20T11:20:59Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The queued messages are recovery notices about the last handoff signal. The work is complete, and the last `repoos check` I ran (exit 0) came after my final code change. I'll confirm the worktree is clean, then emit the signal correctly. · stderr: (empty)
