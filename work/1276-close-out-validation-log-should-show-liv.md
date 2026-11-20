@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "1276"
 title: Close-out validation log should show live progress
 type: feature
@@ -35,3 +36,4 @@ Related: #1272 (timer should count from validation start). Never touch repoos.to
 - 2026-11-20T07:46:53Z · cli_override, model_override
 - 2026-11-20T07:46:53Z · status ready→active, branch
 - 2026-11-20T09:01:37Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The close-out progress feature is implemented, but the task is **not ready to hand off**: the scoped gate is still red, so I've left the task `active` and not emitted the handoff signal. **Why the gate is red** - Three remote runs each fai… · stderr: (empty)
+
