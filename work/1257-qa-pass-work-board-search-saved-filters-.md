@@ -2,7 +2,7 @@
 id: "1257"
 title: "QA pass: Work board search, saved filters and sort persistence across reloads"
 type: bug
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/qa-pass-work-board-search-saved-filters-
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T00:07:29Z"
-updated_at: "2026-11-20T00:49:33Z"
+updated_at: "2026-11-20T00:49:35Z"
 ---
 ## Problem
 Search text, filters and sort on the Work board may not persist or reset correctly across reloads, tabs and projects.
@@ -34,3 +34,4 @@ Do not touch repoos.toml.
 - 2026-11-20T00:29:19Z · body
 - 2026-11-20T00:32:09Z · CTO nudge: held — handoff gate is running
 - 2026-11-20T00:49:33Z · note: ui verification passed: 1 shot captured with clean console
+- 2026-11-20T00:49:35Z · status active→review
