@@ -12,7 +12,7 @@ branch: feat/qa-pass-stories-and-docs-pages-reading-e
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T05:07:07Z"
-updated_at: "2026-11-20T11:34:23Z"
+updated_at: "2026-11-20T11:36:47Z"
 last_close_out_gate_ms: 984744
 last_close_out_gate_at: "2026-11-20T11:34:12.226Z"
 review_passes: 2
@@ -85,3 +85,4 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 - 2026-11-20T07:46:52Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-20T11:34:12Z · close-out gate completed in 985s
 - 2026-11-20T11:34:23Z · message_dropped: 1 queued message(s) discarded — task is done
+- 2026-11-20T11:36:47Z · status done→done, release:success
