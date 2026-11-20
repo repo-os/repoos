@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/close-out-validation-log-should-show-liv
 created_at: "2026-11-20T07:42:21Z"
-updated_at: "2026-11-20T20:07:11Z"
+updated_at: "2026-11-20T20:07:15Z"
 review_passes: 3
 review_failed_report_retries: 0
 review_rounds: 2
