@@ -11,7 +11,7 @@ branch: feat/qa-pass-checks-page-and-check-history-vi
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T02:26:53Z"
-updated_at: "2026-11-20T05:02:38Z"
+updated_at: "2026-11-20T06:03:55Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-20T04:55:08.051Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_passes: 2
@@ -103,3 +103,4 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 - 2026-11-20T04:55:07Z · message_delivered: 1 message(s)
 - 2026-11-20T05:00:43Z · body
 - 2026-11-20T05:02:38Z · message_queued at 2026-11-20T05:02:38.735Z
+- 2026-11-20T06:03:55Z · message_overdue: still queued after 60m without being delivered
