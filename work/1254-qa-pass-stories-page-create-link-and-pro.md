@@ -36,3 +36,4 @@ Do not touch repoos.toml.
 - 2026-11-20T00:22:08Z · CTO nudge: held — handoff gate is running
 - 2026-11-20T00:36:51Z · handoff failed · remote validation failed: test failure: tests/sign-in-users-qa-browser.test.ts > sign-in, users and user menu QA (#1239) > sign-in at 1280px > tells a locked-out visitor to wait, in plain English on thinkpad — fix it in the feature branch and re-run the gate
 - 2026-11-20T00:36:52Z · message_queued at 2026-11-20T00:36:52.236Z
+- 2026-11-20T00:36:52Z · handoff failed · handoff recovery attempted · finalization failed
