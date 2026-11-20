@@ -2,7 +2,7 @@
 id: "1281"
 title: "Tests leak git worker processes: one vitest run left 48 git-worker-entry processes"
 type: feature
-status: active
+status: review
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/tests-leak-git-worker-processes-one-vite
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T11:47:41Z"
-updated_at: "2026-11-20T20:01:16Z"
+updated_at: "2026-11-20T21:03:16Z"
 review_rounds: 1
 review_passes: 1
 review_failed_report_retries: 0
@@ -83,3 +83,4 @@ Reproduce with bun run test on a scoped path while watching ps for git-worker-en
 - 2026-11-20T19:50:52Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-20T19:51:03Z · message_delivered: 1 message(s)
 - 2026-11-20T20:01:16Z · CTO nudge: held — handoff gate is running
+- 2026-11-20T21:03:16Z · status active→review
