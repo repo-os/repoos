@@ -56,6 +56,17 @@ describe("mobile dev update dialog focus", () => {
     expect(document.activeElement?.closest(".update-dialog")).not.toBeNull();
   });
 
+  it("is teleported to body as a floating overlay layer", async () => {
+    // A fixed overlay inside the page tree is trapped by an ancestor's stacking
+    // context (AGENTS.md: fixed overlays teleport to body).
+    const { dialog } = mountDialog();
+    await flushPromises();
+    expect(root().parentElement).toBe(document.body);
+    expect(root().getAttribute("data-overlay-layer")).toBe("floating");
+    dialog.unmount();
+    wrapper = null;
+  });
+
   it.each([
     ["Tab from the last control wraps to the first", "Later", "Tab", false, "Download now"],
     ["Shift+Tab from the first control wraps to the last", "Download now", "Tab", true, "Later"],
