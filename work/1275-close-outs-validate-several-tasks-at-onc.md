@@ -1,6 +1,4 @@
 ---
-last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
-last_handoff_failure_sha: 82edbaa33be212d01145fb74bfb7a40640482476
 id: "1275"
 title: "Close-outs: validate several tasks at once on different runner machines"
 type: feature
@@ -13,7 +11,9 @@ branch: feat/close-outs-validate-several-tasks-at-onc
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T07:42:13Z"
-updated_at: "2026-11-20T09:46:46Z"
+updated_at: "2026-11-20T09:46:58Z"
+last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
+last_handoff_failure_sha: 82edbaa33be212d01145fb74bfb7a40640482476
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-20T09:04:46.665Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 handoff_signal_retry_count: 2
@@ -83,4 +83,4 @@ Read docs/close-out-pipeline.md and docs/remote-validation.md first. Never touch
 - 2026-11-20T09:31:48Z · orphaned run process stopped · pid 52501 · sleep 60 · cpu 0s · age 10s
 - 2026-11-20T09:46:45Z · message_queued at 2026-11-20T09:46:45.627Z
 - 2026-11-20T09:46:46Z · handoff failed · task-file handoff failed at check · repoos check failed: ◆ Check plan
-
+- 2026-11-20T09:46:58Z · orphaned run process stopped · pid 56591 · bun run smoke · cpu 0s · age 13s
