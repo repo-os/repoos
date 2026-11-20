@@ -12,7 +12,7 @@ branch: feat/qa-pass-inbox-and-review-pages-at-phone-
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T01:42:34Z"
-updated_at: "2026-11-20T04:29:41Z"
+updated_at: "2026-11-20T04:32:07Z"
 last_close_out_gate_ms: 727104
 last_close_out_gate_at: "2026-11-20T04:27:14.879Z"
 review_passes: 1
@@ -50,3 +50,4 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 - 2026-11-20T03:19:27Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-20T04:27:14Z · close-out gate completed in 727s
 - 2026-11-20T04:29:41Z · message_dropped: 1 queued message(s) discarded — task is done
+- 2026-11-20T04:32:07Z · status done→done, release:success
