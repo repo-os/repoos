@@ -25,6 +25,7 @@ import type { ActiveRemoteRunInfo } from "../../server/remote-validation.js";
 import {
   integrationActiveCopy,
   integrationAttemptContext,
+  integrationBarActiveTitle,
   integrationPipelineStalled,
 } from "../src/lib/integration-pipeline-ui";
 import type { IntegrationPipelineSnapshot } from "../src/types";
@@ -429,6 +430,27 @@ describe("pipeline snapshot and card copy (#1276)", () => {
     expect(stale.label).toContain("stalled · no progress");
     expect(stale.label).toContain("on 10.0.0.7 · attempt 2");
     expect(integrationPipelineStalled(snap({ progressStale: true }), T0 + 5_000)).toBe(true);
+  });
+
+  it("the status bar title names the step, host and attempt, with the elapsed time", () => {
+    const snap = {
+      empty: false,
+      active: {
+        taskId: "1276",
+        stage: "check" as const,
+        failed: false,
+        startedAt: new Date(T0).toISOString(),
+        lastProgressAt: new Date(T0).toISOString(),
+        attempt: 2,
+        step: CLOSE_OUT_STEP.checks,
+        host: "local",
+      },
+      queue: [],
+      at: new Date(T0).toISOString(),
+    } as IntegrationPipelineSnapshot;
+    expect(integrationBarActiveTitle(snap, T0 + 90_000)).toBe(
+      `integrating · ${CLOSE_OUT_STEP.checks} · local · attempt 2 1m 30s`,
+    );
   });
 
   it("keeps the existing label for an attempt with no step, host or retry", () => {

@@ -305,6 +305,8 @@ export function integrationBarActiveTitle(
   if (copy.stalled || active.detail?.trim()) return copy.label;
   const elapsed = integrationElapsedMs(active.startedAt, nowMs);
   const elapsedBit = elapsed !== null ? ` ${formatDuration(elapsed)}` : "";
+  // A live step, host or retry attempt (#1276) is named by the copy label.
+  if (active.step || integrationAttemptContext(active)) return `${copy.label}${elapsedBit}`;
   const stage = integrationStageLabel(active.stage);
   return `integrating · ${stage}${elapsedBit}`;
 }
