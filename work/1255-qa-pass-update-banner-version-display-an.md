@@ -2,7 +2,7 @@
 id: "1255"
 title: "QA pass: update banner, version display and release notes modal at all screen sizes"
 type: bug
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/qa-pass-update-banner-version-display-an
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T23:27:47Z"
-updated_at: "2026-11-20T02:02:50Z"
+updated_at: "2026-11-20T02:02:51Z"
 review_passes: 4
 review_rounds: 2
 deferred_handoff_resume_count: 1
@@ -107,3 +107,4 @@ Do not touch repoos.toml.
 - 2026-11-20T02:02:50Z · message_queued at 2026-11-20T02:02:50.577Z
 - 2026-11-20T02:02:50Z · ↻ resuming engineer to read queued message
 - 2026-11-20T02:02:50Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The draft is written. Before I hand off, I'll correct one sentence that claims more than I observed. I saw a live `claude -p` process from another task, but I don't know it held the lock. Then I'll check the word count against the 1,200-wo… · stderr: (empty)
+- 2026-11-20T02:02:51Z · status active→review
