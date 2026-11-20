@@ -13,7 +13,7 @@ branch: feat/work-board-apply-queue-search-and-filter
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T00:57:29Z"
-updated_at: "2026-11-20T08:02:35Z"
+updated_at: "2026-11-20T08:02:51Z"
 last_close_out_gate_ms: 193409
 last_close_out_gate_at: "2026-11-20T08:02:35.403Z"
 review_passes: 1
@@ -56,4 +56,4 @@ Headless Playwright only, against fixtures. Do not touch repoos.toml. Reuse the 
 - 2026-11-20T05:26:02Z · note: review pass 1: good to go
 - 2026-11-20T06:27:03Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-20T08:02:35Z · close-out gate completed in 193s
-
+- 2026-11-20T08:02:51Z · status done→done, release:success
