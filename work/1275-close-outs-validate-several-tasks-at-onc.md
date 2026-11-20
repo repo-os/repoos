@@ -109,3 +109,4 @@ Read docs/close-out-pipeline.md and docs/remote-validation.md first. Never touch
 - 2026-11-20T12:08:33Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-20T12:20:04Z · message_delivered: 1 message(s)
 - 2026-11-20T12:38:33Z · message_queued at 2026-11-20T12:38:33.598Z
+- 2026-11-20T12:38:33Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
