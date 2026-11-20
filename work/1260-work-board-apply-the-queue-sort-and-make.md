@@ -12,7 +12,7 @@ branch: feat/work-board-apply-the-queue-sort-and-make
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T00:57:33Z"
-updated_at: "2026-11-20T05:01:02Z"
+updated_at: "2026-11-20T05:43:28Z"
 ---
 ## Problem
 Two gaps from #1257 (docs/qa/2026-11-filter-persistence-qa.md):
@@ -59,3 +59,4 @@ Headless Playwright only, against fixtures. Do not touch repoos.toml. Keep the i
 - 2026-11-20T04:55:17Z · watchdog: restarting engineer because a queued message waited 3m with no live process
 - 2026-11-20T04:55:22Z · message_delivered: 1 message(s)
 - 2026-11-20T05:01:02Z · body
+- 2026-11-20T05:43:28Z · CTO nudge: held — handoff gate is running
