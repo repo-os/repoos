@@ -11,7 +11,7 @@ branch: feat/qa-pass-update-banner-version-display-an
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T23:27:47Z"
-updated_at: "2026-11-20T00:47:45Z"
+updated_at: "2026-11-20T00:47:47Z"
 review_passes: 3
 review_rounds: 2
 ---
@@ -86,3 +86,4 @@ Do not touch repoos.toml.
 - 2026-11-20T00:32:09Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-20T00:35:06Z · body
 - 2026-11-20T00:47:45Z · queued message undelivered for 21m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-20T00:47:47Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: The full test suite is still running in the background, and a monitor will notify me when it finishes. I'll hold the handoff until that result is in. **Where #1255 stands (round 3):** - **Chat list markers fixed.** `.td-markdown` (task deb… · stderr: (empty)
