@@ -11,7 +11,7 @@ branch: feat/qa-pass-login-lock-screen-and-session-ex
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T07:06:52Z"
-updated_at: "2026-11-20T11:07:07Z"
+updated_at: "2026-11-20T11:08:29Z"
 handoff_signal_retry_count: 2
 last_check_failure: "repoos check at 2026-11-20T09:15:23.483Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 deferred_handoff_resume_count: 1
@@ -96,3 +96,4 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser. Never
 - 2026-11-20T11:07:05Z · message_queued at 2026-11-20T11:07:05.980Z
 - 2026-11-20T11:07:06Z · handoff failed · task-file handoff failed at review · Engineering report narrative is 1259 words; the hard limit is 1,200 words of narrative. Shorten it and request handoff again.
 - 2026-11-20T11:07:07Z · orphaned run process stopped · pid 82084 · /opt/homebrew/Cellar/bun/1.4.2/bin/bun /Users/nick/code/nick/repoos-worktrees/feat/qa-pass-login-loc · cpu 1s · age 33s
+- 2026-11-20T11:08:29Z · CTO nudge: held — an undelivered message is already queued
