@@ -1,4 +1,6 @@
 ---
+last_close_out_gate_ms: 193409
+last_close_out_gate_at: "2026-11-20T08:02:35.403Z"
 id: "1259"
 title: "Work board: apply queue search and filters on wide screens, with a search input"
 type: feature
@@ -12,7 +14,7 @@ branch: feat/work-board-apply-queue-search-and-filter
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T00:57:29Z"
-updated_at: "2026-11-20T06:27:03Z"
+updated_at: "2026-11-20T08:02:35Z"
 review_passes: 1
 ---
 ## Problem
@@ -52,3 +54,5 @@ Headless Playwright only, against fixtures. Do not touch repoos.toml. Reuse the 
 - 2026-11-20T05:24:31Z · orphaned run process stopped · pid 78960 · /opt/homebrew/Cellar/bun/1.4.2/bin/bun /Users/nick/code/nick/repoos-worktrees/feat/work-board-apply- · cpu 1s · age 30s
 - 2026-11-20T05:26:02Z · note: review pass 1: good to go
 - 2026-11-20T06:27:03Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-20T08:02:35Z · close-out gate completed in 193s
+
