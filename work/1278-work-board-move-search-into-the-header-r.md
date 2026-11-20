@@ -11,7 +11,7 @@ branch: feat/work-board-move-search-into-the-header-r
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T08:46:27Z"
-updated_at: "2026-11-20T16:00:10Z"
+updated_at: "2026-11-20T16:01:15Z"
 ---
 ## Problem
 The new desktop board search (#1259) sits on its own row below the page title, takes a lot of width, and shows a redundant 'Search: web' chip under it while typing.
@@ -67,3 +67,4 @@ Start from src/ui-app/src/components/BoardQueueSearch.vue and the Work view head
 - 2026-11-20T16:00:09Z · queued message undelivered for 9m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-20T16:00:10Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: The gate is running. I'll wait for it to finish rather than poll. · stderr: (empty)
 - 2026-11-20T16:00:10Z · message_delivered: 1 message(s)
+- 2026-11-20T16:01:15Z · message_queued at 2026-11-20T16:01:15.786Z
