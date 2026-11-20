@@ -11,7 +11,7 @@ branch: feat/mobile-polish-open-on-work-hide-page-scr
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T00:15:33Z"
-updated_at: "2026-11-20T11:58:32Z"
+updated_at: "2026-11-20T11:59:02Z"
 last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
 last_handoff_failure_sha: bedc3455e991267a2057dbbd535a6d9f46966f62
 check_retry_count: 1
@@ -108,3 +108,4 @@ Screenshot attached shows the current mobile header and Mission Control. Do not 
 - 2026-11-20T10:49:26Z · body
 - 2026-11-20T11:07:05Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-20T11:58:32Z · CTO nudge: held — handoff gate is running
+- 2026-11-20T11:59:02Z · handoff_deferred: 2 queued message(s) must be read before review
