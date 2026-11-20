@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: ""
 created_at: "2026-11-20T08:26:19Z"
-updated_at: "2026-11-20T08:26:34Z"
+updated_at: "2026-11-20T08:27:03Z"
 ---
 ## Problem
 A review card that is already queued for close-out (Moving to done, queued #N) still shows 'Stale evidence is the only finding · repoos verify <id>' and a Refresh evidence button. Once close-out is queued or running the evidence prompt is noise, and clicking it would start a new review on a task that is mid-close-out.
@@ -23,7 +23,7 @@ While a task has an active or queued close-out job, the card and drawer hide the
 - Test covering queued, validating and failed states.
 
 ## Notes for AI
-Never touch repoos.toml. Headless Playwright only.
+Also (Nick): on the card and drawer, show only the Refresh evidence button; do not show the repoos verify <id> command text. Shorten the notice text to just: Stale evidence. Update any tests that assert the old wording. Never touch repoos.toml. Headless Playwright only.
 
 ## Screenshots
 
@@ -34,3 +34,4 @@ Never touch repoos.toml. Headless Playwright only.
 - 2026-11-20T08:26:19Z · created · t@t
 - 2026-11-20T08:26:22Z · screenshots
 - 2026-11-20T08:26:34Z · status inbox→ready
+- 2026-11-20T08:27:03Z · body: Notes for AI (added 1, removed 1)
