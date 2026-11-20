@@ -12,7 +12,6 @@ cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T00:07:05Z"
 updated_at: "2026-11-20T01:30:31Z"
-check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-20T01:13:20.950Z: repoos check failed: tests — Test Files 1 failed | 163 passed (164)"
 review_rounds: 1
 review_passes: 1
@@ -54,3 +53,4 @@ Do not touch repoos.toml.
 - 2026-11-20T01:13:20Z · message_delivered: 1 message(s)
 - 2026-11-20T01:30:22Z · body
 - 2026-11-20T01:30:31Z · orphaned run process stopped · pid 95245 · /opt/homebrew/bin/bun dist/cli/index.js check --changed main · cpu 5s · age 7m
+
