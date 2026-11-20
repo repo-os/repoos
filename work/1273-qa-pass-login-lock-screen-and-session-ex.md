@@ -2,14 +2,14 @@
 id: "1273"
 title: "QA pass: login, lock screen and session expiry flows"
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: web
-assigned_to: ""
+assigned_to: ai
 created_by: t@t
 branch: ""
 created_at: "2026-11-20T07:06:52Z"
-updated_at: "2026-11-20T07:06:52Z"
+updated_at: "2026-11-20T07:06:57Z"
 ---
 ## Problem
 Sweep sign-in, lock screen and session-expiry flows (code entry, errors, expired session, offline) for layout, wording and state bugs.
@@ -28,3 +28,4 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser. Never
 ## Activity
 
 - 2026-11-20T07:06:52Z · created · t@t
+- 2026-11-20T07:06:57Z · status inbox→ready
