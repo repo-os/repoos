@@ -11,7 +11,7 @@ branch: feat/work-board-move-search-into-the-header-r
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T08:46:27Z"
-updated_at: "2026-11-20T20:04:40Z"
+updated_at: "2026-11-20T20:10:25Z"
 review_rounds: 1
 review_passes: 1
 review_failed_report_retries: 0
@@ -89,3 +89,4 @@ Start from src/ui-app/src/components/BoardQueueSearch.vue and the Work view head
 - 2026-11-20T20:01:37Z · message_queued at 2026-11-20T20:01:37.962Z
 - 2026-11-20T20:04:38Z · watchdog: restarting engineer because a queued message waited 3m with no live process
 - 2026-11-20T20:04:40Z · message_delivered: 1 message(s)
+- 2026-11-20T20:10:25Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: 1278 isn't ready to hand off. Two things block it, and I've left the handoff signal out on purpose. **Blockers** 1. **The `main` merge is still open.** `.git/MERGE_HEAD` exists. The conflicts are resolved in the index: `workQueueFilters.ts… · stderr: (empty)
