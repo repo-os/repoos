@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-20T00:39:22Z"
+review_passes: 1
 id: "1258"
 title: "Mobile polish: open on Work, hide page scrollbar, even-height header row"
 type: bug
@@ -11,7 +13,6 @@ branch: feat/mobile-polish-open-on-work-hide-page-scr
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T00:15:33Z"
-updated_at: "2026-11-20T00:39:21Z"
 ---
 ## Problem
 On a phone (seen on the Android Hub app, Mission Control page):
@@ -60,3 +61,4 @@ Screenshot attached shows the current mobile header and Mission Control. Do not 
 - 2026-11-20T00:36:58Z · status active→review
 - 2026-11-20T00:36:59Z · message_queued at 2026-11-20T00:36:59.082Z
 - 2026-11-20T00:39:21Z · note: review pass 1: good to go
+
