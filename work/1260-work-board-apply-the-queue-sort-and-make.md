@@ -12,7 +12,7 @@ branch: feat/work-board-apply-the-queue-sort-and-make
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T00:57:33Z"
-updated_at: "2026-11-20T10:10:45Z"
+updated_at: "2026-11-20T10:13:34Z"
 close_out_repair_count: 1
 review_passes: 2
 review_rounds: 1
@@ -83,3 +83,4 @@ Headless Playwright only, against fixtures. Do not touch repoos.toml. Keep the i
 - 2026-11-20T09:29:43Z · CTO nudge: held — handoff gate is running
 - 2026-11-20T10:10:23Z · message_queued at 2026-11-20T10:10:23.334Z
 - 2026-11-20T10:10:45Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-20T10:13:34Z · watchdog: restarting engineer because a queued message waited 3m with no live process
