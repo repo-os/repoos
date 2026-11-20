@@ -11,7 +11,7 @@ branch: feat/work-board-move-search-into-the-header-r
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T08:46:27Z"
-updated_at: "2026-11-20T20:46:16Z"
+updated_at: "2026-11-20T20:46:21Z"
 handoff_signal_retry_count: 2
 review_rounds: 1
 review_passes: 1
@@ -106,3 +106,4 @@ Start from src/ui-app/src/components/BoardQueueSearch.vue and the Work view head
 - 2026-11-20T20:45:35Z · message_delivered: 4 message(s)
 - 2026-11-20T20:46:03Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: I'm stopping here without emitting the handoff signal, because the handoff is blocked on a step this session isn't allowed to take. **Why the handoff keeps failing** - The commit step fails with "cannot do a partial commit during a merge".… · stderr: (empty)
 - 2026-11-20T20:46:16Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-20T20:46:21Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The merge with `main` is still open, so the handoff will fail at the commit step again. I can't clear it from this session without committing, which the runner rules don't allow. I'm not requesting review. **State** - `MERGE_HEAD` is set a… · stderr: (empty)
