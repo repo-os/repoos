@@ -1,5 +1,4 @@
 ---
-handoff_signal_retry_count: 1
 id: "1257"
 title: "QA pass: Work board search, saved filters and sort persistence across reloads"
 type: bug
@@ -12,7 +11,8 @@ branch: feat/qa-pass-work-board-search-saved-filters-
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T00:07:29Z"
-updated_at: "2026-11-20T00:56:18Z"
+updated_at: "2026-11-20T00:56:30Z"
+handoff_signal_retry_count: 1
 review_rounds: 1
 review_passes: 1
 ---
@@ -43,4 +43,4 @@ Do not touch repoos.toml.
 - 2026-11-20T00:51:06Z · status review→active
 - 2026-11-20T00:51:08Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-20T00:56:18Z · message_queued at 2026-11-20T00:56:18.444Z
-
+- 2026-11-20T00:56:30Z · message_delivered: 1 message(s)
