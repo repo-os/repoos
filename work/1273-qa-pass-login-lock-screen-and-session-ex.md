@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 914232
-last_close_out_gate_at: "2026-11-20T14:50:31.915Z"
 id: "1273"
 title: "QA pass: login, lock screen and session expiry flows"
 type: feature
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: 39c7e896b70da68f664c3a8913f6253cd305a217
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-login-lock-screen-and-session-ex
@@ -14,6 +13,8 @@ cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T07:06:52Z"
 updated_at: "2026-11-20T14:50:31Z"
+last_close_out_gate_ms: 914232
+last_close_out_gate_at: "2026-11-20T14:50:31.915Z"
 review_passes: 1
 handoff_signal_retry_count: 2
 last_check_failure: "repoos check at 2026-11-20T09:15:23.483Z: repoos check failed: server-side finalization timed out (deadline exceeded)"

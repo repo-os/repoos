@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from "vue";
+import { ref, computed, onMounted, onUnmounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useAuthStore } from "../stores/auth";
 import { SERVER_UNREACHABLE_MESSAGE } from "../api";
@@ -11,6 +11,8 @@ const route = useRoute();
 const router = useRouter();
 const auth = useAuthStore();
 const shotFixture = readShotPreviewFixtureFromLocation(window.location);
+/** An open app that lost its session sends the visitor here with `expired=1`. */
+const sessionExpired = computed(() => route.query.expired === "1");
 
 /**
  * The login screen is part of the connected server, so an expired session must
@@ -162,6 +164,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   window.removeEventListener("focus", onWindowFocus);
+  clearInterval(resendInterval);
 });
 
 function startResendTimer(): void {
@@ -173,6 +176,17 @@ function startResendTimer(): void {
       clearInterval(resendInterval);
     }
   }, 1000);
+}
+
+/**
+ * Back to the email step drops what belongs to the code step: a wrong-code
+ * message would otherwise sit under the email field (the error block is shared
+ * by both steps), and a half-typed code would reappear on the next attempt.
+ */
+function useDifferentEmail(): void {
+  step.value = "email";
+  errorMsg.value = "";
+  otpCode.value = "";
 }
 
 async function requestOtp(): Promise<void> {
@@ -322,6 +336,7 @@ function googleLogin(): void {
             :disabled="bootstrapping || !bootstrapEmail.trim()"
             @click="doBootstrap"
           >
+            <span v-if="bootstrapping" class="btn-spinner" aria-hidden="true"></span>
             {{ bootstrapping ? "Setting up..." : "Create Admin" }}
           </button>
         </div>
@@ -335,6 +350,14 @@ function googleLogin(): void {
         <!-- Step: email -->
         <div v-if="step === 'email'" class="login-form">
           <div v-if="hasEmailProvider">
+            <p
+              v-if="sessionExpired"
+              class="login-subtitle"
+              role="status"
+              data-testid="login-session-expired"
+            >
+              Your session ended. Sign in again to continue.
+            </p>
             <p class="login-subtitle">Enter your email to receive a one-time code.</p>
             <input
               v-model="email"
@@ -407,13 +430,14 @@ function googleLogin(): void {
             :disabled="verifying || otpCode.length !== 6"
             @click="verifyOtp"
           >
+            <span v-if="verifying" class="btn-spinner" aria-hidden="true"></span>
             {{ verifying ? "Verifying..." : "Verify" }}
           </button>
           <div class="login-actions">
             <button class="login-link" :disabled="resendTimer > 0" @click="requestOtp">
               {{ resendTimer > 0 ? `Resend in ${resendTimer}s` : "Resend code" }}
             </button>
-            <button class="login-link" @click="step = 'email'">Use a different email</button>
+            <button class="login-link" @click="useDifferentEmail">Use a different email</button>
           </div>
         </div>
 
@@ -582,6 +606,13 @@ function googleLogin(): void {
   background: var(--panel-solid);
 }
 
+/* `outline: none` above removes the browser ring, so keyboard focus gets its
+   own visible ring (the same one the logo button uses). */
+.login-input:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
 .otp-input {
   font-size: 26px;
   text-align: center;
@@ -689,7 +720,9 @@ function googleLogin(): void {
   color: var(--cyan);
   cursor: pointer;
   font-size: 13px;
-  padding: 4px;
+  /* 44px is the touch-target floor; the text stays 13px. */
+  min-height: 44px;
+  padding: 4px 8px;
   font-family: inherit;
 }
 

@@ -126,6 +126,10 @@ const FAIL = (error: string): Reply => ({ status: 500, body: { error } });
 function baseReplies(overrides: Replies): Replies {
   return {
     "GET /api/auth/me": OK(ME_ADMIN),
+    // The admin account panel loads alongside the tab. Unanswered, it reaches
+    // the fixture server (auth off), gets a 401, and the app now treats that as
+    // an expired session and leaves the page.
+    "GET /api/auth/users": OK({ users: [] }),
     "GET /api/telegram/status": OK(CONNECTED_STATUS),
     "GET /api/auth/telegram/links": OK({ links: [TELEGRAM_LINK] }),
     "GET /api/auth/telegram/chats": OK({ chats: [CHAT_ROW] }),
