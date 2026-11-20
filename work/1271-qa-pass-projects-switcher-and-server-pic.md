@@ -11,7 +11,7 @@ branch: feat/qa-pass-projects-switcher-and-server-pic
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T06:07:22Z"
-updated_at: "2026-11-20T12:18:53Z"
+updated_at: "2026-11-20T12:33:42Z"
 last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
 last_handoff_failure_sha: f4e6a04ec83ffe923a2a8afb52f1db6ef9ae75bf
 handoff_signal_retry_count: 2
@@ -72,3 +72,6 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 - 2026-11-20T11:58:33Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-20T12:00:31Z · watchdog: restarting engineer because a queued message waited 3m with no live process
 - 2026-11-20T12:18:53Z · message_delivered: 1 message(s)
+- 2026-11-20T12:22:29Z · body
+- 2026-11-20T12:24:03Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: I haven't handed this off. The scoped `repoos check` fails, and the failure comes from `main`, not from this branch. **What's blocking handoff** - `rendered-contrast` fails on the Settings page. The muted text (`#686e76` on `#161b23`, 3.36… · stderr: (empty)
+- 2026-11-20T12:33:42Z · CTO action: restart-stalled-agent (resume) · agent crashed or was interrupted mid-turn — task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
