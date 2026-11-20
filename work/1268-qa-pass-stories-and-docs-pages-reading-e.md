@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 984744
-last_close_out_gate_at: "2026-11-20T11:34:12.226Z"
 id: "1268"
 title: "QA pass: Stories and Docs pages reading experience"
 type: feature
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: 414135a1abd92ae2d0c6d4a95758903dffce5267
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-stories-and-docs-pages-reading-e
@@ -14,6 +13,8 @@ cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T05:07:07Z"
 updated_at: "2026-11-20T11:34:12Z"
+last_close_out_gate_ms: 984744
+last_close_out_gate_at: "2026-11-20T11:34:12.226Z"
 review_passes: 2
 review_rounds: 1
 last_check_failure: "repoos check at 2026-11-20T05:51:27.790Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Docs reader: doc tree rows are buttons with a selected row, long doc title wraps (target \"default\"): highlight .tree-file.sel matched nothing on /repo?doc=docs/agent-ui-and-preview-conventions.md (http://127.0.0.1:33211/repo?doc=docs/agent-ui-and-preview-conventions.md)"
