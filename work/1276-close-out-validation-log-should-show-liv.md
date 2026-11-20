@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-20T19:51:13Z"
-review_passes: 3
 id: "1276"
 title: Close-out validation log should show live progress
 type: feature
@@ -13,9 +11,10 @@ area: [server, core]
 assigned_to: ai
 created_by: t@t
 branch: feat/close-out-validation-log-should-show-liv
-cli_override: claude code
-model_override: haiku
+model_override: default
 created_at: "2026-11-20T07:42:21Z"
+updated_at: "2026-11-20T20:06:59Z"
+review_passes: 3
 review_failed_report_retries: 0
 review_rounds: 2
 handoff_signal_retry_count: 2
@@ -98,4 +97,4 @@ Related: #1272 (timer should count from validation start). Never touch repoos.to
 - 2026-11-20T19:49:36Z · needs_input (review-failed) cleared for review again by hello@repoos.org
 - 2026-11-20T19:51:12Z · note: review pass 7: needs some work
 - 2026-11-20T19:51:13Z · needs_input
-
+- 2026-11-20T20:06:59Z · cli_override, model_override
