@@ -411,7 +411,12 @@ describe("pipeline snapshot and card copy (#1276)", () => {
       progressStale: false,
     };
     const snap = (active: Partial<NonNullable<IntegrationPipelineSnapshot["active"]>>) =>
-      ({ empty: false, active: { ...base, ...active }, queue: [] }) as IntegrationPipelineSnapshot;
+      ({
+        empty: false,
+        active: { ...base, ...active },
+        queue: [],
+        at: new Date(T0).toISOString(),
+      }) as IntegrationPipelineSnapshot;
 
     const live = integrationActiveCopy(snap({}), T0 + 5_000);
     expect(live.label).toBe(
@@ -437,6 +442,7 @@ describe("pipeline snapshot and card copy (#1276)", () => {
         lastProgressAt: new Date(T0).toISOString(),
       },
       queue: [],
+      at: new Date(T0).toISOString(),
     } as IntegrationPipelineSnapshot;
     expect(integrationAttemptContext(snap.active!)).toBe("");
     expect(integrationActiveCopy(snap, T0 + 1_000).label).toMatch(/^integrating · /);
