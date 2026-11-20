@@ -2,7 +2,7 @@
 id: "1271"
 title: "QA pass: Projects switcher and server picker flows"
 type: feature
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/qa-pass-projects-switcher-and-server-pic
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T06:07:22Z"
-updated_at: "2026-11-20T13:28:49Z"
+updated_at: "2026-11-20T13:34:02Z"
 review_rounds: 1
 review_passes: 2
 handoff_signal_retry_count: 2
@@ -83,3 +83,4 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 - 2026-11-20T13:28:39Z · note: review pass 2: needs some work
 - 2026-11-20T13:28:43Z · status review→active
 - 2026-11-20T13:28:49Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-20T13:34:02Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — task-file handoff failed at check · server-side finalization timed out (deadline exceeded) · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
