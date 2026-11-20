@@ -34,6 +34,13 @@ import SelectValue from "../components/ui/select/value.vue";
 import SelectViewport from "../components/ui/select/viewport.vue";
 import IntegrationStatusBar from "../components/IntegrationStatusBar.vue";
 import MobileWorkQueue from "../components/MobileWorkQueue.vue";
+import BoardQueueFilters from "../components/BoardQueueFilters.vue";
+import {
+  clearWorkQueueFilterQuery,
+  hasActiveWorkQueueFilters,
+  matchesWorkQueueFilters,
+  readWorkQueueFilters,
+} from "../lib/workQueueFilters";
 import {
   applyShotPreviewFixture,
   isShotPreviewCaptureActive,
@@ -270,11 +277,27 @@ const hiddenTaskIds = computed<ReadonlySet<string>>(() => {
   return ids;
 });
 
-/** The board's per-status task list with the hidden categories removed. */
+// ── #1257 Queue search and quick filters on the board ─────────────────
+// The phone queue writes search and quick filters to the URL (#1138). A
+// phone-width session or a shared link can carry them to a wider screen, so the
+// board applies the same filters and shows them in a chip bar with a clear
+// control. At 720px and up no search input is rendered here.
+const queueFilters = computed(() => readWorkQueueFilters(route.query));
+const queueFiltersActive = computed(() => hasActiveWorkQueueFilters(queueFilters.value));
+function clearQueueFilters(): void {
+  void router.replace({ query: clearWorkQueueFilterQuery(route.query) });
+}
+
+/** The board's per-status task list with the queue filters and the hidden
+ *  categories removed. */
 function visibleByStatus(status: string): Task[] {
   const hidden = hiddenTaskIds.value;
+  const filters = queueFilters.value;
   const tasks = repo.byStatus(status);
-  return hidden.size ? tasks.filter((t) => !hidden.has(t.id)) : tasks;
+  const matching = queueFiltersActive.value
+    ? tasks.filter((t) => matchesWorkQueueFilters(t, filters))
+    : tasks;
+  return hidden.size ? matching.filter((t) => !hidden.has(t.id)) : matching;
 }
 
 // ── #0290 Keyboard navigation over the board ─────────────────────────────
@@ -630,6 +653,12 @@ function openHeld(task: Task): void {
       </span>
       <router-link to="/work" class="filter-clear">Show all statuses</router-link>
     </div>
+
+    <BoardQueueFilters
+      v-if="queueFiltersActive && effectiveView === 'board'"
+      :filters="queueFilters"
+      @clear="clearQueueFilters"
+    />
 
     <PipelineView v-show="effectiveView === 'pipeline'" />
 
