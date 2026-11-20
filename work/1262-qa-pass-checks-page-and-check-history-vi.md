@@ -11,7 +11,7 @@ branch: feat/qa-pass-checks-page-and-check-history-vi
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T02:26:53Z"
-updated_at: "2026-11-20T04:27:17Z"
+updated_at: "2026-11-20T04:41:17Z"
 review_rounds: 1
 review_passes: 1
 handoff_signal_retry_count: 2
@@ -87,3 +87,4 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 - 2026-11-20T04:24:01Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
 - 2026-11-20T04:24:06Z · note: handoff requested (cli)
 - 2026-11-20T04:27:17Z · CTO nudge: held — handoff gate is running
+- 2026-11-20T04:41:17Z · message_delivered: 1 message(s)
