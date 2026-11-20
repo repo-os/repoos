@@ -90,3 +90,4 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser. Never
 - 2026-11-20T10:48:14Z · handoff_deferred: 2 queued message(s) must be read before review
 - 2026-11-20T10:48:14Z · message_queued at 2026-11-20T10:48:14.724Z
 - 2026-11-20T10:48:17Z · ↻ resuming engineer to read queued message
+- 2026-11-20T10:48:17Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The check now exits 0, with all checks passed and no failed steps. Before requesting handoff, I'll add the latest result to the report draft so the record matches the run. · stderr: (empty)
