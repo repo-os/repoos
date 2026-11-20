@@ -11,7 +11,7 @@ branch: feat/qa-pass-update-banner-version-display-an
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T23:27:47Z"
-updated_at: "2026-11-20T00:27:09Z"
+updated_at: "2026-11-20T00:27:12Z"
 review_passes: 3
 review_rounds: 2
 ---
@@ -81,3 +81,4 @@ Do not touch repoos.toml.
 - 2026-11-20T00:27:04Z · status review→active
 - 2026-11-20T00:27:07Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-20T00:27:07Z · needs_input
+- 2026-11-20T00:27:12Z · message_delivered: 2 message(s)
