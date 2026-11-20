@@ -11,7 +11,7 @@ branch: feat/mobile-polish-open-on-work-hide-page-scr
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T00:15:33Z"
-updated_at: "2026-11-20T08:27:29Z"
+updated_at: "2026-11-20T08:34:52Z"
 review_passes: 1
 ---
 ## Problem
@@ -73,3 +73,4 @@ Screenshot attached shows the current mobile header and Mission Control. Do not 
 - 2026-11-20T08:26:31Z · message_delivered: 1 message(s)
 - 2026-11-20T08:27:29Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: I've stopped short of the handoff. The two target tests and the other header tests pass, but the change isn't ready to hand off. **What I fixed** - `src/core/shot-targets.ts`: added `/control` to `APP_ROUTE_PREFIXES`. It's the route that M… · stderr: (empty)
 - 2026-11-20T08:27:29Z · status active→review
+- 2026-11-20T08:34:52Z · message_queued at 2026-11-20T08:34:52.007Z
