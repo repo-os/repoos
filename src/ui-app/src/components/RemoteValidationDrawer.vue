@@ -353,7 +353,11 @@ const hetznerSteps: { label: string; body: string; cmd?: string }[] = [
               >Requires a server restart to take effect.</span
             >
           </label>
-          <Switch :checked="enabled" @update:checked="(v: boolean) => (enabled = v)" />
+          <Switch
+            aria-label="Enable remote validation"
+            :checked="enabled"
+            @update:checked="(v: boolean) => (enabled = v)"
+          />
 
           <label style="display: flex; flex-direction: column; gap: 2px">
             Fall back to local on infra failure
@@ -363,6 +367,7 @@ const hetznerSteps: { label: string; body: string; cmd?: string }[] = [
             </span>
           </label>
           <Switch
+            aria-label="Fall back to local on infra failure"
             :checked="fallbackToLocal"
             @update:checked="(v: boolean) => (fallbackToLocal = v)"
           />
@@ -456,6 +461,7 @@ const hetznerSteps: { label: string; body: string; cmd?: string }[] = [
             </span>
           </label>
           <Switch
+            aria-label="Run close-out gate locally on slow or metered link"
             data-config-key="remoteValidation.forceLocalOnMeteredLink"
             :checked="forceLocalOnMeteredLink"
             @update:checked="(v: boolean) => (forceLocalOnMeteredLink = v)"
@@ -472,6 +478,7 @@ const hetznerSteps: { label: string; body: string; cmd?: string }[] = [
             </span>
           </label>
           <Switch
+            aria-label="Engineer self-check on runner"
             :checked="engineerSelfCheckRemote"
             @update:checked="(v: boolean) => (engineerSelfCheckRemote = v)"
           />
@@ -487,6 +494,7 @@ const hetznerSteps: { label: string; body: string; cmd?: string }[] = [
             </span>
           </label>
           <Switch
+            aria-label="Retry on other hosts when one fails"
             :checked="retryOtherHosts"
             @update:checked="(v: boolean) => (retryOtherHosts = v)"
           />

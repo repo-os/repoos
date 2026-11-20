@@ -71,6 +71,14 @@ const PAGES = [
   { name: "Settings → Security", path: "/settings?tab=security" },
   { name: "Settings → Advanced", path: "/settings?tab=advanced" },
   { name: "Settings → Import/Export", path: "/settings?tab=import-export" },
+  { name: "Agents → Agents", path: "/agents" },
+  { name: "Agents → Build Your Team", path: "/agents?tab=team" },
+  { name: "Agents → Scheduled Tasks", path: "/agents?tab=scheduled" },
+  { name: "Agents → Reminders", path: "/agents?tab=reminders" },
+  { name: "Agents → Detected Coding Agents", path: "/agents?tab=detected" },
+  { name: "Agents → Model Playground", path: "/agents?tab=playground" },
+  { name: "Agents → Model providers", path: "/agents?tab=providers" },
+  { name: "Agents → Model routing", path: "/agents?tab=model-routing" },
   { name: "Agents → Budget Controls", path: "/agents?tab=budget-controls" },
 ] as const;
 
@@ -135,6 +143,23 @@ function auditPage(): string[] {
   );
   for (const el of controls) {
     if (!named(el)) issues.push("form control has no label: " + describe(el));
+  }
+
+  // The selected tab must be inside its strip, not scrolled out of view.
+  for (const tab of document.querySelectorAll(
+    ".tab-btn.active, [role=tab][aria-selected='true']",
+  )) {
+    if (!visible(tab)) continue;
+    let strip = tab.parentElement;
+    while (strip && strip !== document.body && getComputedStyle(strip).overflowX === "visible") {
+      strip = strip.parentElement;
+    }
+    if (!strip || strip === document.body) continue;
+    const t = tab.getBoundingClientRect();
+    const s = strip.getBoundingClientRect();
+    if (t.left < s.left - 1 || t.right > s.right + 1) {
+      issues.push("selected tab is scrolled out of its strip: " + describe(tab));
+    }
   }
 
   const buttons = [
