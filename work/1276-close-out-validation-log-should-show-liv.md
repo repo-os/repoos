@@ -2,7 +2,7 @@
 id: "1276"
 title: Close-out validation log should show live progress
 type: feature
-status: review
+status: active
 priority: p1
 area: [server, core]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/close-out-validation-log-should-show-liv
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T07:42:21Z"
-updated_at: "2026-11-20T15:22:36Z"
+updated_at: "2026-11-20T20:07:08Z"
 review_rounds: 2
 review_passes: 2
 handoff_signal_retry_count: 2
@@ -79,3 +79,4 @@ Related: #1272 (timer should count from validation start). Never touch repoos.to
 - 2026-11-20T14:24:54Z · handoff failed · task-file handoff failed at commit · git commit failed: fatal: cannot do a partial commit during a merge.
 - 2026-11-20T14:25:22Z · message_delivered: 1 message(s)
 - 2026-11-20T15:22:36Z · status active→review
+- 2026-11-20T20:07:08Z · status review→active
