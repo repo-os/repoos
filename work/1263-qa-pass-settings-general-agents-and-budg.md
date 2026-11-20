@@ -2,7 +2,7 @@
 id: "1263"
 title: "QA pass: Settings general, agents and budget tabs"
 type: feature
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/qa-pass-settings-general-agents-and-budg
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T02:27:07Z"
-updated_at: "2026-11-20T04:02:44Z"
+updated_at: "2026-11-20T04:03:19Z"
 review_rounds: 2
 review_passes: 2
 ---
@@ -85,3 +85,4 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 - 2026-11-20T04:00:55Z · note: handoff requested (cli)
 - 2026-11-20T04:02:14Z · CTO nudge: held — handoff gate is running
 - 2026-11-20T04:02:44Z · message_delivered: 1 message(s)
+- 2026-11-20T04:03:19Z · status active→review
