@@ -11,7 +11,7 @@ branch: feat/qa-pass-login-lock-screen-and-session-ex
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T07:06:52Z"
-updated_at: "2026-11-20T07:50:04Z"
+updated_at: "2026-11-20T07:52:31Z"
 ---
 ## Problem
 Sweep sign-in, lock screen and session-expiry flows (code entry, errors, expired session, offline) for layout, wording and state bugs.
@@ -45,3 +45,4 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser. Never
 - 2026-11-20T07:50:03Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-20T07:50:03Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: The scoped check is running again from the start, and the Monitor will report when it exits. Once it passes I'll declare the UI shots and hand off. · stderr: (empty)
 - 2026-11-20T07:50:04Z · message_delivered: 1 message(s)
+- 2026-11-20T07:52:31Z · message_queued at 2026-11-20T07:52:31.506Z
