@@ -100,3 +100,4 @@ Headless Playwright only, against fixtures. Do not touch repoos.toml. Keep the i
 - 2026-11-20T12:49:04Z · message_queued at 2026-11-20T12:49:04.511Z
 - 2026-11-20T12:52:38Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-20T13:05:23Z · note: ui verification passed: 1 of 1 shot captured with clean console
+- 2026-11-20T13:05:29Z · note: handoff requested (cli)
