@@ -98,3 +98,4 @@ Read docs/close-out-pipeline.md and docs/remote-validation.md first. Never touch
 - 2026-11-20T11:34:28Z · message_delivered: 1 message(s)
 - 2026-11-20T11:38:29Z · CTO nudge: held — handoff gate is running
 - 2026-11-20T12:00:48Z · orphaned run process stopped · pid 83506 · sleep 60 · cpu 0s · age 17s
+- 2026-11-20T12:00:48Z · orphaned run process stopped · pid 83677 · sleep 60 · cpu 0s · age 12s
