@@ -1,4 +1,6 @@
 ---
+check_retry_count: 2
+last_check_failure: "repoos check at 2026-11-20T11:18:52.239Z: repoos check failed: vite v8.2.0 building client environment for production..."
 id: "1275"
 title: "Close-outs: validate several tasks at once on different runner machines"
 type: feature
@@ -14,8 +16,6 @@ created_at: "2026-11-20T07:42:13Z"
 updated_at: "2026-11-20T11:18:49Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: 82edbaa33be212d01145fb74bfb7a40640482476
-check_retry_count: 1
-last_check_failure: "repoos check at 2026-11-20T09:04:46.665Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 handoff_signal_retry_count: 2
 ---
 ## Problem
@@ -94,3 +94,4 @@ Read docs/close-out-pipeline.md and docs/remote-validation.md first. Never touch
 - 2026-11-20T11:04:50Z · orphaned run process stopped · pid 68591 · sleep 60 · cpu 0s · age 23s
 - 2026-11-20T11:05:06Z · orphaned run process stopped · pid 72576 · sleep 60 · cpu 0s · age 13s
 - 2026-11-20T11:18:49Z · message_queued at 2026-11-20T11:18:49.216Z
+
