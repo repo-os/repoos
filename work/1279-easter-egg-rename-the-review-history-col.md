@@ -3,6 +3,9 @@ id: "1279"
 title: "Easter eggs bundle: rename review history column to Issues"
 type: feature
 status: ready
+needs_input: true
+needs_input_reason: needs-human-step
+needs_input_detail: "Acceptance criteria mention a real device, physical hardware, accounts, credentials, or third-party registration — split that verification into a separate human-only task. (matched: named mobile hardware — \"Board card top line uses the plain task number as in the pipeline card, and stays on one line at phone, tablet and desktop widths, including long ids and p1 badges;\")"
 priority: p3
 area: web
 assigned_to: ai
@@ -39,3 +42,4 @@ Copy change only. Never touch repoos.toml. Headless Playwright only.
 - 2026-11-20T10:38:55Z · title
 - 2026-11-20T10:45:33Z · body: Desired UX (added 3, removed 1)
 - 2026-11-20T10:45:44Z · body: Acceptance criteria (added 3, removed 3)
+- 2026-11-20T10:45:44Z · needs_input
