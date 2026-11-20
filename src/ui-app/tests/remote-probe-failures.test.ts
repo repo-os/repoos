@@ -102,6 +102,47 @@ const rows: Row[] = [
     cause: /setup check failed on mac1/,
     next: /Read the details below/,
   },
+  {
+    // Regression for the review: the remote `touch` prints a bare "Permission
+    // denied" before the probe's own cache message. That is a cache problem,
+    // not a login problem.
+    name: "unwritable Bun cache with a remote 'Permission denied' line is a cache problem",
+    run: {
+      code: 1,
+      output:
+        "touch: /home/nick/.cache/repoos-bun/.repoos-probe: Permission denied\nbun cache dir $HOME/.cache/repoos-bun is not writable",
+    },
+    cause: /Bun cache on mac1 is not writable/,
+    next: /permissions/,
+  },
+  {
+    name: "docker's own 'permission denied' socket error is not an SSH login failure",
+    run: {
+      code: 1,
+      output: "docker: permission denied while trying to connect to the Docker daemon socket",
+    },
+    cause: /setup check failed on mac1/,
+    next: /Read the details below/,
+  },
+  {
+    name: "missing runner script",
+    run: {
+      code: 1,
+      output: "missing runner script at /opt/repoos/validate.sh or ~/.local/bin/repoos-validate",
+    },
+    cause: /runner script is not installed on mac1/,
+    next: /per-host install/,
+  },
+  {
+    name: "outdated runner script",
+    run: {
+      code: 1,
+      output:
+        "outdated runner script: project command support is required; re-run the per-host install",
+    },
+    cause: /runner script on mac1 is out of date/,
+    next: /Re-run the per-host install/,
+  },
 ];
 
 describe("describeHostProbeFailure (#1256)", () => {

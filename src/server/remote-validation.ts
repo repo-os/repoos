@@ -2444,28 +2444,9 @@ export function describeHostProbeFailure(
       next: "Check the machine is awake and connected to Tailscale, then Test again.",
     };
   }
-  if (/Permission denied/i.test(output)) {
-    return {
-      cause: `SSH refused the login as ${host.user}@${name}.`,
-      next: `Check the SSH user for ${name} in repoos.toml, and that its public key is in that user's authorized_keys on the machine. Then Test again.`,
-    };
-  }
-  if (/Could not resolve hostname/i.test(output)) {
-    return {
-      cause: `${name} is not a name this machine can resolve.`,
-      next: "Check the spelling in Host pool, or use the host's 100.x.x.x Tailscale address. Then Test again.",
-    };
-  }
-  if (
-    /Connection (?:refused|timed out|closed)|timed out|No route to host|Network is unreachable|kex_exchange_identification/i.test(
-      output,
-    )
-  ) {
-    return {
-      cause: `${name} did not accept an SSH connection.`,
-      next: "Check the machine is on, connected to Tailscale, and running SSH. Then Test again.",
-    };
-  }
+  // The probe's own fixed messages come first: they are printed by commands on
+  // the host after ssh has logged in, so a stray "Permission denied" from a
+  // remote command (e.g. an unwritable cache) must not be read as a login failure.
   if (/docker daemon not reachable/i.test(output)) {
     return {
       cause: `Docker is installed on ${name} but is not running.`,
@@ -2499,6 +2480,45 @@ export function describeHostProbeFailure(
     return {
       cause: `The Bun cache on ${name} is not writable.`,
       next: "Fix the permissions on that machine's ~/.cache or free up its disk, then Test again.",
+    };
+  }
+  if (/missing runner script/.test(output)) {
+    return {
+      cause: `The runner script is not installed on ${name}.`,
+      next: "Run the per-host install for the runner script (docs/remote-validation.md), then Test again.",
+    };
+  }
+  if (/outdated runner script/.test(output)) {
+    return {
+      cause: `The runner script on ${name} is out of date.`,
+      next: "Re-run the per-host install to update the runner script, then Test again.",
+    };
+  }
+  // ssh's own login refusal has the shape `user@host: Permission denied (publickey,…)`.
+  // Anchored to that shape so remote-side "Permission denied" output is not
+  // mistaken for a login failure.
+  if (
+    /(?:^|\n)\S+@\S+: Permission denied \((?:publickey|password|keyboard-interactive)/.test(output)
+  ) {
+    return {
+      cause: `SSH refused the login as ${host.user}@${name}.`,
+      next: `Check the SSH user for ${name} in repoos.toml, and that its public key is in that user's authorized_keys on the machine. Then Test again.`,
+    };
+  }
+  if (/Could not resolve hostname/i.test(output)) {
+    return {
+      cause: `${name} is not a name this machine can resolve.`,
+      next: "Check the spelling in Host pool, or use the host's 100.x.x.x Tailscale address. Then Test again.",
+    };
+  }
+  if (
+    /Connection (?:refused|timed out|closed)|timed out|No route to host|Network is unreachable|kex_exchange_identification/i.test(
+      output,
+    )
+  ) {
+    return {
+      cause: `${name} did not accept an SSH connection.`,
+      next: "Check the machine is on, connected to Tailscale, and running SSH. Then Test again.",
     };
   }
   if (run.code === 255) {

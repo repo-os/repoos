@@ -62,6 +62,32 @@ visible browser was opened, and `repoos.toml` was not touched.
 Pinned by tests: the existing drawer tests still pass unchanged, including the
 single-host failure string and the empty-pool guidance.
 
+## Review round 2
+
+- **A remote-side "Permission denied" was read as a login failure (fixed).**
+  The login rule matched any `Permission denied`, so an unwritable Bun cache
+  (`touch: …: Permission denied` printed before the probe's own message) was
+  reported as an SSH login refusal. The login rule now matches only ssh's own
+  shape (`user@host: Permission denied (publickey…)`), and the probe's fixed
+  messages are checked first. Tests cover the cache case and a Docker socket
+  `permission denied`, which falls to the generic line.
+- **The probe's script messages got the generic line (fixed).** "missing runner
+  script" and "outdated runner script" now have their own causes and next steps.
+- **Save hosts could run with the pool unknown (defensive guard added).** The
+  save path refuses while the status is not loaded. In the UI the pool editor is
+  hidden when the status fails, so the guard is not reachable by typing; a test
+  pins that the editor is absent.
+- **A stale removal panel could confirm an old set (fixed).** Editing the host
+  list clears the pending removal, so the panel only confirms what is on screen.
+- **Shots not declared.** The failure block and the remove panel can only be
+  reached by pressing Test (which probes real hosts from a preview) or by saving
+  the pool (which writes `repoos.toml`). Both are off-limits for this QA, so a
+  declared shot would show only the closed drawer. The fixture renders above are
+  the evidence instead.
+- **Server-side PATCH still removes hosts without a prompt (kept).** The guard is
+  in the drawer, matching the other drawer-only controls. An API caller can still
+  remove a host directly.
+
 ## Rendered checks (WebKit, 375 / 768 / 1280 px)
 
 | State | 375 | 768 | 1280 |

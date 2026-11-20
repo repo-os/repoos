@@ -127,6 +127,8 @@ interface Scenario {
   testError?: Error;
   /** Never answer the test request — a host that is still being probed. */
   holdTest?: boolean;
+  /** The pool status request fails, so the drawer never learns the pool. */
+  statusFails?: boolean;
 }
 
 interface ApiCall {
@@ -148,6 +150,14 @@ function stubFetch(s: Scenario): ApiCall[] {
       const body = typeof init?.body === "string" ? JSON.parse(init.body) : undefined;
       calls.push({ method, path, body });
       if (path === "/api/remote-validation/status") {
+        if (s.statusFails) {
+          return {
+            ok: false,
+            status: 500,
+            statusText: "Internal Server Error",
+            json: async () => ({ error: "boom" }),
+          } as unknown as Response;
+        }
         return okJson({
           enabled: true,
           running: true,
@@ -282,6 +292,29 @@ describe("remote runner flows: add, test and remove failures (#1256)", () => {
       "Not removed. The host pool is unchanged.",
     );
     expect(wrapper.find('[data-testid="remove-hosts-confirm"]').exists()).toBe(false);
+  });
+
+  it("offers no host editor while the pool is unknown, so a removal cannot be saved unasked", async () => {
+    // With the status request failing the drawer falls back to the Hetzner
+    // provider and hides the pool editor, so the save guard in saveHosts is
+    // only defensive. This pins the UI behaviour the guard relies on.
+    const { wrapper, calls } = await mountDrawer({ ...REMOVAL_SCENARIO, statusFails: true });
+
+    expect(wrapper.find("#rvr-hosts-input").exists()).toBe(false);
+    expect(calls.filter((c) => c.method === "PATCH")).toHaveLength(0);
+  });
+
+  it("editing the list clears a pending removal so a stale panel cannot confirm", async () => {
+    const { wrapper, calls } = await mountDrawer(REMOVAL_SCENARIO);
+    await wrapper.get("#rvr-hosts-input").setValue("bee");
+    await wrapper.get('[data-testid="save-hosts"]').trigger("click");
+    await flush();
+    expect(wrapper.find('[data-testid="remove-hosts-confirm"]').exists()).toBe(true);
+
+    await wrapper.get("#rvr-hosts-input").setValue("bee, mac1, pi-den");
+    await flush();
+    expect(wrapper.find('[data-testid="remove-hosts-confirm"]').exists()).toBe(false);
+    expect(calls.filter((c) => c.method === "PATCH")).toHaveLength(0);
   });
 
   it("adding a host saves straight away with no removal prompt", async () => {

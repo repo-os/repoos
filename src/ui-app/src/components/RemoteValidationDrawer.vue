@@ -207,7 +207,13 @@ async function saveHosts(confirmedRemoval = false): Promise<void> {
       "Nothing to save — add at least one host. To remove every host, edit repoos.toml.";
     return;
   }
-  const current: string[] = status.value?.tailscaleHosts ?? [];
+  // Without a loaded pool we cannot tell a removal from an edit, so refuse
+  // rather than save past the confirmation (#1256 review).
+  if (!status.value) {
+    hostsMsg.value = "The host pool has not loaded yet. Refresh, then save again.";
+    return;
+  }
+  const current: string[] = status.value.tailscaleHosts ?? [];
   const removed = current.filter((h) => !list.includes(h));
   if (removed.length && !confirmedRemoval) {
     pendingRemoval.value = removed;
@@ -667,6 +673,7 @@ const hetznerSteps: { label: string; body: string; cmd?: string }[] = [
             <input
               id="rvr-hosts-input"
               v-model="hostsInput"
+              @input="pendingRemoval = []"
               type="text"
               placeholder="bee, mac1"
               @keydown.enter.prevent="saveHosts()"
