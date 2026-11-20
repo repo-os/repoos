@@ -8,8 +8,10 @@ area: web
 assigned_to: ai
 created_by: t@t
 branch: ""
+cli_override: claude code
+model_override: haiku
 created_at: "2026-11-20T02:27:21Z"
-updated_at: "2026-11-20T02:27:27Z"
+updated_at: "2026-11-20T02:27:29Z"
 ---
 ## Problem
 Sweep the task drawer tabs for layout, wording, loading and empty-state bugs.
@@ -29,3 +31,4 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 
 - 2026-11-20T02:27:21Z · created · t@t
 - 2026-11-20T02:27:27Z · status inbox→ready
+- 2026-11-20T02:27:29Z · cli_override, model_override
