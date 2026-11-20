@@ -8,8 +8,10 @@ area: web
 assigned_to: ai
 created_by: t@t
 branch: ""
+cli_override: claude code
+model_override: haiku
 created_at: "2026-11-20T05:07:07Z"
-updated_at: "2026-11-20T05:07:33Z"
+updated_at: "2026-11-20T05:07:45Z"
 ---
 ## Problem
 Sweep the Docs and Story detail pages for layout, long-text wrapping, link and wording bugs.
@@ -29,3 +31,4 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 
 - 2026-11-20T05:07:07Z · created · t@t
 - 2026-11-20T05:07:33Z · status inbox→ready
+- 2026-11-20T05:07:45Z · cli_override, model_override
