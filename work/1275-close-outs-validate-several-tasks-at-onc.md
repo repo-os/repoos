@@ -2,14 +2,14 @@
 id: "1275"
 title: "Close-outs: validate several tasks at once on different runner machines"
 type: feature
-status: inbox
+status: ready
 priority: p1
 area: [server, core]
-assigned_to: ""
+assigned_to: ai
 created_by: t@t
 branch: ""
 created_at: "2026-11-20T07:42:13Z"
-updated_at: "2026-11-20T07:42:13Z"
+updated_at: "2026-11-20T07:42:19Z"
 ---
 ## Problem
 The close-out queue runs one job at a time (queuePosition 0 validating, everything else queued) even when other runner machines (bee, mini) are idle. A full validation takes 20-25 minutes, so 11 queued tasks means about 4 hours, and one slow or failing job blocks all of them. Observed 2026-11-20: thinkpad ran #1258 for ~55 min while bee and mini had free slots and 10 green tasks waited.
@@ -30,3 +30,4 @@ Read docs/close-out-pipeline.md and docs/remote-validation.md first. Never touch
 ## Activity
 
 - 2026-11-20T07:42:13Z · created · t@t
+- 2026-11-20T07:42:19Z · status inbox→ready
