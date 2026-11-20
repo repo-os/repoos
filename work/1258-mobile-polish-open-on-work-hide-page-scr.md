@@ -11,7 +11,7 @@ branch: feat/mobile-polish-open-on-work-hide-page-scr
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T00:15:33Z"
-updated_at: "2026-11-20T08:06:54Z"
+updated_at: "2026-11-20T08:06:55Z"
 review_passes: 1
 ---
 ## Problem
