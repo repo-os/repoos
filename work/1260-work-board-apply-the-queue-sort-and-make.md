@@ -3,9 +3,6 @@ id: "1260"
 title: "Work board: apply the queue sort and make mobile-only status values visible"
 type: bug
 status: inbox
-needs_input: true
-needs_input_reason: underspecified
-needs_input_detail: "missing sections: Notes for AI"
 priority: p3
 area: web
 depends_on: ["1257"]
@@ -35,3 +32,4 @@ Headless Playwright only, against fixtures. Do not touch repoos.toml. Keep the i
 - 2026-11-20T00:57:33Z · created · t@t
 - 2026-11-20T00:57:34Z · needs_input
 - 2026-11-20T00:57:44Z · body: Notes for AI (added)
+- 2026-11-20T00:57:44Z · needs_input
