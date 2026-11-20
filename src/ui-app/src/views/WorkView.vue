@@ -38,11 +38,14 @@ import IntegrationStatusBar from "../components/IntegrationStatusBar.vue";
 import MobileWorkQueue from "../components/MobileWorkQueue.vue";
 import BoardQueueFilters from "../components/BoardQueueFilters.vue";
 import {
+  BOARD_STATUS_FILTER_IDS,
   clearWorkQueueFilterQuery,
   hasActiveWorkQueueFilters,
   ignoredWorkQueueFilterChips,
   matchesWorkQueueFilters,
   readWorkQueueFilters,
+  readWorkQueueSort,
+  sortWorkQueueTasks,
 } from "../lib/workQueueFilters";
 import {
   applyShotPreviewFixture,
@@ -53,8 +56,6 @@ import { SHOT_PREVIEW_FIXTURE_TASK_ID } from "../../../core/shot-fixtures.js";
 import type { Task } from "../types";
 
 const DRAFT_BAR = "#3a4055";
-
-const STATUS_IDS = new Set(["draft", "inbox", "ready", "active", "review", "done"]);
 
 const repo = useRepoStore();
 const ui = useUiStore();
@@ -86,7 +87,9 @@ const labeledColumns = computed(() => columnsWithLabels(columnLabels.value));
 
 const statusFilter = computed<string | null>(() => {
   const s = route.query.status;
-  return typeof s === "string" && STATUS_IDS.has(s) ? s : null;
+  return typeof s === "string" && (BOARD_STATUS_FILTER_IDS as readonly string[]).includes(s)
+    ? s
+    : null;
 });
 
 const filterCol = computed<Column | null>(() => {
@@ -301,23 +304,37 @@ const hiddenTaskIds = computed<ReadonlySet<string>>(() => {
 const queueFilters = computed(() => readWorkQueueFilters(route.query));
 const queueFiltersActive = computed(() => hasActiveWorkQueueFilters(queueFilters.value));
 const ignoredQueueFilters = computed(() => ignoredWorkQueueFilterChips(route.query));
-/** The bar shows for an applied filter or a URL value that was not applied. */
+/** The queue's sort (`sort=newest|oldest`), applied to every column. Absent, the
+ *  board keeps its own Sort control. */
+const boardQueueSort = computed(() => readWorkQueueSort(route.query));
+/** The bar shows for an applied filter or sort, or a URL value that was not applied. */
 const queueBarVisible = computed(
-  () => queueFiltersActive.value || ignoredQueueFilters.value.length > 0,
+  () =>
+    queueFiltersActive.value ||
+    boardQueueSort.value !== null ||
+    ignoredQueueFilters.value.length > 0,
 );
 function clearQueueFilters(): void {
   void router.replace({ query: clearWorkQueueFilterQuery(route.query) });
 }
+/** A URL sort overrides the Sort control, so picking a sort here drops the URL's. */
+function setBoardSortOrder(order: SortOrder): void {
+  repo.setSortOrder(order);
+  if (boardQueueSort.value) void router.replace({ query: { ...route.query, sort: undefined } });
+}
 
-/** The board's per-status task list with the queue filters and the hidden
- *  categories removed. */
+/** The board's per-status task list with the queue filters, the URL sort and the
+ *  hidden categories applied. */
 function visibleByStatus(status: string): Task[] {
   const filters = queueFilters.value;
   const tasks = repo.byStatus(status);
   const matching = queueFiltersActive.value
     ? tasks.filter((t) => matchesWorkQueueFilters(t, filters))
     : tasks;
-  return withoutHiddenTasks(matching, hiddenTaskIds.value);
+  const ordered = boardQueueSort.value
+    ? sortWorkQueueTasks(matching, boardQueueSort.value)
+    : matching;
+  return withoutHiddenTasks(ordered, hiddenTaskIds.value);
 }
 
 // ── #0290 Keyboard navigation over the board ─────────────────────────────
@@ -624,7 +641,7 @@ function openHeld(task: Task): void {
         <Select
           v-if="effectiveView === 'board'"
           :model-value="repo.sortOrder"
-          @update:model-value="(v) => repo.setSortOrder(v as SortOrder)"
+          @update:model-value="(v) => setBoardSortOrder(v as SortOrder)"
         >
           <SelectTrigger class="h-[34px] w-[210px] rounded-[9px] px-[11px]">
             <SelectValue />
@@ -685,6 +702,7 @@ function openHeld(task: Task): void {
     <BoardQueueFilters
       v-if="queueBarVisible"
       :filters="queueFilters"
+      :sort="boardQueueSort"
       :ignored="ignoredQueueFilters"
       :applied="effectiveView === 'board'"
       @clear="clearQueueFilters"

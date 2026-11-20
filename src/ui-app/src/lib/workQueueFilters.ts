@@ -6,6 +6,21 @@ import type { Task } from "../types";
  * these controls; the desktop board reads the same URL keys so a filter that
  * arrives from a phone or a shared link is applied and shown at every width.
  */
+
+/** Status columns the board filters by (`?status=`). Any other value is a
+ *  phone-only queue view (attention, held, archived, human, all) or not a
+ *  status at all, so the board shows it as an ignored notice. */
+export const BOARD_STATUS_FILTER_IDS = [
+  "draft",
+  "inbox",
+  "ready",
+  "active",
+  "review",
+  "done",
+] as const;
+
+/** The queue's sort, by last update. Absent `sort` leaves the board's own sort. */
+export type WorkQueueSort = "newest" | "oldest";
 export interface WorkQueueFilters {
   /** Raw search text; `#` and case are normalised when matching. */
   query: string;
@@ -50,6 +65,24 @@ export function readWorkQueueFilters(query: Record<string, unknown>): WorkQueueF
   };
 }
 
+/** The sort the URL asks for, or null when `sort` is absent or not a known value. */
+export function readWorkQueueSort(query: Record<string, unknown>): WorkQueueSort | null {
+  const sort = firstString(query.sort);
+  return sort === "newest" || sort === "oldest" ? sort : null;
+}
+
+/** Newest or oldest first by last update: the order the phone queue has always used. */
+export function sortWorkQueueTasks(tasks: Task[], order: WorkQueueSort): Task[] {
+  return [...tasks].sort((a, b) => {
+    const compared = (a.updated_at ?? "").localeCompare(b.updated_at ?? "");
+    return order === "newest" ? -compared : compared;
+  });
+}
+
+function isBoardStatus(value: string): boolean {
+  return (BOARD_STATUS_FILTER_IDS as readonly string[]).includes(value);
+}
+
 export function taskAreaNames(task: Task): string[] {
   return parseTaskAreas(task.areas?.length ? task.areas : task.area);
 }
@@ -92,10 +125,19 @@ export function hasActiveWorkQueueFilters(filters: WorkQueueFilters): boolean {
 }
 
 export interface WorkQueueFilterChip {
-  key: (typeof WORK_QUEUE_FILTER_KEYS)[number];
+  key: (typeof WORK_QUEUE_FILTER_KEYS)[number] | "status" | "sort";
   label: string;
   /** True for a URL value that was not applied. */
   ignored?: boolean;
+}
+
+/** A chip for the board's applied sort, so a sorted board never looks like the default. */
+export function workQueueSortChip(sort: WorkQueueSort | null): WorkQueueFilterChip | null {
+  if (!sort) return null;
+  return {
+    key: "sort",
+    label: sort === "oldest" ? "Sort: Oldest updated" : "Sort: Newest updated",
+  };
 }
 
 /** One chip per filter that is set, in the order the controls appear. */
@@ -117,9 +159,10 @@ export function workQueueFilterChips(filters: WorkQueueFilters): WorkQueueFilter
 }
 
 /**
- * Present URL values the reader cannot use: a priority that is not p0-p3, or a
- * `mine` other than `1`. They are not applied, so each one gets a notice chip
- * and Clear filters removes it, instead of the board silently ignoring it.
+ * Present URL values the reader cannot use: a priority that is not p0-p3, a
+ * `mine` other than `1`, a status that is not a board column, or a sort that is
+ * not newest/oldest. They are not applied, so each one gets a notice chip and
+ * Clear filters removes it, instead of the board silently ignoring it.
  */
 export function ignoredWorkQueueFilterChips(query: Record<string, unknown>): WorkQueueFilterChip[] {
   const chips: WorkQueueFilterChip[] = [];
@@ -136,17 +179,43 @@ export function ignoredWorkQueueFilterChips(query: Record<string, unknown>): Wor
       ignored: true,
     });
   }
+  const status = firstString(query.status);
+  if (isIgnoredStatus(status)) {
+    chips.push({
+      key: "status",
+      label: `Ignored filter: status=${status} (not a board column)`,
+      ignored: true,
+    });
+  }
+  const sort = firstString(query.sort);
+  if (sort && !readWorkQueueSort({ sort })) {
+    chips.push({
+      key: "sort",
+      label: `Ignored filter: sort=${sort} (only newest or oldest applies)`,
+      ignored: true,
+    });
+  }
   return chips;
 }
 
+/** A status the board cannot show as a column. A board column stays in the URL
+ *  and keeps its own filter bar, so Clear never removes it. */
+function isIgnoredStatus(status: string): boolean {
+  return status !== "" && !isBoardStatus(status);
+}
+
 /**
- * A copy of the route query with only the queue filter keys removed. Every
- * other entry, including null (bare `?key`) and repeated values, is kept as-is.
+ * A copy of the route query with the queue filter keys removed, plus the board's
+ * `sort` and any status the board ignores (those are shown in the same bar). A
+ * board status column, and every other entry, including null (bare `?key`) and
+ * repeated values, is kept as-is.
  */
 export function clearWorkQueueFilterQuery(query: Record<string, unknown>): Record<string, unknown> {
   const next: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(query)) {
     if ((WORK_QUEUE_FILTER_KEYS as readonly string[]).includes(key)) continue;
+    if (key === "sort") continue;
+    if (key === "status" && isIgnoredStatus(firstString(value))) continue;
     next[key] = value;
   }
   return next;
