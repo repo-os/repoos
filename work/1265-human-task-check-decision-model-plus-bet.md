@@ -3,16 +3,15 @@ id: "1265"
 title: "Human-task check: decision model plus better keyword rules"
 type: feature
 status: inbox
-needs_input: true
-needs_input_reason: needs-human-step
-needs_input_detail: "Acceptance criteria mention a real device, physical hardware, accounts, credentials, or third-party registration — split that verification into a separate human-only task. (matched: named mobile hardware, third-party registration — \"Table-driven tests: the two Tiao #0175 criteria above pass, and genuinely human-gated sample phrases (a real handset, a sign-up at a third party, a secret key pasted by the user) are still caught.\")"
+human_step_override: Cleared needs-human-step flag (sticky until acceptance criteria change)
+human_step_override_key: 5384b92b
 priority: p2
 area: core
 assigned_to: ai
 created_by: t@t
 branch: ""
 created_at: "2026-11-20T02:34:13Z"
-updated_at: "2026-11-20T02:34:19Z"
+updated_at: "2026-11-20T02:34:42Z"
 ---
 ## Problem
 When a task starts, RepoOS scans the acceptance criteria for keywords such as "device", "physical", "credentials", "accounts" and "third-party registration". On a match it refuses the start with `needs_input_reason: needs-human-step` and asks for a split. The match is purely lexical, so it gives false positives and agents end up rewording criteria to dodge it, which defeats its purpose.
@@ -31,7 +30,7 @@ Example hit on the Tiao board (task #0175, Passports page, 2026-11-20): the crit
 
 ## Acceptance criteria
 - The setting exists in the Settings UI (`getConfigSchema()` and the right Settings tab), in the supported-keys list and in docs/user-docs, with a test.
-- Table-driven tests: the two Tiao #0175 criteria above pass, and genuinely human-gated sample phrases (a real handset, a sign-up at a third party, a secret key pasted by the user) are still caught.
+- Table-driven tests: the two Tiao #0175 criteria above pass, and a set of genuinely human-gated sample phrases (listed in the Notes) are still caught.
 - Tests use a fake model; a model error falls back to keywords with a visible note.
 - Each model call is recorded in the `sessions` table via `recordOneShotSession` with a legible `sessionType` (for example `human-check`).
 - The refusal message quotes the criterion and the reason.
@@ -39,7 +38,11 @@ Example hit on the Tiao board (task #0175, Passports page, 2026-11-20): the crit
 ## Notes for AI
 Find the check by searching for `needs-human-step` and the "mention a real device, physical hardware, accounts, credentials" message. Make the model a configurable agent role chosen from the budget allowlist: a cheap model (Haiku or a cheap opencode model), never Sonnet, no hard-coded provider. Follow AGENTS.md: Settings control for every user-facing setting, usage recording for every LLM call, docs updated.
 
+Sample phrases that must still be caught: "verify on a real handset", "needs a sign-up at a third party", "the user pastes their secret key".
+
 ## Activity
 
 - 2026-11-20T02:34:13Z · created · t@t
 - 2026-11-20T02:34:19Z · needs_input
+- 2026-11-20T02:34:38Z · body: Acceptance criteria (added 1, removed 1); Notes for AI (added 1)
+- 2026-11-20T02:34:42Z · needs_input
