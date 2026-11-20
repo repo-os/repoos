@@ -12,7 +12,7 @@ branch: feat/qa-pass-stories-page-create-link-and-pro
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T23:27:29Z"
-updated_at: "2026-11-20T02:30:50Z"
+updated_at: "2026-11-20T02:32:11Z"
 last_close_out_gate_ms: 773409
 last_close_out_gate_at: "2026-11-20T02:30:50.382Z"
 review_passes: 1
@@ -52,4 +52,4 @@ Do not touch repoos.toml.
 - 2026-11-20T01:22:43Z · note: review pass 1: good to go
 - 2026-11-20T02:27:05Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-20T02:30:50Z · close-out gate completed in 773s
-
+- 2026-11-20T02:32:11Z · status done→done, release:success
