@@ -693,7 +693,7 @@ function openHeld(task: Task): void {
           :col="filterCol!"
           :bar-color="filterCol!.id === 'draft' ? DRAFT_BAR : ''"
           :tasks="visibleByStatus(filterCol!.id)"
-          empty-text="—"
+          :empty-text="filterCol!.id === 'draft' ? '—' : undefined"
           force-expand
           :drag-enabled="false"
           :highlight-id="boardKey.highlightId.value"
