@@ -6,7 +6,7 @@ Task #1242. Copy and error-state pass over the Android/iOS Hub picker and its ad
 
 The app was served with `bunx vite --port 5188` from `mobile/`. Playwright runs headless Chromium (`headless: true`). Every request the page makes goes through one route table. The fixture hosts (`ok.example.test`, `gone.example.test`, `page.example.test`, `dead.example.test`, `slow.example.test`) get canned replies, or no reply for the slow case. Any other host is aborted, and the sweep records each host it sees. For every address that the form should refuse before the network, the sweep asserts that no request was made.
 
-Four viewports were run: 360×800 and 412×915 (phone portrait), and 768×1024 and 1024×768 (tablet portrait and landscape), each at device scale factor 2. At each width the sweep covers the add-server form with 14 addresses and the rename sheet on a saved server.
+The #1242 pass ran four viewports: 360×800 and 412×915 (phone portrait), and 768×1024 and 1024×768 (tablet portrait and landscape), each at device scale factor 2. #1271 added 375×812 and 1280×800, so the script now runs six (see the #1271 section below). At each width the sweep covers the add-server form with 14 addresses and the rename sheet on a saved server.
 
 The sweep ran 340 checks, all passing. Each add case checks that the previous error cleared, the exact message, that the error is announced (`role="alert"`), that no element leaves the viewport, and that the error text fits its box. The refused-before-network cases also check that no request was made.
 
@@ -59,6 +59,16 @@ The rename sheet refuses a name already used by another saved server, and shows 
 ## Layout
 
 No element left the viewport and no error text overflowed its box at any of the four widths. This was measured in Chromium at the sizes above. The add form's error text and the rename sheet's error stayed in bounds. No layout CSS changed in this pass.
+
+## Second pass: #1271 (widths 375, 768, 1280)
+
+The sweep now runs six viewports, including the 375 phone and 1280 desktop widths. It passed 510 of 510 checks. The picker list was also walked in each state (many, one, empty, unreachable, add, discover, the rename sheet with a duplicate name, long unbroken URLs, and the busy discovery screen). Those walks were one-off scripts and are not committed. They measured document overflow, elements past the viewport edge, console errors, and whether each Tab-focused control shows a focus cue. They found no overflow and no missing cues.
+
+**The rename sheet trapped keyboard users outside it.** The sheet is a modal dialog. Opening it from the keyboard left focus on the row behind the scrim, and Escape did nothing. `mobile/src/components/BottomSheet.vue` now moves focus into the panel on open, keeps Tab and Shift+Tab inside it, closes on Escape, and returns focus to the control that opened it. The panel itself has no outline (`mobile/src/style.css`). Covered by `src/ui-app/tests/mobile-bottom-sheet-focus.test.ts`. The update dialog in `mobile/src/App.vue` is a dev-only `role="dialog"` with the same gap; it is not in the picker flow and is left for a follow-up.
+
+The 2px focus ring on the form fields (`.field input:focus`) is pinned by `src/ui-app/tests/mobile-hub-picker-layout.test.ts`.
+
+Not reached by fixtures: the reachability "Checking…" label. The `many` fixture sets every server to "Reachable" without a network call, so that label was not seen in a browser.
 
 ## Not covered
 
