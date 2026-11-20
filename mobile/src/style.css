@@ -817,6 +817,11 @@ select {
   z-index: 1;
 }
 
+/* The panel takes focus on open so Escape and Tab work; it is a container, not a control. */
+.sheet-panel:focus {
+  outline: none;
+}
+
 .sheet-head {
   display: flex;
   align-items: center;
