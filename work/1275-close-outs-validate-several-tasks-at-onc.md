@@ -11,7 +11,7 @@ branch: feat/close-outs-validate-several-tasks-at-onc
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T07:42:13Z"
-updated_at: "2026-11-20T08:02:38Z"
+updated_at: "2026-11-20T08:05:34Z"
 ---
 ## Problem
 The close-out queue runs one job at a time (queuePosition 0 validating, everything else queued) even when other runner machines (bee, mini) are idle. A full validation takes 20-25 minutes, so 11 queued tasks means about 4 hours, and one slow or failing job blocks all of them. Observed 2026-11-20: thinkpad ran #1258 for ~55 min while bee and mini had free slots and 10 green tasks waited.
@@ -38,3 +38,4 @@ Read docs/close-out-pipeline.md and docs/remote-validation.md first. Never touch
 - 2026-11-20T08:02:31Z · message_queued at 2026-11-20T08:02:31.538Z
 - 2026-11-20T08:02:31Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-20T08:02:38Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-20T08:05:34Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
