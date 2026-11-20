@@ -2,7 +2,7 @@
 id: "1274"
 title: "QA pass: Agents page model providers and routing status copy"
 type: feature
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -37,3 +37,4 @@ Keep changes small. Never touch repoos.toml. Never show real keys.
 - 2026-11-20T07:37:17Z · body
 - 2026-11-20T07:40:42Z · CTO nudge: held — handoff gate is running
 - 2026-11-20T07:41:43Z · note: ui verification passed: 1 shot captured with clean console
+- 2026-11-20T07:41:43Z · status active→review
