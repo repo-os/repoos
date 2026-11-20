@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-20T01:13:20.950Z: repoos check failed: tests — Test Files 1 failed | 163 passed (164)"
 id: "1256"
 title: "QA pass: remote runners page add, test and remove flows with failures"
 type: bug
@@ -50,3 +52,4 @@ Do not touch repoos.toml.
 - 2026-11-20T01:08:36Z · orphaned run process stopped · pid 39397 · sleep 60 · cpu 0s · age 11s
 - 2026-11-20T01:13:17Z · message_queued at 2026-11-20T01:13:17.851Z
 - 2026-11-20T01:13:20Z · message_delivered: 1 message(s)
+
