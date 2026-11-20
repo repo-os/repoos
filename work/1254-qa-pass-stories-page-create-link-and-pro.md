@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-20T01:22:43Z"
+review_passes: 1
 id: "1254"
 title: "QA pass: Stories page create, link and progress flows at all screen sizes"
 type: bug
@@ -11,7 +13,6 @@ branch: feat/qa-pass-stories-page-create-link-and-pro
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T23:27:29Z"
-updated_at: "2026-11-20T01:22:43Z"
 ---
 ## Problem
 Creating a story, linking tasks to it and reading its progress have not been exercised end to end with edge cases.
@@ -46,3 +47,4 @@ Do not touch repoos.toml.
 - 2026-11-20T01:18:23Z · status active→review
 - 2026-11-20T01:18:25Z · message_queued at 2026-11-20T01:18:25.892Z
 - 2026-11-20T01:22:43Z · note: review pass 1: good to go
+
