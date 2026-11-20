@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/close-out-validation-log-should-show-liv
 created_at: "2026-11-20T07:42:21Z"
-updated_at: "2026-11-20T20:53:22Z"
+updated_at: "2026-11-20T20:55:12Z"
 review_passes: 3
 review_failed_report_retries: 0
 review_rounds: 2
@@ -29,6 +29,19 @@ The running attempt streams its check progress to a log and to the integration-j
 
 ## Notes for AI
 Related: #1272 (timer should count from validation start). Never touch repoos.toml.
+
+## Shots
+```json
+[
+{
+  "label": "Close-out drawer with live step, host, and attempt",
+  "target": "default",
+  "route": "/work?task=9999&tab=changes",
+  "highlight": "[data-task-id=\"9999\"]",
+  "state": "drawer:closeOutRemoteTests"
+}
+]
+```
 
 ## Activity
 
@@ -100,3 +113,4 @@ Related: #1272 (timer should count from validation start). Never touch repoos.to
 - 2026-11-20T20:07:11Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-20T20:07:15Z · message_delivered: 1 message(s)
 - 2026-11-20T20:53:22Z · body
+- 2026-11-20T20:55:12Z · body
