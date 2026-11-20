@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-20T12:49:08.292Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 id: "1260"
 title: "Work board: apply the queue sort and make mobile-only status values visible"
 type: bug
@@ -97,3 +99,4 @@ Headless Playwright only, against fixtures. Do not touch repoos.toml. Keep the i
 - 2026-11-20T12:01:29Z · body
 - 2026-11-20T12:03:33Z · CTO nudge: held — handoff gate is running
 - 2026-11-20T12:49:04Z · message_queued at 2026-11-20T12:49:04.511Z
+
