@@ -2,7 +2,7 @@
 id: "1263"
 title: "QA pass: Settings general, agents and budget tabs"
 type: feature
-status: review
+status: active
 priority: p2
 area: web
 assigned_to: ai
