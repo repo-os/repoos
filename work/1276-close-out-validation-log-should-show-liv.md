@@ -63,3 +63,4 @@ Related: #1272 (timer should count from validation start). Never touch repoos.to
 - 2026-11-20T11:20:49Z · handoff_deferred: 2 queued message(s) must be read before review
 - 2026-11-20T11:20:50Z · message_queued at 2026-11-20T11:20:50.639Z
 - 2026-11-20T11:20:51Z · ↻ resuming engineer to read queued message
+- 2026-11-20T11:20:51Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: Now the full scoped gate on the round-2 tree, run in the background since it takes about 20 minutes. · stderr: (empty)
