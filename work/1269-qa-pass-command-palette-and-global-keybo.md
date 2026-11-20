@@ -11,7 +11,7 @@ branch: feat/qa-pass-command-palette-and-global-keybo
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T05:08:53Z"
-updated_at: "2026-11-20T05:42:36Z"
+updated_at: "2026-11-20T05:43:27Z"
 ---
 ## Problem
 Sweep the command palette and keyboard shortcuts for focus, wording, mobile and screen-reader bugs.
@@ -36,3 +36,4 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 - 2026-11-20T05:42:27Z · message_queued at 2026-11-20T05:42:27.781Z
 - 2026-11-20T05:42:27Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-20T05:42:36Z · body
+- 2026-11-20T05:43:27Z · CTO nudge: held — an undelivered message is already queued
