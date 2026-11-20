@@ -1763,7 +1763,10 @@ onUnmounted(() => {
                         :disabled="config.saving"
                         @update:model-value="(v) => (form[f.key] = v)"
                       >
-                        <SelectTrigger class="h-[34px] w-[200px] rounded-[9px] px-[11px]">
+                        <SelectTrigger
+                          :aria-label="f.label"
+                          class="h-[34px] w-[200px] rounded-[9px] px-[11px]"
+                        >
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent position="popper">
@@ -1775,6 +1778,7 @@ onUnmounted(() => {
                         </SelectContent>
                       </Select>
                       <Switch
+                        :aria-label="f.label"
                         v-else-if="f.type === 'boolean'"
                         :checked="!!form[f.key]"
                         :disabled="config.saving"
@@ -1814,6 +1818,7 @@ onUnmounted(() => {
                         }}</span>
                       </span>
                       <Input
+                        :aria-label="f.label"
                         v-else-if="f.type === 'number'"
                         :model-value="form[f.key] == null ? '' : String(form[f.key])"
                         type="number"
@@ -1827,6 +1832,7 @@ onUnmounted(() => {
                         "
                       />
                       <Input
+                        :aria-label="f.label"
                         v-else-if="f.type === 'string'"
                         :model-value="String(form[f.key] ?? '')"
                         type="text"
@@ -1834,6 +1840,7 @@ onUnmounted(() => {
                         @update:model-value="(v) => (form[f.key] = v)"
                       />
                       <Input
+                        :aria-label="f.label"
                         v-else-if="f.type === 'array'"
                         :model-value="String(form[f.key] ?? '')"
                         type="text"
@@ -2002,7 +2009,10 @@ onUnmounted(() => {
                         :disabled="config.saving"
                         @update:model-value="(v) => (form[f.key] = v)"
                       >
-                        <SelectTrigger class="h-[34px] w-[200px] rounded-[9px] px-[11px]">
+                        <SelectTrigger
+                          :aria-label="f.label"
+                          class="h-[34px] w-[200px] rounded-[9px] px-[11px]"
+                        >
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent position="popper">
@@ -2014,12 +2024,14 @@ onUnmounted(() => {
                         </SelectContent>
                       </Select>
                       <Switch
+                        :aria-label="f.label"
                         v-else-if="f.type === 'boolean'"
                         :checked="!!form[f.key]"
                         :disabled="config.saving"
                         @update:checked="(v: boolean) => (form[f.key] = v)"
                       />
                       <Input
+                        :aria-label="f.label"
                         v-else-if="f.type === 'string' || f.type === 'array'"
                         :model-value="
                           Array.isArray(form[f.key])
@@ -2066,7 +2078,11 @@ onUnmounted(() => {
                     </div>
                   </div>
                   <div class="setting-input">
-                    <Switch :checked="ui.glideAnimations" @update:checked="ui.setGlideAnimations" />
+                    <Switch
+                      aria-label="Glide animations"
+                      :checked="ui.glideAnimations"
+                      @update:checked="ui.setGlideAnimations"
+                    />
                   </div>
                 </div>
                 <div class="setting-row">
@@ -2082,6 +2098,7 @@ onUnmounted(() => {
                   </div>
                   <div class="setting-input">
                     <Switch
+                      aria-label="Keyboard navigation"
                       :checked="ui.keyboardNavEnabled"
                       @update:checked="ui.setKeyboardNavEnabled"
                     />
@@ -2116,6 +2133,7 @@ onUnmounted(() => {
                     </div>
                     <div class="setting-input">
                       <Switch
+                        aria-label="Enable ntfy notifications"
                         :checked="!!form.ntfyEnabled"
                         :disabled="config.saving"
                         @update:checked="(v: boolean) => (form.ntfyEnabled = v)"
@@ -2207,6 +2225,7 @@ onUnmounted(() => {
                 </div>
                 <div class="setting-input">
                   <Switch
+                    aria-label="Telegram bot"
                     :checked="!!form['telegram.enabled']"
                     :disabled="config.saving"
                     @update:checked="(v: boolean) => (form['telegram.enabled'] = v)"
@@ -2268,6 +2287,7 @@ onUnmounted(() => {
                 </div>
                 <div class="setting-input">
                   <Switch
+                    aria-label="Sound notifications"
                     :checked="notifications.soundEnabled"
                     @update:checked="notifications.setSoundEnabled"
                   />
@@ -2284,6 +2304,7 @@ onUnmounted(() => {
                 </div>
                 <div class="setting-input">
                   <Switch
+                    aria-label="Push notifications"
                     :checked="notifications.pushEnabled"
                     @update:checked="notifications.setPushEnabled"
                   />
@@ -2345,6 +2366,7 @@ onUnmounted(() => {
                 </div>
                 <div class="setting-input">
                   <Switch
+                    :aria-label="NOTIFICATION_TYPE_LABELS[t]"
                     :checked="notifications.types[t]"
                     @update:checked="notifications.setTypeEnabled(t, $event)"
                   />
@@ -2376,6 +2398,7 @@ onUnmounted(() => {
                 <span class="restart-badge" aria-label="Restart required">restart required</span>
                 <div class="setting-input">
                   <Switch
+                    aria-label="Authentication"
                     :checked="!!form['auth.enabled']"
                     :disabled="config.saving"
                     @update:checked="(v: boolean) => (form['auth.enabled'] = v)"
@@ -2431,7 +2454,10 @@ onUnmounted(() => {
                     :disabled="config.saving"
                     @update:model-value="(v) => (form[f.key] = v)"
                   >
-                    <SelectTrigger class="h-[34px] w-[200px] rounded-[9px] px-[11px]">
+                    <SelectTrigger
+                      :aria-label="f.label"
+                      class="h-[34px] w-[200px] rounded-[9px] px-[11px]"
+                    >
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent position="popper">
@@ -2443,6 +2469,7 @@ onUnmounted(() => {
                     </SelectContent>
                   </Select>
                   <Input
+                    :aria-label="f.label"
                     v-else-if="f.type === 'string'"
                     :model-value="String(form[f.key] ?? '')"
                     type="password"
@@ -2491,12 +2518,14 @@ onUnmounted(() => {
                 >
                 <div :data-config-key="f.key" class="setting-input">
                   <Input
+                    :aria-label="f.label"
                     v-if="f.type === 'string'"
                     :model-value="String(form[f.key])"
                     type="text"
                     @update:model-value="(v) => (form[f.key] = v)"
                   />
                   <Input
+                    :aria-label="f.label"
                     v-else-if="f.type === 'array'"
                     :model-value="String(form[f.key])"
                     type="text"
@@ -2529,6 +2558,7 @@ onUnmounted(() => {
                     }}</span>
                   </span>
                   <Input
+                    :aria-label="f.label"
                     v-else-if="f.type === 'number'"
                     :model-value="form[f.key] == null ? '' : String(form[f.key])"
                     type="number"
@@ -2537,6 +2567,7 @@ onUnmounted(() => {
                     @update:model-value="(v) => (form[f.key] = v === '' ? f.default : Number(v))"
                   />
                   <Switch
+                    :aria-label="f.label"
                     v-else-if="f.type === 'boolean'"
                     :checked="!!form[f.key]"
                     :disabled="config.saving"

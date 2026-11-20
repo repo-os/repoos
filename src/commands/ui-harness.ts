@@ -63,6 +63,8 @@ export interface SmokePage {
   close(): Promise<void>;
   goto(url: string, options: { waitUntil: string; timeout: number }): Promise<unknown>;
   title(): Promise<string>;
+  /** Makes this page the window that receives keyboard input. */
+  bringToFront(): Promise<void>;
   /**
    * Run `fn` in the page. Playwright serializes the function itself, so `fn`
    * must be self-contained (no module-scope references) — that is exactly how
