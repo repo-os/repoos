@@ -472,7 +472,7 @@ const RESULT_ICON: Record<string, string> = {
           </article>
           <p v-for="(queued, index) in localSlotQueue" :key="queued.taskId" class="ck-queue-row">
             Queue {{ index + 1 }} · #{{ queued.taskId }} · position {{ queued.position }} · waiting
-            {{ fmtDuration(Date.now() - Date.parse(queued.since)) }}
+            {{ fmtDuration(Math.max(0, Date.now() - Date.parse(queued.since))) }}
           </p>
           <p v-if="slotActionNotice" class="ck-slot-notice" role="status">
             {{ slotActionNotice }}
@@ -760,6 +760,14 @@ const RESULT_ICON: Record<string, string> = {
   margin: 0;
   color: var(--txt-dim);
   font-size: 12px;
+}
+/* The paragraph rule above is a class plus an element; these two outrank it so
+   a failed load and an action result keep their red and green. */
+.ck-local-slots > .ck-err {
+  color: var(--red);
+}
+.ck-local-slots > .ck-slot-notice {
+  color: var(--green);
 }
 .ck-local-slot,
 .ck-queue-row {

@@ -414,4 +414,48 @@ describe("Checks page QA at 375/768/1280 (WebKit, fixtures)", () => {
     expect(wrapper.text()).toContain("No recorded runs yet");
     wrapper.unmount();
   });
+
+  /* ── 5. Status colours survive the panel's paragraph rule ──────────────── */
+
+  it.each(VIEWPORTS)(
+    "slot errors and notices keep red and green at %spx (computed style)",
+    async (width) => {
+      const wrapper = await mountChecks("now", { "/api/local-check-slots": "fail" });
+      const markup = wrapper.html();
+      const page = await openFixturePage("now-slot-error", markup, scopedStyles(markup), width);
+      // Compare against resolved token swatches, not hex literals, so a theme
+      // change cannot make the assertion lie. Probes copy the component's scope
+      // attribute so the scoped rules apply to them as they do in the page.
+      const colours = await page.evaluate(() => {
+        const panel = document.querySelector<HTMLElement>(".ck-local-slots")!;
+        const alert = panel.querySelector<HTMLElement>('[role="alert"]')!;
+        const token = (value: string) => {
+          const swatch = document.createElement("span");
+          swatch.style.color = `var(${value})`;
+          document.body.append(swatch);
+          const resolved = getComputedStyle(swatch).color;
+          swatch.remove();
+          return resolved;
+        };
+        const notice = document.createElement("p");
+        notice.className = "ck-slot-notice";
+        for (const attr of alert.getAttributeNames()) {
+          if (attr.startsWith("data-v-")) notice.setAttribute(attr, "");
+        }
+        panel.append(notice);
+        const noticeColour = getComputedStyle(notice).color;
+        notice.remove();
+        return {
+          alert: getComputedStyle(alert).color,
+          red: token("--red"),
+          notice: noticeColour,
+          green: token("--green"),
+        };
+      });
+      expect(colours.alert, `slot load error is not red at ${width}px`).toBe(colours.red);
+      expect(colours.notice, `slot notice is not green at ${width}px`).toBe(colours.green);
+      await page.close();
+      wrapper.unmount();
+    },
+  );
 });
