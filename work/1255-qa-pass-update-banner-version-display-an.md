@@ -12,7 +12,7 @@ branch: feat/qa-pass-update-banner-version-display-an
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T23:27:47Z"
-updated_at: "2026-11-20T03:13:52Z"
+updated_at: "2026-11-20T03:16:41Z"
 last_close_out_gate_ms: 1399876
 last_close_out_gate_at: "2026-11-20T03:13:52.600Z"
 review_passes: 5
@@ -119,4 +119,4 @@ Do not touch repoos.toml.
 - 2026-11-20T02:11:45Z · note: review pass 5: good to go
 - 2026-11-20T03:09:27Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-20T03:13:52Z · close-out gate completed in 1400s
-
+- 2026-11-20T03:16:41Z · status done→done, release:success
