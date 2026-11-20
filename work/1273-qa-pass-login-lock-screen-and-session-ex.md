@@ -11,7 +11,7 @@ branch: feat/qa-pass-login-lock-screen-and-session-ex
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T07:06:52Z"
-updated_at: "2026-11-20T08:43:36Z"
+updated_at: "2026-11-20T08:46:47Z"
 ---
 ## Problem
 Sweep sign-in, lock screen and session-expiry flows (code entry, errors, expired session, offline) for layout, wording and state bugs.
@@ -75,3 +75,4 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser. Never
 - 2026-11-20T08:27:32Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-20T08:27:34Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-20T08:43:36Z · body
+- 2026-11-20T08:46:47Z · CTO nudge: held — handoff gate is running
