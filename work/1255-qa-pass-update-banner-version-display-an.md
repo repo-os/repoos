@@ -11,7 +11,7 @@ branch: feat/qa-pass-update-banner-version-display-an
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T23:27:47Z"
-updated_at: "2026-11-20T02:02:51Z"
+updated_at: "2026-11-20T02:02:52Z"
 review_passes: 4
 review_rounds: 2
 ---
@@ -108,3 +108,4 @@ Do not touch repoos.toml.
 - 2026-11-20T02:02:50Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The draft is written. Before I hand off, I'll correct one sentence that claims more than I observed. I saw a live `claude -p` process from another task, but I don't know it held the lock. Then I'll check the word count against the 1,200-wo… · stderr: (empty)
 - 2026-11-20T02:02:51Z · status active→review
 - 2026-11-20T02:02:51Z · message_delivered: 2 message(s)
+- 2026-11-20T02:02:52Z · note: handoff requested (cli)
