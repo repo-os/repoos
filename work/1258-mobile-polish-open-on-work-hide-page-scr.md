@@ -2,7 +2,7 @@
 id: "1258"
 title: "Mobile polish: open on Work, hide page scrollbar, even-height header row"
 type: bug
-status: review
+status: active
 priority: p2
 area: [web, mobile]
 assigned_to: ai
@@ -11,8 +11,13 @@ branch: feat/mobile-polish-open-on-work-hide-page-scr
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T00:15:33Z"
-updated_at: "2026-11-20T01:40:38Z"
-review_passes: 1
+updated_at: "2026-11-20T14:18:34Z"
+last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
+last_handoff_failure_sha: bedc3455e991267a2057dbbd535a6d9f46966f62
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-20T09:49:11.145Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Work is the home page; header row controls share one height (target \"default\"): loading state detected: loading indicator [aria-busy=\"true\"] on /work (http://127.0.0.1:34337/work)"
+review_rounds: 2
+review_passes: 3
 ---
 ## Problem
 On a phone (seen on the Android Hub app, Mission Control page):
@@ -39,7 +44,13 @@ Screenshot attached shows the current mobile header and Mission Control. Do not 
 "label": "Work is the home page; header row controls share one height",
 "target": "default",
 "route": "/work",
-"highlight": ".topbar"
+"highlight": ".topbar",
+"steps": [
+{
+"waitMs": 3000
+}
+],
+"state": "board:withReviewTask"
 }
 ]
 ```
@@ -62,3 +73,57 @@ Screenshot attached shows the current mobile header and Mission Control. Do not 
 - 2026-11-20T00:36:59Z · message_queued at 2026-11-20T00:36:59.082Z
 - 2026-11-20T00:39:21Z · note: review pass 1: good to go
 - 2026-11-20T01:40:38Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-20T08:06:53Z · status review→active
+- 2026-11-20T08:06:58Z · message_queued at 2026-11-20T08:06:58.117Z
+- 2026-11-20T08:10:05Z · message_delivered: 1 message(s)
+- 2026-11-20T08:12:31Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-20T08:22:19Z · queued message undelivered for 15m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-20T08:22:21Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: The #1258 implementation was already on the branch and the review passed, so this session only verified it and prepared the handoff. The scoped check is still running in the background, so I have not emitted the handoff signal yet. **What … · stderr: (empty)
+- 2026-11-20T08:22:23Z · note: handoff requested (cli)
+- 2026-11-20T08:22:31Z · CTO nudge: held — handoff gate is running
+- 2026-11-20T08:26:31Z · message_delivered: 1 message(s)
+- 2026-11-20T08:27:29Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: I've stopped short of the handoff. The two target tests and the other header tests pass, but the change isn't ready to hand off. **What I fixed** - `src/core/shot-targets.ts`: added `/control` to `APP_ROUTE_PREFIXES`. It's the route that M… · stderr: (empty)
+- 2026-11-20T08:27:29Z · status active→review
+- 2026-11-20T08:34:52Z · message_queued at 2026-11-20T08:34:52.007Z
+- 2026-11-20T08:34:52Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: tests/mobile-touch-affordances.test.ts > mobile web polish (#1139) > gives top-bar controls a 44px touch target and keeps the project name visible, tests/mobile-touch-affordances.test.ts > mobile web polish (#1139) > turns search into a compact accessible icon button on phones, tests/shot-target-support-0866.test.ts > app target resolution (#0866) > keeps APP_ROUTE_PREFIXES in sync with the UI router on mini — fix it in the feature branch and re-run the gate
+- 2026-11-20T08:34:53Z · note: review pass 2: needs some work
+- 2026-11-20T08:34:53Z · message_delivered: 1 message(s)
+- 2026-11-20T08:34:54Z · status review→active
+- 2026-11-20T08:46:47Z · CTO nudge: held — handoff gate is running
+- 2026-11-20T08:54:35Z · handoff failed · remote validation failed: test failure: tests/live-reconnect-qa-browser.test.ts > Control dashboard live recovery at 375/768/1280 (WebKit, fixtures) > reconnects, catches up, and clears the pill at 375px without a reload, tests/live-reconnect-qa-browser.test.ts > Control dashboard live recovery at 375/768/1280 (WebKit, fixtures) > reconnects, catches up, and clears the pill at 768px without a reload, tests/live-reconnect-qa-browser.test.ts > Control dashboard live recovery at 375/768/1280 (WebKit, fixtures) > reconnects, catches up, and clears the pill at 1280px without a reload on mini — fix it in the feature branch and re-run the gate
+- 2026-11-20T08:54:36Z · message_queued at 2026-11-20T08:54:36.589Z
+- 2026-11-20T08:57:31Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-20T08:57:39Z · watchdog: restarting engineer because a queued message waited 3m with no live process
+- 2026-11-20T08:57:40Z · message_delivered: 1 message(s)
+- 2026-11-20T09:26:28Z · body
+- 2026-11-20T09:29:36Z · status active→review
+- 2026-11-20T09:49:07Z · note: ui verification failed: ui verification failed (1 issue(s)): [missing-target] Work is the home page; header row controls share one height (target "default"): loading state detected: loading indicator [aria-busy="true"] on /work (http://127.0.0.1:34337/work)
+- 2026-11-20T09:49:07Z · message_queued at 2026-11-20T09:49:07.962Z
+- 2026-11-20T09:49:08Z · note: review pass 3: needs some work
+- 2026-11-20T09:49:09Z · status review→active
+- 2026-11-20T09:49:10Z · message_queued at 2026-11-20T09:49:10.963Z
+- 2026-11-20T09:49:12Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-20T09:54:15Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — task-file handoff failed at check · remote validation failed: test failure: tests/mobile-touch-affordances.test.ts > mobile web polish (#1139) > gives top-bar controls a 44px touch target and keeps the project name visible, tests/mobile-touch-affordances.test.ts > mobile web polish (#1139) > turns search into a compact accessible icon button on phones, tests/shot-target-support-0866.test.ts > app target resolution (#0866) > keeps APP_ROUTE_PREFIXES in sync with the UI router on mini — fix it in the feature branch and re-run the gate · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-11-20T09:54:17Z · note: handoff requested (cli)
+- 2026-11-20T09:57:36Z · CTO nudge: held — handoff gate is running
+- 2026-11-20T10:24:18Z · message_queued at 2026-11-20T10:24:18.808Z
+- 2026-11-20T10:24:19Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
+- 2026-11-20T10:27:36Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-20T10:48:13Z · message_delivered: 1 message(s)
+- 2026-11-20T10:49:26Z · body
+- 2026-11-20T11:07:05Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-20T11:58:32Z · CTO nudge: held — handoff gate is running
+- 2026-11-20T11:59:02Z · handoff_deferred: 2 queued message(s) must be read before review
+- 2026-11-20T11:59:03Z · message_queued at 2026-11-20T11:59:03.349Z
+- 2026-11-20T11:59:04Z · ↻ resuming engineer to read queued message
+- 2026-11-20T11:59:05Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The last scoped check did fail (`1 check(s) failed`, exit 1). Its failures are the same unrelated load-timeout set I listed in my last report, so the verdict stands as I described it: not green locally. Load has dropped to about 20 since t… · stderr: (empty)
+- 2026-11-20T11:59:06Z · message_delivered: 3 message(s)
+- 2026-11-20T11:59:49Z · body
+- 2026-11-20T12:18:14Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: I'm not emitting the handoff signal this time. The check still fails, and one failure reproduces in isolation with no link to my change. **Addressed** - **Queued messages read.** The deferred handoff is about reading these, and they're now… · stderr: (empty)
+- 2026-11-20T12:23:39Z · CTO action: restart-stalled-agent (resume) · agent crashed or was interrupted mid-turn — task-file handoff failed at check · remote validation failed: test failure: tests/mobile-touch-affordances.test.ts > mobile web polish (#1139) > gives top-bar controls a 44px touch target and keeps the project name visible, tests/mobile-touch-affordances.test.ts > mobile web polish (#1139) > turns search into a compact accessible icon button on phones, tests/shot-target-support-0866.test.ts > app target resolution (#0866) > keeps APP_ROUTE_PREFIXES in sync with the UI router on mini — fix it in the feature branch and re-run the gate
+- 2026-11-20T13:03:33Z · CTO nudge: held — machine under pressure (CPU idle is 0% (below 5%) — holding new work until the machine has idle CPU)
+- 2026-11-20T13:09:14Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: I'm not handing off yet. The scoped gate is still red, and I don't think my change is the cause, but I haven't proven that. **Gate results (`repoos check --changed main`):** - **Run 1:** `tests` failed on two tests, `debugger-integration.t… · stderr: (empty)
+- 2026-11-20T13:18:37Z · CTO action: restart-stalled-agent (resume) · agent crashed or was interrupted mid-turn — task-file handoff failed at check · remote validation failed: test failure: tests/mobile-touch-affordances.test.ts > mobile web polish (#1139) > gives top-bar controls a 44px touch target and keeps the project name visible, tests/mobile-touch-affordances.test.ts > mobile web polish (#1139) > turns search into a compact accessible icon button on phones, tests/shot-target-support-0866.test.ts > app target resolution (#0866) > keeps APP_ROUTE_PREFIXES in sync with the UI router on mini — fix it in the feature branch and re-run the gate
+- 2026-11-20T13:40:27Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The scoped check is not green, so I have not handed off and I'm not emitting the handoff-ready signal. The expired monitor is irrelevant now; the check had already finished. **Blocker: `repoos check --changed main` fails on the `tests` ste… · stderr: (empty)
+- 2026-11-20T13:48:40Z · CTO action: restart-stalled-agent (fresh) · agent crashed or was interrupted mid-turn — task-file handoff failed at check · remote validation failed: test failure: tests/mobile-touch-affordances.test.ts > mobile web polish (#1139) > gives top-bar controls a 44px touch target and keeps the project name visible, tests/mobile-touch-affordances.test.ts > mobile web polish (#1139) > turns search into a compact accessible icon button on phones, tests/shot-target-support-0866.test.ts > app target resolution (#0866) > keeps APP_ROUTE_PREFIXES in sync with the UI router on mini — fix it in the feature branch and re-run the gate
+- 2026-11-20T14:18:34Z · CTO nudge: held — machine under pressure (CPU idle is 0% (below 5%) — holding new work until the machine has idle CPU)
