@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-11-20T01:35:44Z"
-review_passes: 2
+last_close_out_gate_ms: 823357
+last_close_out_gate_at: "2026-11-20T02:46:47.659Z"
 id: "1256"
 title: "QA pass: remote runners page add, test and remove flows with failures"
 type: bug
@@ -13,6 +13,8 @@ branch: feat/qa-pass-remote-runners-page-add-test-and
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T00:07:05Z"
+updated_at: "2026-11-20T02:46:47Z"
+review_passes: 2
 last_check_failure: "repoos check at 2026-11-20T01:13:20.950Z: repoos check failed: tests — Test Files 1 failed | 163 passed (164)"
 review_rounds: 1
 ---
@@ -58,4 +60,5 @@ Do not touch repoos.toml.
 - 2026-11-20T01:34:19Z · status active→review
 - 2026-11-20T01:34:20Z · message_queued at 2026-11-20T01:34:20.011Z
 - 2026-11-20T01:35:43Z · note: review pass 2: good to go
+- 2026-11-20T02:46:47Z · close-out gate completed in 823s
 
