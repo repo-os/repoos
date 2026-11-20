@@ -16,6 +16,7 @@ handoff_signal_retry_count: 2
 review_rounds: 1
 review_passes: 1
 review_failed_report_retries: 0
+deferred_handoff_resume_count: 1
 ---
 ## Problem
 The new desktop board search (#1259) sits on its own row below the page title, takes a lot of width, and shows a redundant 'Search: web' chip under it while typing.
