@@ -2,16 +2,16 @@
 id: "1269"
 title: "QA pass: command palette and global keyboard shortcuts"
 type: feature
-status: ready
+status: active
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
-branch: ""
+branch: feat/qa-pass-command-palette-and-global-keybo
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T05:08:53Z"
-updated_at: "2026-11-20T05:09:31Z"
+updated_at: "2026-11-20T05:09:38Z"
 ---
 ## Problem
 Sweep the command palette and keyboard shortcuts for focus, wording, mobile and screen-reader bugs.
@@ -32,3 +32,4 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 - 2026-11-20T05:08:53Z · created · t@t
 - 2026-11-20T05:09:22Z · status inbox→ready
 - 2026-11-20T05:09:31Z · cli_override, model_override
+- 2026-11-20T05:09:38Z · status ready→active, branch
