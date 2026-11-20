@@ -40,3 +40,4 @@ Headless Playwright only, against fixtures. Do not touch repoos.toml. Reuse the 
 - 2026-11-20T04:20:09Z · body
 - 2026-11-20T04:42:22Z · CTO nudge: held — handoff gate is running
 - 2026-11-20T04:56:21Z · handoff failed · remote validation failed: test failure: tests/agent-review.test.ts > agent review before human sign-off (#0101) > routes reviewer chat to its own session and serves the conversation on mini — fix it in the feature branch and re-run the gate
+- 2026-11-20T04:56:21Z · message_queued at 2026-11-20T04:56:21.715Z
