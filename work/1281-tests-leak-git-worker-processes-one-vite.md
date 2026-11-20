@@ -11,7 +11,7 @@ branch: feat/tests-leak-git-worker-processes-one-vite
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T11:47:41Z"
-updated_at: "2026-11-20T19:49:31Z"
+updated_at: "2026-11-20T19:50:49Z"
 review_failed_report_retries: 2
 ---
 ## Problem
@@ -76,3 +76,4 @@ Reproduce with bun run test on a scoped path while watching ps for git-worker-en
 - 2026-11-20T16:06:23Z · needs_input
 - 2026-11-20T17:06:15Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-20T19:49:31Z · needs_input (review-failed) cleared for review again by hello@repoos.org
+- 2026-11-20T19:50:49Z · note: review pass 4: needs some work
