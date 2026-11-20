@@ -17,7 +17,6 @@ last_handoff_failure_sha: f4e6a04ec83ffe923a2a8afb52f1db6ef9ae75bf
 handoff_signal_retry_count: 2
 close_out_repair_count: 1
 review_passes: 1
-deferred_handoff_resume_count: 1
 ---
 ## Problem
 Sweep the project switcher and server picker (add, switch, offline and error states) for layout, wording and state bugs.
