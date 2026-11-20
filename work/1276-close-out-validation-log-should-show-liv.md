@@ -2,7 +2,7 @@
 id: "1276"
 title: Close-out validation log should show live progress
 type: feature
-status: active
+status: review
 priority: p1
 area: [server, core]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/close-out-validation-log-should-show-liv
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T07:42:21Z"
-updated_at: "2026-11-20T13:18:52Z"
+updated_at: "2026-11-20T13:18:54Z"
 handoff_signal_retry_count: 2
 review_rounds: 1
 review_passes: 1
@@ -67,3 +67,4 @@ Related: #1272 (timer should count from validation start). Never touch repoos.to
 - 2026-11-20T12:54:42Z · body
 - 2026-11-20T12:58:33Z · CTO nudge: held — handoff gate is running
 - 2026-11-20T13:18:52Z · note: ui verification passed: 1 shot captured with clean console
+- 2026-11-20T13:18:54Z · status active→review
