@@ -12,7 +12,7 @@ branch: feat/qa-pass-checks-page-and-check-history-vi
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T02:26:53Z"
-updated_at: "2026-11-20T09:31:20Z"
+updated_at: "2026-11-20T09:33:06Z"
 last_close_out_gate_ms: 997601
 last_close_out_gate_at: "2026-11-20T09:31:20.791Z"
 review_passes: 3
@@ -109,4 +109,4 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 - 2026-11-20T06:03:55Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-20T06:08:15Z · note: review pass 3: good to go
 - 2026-11-20T09:31:20Z · close-out gate completed in 998s
-
+- 2026-11-20T09:33:06Z · status done→done, release:success
