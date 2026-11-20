@@ -1,4 +1,6 @@
 ---
+last_close_out_gate_ms: 914232
+last_close_out_gate_at: "2026-11-20T14:50:31.915Z"
 id: "1273"
 title: "QA pass: login, lock screen and session expiry flows"
 type: feature
@@ -11,7 +13,7 @@ branch: feat/qa-pass-login-lock-screen-and-session-ex
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T07:06:52Z"
-updated_at: "2026-11-20T14:28:34Z"
+updated_at: "2026-11-20T14:50:31Z"
 review_passes: 1
 handoff_signal_retry_count: 2
 last_check_failure: "repoos check at 2026-11-20T09:15:23.483Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
@@ -116,3 +118,5 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser. Never
 - 2026-11-20T13:26:39Z · message_queued at 2026-11-20T13:26:39.030Z
 - 2026-11-20T13:29:20Z · note: review pass 1: good to go
 - 2026-11-20T14:28:34Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-20T14:50:31Z · close-out gate completed in 914s
+
