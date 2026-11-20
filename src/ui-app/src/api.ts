@@ -103,7 +103,10 @@ export async function api<T = unknown>(path: string, opts?: ApiRequestInit): Pro
   }
 }
 
-export const JSON_OPTS = (method: "POST" | "PATCH" | "PUT", body: unknown): RequestInit => ({
+export const JSON_OPTS = (
+  method: "POST" | "PATCH" | "PUT" | "DELETE",
+  body: unknown,
+): RequestInit => ({
   method,
   headers: { "Content-Type": "application/json" },
   body: JSON.stringify(body),

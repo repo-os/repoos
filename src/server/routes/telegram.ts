@@ -64,8 +64,8 @@ function requireTelegramEnabled(ctx: { config: RepoOSConfig }, res: ServerRespon
   if (ctx.config.telegram?.enabled === true) return true;
   json(res, 400, {
     error:
-      "the Telegram integration is disabled — enable it in Settings (or set [telegram] " +
-      "enabled = true in repoos.toml); no Telegram surface is active while it is off",
+      "Telegram is off for this repository. Turn on the Telegram bot in Settings → " +
+      "Notifications, then try again.",
   });
   return false;
 }

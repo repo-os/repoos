@@ -60,6 +60,7 @@ import { useNow } from "../composables/useNow";
 import { isHoldActive, taskIsHeld } from "../../../core/task-selection.js";
 import { splitAgentFailureDetail } from "../../../core/agent-failure.js";
 import { Clock3 } from "lucide-vue-next";
+import ConfirmDialog from "./ConfirmDialog.vue";
 
 const holdNow = useNow();
 const props = withDefaults(
@@ -932,14 +933,15 @@ const stalledCheck = computed(() => {
   return hint.cls === "tc-stuck" && hint.label.startsWith("check stalled");
 });
 const cancelCheckBusy = ref(false);
+/** Whether the cancel dialog is open (replaces native confirm()). */
+const cancelCheckConfirmOpen = ref(false);
+function askCancelStalledCheck(): void {
+  if (cancelCheckBusy.value || !stalledCheck.value) return;
+  cancelCheckConfirmOpen.value = true;
+}
 async function cancelStalledCheck(): Promise<void> {
   if (cancelCheckBusy.value || !stalledCheck.value) return;
-  if (
-    !window.confirm(
-      `Cancel the stalled check for task #${props.task.id}? RepoOS will verify it has stopped before allowing a restart.`,
-    )
-  )
-    return;
+  cancelCheckConfirmOpen.value = false;
   cancelCheckBusy.value = true;
   try {
     await repo.cancelStalledCheck(props.task.id);
@@ -2038,7 +2040,7 @@ async function openDebuggerFromError(): Promise<void> {
         class="tc-card-footer-action flex w-full items-center justify-center gap-2 border-t px-4 py-[9px] font-mono text-xs font-semibold text-[var(--warning)] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--border-bright)]"
         :disabled="cancelCheckBusy || busy"
         title="Explicitly cancel this stalled check; RepoOS verifies process exit before enabling pause or restart."
-        @click.stop="cancelStalledCheck"
+        @click.stop="askCancelStalledCheck"
       >
         {{ cancelCheckBusy ? "Cancelling check…" : "Cancel stalled check" }}
       </button>
@@ -2132,6 +2134,15 @@ async function openDebuggerFromError(): Promise<void> {
         Acknowledge
       </button>
     </div>
+    <ConfirmDialog
+      :open="cancelCheckConfirmOpen"
+      :title="`Cancel the stalled check for task #${task.id}?`"
+      confirm-label="Cancel check"
+      @update:open="(v) => (cancelCheckConfirmOpen = v)"
+      @confirm="cancelStalledCheck"
+    >
+      RepoOS will verify it has stopped before allowing a restart.
+    </ConfirmDialog>
   </article>
 
   <RestartTaskDialog

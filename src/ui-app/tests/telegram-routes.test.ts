@@ -565,7 +565,9 @@ describe("test message", () => {
     const { res, fake } = makeRes();
     await telegramTestMessage(ctx(h.config), makeReq({ chatId: BOUND_CHAT_ID }), res, {});
     expect(fake.status).toBe(400);
-    expect((fake.payload as { error: string }).error).toMatch(/integration is disabled/);
+    expect((fake.payload as { error: string }).error).toMatch(
+      /Telegram is off for this repository/,
+    );
   });
 });
 
@@ -581,7 +583,9 @@ describe("the enabled gate", () => {
     const connect = makeRes();
     await telegramConnect(ctx(h.config), makeReq({ token: TOKEN }), connect.res, {});
     expect(connect.fake.status).toBe(400);
-    expect((connect.fake.payload as { error: string }).error).toMatch(/integration is disabled/);
+    expect((connect.fake.payload as { error: string }).error).toMatch(
+      /Telegram is off for this repository/,
+    );
     expect(connect.fake.raw).not.toContain(TOKEN);
 
     const profile = makeRes();
@@ -684,7 +688,9 @@ describe("transport off stays available while disabled (round 3)", () => {
     const arm = makeRes();
     await telegramTransport(ctx(h.config), makeReq({ mode: "polling" }), arm.res, {});
     expect(arm.fake.status).toBe(400);
-    expect((arm.fake.payload as { error: string }).error).toMatch(/integration is disabled/);
+    expect((arm.fake.payload as { error: string }).error).toMatch(
+      /Telegram is off for this repository/,
+    );
   });
 });
 
