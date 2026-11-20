@@ -2,7 +2,7 @@
 id: "1269"
 title: "QA pass: command palette and global keyboard shortcuts"
 type: feature
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/qa-pass-command-palette-and-global-keybo
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T05:08:53Z"
-updated_at: "2026-11-20T06:01:57Z"
+updated_at: "2026-11-20T06:01:58Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -76,3 +76,4 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 - 2026-11-20T05:57:09Z · body
 - 2026-11-20T05:59:45Z · CTO nudge: held — handoff gate is running
 - 2026-11-20T06:01:57Z · note: ui verification passed: 1 of 1 shot captured with clean console
+- 2026-11-20T06:01:58Z · status active→review
