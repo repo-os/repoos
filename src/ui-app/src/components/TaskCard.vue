@@ -27,7 +27,7 @@ import HotfixBadge from "./HotfixBadge.vue";
 import { confirmDependencyOverride } from "../lib/task-dependencies";
 import DependencyChip from "./DependencyChip.vue";
 import { resolveEffectiveAgent } from "../lib/effective-agent";
-import { closeOutAttemptStartedAt, isStaleDoneError } from "../lib/closeOutAttempt";
+import { closeOutFailureCutoff, isStaleDoneError } from "../lib/closeOutAttempt";
 import {
   integrationActiveCopy,
   integrationProgressCardLabel,
@@ -1346,8 +1346,8 @@ const cardDoneError = computed(() => {
 
 const doneErrorStale = computed(() => {
   if (!inPipeline.value || !cardDoneError.value) return false;
-  const startedAt = closeOutAttemptStartedAt(props.task.id, repo.integration);
-  return isStaleDoneError(cardDoneError.value.failedAt, startedAt);
+  const cutoff = closeOutFailureCutoff(props.task.id, repo.integration);
+  return isStaleDoneError(cardDoneError.value.failedAt, cutoff);
 });
 
 const FIX_DISABLED_WHILE_CLOSE_OUT =
