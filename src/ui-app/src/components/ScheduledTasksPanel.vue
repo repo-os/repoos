@@ -372,6 +372,7 @@ onMounted(() => {
             </span>
           </div>
           <Switch
+            :aria-label="`Enable schedule ${row.title}`"
             :data-testid="`schedule-enabled-${row.id}`"
             :checked="row.enabled"
             @update:checked="(v) => toggleEnabled(row, v)"

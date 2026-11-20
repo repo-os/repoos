@@ -79,9 +79,18 @@ function badgeLabel(): string | null {
         <Button variant="ghost" size="sm" class="agent-remove" @click="emit('remove')">
           Remove
         </Button>
-        <Switch :checked="agent.enabled" @update:checked="(v) => (agent.enabled = v)" />
+        <Switch
+          :aria-label="`Enable ${agent.name}`"
+          :checked="agent.enabled"
+          @update:checked="(v) => (agent.enabled = v)"
+        />
       </div>
-      <Switch v-else :checked="agent.enabled" @update:checked="(v) => (agent.enabled = v)" />
+      <Switch
+        :aria-label="`Enable ${agent.name}`"
+        v-else
+        :checked="agent.enabled"
+        @update:checked="(v) => (agent.enabled = v)"
+      />
     </div>
     <div class="agent-body">
       <div class="agent-field">

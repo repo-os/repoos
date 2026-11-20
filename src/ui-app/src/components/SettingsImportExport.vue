@@ -277,6 +277,7 @@ async function applyImport(): Promise<void> {
           </div>
           <div class="setting-input">
             <Switch
+              :aria-label="s.label"
               :checked="!!selection[s.id]"
               :disabled="!config.loaded"
               @update:checked="(v: boolean) => (selection[s.id] = v)"
