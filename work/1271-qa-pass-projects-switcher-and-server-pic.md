@@ -1,5 +1,4 @@
 ---
-handoff_signal_retry_count: 1
 id: "1271"
 title: "QA pass: Projects switcher and server picker flows"
 type: feature
@@ -12,7 +11,8 @@ branch: feat/qa-pass-projects-switcher-and-server-pic
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T06:07:22Z"
-updated_at: "2026-11-20T09:50:16Z"
+updated_at: "2026-11-20T09:55:33Z"
+handoff_signal_retry_count: 1
 close_out_repair_count: 1
 review_passes: 1
 ---
@@ -47,4 +47,4 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 - 2026-11-20T09:44:54Z · note: close-out repair: gate-failure
 - 2026-11-20T09:45:01Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-20T09:50:16Z · message_queued at 2026-11-20T09:50:16.108Z
-
+- 2026-11-20T09:55:33Z · message_queued at 2026-11-20T09:55:33.178Z
