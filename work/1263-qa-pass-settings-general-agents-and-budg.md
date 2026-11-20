@@ -11,7 +11,7 @@ branch: feat/qa-pass-settings-general-agents-and-budg
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T02:27:07Z"
-updated_at: "2026-11-20T06:46:35Z"
+updated_at: "2026-11-20T06:46:48Z"
 review_passes: 3
 review_rounds: 2
 ---
@@ -96,3 +96,4 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 - 2026-11-20T06:46:30Z · status review→active
 - 2026-11-20T06:46:34Z · message_delivered: 1 message(s)
 - 2026-11-20T06:46:35Z · message_queued at 2026-11-20T06:46:35.398Z
+- 2026-11-20T06:46:48Z · CTO nudge: held — an undelivered message is already queued
