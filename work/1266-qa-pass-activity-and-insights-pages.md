@@ -2,7 +2,7 @@
 id: "1266"
 title: "QA pass: Activity and Insights pages"
 type: feature
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -36,3 +36,4 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 - 2026-11-20T03:31:54Z · body
 - 2026-11-20T03:36:09Z · CTO nudge: held — handoff gate is running
 - 2026-11-20T03:54:43Z · orphaned run process stopped · pid 83792 · /opt/homebrew/Cellar/bun/1.4.2/bin/bun /Users/nick/code/nick/repoos-worktrees/feat/qa-pass-activity- · cpu 1s · age 20s
+- 2026-11-20T03:54:43Z · status active→review
