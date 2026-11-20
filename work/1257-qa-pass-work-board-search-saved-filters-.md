@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-20T01:41:38Z"
+review_passes: 2
 id: "1257"
 title: "QA pass: Work board search, saved filters and sort persistence across reloads"
 type: bug
@@ -11,11 +13,9 @@ branch: feat/qa-pass-work-board-search-saved-filters-
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T00:07:29Z"
-updated_at: "2026-11-20T01:41:37Z"
 last_check_failure: "repoos check at 2026-11-20T01:32:09.378Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Pipeline with filter chip bar and the not-applied note (target \"default\"): highlight .board-queue-filter-note matched nothing on /work?tab=pipeline&q=login (http://127.0.0.1:45181/work?tab=pipeline&q=login)"
 handoff_signal_retry_count: 1
 review_rounds: 1
-review_passes: 1
 ---
 ## Problem
 Search text, filters and sort on the Work board may not persist or reset correctly across reloads, tabs and projects.
@@ -77,3 +77,4 @@ Do not touch repoos.toml.
 - 2026-11-20T01:40:37Z · status active→review
 - 2026-11-20T01:40:38Z · message_queued at 2026-11-20T01:40:38.890Z
 - 2026-11-20T01:41:37Z · note: review pass 2: needs some work
+
