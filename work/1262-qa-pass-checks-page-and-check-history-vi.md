@@ -13,7 +13,6 @@ model_override: haiku
 created_at: "2026-11-20T02:26:53Z"
 updated_at: "2026-11-20T04:08:19Z"
 handoff_signal_retry_count: 2
-check_retry_count: 2
 last_check_failure: "repoos check at 2026-11-20T03:19:36.092Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 ---
 ## Problem
@@ -77,3 +76,4 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 - 2026-11-20T03:52:53Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The scoped check failed again, and this time on a different Settings element. The rendered-contrast audit has now failed on two different Settings descriptions across three runs and passed on one re-run, with nothing changed in between. My… · stderr: (empty)
 - 2026-11-20T04:02:31Z · body
 - 2026-11-20T04:08:19Z · CTO nudge: held — handoff gate is running
+
