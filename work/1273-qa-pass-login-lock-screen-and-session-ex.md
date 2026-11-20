@@ -2,7 +2,7 @@
 id: "1273"
 title: "QA pass: login, lock screen and session expiry flows"
 type: feature
-status: review
+status: active
 priority: p2
 area: web
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/qa-pass-login-lock-screen-and-session-ex
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T07:06:52Z"
-updated_at: "2026-11-20T10:53:20Z"
+updated_at: "2026-11-20T10:53:21Z"
 handoff_signal_retry_count: 2
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-20T09:15:23.483Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
