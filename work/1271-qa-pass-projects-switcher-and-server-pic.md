@@ -11,7 +11,7 @@ branch: feat/qa-pass-projects-switcher-and-server-pic
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T06:07:22Z"
-updated_at: "2026-11-20T11:38:30Z"
+updated_at: "2026-11-20T11:57:17Z"
 last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
 last_handoff_failure_sha: f4e6a04ec83ffe923a2a8afb52f1db6ef9ae75bf
 handoff_signal_retry_count: 2
@@ -68,3 +68,4 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 - 2026-11-20T11:20:58Z · message_delivered: 4 message(s)
 - 2026-11-20T11:25:23Z · body
 - 2026-11-20T11:38:30Z · CTO nudge: held — handoff gate is running
+- 2026-11-20T11:57:17Z · message_queued at 2026-11-20T11:57:17.969Z
