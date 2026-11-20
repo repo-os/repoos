@@ -3,16 +3,15 @@ id: "1279"
 title: "Easter eggs bundle: rename review history column to Issues"
 type: feature
 status: ready
-needs_input: true
-needs_input_reason: needs-human-step
-needs_input_detail: "Acceptance criteria mention a real device, physical hardware, accounts, credentials, or third-party registration — split that verification into a separate human-only task. (matched: named mobile hardware — \"Board card top line uses the plain task number as in the pipeline card, and stays on one line at phone, tablet and desktop widths, including long ids and p1 badges;\")"
+human_step_override: Cleared needs-human-step flag (sticky until acceptance criteria change)
+human_step_override_key: 8dbfd6ac
 priority: p3
 area: web
 assigned_to: ai
 created_by: t@t
 branch: ""
 created_at: "2026-11-20T10:35:33Z"
-updated_at: "2026-11-20T10:46:24Z"
+updated_at: "2026-11-20T10:46:25Z"
 ---
 ## Problem
 The review pass history table in the task drawer has a column headed 'finding classes', which means little to a reader. It is useful as a quick view of what is wrong when a pass is not good to go.
@@ -48,3 +47,4 @@ Copy change only. Never touch repoos.toml. Headless Playwright only.
 - 2026-11-20T10:45:58Z · screenshots
 - 2026-11-20T10:46:10Z · screenshots
 - 2026-11-20T10:46:24Z · body: Acceptance criteria (added 1, removed 1)
+- 2026-11-20T10:46:25Z · needs_input
