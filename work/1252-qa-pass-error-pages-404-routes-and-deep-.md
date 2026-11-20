@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 1077226
-last_close_out_gate_at: "2026-11-20T01:04:28.427Z"
 id: "1252"
 title: "QA pass: error pages, 404 routes and deep links to tasks, tabs and settings"
 type: bug
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: c5c12bc8bad5028fbd92f2eb4e15efcd2fe69b4f
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-error-pages-404-routes-and-deep-
@@ -14,6 +13,8 @@ cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T22:27:09Z"
 updated_at: "2026-11-20T01:04:28Z"
+last_close_out_gate_ms: 1077226
+last_close_out_gate_at: "2026-11-20T01:04:28.427Z"
 review_passes: 1
 ---
 ## Problem
