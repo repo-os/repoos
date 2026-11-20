@@ -15,7 +15,6 @@ updated_at: "2026-11-20T11:40:20Z"
 handoff_signal_retry_count: 2
 review_rounds: 1
 review_passes: 1
-deferred_handoff_resume_count: 1
 ---
 ## Problem
 During a close-out the integration log (.repoos/logs/integration/<id>-<n>.log) is not written for the running attempt: #1258's log was last modified hours earlier while its job had been validating for ~55 minutes. Drivers and the UI cannot tell whether a close-out is running, waiting for a host slot, retrying after a timeout, or stuck. The card timer also appears to count from an earlier start.
