@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 617916
-last_close_out_gate_at: "2026-11-20T15:32:48.858Z"
 id: "1271"
 title: "QA pass: Projects switcher and server picker flows"
 type: feature
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: a7ac08bcb5552b42cda69b239d17f19d22b349ec
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-projects-switcher-and-server-pic
@@ -14,6 +13,8 @@ cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T06:07:22Z"
 updated_at: "2026-11-20T15:32:48Z"
+last_close_out_gate_ms: 617916
+last_close_out_gate_at: "2026-11-20T15:32:48.858Z"
 last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (appeared: mobile/src/App.vue, mobile/src/components/BottomSheet.vue, mobile/src/style.css, mobile/src/components/DevUpdateDialog.vue, mobile/src/modal-focus.ts, src/ui-app/tests/mobile-update-dialog-focus.test.ts) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 last_handoff_failure_sha: f9ff295b43cac150ac1de4268f97155c4992d986
 review_rounds: 1

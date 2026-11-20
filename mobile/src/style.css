@@ -767,6 +767,9 @@ select {
 .field input:focus {
   outline: none;
   border-color: var(--ring, var(--primary, var(--cyan)));
+  /* The outline is removed, so a 1px border colour shift is the only cue.
+     A second 1px ring makes the focused field a clear 2px edge. */
+  box-shadow: 0 0 0 1px var(--ring, var(--primary, var(--cyan)));
 }
 
 .form-error {
@@ -812,6 +815,11 @@ select {
   padding: 0 16px calc(env(safe-area-inset-bottom, 0px) + 16px);
   box-shadow: var(--drawer-shadow, 0 -8px 32px var(--overlay-bg));
   z-index: 1;
+}
+
+/* The panel takes focus on open so Escape and Tab work; it is a container, not a control. */
+.sheet-panel:focus {
+  outline: none;
 }
 
 .sheet-head {
@@ -891,6 +899,11 @@ select {
   padding: 24px;
   background: rgb(0 0 0 / 56%);
 }
+/* Focus lands on the dialog container on open; it is not a control. */
+.update-dialog:focus {
+  outline: none;
+}
+
 .update-dialog {
   width: min(100%, 420px);
   padding: 24px;

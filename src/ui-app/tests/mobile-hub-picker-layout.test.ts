@@ -50,4 +50,12 @@ describe("mobile hub server picker at phone width", () => {
       expect(ruleBody(selector)).toContain("overflow-wrap: anywhere");
     },
   );
+
+  // A field that drops its outline must still show a focus cue beyond a 1px
+  // border colour shift (QA #1271 measured only the border change).
+  it.each([".field input:focus"])("%s keeps a 2px focus ring without an outline", (selector) => {
+    const body = ruleBody(selector);
+    expect(body).toContain("outline: none");
+    expect(body).toMatch(/box-shadow: 0 0 0 1px var\(--ring/);
+  });
 });
