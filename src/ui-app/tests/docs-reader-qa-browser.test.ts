@@ -84,7 +84,11 @@ const DOCS: DocMeta[] = [
     mtimeMs: 0,
   },
   { path: "docs/plain/notes.txt", title: "Plain notes", mtimeMs: 0 },
-  { path: "docs/adr/0001-a-decision-with-a-deliberately-long-file-name.md", title: "ADR", mtimeMs: 0 },
+  {
+    path: "docs/adr/0001-a-decision-with-a-deliberately-long-file-name.md",
+    title: "ADR",
+    mtimeMs: 0,
+  },
 ];
 
 const LONG_URL = `https://example.com/${"path-segment/".repeat(12)}end?query=${"q".repeat(90)}`;
@@ -208,11 +212,7 @@ describe.skipIf(!existsSync(webkit.executablePath()))(
       await browser?.close();
     });
 
-    async function openFixturePage(
-      label: string,
-      markup: string,
-      width: number,
-    ): Promise<Page> {
+    async function openFixturePage(label: string, markup: string, width: number): Promise<Page> {
       const page = await browser.newPage({ viewport: { width, height: 900 } });
       await page.setViewportSize({ width, height: 900 });
       await page.setContent(
