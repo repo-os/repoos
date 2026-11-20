@@ -11,7 +11,7 @@ branch: feat/tests-leak-git-worker-processes-one-vite
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T11:47:41Z"
-updated_at: "2026-11-20T15:35:55Z"
+updated_at: "2026-11-20T15:36:15Z"
 ---
 ## Problem
 On 2026-11-20 around 19:45 local, a single scoped vitest run in the #1258 engineer worktree had about 48 live src/server/git-worker-entry.ts processes (each several minutes old) plus its vitest workers, and the machine load average reached about 130 on 10 cores. This looks like a test, or the code it exercises, starting git worker processes and not shutting them down.
@@ -46,3 +46,4 @@ Reproduce with bun run test on a scoped path while watching ps for git-worker-en
 - 2026-11-20T15:35:54Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-20T15:35:54Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: The CTO check-in is right: this task has been idle too long. My earlier scoped check was killed partway through the tests (312 of 821 done), with no failure reported, so I restarted it detached at `/tmp/1281-check2.log`. The handoff stays … · stderr: (empty)
 - 2026-11-20T15:35:55Z · message_delivered: 1 message(s)
+- 2026-11-20T15:36:15Z · message_queued at 2026-11-20T15:36:15.254Z
