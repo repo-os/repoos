@@ -11,8 +11,7 @@ branch: feat/easter-eggs-bundle-document-queueing-clo
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T05:43:15Z"
-updated_at: "2026-11-20T07:07:02Z"
-review_passes: 1
+updated_at: "2026-11-20T05:48:07Z"
 ---
 ## Problem
 Drivers (and agents) land green review tasks one at a time, waiting for each to finish before clicking Move to done on the next. The close-out pipeline already has a queued phase and publishes under a lock, so queueing every green task at once keeps the pipeline busy and lands more work sooner. This is not written down as guidance, so it keeps getting done the slow way.
@@ -35,9 +34,4 @@ Docs-only. Never touch repoos.toml. Observed 2026-11-20: six close-outs queued t
 - 2026-11-20T05:43:23Z · status inbox→ready
 - 2026-11-20T05:43:29Z · cli_override, model_override
 - 2026-11-20T05:43:31Z · status ready→active, branch
-- 2026-11-20T05:46:28Z · CTO nudge: held — handoff gate is running
-- 2026-11-20T05:48:08Z · status active→review
-- 2026-11-20T05:48:09Z · message_queued at 2026-11-20T05:48:09.477Z
-- 2026-11-20T05:48:10Z · note: shots: skipped — the diff (5 changed paths) touches no capture target's globs — no UI change to capture
-- 2026-11-20T05:49:03Z · note: review pass 1: good to go
-- 2026-11-20T07:07:02Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-20T05:48:07Z · status active→review

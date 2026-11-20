@@ -258,3 +258,15 @@ engineer's first lines are Codex connection errors on resume, restart it with
 `--fresh` before anything else. Separately: pinning a model with
 `repoos override` stops crash recovery from switching engines, so a usage-limit
 crash loop on a pinned task just stops (3/3 crashes) until a driver acts.
+
+## 2026-11-20 — queue every green close-out at once; don't wait between them
+
+Best practice: once the human has approved a set of tasks, queue each one that
+`repoos landable <id>` reports as ready to merge, back to back with
+`repoos done <id>`. Don't wait for one close-out to finish before queueing the
+next. Each task becomes its own integration job, and the queue runs them in
+order. Observed: six close-outs queued together showed `queuePosition` 0..5 and
+ran in order. The machine's load, not click timing, sets the pace. A failed job
+drops out of the queue and the others keep going: fix it on the branch or retry
+it, then queue it again. The full procedure is in
+[Queueing several close-outs](close-out-pipeline.md#queueing-several-close-outs).
