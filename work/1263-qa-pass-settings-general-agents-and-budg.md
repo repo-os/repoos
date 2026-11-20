@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-20T04:13:46Z"
-review_passes: 3
 id: "1263"
 title: "QA pass: Settings general, agents and budget tabs"
 type: feature
@@ -13,6 +11,8 @@ branch: feat/qa-pass-settings-general-agents-and-budg
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T02:27:07Z"
+updated_at: "2026-11-20T04:13:57Z"
+review_passes: 3
 review_rounds: 2
 ---
 ## Problem
@@ -89,4 +89,4 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 - 2026-11-20T04:13:42Z · note: ui verification failed (2 issue(s)): [missing-target] Settings General with every setting control named (target "default"): loading state detected: loading indicator [aria-busy="true"] on /settings?tab=general (http://127.0.0.1:63011/settings?tab=general); [missing-target] Agents Budget Controls tab with named controls (target "default"): loading state detected: loading indicator [aria-busy="true"] on /agents?tab=budget-controls (http://127.0.0.1:63011/agents?tab=budget-controls)
 - 2026-11-20T04:13:43Z · handoff failed · task-file handoff failed at verify · ui verification failed (2 issue(s)): [missing-target] Settings General with every setting control named (target "default"): loading state detected: loading indicator [aria-busy="true"] on /settings?tab=general (http://127.0.0.1:63011/settings?tab=general); [missing-target] Agents Budget Controls tab with named controls (target "default"): loading state detected: loading indicator [aria-busy="true"] on /agents?tab=budget-controls (http://127.0.0.1:63011/agents?tab=budget-controls)
 - 2026-11-20T04:13:45Z · note: review pass 3: good to go
-
+- 2026-11-20T04:13:57Z · orphaned run process stopped · pid 61702 · /opt/homebrew/Cellar/bun/1.4.2/bin/bun /Users/nick/code/nick/repoos-worktrees/feat/qa-pass-settings- · cpu 1s · age 42s
