@@ -54,3 +54,4 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 - 2026-11-20T05:47:17Z · body
 - 2026-11-20T05:47:27Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-20T05:47:27Z · message_queued at 2026-11-20T05:47:27.350Z
+- 2026-11-20T05:47:27Z · ↻ resuming engineer to read queued message
