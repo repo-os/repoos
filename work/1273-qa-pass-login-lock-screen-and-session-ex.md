@@ -99,3 +99,4 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser. Never
 - 2026-11-20T11:08:29Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-20T11:20:49Z · message_delivered: 3 message(s)
 - 2026-11-20T11:20:58Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-20T11:20:58Z · message_queued at 2026-11-20T11:20:58.958Z
