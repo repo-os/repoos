@@ -371,7 +371,7 @@ onUnmounted(() => {
               >
             </template>
             <template v-else
-              ><p class="release-update-muted" role="status">
+              ><p class="release-update-muted release-update-status" role="status">
                 Restart is waiting for agents, reviews and checks to finish.
               </p>
               <Button

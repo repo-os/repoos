@@ -59,18 +59,23 @@ navigation; release notes render with markers; no uncaught page errors.
    and checks to finish." rendered as a bare span at dialog body size in both
    the supervised and hand-run layouts. It is now a muted paragraph on its own
    row, like the failure alert. The harness checks that its computed size is
-   12 px. Test: `gives the waiting line the muted size on its own row, and keeps
-   list bullets (#1255)`.
+   12 px. The supervised waiting line also carries the row class, so it no
+   longer shares a row with Cancel. Test: `gives the waiting line the muted size
+   on its own row (#1255)`, which requires the class on both the supervised and
+   hand-run lines.
 4. **Markdown bullets had no markers.** Preflight sets every list to
    `list-style: none`, so each markdown surface lost its markers while keeping
    its indent. One shared rule in `style.css` now restores disc and decimal
    markers on every rendered-markdown container: `md-rendered` (story bodies,
    review reports, context and inputs), `pm-markdown`, `cto-markdown`,
-   `debugger-markdown`, `playground-markdown` and `release-update-markdown`. The
-   playground also gets the same 17 px list indent as the others, because it had
-   none. Test: `src/ui-app/tests/markdown-list-markers.test.ts`, which checks
-   each surface in a table and the playground indent. The release-notes
-   harness check verifies the computed `list-style-type` at every width.
+   `debugger-markdown`, `td-markdown` (task debugger chat), `guide-markdown`
+   (repo guide chat), `playground-markdown` and `release-update-markdown`. The
+   The guard test scans every `v-html` `renderMarkdown()`/`renderChatMarkdown()` call
+   in `src/ui-app/src`, so a new surface without a rule fails the test. Test:
+   `src/ui-app/tests/markdown-list-markers.test.ts`. The playground also gets
+   the same 17 px list indent as the others, because it had none. The
+   release-notes harness check verifies the computed `list-style-type` at every
+   width.
 5. **The restart failure fixture had no command to run.** The fixture omitted
    `restartCommand`, so its alert read "Run in a terminal." The real status
    route always sends the command, so this was a fixture defect. The fixture now

@@ -840,9 +840,11 @@ describe("feature releases", () => {
     expect(releaseUpdateNotificationSource).toMatch(
       /<p\s+v-if="restartStatus\.restartWhenIdlePending"\s+class="release-update-muted release-update-status"\s+role="status"/,
     );
-    expect(releaseUpdateNotificationSource).toMatch(
-      /class="release-update-muted release-update-status"\s+role="status"/,
+    // Supervised (inside Cancel's row) and hand-run (manual block) both render the line.
+    const waitingLines = releaseUpdateNotificationSource.match(
+      /class="release-update-muted release-update-status"\s+role="status"/g,
     );
+    expect(waitingLines).toHaveLength(2);
     expect(releaseUpdateNotificationSource).toMatch(
       /\.release-update-status\s*\{[^}]*flex:\s*1 0 100%/s,
     );

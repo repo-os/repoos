@@ -1,22 +1,38 @@
 import { describe, expect, it } from "vitest";
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { readdirSync, readFileSync, statSync } from "node:fs";
+import { join, resolve } from "node:path";
 import playgroundSource from "../src/components/ModelPlaygroundPanel.vue?raw";
 
+const SRC_DIR = resolve(__dirname, "../src");
+
+/** Every .vue file under src/ui-app/src, recursively. */
+function vueFiles(dir: string): string[] {
+  return readdirSync(dir).flatMap((name) => {
+    const path = join(dir, name);
+    if (statSync(path).isDirectory()) return vueFiles(path);
+    return name.endsWith(".vue") ? [path] : [];
+  });
+}
+
 /**
- * Every surface that renders markdown through renderMarkdown() or
- * renderChatMarkdown(). Preflight sets `list-style: none` on all lists, so each
- * surface needs its markers restored by the shared rule in style.css (#1255
- * review). Add a new markdown container here when you add one.
+ * Every element whose `v-html` renders markdown directly, with its `class`.
+ * Preflight sets `list-style: none` on all lists, so each container class needs
+ * its markers restored by the shared rule in style.css. Scanning the source
+ * means a new surface fails here until it is added to that rule (#1255 review).
  */
-const MARKDOWN_SURFACES = [
-  "md-rendered",
-  "pm-markdown",
-  "cto-markdown",
-  "debugger-markdown",
-  "playground-markdown",
-  "release-update-markdown",
-];
+function markdownSurfaces(): Map<string, string[]> {
+  const surfaces = new Map<string, string[]>();
+  const site = /<([a-z][\w-]*)\b([^>]*?)v-html="render(?:Chat)?Markdown\(/g;
+  for (const file of vueFiles(SRC_DIR)) {
+    const source = readFileSync(file, "utf8");
+    for (const match of source.matchAll(site)) {
+      const classAttr = match[2].match(/\sclass="([^"]+)"/);
+      const where = `${file.slice(SRC_DIR.length + 1)} <${match[1]}>`;
+      surfaces.set(where, classAttr ? classAttr[1].split(/\s+/) : []);
+    }
+  }
+  return surfaces;
+}
 
 /** Selectors that a `list-style: <style>` rule applies to, across every rule in the source. */
 function selectorsWithListStyle(source: string, style: "disc" | "decimal"): Set<string> {
@@ -30,15 +46,30 @@ function selectorsWithListStyle(source: string, style: "disc" | "decimal"): Set<
 }
 
 // vitest returns an empty string for a CSS `?raw` import, so read the file itself.
-const styleSource = readFileSync(resolve(__dirname, "../src/style.css"), "utf8");
+const styleSource = readFileSync(resolve(SRC_DIR, "style.css"), "utf8");
 
 describe("markdown list markers", () => {
   const disc = selectorsWithListStyle(styleSource, "disc");
   const decimal = selectorsWithListStyle(styleSource, "decimal");
+  const surfaces = markdownSurfaces();
+  const classes = new Set([...surfaces.values()].flat());
 
-  it.each(MARKDOWN_SURFACES)("restores disc and decimal markers on .%s", (surface) => {
-    expect(disc.has(`.${surface} ul`)).toBe(true);
-    expect(decimal.has(`.${surface} ol`)).toBe(true);
+  it("finds the markdown render sites (scan sanity check)", () => {
+    expect(surfaces.size).toBeGreaterThanOrEqual(6);
+    expect(classes).toContain("td-markdown");
+    expect(classes).toContain("guide-markdown");
+  });
+
+  it("gives every markdown render site a container class", () => {
+    const bare = [...surfaces].filter(([, cls]) => cls.length === 0).map(([where]) => where);
+    expect(bare).toEqual([]);
+  });
+
+  it.each([...surfaces])("restores disc and decimal markers in %s", (_where, cls) => {
+    // A container may carry modifier classes (`md-rendered engineering-report-body`);
+    // one of them needs the marker rule.
+    expect(cls.some((c) => disc.has(`.${c} ul`))).toBe(true);
+    expect(cls.some((c) => decimal.has(`.${c} ol`))).toBe(true);
   });
 
   it("keeps the playground list indent so restored markers sit inside the bubble", () => {
