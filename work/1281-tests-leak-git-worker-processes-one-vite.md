@@ -55,3 +55,4 @@ Reproduce with bun run test on a scoped path while watching ps for git-worker-en
 - 2026-11-20T15:41:15Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-20T15:44:24Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-20T15:44:25Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: #1281 is still waiting on the scoped `repoos check --changed main`. The restarted run (PID 13490) is at 73 of 821 tests after about 8 minutes, and it hasn't exited, so there's no pass or fail yet. The earlier "failed" lines in the log are … · stderr: (empty)
+- 2026-11-20T15:44:25Z · message_delivered: 1 message(s)
