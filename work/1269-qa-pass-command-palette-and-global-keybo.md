@@ -11,7 +11,7 @@ branch: feat/qa-pass-command-palette-and-global-keybo
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T05:08:53Z"
-updated_at: "2026-11-20T05:49:06Z"
+updated_at: "2026-11-20T05:51:11Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -29,6 +29,33 @@ Pages look and behave correctly at 375, 768 and 1280 widths: no overflow, clear 
 ## Notes for AI
 Keep changes small. Never touch repoos.toml. Never open a visible browser.
 
+## Shots
+```json
+[
+{
+  "label": "Command palette open with a task result and keyboard legend",
+  "target": "default",
+  "route": "/work",
+  "highlight": ".search-overlay",
+  "steps": [
+    {
+      "click": ".search-input"
+    },
+    {
+      "waitFor": ".search-overlay-input"
+    },
+    {
+      "fill": ".search-overlay-input",
+      "text": "QA pass"
+    },
+    {
+      "waitMs": 300
+    }
+  ]
+}
+]
+```
+
 ## Activity
 
 - 2026-11-20T05:08:53Z · created · t@t
@@ -45,3 +72,4 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 - 2026-11-20T05:49:05Z · note: review pass 1: needs some work
 - 2026-11-20T05:49:06Z · message_delivered: 1 message(s)
 - 2026-11-20T05:49:06Z · status review→active
+- 2026-11-20T05:51:11Z · body
