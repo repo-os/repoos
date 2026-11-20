@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: t@t
 branch: ""
 created_at: "2026-11-20T10:35:33Z"
-updated_at: "2026-11-20T10:45:56Z"
+updated_at: "2026-11-20T10:45:58Z"
 ---
 ## Problem
 The review pass history table in the task drawer has a column headed 'finding classes', which means little to a reader. It is useful as a quick view of what is wrong when a pass is not good to go.
@@ -33,6 +33,7 @@ Copy change only. Never touch repoos.toml. Headless Playwright only.
 ## Screenshots
 
 ![Review pass history table with the Finding classes column](/api/tasks/1279/attachments/att_f890472a-9287-4186-9f3b-df29a2c0616b.png)
+![Pipeline view: task number is plain text (#1275 FEATURE P1)](/api/tasks/1279/attachments/att_2af63faa-2ce5-45f6-9a94-683f604594c0.png)
 
 ## Activity
 
@@ -43,3 +44,4 @@ Copy change only. Never touch repoos.toml. Headless Playwright only.
 - 2026-11-20T10:45:33Z · body: Desired UX (added 3, removed 1)
 - 2026-11-20T10:45:44Z · body: Acceptance criteria (added 3, removed 3)
 - 2026-11-20T10:45:44Z · needs_input
+- 2026-11-20T10:45:58Z · screenshots
