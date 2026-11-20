@@ -49,3 +49,4 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 - 2026-11-20T09:50:16Z · message_queued at 2026-11-20T09:50:16.108Z
 - 2026-11-20T09:55:33Z · message_queued at 2026-11-20T09:55:33.178Z
 - 2026-11-20T10:00:44Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-11-20T10:00:45Z · note: handoff requested (cli)
