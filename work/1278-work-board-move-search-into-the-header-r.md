@@ -49,3 +49,4 @@ Start from src/ui-app/src/components/BoardQueueSearch.vue and the Work view head
 - 2026-11-20T15:49:25Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: The live run is still in remote validation on "thinkpad", so it hasn't reported a result yet. I'll wait for its completion notification. · stderr: (empty)
 - 2026-11-20T15:49:25Z · message_delivered: 1 message(s)
 - 2026-11-20T15:51:15Z · message_queued at 2026-11-20T15:51:15.102Z
+- 2026-11-20T15:51:15Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
