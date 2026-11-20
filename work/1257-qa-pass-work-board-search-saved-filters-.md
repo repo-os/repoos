@@ -11,7 +11,7 @@ branch: feat/qa-pass-work-board-search-saved-filters-
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T00:07:29Z"
-updated_at: "2026-11-20T00:57:58Z"
+updated_at: "2026-11-20T01:18:24Z"
 handoff_signal_retry_count: 1
 review_rounds: 1
 review_passes: 1
@@ -31,16 +31,16 @@ Do not touch repoos.toml.
 ```json
 [
 {
-  "label": "Board with search and priority chips and Clear filters",
-  "target": "default",
-  "route": "/work?q=login&priority=p1",
-  "highlight": ".board-queue-filters"
+"label": "Board with search and priority chips and Clear filters",
+"target": "default",
+"route": "/work?q=login&priority=p1",
+"highlight": ".board-queue-filters"
 },
 {
-  "label": "Pipeline with filter chip bar and the not-applied note",
-  "target": "default",
-  "route": "/work?tab=pipeline&q=login",
-  "highlight": ".board-queue-filter-note"
+"label": "Pipeline with filter chip bar and the not-applied note",
+"target": "default",
+"route": "/work?tab=pipeline&q=login",
+"highlight": ".board-queue-filter-note"
 }
 ]
 ```
@@ -63,3 +63,4 @@ Do not touch repoos.toml.
 - 2026-11-20T00:56:18Z · message_queued at 2026-11-20T00:56:18.444Z
 - 2026-11-20T00:56:30Z · message_delivered: 1 message(s)
 - 2026-11-20T00:57:58Z · body
+- 2026-11-20T01:18:24Z · queued message undelivered for 22m and the engineer produced no output — ending the turn so it is delivered
