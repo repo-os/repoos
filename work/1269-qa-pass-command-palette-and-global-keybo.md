@@ -11,7 +11,7 @@ branch: feat/qa-pass-command-palette-and-global-keybo
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T05:08:53Z"
-updated_at: "2026-11-20T05:09:38Z"
+updated_at: "2026-11-20T05:42:27Z"
 ---
 ## Problem
 Sweep the command palette and keyboard shortcuts for focus, wording, mobile and screen-reader bugs.
@@ -33,3 +33,4 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 - 2026-11-20T05:09:22Z · status inbox→ready
 - 2026-11-20T05:09:31Z · cli_override, model_override
 - 2026-11-20T05:09:38Z · status ready→active, branch
+- 2026-11-20T05:42:27Z · message_queued at 2026-11-20T05:42:27.781Z
