@@ -11,7 +11,7 @@ branch: feat/mobile-polish-open-on-work-hide-page-scr
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T00:15:33Z"
-updated_at: "2026-11-20T14:43:36Z"
+updated_at: "2026-11-20T14:47:13Z"
 last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
 last_handoff_failure_sha: bedc3455e991267a2057dbbd535a6d9f46966f62
 check_retry_count: 1
@@ -129,3 +129,4 @@ Screenshot attached shows the current mobile header and Mission Control. Do not 
 - 2026-11-20T14:18:34Z · CTO nudge: held — machine under pressure (CPU idle is 0% (below 5%) — holding new work until the machine has idle CPU)
 - 2026-11-20T14:28:39Z · CTO nudge: held — machine under pressure (CPU idle is 0% (below 5%) — holding new work until the machine has idle CPU)
 - 2026-11-20T14:43:36Z · CTO nudge: held — machine under pressure (CPU idle is 1% (below 5%) — holding new work until the machine has idle CPU)
+- 2026-11-20T14:47:13Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: I have not handed off. The scoped gate is still red, so I'm leaving #1258 active and not emitting the handoff-ready signal. **What's fixed and verified** - The two tests named in the crash signal (`mobile-touch-affordances.test.ts`, 10/10,… · stderr: (empty)
