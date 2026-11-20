@@ -132,13 +132,15 @@ function queueWait(ms: number): string {
     </template>
 
     <p v-else class="ips-active">
-      <span class="ips-active-label">Close-out in progress</span>
+      <span class="ips-active-label">{{
+        queue.length ? "Queued — waiting for the next close-out to start" : "Close-out in progress"
+      }}</span>
     </p>
 
     <div v-if="showQueue" class="ips-queue">
       <span class="ips-queue-label">Queued behind</span>
       <span v-for="q in queueDetail" :key="q.taskId" class="ips-chip">
-        #{{ q.taskId }} · pos {{ q.position }} · {{ queueWait(q.waitedMs)
+        #{{ q.taskId }} · position {{ q.position }} · waited {{ queueWait(q.waitedMs)
         }}<template v-if="q.blockerTaskId">
           · ahead: #{{ q.blockerTaskId }} {{ q.blockerPhase }}</template
         >

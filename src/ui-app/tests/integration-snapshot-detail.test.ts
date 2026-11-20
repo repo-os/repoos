@@ -25,6 +25,7 @@ describe("integration snapshot upload detail (#0782)", () => {
     const { root, coordinator } = makeCoordinator();
     try {
       coordinator.enqueue({ id: "0001", branch: "feat/t1" } as never);
+      coordinator.updateJob("0001", { phase: "syncing", startedAt: "2026-10-14T09:59:00.000Z" });
       const snap = buildIntegrationSnapshot(coordinator, {});
       expect(snap.active?.taskId).toBe("0001");
       expect(snap.active?.detail).toBeNull();
@@ -37,6 +38,7 @@ describe("integration snapshot upload detail (#0782)", () => {
     const { root, coordinator } = makeCoordinator();
     try {
       coordinator.enqueue({ id: "0001", branch: "feat/t1" } as never);
+      coordinator.updateJob("0001", { phase: "syncing", startedAt: "2026-10-14T09:59:00.000Z" });
       const snap = buildIntegrationSnapshot(
         coordinator,
         {},
@@ -58,6 +60,7 @@ describe("integration snapshot upload detail (#0782)", () => {
       coordinator.updateJob("0001", { enqueuedAt: "2026-01-01T00:00:00.000Z" });
       coordinator.enqueue({ id: "0002", branch: "feat/t2" } as never);
       coordinator.updateJob("0002", { enqueuedAt: "2026-01-01T00:00:01.000Z" });
+      coordinator.updateJob("0001", { phase: "syncing", startedAt: "2026-10-14T09:59:00.000Z" });
       const snap = buildIntegrationSnapshot(
         coordinator,
         {},
@@ -107,6 +110,7 @@ describe("applyPipelineDetail (#0782 review)", () => {
     const { root, coordinator } = makeCoordinator();
     try {
       coordinator.enqueue({ id: "0001", branch: "feat/t1" } as never);
+      coordinator.updateJob("0001", { phase: "syncing", startedAt: "2026-10-14T09:59:00.000Z" });
       const snap = buildIntegrationSnapshot(coordinator, {}, undefined, at, detail);
       expect(snap.active?.detail).toBeNull();
     } finally {
@@ -123,6 +127,7 @@ describe("integration snapshot phase + queue detail (#0897)", () => {
       coordinator.updateJob("0892", {
         phase: "validating",
         enqueuedAt: "2026-10-21T12:00:00.000Z",
+        startedAt: "2026-10-21T12:00:00.000Z",
       });
       // Pin the phase start independently of the real clock for a stable assertion.
       coordinator.updateJob("0892", { phaseStartedAt: "2026-10-21T12:10:00.000Z" });
