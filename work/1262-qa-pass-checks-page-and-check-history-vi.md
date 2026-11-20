@@ -2,7 +2,7 @@
 id: "1262"
 title: "QA pass: Checks page and check history views"
 type: feature
-status: review
+status: active
 priority: p2
 area: web
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/qa-pass-checks-page-and-check-history-vi
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T02:26:53Z"
-updated_at: "2026-11-20T04:24:01Z"
+updated_at: "2026-11-20T04:24:02Z"
 review_rounds: 1
 review_passes: 1
 handoff_signal_retry_count: 2
