@@ -69,11 +69,15 @@ navigation; release notes render with markers; no uncaught page errors.
    markers on every rendered-markdown container: `md-rendered` (story bodies,
    review reports, context and inputs), `pm-markdown`, `cto-markdown`,
    `debugger-markdown`, `td-markdown` (task debugger chat), `guide-markdown`
-   (repo guide chat), `playground-markdown` and `release-update-markdown`. The
-   The guard test scans every `v-html` `renderMarkdown()`/`renderChatMarkdown()` call
-   in `src/ui-app/src`, so a new surface without a rule fails the test. Test:
-   `src/ui-app/tests/markdown-list-markers.test.ts`. The playground also gets
-   the same 17 px list indent as the others, because it had none. The
+   (repo guide chat), `playground-markdown` and `release-update-markdown`.
+   Test: `src/ui-app/tests/markdown-list-markers.test.ts`. It checks every
+   `v-html` in a file that imports `renderMarkdown`/`renderChatMarkdown`, so
+   computed surfaces such as `v-html="specHtml"` are covered as well as literal
+   calls. A surface whose container class lacks a rule fails the test. Markdown
+   rendered by a child component is not scanned, so its container class must be
+   added to the shared rule by hand. A static list of required containers in the
+   test also fails if one of those classes loses its rule. The playground
+   also gets the same 17 px list indent as the others, because it had none. The
    release-notes harness check verifies the computed `list-style-type` at every
    width.
 5. **The restart failure fixture had no command to run.** The fixture omitted
@@ -86,7 +90,12 @@ Harness, not product, defects that were also fixed in the script: the modal
 check read `innerText`, which uppercases "Installed", so the check now reads
 `textContent`; WebKit reports requests aborted by a reload as "due to access
 control checks" page errors, which the script filters out with a comment; the
-deliberate 500 in the failure scenario is no longer counted as an error.
+deliberate 500 in the failure scenario is no longer counted as an error. The
+"dialog fits" check failed on the "Read more on GitHub" link in about half of
+runs. The link wraps onto two lines, and the check hit-tested the union box of
+its fragments, whose centre falls in the gap between lines. The check now
+hit-tests each line fragment. The failing fit checks now print their
+measurements, so a real overflow would show its numbers.
 
 ## Observations, not changed
 
@@ -121,12 +130,16 @@ deliberate 500 in the failure scenario is no longer counted as an error.
   fixes, 126 checks with 18 failures. Of those, 6 were product copy defects
   (`#0214` on supervised and hand-run, three widths each), 3 were the restart
   failure fixture's missing command, and 9 were harness artifacts (modal case,
-  reload-abort noise, the deliberate 500). After the fixes, 135 checks with 0
-  failures in each of three consecutive runs on the final build.
-- One earlier run on the same build, immediately after the shared list-marker
-  change, reported one failed check. I did not capture which check it was, and
-  the three runs after it passed. Treat that as an unexplained flake until a
-  rerun says otherwise.
+  reload-abort noise, the deliberate 500). After the fit-check fix, eleven runs
+  on the same build: nine had 135 checks with 0 failures. Two were not clean.
+  One run failed three fit checks before the fix landed, and the fix removed
+  that failure in every later run. One run, after the fix, failed one check:
+  "supervised: scenario ran @375", a timeout waiting 5 s for the "Restart is
+  waiting" line after Restart when idle. It did not reproduce in six further
+  runs. I have not identified its cause. It may be a real race between the 1.5 s
+  status refresh after the POST and the harness wait, or harness load. Treat it
+  as an open intermittent failure, not a fixed one, until it is explained or a
+  longer run shows it is gone.
 - `bun run test:vitest -- src/ui-app/tests/releases.test.ts
   src/ui-app/tests/markdown-list-markers.test.ts src/ui-app/tests/update-status.test.ts`:
-  70 passed.
+  89 passed.

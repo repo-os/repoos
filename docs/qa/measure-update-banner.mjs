@@ -85,11 +85,15 @@ const PAGE_HELPERS = `
         })
         .map((el) => el.tagName.toLowerCase() + " " + String(el.textContent || "").trim().slice(0, 40));
     },
-    /* True when something other than the element (or its descendant) is hit at its centre. */
+    /* True when something other than the element (or its descendant) is hit at the centre of
+       any of its line fragments. A wrapped inline link has one box per line, and the union box
+       (getBoundingClientRect) can centre in the gap between lines, so test each fragment. */
     covered(el) {
-      const r = el.getBoundingClientRect();
-      const top = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
-      return !(top === el || (top !== null && el.contains(top)));
+      const boxes = [...el.getClientRects()].filter((r) => r.width > 0 && r.height > 0);
+      return boxes.some((r) => {
+        const top = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+        return !(top === el || (top !== null && el.contains(top)));
+      });
     },
     intersects(a, b) {
       const ra = a.getBoundingClientRect();
@@ -203,7 +207,10 @@ function record(scenario, width, ok, detail) {
 }
 
 async function shot(page, name, width) {
-  if (shotsDir) await page.screenshot({ path: join(shotsDir, `${name}-${width}.png`) });
+  if (!shotsDir) return;
+  // Let the dialog's entrance fade finish, so the capture shows the settled state.
+  await page.waitForTimeout(400);
+  await page.screenshot({ path: join(shotsDir, `${name}-${width}.png`) });
 }
 
 /** Common fit checks for a visible root: inside the viewport and every control hit-testable. */
@@ -264,11 +271,8 @@ async function restartScenario(name, { supervised }) {
         !/serve flags|#0214/.test(text),
         text.match(/serve flags|#0214/)?.[0] ?? undefined,
       );
-      record(
-        `${name}: dialog fits`,
-        width,
-        fitOk(await fitReport(page, '[data-test-id="installed-restart-notice"]')),
-      );
+      const fit = await fitReport(page, '[data-test-id="installed-restart-notice"]');
+      record(`${name}: dialog fits`, width, fitOk(fit), fitOk(fit) ? undefined : fit);
 
       if (supervised) {
         await page.getByRole("button", { name: "Restart when idle" }).click();
@@ -353,10 +357,12 @@ async function failureScenario() {
         width,
         text.includes(HAND_RUN_COMMAND),
       );
+      const failFit = await fitReport(page, '[data-test-id="installed-restart-notice"]');
       record(
         "failure: failed alert fits",
         width,
-        fitOk(await fitReport(page, '[data-test-id="installed-restart-notice"]')),
+        fitOk(failFit),
+        fitOk(failFit) ? undefined : failFit,
       );
       record(
         "failure: Restart now stays enabled to retry",

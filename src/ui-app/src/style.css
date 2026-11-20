@@ -7642,9 +7642,11 @@
 }
 /* Preflight resets every list to `list-style: none`, which drops the markers
    while keeping the indent. One shared rule restores them on every rendered-
-   markdown surface. src/ui-app/tests/markdown-list-markers.test.ts scans every
-   v-html renderMarkdown()/renderChatMarkdown() site and fails if its container
-   class is missing here, so add new surfaces to this list (#1255 review). */
+   markdown surface. src/ui-app/tests/markdown-list-markers.test.ts checks every
+   v-html in a file that imports renderMarkdown/renderChatMarkdown, including
+   computed names such as `v-html="specHtml"`, and fails if its container class
+   is missing here. Markdown rendered by a child component is not scanned, so
+   add new surfaces to this list by hand (#1255 review). */
 .md-rendered ul,
 .pm-markdown ul,
 .cto-markdown ul,
