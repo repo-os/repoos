@@ -14,7 +14,7 @@ branch: feat/work-board-move-search-into-the-header-r
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T08:46:27Z"
-updated_at: "2026-11-20T16:22:11Z"
+updated_at: "2026-11-20T17:26:15Z"
 review_failed_report_retries: 2
 ---
 ## Problem
@@ -81,3 +81,4 @@ Start from src/ui-app/src/components/BoardQueueSearch.vue and the Work view head
 - 2026-11-20T16:22:03Z · note: review pass 2: failed — no usable report
 - 2026-11-20T16:22:11Z · note: review pass 3: failed — no usable report
 - 2026-11-20T16:22:11Z · needs_input
+- 2026-11-20T17:26:15Z · message_overdue: still queued after 60m without being delivered
