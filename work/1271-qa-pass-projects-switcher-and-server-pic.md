@@ -36,3 +36,4 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 - 2026-11-20T06:25:44Z · body
 - 2026-11-20T06:27:03Z · CTO nudge: held — handoff gate is running
 - 2026-11-20T06:27:25Z · status active→review
+- 2026-11-20T06:27:25Z · message_queued at 2026-11-20T06:27:25.704Z
