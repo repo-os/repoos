@@ -24,13 +24,14 @@ function mountSheet() {
   trigger.textContent = "Edit dev";
   document.body.appendChild(trigger);
   trigger.focus();
+  // The component's generic props type is too deep to assign to VueWrapper directly.
   const sheet = mount(BottomSheet, {
     props: { title: "Edit server", open: false },
     slots: {
       default: '<input aria-label="Display name" /><button>Delete</button><button>Save</button>',
     },
     attachTo: document.body,
-  });
+  }) as unknown as VueWrapper;
   wrapper = sheet;
   return { trigger, sheet };
 }
