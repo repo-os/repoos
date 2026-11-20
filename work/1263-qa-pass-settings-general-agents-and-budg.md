@@ -11,7 +11,7 @@ branch: feat/qa-pass-settings-general-agents-and-budg
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T02:27:07Z"
-updated_at: "2026-11-20T03:55:28Z"
+updated_at: "2026-11-20T03:57:14Z"
 review_rounds: 2
 review_passes: 2
 ---
@@ -78,3 +78,4 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 - 2026-11-20T03:55:20Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: The round-3 scoped check is running, and I've left the tree alone while it runs. I'll report its result when it finishes. · stderr: (empty)
 - 2026-11-20T03:55:22Z · message_delivered: 1 message(s)
 - 2026-11-20T03:55:28Z · body
+- 2026-11-20T03:57:14Z · message_queued at 2026-11-20T03:57:14.888Z
