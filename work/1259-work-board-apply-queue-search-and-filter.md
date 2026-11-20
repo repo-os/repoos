@@ -12,7 +12,7 @@ branch: feat/work-board-apply-queue-search-and-filter
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T00:57:29Z"
-updated_at: "2026-11-20T04:42:22Z"
+updated_at: "2026-11-20T04:56:21Z"
 ---
 ## Problem
 Search and quick filters only exist on the phone queue (below 720 px). The desktop board at 720 px and up can only receive them from a URL, so a user cannot set one on a wide screen (#1257 gap).
@@ -39,3 +39,4 @@ Headless Playwright only, against fixtures. Do not touch repoos.toml. Reuse the 
 - 2026-11-20T04:07:05Z · status ready→active, branch
 - 2026-11-20T04:20:09Z · body
 - 2026-11-20T04:42:22Z · CTO nudge: held — handoff gate is running
+- 2026-11-20T04:56:21Z · handoff failed · remote validation failed: test failure: tests/agent-review.test.ts > agent review before human sign-off (#0101) > routes reviewer chat to its own session and serves the conversation on mini — fix it in the feature branch and re-run the gate
