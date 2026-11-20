@@ -106,7 +106,9 @@ describe("CloseOutProgressRecorder (#1276)", () => {
       root,
       taskId: "1276",
       attempt: 2,
-      persist: (patch) => writes.push(patch),
+      persist: (patch) => {
+        writes.push(patch);
+      },
       remoteRun: () => run,
       now: () => clock,
       ...over,
