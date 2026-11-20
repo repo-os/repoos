@@ -2,14 +2,14 @@
 id: "1269"
 title: "QA pass: command palette and global keyboard shortcuts"
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: web
-assigned_to: ""
+assigned_to: ai
 created_by: t@t
 branch: ""
 created_at: "2026-11-20T05:08:53Z"
-updated_at: "2026-11-20T05:08:53Z"
+updated_at: "2026-11-20T05:09:22Z"
 ---
 ## Problem
 Sweep the command palette and keyboard shortcuts for focus, wording, mobile and screen-reader bugs.
@@ -28,3 +28,4 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 ## Activity
 
 - 2026-11-20T05:08:53Z · created · t@t
+- 2026-11-20T05:09:22Z · status inbox→ready
