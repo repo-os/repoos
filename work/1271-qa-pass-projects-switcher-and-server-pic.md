@@ -2,7 +2,7 @@
 id: "1271"
 title: "QA pass: Projects switcher and server picker flows"
 type: feature
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/qa-pass-projects-switcher-and-server-pic
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T06:07:22Z"
-updated_at: "2026-11-20T14:35:26Z"
+updated_at: "2026-11-20T14:39:00Z"
 last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (appeared: mobile/src/App.vue, mobile/src/components/BottomSheet.vue, mobile/src/style.css, mobile/src/components/DevUpdateDialog.vue, mobile/src/modal-focus.ts, src/ui-app/tests/mobile-update-dialog-focus.test.ts) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 last_handoff_failure_sha: f9ff295b43cac150ac1de4268f97155c4992d986
 review_rounds: 1
@@ -96,3 +96,4 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 - 2026-11-20T14:02:13Z · watchdog: restarting engineer because a queued message waited 3m with no live process
 - 2026-11-20T14:19:35Z · message_delivered: 1 message(s)
 - 2026-11-20T14:35:26Z · body
+- 2026-11-20T14:39:00Z · status active→review
