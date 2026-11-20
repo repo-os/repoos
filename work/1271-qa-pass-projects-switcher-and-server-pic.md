@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "1271"
 title: "QA pass: Projects switcher and server picker flows"
 type: feature
@@ -46,3 +47,4 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 - 2026-11-20T09:44:54Z · note: close-out repair: gate-failure
 - 2026-11-20T09:45:01Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-20T09:50:16Z · message_queued at 2026-11-20T09:50:16.108Z
+
