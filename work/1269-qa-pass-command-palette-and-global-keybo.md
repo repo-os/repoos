@@ -2,7 +2,7 @@
 id: "1269"
 title: "QA pass: command palette and global keyboard shortcuts"
 type: feature
-status: review
+status: active
 priority: p2
 area: web
 assigned_to: ai
@@ -12,6 +12,7 @@ cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T05:08:53Z"
 updated_at: "2026-11-20T05:49:06Z"
+review_rounds: 1
 review_passes: 1
 ---
 ## Problem
@@ -43,3 +44,4 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 - 2026-11-20T05:46:26Z · message_queued at 2026-11-20T05:46:26.977Z
 - 2026-11-20T05:49:05Z · note: review pass 1: needs some work
 - 2026-11-20T05:49:06Z · message_delivered: 1 message(s)
+- 2026-11-20T05:49:06Z · status review→active
