@@ -11,7 +11,7 @@ branch: feat/close-out-validation-log-should-show-liv
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T07:42:21Z"
-updated_at: "2026-11-20T14:24:39Z"
+updated_at: "2026-11-20T14:24:40Z"
 review_rounds: 2
 review_passes: 2
 handoff_signal_retry_count: 2
@@ -74,3 +74,4 @@ Related: #1272 (timer should count from validation start). Never touch repoos.to
 - 2026-11-20T13:20:33Z · status review→active
 - 2026-11-20T13:20:36Z · CTO nudge: held — remote validation is running
 - 2026-11-20T14:24:38Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — task-file handoff failed at review · Engineering report draft is missing: .repoos/engineering-report-drafts/1276.md · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-11-20T14:24:40Z · note: handoff requested (cli)
