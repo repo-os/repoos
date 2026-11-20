@@ -11,7 +11,7 @@ branch: feat/qa-pass-work-board-search-saved-filters-
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T00:07:29Z"
-updated_at: "2026-11-20T01:26:56Z"
+updated_at: "2026-11-20T01:32:05Z"
 handoff_signal_retry_count: 1
 review_rounds: 1
 review_passes: 1
@@ -67,3 +67,4 @@ Do not touch repoos.toml.
 - 2026-11-20T01:18:33Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: The UI smoke run is still going in the background, and a monitor will notify me when it exits. Once it finishes I'll decide whether the failure is environmental or needs a code change. Until then, the round 2 fixes and scoped tests are don… · stderr: (empty)
 - 2026-11-20T01:20:36Z · message_delivered: 1 message(s)
 - 2026-11-20T01:26:56Z · body
+- 2026-11-20T01:32:05Z · note: ui verification failed: ui verification failed (1 issue(s)): [missing-target] Pipeline with filter chip bar and the not-applied note (target "default"): highlight .board-queue-filter-note matched nothing on /work?tab=pipeline&q=login (http://127.0.0.1:45181/work?tab=pipeline&q=login)
