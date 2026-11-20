@@ -11,7 +11,7 @@ branch: feat/qa-pass-checks-page-and-check-history-vi
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T02:26:53Z"
-updated_at: "2026-11-20T02:45:32Z"
+updated_at: "2026-11-20T02:46:57Z"
 ---
 ## Problem
 Sweep the Checks page (local and remote tabs, history, failure details) for layout, wording and state bugs.
@@ -31,18 +31,18 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 ```json
 [
 {
-  "label": "Check plan at phone width: long step names and commands wrap or scroll inside their cards",
-  "target": "default",
-  "route": "/checks?tab=plan",
-  "highlight": ".ck-steps",
-  "state": "checks:longData"
+"label": "Check plan at phone width: long step names and commands wrap or scroll inside their cards",
+"target": "default",
+"route": "/checks?tab=plan",
+"highlight": ".ck-steps",
+"state": "checks:longData"
 },
 {
-  "label": "Now tab: local slots and close-out pipeline share one divider and label style",
-  "target": "default",
-  "route": "/checks?tab=now",
-  "highlight": ".ips-local-slots",
-  "state": "checks:progress"
+"label": "Now tab: local slots and close-out pipeline share one divider and label style",
+"target": "default",
+"route": "/checks?tab=now",
+"highlight": ".ips-local-slots",
+"state": "checks:progress"
 }
 ]
 ```
@@ -55,3 +55,4 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 - 2026-11-20T02:27:01Z · status ready→active, branch
 - 2026-11-20T02:43:33Z · body
 - 2026-11-20T02:45:32Z · body
+- 2026-11-20T02:46:57Z · CTO nudge: held — handoff gate is running
