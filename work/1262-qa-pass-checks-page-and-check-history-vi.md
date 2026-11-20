@@ -11,7 +11,7 @@ branch: feat/qa-pass-checks-page-and-check-history-vi
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T02:26:53Z"
-updated_at: "2026-11-20T04:45:35Z"
+updated_at: "2026-11-20T04:45:36Z"
 review_rounds: 1
 review_passes: 1
 handoff_signal_retry_count: 2
@@ -92,3 +92,4 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 - 2026-11-20T04:43:56Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: I've stopped here rather than work around the lock. Here's where things stand. **Review round 2 fixes are made but not yet verified or handed off.** The worktree is locked against edits, so I can't finish them. **What I changed (on disk, n… · stderr: (empty)
 - 2026-11-20T04:45:33Z · note: ui verification passed: 2 of 2 shots captured with clean console
 - 2026-11-20T04:45:35Z · message_queued at 2026-11-20T04:45:35.528Z
+- 2026-11-20T04:45:36Z · handoff failed · task-file handoff failed at review · Engineering report draft is missing: .repoos/engineering-report-drafts/1262.md
