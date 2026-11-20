@@ -11,7 +11,7 @@ branch: feat/tests-leak-git-worker-processes-one-vite
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T11:47:41Z"
-updated_at: "2026-11-20T19:50:52Z"
+updated_at: "2026-11-20T19:51:03Z"
 review_rounds: 1
 review_passes: 1
 review_failed_report_retries: 0
@@ -81,3 +81,4 @@ Reproduce with bun run test on a scoped path while watching ps for git-worker-en
 - 2026-11-20T19:50:49Z · note: review pass 4: needs some work
 - 2026-11-20T19:50:49Z · status review→active
 - 2026-11-20T19:50:52Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-20T19:51:03Z · message_delivered: 1 message(s)
