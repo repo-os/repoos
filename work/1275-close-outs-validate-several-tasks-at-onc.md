@@ -1,6 +1,4 @@
 ---
-check_retry_count: 1
-last_check_failure: "repoos check at 2026-11-20T09:04:46.665Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 id: "1275"
 title: "Close-outs: validate several tasks at once on different runner machines"
 type: feature
@@ -13,7 +11,9 @@ branch: feat/close-outs-validate-several-tasks-at-onc
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T07:42:13Z"
-updated_at: "2026-11-20T09:04:46Z"
+updated_at: "2026-11-20T09:07:31Z"
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-20T09:04:46.665Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 handoff_signal_retry_count: 2
 ---
 ## Problem
@@ -58,4 +58,4 @@ Read docs/close-out-pipeline.md and docs/remote-validation.md first. Never touch
 - 2026-11-20T08:34:57Z · CTO nudge: held — handoff gate is running
 - 2026-11-20T09:04:43Z · message_queued at 2026-11-20T09:04:43.435Z
 - 2026-11-20T09:04:46Z · message_delivered: 1 message(s)
-
+- 2026-11-20T09:07:31Z · message_queued at 2026-11-20T09:07:31.572Z
