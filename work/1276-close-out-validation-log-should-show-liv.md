@@ -2,7 +2,7 @@
 id: "1276"
 title: Close-out validation log should show live progress
 type: feature
-status: review
+status: active
 priority: p1
 area: [server, core]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/close-out-validation-log-should-show-liv
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T07:42:21Z"
-updated_at: "2026-11-20T14:24:38Z"
+updated_at: "2026-11-20T14:24:39Z"
 review_rounds: 2
 review_passes: 2
 handoff_signal_retry_count: 2
