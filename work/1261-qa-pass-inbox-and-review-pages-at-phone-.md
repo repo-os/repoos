@@ -11,7 +11,7 @@ branch: feat/qa-pass-inbox-and-review-pages-at-phone-
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T01:42:34Z"
-updated_at: "2026-11-20T02:14:17Z"
+updated_at: "2026-11-20T02:15:26Z"
 ---
 ## Problem
 Final sweep of the Inbox and Review views for layout, wording and state bugs at different screen sizes.
@@ -42,3 +42,4 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 - 2026-11-20T02:14:15Z · note: ui verification passed: 1 shot captured with clean console
 - 2026-11-20T02:14:17Z · status active→review
 - 2026-11-20T02:14:17Z · message_queued at 2026-11-20T02:14:17.260Z
+- 2026-11-20T02:15:26Z · note: review pass 1: good to go
