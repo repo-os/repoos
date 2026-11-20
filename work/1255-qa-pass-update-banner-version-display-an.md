@@ -11,7 +11,7 @@ branch: feat/qa-pass-update-banner-version-display-an
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T23:27:47Z"
-updated_at: "2026-11-20T00:56:30Z"
+updated_at: "2026-11-20T01:04:14Z"
 review_passes: 3
 review_rounds: 2
 ---
@@ -92,3 +92,4 @@ Do not touch repoos.toml.
 - 2026-11-20T00:49:37Z · CTO nudge: held — handoff gate is running
 - 2026-11-20T00:55:44Z · body
 - 2026-11-20T00:56:30Z · status active→review
+- 2026-11-20T01:04:14Z · note: ui verification passed: 3 of 3 shots captured with clean console
