@@ -12,7 +12,7 @@ branch: feat/qa-pass-task-drawer-tabs-changes-activit
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T02:27:21Z"
-updated_at: "2026-11-20T08:42:34Z"
+updated_at: "2026-11-20T08:43:28Z"
 last_close_out_gate_ms: 2367746
 last_close_out_gate_at: "2026-11-20T08:42:34.098Z"
 review_passes: 1
@@ -50,4 +50,4 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 - 2026-11-20T03:42:11Z · note: review pass 1: good to go
 - 2026-11-20T04:45:33Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-20T08:42:34Z · close-out gate completed in 2368s
-
+- 2026-11-20T08:43:28Z · status done→done, release:success
