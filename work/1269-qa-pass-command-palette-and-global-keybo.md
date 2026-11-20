@@ -14,7 +14,6 @@ created_at: "2026-11-20T05:08:53Z"
 updated_at: "2026-11-20T06:09:54Z"
 review_rounds: 2
 review_passes: 2
-deferred_handoff_resume_count: 1
 ---
 ## Problem
 Sweep the command palette and keyboard shortcuts for focus, wording, mobile and screen-reader bugs.
