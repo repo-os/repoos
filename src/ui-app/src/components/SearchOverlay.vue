@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed, nextTick, ref, useId, watch } from "vue";
 import { useRouter } from "vue-router";
 import { storeToRefs } from "pinia";
 import { useRepoStore, statusColor } from "../stores/repo";
@@ -44,6 +44,18 @@ const query = ref("");
 const highlight = ref(0);
 const inputEl = ref<HTMLInputElement | null>(null);
 const overlayEl = ref<HTMLElement | null>(null);
+/** Ids that tie the input (combobox) to the listbox and its active option. */
+const baseId = `search-overlay-${useId().replaceAll(":", "-")}`;
+const listId = `${baseId}-list`;
+function optionId(idx: number): string {
+  return `${baseId}-opt-${idx}`;
+}
+const activeOptionId = computed(() =>
+  displayItems.value.length ? optionId(highlight.value) : undefined,
+);
+/** Focus before the palette opened; restored on dismiss when no caller gave one. */
+let lastFocused: HTMLElement | null = null;
+const loadingBodies = ref(false);
 
 const settingLocation = computed(() => ({
   inspectorAvailable: repo.health?.copyInspectorAvailable === true,
@@ -182,13 +194,15 @@ const groups = computed<Group[]>(() => {
 
 const emptyMessage = computed(() => {
   if (showRecent.value || displayItems.value.length) return "";
+  // Doc and skill bodies arrive async; until they do, "no match" would be a lie.
+  if (loadingBodies.value) return "Loading results…";
   if (props.scope === "settings") {
     return `No settings match “${query.value.trim()}”`;
   }
   if (props.scope === "context") {
     return `No context docs or skills match “${query.value.trim()}”`;
   }
-  return "No results";
+  return `No results for “${query.value.trim()}”`;
 });
 
 const placeholder = computed(() => {
@@ -209,7 +223,12 @@ async function loadSearchBodies(): Promise<void> {
     props.scope === "context"
       ? [...docList.value.map((d) => d.path), ...skillList.value.map((s) => s.path)]
       : docList.value.map((d) => d.path);
-  await ensurePaths(paths);
+  loadingBodies.value = true;
+  try {
+    await ensurePaths(paths);
+  } finally {
+    loadingBodies.value = false;
+  }
 }
 
 let bodyLoadTimer: ReturnType<typeof setTimeout> | undefined;
@@ -224,6 +243,7 @@ watch(
   () => props.open,
   (isOpen) => {
     if (isOpen) {
+      lastFocused = document.activeElement as HTMLElement | null;
       query.value = "";
       highlight.value = 0;
       setTimeout(() => inputEl.value?.focus(), 0);
@@ -234,6 +254,13 @@ watch(
 
 watch(query, () => {
   highlight.value = 0;
+});
+
+// Arrow keys can move the highlight past the scrolled-to region of the list;
+// keep the active option on screen (and the SR's active descendant in view).
+watch(highlight, async () => {
+  await nextTick();
+  document.getElementById(optionId(highlight.value))?.scrollIntoView?.({ block: "nearest" });
 });
 
 async function navigateToSetting(
@@ -261,10 +288,13 @@ async function navigateToSetting(
   await router.push({ name: "settings", query });
 }
 
-function closeOverlay(): void {
+/** `fallbackFocus` is where focus goes when the caller gave no `returnFocusEl`.
+ *  Dismissals (Esc, ✕, backdrop) pass the element focused before opening;
+ *  opening a result passes null so it does not pull focus back from the drawer. */
+function closeOverlay(fallbackFocus: HTMLElement | null = lastFocused): void {
   emit("update:open", false);
   query.value = "";
-  const el = props.returnFocusEl;
+  const el = props.returnFocusEl ?? fallbackFocus;
   if (el) {
     setTimeout(() => el.focus(), 0);
   }
@@ -295,7 +325,7 @@ function openResult(r: SearchResult): void {
       void router.push({ name: "settings", query: { focus: r.key } });
     }
   }
-  closeOverlay();
+  closeOverlay(null);
 }
 
 function openRecentSearch(q: string): void {
@@ -414,12 +444,17 @@ watch([docList, skillList], () => {
             spellcheck="false"
             :placeholder="placeholder"
             :aria-label="ariaLabel"
+            role="combobox"
+            aria-autocomplete="list"
+            :aria-expanded="displayItems.length > 0"
+            :aria-controls="listId"
+            :aria-activedescendant="activeOptionId"
             class="search-overlay-input"
           />
           <button
             class="search-overlay-close"
             type="button"
-            @click="closeOverlay"
+            @click="closeOverlay()"
             aria-label="Close search"
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
@@ -433,13 +468,20 @@ watch([docList, skillList], () => {
           </button>
         </div>
 
-        <div class="search-overlay-body" role="listbox" :aria-label="ariaLabel">
+        <div :id="listId" class="search-overlay-body" role="listbox" :aria-label="ariaLabel">
           <template v-if="displayItems.length">
-            <div v-for="g in groups" :key="g.kind" class="search-group">
-              <div v-if="g.label" class="search-group-label">{{ g.label }}</div>
+            <div
+              v-for="g in groups"
+              :key="g.kind"
+              class="search-group"
+              role="group"
+              :aria-label="g.label || undefined"
+            >
+              <div v-if="g.label" class="search-group-label" aria-hidden="true">{{ g.label }}</div>
               <div
                 v-for="item in g.items"
-                :key="(g.kind === 'recent' ? 'recent-' : g.kind + '-') + item.r.title"
+                :id="optionId(item.idx)"
+                :key="item.idx"
                 class="search-row"
                 role="option"
                 :aria-selected="item.idx === highlight"
@@ -486,7 +528,7 @@ watch([docList, skillList], () => {
             {{ contextSearchOutput.results.length }}. Narrow your search to see fewer results.
           </div>
         </div>
-        <div class="search-overlay-keyboard-hint" aria-label="Keyboard controls">
+        <div class="search-overlay-keyboard-hint" role="group" aria-label="Keyboard controls">
           <span><kbd>↑</kbd><kbd>↓</kbd> Navigate</span>
           <span><kbd>Enter</kbd> Open</span>
           <span><kbd>Esc</kbd> Close</span>
