@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-11-20T00:18:25Z"
-review_passes: 3
 id: "1255"
 title: "QA pass: update banner, version display and release notes modal at all screen sizes"
 type: bug
-status: review
+status: active
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 needs_input_detail: "`needs some work` — the pass-2 list-marker class fix is still incomplete: `.td-markdown` and `.guide-markdown` chat surfaces remain markerl…"
@@ -16,6 +14,8 @@ branch: feat/qa-pass-update-banner-version-display-an
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T23:27:47Z"
+updated_at: "2026-11-20T00:27:04Z"
+review_passes: 3
 review_rounds: 2
 ---
 ## Problem
@@ -81,4 +81,4 @@ Do not touch repoos.toml.
 - 2026-11-20T00:16:16Z · message_queued at 2026-11-20T00:16:16.871Z
 - 2026-11-20T00:18:25Z · note: review pass 3: needs some work
 - 2026-11-20T00:18:25Z · needs_input
-
+- 2026-11-20T00:27:04Z · status review→active
