@@ -11,7 +11,7 @@ branch: feat/qa-pass-checks-page-and-check-history-vi
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T02:26:53Z"
-updated_at: "2026-11-20T04:55:04Z"
+updated_at: "2026-11-20T04:55:05Z"
 review_rounds: 1
 review_passes: 1
 handoff_signal_retry_count: 2
@@ -97,3 +97,4 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 - 2026-11-20T04:50:23Z · body
 - 2026-11-20T04:53:15Z · status active→review
 - 2026-11-20T04:55:04Z · message_queued at 2026-11-20T04:55:04.845Z
+- 2026-11-20T04:55:05Z · note: shots: failed — browser capture cancelled
