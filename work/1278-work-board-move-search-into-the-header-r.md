@@ -11,7 +11,7 @@ branch: feat/work-board-move-search-into-the-header-r
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T08:46:27Z"
-updated_at: "2026-11-20T20:31:47Z"
+updated_at: "2026-11-20T20:45:34Z"
 handoff_signal_retry_count: 2
 review_rounds: 1
 review_passes: 1
@@ -99,3 +99,4 @@ Start from src/ui-app/src/components/BoardQueueSearch.vue and the Work view head
 - 2026-11-20T20:31:40Z · note: handoff requested (cli)
 - 2026-11-20T20:31:46Z · message_queued at 2026-11-20T20:31:46.922Z
 - 2026-11-20T20:31:47Z · handoff failed · task-file handoff failed at commit · git commit failed: fatal: cannot do a partial commit during a merge.
+- 2026-11-20T20:45:34Z · handoff_deferred: 3 queued message(s) must be read before review
