@@ -26,7 +26,9 @@ function mountSheet() {
   trigger.focus();
   wrapper = mount(BottomSheet, {
     props: { title: "Edit server", open: false },
-    slots: { default: '<input aria-label="Display name" /><button>Delete</button><button>Save</button>' },
+    slots: {
+      default: '<input aria-label="Display name" /><button>Delete</button><button>Save</button>',
+    },
     attachTo: document.body,
   });
   return { trigger, sheet: wrapper };
