@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 2
 id: "1276"
 title: Close-out validation log should show live progress
 type: feature
@@ -14,7 +15,6 @@ created_at: "2026-11-20T07:42:21Z"
 updated_at: "2026-11-20T10:15:52Z"
 review_rounds: 1
 review_passes: 1
-handoff_signal_retry_count: 1
 ---
 ## Problem
 During a close-out the integration log (.repoos/logs/integration/<id>-<n>.log) is not written for the running attempt: #1258's log was last modified hours earlier while its job had been validating for ~55 minutes. Drivers and the UI cannot tell whether a close-out is running, waiting for a host slot, retrying after a timeout, or stuck. The card timer also appears to count from an earlier start.
@@ -49,3 +49,4 @@ Related: #1272 (timer should count from validation start). Never touch repoos.to
 - 2026-11-20T10:10:43Z · status review→active
 - 2026-11-20T10:10:45Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-20T10:15:52Z · message_queued at 2026-11-20T10:15:52.688Z
+
