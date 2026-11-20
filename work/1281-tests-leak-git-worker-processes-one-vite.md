@@ -84,3 +84,4 @@ Reproduce with bun run test on a scoped path while watching ps for git-worker-en
 - 2026-11-20T19:51:03Z · message_delivered: 1 message(s)
 - 2026-11-20T20:01:16Z · CTO nudge: held — handoff gate is running
 - 2026-11-20T21:03:16Z · status active→review
+- 2026-11-20T21:03:16Z · message_queued at 2026-11-20T21:03:16.983Z
