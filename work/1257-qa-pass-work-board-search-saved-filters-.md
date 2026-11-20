@@ -11,7 +11,7 @@ branch: feat/qa-pass-work-board-search-saved-filters-
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T00:07:29Z"
-updated_at: "2026-11-20T00:49:36Z"
+updated_at: "2026-11-20T00:51:06Z"
 ---
 ## Problem
 Search text, filters and sort on the Work board may not persist or reset correctly across reloads, tabs and projects.
@@ -36,3 +36,4 @@ Do not touch repoos.toml.
 - 2026-11-20T00:49:33Z · note: ui verification passed: 1 shot captured with clean console
 - 2026-11-20T00:49:35Z · status active→review
 - 2026-11-20T00:49:36Z · message_queued at 2026-11-20T00:49:36.194Z
+- 2026-11-20T00:51:06Z · note: review pass 1: needs some work
