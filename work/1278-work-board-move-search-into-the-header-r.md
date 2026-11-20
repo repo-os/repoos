@@ -3,9 +3,6 @@ id: "1278"
 title: "Work board: move search into the header row, half width, drop the search chip"
 type: feature
 status: review
-needs_input: true
-needs_input_reason: review-failed
-needs_input_detail: "the opencode agent exited without output: error: OpenCode Go usage limit reached (monthly, resets in 1d 14h). To keep going now, turn on Extra Usage at https://opencode.ai/console/wrk_01KQ7ZAG4V1XEK1E46TJF13DFZ/go."
 priority: p2
 area: web
 assigned_to: ai
@@ -14,7 +11,7 @@ branch: feat/work-board-move-search-into-the-header-r
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T08:46:27Z"
-updated_at: "2026-11-20T17:26:15Z"
+updated_at: "2026-11-20T19:49:26Z"
 review_failed_report_retries: 2
 ---
 ## Problem
@@ -82,3 +79,4 @@ Start from src/ui-app/src/components/BoardQueueSearch.vue and the Work view head
 - 2026-11-20T16:22:11Z · note: review pass 3: failed — no usable report
 - 2026-11-20T16:22:11Z · needs_input
 - 2026-11-20T17:26:15Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-20T19:49:26Z · needs_input (review-failed) cleared for review again by hello@repoos.org
