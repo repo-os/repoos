@@ -11,7 +11,7 @@ branch: feat/close-outs-validate-several-tasks-at-onc
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T07:42:13Z"
-updated_at: "2026-11-20T08:22:21Z"
+updated_at: "2026-11-20T08:34:05Z"
 handoff_signal_retry_count: 2
 ---
 ## Problem
@@ -50,3 +50,4 @@ Read docs/close-out-pipeline.md and docs/remote-validation.md first. Never touch
 - 2026-11-20T08:15:22Z · message_queued at 2026-11-20T08:15:22.880Z
 - 2026-11-20T08:20:38Z · message_queued at 2026-11-20T08:20:38.028Z
 - 2026-11-20T08:22:21Z · message_delivered: 1 message(s)
+- 2026-11-20T08:34:05Z · queued message undelivered for 19m and the engineer produced no output — ending the turn so it is delivered
