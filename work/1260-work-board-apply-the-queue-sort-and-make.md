@@ -12,7 +12,7 @@ branch: feat/work-board-apply-the-queue-sort-and-make
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T00:57:33Z"
-updated_at: "2026-11-20T13:44:47Z"
+updated_at: "2026-11-20T13:53:34Z"
 last_check_failure: "repoos check at 2026-11-20T12:49:08.292Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 close_out_repair_count: 1
 review_passes: 2
@@ -111,3 +111,4 @@ Headless Playwright only, against fixtures. Do not touch repoos.toml. Keep the i
 - 2026-11-20T13:29:25Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: The server handoff for #1260 is still running. It has moved from the `check` step to `verify` (as of 13:22 UTC), so the retry is progressing. I'll check it again in about 15 minutes. I'm not starting a local check while the server run is l… · stderr: (empty)
 - 2026-11-20T13:40:37Z · message_delivered: 1 message(s)
 - 2026-11-20T13:44:47Z · body
+- 2026-11-20T13:53:34Z · CTO nudge: held — machine under pressure (CPU idle is 0% (below 5%) — holding new work until the machine has idle CPU)
