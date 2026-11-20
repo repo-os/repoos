@@ -1439,6 +1439,16 @@ export interface IntegrationPipelineSnapshot {
     phaseElapsedMs?: number | null;
     /** Time spent in every phase so far, oldest first (#0897). */
     phaseTimings?: { phase: string; startedAt: string; endedAt?: string; durationMs?: number }[];
+    /** The attempt this run belongs to; above 1 means a retry (#1276). */
+    attempt?: number;
+    /** Fine-grained step, e.g. "queued for host slot" (#1276). */
+    step?: string | null;
+    /** Where the step runs: `local` or a remote host (#1276). */
+    host?: string | null;
+    /** True when the attempt stopped writing progress: possibly stuck (#1276). */
+    progressStale?: boolean;
+    /** Why the attempt this one replaced failed (#1276). */
+    previousFailure?: { attempt: number; reason?: string; failedAt?: string } | null;
   } | null;
   /** Task ids queued behind the active job, in FIFO order. */
   queue: string[];

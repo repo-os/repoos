@@ -193,7 +193,8 @@ import {
   conflictResolutionSnapshot,
   createResolutionProvenanceStore,
 } from "../conflict-resolution.js";
-import { pendingCloseOutJobs } from "../integration-job.js";
+import { jobAttempt, pendingCloseOutJobs } from "../integration-job.js";
+import { progressIsStale } from "../close-out-progress.js";
 import { createCloseOutOutcomeStore } from "../close-out-outcome.js";
 import { resolvePipelineCheckPlan } from "../check-plan-info.js";
 import { loadDiffSnapshot } from "../diff-snapshot.js";
@@ -4769,12 +4770,26 @@ export const getIntegrationJob: RouteHandler = (ctx, _req, res, params) => {
       taskId: job.taskId,
       phase: job.phase,
       enqueuedAt: job.enqueuedAt,
+      // When this attempt began processing (ISO); null until it leaves `queued`.
       startedAt: job.startedAt,
       baseMainSha: job.baseMainSha,
       branchSha: job.branchSha,
       candidateSha: job.candidateSha,
       reason: job.reason,
       logPath: job.logPath,
+      // Live attempt progress (#1276): which attempt, what step, where it runs,
+      // when it last wrote progress, and whether that write is overdue.
+      attempt: jobAttempt(job),
+      step: job.step ?? null,
+      host: job.host ?? null,
+      lastProgressAt: job.lastProgressAt ?? null,
+      // Only an active attempt can be stuck; a finished one has stopped writing on purpose.
+      progressStale:
+        job.phase !== "done" &&
+        job.phase !== "failed" &&
+        progressIsStale(job.lastProgressAt, Date.now()),
+      progressLogPath: job.progressLogPath ?? null,
+      previousFailure: job.previousFailure ?? null,
       queuePosition: queuePos,
       queueLength: pendingJobs.length,
       conflictResolution,

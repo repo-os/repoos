@@ -24,6 +24,7 @@ import { resolveDefaultBranch } from "../core/repo-log.js";
 import type { RepoOSConfig, Task } from "../core/types.js";
 import type { IntegrationJob, JobCoordinator, JobPhase } from "./integration-job.js";
 import { jobAttempt } from "./integration-job.js";
+import { CLOSE_OUT_STEP, CloseOutProgressRecorder, LOCAL_HOST } from "./close-out-progress.js";
 import type { CloseOutOutcome, CloseOutOutcomeEvent } from "./close-out-outcome.js";
 import type { RepositoryLock, RootLock } from "./repo-lock.js";
 import type { Logger } from "../core/logger.js";
@@ -1009,6 +1010,12 @@ export class CloseOutOrchestrator {
   private ownedAttempt: number | undefined = undefined;
 
   /**
+   * The live progress recorder for the run in flight (#1276). Set for the span
+   * of one `processJob` call; `reportStep` is a no-op without it.
+   */
+  private progress: CloseOutProgressRecorder | undefined = undefined;
+
+  /**
    * Tasks whose `status: done` this process stamped into the publish commit
    * (#0886). Only these may be reverted on failure — a task that was already
    * done from an earlier close-out must stay moot/untouched.
@@ -1550,7 +1557,43 @@ export class CloseOutOrchestrator {
     return this.processJob(job);
   }
 
+  /**
+   * One processing run of the job's current attempt (#1276). Streams the run's
+   * step, host and heartbeat to the attempt's progress log and job record, and
+   * closes the log with the run's outcome. Observation only: it never changes
+   * what the phases do.
+   */
   private async processJob(job: IntegrationJob): Promise<{ ok: boolean; reason?: string }> {
+    const attempt = job.attempt ?? jobAttempt(this.coordinator.getJob(job.taskId));
+    const recorder = new CloseOutProgressRecorder({
+      root: this.config.root,
+      taskId: job.taskId,
+      attempt,
+      persist: (patch) => {
+        this.coordinator.updateJob(job.taskId, patch, attempt);
+      },
+      remoteRun: () =>
+        this.remoteValidator?.activeRemoteRuns?.().find((run) => run.taskId === job.taskId),
+    });
+    this.progress = recorder;
+    recorder.start();
+    let outcome = "stopped before finishing";
+    try {
+      const result = await this.runJobPhases(job);
+      outcome = result.ok ? "published" : (result.reason ?? "failed");
+      return result;
+    } finally {
+      recorder.stop(outcome);
+      this.progress = undefined;
+    }
+  }
+
+  /** Report the run's current step to its progress log and job record (#1276). */
+  private reportStep(step: string, host: string = LOCAL_HOST): void {
+    this.progress?.setStep(step, host);
+  }
+
+  private async runJobPhases(job: IntegrationJob): Promise<{ ok: boolean; reason?: string }> {
     const root = this.config.root;
 
     // Pin the execution generation this run owns (#0736). Every coordinator
@@ -1608,6 +1651,7 @@ export class CloseOutOrchestrator {
 
       // Syncing phase: ensure the candidate worktree exists and is up to date with main.
       if (job.phase === "syncing") {
+        this.reportStep(CLOSE_OUT_STEP.syncing);
         const syncRes = await this.syncCandidate(job);
         if (syncRes.cancelled) return this.cancelJob(job);
         if (syncRes.timedOut) return this.timeoutJob(job);
@@ -1777,6 +1821,7 @@ export class CloseOutOrchestrator {
 
       // Publishing phase: merge candidate to live main, holding the repo lock.
       if (job.phase === "publishing") {
+        this.reportStep(CLOSE_OUT_STEP.publishing);
         const pubRes = await this.publishCandidate(job);
         if (pubRes.cancelled) return this.cancelJob(job);
         if (pubRes.timedOut) return this.timeoutJob(job);
@@ -1814,6 +1859,7 @@ export class CloseOutOrchestrator {
 
       // Cleanup phase: remove candidate worktree, delete candidate branch, remove task worktree.
       if (job.phase === "cleanup") {
+        this.reportStep(CLOSE_OUT_STEP.cleanup);
         const cleanRes = await this.cleanup(job);
         if (!cleanRes.ok) {
           // Log but don't fail: the merge succeeded, so task is done even if cleanup is messy.
@@ -3026,6 +3072,7 @@ export class CloseOutOrchestrator {
         // A long build reports nothing between the "build" stage events; the
         // heartbeat keeps the card live instead of reading as a hang (#0799).
         const buildLabel = (): string => "building candidate";
+        this.reportStep(CLOSE_OUT_STEP.building);
         let buildRes = await this.withStageHeartbeat(job.taskId, buildLabel, () =>
           runProcess("bun", ["run", "build"], {
             cwd: wtPath,
@@ -3169,6 +3216,7 @@ export class CloseOutOrchestrator {
           }
         };
         const remoteGateLabel = (): string | null => (remoteUploading ? null : "remote tests");
+        this.reportStep(CLOSE_OUT_STEP.remote);
         remoteGateOutcome = await this.withStageHeartbeat(job.taskId, remoteGateLabel, () =>
           runRemoteGateAndClear(scopedRemoteRef),
         );
@@ -3340,7 +3388,14 @@ export class CloseOutOrchestrator {
           const heading = parseCheckStepHeading(checkStepBuffer);
           if (heading) currentCheckStep = heading;
         };
-        const checkLabel = (): string | null => currentCheckStep;
+        const checkLabel = (): string | null => {
+          this.reportStep(
+            currentCheckStep === "running check"
+              ? CLOSE_OUT_STEP.checks
+              : `${CLOSE_OUT_STEP.checks} · ${currentCheckStep}`,
+          );
+          return currentCheckStep;
+        };
         const rawCheck = (
           cli: string,
           args: string[],
@@ -3462,6 +3517,7 @@ export class CloseOutOrchestrator {
           return { checkRes, outcome };
         };
 
+        this.reportStep(CLOSE_OUT_STEP.checks);
         let { checkRes, outcome } = await this.withStageHeartbeat(job.taskId, checkLabel, () =>
           runGatePass(baseCheckArgs, checkEnv),
         );

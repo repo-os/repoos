@@ -178,6 +178,44 @@ curl -s http://localhost:7171/api/integration-jobs   # every job in the queue
 
 Fields that matter: `phase`, `reason` (only present when `failed`), `baseMainSha`,
 `branchSha`, `handoffSha` (feature HEAD at handoff, when recorded), `candidateSha`.
+While an attempt runs, the live fields below say what it is doing right now.
+
+## Live attempt progress (#1276)
+
+Every processing run of a close-out attempt streams its progress, so a driver can
+tell "running", "waiting for a host slot", "retrying" and "stopped writing" apart
+without reading the server log.
+
+- **Log.** Each attempt appends to `.repoos/logs/integration/<id>-attempt-<n>.log`:
+  a start line, one line per step change (`step: <step> · host: <host>`), a
+  `heartbeat` line at least every 15 seconds while the attempt is active, and an
+  end line naming the outcome (`published`, or the failure reason). This is
+  separate from the per-check output log (`<id>-<checkAttempt>.log`, #0428), which
+  holds one failed gate run's full transcript.
+- **Job record and API.** `GET /api/tasks/<id>/integration-job` returns `attempt`
+  (the generation, which goes up on every retry), `step`, `host` (`local` or the
+  remote runner host), `lastProgressAt`, `progressStale`, `progressLogPath`,
+  `startedAt` (when this attempt began processing) and `previousFailure` (`attempt`,
+  `reason`, `failedAt` of the attempt this one replaced, set only on a retry).
+- **Steps.** `queued for host slot` (waiting for a runner slot), `bundling and
+  uploading`, `running tests` (remote run), `building candidate`, `syncing with
+  main`, `running checks · <step>` (local gate), `publishing to main`,
+  `cleaning up`, and `remote validation` when the runner's stage is not yet known.
+- **Host.** Read from the live remote run every 5 seconds, so a remote run names its
+  host from the moment it is registered. Local steps report `local`.
+- **Stale.** `progressStale` is true when the last progress write is 90 seconds old
+  or more on an active attempt. A heartbeat writes every 15 seconds, so a stale
+  value means the writer stopped, which is usually a hung close-out, not a slow
+  step. A quiet remote test run still heartbeats and is not flagged. The card and
+  drawer label a stale attempt `stalled · no progress …` and keep the step, host and
+  attempt on the label.
+- **Retries.** A retry after a timeout or failure is a new attempt (attempt number
+  up by one, log `attempt-<n+1>`), and `previousFailure` carries the reason the last
+  one failed. A cancelled attempt does not set `previousFailure`.
+
+Helpers: `src/server/close-out-progress.ts` (recorder, step names, stale rule);
+the orchestrator reports steps through `reportStep` and the recorder wraps each
+`processJob` run.
 
 ## Handoff snapshot and worktree integrity (#0598)
 

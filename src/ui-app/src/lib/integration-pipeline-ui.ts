@@ -161,6 +161,7 @@ export function integrationPipelineStalled(
 ): boolean {
   const active = snap?.active;
   if (!active || active.failed) return false;
+  if (active.progressStale === true) return true;
   const idle = integrationIdleMs(active, nowMs);
   return idle !== null && idle >= stallMs;
 }
@@ -199,6 +200,20 @@ export function integrationProgressCardLabel(label: string): string {
   return out;
 }
 
+/**
+ * "on <host> · attempt N" for the active attempt (#1276). Host is named when it
+ * is a remote runner; attempt is named only on a retry (attempt > 1). Empty when
+ * there is nothing to add, so existing labels stay unchanged.
+ */
+export function integrationAttemptContext(
+  active: NonNullable<IntegrationPipelineSnapshot["active"]>,
+): string {
+  const parts: string[] = [];
+  if (active.host) parts.push(active.host === "local" ? "local" : `on ${active.host}`);
+  if (active.attempt && active.attempt > 1) parts.push(`attempt ${active.attempt}`);
+  return parts.join(" · ");
+}
+
 /** Active-job copy for the board card and pipeline bar (#0740). */
 export function integrationActiveCopy(
   snap: IntegrationPipelineSnapshot,
@@ -207,11 +222,15 @@ export function integrationActiveCopy(
 ): IntegrationActiveCopy {
   const active = snap.active!;
   const idle = integrationIdleMs(active, nowMs);
-  const stalled = idle !== null && idle >= stallMs;
+  // The server flags an attempt whose progress writer stopped (#1276); the
+  // idle timer still catches a job that reports nothing for a long time.
+  const stalled = active.progressStale === true || (idle !== null && idle >= stallMs);
+  const ctx = integrationAttemptContext(active);
+  const withCtx = (label: string): string => (ctx ? `${label} · ${ctx}` : label);
   if (stalled) {
-    const dur = formatDuration(idle!);
+    const dur = idle !== null ? ` ${formatDuration(idle)}` : "";
     return {
-      label: `stalled · no progress ${dur}`,
+      label: withCtx(`stalled · no progress${dur}`),
       title:
         "Close-out has not reported stage progress in a while — it may be hung. Cancel to return the task to review, or retry to stop and enqueue a fresh attempt.",
       stalled: true,
@@ -225,7 +244,7 @@ export function integrationActiveCopy(
     return {
       // A live in-stage detail line — the #0782 bundle upload or a #0799
       // heartbeat naming the current long stage (e.g. "remote tests").
-      label: `integrating · ${detail}`,
+      label: withCtx(`integrating · ${detail}`),
       title:
         "Close-out is working — the detail line shows the current step. Progress refreshes every few seconds; the job is only flagged stalled when nothing arrives for a while.",
       stalled: false,
@@ -233,7 +252,8 @@ export function integrationActiveCopy(
     };
   }
   return {
-    label: `integrating · ${stage}`,
+    // The live step (#1276) names the work more precisely than the coarse stage.
+    label: withCtx(`integrating · ${active.step ?? stage}`),
     title:
       active.stage === "resolve-conflict"
         ? "Resolving an integration conflict against current main in an isolated candidate — the original review is preserved and only the resolution delta is reviewed."
