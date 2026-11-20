@@ -11,7 +11,7 @@ branch: feat/qa-pass-command-palette-and-global-keybo
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T05:08:53Z"
-updated_at: "2026-11-20T06:43:16Z"
+updated_at: "2026-11-20T07:46:52Z"
 review_passes: 3
 review_rounds: 2
 ---
@@ -99,3 +99,4 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 - 2026-11-20T06:25:52Z · note: review pass 3: good to go
 - 2026-11-20T06:43:16Z · note: ui verification passed: 1 of 1 shot captured with clean console
 - 2026-11-20T06:43:16Z · message_queued at 2026-11-20T06:43:16.377Z
+- 2026-11-20T07:46:52Z · message_overdue: still queued after 60m without being delivered
