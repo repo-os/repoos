@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-20T16:06:16Z"
-review_failed_report_retries: 2
 id: "1281"
 title: "Tests leak git worker processes: one vitest run left 48 git-worker-entry processes"
 type: feature
@@ -13,6 +11,8 @@ branch: feat/tests-leak-git-worker-processes-one-vite
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T11:47:41Z"
+updated_at: "2026-11-20T16:06:23Z"
+review_failed_report_retries: 2
 ---
 ## Problem
 On 2026-11-20 around 19:45 local, a single scoped vitest run in the #1258 engineer worktree had about 48 live src/server/git-worker-entry.ts processes (each several minutes old) plus its vitest workers, and the machine load average reached about 130 on 10 cores. This looks like a test, or the code it exercises, starting git worker processes and not shutting them down.
@@ -72,4 +72,4 @@ Reproduce with bun run test on a scoped path while watching ps for git-worker-en
 - 2026-11-20T16:06:03Z · note: shots: skipped — the diff (6 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-20T16:06:08Z · note: review pass 1: failed — no usable report
 - 2026-11-20T16:06:16Z · note: review pass 2: failed — no usable report
-
+- 2026-11-20T16:06:23Z · note: review pass 3: failed — no usable report
