@@ -11,7 +11,7 @@ branch: feat/work-board-move-search-into-the-header-r
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T08:46:27Z"
-updated_at: "2026-11-20T19:50:35Z"
+updated_at: "2026-11-20T19:50:37Z"
 review_rounds: 1
 review_passes: 1
 review_failed_report_retries: 0
@@ -84,3 +84,4 @@ Start from src/ui-app/src/components/BoardQueueSearch.vue and the Work view head
 - 2026-11-20T19:49:26Z · needs_input (review-failed) cleared for review again by hello@repoos.org
 - 2026-11-20T19:50:34Z · note: review pass 4: needs some work
 - 2026-11-20T19:50:35Z · status review→active
+- 2026-11-20T19:50:37Z · CTO nudge: held — an undelivered message is already queued
