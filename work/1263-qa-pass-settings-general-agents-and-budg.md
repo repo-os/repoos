@@ -12,7 +12,7 @@ branch: feat/qa-pass-settings-general-agents-and-budg
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T02:27:07Z"
-updated_at: "2026-11-20T14:34:14Z"
+updated_at: "2026-11-20T14:35:01Z"
 last_close_out_gate_ms: 946330
 last_close_out_gate_at: "2026-11-20T14:34:05.719Z"
 review_passes: 5
@@ -114,3 +114,4 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 - 2026-11-20T13:23:35Z · note: review pass 5: good to go
 - 2026-11-20T14:34:05Z · close-out gate completed in 946s
 - 2026-11-20T14:34:14Z · message_dropped: 1 queued message(s) discarded — task is done
+- 2026-11-20T14:35:01Z · status done→done, release:success
