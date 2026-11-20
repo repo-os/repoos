@@ -1,4 +1,6 @@
 ---
+last_close_out_gate_ms: 486241
+last_close_out_gate_at: "2026-11-20T08:52:18.104Z"
 id: "1266"
 title: "QA pass: Activity and Insights pages"
 type: feature
@@ -11,7 +13,7 @@ branch: feat/qa-pass-activity-and-insights-pages
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T03:07:06Z"
-updated_at: "2026-11-20T04:55:04Z"
+updated_at: "2026-11-20T08:52:18Z"
 review_passes: 1
 ---
 ## Problem
@@ -41,3 +43,5 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 - 2026-11-20T03:54:44Z · message_queued at 2026-11-20T03:54:44.956Z
 - 2026-11-20T04:00:47Z · note: review pass 1: good to go
 - 2026-11-20T04:55:04Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-20T08:52:18Z · close-out gate completed in 486s
+
