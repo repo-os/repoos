@@ -12,7 +12,7 @@ branch: feat/work-board-apply-the-queue-sort-and-make
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T00:57:33Z"
-updated_at: "2026-11-20T13:26:22Z"
+updated_at: "2026-11-20T13:26:42Z"
 last_check_failure: "repoos check at 2026-11-20T12:49:08.292Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 close_out_repair_count: 1
 review_passes: 2
@@ -106,3 +106,4 @@ Headless Playwright only, against fixtures. Do not touch repoos.toml. Keep the i
 - 2026-11-20T13:26:20Z · note: ui verification passed: 1 of 1 shot captured with clean console
 - 2026-11-20T13:26:22Z · message_queued at 2026-11-20T13:26:22.375Z
 - 2026-11-20T13:26:22Z · handoff failed · task-file handoff failed at review · Engineering report draft is missing: .repoos/engineering-report-drafts/1260.md
+- 2026-11-20T13:26:42Z · CTO nudge: held — an undelivered message is already queued
