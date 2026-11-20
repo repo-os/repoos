@@ -2,16 +2,19 @@
 id: "1261"
 title: "QA pass: Inbox and Review pages at phone, tablet and desktop widths"
 type: feature
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: 3b4fc96ba7cf708c49a18447a3c20952b612fa54
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-inbox-and-review-pages-at-phone-
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T01:42:34Z"
-updated_at: "2026-11-20T03:19:27Z"
+updated_at: "2026-11-20T04:32:07Z"
+last_close_out_gate_ms: 727104
+last_close_out_gate_at: "2026-11-20T04:27:14.879Z"
 review_passes: 1
 ---
 ## Problem
@@ -45,3 +48,6 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 - 2026-11-20T02:14:17Z · message_queued at 2026-11-20T02:14:17.260Z
 - 2026-11-20T02:15:26Z · note: review pass 1: good to go
 - 2026-11-20T03:19:27Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-20T04:27:14Z · close-out gate completed in 727s
+- 2026-11-20T04:29:41Z · message_dropped: 1 queued message(s) discarded — task is done
+- 2026-11-20T04:32:07Z · status done→done, release:success

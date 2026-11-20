@@ -2,16 +2,19 @@
 id: "1257"
 title: "QA pass: Work board search, saved filters and sort persistence across reloads"
 type: bug
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: 769eb05151fa7ee1b392864747740c165120ec16
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-work-board-search-saved-filters-
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T00:07:29Z"
-updated_at: "2026-11-20T03:19:26Z"
+updated_at: "2026-11-20T03:36:07Z"
+last_close_out_gate_ms: 883769
+last_close_out_gate_at: "2026-11-20T03:31:57.180Z"
 review_passes: 3
 review_rounds: 2
 last_check_failure: "repoos check at 2026-11-20T01:32:09.378Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Pipeline with filter chip bar and the not-applied note (target \"default\"): highlight .board-queue-filter-note matched nothing on /work?tab=pipeline&q=login (http://127.0.0.1:45181/work?tab=pipeline&q=login)"
@@ -93,3 +96,6 @@ Do not touch repoos.toml.
 - 2026-11-20T02:14:08Z · message_queued at 2026-11-20T02:14:08.903Z
 - 2026-11-20T02:16:16Z · note: review pass 3: good to go
 - 2026-11-20T03:19:26Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-20T03:31:57Z · close-out gate completed in 884s
+- 2026-11-20T03:33:05Z · status done→done, release:success
+- 2026-11-20T03:36:07Z · message_dropped: 1 queued message(s) discarded — task is done
