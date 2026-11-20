@@ -11,7 +11,7 @@ branch: feat/tests-leak-git-worker-processes-one-vite
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T11:47:41Z"
-updated_at: "2026-11-20T15:49:55Z"
+updated_at: "2026-11-20T15:51:15Z"
 ---
 ## Problem
 On 2026-11-20 around 19:45 local, a single scoped vitest run in the #1258 engineer worktree had about 48 live src/server/git-worker-entry.ts processes (each several minutes old) plus its vitest workers, and the machine load average reached about 130 on 10 cores. This looks like a test, or the code it exercises, starting git worker processes and not shutting them down.
@@ -64,3 +64,4 @@ Reproduce with bun run test on a scoped path while watching ps for git-worker-en
 - 2026-11-20T15:49:31Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: #1281 is still waiting on the scoped `repoos check --changed main`. The restarted run (PID 13490) is at 291 of 821 tests after about 18 minutes and hasn't exited, so there's no pass or fail yet. The handoff stays on hold until it finishes.… · stderr: (empty)
 - 2026-11-20T15:49:40Z · orphaned run process stopped · pid 13490 · /opt/homebrew/bin/bun /Users/nick/.bun/bin/repoos check · cpu 14s · age 18m
 - 2026-11-20T15:49:55Z · orphaned run process stopped · pid 18453 · ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new -o ConnectTimeout=15 -o ServerAliveInterval · cpu 0s · age 17m
+- 2026-11-20T15:51:15Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
