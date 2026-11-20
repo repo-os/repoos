@@ -11,7 +11,7 @@ branch: feat/qa-pass-settings-general-agents-and-budg
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T02:27:07Z"
-updated_at: "2026-11-20T03:22:32Z"
+updated_at: "2026-11-20T03:27:15Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -33,14 +33,14 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 ```json
 [
 {
-  "label": "Settings General with every setting control named",
-  "target": "default",
-  "route": "/settings?tab=general"
+"label": "Settings General with every setting control named",
+"target": "default",
+"route": "/settings?tab=general"
 },
 {
-  "label": "Agents Budget Controls tab with named controls",
-  "target": "default",
-  "route": "/agents?tab=budget-controls"
+"label": "Agents Budget Controls tab with named controls",
+"target": "default",
+"route": "/agents?tab=budget-controls"
 }
 ]
 ```
@@ -62,3 +62,4 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 - 2026-11-20T03:09:37Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-20T03:12:07Z · message_delivered: 1 message(s)
 - 2026-11-20T03:22:32Z · body
+- 2026-11-20T03:27:15Z · body
