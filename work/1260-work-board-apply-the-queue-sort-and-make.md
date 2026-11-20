@@ -12,7 +12,7 @@ branch: feat/work-board-apply-the-queue-sort-and-make
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T00:57:33Z"
-updated_at: "2026-11-20T04:36:19Z"
+updated_at: "2026-11-20T04:37:23Z"
 ---
 ## Problem
 Two gaps from #1257 (docs/qa/2026-11-filter-persistence-qa.md):
@@ -33,10 +33,10 @@ Headless Playwright only, against fixtures. Do not touch repoos.toml. Keep the i
 ```json
 [
 {
-  "label": "Board with applied oldest-first sort and an ignored status notice",
-  "target": "default",
-  "route": "/work?sort=oldest&status=held",
-  "highlight": ".board-queue-filters"
+"label": "Board with applied oldest-first sort and an ignored status notice",
+"target": "default",
+"route": "/work?sort=oldest&status=held",
+"highlight": ".board-queue-filters"
 }
 ]
 ```
@@ -52,3 +52,4 @@ Headless Playwright only, against fixtures. Do not touch repoos.toml. Keep the i
 - 2026-11-20T04:08:13Z · status ready→active, branch
 - 2026-11-20T04:22:08Z · body
 - 2026-11-20T04:36:19Z · body
+- 2026-11-20T04:37:23Z · CTO nudge: held — handoff gate is running
