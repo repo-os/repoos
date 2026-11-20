@@ -9,13 +9,15 @@ assigned_to: ai
 created_by: t@t
 branch: ""
 created_at: "2026-11-20T10:35:33Z"
-updated_at: "2026-11-20T10:38:55Z"
+updated_at: "2026-11-20T10:45:33Z"
 ---
 ## Problem
 The review pass history table in the task drawer has a column headed 'finding classes', which means little to a reader. It is useful as a quick view of what is wrong when a pass is not good to go.
 
 ## Desired UX
-Rename the column header to 'Issues'. Keep the content (the reviewer's class labels, a dash when none). Keep the column quick to scan.
+1. Rename the review history column 'Finding classes' to 'Issues'. Keep the content (reviewer class labels, a dash when none).
+2. Work board cards: show the task number as plain text, not a chip/button, the way the Pipeline view does, to save space on the card's top line. The task number chip in the task drawer stays the clickable one.
+3. The top line of a board card (task number, type, priority and robot icon) must never wrap to a second line. If something must shrink to fit, shorten the type label 'feature' to 'feat'.
 
 ## Acceptance criteria
 - Header in src/ui-app/src/components/TaskDrawer.vue (the finding classes th, around line 7069) reads Issues.
@@ -35,3 +37,4 @@ Copy change only. Never touch repoos.toml. Headless Playwright only.
 - 2026-11-20T10:36:08Z · screenshots
 - 2026-11-20T10:37:42Z · status inbox→ready
 - 2026-11-20T10:38:55Z · title
+- 2026-11-20T10:45:33Z · body: Desired UX (added 3, removed 1)
