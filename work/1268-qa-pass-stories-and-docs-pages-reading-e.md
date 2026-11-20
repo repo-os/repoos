@@ -58,3 +58,4 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 - 2026-11-20T05:47:28Z · message_delivered: 2 message(s)
 - 2026-11-20T05:47:40Z · CTO nudge: held — handoff gate is running
 - 2026-11-20T05:51:24Z · note: ui verification failed: ui verification failed (1 issue(s)): [missing-target] Docs reader: doc tree rows are buttons with a selected row, long doc title wraps (target "default"): highlight .tree-file.sel matched nothing on /repo?doc=docs/agent-ui-and-preview-conventions.md (http://127.0.0.1:33211/repo?doc=docs/agent-ui-and-preview-conventions.md)
+- 2026-11-20T05:51:24Z · message_queued at 2026-11-20T05:51:24.484Z
