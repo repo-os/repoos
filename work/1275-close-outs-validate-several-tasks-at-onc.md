@@ -11,7 +11,7 @@ branch: feat/close-outs-validate-several-tasks-at-onc
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T07:42:13Z"
-updated_at: "2026-11-20T09:46:58Z"
+updated_at: "2026-11-20T09:47:13Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: 82edbaa33be212d01145fb74bfb7a40640482476
 check_retry_count: 1
@@ -84,3 +84,4 @@ Read docs/close-out-pipeline.md and docs/remote-validation.md first. Never touch
 - 2026-11-20T09:46:45Z · message_queued at 2026-11-20T09:46:45.627Z
 - 2026-11-20T09:46:46Z · handoff failed · task-file handoff failed at check · repoos check failed: ◆ Check plan
 - 2026-11-20T09:46:58Z · orphaned run process stopped · pid 56591 · bun run smoke · cpu 0s · age 13s
+- 2026-11-20T09:47:13Z · orphaned run process stopped · pid 56592 · bun scripts/ui-smoke.mjs · cpu 3s · age 28s
