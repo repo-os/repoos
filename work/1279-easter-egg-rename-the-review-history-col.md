@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: ""
 created_at: "2026-11-20T10:35:33Z"
-updated_at: "2026-11-20T10:45:33Z"
+updated_at: "2026-11-20T10:45:44Z"
 ---
 ## Problem
 The review pass history table in the task drawer has a column headed 'finding classes', which means little to a reader. It is useful as a quick view of what is wrong when a pass is not good to go.
@@ -20,9 +20,9 @@ The review pass history table in the task drawer has a column headed 'finding cl
 3. The top line of a board card (task number, type, priority and robot icon) must never wrap to a second line. If something must shrink to fit, shorten the type label 'feature' to 'feat'.
 
 ## Acceptance criteria
-- Header in src/ui-app/src/components/TaskDrawer.vue (the finding classes th, around line 7069) reads Issues.
-- Any other user-facing text that says finding classes (user-docs/review-and-close-out.md and similar) is reworded to match; internal names and APIs stay unchanged.
-- Tests that assert the old header text are updated.
+- Header in TaskDrawer.vue (finding classes th, around line 7069) reads Issues; user-docs wording that says finding classes is reworded to match; internal names unchanged.
+- Board card top line uses the plain task number as in the pipeline card, and stays on one line at phone, tablet and desktop widths, including long ids and p1 badges; 'feature' becomes 'feat' only when needed to fit.
+- Tests asserting the old header text or the old chip are updated; headless fixtures at 375, 768 and 1280.
 
 ## Notes for AI
 Copy change only. Never touch repoos.toml. Headless Playwright only.
@@ -38,3 +38,4 @@ Copy change only. Never touch repoos.toml. Headless Playwright only.
 - 2026-11-20T10:37:42Z · status inbox→ready
 - 2026-11-20T10:38:55Z · title
 - 2026-11-20T10:45:33Z · body: Desired UX (added 3, removed 1)
+- 2026-11-20T10:45:44Z · body: Acceptance criteria (added 3, removed 3)
