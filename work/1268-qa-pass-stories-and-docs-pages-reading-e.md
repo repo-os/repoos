@@ -2,7 +2,7 @@
 id: "1268"
 title: "QA pass: Stories and Docs pages reading experience"
 type: feature
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -11,9 +11,9 @@ branch: feat/qa-pass-stories-and-docs-pages-reading-e
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T05:07:07Z"
-updated_at: "2026-11-20T06:04:53Z"
+updated_at: "2026-11-20T07:46:52Z"
+review_passes: 2
 review_rounds: 1
-review_passes: 1
 last_check_failure: "repoos check at 2026-11-20T05:51:27.790Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Docs reader: doc tree rows are buttons with a selected row, long doc title wraps (target \"default\"): highlight .tree-file.sel matched nothing on /repo?doc=docs/agent-ui-and-preview-conventions.md (http://127.0.0.1:33211/repo?doc=docs/agent-ui-and-preview-conventions.md)"
 handoff_signal_retry_count: 1
 ---
@@ -72,3 +72,11 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 - 2026-11-20T06:04:53Z · note: review pass 1: needs some work
 - 2026-11-20T06:04:53Z · message_delivered: 1 message(s)
 - 2026-11-20T06:04:53Z · status review→active
+- 2026-11-20T06:33:49Z · body
+- 2026-11-20T06:43:07Z · body
+- 2026-11-20T06:46:32Z · CTO nudge: held — handoff gate is running
+- 2026-11-20T06:46:45Z · note: ui verification passed: 1 of 1 shot captured with clean console
+- 2026-11-20T06:46:46Z · status active→review
+- 2026-11-20T06:46:46Z · message_queued at 2026-11-20T06:46:46.480Z
+- 2026-11-20T06:51:22Z · note: review pass 2: good to go
+- 2026-11-20T07:46:52Z · message_overdue: still queued after 60m without being delivered

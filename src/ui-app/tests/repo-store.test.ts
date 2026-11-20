@@ -346,6 +346,74 @@ describe("repo store SSE ingestion", () => {
   });
 });
 
+/**
+ * Feed entries render through `v-html`, so every free-text SSE field must be
+ * escaped before it is interpolated. Each row feeds a hostile payload through
+ * one event branch and checks that it arrives as text, not as a tag.
+ */
+describe("activity feed escapes free text", () => {
+  const PAYLOAD = `<img src=x onerror=alert(1)>`;
+  const ESCAPED = "&#60;img src=x onerror=alert(1)&#62;";
+  const cases: { name: string; event: string; data: (over: string) => Record<string, unknown> }[] =
+    [
+      {
+        name: "task title on creation",
+        event: "task.created",
+        data: (v) => ({ type: "task.created", task: makeTask({ id: "0001", title: v }) }),
+      },
+      {
+        name: "self-heal note",
+        event: "task.corrected",
+        data: (v) => ({ type: "task.corrected", id: "0001", note: v }),
+      },
+      {
+        name: "auto-approve rule",
+        event: "task.autoApproved",
+        data: (v) => ({ type: "task.autoApproved", id: "0001", rule: v }),
+      },
+      {
+        name: "preview URL",
+        event: "preview",
+        data: (v) => ({
+          type: "preview",
+          id: "0001",
+          preview: { url: v, starting: false },
+        }),
+      },
+    ];
+
+  it.each(cases)("escapes the $name", async ({ event, data }) => {
+    const repo = useRepoStore();
+    await repo.init();
+    const es = FakeEventSource.instances[0];
+    es.emit(event, data(PAYLOAD));
+    const msg = repo.feed[0].msg;
+    expect(msg).not.toContain("<img");
+    expect(msg).toContain(ESCAPED);
+  });
+});
+
+/**
+ * A server event only reaches the store if the EventSource subscribes to its
+ * name. Each row is a type the server emits and the store has a branch for;
+ * a missing subscription leaves that branch dead (task.autoApproved was).
+ */
+describe("SSE subscriptions reach the store handlers", () => {
+  it.each([
+    "task.autoApproved",
+    "task.debugTldr",
+    "task.doneErrorTldr",
+    "agent.queued",
+    "agent.dequeued",
+    "auto-engineering.state",
+    "bookkeeping.recovered",
+  ])("subscribes to %s", async (event) => {
+    const repo = useRepoStore();
+    await repo.init();
+    expect(FakeEventSource.instances[0].listeners.has(event)).toBe(true);
+  });
+});
+
 describe("agent running state", () => {
   it("marks a task running on agent.running and clears it on agent.exited", async () => {
     const repo = useRepoStore();

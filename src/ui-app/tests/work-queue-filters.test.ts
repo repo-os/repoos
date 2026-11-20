@@ -6,6 +6,7 @@ import {
   matchesWorkQueueFilters,
   NO_WORK_QUEUE_FILTERS,
   readWorkQueueFilters,
+  withWorkQueueSearch,
   workQueueFilterChips,
 } from "../src/lib/workQueueFilters";
 import type { Task } from "../src/types";
@@ -120,5 +121,24 @@ describe("work queue filters", () => {
       tab: ["review", "changes"],
     });
     expect(next).toEqual({ status: "review", task: "0001", tab: ["review", "changes"] });
+  });
+
+  it("search writes q and keeps the other queue keys and the drawer params", () => {
+    const next = withWorkQueueSearch(
+      { priority: "p1", area: "web", task: "0001", tab: "review" },
+      "login",
+    );
+    expect(next).toEqual({ priority: "p1", area: "web", task: "0001", tab: "review", q: "login" });
+  });
+
+  it("search replaces an existing q and removes it when the text is empty", () => {
+    expect(withWorkQueueSearch({ q: "old", mine: "1" }, "new")).toEqual({ q: "new", mine: "1" });
+    expect(withWorkQueueSearch({ q: "old", mine: "1" }, "")).toEqual({ mine: "1" });
+  });
+
+  it("search does not change the query it was given", () => {
+    const query = { q: "old", tab: "changes" };
+    withWorkQueueSearch(query, "");
+    expect(query).toEqual({ q: "old", tab: "changes" });
   });
 });

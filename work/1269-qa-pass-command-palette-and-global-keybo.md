@@ -2,7 +2,7 @@
 id: "1269"
 title: "QA pass: command palette and global keyboard shortcuts"
 type: feature
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -11,9 +11,9 @@ branch: feat/qa-pass-command-palette-and-global-keybo
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T05:08:53Z"
-updated_at: "2026-11-20T06:07:29Z"
+updated_at: "2026-11-20T07:46:52Z"
+review_passes: 3
 review_rounds: 2
-review_passes: 2
 ---
 ## Problem
 Sweep the command palette and keyboard shortcuts for focus, wording, mobile and screen-reader bugs.
@@ -85,3 +85,18 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 - 2026-11-20T06:07:06Z · engineer stopped by request
 - 2026-11-20T06:07:08Z · message_queued at 2026-11-20T06:07:08.918Z
 - 2026-11-20T06:07:29Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-20T06:09:53Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-20T06:09:53Z · message_queued at 2026-11-20T06:09:53.475Z
+- 2026-11-20T06:09:53Z · ↻ resuming engineer to read queued message
+- 2026-11-20T06:09:53Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The scoped `repoos check` is still running, so I'm not handing off yet. I'll wait for its completion notice before I report the result or send the handoff signal. · stderr: (empty)
+- 2026-11-20T06:09:53Z · status active→review
+- 2026-11-20T06:09:54Z · message_delivered: 2 message(s)
+- 2026-11-20T06:09:54Z · note: handoff requested (cli)
+- 2026-11-20T06:12:31Z · CTO nudge: held — handoff gate is running
+- 2026-11-20T06:21:19Z · body
+- 2026-11-20T06:22:01Z · status active→review
+- 2026-11-20T06:25:51Z · note: ui verification passed: 1 of 1 shot captured with clean console
+- 2026-11-20T06:25:52Z · note: review pass 3: good to go
+- 2026-11-20T06:43:16Z · note: ui verification passed: 1 of 1 shot captured with clean console
+- 2026-11-20T06:43:16Z · message_queued at 2026-11-20T06:43:16.377Z
+- 2026-11-20T07:46:52Z · message_overdue: still queued after 60m without being delivered

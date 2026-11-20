@@ -31,6 +31,15 @@ describe.skipIf(!existsSync(webkit.executablePath()))(
       server = await createServer({
         configFile: resolve(__dirname, "../vite.config.ts"),
         server: { host: "127.0.0.1", port: 0, strictPort: false },
+        // Pre-scan the fixture entries so their dependencies are bundled up
+        // front; a late discovery would re-hash them and strand the page on
+        // 504 "Outdated Optimize Dep" responses (see checks-live-run-responsive).
+        optimizeDeps: {
+          entries: [
+            "tests/fixtures/checks-releases-responsive.ts",
+            "tests/fixtures/repo-store-browser-stub.ts",
+          ],
+        },
         plugins: [
           {
             name: "responsive-fixture-repo-store",
@@ -58,7 +67,9 @@ describe.skipIf(!existsSync(webkit.executablePath()))(
       "renders real page components with long data at %i px",
       async (width) => {
         const page = await browser.newPage({ viewport: { width, height: 900 } });
-        page.setDefaultTimeout(5000);
+        // The first case cold-loads the real Checks and Releases components
+        // through Vite; a 5 s budget is too tight on a loaded machine.
+        page.setDefaultTimeout(30_000);
         const checkRows = Array.from({ length: 24 }, (_, i) => ({
           name: `integration-verification-${"x".repeat(120)}-${i}`,
           command: `bun run test -- ${"very-long-directory-name/".repeat(5)}${"y".repeat(80)}-${i}`,
@@ -250,8 +261,8 @@ describe.skipIf(!existsSync(webkit.executablePath()))(
 
           const refresh = page.getByRole("button", { name: "Check again" });
           // Vitest's default poll timeout is 1 s; the fixture's delayed
-          // responses can outlast that on a loaded runner, so match the page's
-          // own 5 s budget instead of racing it.
+          // responses can outlast that on a loaded runner, so poll for longer
+          // instead of racing it.
           const POLL = { timeout: 5000 };
           await expect.poll(() => refresh.isVisible(), POLL).toBe(true);
           await refresh.click();
@@ -283,6 +294,10 @@ describe.skipIf(!existsSync(webkit.executablePath()))(
           await page.close();
         }
       },
+      // Each case cold-loads the real Checks and Releases components through
+      // Vite and drives two page loads; the 5 s default is too tight for a
+      // first WebKit run on a loaded machine. Layout assertions are unchanged.
+      60_000,
     );
   },
 );

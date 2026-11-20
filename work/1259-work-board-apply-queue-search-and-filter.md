@@ -1,19 +1,22 @@
 ---
-updated_at: "2026-11-20T05:26:02Z"
-review_passes: 1
 id: "1259"
 title: "Work board: apply queue search and filters on wide screens, with a search input"
 type: feature
-status: review
+status: done
 priority: p2
 area: web
 depends_on: ["1257"]
+merged_commit: e6ce5bb400dd1c81dc0604701d2350fe31c79eb3
 assigned_to: ai
 created_by: t@t
 branch: feat/work-board-apply-queue-search-and-filter
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T00:57:29Z"
+updated_at: "2026-11-20T08:06:55Z"
+last_close_out_gate_ms: 193409
+last_close_out_gate_at: "2026-11-20T08:02:35.403Z"
+review_passes: 1
 ---
 ## Problem
 Search and quick filters only exist on the phone queue (below 720 px). The desktop board at 720 px and up can only receive them from a URL, so a user cannot set one on a wide screen (#1257 gap).
@@ -51,4 +54,7 @@ Headless Playwright only, against fixtures. Do not touch repoos.toml. Reuse the 
 - 2026-11-20T05:24:22Z · message_queued at 2026-11-20T05:24:22.642Z
 - 2026-11-20T05:24:31Z · orphaned run process stopped · pid 78960 · /opt/homebrew/Cellar/bun/1.4.2/bin/bun /Users/nick/code/nick/repoos-worktrees/feat/work-board-apply- · cpu 1s · age 30s
 - 2026-11-20T05:26:02Z · note: review pass 1: good to go
-
+- 2026-11-20T06:27:03Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-20T08:02:35Z · close-out gate completed in 193s
+- 2026-11-20T08:02:51Z · status done→done, release:success
+- 2026-11-20T08:06:55Z · message_dropped: 1 queued message(s) discarded — task is done
