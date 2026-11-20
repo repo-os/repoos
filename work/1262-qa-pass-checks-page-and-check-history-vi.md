@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 997601
-last_close_out_gate_at: "2026-11-20T09:31:20.791Z"
 id: "1262"
 title: "QA pass: Checks page and check history views"
 type: feature
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: f2dd45a7b595b3b563f0c4fc3baba00f8602aa1f
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-checks-page-and-check-history-vi
@@ -14,6 +13,8 @@ cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T02:26:53Z"
 updated_at: "2026-11-20T09:31:20Z"
+last_close_out_gate_ms: 997601
+last_close_out_gate_at: "2026-11-20T09:31:20.791Z"
 review_passes: 3
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-20T04:55:08.051Z: repoos check failed: reused check inputs changed during handoff — run the check again"
