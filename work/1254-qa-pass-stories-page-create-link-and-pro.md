@@ -11,7 +11,7 @@ branch: feat/qa-pass-stories-page-create-link-and-pro
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T23:27:29Z"
-updated_at: "2026-11-20T00:22:08Z"
+updated_at: "2026-11-20T00:36:51Z"
 ---
 ## Problem
 Creating a story, linking tasks to it and reading its progress have not been exercised end to end with edge cases.
@@ -34,3 +34,4 @@ Do not touch repoos.toml.
 - 2026-11-19T23:52:46Z · CTO nudge: held — handoff gate is running
 - 2026-11-20T00:01:37Z · CTO nudge: held — handoff gate is running
 - 2026-11-20T00:22:08Z · CTO nudge: held — handoff gate is running
+- 2026-11-20T00:36:51Z · handoff failed · remote validation failed: test failure: tests/sign-in-users-qa-browser.test.ts > sign-in, users and user menu QA (#1239) > sign-in at 1280px > tells a locked-out visitor to wait, in plain English on thinkpad — fix it in the feature branch and re-run the gate
