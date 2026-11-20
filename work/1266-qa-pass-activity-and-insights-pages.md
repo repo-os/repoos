@@ -2,7 +2,7 @@
 id: "1266"
 title: "QA pass: Activity and Insights pages"
 type: feature
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/qa-pass-activity-and-insights-pages
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T03:07:06Z"
-updated_at: "2026-11-20T03:08:12Z"
+updated_at: "2026-11-20T03:54:43Z"
 ---
 ## Problem
 Sweep the Activity and Insights pages for layout, wording and state bugs.
@@ -33,3 +33,4 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 - 2026-11-20T03:07:38Z · status inbox→ready
 - 2026-11-20T03:07:52Z · cli_override, model_override
 - 2026-11-20T03:08:12Z · status ready→active, branch
+- 2026-11-20T03:54:43Z · status active→review
