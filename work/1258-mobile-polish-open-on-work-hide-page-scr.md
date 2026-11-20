@@ -11,7 +11,7 @@ branch: feat/mobile-polish-open-on-work-hide-page-scr
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T00:15:33Z"
-updated_at: "2026-11-20T13:18:37Z"
+updated_at: "2026-11-20T13:40:27Z"
 last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
 last_handoff_failure_sha: bedc3455e991267a2057dbbd535a6d9f46966f62
 check_retry_count: 1
@@ -124,3 +124,4 @@ Screenshot attached shows the current mobile header and Mission Control. Do not 
 - 2026-11-20T13:03:33Z · CTO nudge: held — machine under pressure (CPU idle is 0% (below 5%) — holding new work until the machine has idle CPU)
 - 2026-11-20T13:09:14Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: I'm not handing off yet. The scoped gate is still red, and I don't think my change is the cause, but I haven't proven that. **Gate results (`repoos check --changed main`):** - **Run 1:** `tests` failed on two tests, `debugger-integration.t… · stderr: (empty)
 - 2026-11-20T13:18:37Z · CTO action: restart-stalled-agent (resume) · agent crashed or was interrupted mid-turn — task-file handoff failed at check · remote validation failed: test failure: tests/mobile-touch-affordances.test.ts > mobile web polish (#1139) > gives top-bar controls a 44px touch target and keeps the project name visible, tests/mobile-touch-affordances.test.ts > mobile web polish (#1139) > turns search into a compact accessible icon button on phones, tests/shot-target-support-0866.test.ts > app target resolution (#0866) > keeps APP_ROUTE_PREFIXES in sync with the UI router on mini — fix it in the feature branch and re-run the gate
+- 2026-11-20T13:40:27Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The scoped check is not green, so I have not handed off and I'm not emitting the handoff-ready signal. The expired monitor is irrelevant now; the check had already finished. **Blocker: `repoos check --changed main` fails on the `tests` ste… · stderr: (empty)
