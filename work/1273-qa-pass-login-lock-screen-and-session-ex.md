@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-20T09:15:23.483Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 id: "1273"
 title: "QA pass: login, lock screen and session expiry flows"
 type: feature
@@ -77,3 +79,4 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser. Never
 - 2026-11-20T08:43:36Z · body
 - 2026-11-20T08:46:47Z · CTO nudge: held — handoff gate is running
 - 2026-11-20T09:15:20Z · message_queued at 2026-11-20T09:15:20.449Z
+
