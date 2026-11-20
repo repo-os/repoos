@@ -80,8 +80,6 @@
   --info-alpha: var(--cyan-dim);
   --red-alpha: var(--red-tint);
   --focus: var(--border-focus);
-  --yellow: var(--amber);
-  --warning: var(--amber);
   --border-focus: var(--border-bright);
   --cyan-tint: color-mix(in srgb, var(--cyan) 12%, transparent);
   --cyan-border-tint: color-mix(in srgb, var(--cyan) 25%, transparent);

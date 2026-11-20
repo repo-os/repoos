@@ -12,7 +12,7 @@
  *
  * Set `QA_SHOTS=<dir>` to save a full-page screenshot per fixture and width.
  */
-import { existsSync, mkdirSync, readdirSync, readFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { resolve } from "node:path";
 import { webkit, type Browser, type Page } from "@playwright/test";
 import { compileStyle, parse } from "@vue/compiler-sfc";
@@ -41,6 +41,13 @@ function builtGlobalCss(): string {
   }
   if (!files.length) {
     throw new Error("Built global UI stylesheet was not found — run `bun run build`");
+  }
+  // A stale build would validate yesterday's CSS without any sign of it.
+  const source = resolve(uiRoot, "src/style.css");
+  for (const f of files) {
+    if (statSync(resolve(dir, f)).mtimeMs < statSync(source).mtimeMs) {
+      throw new Error("dist/ui predates src/style.css — run `bun run build:ui` first");
+    }
   }
   return files.map((f) => readFileSync(resolve(dir, f), "utf8")).join("\n");
 }
