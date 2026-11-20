@@ -50,11 +50,31 @@ describe.skipIf(process.platform === "win32")("Git worker child processes", () =
 
     closeAllGitWorkers();
 
+    // A child leaves the count on its exit event, which can trail the process
+    // leaving the process table, so wait for both views to settle.
     await waitFor(
-      () => liveGitWorkerChildren().length === 0,
+      () => liveGitWorkerChildren().length === 0 && gitWorkerChildCount() === 0,
       "git worker children to exit after closeAllGitWorkers",
     );
-    expect(gitWorkerChildCount()).toBe(0);
+  });
+
+  it("never runs more git worker processes than the cap, even under a concurrent burst", async () => {
+    const burst = Array.from({ length: MAX_GIT_WORKER_CHILDREN * 3 }, () => gitRoot());
+    let peakProcesses = 0;
+    let peakTracked = 0;
+    const sampler = setInterval(() => {
+      peakProcesses = Math.max(peakProcesses, liveGitWorkerChildren().length);
+      peakTracked = Math.max(peakTracked, gitWorkerChildCount());
+    }, 20);
+    try {
+      const overviews = await Promise.all(burst.map((root) => getGitWorker(root).gitOverview()));
+      expect(overviews.every((overview) => overview.useGit)).toBe(true);
+    } finally {
+      clearInterval(sampler);
+    }
+    expect(peakTracked).toBeGreaterThan(0);
+    expect(peakTracked).toBeLessThanOrEqual(MAX_GIT_WORKER_CHILDREN);
+    expect(peakProcesses).toBeLessThanOrEqual(MAX_GIT_WORKER_CHILDREN);
   });
 
   it("keeps live git worker children at or under the cap across many repositories", async () => {
