@@ -11,7 +11,7 @@ branch: feat/qa-pass-settings-general-agents-and-budg
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T02:27:07Z"
-updated_at: "2026-11-20T07:24:59Z"
+updated_at: "2026-11-20T07:25:00Z"
 review_passes: 4
 review_rounds: 2
 ---
@@ -106,4 +106,4 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 - 2026-11-20T07:18:32Z · status active→review
 - 2026-11-20T07:24:58Z · note: ui verification passed: 2 of 2 shots captured with clean console
 - 2026-11-20T07:24:59Z · note: review pass 4: needs some work — clamped by automated verification: browser verification: Handoff browser verification recorded 2 blocking issue(s): [missing-target] Settings General with every setting control named (target "default"): loading state detected: loading indicator [aria-busy="true"] on /settings?tab=general; [missing-target] Agents Budget Controls tab with named controls (target "default"): loading state detected: loading indicator [aria-busy="true"] on /agents?tab=budget-controls
-
+- 2026-11-20T07:25:00Z · message_queued at 2026-11-20T07:25:00.019Z
