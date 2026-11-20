@@ -18,7 +18,6 @@ check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-20T09:49:11.145Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Work is the home page; header row controls share one height (target \"default\"): loading state detected: loading indicator [aria-busy=\"true\"] on /work (http://127.0.0.1:34337/work)"
 review_rounds: 2
 review_passes: 3
-deferred_handoff_resume_count: 1
 ---
 ## Problem
 On a phone (seen on the Android Hub app, Mission Control page):
