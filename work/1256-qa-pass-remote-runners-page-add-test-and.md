@@ -1,0 +1,26 @@
+---
+id: "1256"
+title: "QA pass: remote runners page add, test and remove flows with failures"
+type: bug
+status: inbox
+priority: p2
+area: web
+assigned_to: ai
+created_by: t@t
+branch: ""
+created_at: "2026-11-20T00:07:05Z"
+updated_at: "2026-11-20T00:07:05Z"
+---
+## Problem
+Adding, testing and removing a remote runner has not been checked for unreachable hosts, wrong users, missing CLIs and slow responses.
+## Desired UX
+Each failure says what went wrong and what to do next in plain English; remove asks for confirmation; works at 375, 768 and 1280 px.
+## Acceptance criteria
+- Headless Playwright only against fixtures; read-only: no ssh and no change to any real runner; never open a visible browser.
+- Fix issues with tests; commit docs/qa/2026-11-runner-flows-failures-qa.md.
+## Notes for AI
+Do not touch repoos.toml.
+
+## Activity
+
+- 2026-11-20T00:07:05Z · created · t@t
