@@ -14,6 +14,7 @@ import {
 import type { Column, SortOrder } from "../stores/repo";
 import { useUiStore } from "../stores/ui";
 import { useConfigStore } from "../stores/config";
+import { keepSameIds, withoutHiddenTasks } from "../lib/boardVisibility";
 import { useBoardKeyboardNav } from "../composables/useBoardKeyboardNav";
 import { useResponsiveLayout } from "../composables/useResponsiveLayout";
 import {
@@ -25,6 +26,7 @@ import {
 } from "../lib/boardCollapse";
 import BoardColumn from "../components/BoardColumn.vue";
 import PipelineView from "../components/PipelineView.vue";
+import RouteNotice from "../components/RouteNotice.vue";
 import Button from "../components/ui/button.vue";
 import Select from "../components/ui/select/root.vue";
 import SelectContent from "../components/ui/select/content.vue";
@@ -34,6 +36,16 @@ import SelectValue from "../components/ui/select/value.vue";
 import SelectViewport from "../components/ui/select/viewport.vue";
 import IntegrationStatusBar from "../components/IntegrationStatusBar.vue";
 import MobileWorkQueue from "../components/MobileWorkQueue.vue";
+import BoardQueueFilters from "../components/BoardQueueFilters.vue";
+import BoardQueueSearch from "../components/BoardQueueSearch.vue";
+import {
+  clearWorkQueueFilterQuery,
+  hasActiveWorkQueueFilters,
+  ignoredWorkQueueFilterChips,
+  matchesWorkQueueFilters,
+  readWorkQueueFilters,
+  withWorkQueueSearch,
+} from "../lib/workQueueFilters";
 import {
   applyShotPreviewFixture,
   isShotPreviewCaptureActive,
@@ -126,11 +138,18 @@ watch(
  * stale task or leave the phone detail stuck on its loading shell.
  */
 let taskOpenRequest = 0;
+/**
+ * The `?task=` id that could not be loaded (deleted, never existed, or the
+ * server refused it). Drives the desktop "isn't on this board" notice; the
+ * phone shell has its own "Task unavailable" surface.
+ */
+const missingTaskId = ref<string | null>(null);
 watch(
   () => route.query.task,
   (v, previous) => {
     if (typeof v !== "string" || !v) {
       taskOpenRequest++;
+      missingTaskId.value = null;
       ui.activeDetailLoading = false;
       if (isNarrow.value && typeof previous === "string" && !ui.isNew) ui.close();
       return;
@@ -164,6 +183,7 @@ async function returnToQueue(): Promise<void> {
 
 async function openFromTaskParam(raw: string): Promise<void> {
   const request = ++taskOpenRequest;
+  missingTaskId.value = null;
   if (raw === "new") {
     ui.openNewTask();
     return;
@@ -200,8 +220,10 @@ async function openFromTaskParam(raw: string): Promise<void> {
     } catch {
       // Unknown id — leave the param in place so the broken link stays
       // inspectable, and let the phone shell offer Return to Work instead of a
-      // blank page. The request token keeps a stale failure from clearing a
-      // newer request's loading state.
+      // blank page. Desktop gets the same way back through `missingTaskId`.
+      // The request token keeps a stale failure from clearing a newer
+      // request's loading state.
+      if (request === taskOpenRequest) missingTaskId.value = id;
       return;
     } finally {
       if (request === taskOpenRequest) ui.activeDetailLoading = false;
@@ -263,18 +285,45 @@ function toggleHeldVisible(): void {
  *  would show. The categories are independent: each toggle only adds its own
  *  ids, and an overlap (a human task that is also held) hides until the task is
  *  visible in both categories again. */
+let hiddenIds: ReadonlySet<string> = new Set();
 const hiddenTaskIds = computed<ReadonlySet<string>>(() => {
   const ids = new Set<string>();
   if (!humanVisible.value) for (const t of repo.humanTasks) ids.add(t.id);
   if (!heldVisible.value) for (const t of repo.heldTasks) ids.add(t.id);
-  return ids;
+  // Same ids as last time: return the old Set so the board does not re-render.
+  hiddenIds = keepSameIds(ids, hiddenIds);
+  return hiddenIds;
 });
 
-/** The board's per-status task list with the hidden categories removed. */
+// ── #1257 Queue search and quick filters on the board ─────────────────
+// The phone queue writes search and quick filters to the URL (#1138). A
+// phone-width session or a shared link can carry them to a wider screen, so the
+// board applies the same filters and shows them in a chip bar with a clear
+// control. At 720px and up the board also has a search box (#1259) that writes
+// `q` to the same URL key, so a search set on a wide screen survives a reload.
+const queueFilters = computed(() => readWorkQueueFilters(route.query));
+const queueFiltersActive = computed(() => hasActiveWorkQueueFilters(queueFilters.value));
+const ignoredQueueFilters = computed(() => ignoredWorkQueueFilterChips(route.query));
+/** The bar shows for an applied filter or a URL value that was not applied. */
+const queueBarVisible = computed(
+  () => queueFiltersActive.value || ignoredQueueFilters.value.length > 0,
+);
+function clearQueueFilters(): void {
+  void router.replace({ query: clearWorkQueueFilterQuery(route.query) });
+}
+function setQueueSearch(text: string): void {
+  void router.replace({ query: withWorkQueueSearch(route.query, text) });
+}
+
+/** The board's per-status task list with the queue filters and the hidden
+ *  categories removed. */
 function visibleByStatus(status: string): Task[] {
-  const hidden = hiddenTaskIds.value;
+  const filters = queueFilters.value;
   const tasks = repo.byStatus(status);
-  return hidden.size ? tasks.filter((t) => !hidden.has(t.id)) : tasks;
+  const matching = queueFiltersActive.value
+    ? tasks.filter((t) => matchesWorkQueueFilters(t, filters))
+    : tasks;
+  return withoutHiddenTasks(matching, hiddenTaskIds.value);
 }
 
 // ── #0290 Keyboard navigation over the board ─────────────────────────────
@@ -499,6 +548,14 @@ function openHeld(task: Task): void {
     </main>
   </template>
   <div v-else class="work-page">
+    <RouteNotice
+      v-if="missingTaskId"
+      title="This task isn't on the board"
+      :message="`Task #${missingTaskId} could not be found. It may have been deleted, or the link may be mistyped.`"
+      data-testid="work-task-missing"
+    >
+      <Button variant="outline" @click="returnToQueue">Back to Work</Button>
+    </RouteNotice>
     <div class="work-header">
       <div class="work-header-copy">
         <div class="page-title">Work Queue</div>
@@ -631,6 +688,20 @@ function openHeld(task: Task): void {
       <router-link to="/work" class="filter-clear">Show all statuses</router-link>
     </div>
 
+    <BoardQueueSearch
+      v-if="effectiveView === 'board'"
+      :model-value="queueFilters.query"
+      @update:model-value="setQueueSearch"
+    />
+
+    <BoardQueueFilters
+      v-if="queueBarVisible"
+      :filters="queueFilters"
+      :ignored="ignoredQueueFilters"
+      :applied="effectiveView === 'board'"
+      @clear="clearQueueFilters"
+    />
+
     <PipelineView v-show="effectiveView === 'pipeline'" />
 
     <section
@@ -672,7 +743,7 @@ function openHeld(task: Task): void {
           :col="filterCol!"
           :bar-color="filterCol!.id === 'draft' ? DRAFT_BAR : ''"
           :tasks="visibleByStatus(filterCol!.id)"
-          empty-text="—"
+          :empty-text="filterCol!.id === 'draft' ? '—' : undefined"
           force-expand
           :drag-enabled="false"
           :highlight-id="boardKey.highlightId.value"

@@ -218,6 +218,13 @@ function str(v: unknown): string | null {
  * `{ error: { message } }` and `{ error: "..." }` forms, plus top-level
  * `{ message: "..." }` and `{ message: "...", errors: [...] }`.
  */
+/** Next step appended to every "key rejected" message (plain English, no upstream text). */
+const REJECTED_KEY_NEXT_STEP =
+  "Check the key was copied in full, then use Replace key to paste it again.";
+/** Network-level failure text: the request never got an HTTP status back. */
+const unreachableMessage = (label: string): string =>
+  `${label} could not be reached. Check your internet connection, then press Retry.`;
+
 function upstreamError(body: unknown, fallback: string): string {
   if (typeof body === "object" && body !== null) {
     const obj = body as Record<string, unknown>;
@@ -338,6 +345,9 @@ export async function fetchOpenRouterSpend(apiKey: string): Promise<OpenRouterSp
   ): { data: unknown | null; error: string | null } => {
     if (part.status === "fulfilled") {
       const { body, status } = part.value;
+      if (status === 401) {
+        return { data: null, error: `OpenRouter rejected the API key. ${REJECTED_KEY_NEXT_STEP}` };
+      }
       if (status >= 400) {
         return { data: null, error: upstreamError(body, `OpenRouter API returned ${status}`) };
       }
@@ -345,7 +355,7 @@ export async function fetchOpenRouterSpend(apiKey: string): Promise<OpenRouterSp
     }
     return {
       data: null,
-      error: part.reason instanceof Error ? part.reason.message : "OpenRouter request failed",
+      error: unreachableMessage("OpenRouter"),
     };
   };
 
@@ -514,10 +524,11 @@ export async function fetchOpenCodeGoUsage(apiKey: string): Promise<OpenCodeGoUs
       signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     });
   } catch {
-    throw new Error("Could not reach the opencode Go usage API.");
+    throw new Error(unreachableMessage("The opencode Go usage API"));
   }
   const body = await parseJsonResponse<unknown>(res, "opencode Go");
-  if (res.status === 401) throw new Error(upstreamError(body, "opencode rejected the API key."));
+  if (res.status === 401)
+    throw new Error(`opencode rejected the API key. ${REJECTED_KEY_NEXT_STEP}`);
   if (res.status >= 400)
     throw new Error(upstreamError(body, `opencode Go API returned ${res.status}`));
   return parseOpenCodeGoUsage(body);
@@ -698,7 +709,7 @@ export async function fetchDeepInfraSpend(apiKey: string): Promise<DeepInfraSpen
     if (part.status === "fulfilled") {
       const { body, status } = part.value;
       if (status === 401)
-        return { data: null, error: upstreamError(body, `${label} rejected the API key.`) };
+        return { data: null, error: `${label} rejected the API key. ${REJECTED_KEY_NEXT_STEP}` };
       if (status >= 400) {
         return { data: null, error: upstreamError(body, `${label} API returned ${status}`) };
       }
@@ -706,7 +717,7 @@ export async function fetchDeepInfraSpend(apiKey: string): Promise<DeepInfraSpen
     }
     return {
       data: null,
-      error: part.reason instanceof Error ? part.reason.message : `${label} request failed`,
+      error: unreachableMessage(label),
     };
   };
 

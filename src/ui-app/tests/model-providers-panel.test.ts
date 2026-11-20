@@ -148,6 +148,23 @@ function stubFetch(routes: StubRoute[]): ReturnType<typeof vi.fn> {
   return fn;
 }
 
+/** Empty OpenRouter usage payload for key-flow tests (no spend figures). */
+const EMPTY_OPENROUTER_USAGE = {
+  kind: "openrouter",
+  credits: null,
+  creditsError: "Only management keys can perform this operation",
+  key: {
+    label: null,
+    usageDaily: null,
+    usageWeekly: null,
+    usageMonthly: null,
+    limit: null,
+    limitRemaining: null,
+    rateLimit: null,
+  },
+  keyError: null,
+};
+
 const providersRoute = (providers: ModelProvidersResponse["providers"]): StubRoute => ({
   match: (url) =>
     url.includes("/api/model-providers") && !url.includes("/usage") && !url.includes("/key"),
@@ -289,7 +306,8 @@ describe("ModelProvidersPanel — key flow", () => {
 
   it("a failed save shows the error and keeps the form open", async () => {
     const key = keyRoute(400, {
-      error: "Could not save the key: Secret value must not contain newlines",
+      error:
+        "That doesn't look like a valid OpenRouter key — it spans more than one line. Paste the key again as a single line.",
     });
     stubFetch([providersRoute(providersFixture()), key]);
     const wrapper = mount(ModelProvidersPanel);
@@ -303,7 +321,7 @@ describe("ModelProvidersPanel — key flow", () => {
 
     expect(key.calls).toHaveLength(1);
     expect(wrapper.findAll(".mp-row")[0].text()).toContain(
-      "Secret value must not contain newlines",
+      "it spans more than one line. Paste the key again as a single line.",
     );
     expect(wrapper.findAll(".mp-row")[0].find(".mp-key-form").exists()).toBe(true);
   });
@@ -343,6 +361,78 @@ describe("ModelProvidersPanel — key flow", () => {
     const saved = JSON.parse(key.calls![0].opts!.body as string);
     expect(saved).toEqual({ key: "" });
     expect(wrapper.findAll(".mp-row")[0].find(".mp-key-form").exists()).toBe(true);
+  });
+
+  it("refuses a Save with nothing pasted, so a saved key is not cleared by accident", async () => {
+    const key = keyRoute(200, { ok: true, hasKey: false });
+    stubFetch([
+      providersRoute(providersFixture([{ hasKey: true }])),
+      key,
+      openrouterUsageRoute(EMPTY_OPENROUTER_USAGE),
+    ]);
+    const wrapper = mount(ModelProvidersPanel);
+    await flushPromises();
+    await nextTick();
+
+    const replace = wrapper
+      .findAll(".mp-row")[0]
+      .findAll("button")
+      .find((b) => b.text() === "Replace key");
+    await replace!.trigger("click");
+    await nextTick();
+    await wrapper.findAll(".mp-row")[0].find(".mp-key-form button").trigger("click");
+    await flushPromises();
+    await nextTick();
+
+    expect(key.calls).toHaveLength(0);
+    expect(wrapper.findAll(".mp-row")[0].find(".mp-key-form .mp-error").text()).toBe(
+      "Paste your OpenRouter API key to save it. To remove the saved key, use Clear.",
+    );
+  });
+
+  it("a failed Clear shows its error on the saved row, which stays saved", async () => {
+    const key = keyRoute(500, {
+      error:
+        "Could not write the key to .env. Check that the repo folder is writable, then try again.",
+    });
+    stubFetch([
+      providersRoute(providersFixture([{ hasKey: true }])),
+      key,
+      openrouterUsageRoute(EMPTY_OPENROUTER_USAGE),
+    ]);
+    const wrapper = mount(ModelProvidersPanel);
+    await flushPromises();
+    await nextTick();
+
+    const clearBtn = wrapper
+      .findAll(".mp-row")[0]
+      .findAll("button")
+      .find((b) => b.text() === "Clear");
+    await clearBtn!.trigger("click");
+    await flushPromises();
+    await nextTick();
+
+    const row = wrapper.findAll(".mp-row")[0];
+    expect(row.find(".mp-key-form").exists()).toBe(false);
+    expect(row.text()).toContain("Could not write the key to .env.");
+    expect(row.find("[data-test-id=model-providers-key-status]").text()).toBe("Saved");
+  });
+
+  it("labels each live key row Saved or Not set, with a masked input and no key text", async () => {
+    stubFetch([
+      providersRoute(providersFixture([{ hasKey: true }])),
+      openrouterUsageRoute(EMPTY_OPENROUTER_USAGE),
+    ]);
+    const wrapper = mount(ModelProvidersPanel);
+    await flushPromises();
+    await nextTick();
+
+    const rows = wrapper.findAll(".mp-row");
+    expect(rows[0].find("[data-test-id=model-providers-key-status]").text()).toBe("Saved");
+    expect(rows[1].find("[data-test-id=model-providers-key-status]").text()).toBe("Not set");
+    expect(rows[1].find(".mp-key-form input").attributes("type")).toBe("password");
+    // Link-out rows have no key at all, so no status pill.
+    expect(rows[2].find("[data-test-id=model-providers-key-status]").exists()).toBe(false);
   });
 });
 

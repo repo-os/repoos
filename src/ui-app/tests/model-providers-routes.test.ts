@@ -330,6 +330,42 @@ describe("POST /api/model-providers/:id/key", () => {
     expect(capture.statusCode).toBe(400);
     expect(existsSync(join(root, ".env"))).toBe(false);
   });
+
+  it("explains a key pasted across several lines and never writes it", async () => {
+    const root = tmpRoot();
+    const ctx = makeCtx(root);
+    const { capture, res } = makeRes();
+    await setModelProviderKey(
+      ctx as never,
+      reqWithBody({ key: "sk-test-fake-0803\nREPOOS_OTHER=1" }) as IncomingMessage,
+      res as never,
+      { param1: "openrouter" },
+    );
+    expect(capture.statusCode).toBe(400);
+    expect(capture.body.error).toBe(
+      "That doesn't look like a valid OpenRouter key — it spans more than one line. Paste the key again as a single line.",
+    );
+    expect(existsSync(join(root, ".env"))).toBe(false);
+  });
+
+  it("answers a failed .env write with a plain-English next step and no path", async () => {
+    const root = tmpRoot();
+    // The repo folder does not exist, so the .env write fails.
+    const ctx = { config: loadConfig(root) };
+    ctx.config.root = join(root, "missing-repo");
+    const { capture, res } = makeRes();
+    await setModelProviderKey(
+      ctx as never,
+      reqWithBody({ key: "sk-test-fake-0803" }) as IncomingMessage,
+      res as never,
+      { param1: "openrouter" },
+    );
+    expect(capture.statusCode).toBe(500);
+    expect(capture.body.error).toBe(
+      "Could not write the key to .env. Check that the repo folder is writable, then try again.",
+    );
+    expect(JSON.stringify(capture.body)).not.toContain("missing-repo");
+  });
 });
 
 describe("GET /api/model-providers/:id/usage", () => {
@@ -455,7 +491,7 @@ describe("GET /api/model-providers/:id/usage", () => {
     }
   });
 
-  it("surfaces an upstream rejection as a 502 with the upstream message", async () => {
+  it("surfaces an upstream rejection as a 502 with a plain-English next step", async () => {
     const root = tmpRoot();
     process.env.REPOOS_OPENCODE_GO_API_KEY = "zen-key";
     vi.stubGlobal(
@@ -477,7 +513,9 @@ describe("GET /api/model-providers/:id/usage", () => {
     const { capture, res } = makeRes();
     await getModelProviderUsage(ctx as never, makeReq(), res as never, { param1: "opencode-go" });
     expect(capture.statusCode).toBe(502);
-    expect(capture.body.error).toBe("Missing API key.");
+    expect(capture.body.error).toBe(
+      "opencode rejected the API key. Check the key was copied in full, then use Replace key to paste it again.",
+    );
   });
 });
 

@@ -218,6 +218,10 @@ export interface CliShotPlanInput {
   fixtureValidator?: (id: string) => boolean;
   /** The target that serves the main app, for state/app-route defaults (#0866). */
   appTarget?: string;
+  /** The `--viewport` size (default 1280x800), the size an undeclared web shot gets (#1267). */
+  viewport?: { width: number; height: number };
+  /** True when `--viewport` was typed: the fallback captures that one size only (#1267). */
+  viewportExplicit?: boolean;
 }
 
 /** The plan plus the visible notes `cmdShot` prints alongside it. */
@@ -264,6 +268,8 @@ export function buildCliShotPlan(input: CliShotPlanInput): CliShotPlan {
     selector: input.selector,
     ...(input.env ? { env: input.env } : {}),
     ...(input.glob ? { glob: input.glob } : {}),
+    ...(input.viewport ? { defaultViewport: input.viewport } : {}),
+    ...(input.viewportExplicit && input.viewport ? { viewports: [input.viewport] } : {}),
   });
   return {
     entries: built.entries,
@@ -539,7 +545,8 @@ export async function cmdShot(args: string[]): Promise<number> {
     --base <ref>       Base branch for changed-path resolution (default "main")
     --wait <ms>        Settle time after load before capturing (default 900)
     --full-page        Capture the full scrollable page
-    --viewport <WxH>   Viewport size (default 1280x800)`);
+    --viewport <WxH>   Viewport size for every capture (default: an undeclared
+                       capture shoots phone 390x844 and desktop 1280x800)`);
     return 0;
   }
   if (opts.error) {
@@ -675,6 +682,8 @@ export async function cmdShot(args: string[]): Promise<number> {
       ...(opts.env ? { env: opts.env } : {}),
       ...(opts.glob ? { glob: opts.glob } : {}),
       ...(fixtureValidator ? { fixtureValidator } : {}),
+      viewport: opts.viewport,
+      viewportExplicit: opts.viewportExplicit,
     });
     for (const error of built.declaredErrors) {
       console.error(c.yellow("  · ") + `declared shot list: ${error}`);

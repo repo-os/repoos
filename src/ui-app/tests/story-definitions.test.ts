@@ -49,7 +49,7 @@ describe("story definition files", () => {
       );
       expect(() =>
         writeStoryDefinition(c, { name: "project updates", body: "Again.", createdBy: "x" }),
-      ).toThrow(/already exists/);
+      ).toThrow('A story named "Project Updates" already exists. Choose a different name.');
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -231,7 +231,7 @@ describe("rewriteStoryDefinition", () => {
       writeStoryDefinition(c, { name: "Taken", body: "x", createdBy: "a" });
       expect(() =>
         rewriteStoryDefinition(c, definition.path, { name: "taken", body: "y" }),
-      ).toThrow(/already exists/);
+      ).toThrow('A story named "Taken" already exists. Choose a different name.');
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

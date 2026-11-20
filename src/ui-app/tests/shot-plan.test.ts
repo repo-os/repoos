@@ -228,7 +228,7 @@ describe("parseShotPlan", () => {
 });
 
 describe("buildCapturePlan", () => {
-  it("falls back to one '/' entry per resolved target, captioned as auto match", () => {
+  it("falls back to a phone and a desktop '/' entry per resolved target, captioned as auto match", () => {
     const { entries, errors } = buildCapturePlan(["Docs site", "default"], [], {
       matchedGlobs: new Map([
         ["Docs site", ["user-docs/**"]],
@@ -236,34 +236,55 @@ describe("buildCapturePlan", () => {
       ]),
     });
     expect(errors).toEqual([]);
-    // #0603: the fallback always captions itself — label + provenance.
+    // #0603: the fallback always captions itself — label + provenance. #1267:
+    // each web target is shot at phone then desktop, and the caption names the size.
     expect(entries).toEqual([
       {
         target: "Docs site",
         route: "/",
-        label: "auto: matched user-docs/**",
-        provenance: { kind: "auto", globs: ["user-docs/**"] },
+        viewportWidth: 390,
+        viewportHeight: 844,
+        label: "auto: matched user-docs/** · phone 390x844",
+        provenance: { kind: "auto", globs: ["user-docs/**"], viewport: "phone 390x844" },
+      },
+      {
+        target: "Docs site",
+        route: "/",
+        viewportWidth: 1280,
+        viewportHeight: 800,
+        label: "auto: matched user-docs/** · desktop 1280x800",
+        provenance: { kind: "auto", globs: ["user-docs/**"], viewport: "desktop 1280x800" },
       },
       {
         target: "default",
         route: "/",
-        label: "auto: matched src/ui-app/**",
-        provenance: { kind: "auto", globs: ["src/ui-app/**"] },
+        viewportWidth: 390,
+        viewportHeight: 844,
+        label: "auto: matched src/ui-app/** · phone 390x844",
+        provenance: { kind: "auto", globs: ["src/ui-app/**"], viewport: "phone 390x844" },
+      },
+      {
+        target: "default",
+        route: "/",
+        viewportWidth: 1280,
+        viewportHeight: 800,
+        label: "auto: matched src/ui-app/** · desktop 1280x800",
+        provenance: { kind: "auto", globs: ["src/ui-app/**"], viewport: "desktop 1280x800" },
       },
     ]);
   });
 
-  it("labels a fallback with no known glob as plain auto", () => {
+  it("labels a fallback with no known glob as plain auto, still naming its size", () => {
     const { entries } = buildCapturePlan(["default"], []);
-    expect(entries[0]?.label).toBe("auto");
-    expect(entries[0]?.provenance).toEqual({ kind: "auto" });
+    expect(entries[0]?.label).toBe("auto · phone 390x844");
+    expect(entries[0]?.provenance).toEqual({ kind: "auto", viewport: "phone 390x844" });
   });
 
   it("skips a docs-content-only target on the fallback path (#0603)", () => {
     const { entries, autoSkips } = buildCapturePlan(["Docs site", "default"], [], {
       docsContentOnly: new Set(["Docs site"]),
     });
-    expect(entries.map((e) => e.target)).toEqual(["default"]);
+    expect(entries.map((e) => e.target)).toEqual(["default", "default"]);
     expect(autoSkips[0]).toMatch(/Docs site skipped: no docs shot declared/);
   });
 
@@ -276,11 +297,13 @@ describe("buildCapturePlan", () => {
     });
     expect(entries.map((e) => [e.target, e.route])).toEqual([
       ["Docs site", "/repo/commits/abc123"],
+      ["Docs site", "/repo/commits/abc123"],
+      ["default", "/repo/commits/abc123"],
       ["default", "/repo/commits/abc123"],
     ]);
     // Still captioned (#0603): a request is not a declaration, but a shot with
     // no reason is never anonymous.
-    expect(entries[1]?.label).toBe("auto: matched src/ui-app/**");
+    expect(entries[3]?.label).toBe("auto: matched src/ui-app/** · desktop 1280x800");
     expect(autoSkips).toEqual([]);
   });
 
@@ -296,7 +319,7 @@ describe("buildCapturePlan", () => {
       route: "/configuration",
       docsContentOnly: new Set(["Docs site"]),
     });
-    expect(requested.entries.map((e) => e.route)).toEqual(["/configuration"]);
+    expect(requested.entries.map((e) => e.route)).toEqual(["/configuration", "/configuration"]);
     expect(requested.autoSkips).toEqual([]);
   });
 
@@ -327,7 +350,11 @@ describe("buildCapturePlan", () => {
   it("maps an omitted target to the default target or the sole resolution", () => {
     const one = buildCapturePlan(["default"], [{ route: "/board", label: "Board" }]);
     expect(one.entries[0].target).toBe("default");
-    expect(one.entries[0].provenance).toEqual({ kind: "declared", label: "Board" });
+    expect(one.entries[0].provenance).toEqual({
+      kind: "declared",
+      label: "Board",
+      viewport: "desktop 1280x800",
+    });
 
     const sole = buildCapturePlan(["Docs site"], [{ route: "/", highlight: ".title" }]);
     expect(sole.entries[0].target).toBe("Docs site");
@@ -376,7 +403,11 @@ describe("buildCapturePlan", () => {
     );
     expect(entries).toHaveLength(2);
     expect(entries[1].steps).toEqual([{ click: "button.new" }]);
-    expect(entries[0].provenance).toEqual({ kind: "declared", label: "Board" });
+    expect(entries[0].provenance).toEqual({
+      kind: "declared",
+      label: "Board",
+      viewport: "desktop 1280x800",
+    });
   });
 
   it("collapses near-duplicate declared shots and merges highlights (#0613)", () => {
@@ -488,7 +519,8 @@ describe("buildCliShotPlan (#0610)", () => {
   it("carries a typed positional route into the capture entry", () => {
     // The reported bug: `repoos shot /repo/commits/abc123` captured `/`.
     const built = plan(["/repo/commits/abc123"]);
-    expect(built.entries).toHaveLength(1);
+    expect(built.entries).toHaveLength(2);
+    expect(built.entries.map((e) => e.viewportWidth)).toEqual([390, 1280]);
     expect(built.entries[0]).toMatchObject({
       target: "default",
       route: "/repo/commits/abc123",
@@ -497,10 +529,11 @@ describe("buildCliShotPlan (#0610)", () => {
 
   it("replaces the declared list when a route or selector is pinned", () => {
     const routed = plan(["/settings"]);
-    expect(routed.entries.map((e) => e.route)).toEqual(["/settings"]);
+    expect(routed.entries.map((e) => e.route)).toEqual(["/settings", "/settings"]);
     expect(routed.entries[0].provenance).toEqual({
       kind: "auto",
       globs: ["src/ui-app/**"],
+      viewport: "phone 390x844",
     });
 
     const selector = plan(["--selector", ".sidebar"]);
@@ -523,7 +556,7 @@ describe("buildCliShotPlan (#0610)", () => {
     // fallback — with the parse error still reported, not swallowed.
     const malformed = plan([], { body: bodyWithShots("not json") });
     expect(malformed.declaredErrors[0]).toMatch(/does not parse/i);
-    expect(malformed.entries.map((e) => e.route)).toEqual(["/"]);
+    expect(malformed.entries.map((e) => e.route)).toEqual(["/", "/"]);
 
     const docs = plan(["--target", "Docs site"], {
       body: "## Problem\n\nProse only.",
@@ -615,7 +648,7 @@ describe("planAutoCapture gates (#0594)", () => {
           target: "default",
           route: "/settings",
           label: "Settings",
-          provenance: { kind: "declared", label: "Settings" },
+          provenance: { kind: "declared", label: "Settings", viewport: "desktop 1280x800" },
         },
       ],
       errors: [],

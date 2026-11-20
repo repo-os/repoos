@@ -2,7 +2,8 @@
 /**
  * #1258: Work is the home page. Opening the app root (and so the Hub's start
  * URL, which is the server root) lands on /work; Mission Control moved to
- * /control. Deep links and unknown paths keep working.
+ * /control. Deep links keep working, and unknown paths reach the not-found
+ * view (#1252) rather than a redirect.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createPinia, setActivePinia } from "pinia";
@@ -35,10 +36,11 @@ describe("home route", () => {
     expect(router.currentRoute.value.name).toBe("work");
   });
 
-  it("sends an unknown path to Work through the root redirect", async () => {
+  it("keeps unknown paths on the not-found view instead of redirecting", async () => {
     await router.push("/no-such-page");
     await router.isReady();
-    expect(router.currentRoute.value.path).toBe("/work");
+    expect(router.currentRoute.value.path).toBe("/no-such-page");
+    expect(router.currentRoute.value.name).toBe("not-found");
   });
 
   it("keeps Mission Control on its own /control path", async () => {

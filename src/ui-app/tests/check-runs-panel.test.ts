@@ -130,7 +130,10 @@ describe("CheckRunsPanel loading (#0950)", () => {
       const wrapper = mount(CheckRunsPanel);
       await flushPromises();
 
-      expect(wrapper.find(rows.length ? ".cr-table" : ".cr-empty").exists()).toBe(true);
+      // With cached rows the table stays; with none, a failed read must not
+      // also claim "No recorded runs yet" (#1262).
+      if (rows.length) expect(wrapper.find(".cr-table").exists()).toBe(true);
+      else expect(wrapper.find(".cr-empty").exists()).toBe(false);
       expect(wrapper.find(".cr-err").text()).toContain("refresh boom");
       expect(wrapper.find(".page-skeleton").exists()).toBe(false);
       wrapper.unmount();

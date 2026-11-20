@@ -5,6 +5,7 @@ import { api, JSON_OPTS } from "../api";
 import { isShotPreviewCaptureActive } from "../lib/shot-preview-fixtures";
 import { useRepoStore } from "../stores/repo";
 import Card from "./ui/card.vue";
+import ConfirmDialog from "./ConfirmDialog.vue";
 import DeleteConfirmDialog from "./DeleteConfirmDialog.vue";
 import type { SystemStats } from "../types";
 
@@ -112,9 +113,22 @@ async function cleanWorktrees(): Promise<void> {
   }
 }
 
+/** PID waiting on the kill dialog (replaces native confirm()). */
+const pendingKillPid = ref<number | null>(null);
+
+function askKillProcess(pid: number): void {
+  if (killingPid.value !== null) return;
+  pendingKillPid.value = pid;
+}
+
+function confirmKillProcess(): void {
+  const pid = pendingKillPid.value;
+  pendingKillPid.value = null;
+  if (pid !== null) void killProcess(pid);
+}
+
 async function killProcess(pid: number): Promise<void> {
   if (killingPid.value !== null) return;
-  if (!confirm(`Kill process ${pid}? This cannot be undone.`)) return;
   killingPid.value = pid;
   try {
     await api("/api/system/kill-process", JSON_OPTS("POST", { pid }));
@@ -515,7 +529,7 @@ const serveMessage = computed(() => {
               class="chip-kill"
               :disabled="killingPid === p.pid"
               title="Kill this stray process"
-              @click="killProcess(p.pid)"
+              @click="askKillProcess(p.pid)"
             >
               ×
             </button>
@@ -642,7 +656,7 @@ const serveMessage = computed(() => {
               class="kill-btn"
               :disabled="killingPid === p.pid"
               title="Kill this process"
-              @click="killProcess(p.pid)"
+              @click="askKillProcess(p.pid)"
             >
               {{ killingPid === p.pid ? "…" : "kill" }}
             </button>
@@ -666,6 +680,19 @@ const serveMessage = computed(() => {
       This removes the worktrees listed in the preview. Worktrees kept for active close-outs or
       unmerged work remain in place.
     </DeleteConfirmDialog>
+    <ConfirmDialog
+      :open="pendingKillPid !== null"
+      :title="`Kill process ${pendingKillPid ?? ''}?`"
+      confirm-label="Kill process"
+      @update:open="
+        (v) => {
+          if (!v) pendingKillPid = null;
+        }
+      "
+      @confirm="confirmKillProcess"
+    >
+      This cannot be undone.
+    </ConfirmDialog>
   </Card>
 </template>
 

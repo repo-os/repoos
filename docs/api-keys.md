@@ -28,7 +28,9 @@ deployment bindings do not sync or publish credentials to providers. See
 4. **UI:** masked input (`type="password"`), a real `placeholder` attribute,
    save **only** on an explicit Save action, and status text of **Saved** /
    **Not set** / **Ready** — never echo the secret or show the env var as a
-   free-text field.
+   free-text field. The server reads an empty key as "clear", so the UI refuses
+   a Save with nothing pasted; only an explicit Clear sends an empty value
+   (#1253).
 5. **Tests:** use fake values only (for example `sk-test-fake-0803`). Assert that
    saving a key does not modify `repoos.toml` or any tracked path.
 

@@ -271,6 +271,22 @@ function queueWait(ms: number): string {
 .ips-queue-label {
   color: var(--txt-faint);
 }
+/* Same divider and label treatment as the queue row above it, so the local
+   slot chips read as a second line of the pipeline, not a stray heading. */
+.ips-local-slots {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--border);
+  font-size: 12px;
+}
+.ips-local-slots > strong {
+  font-weight: 500;
+  color: var(--txt-faint);
+}
 .ips-chip {
   font-size: 11.5px;
   font-weight: 600;

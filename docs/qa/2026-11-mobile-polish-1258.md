@@ -16,7 +16,7 @@ Automated, headless WebKit only (`src/ui-app/tests/mobile-header-scroll-browser.
 - **Project chip:** a 999px radius (matching the search field beside it), 13px text at weight 600, and a mono name at weight 700.
 - **Phone gutters:** at 375 and 412 px the page's right padding is 0 and the left and right gutters match. The document and `.main` do not scroll sideways, and the page scroller still scrolls when its `scrollTop` is set.
 - **Scrollbar rule:** a stylesheet test (always runs) pins the phone-only `scrollbar-width: none` and `::-webkit-scrollbar { display: none }` rule for `.main > :not(.spin)`. Headless WebKit draws overlay bars, so the rule's effect on a visible bar is not measured here.
-- **Default route:** `src/ui-app/tests/home-route-work.test.ts` uses the real router. `/` and an unknown path resolve to `/work`. `/control` is Mission Control. Deep links keep their query. `router-guard.test.ts` now expects a login return path of `/work`.
+- **Default route:** `src/ui-app/tests/home-route-work.test.ts` uses the real router. `/` resolves to `/work`; unknown paths keep main's not-found view (#1252). `/control` is Mission Control. Deep links keep their query. `router-guard.test.ts` now expects a login return path of `/work`.
 - **Skeletons and nav:** `app-loading-skeleton.test.ts` covers the `/control` and `/` skeleton kinds and page titles.
 
 ## What was not checked here

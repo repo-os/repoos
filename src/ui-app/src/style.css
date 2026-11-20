@@ -7642,6 +7642,33 @@
 .md-rendered ol:last-child {
   margin-bottom: 0;
 }
+/* Preflight resets every list to `list-style: none`, which drops the markers
+   while keeping the indent. One shared rule restores them on every rendered-
+   markdown surface. src/ui-app/tests/markdown-list-markers.test.ts checks every
+   v-html in a file that imports renderMarkdown/renderChatMarkdown, including
+   computed names such as `v-html="specHtml"`, and fails if its container class
+   is missing here. Markdown rendered by a child component is not scanned, so
+   add new surfaces to this list by hand (#1255 review). */
+.md-rendered ul,
+.pm-markdown ul,
+.cto-markdown ul,
+.debugger-markdown ul,
+.td-markdown ul,
+.guide-markdown ul,
+.playground-markdown ul,
+.release-update-markdown ul {
+  list-style: disc;
+}
+.md-rendered ol,
+.pm-markdown ol,
+.cto-markdown ol,
+.debugger-markdown ol,
+.td-markdown ol,
+.guide-markdown ol,
+.playground-markdown ol,
+.release-update-markdown ol {
+  list-style: decimal;
+}
 .md-rendered a {
   color: var(--cyan);
   text-decoration: none;
@@ -8981,6 +9008,11 @@
 .ff-notice a:hover {
   text-decoration: underline;
 }
+.ff-hint {
+  margin: 0 0 4px;
+  font-size: 12px;
+  color: var(--txt-dim);
+}
 .ff-error {
   display: flex;
   align-items: center;
@@ -10002,6 +10034,63 @@
   margin-bottom: 8px;
   font-weight: 600;
 }
+/* RouteNotice: a bad or missing link explained in one card, with a way back. */
+.route-not-found {
+  padding: 24px 0;
+}
+.route-notice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 16px;
+  margin: 0 0 14px;
+  padding: 18px 20px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--panel);
+}
+.route-notice-copy {
+  flex: 1 1 260px;
+  min-width: 0;
+}
+.route-notice-copy h2 {
+  margin: 0;
+  color: var(--txt);
+  font-size: 15px;
+}
+.route-notice-copy p {
+  margin: 4px 0 0;
+  color: var(--txt-muted);
+  font-size: 13px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+.route-notice-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.route-notice-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 14px;
+  border: 1px solid var(--border-bright);
+  border-radius: 11px;
+  background: var(--panel);
+  color: var(--txt);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+}
+.route-notice-link-quiet {
+  border-color: var(--border);
+  color: var(--txt-dim);
+}
+.route-notice-link:focus-visible {
+  outline: 1px solid var(--border-bright);
+  outline-offset: 2px;
+}
 .spin {
   width: 30px;
   height: 30px;
@@ -10213,6 +10302,10 @@
 }
 .ntfy-controls {
   min-width: 0;
+}
+.ntfy-test-ok {
+  font-size: 12px;
+  color: var(--green);
 }
 .ntfy-info {
   padding: 14px 15px;

@@ -117,6 +117,7 @@ import { bubbleRole, toDisplayRows, type DisplayRow } from "../lib/chat-rows";
 import { confirmDependencyOverride } from "../lib/task-dependencies";
 import DependencyChip from "./DependencyChip.vue";
 import RestartTaskDialog from "./RestartTaskDialog.vue";
+import ConfirmDialog from "./ConfirmDialog.vue";
 import HotfixConfirmDialog from "./HotfixConfirmDialog.vue";
 import HotfixBadge from "./HotfixBadge.vue";
 import { hotfixBannerText } from "../lib/hotfix";
@@ -2170,14 +2171,17 @@ async function openSupportFromError(): Promise<void> {
   ui.close();
 }
 
+/** Whether the reopen dialog is open (replaces native confirm()). */
+const reopenConfirmOpen = ref(false);
+
+function askReopenTask(): void {
+  if (!ui.active) return;
+  reopenConfirmOpen.value = true;
+}
+
 async function reopenTask(): Promise<void> {
   if (!ui.active) return;
-  if (
-    !confirm(
-      "Reopen this done task? It goes back to ready with a fresh branch on the next Start work.",
-    )
-  )
-    return;
+  reopenConfirmOpen.value = false;
   ui.saving = true;
   try {
     await repo.reopenTask(ui.active);
@@ -4231,9 +4235,9 @@ const elapsedMs = computed(() => {
   return s.accumulatedMs + inFlight;
 });
 
-/** "1:03" / "12:03" / "1:02:03" — never NaN, since `elapsedMs` is always a number. */
+/** "1:03" / "12:03" / "1:02:03" — never NaN: a missing or malformed total reads as 0:00. */
 function fmtElapsed(ms: number): string {
-  const totalSec = Math.max(0, Math.floor(ms / 1000));
+  const totalSec = Number.isFinite(ms) ? Math.max(0, Math.floor(ms / 1000)) : 0;
   const h = Math.floor(totalSec / 3600);
   const m = Math.floor((totalSec % 3600) / 60);
   const s = totalSec % 60;
@@ -4398,7 +4402,7 @@ async function runNeedsInputPrimaryAction(): Promise<void> {
     try {
       const result = await api<{ task: typeof ui.active; humanTask: { id: string } }>(
         `/api/tasks/${ui.active.id}/split`,
-        { method: "POST", ...JSON_OPTS },
+        JSON_OPTS("POST", {}),
       );
       ui.syncActive(result.task);
     } catch (err) {
@@ -5747,7 +5751,7 @@ watch(
                 variant="outline"
                 :disabled="ui.saving"
                 title="Send this task back to ready with a fresh branch on the next Start work"
-                @click="reopenTask"
+                @click="askReopenTask"
               >
                 <RotateCcw class="size-3.5" />
                 Reopen
@@ -7247,7 +7251,17 @@ watch(
             <p v-if="review && !review.enabled" class="review-hint">
               The review agent is disabled on the Agents page, so no automatic review runs.
             </p>
-            <p v-else-if="!review?.running && !review?.report" class="review-hint">
+            <div
+              v-else-if="!review && repo.drawerLoadFailedFor('review', ui.active.id)"
+              class="review-hint"
+            >
+              Couldn't load the agent review.
+              <Button variant="outline" size="sm" @click="repo.loadReview(ui.active.id)">
+                Retry
+              </Button>
+            </div>
+            <p v-else-if="!review" class="review-hint">Loading the agent review…</p>
+            <p v-else-if="!review.running && !review.report" class="review-hint">
               No agent review for this task yet.
             </p>
 
@@ -7630,6 +7644,19 @@ watch(
                   >
                 </div>
               </div>
+              <div
+                v-else-if="repo.drawerLoadFailedFor('diff-stats', ui.active.id)"
+                class="diff-stats-loading"
+              >
+                Couldn't load the change summary.
+                <Button
+                  variant="outline"
+                  size="sm"
+                  @click="repo.loadDiffStats(ui.active.id, { priority: true })"
+                >
+                  Retry
+                </Button>
+              </div>
               <div v-else class="diff-stats-loading">
                 <ActivityIndicator size="sm" label="Loading diff…" />
                 Loading changes…
@@ -7673,7 +7700,16 @@ watch(
                 </template>
               </div>
             </section>
-            <div v-if="taskDiff === undefined" class="diff-loading-note">
+            <div
+              v-if="taskDiff === undefined && repo.drawerLoadFailedFor('diff', ui.active.id)"
+              class="diff-loading-note"
+            >
+              <span>Couldn't load the full diff.</span>
+              <Button variant="outline" size="sm" @click="repo.loadDiff(ui.active.id)">
+                Retry
+              </Button>
+            </div>
+            <div v-else-if="taskDiff === undefined" class="diff-loading-note">
               <ActivityIndicator size="sm" label="Loading full diff…" />
               <span>Loading full diff… this may take a moment for large changes.</span>
             </div>
@@ -7878,7 +7914,23 @@ watch(
             </section>
           </div>
           <div
-            v-if="!showStats && (!taskUsage || taskUsage.totalSessions === 0)"
+            v-if="
+              !showStats &&
+              taskUsage === undefined &&
+              repo.drawerLoadFailedFor('usage', ui.active.id)
+            "
+            class="agent-empty"
+          >
+            <p>Couldn't load token usage.</p>
+            <Button variant="outline" size="sm" @click="repo.loadTaskUsage(ui.active.id)">
+              Retry
+            </Button>
+          </div>
+          <div v-else-if="!showStats && taskUsage === undefined" class="agent-empty">
+            <p>Loading token usage…</p>
+          </div>
+          <div
+            v-else-if="!showStats && (!taskUsage || taskUsage.totalSessions === 0)"
             class="agent-empty"
           >
             <p>No token or usage data yet.</p>
@@ -8026,6 +8078,16 @@ watch(
       </div>
     </DialogContent>
   </Dialog>
+
+  <ConfirmDialog
+    :open="reopenConfirmOpen"
+    title="Reopen this done task?"
+    confirm-label="Reopen task"
+    @update:open="(v) => (reopenConfirmOpen = v)"
+    @confirm="reopenTask"
+  >
+    It goes back to ready with a fresh branch on the next Start work.
+  </ConfirmDialog>
 
   <HotfixConfirmDialog
     :open="confirmHotfix"

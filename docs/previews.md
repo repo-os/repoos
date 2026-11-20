@@ -695,7 +695,10 @@ option, so its blind `/` fallback and its conservative gates are unchanged.
 Every
 shot records its provenance in `shots.json` and the drawer — `declared:
 <label>` for a declared shot, `auto: matched <glob>` for the fallback, so
-a reviewer can tell what each capture claims to show.
+a reviewer can tell what each capture claims to show. A web capture's caption
+also names its viewport (`· phone 390x844`, #1267); the automatic fallback
+captures phone and desktop per touched target (tablet only when declared), so
+an automatic pass loads each touched web target twice instead of once.
 
 An engineer-made capture pre-empts
 the automatic one: shots already on disk stand down the auto pass, rather than

@@ -1,6 +1,7 @@
 import { computed, reactive, ref } from "vue";
 import { defineStore } from "pinia";
 import { api, API_TIMEOUT_MS, ApiError, JSON_OPTS } from "../api";
+import { keepSameList } from "../lib/boardVisibility";
 import type { DeclaredShot } from "../../../core/shot-plan.js";
 import {
   checkUiBuild,
@@ -629,14 +630,22 @@ export function sortTasks(tasks: Task[], order: SortOrder, columnStatus?: string
   const copy = [...tasks];
   switch (order) {
     case "recent":
+      if (columnStatus === "done") {
+        // Derive each key once. Scanning the body inside the comparator repeats
+        // the activity-log regex on every comparison, which is most of the
+        // Done column's cost on a board with ~1000 done tasks (#1251).
+        const keyed = copy.map((t) => ({
+          task: t,
+          at: doneAtFromActivity(t.body) ?? t.updated_at ?? t.created_at ?? "",
+        }));
+        keyed.sort((a, b) => {
+          if (!a.at) return b.at ? 1 : 0;
+          if (!b.at) return -1;
+          return b.at.localeCompare(a.at);
+        });
+        return keyed.map((k) => k.task);
+      }
       return copy.sort((a, b) => {
-        if (columnStatus === "done") {
-          const ua = doneAtFromActivity(a.body) ?? a.updated_at ?? a.created_at ?? "";
-          const ub = doneAtFromActivity(b.body) ?? b.updated_at ?? b.created_at ?? "";
-          if (!ua) return ub ? 1 : 0;
-          if (!ub) return -1;
-          return ub.localeCompare(ua);
-        }
         if (!a.updated_at) return b.updated_at ? 1 : 0;
         if (!b.updated_at) return -1;
         return b.updated_at.localeCompare(a.updated_at);
@@ -989,6 +998,19 @@ export const useRepoStore = defineStore("repo", () => {
   >({});
   /** Full patch diffs per task. */
   const diffs = ref<Record<string, { patch: string; truncated: boolean } | null>>({});
+  /**
+   * Drawer loads that failed, keyed `<kind>:<taskId>`. The loaders below stay
+   * best-effort so one endpoint can't break the board, but without this record
+   * the drawer can't tell "still loading" from "failed", and a failed load sat
+   * on its spinner or empty-state copy forever (#1264).
+   */
+  const drawerLoadFailed = ref<Record<string, boolean>>({});
+  type DrawerLoadKind = "diff" | "diff-stats" | "review" | "usage";
+  function setDrawerLoad(kind: DrawerLoadKind, id: string, failed: boolean): void {
+    drawerLoadFailed.value = { ...drawerLoadFailed.value, [`${kind}:${id}`]: failed };
+  }
+  const drawerLoadFailedFor = (kind: DrawerLoadKind, id: string): boolean =>
+    drawerLoadFailed.value[`${kind}:${id}`] === true;
   /** Live merge conflict (task branch vs main) per task; undefined until first load. */
   const mergeConflicts = ref<Record<string, MergeConflictReport | undefined>>({});
   /** Landing pre-checks (#0867) per task; undefined until first load. */
@@ -1205,6 +1227,7 @@ export const useRepoStore = defineStore("repo", () => {
    *  parked out of ALL automation. Uses `isHoldActive` (tag-aware and
    *  expiry-aware) so a `hold` tag surfaces here exactly as the flag does, and
    *  a hold whose auto-release time has passed is no longer shown. */
+  let heldList: Task[] = [];
   const heldTasks = computed<Task[]>(() => {
     const held: Task[] = [];
     for (const t of tasks.value) {
@@ -1214,7 +1237,9 @@ export const useRepoStore = defineStore("repo", () => {
       // invalidated every second.
       if (taskIsHeld(t) && isHoldActive(t, holdNow.value)) held.push(t);
     }
-    return held.sort((a, b) => (b.updated_at ?? "").localeCompare(a.updated_at ?? ""));
+    held.sort((a, b) => (b.updated_at ?? "").localeCompare(a.updated_at ?? ""));
+    heldList = keepSameList(held, heldList);
+    return heldList;
   });
 
   function setSortOrder(order: SortOrder): void {
@@ -1400,9 +1425,13 @@ export const useRepoStore = defineStore("repo", () => {
     Object.assign(counts, c);
   }
 
-  /** Feed entries render as HTML; escape free text (story names, agent errors). */
-  function escapeHtml(text: string): string {
-    return text.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+  /**
+   * Feed entries render as HTML; escape free text (story names, agent errors,
+   * task titles, notes, rules, preview URLs). Coerces missing fields to "" so a
+   * partial SSE payload can't throw inside the event handler.
+   */
+  function escapeHtml(text: unknown): string {
+    return String(text ?? "").replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
   }
 
   function pushFeed(msg: string, color: string, kind: string): void {
@@ -1742,7 +1771,11 @@ export const useRepoStore = defineStore("repo", () => {
       const noun = e.findings === 1 ? "1 finding" : `${e.findings} findings`;
       pushToast(builtInRunNotice(e), "info");
       if (e.runDoc) {
-        pushFeed(`<b>${e.label || e.agent}</b> ${noun} — ${e.runDoc}`, "#39e0ff", "built-in.run");
+        pushFeed(
+          `<b>${escapeHtml(e.label || e.agent)}</b> ${noun} — ${escapeHtml(e.runDoc)}`,
+          "#39e0ff",
+          "built-in.run",
+        );
       }
       return;
     }
@@ -1750,7 +1783,11 @@ export const useRepoStore = defineStore("repo", () => {
       if (!tasks.value.find((t) => t.id === e.task.id)) tasks.value.push(e.task);
       recount();
       if (e.task.dependsOn?.length) void refresh().catch(onError);
-      pushFeed(`<b>created</b> #${e.task.id} ${e.task.title}`, "#4ef0a8", "task.created");
+      pushFeed(
+        `<b>created</b> #${e.task.id} ${escapeHtml(e.task.title)}`,
+        "#4ef0a8",
+        "task.created",
+      );
       flash(e.task.id);
     } else if (e.type === "task.updated") {
       const i = tasks.value.findIndex((t) => t.id === e.task.id);
@@ -1891,7 +1928,7 @@ export const useRepoStore = defineStore("repo", () => {
         // which used to hide even a clean, actionable error like a Cursor
         // usage-limit message.
         pushFeed(
-          `<b>PM agent failed</b> on #${e.id} — draft kept as-is: ${e.reason}`,
+          `<b>PM agent failed</b> on #${e.id} — draft kept as-is: ${escapeHtml(e.reason)}`,
           "#ffb454",
           "task.aiCreateFailed",
         );
@@ -2070,11 +2107,19 @@ export const useRepoStore = defineStore("repo", () => {
       // The server patched the main copy to match the worktree's committed
       // state because the agent's fail-safe checklist silently failed — worth
       // surfacing, not papering over.
-      pushFeed(`<b>board self-healed</b> #${e.id} — ${e.note}`, "#ffb454", "task.corrected");
+      pushFeed(
+        `<b>board self-healed</b> #${e.id} — ${escapeHtml(e.note)}`,
+        "#ffb454",
+        "task.corrected",
+      );
     } else if (e.type === "task.autoApproved") {
       const t = tasks.value.find((task) => task.id === e.id);
       if (t) notifyAttention("autoApproved", t);
-      pushFeed(`<b>auto-approved</b> #${e.id} — ${e.rule}`, "#3dd68c", "task.autoApproved");
+      pushFeed(
+        `<b>auto-approved</b> #${e.id} — ${escapeHtml(e.rule)}`,
+        "#3dd68c",
+        "task.autoApproved",
+      );
     } else if (e.type === "preview") {
       // A preview started or stopped for a task: reflect it on the stored task
       // and, when the drawer is open on that task, on the drawer's copy.
@@ -2089,7 +2134,7 @@ export const useRepoStore = defineStore("repo", () => {
         e.preview
           ? e.preview.starting
             ? `<b>preview building</b> for #${e.id}`
-            : `<b>preview</b> #${e.id} at <span class="mono">${e.preview.url}</span>`
+            : `<b>preview</b> #${e.id} at <span class="mono">${escapeHtml(e.preview.url)}</span>`
           : `<b>preview stopped</b> for #${e.id}`,
         e.preview && !e.preview.starting ? "#39e0ff" : "#ffb454",
         "preview",
@@ -2116,7 +2161,7 @@ export const useRepoStore = defineStore("repo", () => {
             ? `<b>agent review</b> ready for #${e.id}`
             : e.state === "incomplete"
               ? `<b>agent review incomplete</b> on #${e.id} — no verdict in report`
-              : `<b>agent review failed</b> on #${e.id}${e.error ? ` — ${e.error}` : ""}`,
+              : `<b>agent review failed</b> on #${e.id}${e.error ? ` — ${escapeHtml(e.error)}` : ""}`,
           e.state === "ready" ? "#39e0ff" : e.state === "incomplete" ? "#ffb454" : "#ff6b7d",
           "review",
         );
@@ -2681,6 +2726,13 @@ export const useRepoStore = defineStore("repo", () => {
       "task.pmFinished",
       "task.progress",
       "task.corrected",
+      "task.autoApproved",
+      "task.debugTldr",
+      "task.doneErrorTldr",
+      "bookkeeping.recovered",
+      "auto-engineering.state",
+      "agent.queued",
+      "agent.dequeued",
       "preview",
       "review",
       "cto",
@@ -3422,7 +3474,10 @@ export const useRepoStore = defineStore("repo", () => {
         history?: ReviewState["history"];
         lines?: AgentOutputEntry[];
       }>(`/api/tasks/${id}/review`);
-      if (!r.ok) return;
+      if (!r.ok) {
+        setDrawerLoad("review", id, true);
+        return;
+      }
       reviews.value = {
         ...reviews.value,
         [id]: {
@@ -3434,8 +3489,10 @@ export const useRepoStore = defineStore("repo", () => {
           lines: r.lines ?? [],
         },
       };
+      setDrawerLoad("review", id, false);
     } catch {
       /* endpoint unavailable — the review is advisory, never blocking */
+      setDrawerLoad("review", id, true);
     }
   }
 
@@ -3488,6 +3545,7 @@ export const useRepoStore = defineStore("repo", () => {
         noBranch?: boolean;
         noWorktree?: boolean;
       }>(`/api/tasks/${id}/diff-stats`);
+      setDrawerLoad("diff-stats", id, !r.ok);
       if (r.ok) {
         diffStats.value = {
           ...diffStats.value,
@@ -3496,6 +3554,7 @@ export const useRepoStore = defineStore("repo", () => {
       }
     } catch {
       /* endpoint unavailable — diff stats are nice-to-have */
+      setDrawerLoad("diff-stats", id, true);
     }
   }
 
@@ -3590,9 +3649,11 @@ export const useRepoStore = defineStore("repo", () => {
   async function loadTaskUsage(id: string): Promise<void> {
     try {
       const r = await api<{ ok: boolean; stats: TaskUsageStats | null }>(`/api/tasks/${id}/stats`);
+      setDrawerLoad("usage", id, !r.ok);
       if (r.ok) taskUsage.value = { ...taskUsage.value, [id]: r.stats ?? null };
     } catch {
       /* endpoint unavailable — usage is nice-to-have */
+      setDrawerLoad("usage", id, true);
     }
   }
 
@@ -3640,6 +3701,7 @@ export const useRepoStore = defineStore("repo", () => {
         noBranch?: boolean;
         noWorktree?: boolean;
       }>(`/api/tasks/${id}/diff`);
+      setDrawerLoad("diff", id, !r.ok);
       if (r.ok) {
         diffs.value = {
           ...diffs.value,
@@ -3648,6 +3710,7 @@ export const useRepoStore = defineStore("repo", () => {
       }
     } catch {
       /* endpoint unavailable — diff is nice-to-have */
+      setDrawerLoad("diff", id, true);
     }
   }
 
@@ -4551,7 +4614,11 @@ export const useRepoStore = defineStore("repo", () => {
 
   function onError(err: unknown): void {
     const message = err instanceof Error ? err.message : String(err);
-    pushFeed(`<span style="color:var(--red)">error: ${message}</span>`, "#ff6b7d", "error");
+    pushFeed(
+      `<span style="color:var(--red)">error: ${escapeHtml(message)}</span>`,
+      "#ff6b7d",
+      "error",
+    );
     // A failed move-to-done is surfaced inline on the task; a toast for it
     // would duplicate the visible error and detach it from the action. A
     // dirty-checkout guard (0204/#0512) is surfaced by the confirmation modal
@@ -4791,6 +4858,7 @@ export const useRepoStore = defineStore("repo", () => {
     loadBoardUsage,
     loadDiff,
     diffFor,
+    drawerLoadFailedFor,
     loadMergeConflict,
     mergeConflicts,
     loadLandable,

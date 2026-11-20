@@ -27,6 +27,16 @@ const GENZ_EMPTY: Record<string, string> = {
   done: "nothing shipped yet — send it",
 };
 
+// Plain-theme empty copy for the status columns. Draft keeps its explicit dash
+// (WorkView passes it), so only columns without an entry fall back to "—".
+const PLAIN_EMPTY: Record<string, string> = {
+  ready: "Nothing ready to start",
+  inbox: "Nothing waiting in the inbox",
+  active: "Nothing in progress",
+  review: "No tasks waiting for review",
+  done: "Nothing finished yet",
+};
+
 const props = withDefaults(
   defineProps<{
     col: Column;
@@ -40,7 +50,7 @@ const props = withDefaults(
     tasks?: Task[] | null;
   }>(),
   {
-    emptyText: "—",
+    emptyText: "",
     barColor: "",
     forceExpand: false,
     dragEnabled: true,
@@ -56,7 +66,7 @@ const collapsed = computed(() => !props.forceExpand && isColumnCollapsed(props.c
 const displayEmpty = computed(() =>
   config.uiTheme === "gen z"
     ? (GENZ_EMPTY[props.col.id] ?? "nothing here yet — add something")
-    : props.emptyText || "—",
+    : props.emptyText || PLAIN_EMPTY[props.col.id] || "—",
 );
 
 watch(
