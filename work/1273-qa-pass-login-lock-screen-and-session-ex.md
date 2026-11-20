@@ -1,6 +1,4 @@
 ---
-check_retry_count: 1
-last_check_failure: "repoos check at 2026-11-20T09:15:23.483Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 id: "1273"
 title: "QA pass: login, lock screen and session expiry flows"
 type: feature
@@ -13,7 +11,9 @@ branch: feat/qa-pass-login-lock-screen-and-session-ex
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T07:06:52Z"
-updated_at: "2026-11-20T09:15:20Z"
+updated_at: "2026-11-20T09:17:31Z"
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-20T09:15:23.483Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 ---
 ## Problem
 Sweep sign-in, lock screen and session-expiry flows (code entry, errors, expired session, offline) for layout, wording and state bugs.
@@ -79,4 +79,4 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser. Never
 - 2026-11-20T08:43:36Z · body
 - 2026-11-20T08:46:47Z · CTO nudge: held — handoff gate is running
 - 2026-11-20T09:15:20Z · message_queued at 2026-11-20T09:15:20.449Z
-
+- 2026-11-20T09:17:31Z · CTO nudge: held — an undelivered message is already queued
