@@ -11,7 +11,7 @@ branch: feat/work-board-move-search-into-the-header-r
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T08:46:27Z"
-updated_at: "2026-11-20T15:56:15Z"
+updated_at: "2026-11-20T15:58:31Z"
 ---
 ## Problem
 The new desktop board search (#1259) sits on its own row below the page title, takes a lot of width, and shows a redundant 'Search: web' chip under it while typing.
@@ -32,6 +32,18 @@ The new desktop board search (#1259) sits on its own row below the page title, t
 ## Notes for AI
 Start from src/ui-app/src/components/BoardQueueSearch.vue and the Work view header. Never touch repoos.toml. Headless Playwright only.
 
+## Shots
+```json
+[
+{
+  "label": "Work board header: half-width search in the header row, no Search chip",
+  "target": "default",
+  "route": "/work?q=login",
+  "highlight": "[data-testid=\"board-queue-search\"]"
+}
+]
+```
+
 ## Screenshots
 
 ![Desktop Work board: search input sits on its own row with a Search: web chip below it](/api/tasks/1278/attachments/att_d4a18ac1-98bd-4293-ba28-05f20b090486.webp)
@@ -51,3 +63,4 @@ Start from src/ui-app/src/components/BoardQueueSearch.vue and the Work view head
 - 2026-11-20T15:51:15Z · message_queued at 2026-11-20T15:51:15.102Z
 - 2026-11-20T15:51:15Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-20T15:56:15Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-20T15:58:31Z · body
