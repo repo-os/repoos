@@ -96,7 +96,7 @@ describe.each(SCOPES)("palette a11y contract ($scope scope)", ({ scope, query })
       await nextTick();
 
       expect(input.getAttribute("role")).toBe("combobox");
-      const listbox = document.querySelector<HTMLElement>(".search-overlay-body")!;
+      const listbox = document.querySelector<HTMLElement>("[role='listbox']")!;
       expect(listbox.getAttribute("role")).toBe("listbox");
       expect(input.getAttribute("aria-controls")).toBe(listbox.id);
 
@@ -204,6 +204,102 @@ describe("palette keyboard movement and state", () => {
       );
     } finally {
       wrapper.unmount();
+    }
+  });
+
+  it("keeps empty and loading copy out of the listbox, in a status region", async () => {
+    const wrapper = openPalette("all");
+    try {
+      const input = document.querySelector<HTMLInputElement>(".search-overlay-input")!;
+      typeQuery(input, "zzz-nothing");
+      await wait(250);
+      await nextTick();
+      // A listbox may only contain option/group, so the message cannot live in it.
+      expect(document.querySelector("[role='listbox']")).toBeNull();
+      const status = document.querySelector(".search-status");
+      expect(status?.getAttribute("role")).toBe("status");
+      expect(status?.textContent).toBe("No results for “zzz-nothing”");
+      // Collapsed while there is nothing to list, so the combobox state matches.
+      expect(input.getAttribute("aria-expanded")).toBe("false");
+      expect(input.getAttribute("aria-controls")).toBeNull();
+    } finally {
+      wrapper.unmount();
+    }
+  });
+
+  it("expands the combobox and names its listbox only while results are listed", async () => {
+    const wrapper = openPalette("all");
+    try {
+      const input = document.querySelector<HTMLInputElement>(".search-overlay-input")!;
+      typeQuery(input, "Duplicate title");
+      await wait(250);
+      await nextTick();
+      const listbox = document.querySelector<HTMLElement>("[role='listbox']")!;
+      expect(listbox).not.toBeNull();
+      expect(input.getAttribute("aria-expanded")).toBe("true");
+      expect(input.getAttribute("aria-controls")).toBe(listbox.id);
+    } finally {
+      wrapper.unmount();
+    }
+  });
+
+  it("returns focus to the header pill when the trigger was removed while open", async () => {
+    const pill = document.createElement("button");
+    pill.className = "search-input";
+    document.body.appendChild(pill);
+    const trigger = document.createElement("button");
+    document.body.appendChild(trigger);
+    trigger.focus();
+
+    const wrapper = mountPalette(false, "all");
+    try {
+      await setOpen(wrapper, true);
+      await wait(10);
+      trigger.remove();
+      const input = document.querySelector<HTMLInputElement>(".search-overlay-input")!;
+      keydown(input, "Escape");
+      await wait(10);
+      expect(document.activeElement).toBe(pill);
+    } finally {
+      wrapper.unmount();
+      pill.remove();
+    }
+  });
+
+  it("does not let an older body load clear the loading state of a newer one", async () => {
+    const pending: (() => void)[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(
+        () =>
+          new Promise((resolve) => {
+            pending.push(() => resolve({ ok: true, text: async () => "" }));
+          }),
+      ),
+    );
+    const docs = useDocsStore();
+    docs.docs = [{ path: "docs/overlap-a.md", title: "A", mtimeMs: 0 }];
+    const wrapper = mountPalette(false, "all");
+    try {
+      await setOpen(wrapper, true);
+      const input = document.querySelector<HTMLInputElement>(".search-overlay-input")!;
+      typeQuery(input, "zzz-nothing");
+      await wait(250); // first load starts and stays pending
+      docs.docs = [{ path: "docs/overlap-b.md", title: "B", mtimeMs: 0 }];
+      await wait(250); // second load starts and stays pending
+      pending[0]();
+      await wait(10); // the older load settles first
+      await nextTick();
+      expect(document.querySelector(".search-status")?.textContent).toBe("Loading results…");
+      pending[1]();
+      await wait(10);
+      await nextTick();
+      expect(document.querySelector(".search-status")?.textContent).toBe(
+        "No results for “zzz-nothing”",
+      );
+    } finally {
+      wrapper.unmount();
+      docs.docs = [];
     }
   });
 

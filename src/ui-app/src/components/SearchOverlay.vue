@@ -56,6 +56,7 @@ const activeOptionId = computed(() =>
 /** Focus before the palette opened; restored on dismiss when no caller gave one. */
 let lastFocused: HTMLElement | null = null;
 const loadingBodies = ref(false);
+let bodyLoadSeq = 0;
 
 const settingLocation = computed(() => ({
   inspectorAvailable: repo.health?.copyInspectorAvailable === true,
@@ -223,11 +224,14 @@ async function loadSearchBodies(): Promise<void> {
     props.scope === "context"
       ? [...docList.value.map((d) => d.path), ...skillList.value.map((s) => s.path)]
       : docList.value.map((d) => d.path);
+  // Only the newest load may clear the flag: an older load finishing while a
+  // newer one is still fetching must not show "No results" mid-load.
+  const seq = ++bodyLoadSeq;
   loadingBodies.value = true;
   try {
     await ensurePaths(paths);
   } finally {
-    loadingBodies.value = false;
+    if (seq === bodyLoadSeq) loadingBodies.value = false;
   }
 }
 
@@ -291,10 +295,19 @@ async function navigateToSetting(
 /** `fallbackFocus` is where focus goes when the caller gave no `returnFocusEl`.
  *  Dismissals (Esc, ✕, backdrop) pass the element focused before opening;
  *  opening a result passes null so it does not pull focus back from the drawer. */
-function closeOverlay(fallbackFocus: HTMLElement | null = lastFocused): void {
+function rememberedFocus(): HTMLElement | null {
+  // The trigger may have unmounted while the palette was open; focus() on a
+  // detached node is a silent no-op, so fall back to the header pill instead.
+  if (lastFocused?.isConnected) return lastFocused;
+  return document.querySelector<HTMLElement>(".search-input");
+}
+
+/** `restoreFocus` is false when the palette hands focus to something it opens
+ *  (a task drawer). A caller's `returnFocusEl` still wins either way. */
+function closeOverlay(restoreFocus = true): void {
   emit("update:open", false);
   query.value = "";
-  const el = props.returnFocusEl ?? fallbackFocus;
+  const el = props.returnFocusEl ?? (restoreFocus ? rememberedFocus() : null);
   if (el) {
     setTimeout(() => el.focus(), 0);
   }
@@ -325,7 +338,9 @@ function openResult(r: SearchResult): void {
       void router.push({ name: "settings", query: { focus: r.key } });
     }
   }
-  closeOverlay(null);
+  // A task result hands focus to the drawer it opens. Every other result
+  // navigates in place, so focus goes back to where the user was.
+  closeOverlay(r.kind !== "task");
 }
 
 function openRecentSearch(q: string): void {
@@ -447,7 +462,7 @@ watch([docList, skillList], () => {
             role="combobox"
             aria-autocomplete="list"
             :aria-expanded="displayItems.length > 0"
-            :aria-controls="listId"
+            :aria-controls="displayItems.length ? listId : undefined"
             :aria-activedescendant="activeOptionId"
             class="search-overlay-input"
           />
@@ -468,8 +483,8 @@ watch([docList, skillList], () => {
           </button>
         </div>
 
-        <div :id="listId" class="search-overlay-body" role="listbox" :aria-label="ariaLabel">
-          <template v-if="displayItems.length">
+        <div class="search-overlay-body">
+          <div v-if="displayItems.length" :id="listId" role="listbox" :aria-label="ariaLabel">
             <div
               v-for="g in groups"
               :key="g.kind"
@@ -521,8 +536,10 @@ watch([docList, skillList], () => {
                 </div>
               </div>
             </div>
-          </template>
-          <div v-else-if="emptyMessage" class="search-empty">{{ emptyMessage }}</div>
+          </div>
+          <div class="search-status" role="status" :class="{ 'search-empty': emptyMessage }">
+            {{ emptyMessage }}
+          </div>
           <div v-if="contextTruncated" class="search-truncated">
             {{ contextSearchOutput.totalMatches }} matches — showing
             {{ contextSearchOutput.results.length }}. Narrow your search to see fewer results.
