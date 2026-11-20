@@ -345,6 +345,29 @@ describe("palette keyboard movement and state", () => {
     }
   });
 
+  it("falls back to the header pill when a doc result navigates away from the caller's trigger", async () => {
+    const pill = document.createElement("button");
+    pill.className = "search-input";
+    document.body.appendChild(pill);
+    useDocsStore().docs = [{ path: "docs/restore-probe.md", title: "Restore probe", mtimeMs: 0 }];
+    // Detached before the result opens: its route push unmounts ContextView.
+    const caller = document.createElement("button");
+    const wrapper = mountPalette(false, "context", caller);
+    try {
+      await setOpen(wrapper, true);
+      const input = document.querySelector<HTMLInputElement>(".search-overlay-input")!;
+      typeQuery(input, "restore probe");
+      await wait(10);
+      keydown(input, "Enter");
+      await wait(10);
+      expect(document.activeElement).toBe(pill);
+    } finally {
+      wrapper.unmount();
+      pill.remove();
+      useDocsStore().docs = [];
+    }
+  });
+
   it("keeps the loading state until the older load settles, even if the newer one finishes first", async () => {
     const pending: (() => void)[] = [];
     vi.stubGlobal(

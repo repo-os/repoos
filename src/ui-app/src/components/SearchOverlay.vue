@@ -293,9 +293,6 @@ async function navigateToSetting(
   await router.push({ name: "settings", query });
 }
 
-/** `fallbackFocus` is where focus goes when the caller gave no `returnFocusEl`.
- *  Dismissals (Esc, ✕, backdrop) pass the element focused before opening;
- *  opening a result passes null so it does not pull focus back from the drawer. */
 /** The element focused before opening, unless it is gone or was just `body`
  *  (⌘K with nothing focused); then the header pill, the one global trigger. */
 function rememberedFocus(): HTMLElement | null {
