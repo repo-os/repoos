@@ -11,7 +11,7 @@ branch: feat/mobile-polish-open-on-work-hide-page-scr
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T00:15:33Z"
-updated_at: "2026-11-20T08:12:31Z"
+updated_at: "2026-11-20T08:22:19Z"
 review_passes: 1
 ---
 ## Problem
@@ -66,3 +66,4 @@ Screenshot attached shows the current mobile header and Mission Control. Do not 
 - 2026-11-20T08:06:58Z · message_queued at 2026-11-20T08:06:58.117Z
 - 2026-11-20T08:10:05Z · message_delivered: 1 message(s)
 - 2026-11-20T08:12:31Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-20T08:22:19Z · queued message undelivered for 15m and the engineer produced no output — ending the turn so it is delivered
