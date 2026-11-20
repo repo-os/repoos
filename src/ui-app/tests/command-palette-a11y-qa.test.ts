@@ -61,8 +61,12 @@ const SCOPES: { scope: SearchScope; query: string }[] = [
   { scope: "context", query: "" },
 ];
 
+function mountPalette(open: boolean, scope: SearchScope) {
+  return mount(SearchOverlay, { props: { open, scope }, attachTo: document.body });
+}
+
 function openPalette(scope: SearchScope) {
-  return mount(SearchOverlay, { props: { open: true, scope }, attachTo: document.body });
+  return mountPalette(true, scope);
 }
 
 function typeQuery(input: HTMLInputElement, q: string): void {
@@ -125,10 +129,7 @@ describe.each(SCOPES)("palette focus restore ($scope scope, no returnFocusEl)", 
     trigger.focus();
     expect(document.activeElement).toBe(trigger);
 
-    const wrapper = mount(SearchOverlay, {
-      props: { open: false, scope },
-      attachTo: document.body,
-    });
+    const wrapper = mountPalette(false, scope);
     try {
       await wrapper.setProps({ open: true });
       await wait(10);
@@ -207,10 +208,7 @@ describe("palette keyboard movement and state", () => {
     );
     // Mount closed and open it, as the header pill does: the body load is
     // scheduled by the open watcher, which does not fire for an initial prop.
-    const wrapper = mount(SearchOverlay, {
-      props: { open: false, scope: "all" },
-      attachTo: document.body,
-    });
+    const wrapper = mountPalette(false, "all");
     try {
       await wrapper.setProps({ open: true });
       const input = document.querySelector<HTMLInputElement>(".search-overlay-input")!;
