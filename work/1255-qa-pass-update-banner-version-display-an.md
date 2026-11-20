@@ -2,7 +2,7 @@
 id: "1255"
 title: "QA pass: update banner, version display and release notes modal at all screen sizes"
 type: bug
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/qa-pass-update-banner-version-display-an
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T23:27:47Z"
-updated_at: "2026-11-20T00:55:44Z"
+updated_at: "2026-11-20T00:56:30Z"
 review_passes: 3
 review_rounds: 2
 ---
@@ -91,3 +91,4 @@ Do not touch repoos.toml.
 - 2026-11-20T00:48:06Z · message_delivered: 1 message(s)
 - 2026-11-20T00:49:37Z · CTO nudge: held — handoff gate is running
 - 2026-11-20T00:55:44Z · body
+- 2026-11-20T00:56:30Z · status active→review
