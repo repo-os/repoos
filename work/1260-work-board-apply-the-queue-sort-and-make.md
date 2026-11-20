@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-20T14:30:35Z"
-review_passes: 3
 id: "1260"
 title: "Work board: apply the queue sort and make mobile-only status values visible"
 type: bug
@@ -14,6 +12,8 @@ branch: feat/work-board-apply-the-queue-sort-and-make
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T00:57:33Z"
+updated_at: "2026-11-20T14:30:37Z"
+review_passes: 3
 last_check_failure: "repoos check at 2026-11-20T12:49:08.292Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 close_out_repair_count: 1
 review_rounds: 1
