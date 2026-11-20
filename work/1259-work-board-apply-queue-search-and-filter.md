@@ -3,9 +3,6 @@ id: "1259"
 title: "Work board: apply queue search and filters on wide screens, with a search input"
 type: feature
 status: inbox
-needs_input: true
-needs_input_reason: underspecified
-needs_input_detail: "missing sections: Notes for AI"
 priority: p2
 area: web
 depends_on: ["1257"]
@@ -34,3 +31,4 @@ Headless Playwright only, against fixtures. Do not touch repoos.toml. Reuse the 
 - 2026-11-20T00:57:29Z · created · t@t
 - 2026-11-20T00:57:30Z · needs_input
 - 2026-11-20T00:57:41Z · body: Desired UX (added 1, removed 1); Notes for AI (added)
+- 2026-11-20T00:57:41Z · needs_input
