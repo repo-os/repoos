@@ -3,6 +3,9 @@ id: "1276"
 title: Close-out validation log should show live progress
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: "`needs some work` — live progress, retry identity and stale-state reporting have correctness gaps."
 priority: p1
 area: [server, core]
 assigned_to: ai
@@ -133,3 +136,4 @@ Related: #1272 (timer should count from validation start). Never touch repoos.to
 - 2026-11-20T21:30:01Z · status active→review
 - 2026-11-20T21:30:02Z · message_queued at 2026-11-20T21:30:02.189Z
 - 2026-11-20T21:31:37Z · note: review pass 8: needs some work
+- 2026-11-20T21:31:37Z · needs_input
