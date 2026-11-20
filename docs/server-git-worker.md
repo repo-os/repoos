@@ -11,6 +11,14 @@ at three minutes. A running timeout kills only that lane's child process group.
 Late events from that child cannot affect its replacement. STUCK request logs
 include each job's lane, `queueWaitMs` and `runMs` alongside its current age.
 
+Children are capped at `MAX_GIT_WORKER_CHILDREN` (4) per process across all
+repositories and lanes (#1281). Starting a child over the cap first stops the
+least-recently-used idle child; that lane respawns it on its next request, so
+callers never see a closed worker. A busy child is never stopped, so a burst of
+in-flight requests can briefly exceed the cap. Test suites call
+`closeAllGitWorkers()` from the per-file teardown in
+`src/ui-app/tests/setup/process-guard.ts`, so no child outlives its file.
+
 Successful directory-history walks are atomically saved under
 `.repoos/cache/dir-log-<directory hash>.json`, including their HEAD and a format
 version. The cache directory ignores its generated files even in repositories

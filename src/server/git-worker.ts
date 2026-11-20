@@ -113,6 +113,19 @@ function workerEntry(): string {
  */
 export const GIT_WORKER_QUEUE_WAIT_MS = 180_000;
 
+/**
+ * Most git-worker children alive at once in this process, across every
+ * repository and both lanes. Each child is a whole Bun process; uncapped, one
+ * vitest run left 48 of them behind (#1281). Over the cap, the least-recently
+ * used idle child is stopped before a new one starts. Its lane stays usable and
+ * the next request respawns it. A busy child is never stopped, so a burst of
+ * in-flight requests can exceed the cap until they finish.
+ */
+export const MAX_GIT_WORKER_CHILDREN = 4;
+
+/** Lanes that own a live child, least-recently-used first. */
+const liveLanes = new Set<GitWorker>();
+
 export class GitWorker {
   private fast: GitWorker | null = null;
   private maintenance: CommitGraphMaintenance | null = null;
@@ -482,7 +495,12 @@ export class GitWorker {
   }
 
   private ensureChild(): ChildProcessWithoutNullStreams {
-    if (this.child) return this.child;
+    if (this.child) {
+      liveLanes.delete(this);
+      liveLanes.add(this);
+      return this.child;
+    }
+    this.makeRoomForChild();
     const entry = workerEntry();
     const command = entry.endsWith(".ts") && !process.versions.bun ? "bun" : process.execPath;
     const child = this.launch(command, [entry], {
@@ -495,6 +513,7 @@ export class GitWorker {
       stdio: ["pipe", "pipe", "pipe"],
     });
     this.child = child;
+    liveLanes.add(this);
     this.buffered = "";
     this.stderrTail = "";
     child.stdout.setEncoding("utf8");
@@ -588,6 +607,7 @@ export class GitWorker {
   private onExit(error: Error): void {
     const child = this.child;
     this.child = null;
+    liveLanes.delete(this);
     if (!child) return;
     this.childGitCalls.clear();
     const detail = this.stderrTail.trim();
@@ -603,9 +623,22 @@ export class GitWorker {
     }
   }
 
+  private isIdle(): boolean {
+    return !this.active && this.queue.length === 0;
+  }
+
+  /** Stop idle least-recently-used children until a new spawn fits under the cap. */
+  private makeRoomForChild(): void {
+    for (const lane of liveLanes) {
+      if (liveLanes.size < MAX_GIT_WORKER_CHILDREN) return;
+      if (lane.isIdle()) lane.killChild();
+    }
+  }
+
   private killChild(): void {
     const child = this.child;
     this.child = null;
+    liveLanes.delete(this);
     this.childGitCalls.clear();
     if (!child) return;
     try {
@@ -725,4 +758,15 @@ export function gitWorkerInFlight(root: string): GitWorkerJobInfo[] {
 export function closeGitWorker(root: string): void {
   workers.get(root)?.close();
   workers.delete(root);
+}
+
+/** Close every repository worker and any child still registered, e.g. at test-suite teardown. */
+export function closeAllGitWorkers(): void {
+  for (const root of [...workers.keys()]) closeGitWorker(root);
+  for (const lane of [...liveLanes]) lane.close();
+}
+
+/** Lanes that currently own a live child; never more than MAX_GIT_WORKER_CHILDREN once idle. */
+export function gitWorkerChildCount(): number {
+  return liveLanes.size;
 }
