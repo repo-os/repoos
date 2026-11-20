@@ -13,6 +13,7 @@ model_override: haiku
 created_at: "2026-11-20T05:07:07Z"
 updated_at: "2026-11-20T05:47:27Z"
 handoff_signal_retry_count: 1
+deferred_handoff_resume_count: 1
 ---
 ## Problem
 Sweep the Docs and Story detail pages for layout, long-text wrapping, link and wording bugs.
