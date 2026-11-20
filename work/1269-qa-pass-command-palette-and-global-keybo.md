@@ -11,7 +11,7 @@ branch: feat/qa-pass-command-palette-and-global-keybo
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T05:08:53Z"
-updated_at: "2026-11-20T05:46:26Z"
+updated_at: "2026-11-20T05:49:05Z"
 ---
 ## Problem
 Sweep the command palette and keyboard shortcuts for focus, wording, mobile and screen-reader bugs.
@@ -40,3 +40,4 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 - 2026-11-20T05:46:23Z · note: ui verification passed: 1 shot captured with clean console
 - 2026-11-20T05:46:26Z · status active→review
 - 2026-11-20T05:46:26Z · message_queued at 2026-11-20T05:46:26.977Z
+- 2026-11-20T05:49:05Z · note: review pass 1: needs some work
