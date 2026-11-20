@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-20T04:55:08.051Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 id: "1262"
 title: "QA pass: Checks page and check history views"
 type: feature
@@ -15,7 +17,6 @@ updated_at: "2026-11-20T04:55:07Z"
 review_passes: 2
 review_rounds: 1
 handoff_signal_retry_count: 2
-last_check_failure: "repoos check at 2026-11-20T03:19:36.092Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 ---
 ## Problem
 Sweep the Checks page (local and remote tabs, history, failure details) for layout, wording and state bugs.
@@ -100,3 +101,4 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 - 2026-11-20T04:55:05Z · note: shots: failed — browser capture cancelled
 - 2026-11-20T04:55:05Z · note: review pass 2: good to go
 - 2026-11-20T04:55:07Z · message_delivered: 1 message(s)
+
