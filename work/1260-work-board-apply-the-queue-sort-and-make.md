@@ -2,7 +2,7 @@
 id: "1260"
 title: "Work board: apply the queue sort and make mobile-only status values visible"
 type: bug
-status: inbox
+status: ready
 priority: p3
 area: web
 depends_on: ["1257"]
@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: t@t
 branch: ""
 created_at: "2026-11-20T00:57:33Z"
-updated_at: "2026-11-20T00:57:44Z"
+updated_at: "2026-11-20T01:42:23Z"
 ---
 ## Problem
 Two gaps from #1257 (docs/qa/2026-11-filter-persistence-qa.md):
@@ -33,3 +33,4 @@ Headless Playwright only, against fixtures. Do not touch repoos.toml. Keep the i
 - 2026-11-20T00:57:34Z · needs_input
 - 2026-11-20T00:57:44Z · body: Notes for AI (added)
 - 2026-11-20T00:57:44Z · needs_input
+- 2026-11-20T01:42:23Z · status inbox→ready
