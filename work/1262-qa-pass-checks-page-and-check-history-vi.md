@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "1262"
 title: "QA pass: Checks page and check history views"
 type: feature
@@ -66,3 +67,4 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 - 2026-11-20T03:19:32Z · message_queued at 2026-11-20T03:19:32.924Z
 - 2026-11-20T03:22:14Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-20T03:27:24Z · message_queued at 2026-11-20T03:27:24.165Z
+
