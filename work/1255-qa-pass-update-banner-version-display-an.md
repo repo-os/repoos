@@ -3,9 +3,6 @@ id: "1255"
 title: "QA pass: update banner, version display and release notes modal at all screen sizes"
 type: bug
 status: active
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: "`needs some work` — the td/guide marker fix and supervised waiting-row fix are real, but the rewritten guard test silently stopped covering…"
 priority: p2
 area: web
 assigned_to: ai
@@ -14,7 +11,7 @@ branch: feat/qa-pass-update-banner-version-display-an
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T23:27:47Z"
-updated_at: "2026-11-20T01:27:17Z"
+updated_at: "2026-11-20T01:27:20Z"
 review_passes: 4
 review_rounds: 2
 ---
@@ -101,3 +98,4 @@ Do not touch repoos.toml.
 - 2026-11-20T01:04:18Z · needs_input
 - 2026-11-20T01:27:15Z · status review→active
 - 2026-11-20T01:27:17Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-20T01:27:20Z · needs_input
