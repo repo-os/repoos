@@ -11,7 +11,7 @@ branch: feat/qa-pass-remote-runners-page-add-test-and
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T00:07:05Z"
-updated_at: "2026-11-20T01:34:19Z"
+updated_at: "2026-11-20T01:34:20Z"
 last_check_failure: "repoos check at 2026-11-20T01:13:20.950Z: repoos check failed: tests — Test Files 1 failed | 163 passed (164)"
 review_rounds: 1
 review_passes: 1
@@ -56,3 +56,4 @@ Do not touch repoos.toml.
 - 2026-11-20T01:32:09Z · CTO nudge: held — handoff gate is running
 - 2026-11-20T01:34:18Z · note: ui verification passed: 1 shot captured with clean console
 - 2026-11-20T01:34:19Z · status active→review
+- 2026-11-20T01:34:20Z · message_queued at 2026-11-20T01:34:20.011Z
