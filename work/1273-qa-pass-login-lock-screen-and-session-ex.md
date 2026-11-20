@@ -12,7 +12,7 @@ branch: feat/qa-pass-login-lock-screen-and-session-ex
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T07:06:52Z"
-updated_at: "2026-11-20T14:50:31Z"
+updated_at: "2026-11-20T14:50:35Z"
 last_close_out_gate_ms: 914232
 last_close_out_gate_at: "2026-11-20T14:50:31.915Z"
 review_passes: 1
@@ -120,4 +120,4 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser. Never
 - 2026-11-20T13:29:20Z · note: review pass 1: good to go
 - 2026-11-20T14:28:34Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-20T14:50:31Z · close-out gate completed in 914s
-
+- 2026-11-20T14:50:35Z · message_dropped: 1 queued message(s) discarded — task is done
