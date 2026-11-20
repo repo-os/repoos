@@ -11,7 +11,7 @@ branch: feat/qa-pass-settings-general-agents-and-budg
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T02:27:07Z"
-updated_at: "2026-11-20T04:00:50Z"
+updated_at: "2026-11-20T04:00:51Z"
 review_rounds: 2
 review_passes: 2
 ---
@@ -81,3 +81,4 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 - 2026-11-20T03:57:14Z · message_queued at 2026-11-20T03:57:14.888Z
 - 2026-11-20T03:57:15Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-20T04:00:50Z · queued message undelivered for 4m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-20T04:00:51Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: The round-3 check is still running, at its final `ui-smoke` step. I'm waiting on its exit line and will hand off only if it passes. · stderr: (empty)
