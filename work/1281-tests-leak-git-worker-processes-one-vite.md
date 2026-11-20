@@ -3,6 +3,9 @@ id: "1281"
 title: "Tests leak git worker processes: one vitest run left 48 git-worker-entry processes"
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-failed
+needs_input_detail: "the opencode agent exited without output: error: OpenCode Go usage limit reached (monthly, resets in 1d 14h). To keep going now, turn on Extra Usage at https://opencode.ai/console/wrk_01KQ7ZAG4V1XEK1E46TJF13DFZ/go."
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -73,3 +76,4 @@ Reproduce with bun run test on a scoped path while watching ps for git-worker-en
 - 2026-11-20T16:06:08Z · note: review pass 1: failed — no usable report
 - 2026-11-20T16:06:16Z · note: review pass 2: failed — no usable report
 - 2026-11-20T16:06:23Z · note: review pass 3: failed — no usable report
+- 2026-11-20T16:06:23Z · needs_input
