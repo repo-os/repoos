@@ -76,3 +76,4 @@ Related: #1272 (timer should count from validation start). Never touch repoos.to
 - 2026-11-20T14:24:38Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — task-file handoff failed at review · Engineering report draft is missing: .repoos/engineering-report-drafts/1276.md · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
 - 2026-11-20T14:24:40Z · note: handoff requested (cli)
 - 2026-11-20T14:24:54Z · message_queued at 2026-11-20T14:24:54.091Z
+- 2026-11-20T14:24:54Z · handoff failed · task-file handoff failed at commit · git commit failed: fatal: cannot do a partial commit during a merge.
