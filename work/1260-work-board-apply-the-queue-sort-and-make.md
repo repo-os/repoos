@@ -12,7 +12,7 @@ branch: feat/work-board-apply-the-queue-sort-and-make
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T00:57:33Z"
-updated_at: "2026-11-20T04:08:13Z"
+updated_at: "2026-11-20T04:22:08Z"
 ---
 ## Problem
 Two gaps from #1257 (docs/qa/2026-11-filter-persistence-qa.md):
@@ -38,3 +38,4 @@ Headless Playwright only, against fixtures. Do not touch repoos.toml. Keep the i
 - 2026-11-20T01:42:23Z · status inbox→ready
 - 2026-11-20T01:42:26Z · cli_override, model_override
 - 2026-11-20T04:08:13Z · status ready→active, branch
+- 2026-11-20T04:22:08Z · body
