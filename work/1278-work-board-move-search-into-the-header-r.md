@@ -2,7 +2,7 @@
 id: "1278"
 title: "Work board: move search into the header row, half width, drop the search chip"
 type: feature
-status: review
+status: active
 priority: p2
 area: web
 assigned_to: ai
