@@ -39,3 +39,4 @@ Start from src/commands/shot.ts (VIEWPORT, --viewport) and the handoff shot capt
 - 2026-11-20T03:36:31Z · body
 - 2026-11-20T03:42:14Z · CTO nudge: held — handoff gate is running
 - 2026-11-20T03:57:25Z · handoff failed · remote validation failed: test failure: tests/checks-live-run-responsive.test.ts > Checks live run view at phone, tablet and desktop widths (WebKit) > keeps every live run state inside its boxes at 375 px, tests/checks-releases-data-responsive.test.ts > Checks and Releases long data (WebKit) > renders real page components with long data at 375 px on thinkpad — fix it in the feature branch and re-run the gate
+- 2026-11-20T03:57:25Z · message_queued at 2026-11-20T03:57:25.618Z
