@@ -496,6 +496,7 @@ onBeforeUnmount(() => {
         </Select>
         <Input
           type="text"
+          aria-label="Test message text"
           placeholder="Optional custom text"
           :model-value="testText"
           @update:model-value="(v) => (testText = String(v))"

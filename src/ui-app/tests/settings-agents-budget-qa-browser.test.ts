@@ -67,6 +67,10 @@ const VIEWPORTS = [375, 768, 1280] as const;
 /** The pages this pass covers, by the path a reviewer would open. */
 const PAGES = [
   { name: "Settings → General", path: "/settings?tab=general" },
+  { name: "Settings → Notifications", path: "/settings?tab=notifications" },
+  { name: "Settings → Security", path: "/settings?tab=security" },
+  { name: "Settings → Advanced", path: "/settings?tab=advanced" },
+  { name: "Settings → Import/Export", path: "/settings?tab=import-export" },
   { name: "Agents → Budget Controls", path: "/agents?tab=budget-controls" },
 ] as const;
 
@@ -88,7 +92,12 @@ function auditPage(): string[] {
         : "";
     const id = el.id ? "#" + el.id : "";
     const row = el.closest("[id^='setting-']")?.id ?? "";
-    return el.tagName.toLowerCase() + id + cls + " in " + (row || "(no setting row)");
+    const hint = ["type", "placeholder", "aria-label", "name"]
+      .map((a) => (el.getAttribute(a) ? a + "=" + el.getAttribute(a) : ""))
+      .filter(Boolean)
+      .join(" ");
+    const where = row || "(no setting row) " + hint;
+    return el.tagName.toLowerCase() + id + cls + " in " + where;
   };
   const named = (el: Element): boolean => {
     const control = el as HTMLInputElement;

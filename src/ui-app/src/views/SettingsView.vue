@@ -1902,7 +1902,10 @@ onUnmounted(() => {
                       :disabled="config.saving"
                       @update:model-value="(v) => (form['storage.provider'] = v)"
                     >
-                      <SelectTrigger class="h-[34px] w-[200px] rounded-[9px] px-[11px]">
+                      <SelectTrigger
+                        aria-label="Attachment storage"
+                        class="h-[34px] w-[200px] rounded-[9px] px-[11px]"
+                      >
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent position="popper">
@@ -2150,6 +2153,7 @@ onUnmounted(() => {
                     </div>
                     <div class="setting-input" style="display: flex; gap: 8px; align-items: center">
                       <Input
+                        aria-label="Subscription topic"
                         :model-value="String(form.ntfyTopic ?? '')"
                         type="text"
                         placeholder="repoos_myproject"
@@ -2249,6 +2253,7 @@ onUnmounted(() => {
                 </div>
                 <div class="setting-input">
                   <Input
+                    aria-label="Spend alert threshold (USD)"
                     :model-value="spendAlertUsd"
                     type="number"
                     min="0"
@@ -2415,6 +2420,7 @@ onUnmounted(() => {
                 <span class="restart-badge" aria-label="Restart required">restart required</span>
                 <div class="setting-input">
                   <Input
+                    aria-label="Session duration (days)"
                     :model-value="sessionMaxAgeDays"
                     type="number"
                     min="1"
@@ -2604,6 +2610,7 @@ onUnmounted(() => {
                 </div>
                 <div class="setting-input">
                   <Input
+                    :aria-label="f.label"
                     :model-value="String(form[f.key] ?? '')"
                     type="text"
                     :placeholder="String(f.default)"
@@ -2639,6 +2646,7 @@ onUnmounted(() => {
                 </div>
                 <div class="setting-input">
                   <Switch
+                    aria-label="Explain dev failures with AI"
                     :checked="!!form['dev.failureSummary.ai']"
                     :disabled="config.saving"
                     @update:checked="(v: boolean) => (form['dev.failureSummary.ai'] = v)"
