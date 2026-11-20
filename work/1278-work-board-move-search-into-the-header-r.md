@@ -104,3 +104,4 @@ Start from src/ui-app/src/components/BoardQueueSearch.vue and the Work view head
 - 2026-11-20T20:45:34Z · message_queued at 2026-11-20T20:45:34.750Z
 - 2026-11-20T20:45:34Z · ↻ resuming engineer to read queued message
 - 2026-11-20T20:45:35Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The scoped gate passes in this state, and the rendered-contrast audit passes too. The draft on disk is out of date: it says the audit fails and that the layout wasn't changed this turn. Both are wrong. I'll replace it with an accurate acco… · stderr: (empty)
+- 2026-11-20T20:45:35Z · message_delivered: 4 message(s)
