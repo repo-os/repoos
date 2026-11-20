@@ -214,11 +214,34 @@ export function integrationAttemptContext(
   return parts.join(" · ");
 }
 
-/** Active-job copy for the board card and pipeline bar (#0740). */
+/**
+ * Why this attempt is running again (#1276): the reason the attempt it replaced
+ * failed. Null for a first attempt or when no reason was recorded.
+ */
+export function integrationRetryNote(
+  active: NonNullable<IntegrationPipelineSnapshot["active"]>,
+): string | null {
+  const prev = active.previousFailure;
+  if (!active.attempt || active.attempt <= 1 || !prev) return null;
+  const reason = prev.reason?.split("\n")[0]?.trim();
+  return `Attempt ${active.attempt} — attempt ${prev.attempt} failed${reason ? `: ${reason}` : "."}`;
+}
+
+/** Active-job copy for the board card, pipeline bar and drawer (#0740, #1276). */
 export function integrationActiveCopy(
   snap: IntegrationPipelineSnapshot,
   nowMs: number,
   stallMs = DEFAULT_INTEGRATION_STALL_MS,
+): IntegrationActiveCopy {
+  const copy = integrationActiveCopyBase(snap, nowMs, stallMs);
+  const note = integrationRetryNote(snap.active!);
+  return note ? { ...copy, title: `${copy.title}\n${note}` } : copy;
+}
+
+function integrationActiveCopyBase(
+  snap: IntegrationPipelineSnapshot,
+  nowMs: number,
+  stallMs: number,
 ): IntegrationActiveCopy {
   const active = snap.active!;
   const idle = integrationIdleMs(active, nowMs);

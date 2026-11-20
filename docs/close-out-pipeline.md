@@ -196,7 +196,9 @@ without reading the server log.
   (the generation, which goes up on every retry), `step`, `host` (`local` or the
   remote runner host), `lastProgressAt`, `progressStale`, `progressLogPath`,
   `startedAt` (when this attempt began processing) and `previousFailure` (`attempt`,
-  `reason`, `failedAt` of the attempt this one replaced, set only on a retry).
+  `reason`, `failedAt` of the attempt this one replaced, set only on a retry). The
+  card, status bar and drawer tooltip show the same reason as "Attempt 2 — attempt 1
+  failed: …".
 - **Steps.** `queued for host slot` (waiting for a runner slot), `bundling and
   uploading`, `running tests` (remote run), `building candidate`, `syncing with
   main`, `running checks · <step>` (local gate), `publishing to main`,
@@ -211,7 +213,10 @@ without reading the server log.
   attempt on the label.
 - **Retries.** A retry after a timeout or failure is a new attempt (attempt number
   up by one, log `attempt-<n+1>`), and `previousFailure` carries the reason the last
-  one failed. A cancelled attempt does not set `previousFailure`.
+  one failed.
+- **Live push.** A step or host change emits the pipeline snapshot at once, so the UI
+  does not wait for the next stage event. A finished attempt's record is final: the
+  recorder never writes to a `done` or `failed` job. A cancelled attempt does not set `previousFailure`.
 
 Helpers: `src/server/close-out-progress.ts` (recorder, step names, stale rule);
 the orchestrator reports steps through `reportStep` and the recorder wraps each

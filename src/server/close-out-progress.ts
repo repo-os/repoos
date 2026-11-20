@@ -86,6 +86,15 @@ export function progressIsStale(
   return nowMs - at >= staleMs;
 }
 
+/**
+ * Whether an attempt may still write progress to its job record (#1276). A
+ * `done` or `failed` record is final, so a late heartbeat must not stamp it with
+ * a live step or a fresh timestamp. A missing record is also not writable.
+ */
+export function progressWritable(phase: string | null | undefined): boolean {
+  return phase !== undefined && phase !== null && phase !== "done" && phase !== "failed";
+}
+
 /** Fields the recorder writes onto the job record. */
 export interface CloseOutProgressPatch {
   step?: string;
@@ -102,6 +111,12 @@ export interface CloseOutProgressOptions {
   persist: (patch: CloseOutProgressPatch) => void;
   /** The task's live remote run, if one is in flight (host + stage). */
   remoteRun?: () => ActiveRemoteRunInfo | undefined;
+  /**
+   * Fired after a step or host change is persisted, so observers (the pipeline
+   * snapshot / SSE) see the new step without waiting for a stage event (#1276).
+   * Observation only: a throwing observer never disturbs the close-out.
+   */
+  onChange?: () => void;
   /** Clock override for tests; defaults to `Date.now`. */
   now?: () => number;
   pollMs?: number;
@@ -145,6 +160,11 @@ export class CloseOutProgressRecorder {
     this.step = step;
     this.host = host;
     this.record(`step: ${step} · host: ${host}`, { step, host });
+    try {
+      this.opts.onChange?.();
+    } catch {
+      /* an observer must never disturb the close-out */
+    }
   }
 
   /**

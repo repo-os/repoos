@@ -16,6 +16,7 @@ import {
   PROGRESS_STALE_MS,
   progressIsStale,
   progressLogPathFor,
+  progressWritable,
   stepForRemoteStage,
   type CloseOutProgressPatch,
 } from "../../server/close-out-progress.js";
@@ -27,6 +28,7 @@ import {
   integrationAttemptContext,
   integrationBarActiveTitle,
   integrationPipelineStalled,
+  integrationRetryNote,
 } from "../src/lib/integration-pipeline-ui";
 import type { IntegrationPipelineSnapshot } from "../src/types";
 
@@ -469,5 +471,112 @@ describe("pipeline snapshot and card copy (#1276)", () => {
     expect(integrationAttemptContext(snap.active!)).toBe("");
     expect(integrationActiveCopy(snap, T0 + 1_000).label).toMatch(/^integrating · /);
     expect(integrationActiveCopy(snap, T0 + 1_000).label).not.toContain("attempt");
+  });
+});
+
+describe("terminal records and observers (#1276 review)", () => {
+  it.each([
+    ["queued", true],
+    ["syncing", true],
+    ["validating", true],
+    ["publishing", true],
+    ["cleanup", true],
+    ["done", false],
+    ["failed", false],
+    [undefined, false],
+    [null, false],
+  ])("progressWritable(%s) is %s", (phase, writable) => {
+    expect(progressWritable(phase as string | undefined)).toBe(writable);
+  });
+
+  it("notifies the observer on a step or host change, not on a repeat or a heartbeat", () => {
+    let root = mkdtempSync(join(tmpdir(), "repoos-progress-onchange-"));
+    try {
+      let clock = T0;
+      let changes = 0;
+      const rec = new CloseOutProgressRecorder({
+        root,
+        taskId: "1276",
+        attempt: 2,
+        persist: () => {},
+        now: () => clock,
+        onChange: () => changes++,
+      });
+      rec.start();
+      rec.setStep(CLOSE_OUT_STEP.syncing);
+      rec.setStep(CLOSE_OUT_STEP.syncing);
+      expect(changes).toBe(1);
+      rec.setStep(CLOSE_OUT_STEP.checks, "local");
+      expect(changes).toBe(2);
+      clock += 20_000;
+      rec.tick();
+      expect(changes).toBe(2);
+      rec.stop();
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("an observer that throws does not disturb the recorder", () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-progress-throw-"));
+    try {
+      const rec = new CloseOutProgressRecorder({
+        root,
+        taskId: "1276",
+        attempt: 2,
+        persist: () => {},
+        onChange: () => {
+          throw new Error("sse down");
+        },
+      });
+      rec.start();
+      expect(() => rec.setStep(CLOSE_OUT_STEP.syncing)).not.toThrow();
+      rec.stop();
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("names the failure a retry replaces, and only on a retry", () => {
+    const base = {
+      taskId: "1276",
+      stage: null,
+      failed: false,
+      startedAt: new Date(T0).toISOString(),
+      lastProgressAt: new Date(T0).toISOString(),
+    };
+    const retry = {
+      ...base,
+      attempt: 2,
+      previousFailure: {
+        attempt: 1,
+        reason: "close-out timed out after 30m\nFull check output: x.log",
+      },
+    };
+    expect(integrationRetryNote(retry)).toBe(
+      "Attempt 2 — attempt 1 failed: close-out timed out after 30m",
+    );
+    expect(integrationRetryNote({ ...base, attempt: 1 })).toBeNull();
+    expect(integrationRetryNote({ ...base, attempt: 2, previousFailure: null })).toBeNull();
+  });
+
+  it("puts the retry reason in the card and drawer tooltip", () => {
+    const snap = {
+      empty: false,
+      active: {
+        taskId: "1276",
+        stage: null,
+        failed: false,
+        startedAt: new Date(T0).toISOString(),
+        lastProgressAt: new Date(T0).toISOString(),
+        attempt: 2,
+        step: CLOSE_OUT_STEP.syncing,
+        previousFailure: { attempt: 1, reason: "merge conflict in src/a.ts" },
+      },
+      queue: [],
+      at: new Date(T0).toISOString(),
+    } as IntegrationPipelineSnapshot;
+    const copy = integrationActiveCopy(snap, T0 + 1_000);
+    expect(copy.title).toContain("Attempt 2 — attempt 1 failed: merge conflict in src/a.ts");
   });
 });

@@ -24,7 +24,12 @@ import { resolveDefaultBranch } from "../core/repo-log.js";
 import type { RepoOSConfig, Task } from "../core/types.js";
 import type { IntegrationJob, JobCoordinator, JobPhase } from "./integration-job.js";
 import { jobAttempt } from "./integration-job.js";
-import { CLOSE_OUT_STEP, CloseOutProgressRecorder, LOCAL_HOST } from "./close-out-progress.js";
+import {
+  CLOSE_OUT_STEP,
+  CloseOutProgressRecorder,
+  LOCAL_HOST,
+  progressWritable,
+} from "./close-out-progress.js";
 import type { CloseOutOutcome, CloseOutOutcomeEvent } from "./close-out-outcome.js";
 import type { RepositoryLock, RootLock } from "./repo-lock.js";
 import type { Logger } from "../core/logger.js";
@@ -1095,6 +1100,12 @@ export class CloseOutOrchestrator {
      * callers are unaffected.
      */
     private onStageHeartbeat?: (taskId: string, detail: string) => void,
+    /**
+     * Fired when an attempt's step or host changes (#1276), so the pipeline
+     * snapshot reaches the UI at once rather than on the next stage event.
+     * Observation only. Appended last so existing callers are unaffected.
+     */
+    private onAttemptProgress?: (taskId: string) => void,
   ) {}
 
   /** Discard any in-flight resolution provenance for a task (#0692). */
@@ -1570,10 +1581,14 @@ export class CloseOutOrchestrator {
       taskId: job.taskId,
       attempt,
       persist: (patch) => {
+        // A terminal record is final: a late heartbeat must not stamp a
+        // `failed` or `done` job with a live step or a fresh timestamp (#1276).
+        if (!progressWritable(this.coordinator.getJob(job.taskId)?.phase)) return;
         this.coordinator.updateJob(job.taskId, patch, attempt);
       },
       remoteRun: () =>
         this.remoteValidator?.activeRemoteRuns?.().find((run) => run.taskId === job.taskId),
+      onChange: () => this.onAttemptProgress?.(job.taskId),
     });
     this.progress = recorder;
     recorder.start();
