@@ -11,7 +11,7 @@ branch: feat/qa-pass-projects-switcher-and-server-pic
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T06:07:22Z"
-updated_at: "2026-11-20T11:08:01Z"
+updated_at: "2026-11-20T11:09:30Z"
 last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
 last_handoff_failure_sha: f4e6a04ec83ffe923a2a8afb52f1db6ef9ae75bf
 handoff_signal_retry_count: 2
@@ -61,3 +61,4 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 - 2026-11-20T10:42:06Z · watchdog: check wait ended or recovered — cleared needs_input
 - 2026-11-20T11:07:05Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-20T11:08:01Z · body
+- 2026-11-20T11:09:30Z · handoff_deferred: 3 queued message(s) must be read before review
