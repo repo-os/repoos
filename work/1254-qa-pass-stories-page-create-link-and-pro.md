@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 773409
-last_close_out_gate_at: "2026-11-20T02:30:50.382Z"
 id: "1254"
 title: "QA pass: Stories page create, link and progress flows at all screen sizes"
 type: bug
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: cfcff2aca5ac0843c7c1c4d2b2ad809000e10729
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-stories-page-create-link-and-pro
@@ -14,6 +13,8 @@ cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T23:27:29Z"
 updated_at: "2026-11-20T02:30:50Z"
+last_close_out_gate_ms: 773409
+last_close_out_gate_at: "2026-11-20T02:30:50.382Z"
 review_passes: 1
 ---
 ## Problem
