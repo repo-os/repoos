@@ -11,7 +11,7 @@ branch: feat/qa-pass-command-palette-and-global-keybo
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T05:08:53Z"
-updated_at: "2026-11-20T05:57:09Z"
+updated_at: "2026-11-20T05:59:45Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -38,19 +38,19 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 "route": "/work",
 "highlight": ".search-overlay",
 "steps": [
-  {
-    "click": ".search-input"
-  },
-  {
-    "waitFor": ".search-overlay-input"
-  },
-  {
-    "fill": ".search-overlay-input",
-    "text": "QA pass"
-  },
-  {
-    "waitMs": 300
-  }
+{
+  "click": ".search-input"
+},
+{
+  "waitFor": ".search-overlay-input"
+},
+{
+  "fill": ".search-overlay-input",
+  "text": "QA pass"
+},
+{
+  "waitMs": 300
+}
 ]
 }
 ]
@@ -74,3 +74,4 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 - 2026-11-20T05:49:06Z · status review→active
 - 2026-11-20T05:51:11Z · body
 - 2026-11-20T05:57:09Z · body
+- 2026-11-20T05:59:45Z · CTO nudge: held — handoff gate is running
