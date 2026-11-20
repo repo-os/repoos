@@ -102,3 +102,4 @@ Start from src/ui-app/src/components/BoardQueueSearch.vue and the Work view head
 - 2026-11-20T20:31:47Z · handoff failed · task-file handoff failed at commit · git commit failed: fatal: cannot do a partial commit during a merge.
 - 2026-11-20T20:45:34Z · handoff_deferred: 3 queued message(s) must be read before review
 - 2026-11-20T20:45:34Z · message_queued at 2026-11-20T20:45:34.750Z
+- 2026-11-20T20:45:34Z · ↻ resuming engineer to read queued message
