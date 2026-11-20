@@ -1,4 +1,6 @@
 ---
+last_close_out_gate_ms: 2367746
+last_close_out_gate_at: "2026-11-20T08:42:34.098Z"
 id: "1264"
 title: "QA pass: task drawer tabs (changes, activity, reports)"
 type: feature
@@ -11,7 +13,7 @@ branch: feat/qa-pass-task-drawer-tabs-changes-activit
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T02:27:21Z"
-updated_at: "2026-11-20T04:45:33Z"
+updated_at: "2026-11-20T08:42:34Z"
 review_passes: 1
 last_check_failure: "repoos check at 2026-11-20T02:47:20.639Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 ---
@@ -46,3 +48,5 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 - 2026-11-20T03:38:02Z · message_queued at 2026-11-20T03:38:02.412Z
 - 2026-11-20T03:42:11Z · note: review pass 1: good to go
 - 2026-11-20T04:45:33Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-20T08:42:34Z · close-out gate completed in 2368s
+
