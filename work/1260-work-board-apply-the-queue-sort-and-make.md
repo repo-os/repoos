@@ -13,7 +13,7 @@ branch: feat/work-board-apply-the-queue-sort-and-make
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T00:57:33Z"
-updated_at: "2026-11-20T15:20:16Z"
+updated_at: "2026-11-20T15:22:00Z"
 last_close_out_gate_ms: 701741
 last_close_out_gate_at: "2026-11-20T15:20:01.014Z"
 review_passes: 4
@@ -123,3 +123,4 @@ Headless Playwright only, against fixtures. Do not touch repoos.toml. Keep the i
 - 2026-11-20T14:48:55Z · note: review pass 4: good to go
 - 2026-11-20T15:20:01Z · close-out gate completed in 702s
 - 2026-11-20T15:20:16Z · message_dropped: 1 queued message(s) discarded — task is done
+- 2026-11-20T15:22:00Z · status done→done, release:success
