@@ -1,4 +1,6 @@
 ---
+last_close_out_gate_ms: 163957
+last_close_out_gate_at: "2026-11-20T09:14:17.247Z"
 id: "1270"
 title: "Easter eggs bundle: document queueing close-outs (MTD) together"
 type: feature
@@ -11,7 +13,7 @@ branch: feat/easter-eggs-bundle-document-queueing-clo
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T05:43:15Z"
-updated_at: "2026-11-20T07:07:02Z"
+updated_at: "2026-11-20T09:14:17Z"
 review_passes: 1
 ---
 ## Problem
@@ -41,3 +43,5 @@ Docs-only. Never touch repoos.toml. Observed 2026-11-20: six close-outs queued t
 - 2026-11-20T05:48:10Z · note: shots: skipped — the diff (5 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-20T05:49:03Z · note: review pass 1: good to go
 - 2026-11-20T07:07:02Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-20T09:14:17Z · close-out gate completed in 164s
+
