@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-20T05:49:03Z"
+review_passes: 1
 id: "1270"
 title: "Easter eggs bundle: document queueing close-outs (MTD) together"
 type: feature
@@ -11,7 +13,6 @@ branch: feat/easter-eggs-bundle-document-queueing-clo
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T05:43:15Z"
-updated_at: "2026-11-20T05:49:03Z"
 ---
 ## Problem
 Drivers (and agents) land green review tasks one at a time, waiting for each to finish before clicking Move to done on the next. The close-out pipeline already has a queued phase and publishes under a lock, so queueing every green task at once keeps the pipeline busy and lands more work sooner. This is not written down as guidance, so it keeps getting done the slow way.
@@ -39,3 +40,4 @@ Docs-only. Never touch repoos.toml. Observed 2026-11-20: six close-outs queued t
 - 2026-11-20T05:48:09Z · message_queued at 2026-11-20T05:48:09.477Z
 - 2026-11-20T05:48:10Z · note: shots: skipped — the diff (5 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-20T05:49:03Z · note: review pass 1: good to go
+
