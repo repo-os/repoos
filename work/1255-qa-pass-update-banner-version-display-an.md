@@ -11,7 +11,7 @@ branch: feat/qa-pass-update-banner-version-display-an
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T23:27:47Z"
-updated_at: "2026-11-20T00:16:12Z"
+updated_at: "2026-11-20T00:16:14Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -71,3 +71,4 @@ Do not touch repoos.toml.
 - 2026-11-20T00:00:41Z · body
 - 2026-11-20T00:01:35Z · status active→review
 - 2026-11-20T00:16:12Z · note: ui verification passed: 3 of 3 shots captured with clean console
+- 2026-11-20T00:16:14Z · note: review pass 2: needs some work
