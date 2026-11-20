@@ -53,7 +53,19 @@ export interface IntegrationSnapshot {
     /** Time spent in every phase so far, oldest first (#0897). */
     phaseTimings?: IntegrationPhaseTiming[];
   } | null;
-  /** Task ids queued behind the active job, in FIFO order. */
+  /**
+   * Other close-outs already validating alongside the active one (#1275). They
+   * hold a validation slot but are not the publish head, so they are not in
+   * `queue`. Empty when only one job is running.
+   */
+  parallel?: {
+    taskId: string;
+    phase: string;
+    stage: string | null;
+    startedAt: string | null;
+    detail: string | null;
+  }[];
+  /** Task ids queued behind the active job, in FIFO order (not yet started). */
   queue: string[];
   /** Enqueue time (ISO) for each id in `queue`, for stale close-out UI. */
   queueEnqueuedAt?: Record<string, string>;
@@ -158,8 +170,20 @@ export function buildIntegrationSnapshot(
   const queueEnqueuedAt: Record<string, string> = {};
   const queuedJobs: IntegrationJob[] = [];
 
+  const parallel: NonNullable<IntegrationSnapshot["parallel"]> = [];
   for (const job of live) {
     if (inFlight && job.taskId === inFlight.taskId) continue;
+    // A started job is validating alongside the active one (#1275), not waiting.
+    if (job.startedAt) {
+      parallel.push({
+        taskId: job.taskId,
+        phase: job.phase,
+        stage: stageForJob(job, reported[job.taskId]),
+        startedAt: job.startedAt,
+        detail: reportedDetail[job.taskId] ?? null,
+      });
+      continue;
+    }
     queue.push(job.taskId);
     queueEnqueuedAt[job.taskId] = job.enqueuedAt;
     queuedJobs.push(job);
@@ -193,8 +217,8 @@ export function buildIntegrationSnapshot(
       position: i + 1,
       enqueuedAt: job.enqueuedAt,
       waitedMs: Number.isFinite(nowMs) && Number.isFinite(enqueuedMs) ? nowMs - enqueuedMs : 0,
-      // The active job holds the single close-out pipeline slot; every queued
-      // job waits on it, not on the ones behind it (#0897).
+      // The active job is the publish head (#1275): queued jobs publish after
+      // it, not after the ones behind them. Validation slots are a separate limit.
       blockerTaskId: inFlight.taskId,
       blockerPhase: inFlight.phase,
       blockerElapsedMs,
@@ -215,6 +239,7 @@ export function buildIntegrationSnapshot(
       phaseElapsedMs: activeElapsed != null && activeElapsed >= 0 ? activeElapsed : null,
       phaseTimings: inFlight.phaseTimings,
     },
+    parallel: parallel.length ? parallel : undefined,
     queue,
     queueEnqueuedAt: queue.length ? queueEnqueuedAt : undefined,
     queueDetail: queueDetail.length ? queueDetail : undefined,

@@ -20,6 +20,7 @@ const idle = computed(() => snapshot.value === null || snapshot.value.empty);
 const active = computed(() => snapshot.value?.active ?? null);
 const queue = computed(() => snapshot.value?.queue ?? []);
 const queueDetail = computed(() => snapshot.value?.queueDetail ?? []);
+const parallel = computed(() => snapshot.value?.parallel ?? []);
 const showQueue = computed(() => queue.value.length > 0 && !active.value?.failed);
 const localSlots = ref<
   Array<{
@@ -134,6 +135,17 @@ function queueWait(ms: number): string {
     <p v-else class="ips-active">
       <span class="ips-active-label">Close-out in progress</span>
     </p>
+
+    <div v-if="parallel.length" class="ips-queue">
+      <span class="ips-queue-label">Also running</span>
+      <span v-for="p in parallel" :key="p.taskId" class="ips-chip">
+        #{{ p.taskId }} ·
+        {{
+          p.phase === "publishing" ? "waiting for publish turn" : `${p.stage ?? "…"} · ${p.phase}`
+        }}
+        <template v-if="p.detail"> · {{ p.detail }}</template>
+      </span>
+    </div>
 
     <div v-if="showQueue" class="ips-queue">
       <span class="ips-queue-label">Queued behind</span>

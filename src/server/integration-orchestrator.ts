@@ -23,7 +23,7 @@ import { notifyGitMutation } from "../core/git-activity.js";
 import { resolveDefaultBranch } from "../core/repo-log.js";
 import type { RepoOSConfig, Task } from "../core/types.js";
 import type { IntegrationJob, JobCoordinator, JobPhase } from "./integration-job.js";
-import { jobAttempt } from "./integration-job.js";
+import { hasPublishTurn, jobAttempt, publishTurnTaskId } from "./integration-job.js";
 import type { CloseOutOutcome, CloseOutOutcomeEvent } from "./close-out-outcome.js";
 import type { RepositoryLock, RootLock } from "./repo-lock.js";
 import type { Logger } from "../core/logger.js";
@@ -1550,6 +1550,21 @@ export class CloseOutOrchestrator {
     return this.processJob(job);
   }
 
+  /**
+   * Run one specific job (#1275). The server runs several jobs at once, each
+   * with its own orchestrator instance, because per-run state (the owned
+   * attempt, the done-stamped tasks) lives on the instance. Publishing is still
+   * ordered: a job that is not at the head of the queue parks in `publishing`
+   * until its turn (see processJob).
+   */
+  async processTask(taskId: string): Promise<{ ok: boolean; reason?: string }> {
+    const job = this.coordinator.getJob(taskId);
+    if (!job || job.phase === "done" || job.phase === "failed") {
+      return { ok: true, reason: "job not pending" };
+    }
+    return this.processJob(job);
+  }
+
   private async processJob(job: IntegrationJob): Promise<{ ok: boolean; reason?: string }> {
     const root = this.config.root;
 
@@ -1586,8 +1601,10 @@ export class CloseOutOrchestrator {
       // budget fails here — before any further work — with a retryable
       // `failed` job. `cleanup` is deliberately excluded: by then the publish
       // merge has landed, so the job must finish as `done`, never be failed
-      // out from under a completed merge.
-      if (job.phase !== "cleanup" && this.pipelineTimedOut(job)) {
+      // out from under a completed merge. `publishing` is excluded too: a job
+      // parked for its publish turn (#1275) spent its wait in the queue, not
+      // on work, and its budget restarts when the turn is granted below.
+      if (job.phase !== "cleanup" && job.phase !== "publishing" && this.pipelineTimedOut(job)) {
         return this.timeoutJob(job);
       }
 
@@ -1777,6 +1794,26 @@ export class CloseOutOrchestrator {
 
       // Publishing phase: merge candidate to live main, holding the repo lock.
       if (job.phase === "publishing") {
+        // Publish order (#1275): only the head of the queue merges. A job that
+        // finished validating ahead of an earlier one stays parked here, with
+        // its candidate intact, and the server re-runs it when the head's run
+        // ends. Nothing is written, so the job's phase and attempt are unchanged.
+        if (!hasPublishTurn(this.coordinator.allJobs(), job.taskId)) {
+          this.logger?.integration(job.taskId, "info", "validated — waiting for publish turn", {
+            headTaskId: publishTurnTaskId(this.coordinator.allJobs()),
+          });
+          return { ok: true, reason: "awaiting publish turn" };
+        }
+        // Queue wait never counts against the close-out budget (#1275): the
+        // publish step gets a fresh budget once its turn comes. Validation was
+        // already budget-checked before promotion, so nothing is skipped.
+        const turn = this.coordinator.updateJob(
+          job.taskId,
+          { budgetMonotonicStartNs: process.hrtime.bigint().toString() },
+          this.ownedAttempt,
+        );
+        if (!turn) return { ok: false, reason: "close-out attempt superseded before publish" };
+        job = turn;
         const pubRes = await this.publishCandidate(job);
         if (pubRes.cancelled) return this.cancelJob(job);
         if (pubRes.timedOut) return this.timeoutJob(job);

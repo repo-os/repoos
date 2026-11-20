@@ -132,6 +132,55 @@ export function pendingCloseOutJobs(jobs: IntegrationJob[]): IntegrationJob[] {
   return jobs.filter((j) => j.phase !== "done" && j.phase !== "failed");
 }
 
+/**
+ * The task id that holds the publish turn (#1275): the head of the pending
+ * queue. Publishing to main is strictly serial in queue order, so only this job
+ * may merge; jobs behind it validate in parallel but park until they reach the
+ * head. A failed or done job leaves the queue, so a failure never blocks the
+ * jobs behind it.
+ */
+export function publishTurnTaskId(jobs: IntegrationJob[]): string | null {
+  const pending = pendingCloseOutJobs(jobs);
+  return pending.length > 0 ? pending[0].taskId : null;
+}
+
+/** Whether `taskId` may publish now (see {@link publishTurnTaskId}). */
+export function hasPublishTurn(jobs: IntegrationJob[], taskId: string): boolean {
+  return publishTurnTaskId(jobs) === taskId;
+}
+
+/**
+ * Which queued close-outs to start now (#1275). Pure, so the server's scheduler
+ * and the tests share one definition of the rules:
+ *
+ * - Jobs start in queue order, so the head is never starved by later jobs.
+ * - At most `limit` runs are in flight. A task already in `running` keeps its slot.
+ * - A `publishing` job starts only when it holds the publish turn. Anything
+ *   behind the head that has finished validating parks until its turn comes and
+ *   is picked up again when the head's run ends.
+ * - `holdExtra` (the memory pressure guard is holding new work) stops any start
+ *   beyond the first concurrent run. The first run is never held, as before.
+ */
+export function selectCloseOutStarts(input: {
+  jobs: IntegrationJob[];
+  running: ReadonlySet<string>;
+  limit: number;
+  holdExtra: boolean;
+}): string[] {
+  const picks: string[] = [];
+  const turn = publishTurnTaskId(input.jobs);
+  let inFlight = input.running.size;
+  for (const job of pendingCloseOutJobs(input.jobs)) {
+    if (input.running.has(job.taskId)) continue;
+    if (job.phase === "publishing" && job.taskId !== turn) continue;
+    if (inFlight >= Math.max(1, input.limit)) break;
+    if (inFlight >= 1 && input.holdExtra) break;
+    picks.push(job.taskId);
+    inFlight++;
+  }
+  return picks;
+}
+
 /** The attempt generation of a job, defaulting legacy records to the first attempt. */
 export function jobAttempt(job: IntegrationJob | null | undefined): number {
   return job?.attempt ?? 1;

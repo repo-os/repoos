@@ -13,6 +13,60 @@ and git history, and desyncs the task file from its branch copy (this exact mist
 a real, confirmed merge-conflict failure later in this session — see "Task file drift"
 below).**
 
+## Parallel validation, serial publish (#1275)
+
+Validation (sync → gate) of several queued close-outs runs at once; publishing to
+`main` stays strictly serial, in queue order. Before #1275 one job ran end to end,
+so 11 queued tasks took about 4 hours and one slow job blocked all of them.
+
+- **Scheduler.** `server.ts` runs a pump (`pumpCloseOutJobs`) that calls
+  `selectCloseOutStarts` (`src/server/integration-job.ts`). It starts up to
+  `maxParallelValidations` runs (default 2, 1–8; `1` is the old serial pipeline).
+  Each run gets its own `CloseOutOrchestrator`, because per-run state (the owned
+  attempt, the tasks it stamped done) lives on the instance. The pump runs again
+  whenever a run ends, so a freed slot or a new head starts the next job at once.
+- **Publish turn.** Only the head of the pending queue (the first job that is not
+  `done`/`failed`, by enqueue time) may publish: `hasPublishTurn` in
+  `integration-job.ts`. A job that finishes validating before an earlier one moves
+  to `publishing`, keeps its candidate, and parks (`awaiting publish turn`) without
+  writing anything. The pump starts it once it becomes the head. A failed or
+  cancelled head leaves the queue, so it never blocks the jobs behind it.
+- **Stale base is never published.** Publish still compares the job's
+  `baseMainSha` with `main` under `repoLock`/`rootLock`. Bookkeeping-only drift
+  publishes directly (`mainDriftIsBookkeepingOnly`, #0386). Any real code drift
+  sends the job back to `syncing`, so the candidate is rebuilt and re-gated before
+  it can publish. The cap on consecutive drift resyncs (`MAX_PUBLISH_DRIFT_RETRIES`,
+  5) still applies. A cheaper re-merge that skips the gate was not proven safe, so
+  it is not used (fail closed).
+- **Budget.** Time spent parked for the publish turn is not charged to
+  `closeOut.timeoutMs`. The clock restarts when the turn is granted, and the
+  publish step gets its own budget. Validation was already budget-checked before
+  promotion.
+- **Host choice and pressure.** Remote runs still go through the existing host
+  lease: fewest active runs, `remoteValidation.maxConcurrent` per host, and the
+  pressure guard (#0901). Local gates are bounded by the local check slots
+  (`localChecks.maxConcurrent`). Starts beyond the first concurrent run are also
+  held while `pressureReason(config)` reports a hold, re-checked every 30 s. The
+  first run is never held, as before.
+- **Locks.** The close-out lock (which defers auto-reload) is a run counter, so it
+  holds while any run is live. The advisory per-worktree check gate (#1061) is per
+  task, so it never serializes two different tasks.
+- **API and UI.** `queuePosition` (`GET /api/tasks/:id/integration-job`,
+  `GET /api/integration-jobs`, the driver brief) is **publish order**: `0` is the next job to publish.
+  Read `phase` for what a job is doing. `validating` jobs can sit at any position,
+  and a `publishing` job that is not at position `0` is parked. The pipeline
+  snapshot lists the head as `active`, other started jobs as `parallel` ("Also
+  running" in the status bar), and only unstarted jobs as `queue`.
+- **Settings.** `maxParallelValidations` (Settings → General → Close-out). It is
+  documented in `user-docs/configuration.md`.
+
+Known limits: overlap raises the number of publish-time drift resyncs. Each one
+re-validates the job, so a busy board can use up `MAX_PUBLISH_DRIFT_RETRIES` for a
+job queued far back. That failure is retryable and never publishes a stale
+candidate. Candidates share one object store and ref namespace, and overlapping `git`
+writes to them have not been load-tested yet; a ref-lock collision would show up
+as that job's sync failing.
+
 ## Watchdog ↔ handoff validation loops (#0693)
 
 A stuck `active` task with work in its branch used to be auto-surfaced to `review`, which

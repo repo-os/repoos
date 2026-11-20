@@ -1440,7 +1440,15 @@ export interface IntegrationPipelineSnapshot {
     /** Time spent in every phase so far, oldest first (#0897). */
     phaseTimings?: { phase: string; startedAt: string; endedAt?: string; durationMs?: number }[];
   } | null;
-  /** Task ids queued behind the active job, in FIFO order. */
+  /** Other close-outs validating alongside the active one (#1275). */
+  parallel?: {
+    taskId: string;
+    phase: string;
+    stage: string | null;
+    startedAt: string | null;
+    detail: string | null;
+  }[];
+  /** Task ids queued behind the active job, in FIFO order (not yet started). */
   queue: string[];
   /** Enqueue time (ISO) for each id in `queue`, for stale close-out UI (#0741). */
   queueEnqueuedAt?: Record<string, string>;
