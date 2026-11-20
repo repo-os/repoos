@@ -2,16 +2,20 @@
 id: "1254"
 title: "QA pass: Stories page create, link and progress flows at all screen sizes"
 type: bug
-status: active
+status: done
 priority: p2
 area: web
+merged_commit: cfcff2aca5ac0843c7c1c4d2b2ad809000e10729
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-stories-page-create-link-and-pro
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T23:27:29Z"
-updated_at: "2026-11-20T00:01:37Z"
+updated_at: "2026-11-20T02:47:16Z"
+last_close_out_gate_ms: 773409
+last_close_out_gate_at: "2026-11-20T02:30:50.382Z"
+review_passes: 1
 ---
 ## Problem
 Creating a story, linking tasks to it and reading its progress have not been exercised end to end with edge cases.
@@ -33,3 +37,20 @@ Do not touch repoos.toml.
 - 2026-11-19T23:45:11Z · body
 - 2026-11-19T23:52:46Z · CTO nudge: held — handoff gate is running
 - 2026-11-20T00:01:37Z · CTO nudge: held — handoff gate is running
+- 2026-11-20T00:22:08Z · CTO nudge: held — handoff gate is running
+- 2026-11-20T00:36:51Z · handoff failed · remote validation failed: test failure: tests/sign-in-users-qa-browser.test.ts > sign-in, users and user menu QA (#1239) > sign-in at 1280px > tells a locked-out visitor to wait, in plain English on thinkpad — fix it in the feature branch and re-run the gate
+- 2026-11-20T00:36:52Z · message_queued at 2026-11-20T00:36:52.236Z
+- 2026-11-20T00:36:52Z · handoff failed · handoff recovery attempted · finalization failed
+- 2026-11-20T00:37:00Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-20T00:39:56Z · watchdog: restarting engineer because a queued message waited 3m with no live process
+- 2026-11-20T00:40:04Z · message_delivered: 1 message(s)
+- 2026-11-20T00:59:50Z · body
+- 2026-11-20T01:04:32Z · CTO nudge: held — handoff gate is running
+- 2026-11-20T01:18:17Z · note: ui verification passed: 1 shot captured with clean console
+- 2026-11-20T01:18:23Z · status active→review
+- 2026-11-20T01:18:25Z · message_queued at 2026-11-20T01:18:25.892Z
+- 2026-11-20T01:22:43Z · note: review pass 1: good to go
+- 2026-11-20T02:27:05Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-20T02:30:50Z · close-out gate completed in 773s
+- 2026-11-20T02:32:11Z · status done→done, release:success
+- 2026-11-20T02:47:16Z · message_dropped: 1 queued message(s) discarded — task is done

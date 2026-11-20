@@ -2,18 +2,21 @@
 id: "1255"
 title: "QA pass: update banner, version display and release notes modal at all screen sizes"
 type: bug
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: 65f6c7a2e16abadb6d49111e9ba4cd197b4bb73a
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-update-banner-version-display-an
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T23:27:47Z"
-updated_at: "2026-11-20T00:01:35Z"
-review_rounds: 1
-review_passes: 1
+updated_at: "2026-11-20T03:19:25Z"
+last_close_out_gate_ms: 1399876
+last_close_out_gate_at: "2026-11-20T03:13:52.600Z"
+review_passes: 5
+review_rounds: 2
 ---
 ## Problem
 The update-available banner, version display and release notes modal have not been checked since the restart fix.
@@ -70,3 +73,51 @@ Do not touch repoos.toml.
 - 2026-11-19T23:58:35Z · note: adopted orphaned engineer pid 71438
 - 2026-11-20T00:00:41Z · body
 - 2026-11-20T00:01:35Z · status active→review
+- 2026-11-20T00:16:12Z · note: ui verification passed: 3 of 3 shots captured with clean console
+- 2026-11-20T00:16:14Z · note: review pass 2: needs some work
+- 2026-11-20T00:16:15Z · message_queued at 2026-11-20T00:16:15.353Z
+- 2026-11-20T00:16:15Z · status review→active
+- 2026-11-20T00:16:16Z · status active→review
+- 2026-11-20T00:16:16Z · message_queued at 2026-11-20T00:16:16.871Z
+- 2026-11-20T00:18:25Z · note: review pass 3: needs some work
+- 2026-11-20T00:18:25Z · needs_input
+- 2026-11-20T00:27:04Z · status review→active
+- 2026-11-20T00:27:07Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-20T00:27:07Z · needs_input
+- 2026-11-20T00:27:12Z · message_delivered: 2 message(s)
+- 2026-11-20T00:27:13Z · message_queued at 2026-11-20T00:27:13.160Z
+- 2026-11-20T00:32:09Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-20T00:35:06Z · body
+- 2026-11-20T00:47:45Z · queued message undelivered for 21m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-20T00:47:47Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: The full test suite is still running in the background, and a monitor will notify me when it finishes. I'll hold the handoff until that result is in. **Where #1255 stands (round 3):** - **Chat list markers fixed.** `.td-markdown` (task deb… · stderr: (empty)
+- 2026-11-20T00:47:50Z · note: handoff requested (cli)
+- 2026-11-20T00:48:06Z · message_delivered: 1 message(s)
+- 2026-11-20T00:49:37Z · CTO nudge: held — handoff gate is running
+- 2026-11-20T00:55:44Z · body
+- 2026-11-20T00:56:30Z · status active→review
+- 2026-11-20T01:04:14Z · note: ui verification passed: 3 of 3 shots captured with clean console
+- 2026-11-20T01:04:17Z · message_queued at 2026-11-20T01:04:17.775Z
+- 2026-11-20T01:04:18Z · note: review pass 4: needs some work
+- 2026-11-20T01:04:18Z · needs_input
+- 2026-11-20T01:27:15Z · status review→active
+- 2026-11-20T01:27:17Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-20T01:27:20Z · needs_input
+- 2026-11-20T01:27:28Z · message_delivered: 1 message(s)
+- 2026-11-20T01:27:31Z · message_queued at 2026-11-20T01:27:31.445Z
+- 2026-11-20T02:01:11Z · body
+- 2026-11-20T02:02:50Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-20T02:02:50Z · message_queued at 2026-11-20T02:02:50.577Z
+- 2026-11-20T02:02:50Z · ↻ resuming engineer to read queued message
+- 2026-11-20T02:02:50Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The draft is written. Before I hand off, I'll correct one sentence that claims more than I observed. I saw a live `claude -p` process from another task, but I don't know it held the lock. Then I'll check the word count against the 1,200-wo… · stderr: (empty)
+- 2026-11-20T02:02:51Z · status active→review
+- 2026-11-20T02:02:51Z · message_delivered: 2 message(s)
+- 2026-11-20T02:02:52Z · note: handoff requested (cli)
+- 2026-11-20T02:07:09Z · CTO nudge: held — handoff gate is running
+- 2026-11-20T02:08:26Z · note: ui verification passed: 3 of 3 shots captured with clean console
+- 2026-11-20T02:08:30Z · status active→review
+- 2026-11-20T02:08:33Z · message_queued at 2026-11-20T02:08:33.517Z
+- 2026-11-20T02:11:45Z · note: review pass 5: good to go
+- 2026-11-20T03:09:27Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-20T03:13:52Z · close-out gate completed in 1400s
+- 2026-11-20T03:16:41Z · status done→done, release:success
+- 2026-11-20T03:19:25Z · message_dropped: 1 queued message(s) discarded — task is done

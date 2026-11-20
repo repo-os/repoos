@@ -2,16 +2,22 @@
 id: "1256"
 title: "QA pass: remote runners page add, test and remove flows with failures"
 type: bug
-status: active
+status: done
 priority: p2
 area: web
+merged_commit: 30bd3f95ebb440709f066c307acfae1a79e55377
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-remote-runners-page-add-test-and
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T00:07:05Z"
-updated_at: "2026-11-20T00:07:19Z"
+updated_at: "2026-11-20T02:49:35Z"
+last_close_out_gate_ms: 823357
+last_close_out_gate_at: "2026-11-20T02:46:47.659Z"
+review_passes: 2
+last_check_failure: "repoos check at 2026-11-20T01:13:20.950Z: repoos check failed: tests — Test Files 1 failed | 163 passed (164)"
+review_rounds: 1
 ---
 ## Problem
 Adding, testing and removing a remote runner has not been checked for unreachable hosts, wrong users, missing CLIs and slow responses.
@@ -29,3 +35,32 @@ Do not touch repoos.toml.
 - 2026-11-20T00:07:14Z · status inbox→ready
 - 2026-11-20T00:07:18Z · cli_override, model_override
 - 2026-11-20T00:07:19Z · status ready→active, branch
+- 2026-11-20T00:17:10Z · note: adopted orphaned engineer pid 44870
+- 2026-11-20T00:24:04Z · body
+- 2026-11-20T00:27:07Z · CTO nudge: held — handoff gate is running
+- 2026-11-20T00:40:51Z · note: ui verification passed: 1 shot captured with clean console
+- 2026-11-20T00:40:57Z · status active→review
+- 2026-11-20T00:40:59Z · message_queued at 2026-11-20T00:40:59.181Z
+- 2026-11-20T00:42:37Z · note: review pass 1: needs some work
+- 2026-11-20T00:42:38Z · status review→active
+- 2026-11-20T00:42:41Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-20T00:45:33Z · message_delivered: 1 message(s)
+- 2026-11-20T01:05:16Z · body
+- 2026-11-20T01:07:09Z · CTO nudge: held — handoff gate is running
+- 2026-11-20T01:08:06Z · orphaned run process stopped · pid 33275 · sleep 60 · cpu 0s · age 18s
+- 2026-11-20T01:08:06Z · orphaned run process stopped · pid 33964 · sleep 60 · cpu 0s · age 13s
+- 2026-11-20T01:08:06Z · orphaned run process stopped · pid 34115 · sleep 60 · cpu 0s · age 12s
+- 2026-11-20T01:08:21Z · orphaned run process stopped · pid 35016 · sleep 60 · cpu 0s · age 22s
+- 2026-11-20T01:08:36Z · orphaned run process stopped · pid 39397 · sleep 60 · cpu 0s · age 11s
+- 2026-11-20T01:13:17Z · message_queued at 2026-11-20T01:13:17.851Z
+- 2026-11-20T01:13:20Z · message_delivered: 1 message(s)
+- 2026-11-20T01:30:22Z · body
+- 2026-11-20T01:30:31Z · orphaned run process stopped · pid 95245 · /opt/homebrew/bin/bun dist/cli/index.js check --changed main · cpu 5s · age 7m
+- 2026-11-20T01:32:09Z · CTO nudge: held — handoff gate is running
+- 2026-11-20T01:34:18Z · note: ui verification passed: 1 shot captured with clean console
+- 2026-11-20T01:34:19Z · status active→review
+- 2026-11-20T01:34:20Z · message_queued at 2026-11-20T01:34:20.011Z
+- 2026-11-20T01:35:43Z · note: review pass 2: good to go
+- 2026-11-20T02:46:47Z · close-out gate completed in 823s
+- 2026-11-20T02:47:18Z · message_dropped: 1 queued message(s) discarded — task is done
+- 2026-11-20T02:49:35Z · status done→done, release:success

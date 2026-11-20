@@ -1,18 +1,21 @@
 ---
-updated_at: "2026-11-19T23:23:59Z"
-review_passes: 1
 id: "1251"
 title: "QA pass: Work board in a project with hundreds of tasks (performance and scroll)"
 type: bug
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: 782b02d804d42571f8dc59ad650021d3fce56152
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-work-board-in-a-project-with-hun
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-19T22:26:56Z"
+updated_at: "2026-11-20T00:49:35Z"
+last_close_out_gate_ms: 1494269
+last_close_out_gate_at: "2026-11-20T00:43:09.234Z"
+review_passes: 1
 ---
 ## Problem
 The Work board and Done column with 1000+ tasks have not been checked for scroll, filter and render speed, especially on phones.
@@ -38,4 +41,7 @@ Do not touch repoos.toml.
 - 2026-11-19T23:22:09Z · status active→review
 - 2026-11-19T23:22:09Z · message_queued at 2026-11-19T23:22:09.425Z
 - 2026-11-19T23:23:59Z · note: review pass 1: good to go
-
+- 2026-11-20T00:27:11Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-20T00:43:09Z · close-out gate completed in 1494s
+- 2026-11-20T00:45:17Z · status done→done, release:success
+- 2026-11-20T00:49:35Z · message_dropped: 1 queued message(s) discarded — task is done

@@ -1,0 +1,113 @@
+---
+id: "1262"
+title: "QA pass: Checks page and check history views"
+type: feature
+status: done
+priority: p2
+area: web
+merged_commit: f2dd45a7b595b3b563f0c4fc3baba00f8602aa1f
+assigned_to: ai
+created_by: t@t
+branch: feat/qa-pass-checks-page-and-check-history-vi
+cli_override: claude code
+model_override: haiku
+created_at: "2026-11-20T02:26:53Z"
+updated_at: "2026-11-20T09:44:55Z"
+last_close_out_gate_ms: 997601
+last_close_out_gate_at: "2026-11-20T09:31:20.791Z"
+review_passes: 3
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-20T04:55:08.051Z: repoos check failed: reused check inputs changed during handoff — run the check again"
+review_rounds: 1
+handoff_signal_retry_count: 2
+---
+## Problem
+Sweep the Checks page (local and remote tabs, history, failure details) for layout, wording and state bugs.
+
+## Desired UX
+Pages look and behave correctly at 375, 768 and 1280 widths: no overflow, clear labels, sensible empty, loading and error states, visible keyboard focus.
+
+## Acceptance criteria
+- Walked headlessly (Playwright only, never a visible browser) at the three widths.
+- Every issue found is fixed, covering the whole class of the problem.
+- Scoped check passes once, then hand off.
+
+## Notes for AI
+Keep changes small. Never touch repoos.toml. Never open a visible browser.
+
+## Shots
+```json
+[
+{
+"label": "Check plan with long step names and commands wrapping inside their cards",
+"target": "default",
+"route": "/checks?tab=plan",
+"highlight": ".ck-steps",
+"state": "checks:longData"
+},
+{
+"label": "Now tab: local slots and close-out pipeline share one divider and label style",
+"target": "default",
+"route": "/checks?tab=now",
+"highlight": ".ips-local-slots",
+"state": "checks:progress"
+}
+]
+```
+
+## Activity
+
+- 2026-11-20T02:26:53Z · created · t@t
+- 2026-11-20T02:26:58Z · status inbox→ready
+- 2026-11-20T02:26:59Z · cli_override, model_override
+- 2026-11-20T02:27:01Z · status ready→active, branch
+- 2026-11-20T02:43:33Z · body
+- 2026-11-20T02:45:32Z · body
+- 2026-11-20T02:46:57Z · CTO nudge: held — handoff gate is running
+- 2026-11-20T02:48:38Z · message_queued at 2026-11-20T02:48:38.576Z
+- 2026-11-20T02:48:41Z · message_delivered: 1 message(s)
+- 2026-11-20T02:58:38Z · body
+- 2026-11-20T03:06:14Z · body
+- 2026-11-20T03:12:15Z · CTO nudge: held — handoff gate is running
+- 2026-11-20T03:19:32Z · message_queued at 2026-11-20T03:19:32.924Z
+- 2026-11-20T03:22:14Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-20T03:27:24Z · message_queued at 2026-11-20T03:27:24.165Z
+- 2026-11-20T03:28:33Z · message_delivered: 1 message(s)
+- 2026-11-20T03:31:20Z · queued message undelivered for 4m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-20T03:31:21Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: The merge is in and the rebuild passed. The fresh scoped check is running in the background, queued behind the pressure guard if needed. I'll request handoff only after it passes. **Status:** The handoff failed twice with "reused check inp… · stderr: (empty)
+- 2026-11-20T03:31:21Z · message_delivered: 1 message(s)
+- 2026-11-20T03:37:41Z · body
+- 2026-11-20T03:43:32Z · body
+- 2026-11-20T03:51:09Z · body
+- 2026-11-20T03:52:53Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The scoped check failed again, and this time on a different Settings element. The rendered-contrast audit has now failed on two different Settings descriptions across three runs and passed on one re-run, with nothing changed in between. My… · stderr: (empty)
+- 2026-11-20T04:02:31Z · body
+- 2026-11-20T04:08:19Z · CTO nudge: held — handoff gate is running
+- 2026-11-20T04:16:19Z · status active→review
+- 2026-11-20T04:16:20Z · message_queued at 2026-11-20T04:16:20.254Z
+- 2026-11-20T04:16:26Z · orphaned run process stopped · pid 70143 · /opt/homebrew/Cellar/bun/1.4.2/bin/bun /Users/nick/code/nick/repoos-worktrees/feat/qa-pass-checks-pa · cpu 1s · age 47s
+- 2026-11-20T04:18:46Z · note: review pass 1: needs some work
+- 2026-11-20T04:18:48Z · status review→active
+- 2026-11-20T04:18:52Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-20T04:24:01Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-11-20T04:24:06Z · note: handoff requested (cli)
+- 2026-11-20T04:27:17Z · CTO nudge: held — handoff gate is running
+- 2026-11-20T04:41:17Z · message_delivered: 1 message(s)
+- 2026-11-20T04:42:06Z · body
+- 2026-11-20T04:43:56Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: I've stopped here rather than work around the lock. Here's where things stand. **Review round 2 fixes are made but not yet verified or handed off.** The worktree is locked against edits, so I can't finish them. **What I changed (on disk, n… · stderr: (empty)
+- 2026-11-20T04:45:33Z · note: ui verification passed: 2 of 2 shots captured with clean console
+- 2026-11-20T04:45:35Z · message_queued at 2026-11-20T04:45:35.528Z
+- 2026-11-20T04:45:36Z · handoff failed · task-file handoff failed at review · Engineering report draft is missing: .repoos/engineering-report-drafts/1262.md
+- 2026-11-20T04:45:36Z · message_delivered: 1 message(s)
+- 2026-11-20T04:50:23Z · body
+- 2026-11-20T04:53:15Z · status active→review
+- 2026-11-20T04:55:04Z · message_queued at 2026-11-20T04:55:04.845Z
+- 2026-11-20T04:55:05Z · note: shots: failed — browser capture cancelled
+- 2026-11-20T04:55:05Z · note: review pass 2: good to go
+- 2026-11-20T04:55:07Z · message_delivered: 1 message(s)
+- 2026-11-20T05:00:43Z · body
+- 2026-11-20T05:02:38Z · message_queued at 2026-11-20T05:02:38.735Z
+- 2026-11-20T06:03:55Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-20T06:08:15Z · note: review pass 3: good to go
+- 2026-11-20T09:31:20Z · close-out gate completed in 998s
+- 2026-11-20T09:33:06Z · status done→done, release:success
+- 2026-11-20T09:44:55Z · message_dropped: 1 queued message(s) discarded — task is done
