@@ -8,8 +8,10 @@ area: web
 assigned_to: ai
 created_by: t@t
 branch: ""
+cli_override: claude code
+model_override: haiku
 created_at: "2026-11-20T06:07:22Z"
-updated_at: "2026-11-20T06:07:27Z"
+updated_at: "2026-11-20T06:07:29Z"
 ---
 ## Problem
 Sweep the project switcher and server picker (add, switch, offline and error states) for layout, wording and state bugs.
@@ -29,3 +31,4 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 
 - 2026-11-20T06:07:22Z · created · t@t
 - 2026-11-20T06:07:27Z · status inbox→ready
+- 2026-11-20T06:07:29Z · cli_override, model_override
