@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-20T07:24:59Z"
-review_passes: 4
 id: "1263"
 title: "QA pass: Settings general, agents and budget tabs"
 type: feature
@@ -13,6 +11,8 @@ branch: feat/qa-pass-settings-general-agents-and-budg
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T02:27:07Z"
+updated_at: "2026-11-20T07:24:59Z"
+review_passes: 4
 review_rounds: 2
 ---
 ## Problem
