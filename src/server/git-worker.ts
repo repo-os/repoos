@@ -113,6 +113,23 @@ function workerEntry(): string {
  */
 export const GIT_WORKER_QUEUE_WAIT_MS = 180_000;
 
+/**
+ * Most git-worker child processes alive at once in this process, across every
+ * repository and both lanes. Each child is a whole Bun process; uncapped, one
+ * vitest run left 48 of them behind (#1281). At the cap, a lane that needs a
+ * child waits for a slot. The least-recently-used idle child is stopped to make
+ * room, and its slot frees only once the process has exited. Its lane stays
+ * usable and respawns on its next request. A busy child is never stopped.
+ */
+export const MAX_GIT_WORKER_CHILDREN = 4;
+
+/** Lanes that own a child that is not being stopped, least-recently-used first. */
+const liveLanes = new Set<GitWorker>();
+/** Child processes not yet exited, including ones being stopped. Bounds the cap. */
+const liveChildren = new Set<ChildProcessWithoutNullStreams>();
+/** Lanes waiting for a child slot; woken when a child exits or a lane goes idle. */
+const slotWaiters = new Set<GitWorker>();
+
 export class GitWorker {
   private fast: GitWorker | null = null;
   private maintenance: CommitGraphMaintenance | null = null;
@@ -443,6 +460,7 @@ export class GitWorker {
   close(): void {
     if (this.closed) return;
     this.closed = true;
+    slotWaiters.delete(this);
     this.fast?.close();
     this.maintenance?.close();
     const error = new Error("git worker closed");
@@ -460,6 +478,16 @@ export class GitWorker {
 
   private pump(): void {
     if (this.closed || this.active) return;
+    if (this.queue.length === 0) {
+      // Going idle frees this lane's child for a waiting lane to stop.
+      GitWorker.wakeSlotWaiters();
+      return;
+    }
+    if (!this.child && !this.claimChildSlot()) {
+      slotWaiters.add(this);
+      return;
+    }
+    slotWaiters.delete(this);
     const job = this.queue.shift();
     if (!job) return;
     this.active = job;
@@ -482,7 +510,11 @@ export class GitWorker {
   }
 
   private ensureChild(): ChildProcessWithoutNullStreams {
-    if (this.child) return this.child;
+    if (this.child) {
+      liveLanes.delete(this);
+      liveLanes.add(this);
+      return this.child;
+    }
     const entry = workerEntry();
     const command = entry.endsWith(".ts") && !process.versions.bun ? "bun" : process.execPath;
     const child = this.launch(command, [entry], {
@@ -495,6 +527,17 @@ export class GitWorker {
       stdio: ["pipe", "pipe", "pipe"],
     });
     this.child = child;
+    liveLanes.add(this);
+    liveChildren.add(child);
+    // The slot frees only when the process has exited, not when it is signalled.
+    const release = () => {
+      if (liveChildren.delete(child)) GitWorker.wakeSlotWaiters();
+    };
+    child.once("exit", release);
+    child.once("error", () => {
+      // A spawn that never started (no pid) emits no exit event.
+      if (child.pid === undefined) release();
+    });
     this.buffered = "";
     this.stderrTail = "";
     child.stdout.setEncoding("utf8");
@@ -588,6 +631,7 @@ export class GitWorker {
   private onExit(error: Error): void {
     const child = this.child;
     this.child = null;
+    liveLanes.delete(this);
     if (!child) return;
     this.childGitCalls.clear();
     const detail = this.stderrTail.trim();
@@ -603,9 +647,35 @@ export class GitWorker {
     }
   }
 
+  private isIdle(): boolean {
+    return !this.active && this.queue.length === 0;
+  }
+
+  /**
+   * Whether this lane may start a child now. At the cap, stops idle
+   * least-recently-used children until enough are on their way out. Their
+   * slots free on exit, so the caller waits instead of spawning over the cap.
+   */
+  private claimChildSlot(): boolean {
+    if (liveChildren.size < MAX_GIT_WORKER_CHILDREN) return true;
+    for (const lane of liveLanes) {
+      if (liveLanes.size < MAX_GIT_WORKER_CHILDREN) break;
+      if (lane.isIdle()) lane.killChild();
+    }
+    return false;
+  }
+
+  private static wakeSlotWaiters(): void {
+    for (const lane of [...slotWaiters]) {
+      slotWaiters.delete(lane);
+      lane.pump();
+    }
+  }
+
   private killChild(): void {
     const child = this.child;
     this.child = null;
+    liveLanes.delete(this);
     this.childGitCalls.clear();
     if (!child) return;
     try {
@@ -725,4 +795,15 @@ export function gitWorkerInFlight(root: string): GitWorkerJobInfo[] {
 export function closeGitWorker(root: string): void {
   workers.get(root)?.close();
   workers.delete(root);
+}
+
+/** Close every repository worker and any child still registered, e.g. at test-suite teardown. */
+export function closeAllGitWorkers(): void {
+  for (const root of [...workers.keys()]) closeGitWorker(root);
+  for (const lane of [...liveLanes]) lane.close();
+}
+
+/** Child processes in this process that have not exited; never above MAX_GIT_WORKER_CHILDREN. */
+export function gitWorkerChildCount(): number {
+  return liveChildren.size;
 }

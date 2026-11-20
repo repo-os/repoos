@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 213144
-last_close_out_gate_at: "2026-11-20T21:10:21.538Z"
 id: "1281"
 title: "Tests leak git worker processes: one vitest run left 48 git-worker-entry processes"
 type: feature
-status: review
+status: done
 priority: p2
 area: [core, server]
+merged_commit: 3319f56eb004ee0a2b5da5be5c18c261e795f52e
 assigned_to: ai
 created_by: t@t
 branch: feat/tests-leak-git-worker-processes-one-vite
@@ -14,6 +13,8 @@ cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T11:47:41Z"
 updated_at: "2026-11-20T21:10:21Z"
+last_close_out_gate_ms: 213144
+last_close_out_gate_at: "2026-11-20T21:10:21.538Z"
 review_passes: 2
 review_rounds: 1
 review_failed_report_retries: 0
