@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 727104
-last_close_out_gate_at: "2026-11-20T04:27:14.879Z"
 id: "1261"
 title: "QA pass: Inbox and Review pages at phone, tablet and desktop widths"
 type: feature
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: 3b4fc96ba7cf708c49a18447a3c20952b612fa54
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-inbox-and-review-pages-at-phone-
@@ -14,6 +13,8 @@ cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T01:42:34Z"
 updated_at: "2026-11-20T04:27:14Z"
+last_close_out_gate_ms: 727104
+last_close_out_gate_at: "2026-11-20T04:27:14.879Z"
 review_passes: 1
 ---
 ## Problem
