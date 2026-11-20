@@ -12,7 +12,7 @@ branch: feat/qa-pass-remote-runners-page-add-test-and
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T00:07:05Z"
-updated_at: "2026-11-20T02:47:18Z"
+updated_at: "2026-11-20T02:49:35Z"
 last_close_out_gate_ms: 823357
 last_close_out_gate_at: "2026-11-20T02:46:47.659Z"
 review_passes: 2
@@ -63,3 +63,4 @@ Do not touch repoos.toml.
 - 2026-11-20T01:35:43Z · note: review pass 2: good to go
 - 2026-11-20T02:46:47Z · close-out gate completed in 823s
 - 2026-11-20T02:47:18Z · message_dropped: 1 queued message(s) discarded — task is done
+- 2026-11-20T02:49:35Z · status done→done, release:success
