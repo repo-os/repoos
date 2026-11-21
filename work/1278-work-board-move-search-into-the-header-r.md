@@ -11,7 +11,7 @@ branch: feat/work-board-move-search-into-the-header-r
 cli_override: github copilot
 model_override: default
 created_at: "2026-11-20T08:46:27Z"
-updated_at: "2026-11-21T15:51:53Z"
+updated_at: "2026-11-21T15:52:11Z"
 handoff_signal_retry_count: 2
 review_rounds: 1
 review_passes: 1
@@ -225,3 +225,4 @@ Start from src/ui-app/src/components/BoardQueueSearch.vue and the Work view head
 - 2026-11-21T15:46:53Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-21T15:47:06Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: **Blocked:** the scoped check passed, but the worktree is still in an unfinished merge. Concluding it requires a commit, which this session’s instructions prohibit. I can’t safely request handoff until that merge is resolved. · stderr: (empty)
 - 2026-11-21T15:51:53Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-21T15:52:11Z · message_queued at 2026-11-21T15:52:11.577Z
