@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/work-board-move-search-into-the-header-r
 created_at: "2026-11-20T08:46:27Z"
-updated_at: "2026-11-21T07:47:20Z"
+updated_at: "2026-11-21T08:02:31Z"
 handoff_signal_retry_count: 2
 review_rounds: 1
 review_passes: 1
@@ -181,3 +181,4 @@ Start from src/ui-app/src/components/BoardQueueSearch.vue and the Work view head
 - 2026-11-21T05:28:23Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-21T07:47:20Z · needs_input
 - 2026-11-21T07:47:20Z · message_delivered: 1 message(s)
+- 2026-11-21T08:02:31Z · message_queued at 2026-11-21T08:02:31.856Z
