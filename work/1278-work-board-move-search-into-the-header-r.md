@@ -11,7 +11,7 @@ branch: feat/work-board-move-search-into-the-header-r
 cli_override: github copilot
 model_override: default
 created_at: "2026-11-20T08:46:27Z"
-updated_at: "2026-11-21T15:37:48Z"
+updated_at: "2026-11-21T15:38:32Z"
 handoff_signal_retry_count: 2
 review_rounds: 1
 review_passes: 1
@@ -221,3 +221,4 @@ Start from src/ui-app/src/components/BoardQueueSearch.vue and the Work view head
 - 2026-11-21T15:37:47Z · agent exited with an error (copilot) · • Run 'gh auth login' to authenticate with the GitHub CLI. Open Raw CLI error for details. (CLI: • Run 'gh auth login' to authenticate with the GitHub CLI)
 - 2026-11-21T15:37:47Z · engineer crash recovery: resuming github copilot + default (2/3 crashes in 30m) · • Run 'gh auth login' to authenticate with the GitHub CLI. Open Raw CLI error for details. (CLI: • Run 'gh auth login' to authenticate with the GitHub CLI)
 - 2026-11-21T15:37:48Z · needs_input
+- 2026-11-21T15:38:32Z · engineer stopped by request
