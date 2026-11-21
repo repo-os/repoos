@@ -3,9 +3,6 @@ id: "1276"
 title: Close-out validation log should show live progress
 type: feature
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "Claude exited with an error. Open Raw CLI error for details. (CLI: 2026-11-20T21:26:43.201153Z ERROR codex_core::util: Custom tool call output is missing for call id: call_eb4148a93ce844cbaa40f3969f0dc612)"
 priority: p1
 area: [server, core]
 assigned_to: ai
@@ -14,7 +11,7 @@ branch: feat/close-out-validation-log-should-show-liv
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T07:42:21Z"
-updated_at: "2026-11-21T02:28:20Z"
+updated_at: "2026-11-21T15:38:27Z"
 last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (appeared: src/server/close-out-progress.ts, src/server/remote-validation.ts) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 last_handoff_failure_sha: 186ed2e4093e9e4c85434660b275d6c18b482f03
 review_passes: 4
@@ -163,3 +160,4 @@ Related: #1272 (timer should count from validation start). Never touch repoos.to
 - 2026-11-21T00:48:32Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-21T00:51:40Z · agent exited with an error (claude) · Claude exited with an error. Open Raw CLI error for details. (CLI: 2026-11-20T21:26:43.201153Z ERROR codex_core::util: Custom tool call output is missing for call id: call_eb4148a93ce844cbaa40f3969f0dc612)
 - 2026-11-21T02:28:20Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-21T15:38:27Z · needs_input
