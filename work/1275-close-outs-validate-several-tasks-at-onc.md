@@ -338,3 +338,4 @@ Read docs/close-out-pipeline.md and docs/remote-validation.md first. Never touch
 - 2026-11-21T06:14:18Z · agent exited with an error (claude) · the agent process exited with an error — open the task to see the full output
 - 2026-11-21T06:14:18Z · engineer crash recovery: resuming claude code + haiku (1/3 crashes in 30m) · the agent process exited with an error — open the task to see the full output. Open Raw CLI error for details. (CLI: the agent process exited with an error — open the task to see the full output)
 - 2026-11-21T07:47:20Z · needs_input
+- 2026-11-21T07:47:20Z · message_delivered: 1 message(s)
