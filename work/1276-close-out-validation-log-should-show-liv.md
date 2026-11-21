@@ -1,6 +1,4 @@
 ---
-last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (appeared: src/server/close-out-progress.ts, src/server/remote-validation.ts) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
-last_handoff_failure_sha: 186ed2e4093e9e4c85434660b275d6c18b482f03
 id: "1276"
 title: Close-out validation log should show live progress
 type: feature
@@ -13,7 +11,9 @@ branch: feat/close-out-validation-log-should-show-liv
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T07:42:21Z"
-updated_at: "2026-11-21T00:39:33Z"
+updated_at: "2026-11-21T00:42:46Z"
+last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (appeared: src/server/close-out-progress.ts, src/server/remote-validation.ts) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
+last_handoff_failure_sha: 186ed2e4093e9e4c85434660b275d6c18b482f03
 review_passes: 4
 last_check_failure: "repoos check at 2026-11-20T21:01:31.328Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Close-out drawer with live step, host, and attempt (target \"default\"): loading state detected: loading text \"Loading changes…\" on /work?task=9999&tab=changes (http://127.0.0.1:43237/work?task=9999&tab=changes&shotState=drawer%3AcloseOutRemoteTests)"
 review_failed_report_retries: 0
@@ -150,4 +150,4 @@ Related: #1272 (timer should count from validation start). Never touch repoos.to
 - 2026-11-21T00:28:32Z · CTO nudge: held — handoff gate is running
 - 2026-11-21T00:39:33Z · message_queued at 2026-11-21T00:39:33.227Z
 - 2026-11-21T00:39:33Z · handoff failed · task-file handoff failed at check · the worktree changed while the gate was running (appeared: src/server/close-out-progress.ts, src/server/remote-validation.ts) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
-
+- 2026-11-21T00:42:46Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
