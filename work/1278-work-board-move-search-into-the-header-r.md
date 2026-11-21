@@ -5,20 +5,20 @@ type: feature
 status: active
 needs_input: true
 needs_input_reason: dev-error
-needs_input_detail: "Automatic recovery could not restart the engineer: Task #1278 already has a running agent"
+needs_input_detail: "Codex exited with an error. Open Raw CLI error for details. (CLI: 2026-11-21T15:37:02.288743Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Client(HttpRequest(HttpRequest(\"http/request failed: error sending request for url (https://chatgpt.com/backend-api/ps/mcp)\"))))"
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
 branch: feat/work-board-move-search-into-the-header-r
 created_at: "2026-11-20T08:46:27Z"
-updated_at: "2026-11-21T15:36:56Z"
+updated_at: "2026-11-21T15:37:12Z"
 handoff_signal_retry_count: 2
 review_rounds: 1
 review_passes: 1
 review_failed_report_retries: 0
-dev_error_count: 9
-engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-21T15:36:54.351Z\",\"kind\":\"dev-error\"}]"
+dev_error_count: 10
+engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-21T15:36:54.351Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-21T15:37:12.838Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 The new desktop board search (#1259) sits on its own row below the page title, takes a lot of width, and shows a redundant 'Search: web' chip under it while typing.
@@ -210,3 +210,4 @@ Start from src/ui-app/src/components/BoardQueueSearch.vue and the Work view head
 - 2026-11-21T15:36:54Z · engineer crash recovery: resuming codex + gpt-6-luna (1/3 crashes in 30m) · Codex exited with an error. Open Raw CLI error for details. (CLI: 2026-11-21T14:55:27.901383Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Client(HttpRequest(HttpRequest("http/request failed: erro…
 - 2026-11-21T15:36:56Z · watchdog: restarting engineer because a queued message waited 57m with no live process
 - 2026-11-21T15:36:56Z · watchdog: active-without-engineer recovery failed — Task #1278 already has a running agent
+- 2026-11-21T15:37:12Z · engineer crash recovery: resuming codex + gpt-6-luna (2/3 crashes in 30m) · Codex exited with an error. Open Raw CLI error for details. (CLI: 2026-11-21T15:37:02.288743Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Client(HttpRequest(HttpRequest("http/request failed: erro…
