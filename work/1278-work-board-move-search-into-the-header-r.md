@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/work-board-move-search-into-the-header-r
 created_at: "2026-11-20T08:46:27Z"
-updated_at: "2026-11-21T09:48:55Z"
+updated_at: "2026-11-21T10:04:44Z"
 handoff_signal_retry_count: 2
 review_rounds: 1
 review_passes: 1
@@ -194,3 +194,4 @@ Start from src/ui-app/src/components/BoardQueueSearch.vue and the Work view head
 - 2026-11-21T09:32:27Z · engineer crash recovery: resuming codex + gpt-6-luna (1/3 crashes in 30m) · Codex exited with an error. Open Raw CLI error for details. (CLI: 2026-11-21T09:13:34.005195Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Client(HttpRequest(HttpRequest("http/request failed: erro…
 - 2026-11-21T09:32:29Z · needs_input
 - 2026-11-21T09:48:55Z · CTO nudge: held — machine under pressure (system load is high (4.3× per CPU, limit 3×) — waiting for headroom before starting more work)
+- 2026-11-21T10:04:44Z · CTO nudge: held — machine under pressure (system load is high (5.8× per CPU, limit 3×) — waiting for headroom before starting more work)
