@@ -3,6 +3,9 @@ id: "1275"
 title: "Close-outs: validate several tasks at once on different runner machines"
 type: feature
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: the agent process exited with an error — open the task to see the full output
 priority: p1
 area: [server, core]
 assigned_to: ai
@@ -11,14 +14,14 @@ branch: feat/close-outs-validate-several-tasks-at-onc
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T07:42:13Z"
-updated_at: "2026-11-21T10:35:49Z"
+updated_at: "2026-11-21T11:09:07Z"
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-11-20T11:18:52.239Z: repoos check failed: vite v8.2.0 building client environment for production..."
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: 82edbaa33be212d01145fb74bfb7a40640482476
 handoff_signal_retry_count: 2
-dev_error_count: 4
-engineer_crash_log: "[{\"cli\":\"claude code\",\"model\":\"haiku\",\"at\":\"2026-11-21T09:13:30.582Z\",\"kind\":\"dev-error\"}]"
+dev_error_count: 5
+engineer_crash_log: "[{\"cli\":\"claude code\",\"model\":\"haiku\",\"at\":\"2026-11-21T11:09:07.532Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 The close-out queue runs one job at a time (queuePosition 0 validating, everything else queued) even when other runner machines (bee, mini) are idle. A full validation takes 20-25 minutes, so 11 queued tasks means about 4 hours, and one slow or failing job blocks all of them. Observed 2026-11-20: thinkpad ran #1258 for ~55 min while bee and mini had free slots and 10 green tasks waited.
@@ -349,3 +352,5 @@ Read docs/close-out-pipeline.md and docs/remote-validation.md first. Never touch
 - 2026-11-21T09:48:54Z · CTO nudge: held — machine under pressure (system load is high (4.3× per CPU, limit 3×) — waiting for headroom before starting more work)
 - 2026-11-21T10:04:43Z · CTO nudge: held — machine under pressure (system load is high (5.8× per CPU, limit 3×) — waiting for headroom before starting more work)
 - 2026-11-21T10:35:49Z · CTO nudge: held — machine under pressure (system load is high (5.8× per CPU, limit 3×) — waiting for headroom before starting more work)
+- 2026-11-21T11:09:07Z · agent exited with an error (claude) · the agent process exited with an error — open the task to see the full output
+- 2026-11-21T11:09:07Z · engineer crash recovery: resuming claude code + haiku (1/3 crashes in 30m) · the agent process exited with an error — open the task to see the full output. Open Raw CLI error for details. (CLI: the agent process exited with an error — open the task to see the full output)
