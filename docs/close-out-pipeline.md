@@ -229,30 +229,44 @@ without reading the server log.
   uploading`, `building candidate`, `running tests` (with remote done/total test
   file progress when available), `syncing with
   main`, `running checks · <step>` (local gate), `publishing to main`,
-  `cleaning up`, and `remote validation` when the runner's stage is not yet known.
-  A job waiting in the close-out queue has no running attempt yet, so its `step` and
-  `lastProgressAt` are null and `progressStale` is false. A remote run's `queued for
-  host slot` appears only once the run itself is queued or locked on a runner.
-- **Host.** Read from the live remote run every 5 seconds, so a remote run names its
-  host from the moment it is registered. Local steps report `local`.
-- **Stale.** `progressStale` is true when the last progress write is 90 seconds old
-  or more on an active attempt. A heartbeat writes every 15 seconds, so a stale
+  `cleaning up`, and `remote validation`. The runner's combined build-and-test
+  command reports as `remote validation` until its first test marker, then moves to
+  `running tests`, so a remote build is never labelled as tests. A job waiting in
+  the close-out queue has no running attempt yet, so its `step` and `lastProgressAt`
+  are null and `progressStale` is false.
+- **Slot wait and host.** A remote run waiting for a runner slot reports `queued for
+  host slot` with no host (`host` is null). Once it holds a slot the step names that
+  host. Local steps report `local`. The host is also read from the live remote run on
+  each progress poll, so a failover to another runner is picked up.
+- **Stale.** `progressStale` is true when the attempt's own last progress write is 90
+  seconds old or more. Only that write counts: a fresh stage event does not mask a
+  recorder that stopped writing. A heartbeat writes every 15 seconds, so a stale
   value means the writer stopped, which is usually a hung close-out, not a slow
   step. A quiet remote test run still heartbeats and is not flagged. The card and
-  drawer label a stale attempt `stalled · no progress …` and keep the step, host and
-  attempt on the label.
-- **Retries.** A retry after a timeout or failure is a new attempt (attempt number
-  up by one, log `attempt-<n+1>`), and `previousFailure` carries the reason the last
-  one failed.
-- **Live push.** A step or host change emits the pipeline snapshot at once, so the UI
-  does not wait for the next stage event. A finished attempt's record is final: the
-  recorder never writes to a `done` or `failed` job. Failed log or job-record writes
-  are reported to the integration logger, and do not advance the saved heartbeat;
-  the close-out itself continues. A cancelled attempt does not set `previousFailure`.
+  drawer label a stale attempt `stalled · <step> · no progress …` and append the
+  retry reason when the attempt is one, alongside the host and attempt.
+- **Retries.** A rerun inside a running close-out is a new attempt, not a silent second
+  pass. That covers a failed validation rerun, a scoped remote run's full-suite rerun,
+  and a host failover. The job record moves to attempt `n+1` with `previousFailure`
+  naming the reason and `startedAt` set to the retry's start; the recorder closes
+  `attempt-<n>.log` with `retried as attempt <n+1>: <reason>` and opens
+  `attempt-<n+1>.log`. The timeout budget does not reset, so a retry still spends the
+  same close-out budget (#0573). A retry after a failed job is a new enqueue, as
+  before, and carries `previousFailure` the same way.
+- **Live push.** Every persisted write (a step or host change, or a heartbeat) emits the
+  pipeline snapshot at once, so the UI sees a live `lastProgressAt` even while a
+  stage is quiet. A finished attempt's record is final: the recorder never writes to a
+  `done` or `failed` job. A failed log append or job-record write is retried on the
+  next write, with its step, host and log line kept. `lastProgressAt` is stamped only
+  when the log line landed, and the saved heartbeat advances only when the record
+  write did too. Failures are reported to the integration logger; the close-out
+  itself continues. A cancelled attempt does not set `previousFailure`.
 
-Helpers: `src/server/close-out-progress.ts` (recorder, step names, stale rule);
-the orchestrator reports steps through `reportStep` and the recorder wraps each
-`processJob` run.
+Helpers: `src/server/close-out-progress.ts` (recorder, step names, slot step, stale
+rule, `beginAttempt`); `advanceAttempt` in `src/server/integration-job.ts` starts the
+next attempt; the orchestrator reports steps through `reportStep` and `reportSlot`,
+starts retries through `beginRetryAttempt`, and the recorder wraps each `processJob`
+run. Tests: `src/ui-app/tests/close-out-progress.test.ts`.
 
 ## Handoff snapshot and worktree integrity (#0598)
 

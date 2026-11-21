@@ -231,12 +231,13 @@ export function buildIntegrationSnapshot(
   const failed = inFlight.phase === "failed";
   const startedAt = inFlight.startedAt;
   // The newest of the stage events and the attempt's own progress writes is the
-  // real "last seen alive" (#1276). Staleness is only judged once the recorder
+  // "last seen alive" shown to the user (#1276). Staleness is judged on the
+  // attempt's own progress writer alone: a fresh stage event must not mask a
+  // recorder that stopped writing. Staleness is only judged once the recorder
   // has written, so a legacy record without progress is not flagged.
   const lastProgressAt =
     latestIso(reportedAt[inFlight.taskId], inFlight.lastProgressAt) ?? startedAt;
-  const progressStale =
-    inFlight.lastProgressAt !== undefined && progressIsStale(lastProgressAt, nowMs);
+  const progressStale = progressIsStale(inFlight.lastProgressAt, nowMs);
   const activePhaseStartedAt = inFlight.phaseStartedAt ?? startedAt;
   const activeElapsed = Number.isFinite(nowMs) ? nowMs - Date.parse(activePhaseStartedAt) : null;
   return {

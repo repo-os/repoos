@@ -409,6 +409,33 @@ export function createJobCoordinator(root: string): JobCoordinator {
       return job;
     },
 
+    /**
+     * Start the next attempt inside a running close-out (#1276): a rerun after a
+     * failed gate or a host failover is a new attempt that records why, not a
+     * silent second pass. The attempt's own start (`startedAt`) moves to now; the
+     * timeout budget (`budgetMonotonicStartNs`) does not, so a retry still spends
+     * the same budget (#0573). Fenced like every attempt write: returns `null`
+     * when `fromAttempt` is no longer the task's current attempt (#0736).
+     */
+    advanceAttempt(taskId: string, fromAttempt: number, reason: string): IntegrationJob | null {
+      const existing = readJob(root, taskId);
+      if (!existing || jobAttempt(existing) !== fromAttempt) return null;
+      const now = new Date().toISOString();
+      const next: IntegrationJob = {
+        ...existing,
+        attempt: Math.max(fromAttempt, readGeneration(root, taskId)) + 1,
+        startedAt: now,
+        previousFailure: { attempt: fromAttempt, reason, failedAt: now },
+        step: undefined,
+        host: undefined,
+        lastProgressAt: undefined,
+        progressLogPath: undefined,
+      };
+      writeJob(root, next);
+      writeGeneration(root, taskId, next.attempt ?? fromAttempt + 1);
+      return next;
+    },
+
     getJob(taskId: string): IntegrationJob | null {
       return readJob(root, taskId);
     },

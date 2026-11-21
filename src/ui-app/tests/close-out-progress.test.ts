@@ -7,7 +7,7 @@
  * and drawer show, including the stale-progress flag.
  */
 import { describe, expect, it, beforeEach, afterEach } from "vitest";
-import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import {
@@ -19,11 +19,16 @@ import {
   progressWritable,
   stepForRemoteStage,
   stepForRemoteRun,
+  stepForSlotState,
   type CloseOutProgressPatch,
 } from "../../server/close-out-progress.js";
 import { createJobCoordinator } from "../../server/integration-job.js";
 import { buildIntegrationSnapshot } from "../../server/integration-status.js";
-import type { ActiveRemoteRunInfo } from "../../server/remote-validation.js";
+import {
+  ActiveRemoteRunRegistry,
+  type ActiveRemoteRunInfo,
+  type RemoteSlotState,
+} from "../../server/remote-validation.js";
 import {
   integrationActiveCopy,
   integrationAttemptContext,
@@ -55,7 +60,9 @@ describe("stepForRemoteStage (#1276)", () => {
     ["lock", CLOSE_OUT_STEP.queuedForHost],
     ["bundle", CLOSE_OUT_STEP.bundling],
     ["upload", CLOSE_OUT_STEP.bundling],
-    ["run", CLOSE_OUT_STEP.runningTests],
+    // `run` is the runner's combined build-and-test command until its first
+    // test marker: the step is the remote validation, not "running tests" (#1276 review).
+    ["run", CLOSE_OUT_STEP.remote],
     ["install", CLOSE_OUT_STEP.runningTests],
     ["test", CLOSE_OUT_STEP.runningTests],
     ["tests", CLOSE_OUT_STEP.runningTests],
@@ -464,7 +471,7 @@ describe("pipeline snapshot and card copy (#1276)", () => {
 
     const stale = integrationActiveCopy(snap({ progressStale: true }), T0 + 5_000);
     expect(stale.stalled).toBe(true);
-    expect(stale.label).toContain("stalled · no progress");
+    expect(stale.label).toContain("stalled · running tests · no progress");
     expect(stale.label).toContain("on 10.0.0.7 · attempt 2");
     expect(integrationPipelineStalled(snap({ progressStale: true }), T0 + 5_000)).toBe(true);
   });
@@ -524,7 +531,7 @@ describe("terminal records and observers (#1276 review)", () => {
     expect(progressWritable(phase as string | undefined)).toBe(writable);
   });
 
-  it("notifies the observer on a step or host change, not on a repeat or a heartbeat", () => {
+  it("notifies the observer on each persisted write, but not on a repeated step", () => {
     let root = mkdtempSync(join(tmpdir(), "repoos-progress-onchange-"));
     try {
       let clock = T0;
@@ -537,15 +544,19 @@ describe("terminal records and observers (#1276 review)", () => {
         now: () => clock,
         onChange: () => changes++,
       });
+      // The start write, then the first step: each one is persisted and seen.
       rec.start();
-      rec.setStep(CLOSE_OUT_STEP.syncing);
-      rec.setStep(CLOSE_OUT_STEP.syncing);
       expect(changes).toBe(1);
-      rec.setStep(CLOSE_OUT_STEP.checks, "local");
+      rec.setStep(CLOSE_OUT_STEP.syncing);
+      rec.setStep(CLOSE_OUT_STEP.syncing);
       expect(changes).toBe(2);
+      rec.setStep(CLOSE_OUT_STEP.checks, "local");
+      expect(changes).toBe(3);
+      // A heartbeat is a persisted write too, so the observer sees a live
+      // `lastProgressAt` during a quiet stretch (#1276 review).
       clock += 20_000;
       rec.tick();
-      expect(changes).toBe(2);
+      expect(changes).toBe(4);
       rec.stop();
     } finally {
       rmSync(root, { recursive: true, force: true });
@@ -613,5 +624,201 @@ describe("terminal records and observers (#1276 review)", () => {
     } as IntegrationPipelineSnapshot;
     const copy = integrationActiveCopy(snap, T0 + 1_000);
     expect(copy.title).toContain("Attempt 2 — attempt 1 failed: merge conflict in src/a.ts");
+  });
+});
+
+describe("retries, slot waits and write failures (#1276 review round 2)", () => {
+  let root: string;
+
+  beforeEach(() => {
+    root = mkdtempSync(join(tmpdir(), "repoos-progress-retry-"));
+  });
+
+  afterEach(() => {
+    rmSync(root, { recursive: true, force: true });
+  });
+
+  it.each([
+    [{ state: "queued" } as RemoteSlotState, CLOSE_OUT_STEP.queuedForHost, null],
+    [{ state: "acquired", host: "10.0.0.7" } as RemoteSlotState, CLOSE_OUT_STEP.remote, "10.0.0.7"],
+  ])("shows slot state %j as step %s on host %s", (slot, step, host) => {
+    expect(stepForSlotState(slot)).toEqual({ step, host });
+  });
+
+  it("moves a retry onto the new attempt's log, with the reason on both logs", () => {
+    let clock = T0;
+    const writes: Array<{ patch: CloseOutProgressPatch; attempt: number }> = [];
+    const rec = new CloseOutProgressRecorder({
+      root,
+      taskId: "1276",
+      attempt: 1,
+      persist: (patch, attempt) => {
+        writes.push({ patch, attempt });
+      },
+      now: () => clock,
+    });
+    rec.start();
+    rec.setStep(CLOSE_OUT_STEP.runningTests, "10.0.0.7");
+    clock += 1_000;
+    rec.beginAttempt(2, "merge conflict in src/a.ts\nmore detail");
+    rec.setStep(CLOSE_OUT_STEP.syncing);
+    rec.stop("published");
+
+    const oldLog = readFileSync(join(root, progressLogPathFor("1276", 1)), "utf8");
+    const newLog = readFileSync(join(root, progressLogPathFor("1276", 2)), "utf8");
+    expect(oldLog).toContain("attempt 1 ended · retried as attempt 2: merge conflict in src/a.ts");
+    expect(oldLog).not.toContain("step: syncing");
+    expect(newLog).toContain("attempt 2 started · retry of attempt 1: merge conflict in src/a.ts");
+    expect(newLog).toContain("step: syncing");
+    expect(newLog).not.toContain("more detail");
+
+    expect(writes.find((w) => w.patch.step === CLOSE_OUT_STEP.runningTests)?.attempt).toBe(1);
+    const started = writes.find((w) => w.patch.progressLogPath === progressLogPathFor("1276", 2));
+    expect(started?.attempt).toBe(2);
+    expect(writes.find((w) => w.patch.step === CLOSE_OUT_STEP.syncing)?.attempt).toBe(2);
+  });
+
+  it("keeps a step whose job-record write failed and sends it with the next write", () => {
+    let clock = T0;
+    let failing = true;
+    const sent: CloseOutProgressPatch[] = [];
+    const rec = new CloseOutProgressRecorder({
+      root,
+      taskId: "1276",
+      attempt: 1,
+      persist: (patch) => {
+        if (failing) throw new Error("disk busy");
+        sent.push(patch);
+      },
+      now: () => clock,
+      onWriteError: () => {},
+    });
+    rec.start();
+    rec.setStep(CLOSE_OUT_STEP.bundling, "10.0.0.7");
+    failing = false;
+    clock += 5_000;
+    rec.tick();
+    rec.stop();
+    expect(sent.at(-1)).toMatchObject({
+      step: CLOSE_OUT_STEP.bundling,
+      host: "10.0.0.7",
+      lastProgressAt: new Date(clock).toISOString(),
+    });
+  });
+
+  it("does not stamp lastProgressAt when the log line did not land", () => {
+    let clock = T0;
+    const sent: CloseOutProgressPatch[] = [];
+    // A directory where the log file goes makes every append fail.
+    mkdirSync(join(root, progressLogPathFor("1276", 1)), { recursive: true });
+    const rec = new CloseOutProgressRecorder({
+      root,
+      taskId: "1276",
+      attempt: 1,
+      persist: (patch) => {
+        sent.push(patch);
+      },
+      now: () => clock,
+      onWriteError: () => {},
+    });
+    rec.start();
+    rec.setStep(CLOSE_OUT_STEP.syncing);
+    rec.stop();
+    expect(sent.length).toBeGreaterThan(0);
+    for (const patch of sent) expect(patch).not.toHaveProperty("lastProgressAt");
+    expect(sent[0]?.progressLogPath).toBe(progressLogPathFor("1276", 1));
+  });
+
+  it("moves a run from the combined run stage to the test stage on its first test marker", () => {
+    const registry = new ActiveRemoteRunRegistry();
+    registry.set(remoteRun({ stage: "run" }), "1276");
+    expect(stepForRemoteRun(registry.get("1276")!)).toBe(CLOSE_OUT_STEP.remote);
+
+    registry.setTestProgress("1276", 3, 84);
+    const run = registry.get("1276")!;
+    expect(run).toMatchObject({ stage: "test", testProgress: { done: 3, total: 84 } });
+    expect(stepForRemoteRun(run)).toContain("(3/84)");
+  });
+
+  it("starts the next attempt in a running close-out with its reason and a fresh start", () => {
+    const coordinator = createJobCoordinator(root);
+    const job = coordinator.enqueue({ id: "1276", branch: "feat/x" } as any)!;
+    const oldStart = new Date(T0).toISOString();
+    coordinator.updateJob(
+      "1276",
+      {
+        phase: "validating",
+        startedAt: oldStart,
+        step: CLOSE_OUT_STEP.runningTests,
+        host: "10.0.0.7",
+        lastProgressAt: oldStart,
+      },
+      job.attempt,
+    );
+    const next = coordinator.advanceAttempt("1276", job.attempt!, "remote tests failed");
+    expect(next).toMatchObject({
+      attempt: job.attempt! + 1,
+      previousFailure: { attempt: job.attempt, reason: "remote tests failed" },
+      step: undefined,
+      host: undefined,
+      lastProgressAt: undefined,
+    });
+    expect(next!.startedAt).not.toBe(oldStart);
+    expect(coordinator.getJob("1276")!.attempt).toBe(job.attempt! + 1);
+    // The superseded attempt can no longer advance or write (#0736).
+    expect(coordinator.advanceAttempt("1276", job.attempt!, "again")).toBeNull();
+    expect(coordinator.updateJob("1276", { step: "stale" }, job.attempt)).toBeNull();
+  });
+
+  it("does not let a fresh stage event mask a recorder that stopped writing", () => {
+    const iso = (ms: number) => new Date(ms).toISOString();
+    const coordinator = createJobCoordinator(root);
+    const job = coordinator.enqueue({ id: "1276", branch: "feat/x" } as any)!;
+    coordinator.updateJob(
+      "1276",
+      {
+        phase: "validating",
+        startedAt: iso(T0),
+        step: CLOSE_OUT_STEP.remote,
+        host: "10.0.0.7",
+        lastProgressAt: iso(T0),
+      },
+      job.attempt,
+    );
+    const now = T0 + PROGRESS_STALE_MS + 1_000;
+    const snap = buildIntegrationSnapshot(
+      coordinator,
+      {},
+      undefined,
+      { "1276": iso(now - 1_000) },
+      {},
+      iso(now),
+    );
+    expect(snap.active).toMatchObject({ progressStale: true, lastProgressAt: iso(now - 1_000) });
+  });
+
+  it("the stalled label names the step it stopped on and the retry reason", () => {
+    const snap = {
+      empty: false,
+      active: {
+        taskId: "1276",
+        stage: null,
+        failed: false,
+        startedAt: new Date(T0).toISOString(),
+        lastProgressAt: new Date(T0).toISOString(),
+        attempt: 2,
+        step: CLOSE_OUT_STEP.remote,
+        host: "10.0.0.7",
+        progressStale: true,
+        previousFailure: { attempt: 1, reason: "remote tests failed" },
+      },
+      queue: [],
+      at: new Date(T0).toISOString(),
+    } as IntegrationPipelineSnapshot;
+    const copy = integrationActiveCopy(snap, T0 + 1_000);
+    expect(copy.stalled).toBe(true);
+    expect(copy.label).toContain("stalled · remote validation · no progress");
+    expect(copy.label).toContain("Attempt 2 — attempt 1 failed: remote tests failed");
+    expect(copy.label).toContain("on 10.0.0.7 · attempt 2");
   });
 });

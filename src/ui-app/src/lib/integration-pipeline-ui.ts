@@ -249,18 +249,22 @@ function integrationActiveCopyBase(
   const stalled = active.progressStale === true || (idle !== null && idle >= stallMs);
   const ctx = integrationAttemptContext(active);
   const withCtx = (label: string): string => (ctx ? `${label} · ${ctx}` : label);
+  const stage = integrationStageLabel(active.stage);
+  const step = active.step ?? stage;
+  const retry = integrationRetryNote(active);
   if (stalled) {
     const dur = idle !== null ? ` ${formatDuration(idle)}` : "";
+    // Name the step it stopped on and why this attempt is running, so the card
+    // and drawer say what is stuck, not only that something is (#1276). A job
+    // with no recorded step yet keeps the plain stall label.
+    const stalledStep = active.step ? `${active.step} · ` : "";
     return {
-      label: withCtx(`stalled · no progress${dur}`),
+      label: withCtx(`stalled · ${stalledStep}no progress${dur}${retry ? ` · ${retry}` : ""}`),
       title:
         "Close-out has not reported stage progress in a while — it may be hung. Cancel to return the task to review, or retry to stop and enqueue a fresh attempt.",
       stalled: true,
     };
   }
-  const stage = integrationStageLabel(active.stage);
-  const step = active.step ?? stage;
-  const retry = integrationRetryNote(active);
   const elapsed = integrationElapsedMs(active.startedAt, nowMs);
   const elapsedTip = elapsed !== null ? integrationCloseOutElapsedTip(active, elapsed) : undefined;
   const detail = active.detail?.trim();

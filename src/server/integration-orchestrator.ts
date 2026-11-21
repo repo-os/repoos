@@ -29,6 +29,7 @@ import {
   CloseOutProgressRecorder,
   LOCAL_HOST,
   progressWritable,
+  stepForSlotState,
 } from "./close-out-progress.js";
 import type { CloseOutOutcome, CloseOutOutcomeEvent } from "./close-out-outcome.js";
 import type { RepositoryLock, RootLock } from "./repo-lock.js";
@@ -80,7 +81,7 @@ import {
 export { hasDependencyInputChange } from "../core/dependency-install.js";
 import type { DoneStep } from "./done.js";
 import { redactSecrets, stripAnsi } from "./done.js";
-import type { RemoteValidator, UploadProgressInfo } from "./remote-validation.js";
+import type { RemoteSlotState, RemoteValidator, UploadProgressInfo } from "./remote-validation.js";
 import { formatBundleUploadDetail } from "./bundle-upload.js";
 import {
   checkEnvAfterRemoteGate,
@@ -1580,11 +1581,11 @@ export class CloseOutOrchestrator {
       root: this.config.root,
       taskId: job.taskId,
       attempt,
-      persist: (patch) => {
+      persist: (patch, patchAttempt) => {
         // A terminal record is final: a late heartbeat must not stamp a
         // `failed` or `done` job with a live step or a fresh timestamp (#1276).
         if (!progressWritable(this.coordinator.getJob(job.taskId)?.phase)) return false;
-        return !!this.coordinator.updateJob(job.taskId, patch, attempt);
+        return !!this.coordinator.updateJob(job.taskId, patch, patchAttempt);
       },
       onWriteError: (error) =>
         this.logger?.integration(job.taskId, "warn", "close-out progress write failed", {
@@ -1608,8 +1609,33 @@ export class CloseOutOrchestrator {
   }
 
   /** Report the run's current step to its progress log and job record (#1276). */
-  private reportStep(step: string, host: string = LOCAL_HOST): void {
+  private reportStep(step: string, host: string | null = LOCAL_HOST): void {
     this.progress?.setStep(step, host);
+  }
+
+  /**
+   * Report a remote run's place in the host pool (#1276): waiting for a slot
+   * (no host yet) or holding one on a named host.
+   */
+  private reportSlot(slot: RemoteSlotState): void {
+    const { step, host } = stepForSlotState(slot);
+    this.reportStep(step, host);
+  }
+
+  /**
+   * Start a new attempt for a retry inside this run (#1276): the job record and
+   * the progress log both move to it, carrying the reason the previous attempt
+   * failed. Returns `false` when this run no longer owns the job (#0736), in
+   * which case the caller must stop without rerunning anything.
+   */
+  private beginRetryAttempt(job: IntegrationJob, reason: string): boolean {
+    if (this.ownedAttempt === undefined) return false;
+    const next = this.coordinator.advanceAttempt(job.taskId, this.ownedAttempt, reason);
+    if (!next) return false;
+    this.ownedAttempt = jobAttempt(next);
+    this.progress?.beginAttempt(this.ownedAttempt, reason);
+    this.onAttemptProgress?.(job.taskId);
+    return true;
   }
 
   private async runJobPhases(job: IntegrationJob): Promise<{ ok: boolean; reason?: string }> {
@@ -1765,6 +1791,10 @@ export class CloseOutOrchestrator {
           if (this.pipelineTimedOut(job)) return this.timeoutJob(job);
           const firstReason = validateRes.reason ?? "unknown";
           const firstChecks = validateRes.failedChecks;
+          // The rerun is a new attempt that records why it runs (#1276).
+          if (!this.beginRetryAttempt(job, firstReason)) {
+            return { ok: false, cancelled: true, reason: CANCEL_REASON };
+          }
           validateRes = await this.validateCandidate(job);
           if (validateRes.cancelled) return this.cancelJob(job);
           if (validateRes.timedOut) return this.timeoutJob(job);
@@ -3212,6 +3242,13 @@ export class CloseOutOrchestrator {
                 /* observation must never break close-out */
               }
             },
+            // Waiting for a host slot, then holding one (#1276).
+            onSlotState: (slot) => this.reportSlot(slot),
+            // A host failover reruns the suite on another host: a new attempt
+            // that says which failure it is retrying (#1276).
+            onRetry: (reason) => {
+              this.beginRetryAttempt(job, reason);
+            },
           });
 
         const scopedRemoteRef =
@@ -3235,7 +3272,8 @@ export class CloseOutOrchestrator {
           }
         };
         const remoteGateLabel = (): string | null => (remoteUploading ? null : "remote tests");
-        this.reportStep(CLOSE_OUT_STEP.remote);
+        // No host yet: the slot callbacks name the host once one is held (#1276).
+        this.reportStep(CLOSE_OUT_STEP.remote, null);
         remoteGateOutcome = await this.withStageHeartbeat(job.taskId, remoteGateLabel, () =>
           runRemoteGateAndClear(scopedRemoteRef),
         );
@@ -3260,6 +3298,12 @@ export class CloseOutOrchestrator {
             "scoped remote close-out gate failed — re-running the full suite once on the runner before failing the close-out",
             { detail: remoteGateOutcome.detail },
           );
+          // The full-suite rerun is a new attempt that records the scoped failure (#1276).
+          if (
+            !this.beginRetryAttempt(job, remoteGateOutcome.detail ?? "scoped remote tests failed")
+          ) {
+            return { ok: false, cancelled: true, reason: CANCEL_REASON };
+          }
           remoteGateOutcome = await this.withStageHeartbeat(job.taskId, remoteGateLabel, () =>
             runRemoteGateAndClear(),
           );
