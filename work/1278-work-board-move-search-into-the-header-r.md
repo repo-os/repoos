@@ -3,16 +3,13 @@ id: "1278"
 title: "Work board: move search into the header row, half width, drop the search chip"
 type: feature
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "Codex exited with an error. Open Raw CLI error for details. (CLI: 2026-11-21T04:44:33.395131Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Client(HttpRequest(HttpRequest(\"http/request failed: error sending request for url (https://chatgpt.com/backend-api/ps/mcp)\"))))"
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
 branch: feat/work-board-move-search-into-the-header-r
 created_at: "2026-11-20T08:46:27Z"
-updated_at: "2026-11-21T05:28:23Z"
+updated_at: "2026-11-21T07:47:20Z"
 handoff_signal_retry_count: 2
 review_rounds: 1
 review_passes: 1
@@ -182,3 +179,4 @@ Start from src/ui-app/src/components/BoardQueueSearch.vue and the Work view head
 - 2026-11-21T05:28:22Z · agent exited with an error (codex) · Codex exited with an error. Open Raw CLI error for details. (CLI: 2026-11-21T04:44:33.395131Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Client(HttpRequest(HttpRequest("http/request failed: error sending request for url (https://chatgpt.com/backend-api/ps/mcp)"))))
 - 2026-11-21T05:28:22Z · engineer crash recovery: resuming codex + gpt-6-luna (1/3 crashes in 30m) · Codex exited with an error. Open Raw CLI error for details. (CLI: 2026-11-21T04:44:33.395131Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Client(HttpRequest(HttpRequest("http/request failed: erro…
 - 2026-11-21T05:28:23Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-21T07:47:20Z · needs_input
