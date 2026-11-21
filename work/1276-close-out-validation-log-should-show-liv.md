@@ -2,7 +2,7 @@
 id: "1276"
 title: Close-out validation log should show live progress
 type: feature
-status: review
+status: active
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: "Claude exited with an error. Open Raw CLI error for details. (CLI: 2026-11-20T21:26:43.201153Z ERROR codex_core::util: Custom tool call output is missing for call id: call_eb4148a93ce844cbaa40f3969f0dc612)"
@@ -162,4 +162,3 @@ Related: #1272 (timer should count from validation start). Never touch repoos.to
 - 2026-11-21T00:43:33Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-21T00:48:32Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-21T00:51:40Z · agent exited with an error (claude) · Claude exited with an error. Open Raw CLI error for details. (CLI: 2026-11-20T21:26:43.201153Z ERROR codex_core::util: Custom tool call output is missing for call id: call_eb4148a93ce844cbaa40f3969f0dc612)
-- 2026-11-21T00:51:40Z · status active→review
