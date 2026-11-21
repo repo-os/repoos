@@ -353,3 +353,4 @@ Read docs/close-out-pipeline.md and docs/remote-validation.md first. Never touch
 - 2026-11-21T11:09:07Z · engineer crash recovery: resuming claude code + haiku (1/3 crashes in 30m) · the agent process exited with an error — open the task to see the full output. Open Raw CLI error for details. (CLI: the agent process exited with an error — open the task to see the full output)
 - 2026-11-21T14:22:29Z · needs_input
 - 2026-11-21T14:40:08Z · message_queued at 2026-11-21T14:40:08.075Z
+- 2026-11-21T14:40:08Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
