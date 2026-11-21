@@ -3,6 +3,9 @@ id: "1258"
 title: "Mobile polish: open on Work, hide page scrollbar, even-height header row"
 type: bug
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "Claude exited with an error. Open Raw CLI error for details. (CLI: ✗ Server finalization stopped at commit: git commit failed: fatal: cannot do a partial commit during a merge.. The same worktree can be resumed and retried.)"
 priority: p2
 area: [web, mobile]
 assigned_to: ai
@@ -11,14 +14,14 @@ branch: feat/mobile-polish-open-on-work-hide-page-scr
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T00:15:33Z"
-updated_at: "2026-11-21T09:13:29Z"
+updated_at: "2026-11-21T09:13:30Z"
 review_passes: 4
 review_failed_report_retries: 0
 last_check_failure: "repoos check at 2026-11-20T09:49:11.145Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Work is the home page; header row controls share one height (target \"default\"): loading state detected: loading indicator [aria-busy=\"true\"] on /work (http://127.0.0.1:34337/work)"
 review_rounds: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-11-21T00:32:46.891Z\",\"reason\":\"clean-exit-without-handoff\"}]"
-dev_error_count: 1
-engineer_crash_log: "[{\"cli\":\"claude code\",\"model\":\"haiku\",\"at\":\"2026-11-21T05:02:04.284Z\",\"kind\":\"dev-error\"}]"
+dev_error_count: 2
+engineer_crash_log: "[{\"cli\":\"claude code\",\"model\":\"haiku\",\"at\":\"2026-11-21T09:13:30.235Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 On a phone (seen on the Android Hub app, Mission Control page):
@@ -189,3 +192,5 @@ Screenshot attached shows the current mobile header and Mission Control. Do not 
 - 2026-11-21T07:47:20Z · needs_input
 - 2026-11-21T09:13:29Z · message_queued at 2026-11-21T09:13:29.806Z
 - 2026-11-21T09:13:29Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-21T09:13:30Z · agent exited with an error (claude) · Claude exited with an error. Open Raw CLI error for details. (CLI: ✗ Server finalization stopped at commit: git commit failed: fatal: cannot do a partial commit during a merge.. The same worktree can be resumed and retried.)
+- 2026-11-21T09:13:30Z · engineer crash recovery: resuming claude code + haiku (1/3 crashes in 30m) · Claude exited with an error. Open Raw CLI error for details. (CLI: ✗ Server finalization stopped at commit: git commit failed: fatal: cannot do a partial commit during a merge.. The same worktree can be resumed and retried.)
