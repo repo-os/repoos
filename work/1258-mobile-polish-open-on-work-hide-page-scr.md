@@ -11,11 +11,12 @@ branch: feat/mobile-polish-open-on-work-hide-page-scr
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T00:15:33Z"
-updated_at: "2026-11-21T00:27:41Z"
+updated_at: "2026-11-21T00:32:46Z"
 review_passes: 4
 review_failed_report_retries: 0
 last_check_failure: "repoos check at 2026-11-20T09:49:11.145Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Work is the home page; header row controls share one height (target \"default\"): loading state detected: loading indicator [aria-busy=\"true\"] on /work (http://127.0.0.1:34337/work)"
 review_rounds: 2
+engineer_stall_resume_log: "[{\"at\":\"2026-11-21T00:32:46.891Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
 ## Problem
 On a phone (seen on the Android Hub app, Mission Control page):
@@ -175,3 +176,4 @@ Screenshot attached shows the current mobile header and Mission Control. Do not 
 - 2026-11-21T00:26:46Z · watchdog: restarting engineer because a queued message waited 3m with no live process
 - 2026-11-21T00:27:08Z · message_delivered: 1 message(s)
 - 2026-11-21T00:27:41Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: I stopped without handing off. The task can't land until someone resolves a git merge that is still open in this worktree. **Blocker:** `.git/worktrees/.../MERGE_HEAD` is set (merging `00bc3e766`), so RepoOS's handoff commit fails with "ca… · stderr: (empty)
+- 2026-11-21T00:32:46Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 1/3
