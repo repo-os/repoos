@@ -3,6 +3,9 @@ id: "1275"
 title: "Close-outs: validate several tasks at once on different runner machines"
 type: feature
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "✗ Server finalization stopped at check: repoos check failed: ◆ Check plan. The same worktree can be resumed and retried. Open Raw CLI error for details. (CLI: ✗ Server finalization stopped at check: repoos check failed: ◆ Check plan. The same worktree can be resumed and retried.)"
 priority: p1
 area: [server, core]
 assigned_to: ai
@@ -11,12 +14,14 @@ branch: feat/close-outs-validate-several-tasks-at-onc
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T07:42:13Z"
-updated_at: "2026-11-21T00:43:32Z"
+updated_at: "2026-11-21T00:52:09Z"
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-11-20T11:18:52.239Z: repoos check failed: vite v8.2.0 building client environment for production..."
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: 82edbaa33be212d01145fb74bfb7a40640482476
 handoff_signal_retry_count: 2
+dev_error_count: 1
+engineer_crash_log: "[{\"cli\":\"claude code\",\"model\":\"haiku\",\"at\":\"2026-11-21T00:52:09.113Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 The close-out queue runs one job at a time (queuePosition 0 validating, everything else queued) even when other runner machines (bee, mini) are idle. A full validation takes 20-25 minutes, so 11 queued tasks means about 4 hours, and one slow or failing job blocks all of them. Observed 2026-11-20: thinkpad ran #1258 for ~55 min while bee and mini had free slots and 10 green tasks waited.
@@ -321,3 +326,5 @@ Read docs/close-out-pipeline.md and docs/remote-validation.md first. Never touch
 - 2026-11-21T00:38:32Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-21T00:38:36Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: I'm still blocked on the same thing, so I'm not requesting handoff again. The server's latest check for #1275 failed at `◆ Check plan` (12:04), and the failing step and its error still aren't shown. To unblock, someone with runner access n… · stderr: (empty)
 - 2026-11-21T00:43:32Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-21T00:52:09Z · agent exited with an error (claude) · ✗ Server finalization stopped at check: repoos check failed: ◆ Check plan. The same worktree can be resumed and retried. Open Raw CLI error for details. (CLI: ✗ Server finalization stopped at check: repoos check failed: ◆ Check plan. The same worktree can be resumed and retried.)
+- 2026-11-21T00:52:09Z · engineer crash recovery: resuming claude code + haiku (1/3 crashes in 30m) · ✗ Server finalization stopped at check: repoos check failed: ◆ Check plan. The same worktree can be resumed and retried. Open Raw CLI error for details. (CLI: ✗ Server finalization stopped at check: repoos check failed: ◆ Check plan. The…
