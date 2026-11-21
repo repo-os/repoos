@@ -3,6 +3,9 @@ id: "1278"
 title: "Work board: move search into the header row, half width, drop the search chip"
 type: feature
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "• Run 'gh auth login' to authenticate with the GitHub CLI. Open Raw CLI error for details. (CLI: • Run 'gh auth login' to authenticate with the GitHub CLI)"
 priority: p2
 area: web
 assigned_to: ai
@@ -11,14 +14,14 @@ branch: feat/work-board-move-search-into-the-header-r
 cli_override: github copilot
 model_override: default
 created_at: "2026-11-20T08:46:27Z"
-updated_at: "2026-11-21T22:02:20Z"
+updated_at: "2026-11-21T22:02:21Z"
 handoff_signal_retry_count: 2
 review_rounds: 1
 review_passes: 1
 review_failed_report_retries: 0
-dev_error_count: 15
+dev_error_count: 16
 engineer_failover: "{\"cli\":\"github copilot\",\"model\":\"default\"}"
-engineer_crash_log: "[{\"cli\":\"github copilot\",\"model\":\"default\",\"at\":\"2026-11-21T18:30:10.312Z\",\"kind\":\"dev-error\"}]"
+engineer_crash_log: "[{\"cli\":\"github copilot\",\"model\":\"default\",\"at\":\"2026-11-21T22:02:21.911Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 The new desktop board search (#1259) sits on its own row below the page title, takes a lot of width, and shows a redundant 'Search: web' chip under it while typing.
@@ -240,3 +243,5 @@ Start from src/ui-app/src/components/BoardQueueSearch.vue and the Work view head
 - 2026-11-21T21:30:01Z · CTO nudge: held — machine under pressure (system load is high (4.7× per CPU, limit 3×) — waiting for headroom before starting more work)
 - 2026-11-21T21:45:25Z · CTO nudge: held — machine under pressure (CPU idle is 0% (below 5%) — holding new work until the machine has idle CPU; system load is high (5.2× per CPU, limit 3×) — waiting for headroom before starting more work)
 - 2026-11-21T22:02:20Z · CTO nudge: held — machine under pressure (CPU idle is 5% (below 5%) — holding new work until the machine has idle CPU; system load is high (4.8× per CPU, limit 3×) — waiting for headroom before starting more work)
+- 2026-11-21T22:02:21Z · agent exited with an error (copilot) · • Run 'gh auth login' to authenticate with the GitHub CLI. Open Raw CLI error for details. (CLI: • Run 'gh auth login' to authenticate with the GitHub CLI)
+- 2026-11-21T22:02:21Z · engineer crash recovery: resuming github copilot + default (1/3 crashes in 30m) · • Run 'gh auth login' to authenticate with the GitHub CLI. Open Raw CLI error for details. (CLI: • Run 'gh auth login' to authenticate with the GitHub CLI)
