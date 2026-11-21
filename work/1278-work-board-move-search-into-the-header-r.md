@@ -17,7 +17,6 @@ review_rounds: 1
 review_passes: 1
 review_failed_report_retries: 0
 dev_error_count: 13
-engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-21T15:36:54.351Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-21T15:37:12.838Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-21T15:37:30.727Z\",\"kind\":\"dev-error\"},{\"cli\":\"github copilot\",\"model\":\"default\",\"at\":\"2026-11-21T15:37:39.807Z\",\"kind\":\"dev-error\"},{\"cli\":\"github copilot\",\"model\":\"default\",\"at\":\"2026-11-21T15:37:47.655Z\",\"kind\":\"dev-error\"}]"
 engineer_failover: "{\"cli\":\"github copilot\",\"model\":\"default\"}"
 ---
 ## Problem
