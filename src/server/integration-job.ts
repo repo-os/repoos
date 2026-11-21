@@ -206,6 +206,12 @@ export interface JobCoordinator {
   ): IntegrationJob | null;
 
   /**
+   * Start the next attempt inside a running close-out (#1276). Returns the new
+   * record, or `null` when `fromAttempt` is no longer the task's current attempt.
+   */
+  advanceAttempt(taskId: string, fromAttempt: number, reason: string): IntegrationJob | null;
+
+  /**
    * Remove a job from the queue (after successful cleanup, explicit
    * cancellation, or a moot/reconciled failure). With `expectedAttempt`, the
    * removal is refused when the current job has been superseded (#0736).

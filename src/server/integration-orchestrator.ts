@@ -1792,9 +1792,7 @@ export class CloseOutOrchestrator {
           const firstReason = validateRes.reason ?? "unknown";
           const firstChecks = validateRes.failedChecks;
           // The rerun is a new attempt that records why it runs (#1276).
-          if (!this.beginRetryAttempt(job, firstReason)) {
-            return { ok: false, cancelled: true, reason: CANCEL_REASON };
-          }
+          if (!this.beginRetryAttempt(job, firstReason)) return this.cancelJob(job);
           validateRes = await this.validateCandidate(job);
           if (validateRes.cancelled) return this.cancelJob(job);
           if (validateRes.timedOut) return this.timeoutJob(job);
@@ -3302,7 +3300,7 @@ export class CloseOutOrchestrator {
           if (
             !this.beginRetryAttempt(job, remoteGateOutcome.detail ?? "scoped remote tests failed")
           ) {
-            return { ok: false, cancelled: true, reason: CANCEL_REASON };
+            return this.cancelJob(job);
           }
           remoteGateOutcome = await this.withStageHeartbeat(job.taskId, remoteGateLabel, () =>
             runRemoteGateAndClear(),
