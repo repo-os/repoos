@@ -6,12 +6,17 @@ import { GitWorker } from "../../server/git-worker.js";
 import type { RepoOSConfig, Task } from "../../core/types.js";
 
 function child() {
-  return Object.assign(new EventEmitter(), {
+  const emitter = new EventEmitter();
+  return Object.assign(emitter, {
     stdin: new PassThrough(),
     stdout: new PassThrough(),
     stderr: new PassThrough(),
     unref: vi.fn(),
-    kill: vi.fn(),
+    // A real process reports its exit after SIGKILL; the worker frees the
+    // child slot only on that event, so the double must emit it too.
+    kill: vi.fn(() => {
+      queueMicrotask(() => emitter.emit("exit", null, "SIGKILL"));
+    }),
   });
 }
 

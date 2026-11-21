@@ -1,19 +1,18 @@
 ---
-updated_at: "2026-11-20T21:31:37Z"
-review_passes: 4
 id: "1276"
 title: Close-out validation log should show live progress
 type: feature
-status: review
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: "`needs some work` — live progress, retry identity and stale-state reporting have correctness gaps."
+status: active
 priority: p1
 area: [server, core]
 assigned_to: ai
 created_by: t@t
 branch: feat/close-out-validation-log-should-show-liv
+cli_override: claude code
+model_override: haiku
 created_at: "2026-11-20T07:42:21Z"
+updated_at: "2026-11-21T00:28:32Z"
+review_passes: 4
 last_check_failure: "repoos check at 2026-11-20T21:01:31.328Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Close-out drawer with live step, host, and attempt (target \"default\"): loading state detected: loading text \"Loading changes…\" on /work?task=9999&tab=changes (http://127.0.0.1:43237/work?task=9999&tab=changes&shotState=drawer%3AcloseOutRemoteTests)"
 review_failed_report_retries: 0
 review_rounds: 2
@@ -137,4 +136,13 @@ Related: #1272 (timer should count from validation start). Never touch repoos.to
 - 2026-11-20T21:30:02Z · message_queued at 2026-11-20T21:30:02.189Z
 - 2026-11-20T21:31:37Z · note: review pass 8: needs some work
 - 2026-11-20T21:31:37Z · needs_input
-
+- 2026-11-21T00:23:32Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-21T00:26:05Z · status review→active
+- 2026-11-21T00:26:06Z · needs_input
+- 2026-11-21T00:26:07Z · cli_override, model_override
+- 2026-11-21T00:26:09Z · message_queued at 2026-11-21T00:26:09.574Z
+- 2026-11-21T00:26:30Z · message_delivered: 1 message(s)
+- 2026-11-21T00:26:55Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: I didn't change any code. Task #1276 is in `review` and its handoff passed, so the worktree is the reviewed tree and must not be edited directly. **Current state** - `repoos list` and the task file both show `status: review`. The last hand… · stderr: 2026-11-20T21:26:43.201153Z ERROR codex_core::util: Custom tool call output is missing for call id: call_eb4148a93ce844cbaa40f3969f0dc612
+- 2026-11-21T00:26:55Z · note: handoff requested (cli)
+- 2026-11-21T00:28:06Z · message_delivered: 1 message(s)
+- 2026-11-21T00:28:32Z · CTO nudge: held — handoff gate is running

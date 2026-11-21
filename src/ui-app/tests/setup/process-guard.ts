@@ -13,6 +13,11 @@ afterEach(() => {
   terminateTestPidsSync(takeTrackedTestPids());
 });
 
-afterAll(() => {
+afterAll(async () => {
   terminateTestPidsSync(takeTrackedTestPids());
+  // Git workers are per-file module state; without this each file's roots left
+  // a Bun child behind until its vitest fork exited (#1281). Loaded lazily so
+  // files that never touch git don't pay for the import.
+  const { closeAllGitWorkers } = await import("../../../server/git-worker.js");
+  closeAllGitWorkers();
 });
