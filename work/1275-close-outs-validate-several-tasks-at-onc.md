@@ -332,3 +332,4 @@ Read docs/close-out-pipeline.md and docs/remote-validation.md first. Never touch
 - 2026-11-21T03:11:17Z · orphaned run process stopped · pid 33327 · /opt/homebrew/bin/bun /Users/nick/.bun/bin/repoos check · cpu 7s · age 2.2h
 - 2026-11-21T04:12:18Z · needs_input
 - 2026-11-21T04:28:02Z · message_queued at 2026-11-21T04:28:02.116Z
+- 2026-11-21T04:28:02Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
