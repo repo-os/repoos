@@ -186,3 +186,4 @@ Start from src/ui-app/src/components/BoardQueueSearch.vue and the Work view head
 - 2026-11-21T08:02:39Z · agent exited with an error (codex) · Codex exited with an error. Open Raw CLI error for details. (CLI: 2026-11-21T07:47:27.805194Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Client(HttpRequest(HttpRequest("http/request failed: error sending request for url (https://chatgpt.com/backend-api/ps/mcp)"))))
 - 2026-11-21T08:02:39Z · engineer crash recovery: resuming codex + gpt-6-luna (1/3 crashes in 30m) · Codex exited with an error. Open Raw CLI error for details. (CLI: 2026-11-21T07:47:27.805194Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Client(HttpRequest(HttpRequest("http/request failed: erro…
 - 2026-11-21T08:02:42Z · needs_input
+- 2026-11-21T08:02:42Z · message_delivered: 1 message(s)
