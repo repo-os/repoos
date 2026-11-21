@@ -3,9 +3,6 @@ id: "1278"
 title: "Work board: move search into the header row, half width, drop the search chip"
 type: feature
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "Codex exited with an error. Open Raw CLI error for details. (CLI: 2026-11-21T15:37:19.984639Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Client(HttpRequest(HttpRequest(\"http/request failed: error sending request for url (https://chatgpt.com/backend-api/ps/mcp)\"))))"
 priority: p2
 area: web
 assigned_to: ai
@@ -14,7 +11,7 @@ branch: feat/work-board-move-search-into-the-header-r
 cli_override: github copilot
 model_override: default
 created_at: "2026-11-20T08:46:27Z"
-updated_at: "2026-11-21T15:37:30Z"
+updated_at: "2026-11-21T15:37:31Z"
 handoff_signal_retry_count: 2
 review_rounds: 1
 review_passes: 1
@@ -217,3 +214,4 @@ Start from src/ui-app/src/components/BoardQueueSearch.vue and the Work view head
 - 2026-11-21T15:37:14Z · needs_input
 - 2026-11-21T15:37:30Z · agent exited with an error (codex) · Codex exited with an error. Open Raw CLI error for details. (CLI: 2026-11-21T15:37:19.984639Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Client(HttpRequest(HttpRequest("http/request failed: error sending request for url (https://chatgpt.com/backend-api/ps/mcp)"))))
 - 2026-11-21T15:37:30Z · engineer crash recovery: switched codex + gpt-6-luna → github copilot + default after 3/3 crashes in 30m · Codex exited with an error. Open Raw CLI error for details. (CLI: 2026-11-21T15:37:19.984639Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Client(HttpRequest(HttpRequest("http/request failed: erro…
+- 2026-11-21T15:37:31Z · needs_input
