@@ -11,7 +11,7 @@ branch: feat/close-outs-validate-several-tasks-at-onc
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T07:42:13Z"
-updated_at: "2026-11-21T14:55:25Z"
+updated_at: "2026-11-21T15:41:07Z"
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-11-20T11:18:52.239Z: repoos check failed: vite v8.2.0 building client environment for production..."
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
@@ -355,3 +355,4 @@ Read docs/close-out-pipeline.md and docs/remote-validation.md first. Never touch
 - 2026-11-21T14:40:08Z · message_queued at 2026-11-21T14:40:08.075Z
 - 2026-11-21T14:40:08Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-21T14:55:25Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-21T15:41:07Z · queued message undelivered for 61m and the engineer produced no output — ending the turn so it is delivered
