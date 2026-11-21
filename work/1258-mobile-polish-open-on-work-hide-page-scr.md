@@ -11,7 +11,7 @@ branch: feat/mobile-polish-open-on-work-hide-page-scr
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T00:15:33Z"
-updated_at: "2026-11-21T07:47:20Z"
+updated_at: "2026-11-21T09:13:29Z"
 review_passes: 4
 review_failed_report_retries: 0
 last_check_failure: "repoos check at 2026-11-20T09:49:11.145Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Work is the home page; header row controls share one height (target \"default\"): loading state detected: loading indicator [aria-busy=\"true\"] on /work (http://127.0.0.1:34337/work)"
@@ -187,3 +187,4 @@ Screenshot attached shows the current mobile header and Mission Control. Do not 
 - 2026-11-21T05:02:04Z · agent exited with an error (claude) · Claude exited with an error. Open Raw CLI error for details. (CLI: ✗ Server finalization stopped at commit: git commit failed: fatal: cannot do a partial commit during a merge.. The same worktree can be resumed and retried.)
 - 2026-11-21T05:02:04Z · engineer crash recovery: resuming claude code + haiku (1/3 crashes in 30m) · Claude exited with an error. Open Raw CLI error for details. (CLI: ✗ Server finalization stopped at commit: git commit failed: fatal: cannot do a partial commit during a merge.. The same worktree can be resumed and retried.)
 - 2026-11-21T07:47:20Z · needs_input
+- 2026-11-21T09:13:29Z · message_queued at 2026-11-21T09:13:29.806Z
