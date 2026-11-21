@@ -11,7 +11,7 @@ branch: feat/close-outs-validate-several-tasks-at-onc
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T07:42:13Z"
-updated_at: "2026-11-21T21:15:10Z"
+updated_at: "2026-11-21T21:15:11Z"
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-11-20T11:18:52.239Z: repoos check failed: vite v8.2.0 building client environment for production..."
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
@@ -371,3 +371,4 @@ Read docs/close-out-pipeline.md and docs/remote-validation.md first. Never touch
 - 2026-11-21T18:00:44Z · engineer crash recovery: resuming claude code + haiku (1/3 crashes in 30m) · the agent process exited with an error — open the task to see the full output. Open Raw CLI error for details. (CLI: the agent process exited with an error — open the task to see the full output)
 - 2026-11-21T18:30:11Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-21T21:15:10Z · needs_input
+- 2026-11-21T21:15:11Z · message_delivered: 1 message(s)
