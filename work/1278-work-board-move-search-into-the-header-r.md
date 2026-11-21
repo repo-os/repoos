@@ -153,3 +153,4 @@ Start from src/ui-app/src/components/BoardQueueSearch.vue and the Work view head
 - 2026-11-21T01:07:41Z · cli_override, model_override
 - 2026-11-21T01:07:42Z · model_override
 - 2026-11-21T01:08:32Z · message_queued at 2026-11-21T01:08:32.843Z
+- 2026-11-21T01:08:32Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
