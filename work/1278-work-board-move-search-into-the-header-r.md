@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/work-board-move-search-into-the-header-r
 created_at: "2026-11-20T08:46:27Z"
-updated_at: "2026-11-21T14:40:08Z"
+updated_at: "2026-11-21T14:55:26Z"
 handoff_signal_retry_count: 2
 review_rounds: 1
 review_passes: 1
@@ -202,3 +202,4 @@ Start from src/ui-app/src/components/BoardQueueSearch.vue and the Work view head
 - 2026-11-21T14:22:29Z · needs_input
 - 2026-11-21T14:40:08Z · message_queued at 2026-11-21T14:40:08.411Z
 - 2026-11-21T14:40:08Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-21T14:55:26Z · CTO nudge: held — an undelivered message is already queued
