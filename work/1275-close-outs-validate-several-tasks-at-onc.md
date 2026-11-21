@@ -18,7 +18,6 @@ last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: 82edbaa33be212d01145fb74bfb7a40640482476
 handoff_signal_retry_count: 2
 dev_error_count: 5
-engineer_crash_log: "[{\"cli\":\"claude code\",\"model\":\"haiku\",\"at\":\"2026-11-21T11:09:07.532Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 The close-out queue runs one job at a time (queuePosition 0 validating, everything else queued) even when other runner machines (bee, mini) are idle. A full validation takes 20-25 minutes, so 11 queued tasks means about 4 hours, and one slow or failing job blocks all of them. Observed 2026-11-20: thinkpad ran #1258 for ~55 min while bee and mini had free slots and 10 green tasks waited.
