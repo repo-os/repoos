@@ -182,3 +182,4 @@ Start from src/ui-app/src/components/BoardQueueSearch.vue and the Work view head
 - 2026-11-21T07:47:20Z · needs_input
 - 2026-11-21T07:47:20Z · message_delivered: 1 message(s)
 - 2026-11-21T08:02:31Z · message_queued at 2026-11-21T08:02:31.856Z
+- 2026-11-21T08:02:31Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
