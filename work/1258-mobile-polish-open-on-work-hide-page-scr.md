@@ -11,7 +11,7 @@ branch: feat/mobile-polish-open-on-work-hide-page-scr
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T00:15:33Z"
-updated_at: "2026-11-21T03:11:15Z"
+updated_at: "2026-11-21T03:28:06Z"
 review_passes: 4
 review_failed_report_retries: 0
 last_check_failure: "repoos check at 2026-11-20T09:49:11.145Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Work is the home page; header row controls share one height (target \"default\"): loading state detected: loading indicator [aria-busy=\"true\"] on /work (http://127.0.0.1:34337/work)"
@@ -178,3 +178,4 @@ Screenshot attached shows the current mobile header and Mission Control. Do not 
 - 2026-11-21T00:27:41Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: I stopped without handing off. The task can't land until someone resolves a git merge that is still open in this worktree. **Blocker:** `.git/worktrees/.../MERGE_HEAD` is set (merging `00bc3e766`), so RepoOS's handoff commit fails with "ca… · stderr: (empty)
 - 2026-11-21T00:32:46Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 1/3
 - 2026-11-21T03:11:15Z · CTO nudge: held — machine under pressure (system load is high (3.5× per CPU, limit 3×) — waiting for headroom before starting more work)
+- 2026-11-21T03:28:06Z · CTO nudge: held — machine under pressure (CPU idle is 0% (below 5%) — holding new work until the machine has idle CPU; system load is high (3.3× per CPU, limit 3×) — waiting for headroom before starting more work)
