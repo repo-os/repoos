@@ -188,3 +188,4 @@ Screenshot attached shows the current mobile header and Mission Control. Do not 
 - 2026-11-21T05:02:04Z · engineer crash recovery: resuming claude code + haiku (1/3 crashes in 30m) · Claude exited with an error. Open Raw CLI error for details. (CLI: ✗ Server finalization stopped at commit: git commit failed: fatal: cannot do a partial commit during a merge.. The same worktree can be resumed and retried.)
 - 2026-11-21T07:47:20Z · needs_input
 - 2026-11-21T09:13:29Z · message_queued at 2026-11-21T09:13:29.806Z
+- 2026-11-21T09:13:29Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
