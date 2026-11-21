@@ -421,11 +421,13 @@ export function createJobCoordinator(root: string): JobCoordinator {
      * silent second pass. The attempt's own start (`startedAt`) moves to now; the
      * timeout budget (`budgetMonotonicStartNs`) does not, so a retry still spends
      * the same budget (#0573). Fenced like every attempt write: returns `null`
-     * when `fromAttempt` is no longer the task's current attempt (#0736).
+     * when `fromAttempt` is no longer the task's current attempt, or when the
+     * attempt was cancelled: a cancel stops the run, it never starts another
+     * attempt on the same record (#0736).
      */
     advanceAttempt(taskId: string, fromAttempt: number, reason: string): IntegrationJob | null {
       const existing = readJob(root, taskId);
-      if (!existing || jobAttempt(existing) !== fromAttempt) return null;
+      if (!existing || existing.cancelled || jobAttempt(existing) !== fromAttempt) return null;
       const now = new Date().toISOString();
       const next: IntegrationJob = {
         ...existing,

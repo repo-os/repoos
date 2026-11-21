@@ -770,6 +770,20 @@ describe("retries, slot waits and write failures (#1276 review round 2)", () => 
     expect(coordinator.updateJob("1276", { step: "stale" }, job.attempt)).toBeNull();
   });
 
+  it("never starts a retry attempt on a cancelled record (Stop MTD keeps ownership, #0736)", () => {
+    const coordinator = createJobCoordinator(root);
+    const job = coordinator.enqueue({ id: "1276", branch: "feat/x" } as any)!;
+    coordinator.updateJob(
+      "1276",
+      { phase: "validating", startedAt: new Date(T0).toISOString() },
+      job.attempt,
+    );
+    coordinator.requestCancel("1276");
+    expect(coordinator.advanceAttempt("1276", job.attempt!, "validation failed")).toBeNull();
+    expect(coordinator.getJob("1276")!.attempt).toBe(job.attempt);
+    expect(coordinator.getJob("1276")!.previousFailure).toBeUndefined();
+  });
+
   it("does not let a fresh stage event mask a recorder that stopped writing", () => {
     const iso = (ms: number) => new Date(ms).toISOString();
     const coordinator = createJobCoordinator(root);

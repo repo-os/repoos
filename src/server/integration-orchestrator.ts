@@ -1629,7 +1629,9 @@ export class CloseOutOrchestrator {
    * which case the caller must stop without rerunning anything.
    */
   private beginRetryAttempt(job: IntegrationJob, reason: string): boolean {
-    if (this.ownedAttempt === undefined) return false;
+    // No ownership claim (a direct single-phase call): there is no job generation
+    // to advance, so the rerun proceeds as it always did (#0736).
+    if (this.ownedAttempt === undefined) return true;
     const next = this.coordinator.advanceAttempt(job.taskId, this.ownedAttempt, reason);
     if (!next) return false;
     this.ownedAttempt = jobAttempt(next);
