@@ -3,6 +3,9 @@ id: "1278"
 title: "Work board: move search into the header row, half width, drop the search chip"
 type: feature
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "Codex exited with an error. Open Raw CLI error for details. (CLI: 2026-11-21T02:39:15.414307Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Client(HttpRequest(HttpRequest(\"http/request failed: error sending request for url (https://chatgpt.com/backend-api/ps/mcp)\"))))"
 priority: p2
 area: web
 assigned_to: ai
@@ -14,8 +17,8 @@ handoff_signal_retry_count: 2
 review_rounds: 1
 review_passes: 1
 review_failed_report_retries: 0
-dev_error_count: 2
-engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-21T02:10:45.522Z\",\"kind\":\"dev-error\"}]"
+dev_error_count: 3
+engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-21T03:28:07.931Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 The new desktop board search (#1259) sits on its own row below the page title, takes a lot of width, and shows a redundant 'Search: web' chip under it while typing.
@@ -170,3 +173,5 @@ Start from src/ui-app/src/components/BoardQueueSearch.vue and the Work view head
 - 2026-11-21T02:28:20Z · needs_input
 - 2026-11-21T03:11:16Z · CTO nudge: held — machine under pressure (system load is high (3.5× per CPU, limit 3×) — waiting for headroom before starting more work)
 - 2026-11-21T03:28:07Z · CTO nudge: held — machine under pressure (CPU idle is 0% (below 5%) — holding new work until the machine has idle CPU; system load is high (3.3× per CPU, limit 3×) — waiting for headroom before starting more work)
+- 2026-11-21T03:28:07Z · agent exited with an error (codex) · Codex exited with an error. Open Raw CLI error for details. (CLI: 2026-11-21T02:39:15.414307Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Client(HttpRequest(HttpRequest("http/request failed: error sending request for url (https://chatgpt.com/backend-api/ps/mcp)"))))
+- 2026-11-21T03:28:07Z · engineer crash recovery: resuming codex + gpt-6-luna (1/3 crashes in 30m) · Codex exited with an error. Open Raw CLI error for details. (CLI: 2026-11-21T02:39:15.414307Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Client(HttpRequest(HttpRequest("http/request failed: erro…
