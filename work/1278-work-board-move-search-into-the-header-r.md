@@ -201,3 +201,4 @@ Start from src/ui-app/src/components/BoardQueueSearch.vue and the Work view head
 - 2026-11-21T10:35:51Z · engineer crash recovery: resuming codex + gpt-6-luna (1/3 crashes in 30m) · Codex exited with an error. Open Raw CLI error for details. (CLI: 2026-11-21T09:48:58.664460Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Client(HttpRequest(HttpRequest("http/request failed: erro…
 - 2026-11-21T14:22:29Z · needs_input
 - 2026-11-21T14:40:08Z · message_queued at 2026-11-21T14:40:08.411Z
+- 2026-11-21T14:40:08Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
