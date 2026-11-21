@@ -3,6 +3,9 @@ id: "1258"
 title: "Mobile polish: open on Work, hide page scrollbar, even-height header row"
 type: bug
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "\"✗ Server finalization stopped at commit: stray repoos.toml on task branch: repoos.toml differs from main. Open Raw CLI error for details. (CLI: ✗ Server finalization stopped at commit: stray repoos.toml on task branch: repoos.toml differs from main"
 priority: p2
 area: [web, mobile]
 assigned_to: ai
@@ -11,14 +14,14 @@ branch: feat/mobile-polish-open-on-work-hide-page-scr
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T00:15:33Z"
-updated_at: "2026-11-21T22:32:23Z"
+updated_at: "2026-11-21T23:17:08Z"
 review_passes: 4
 review_failed_report_retries: 0
 last_check_failure: "repoos check at 2026-11-20T09:49:11.145Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Work is the home page; header row controls share one height (target \"default\"): loading state detected: loading indicator [aria-busy=\"true\"] on /work (http://127.0.0.1:34337/work)"
 review_rounds: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-11-21T00:32:46.891Z\",\"reason\":\"clean-exit-without-handoff\"}]"
-dev_error_count: 4
-engineer_crash_log: "[{\"cli\":\"claude code\",\"model\":\"haiku\",\"at\":\"2026-11-21T18:47:48.745Z\",\"kind\":\"dev-error\"}]"
+dev_error_count: 5
+engineer_crash_log: "[{\"cli\":\"claude code\",\"model\":\"haiku\",\"at\":\"2026-11-21T23:17:08.288Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 On a phone (seen on the Android Hub app, Mission Control page):
@@ -225,3 +228,21 @@ Screenshot attached shows the current mobile header and Mission Control. Do not 
 - 2026-11-21T18:47:48Z · engineer crash recovery: resuming claude code + haiku (1/3 crashes in 30m) · ✗ Server finalization stopped at commit: stray repoos.toml on task branch: repoos.toml differs from main. Open Raw CLI error for details. (CLI: ✗ Server finalization stopped at commit: stray repoos.toml on task branch: repoos.toml differ…
 - 2026-11-21T21:15:13Z · needs_input
 - 2026-11-21T22:32:23Z · CTO nudge: held — machine under pressure (system load is high (4.7× per CPU, limit 3×) — waiting for headroom before starting more work)
+- 2026-11-21T23:17:08Z · agent exited with an error (claude) · ✗ Server finalization stopped at commit: stray repoos.toml on task branch: repoos.toml differs from main. Open Raw CLI error for details. (CLI: ✗ Server finalization stopped at commit: stray repoos.toml on task branch: repoos.toml differs from main
++
++[[budget.allowlist]]
++cli = "opencode"
++models = ["opencode-go/deepseek-v4.1-flash", "opencode-go/glm-5.3-flash", "opencode-go/mimo-v2.6-flash", "deepinfra/deepseek-ai/DeepSeek-V4.1-Flash"]
++pausedModels = [{ model = "opencode-go/mimo-v2.6-flash" }, { model = "deepinfra/deepseek-ai/DeepSeek-V4.1-Flash", pausedReason = "No credits" }]
++[[budget.allowlist]]
++cli = "github copilot"
++models = ["default"]
++paused = true
++pausedReason = "Waiting for model list fix"
++[[budget.allowlist]]
++cli = "cursor"
++models = ["composer-2.5", "grok-4.7-low"]
++[[budget.allowlist]]
++cli = "codex"
++models = ["gpt-6-luna", "gpt-6.1-terra"]. Revert it with: git checkout main -- repoos.toml. The same worktree can be resumed and retried.)
+- 2026-11-21T23:17:08Z · engineer crash recovery: resuming claude code + haiku (1/3 crashes in 30m) · ✗ Server finalization stopped at commit: stray repoos.toml on task branch: repoos.toml differs from main. Open Raw CLI error for details. (CLI: ✗ Server finalization stopped at commit: stray repoos.toml on task branch: repoos.toml differ…
