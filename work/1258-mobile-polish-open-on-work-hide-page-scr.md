@@ -18,7 +18,6 @@ last_check_failure: "repoos check at 2026-11-20T09:49:11.145Z: repoos check fail
 review_rounds: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-11-21T00:32:46.891Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 dev_error_count: 3
-engineer_crash_log: "[{\"cli\":\"claude code\",\"model\":\"haiku\",\"at\":\"2026-11-21T11:09:07.225Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 On a phone (seen on the Android Hub app, Mission Control page):
