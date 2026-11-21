@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (appeared: src/server/close-out-progress.ts, src/server/remote-validation.ts) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
+last_handoff_failure_sha: 186ed2e4093e9e4c85434660b275d6c18b482f03
 id: "1276"
 title: Close-out validation log should show live progress
 type: feature
@@ -148,3 +150,4 @@ Related: #1272 (timer should count from validation start). Never touch repoos.to
 - 2026-11-21T00:28:32Z · CTO nudge: held — handoff gate is running
 - 2026-11-21T00:39:33Z · message_queued at 2026-11-21T00:39:33.227Z
 - 2026-11-21T00:39:33Z · handoff failed · task-file handoff failed at check · the worktree changed while the gate was running (appeared: src/server/close-out-progress.ts, src/server/remote-validation.ts) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
+
