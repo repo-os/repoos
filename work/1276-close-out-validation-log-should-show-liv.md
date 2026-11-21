@@ -2,7 +2,7 @@
 id: "1276"
 title: Close-out validation log should show live progress
 type: feature
-status: active
+status: review
 priority: p1
 area: [server, core]
 assigned_to: ai
@@ -143,3 +143,4 @@ Related: #1272 (timer should count from validation start). Never touch repoos.to
 - 2026-11-21T00:26:09Z · message_queued at 2026-11-21T00:26:09.574Z
 - 2026-11-21T00:26:30Z · message_delivered: 1 message(s)
 - 2026-11-21T00:26:55Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: I didn't change any code. Task #1276 is in `review` and its handoff passed, so the worktree is the reviewed tree and must not be edited directly. **Current state** - `repoos list` and the task file both show `status: review`. The last hand… · stderr: 2026-11-20T21:26:43.201153Z ERROR codex_core::util: Custom tool call output is missing for call id: call_eb4148a93ce844cbaa40f3969f0dc612
+- 2026-11-21T00:26:55Z · status active→review
