@@ -11,7 +11,7 @@ branch: feat/work-board-move-search-into-the-header-r
 cli_override: github copilot
 model_override: default
 created_at: "2026-11-20T08:46:27Z"
-updated_at: "2026-11-21T15:55:22Z"
+updated_at: "2026-11-21T15:55:24Z"
 handoff_signal_retry_count: 2
 review_rounds: 1
 review_passes: 1
@@ -227,3 +227,4 @@ Start from src/ui-app/src/components/BoardQueueSearch.vue and the Work view head
 - 2026-11-21T15:51:53Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-21T15:52:11Z · message_queued at 2026-11-21T15:52:11.577Z
 - 2026-11-21T15:55:22Z · watchdog: restarting engineer because a queued message waited 3m with no live process
+- 2026-11-21T15:55:24Z · message_delivered: 1 message(s)
