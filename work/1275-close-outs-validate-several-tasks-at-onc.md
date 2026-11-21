@@ -11,7 +11,7 @@ branch: feat/close-outs-validate-several-tasks-at-onc
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T07:42:13Z"
-updated_at: "2026-11-21T09:48:54Z"
+updated_at: "2026-11-21T10:04:43Z"
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-11-20T11:18:52.239Z: repoos check failed: vite v8.2.0 building client environment for production..."
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
@@ -347,3 +347,4 @@ Read docs/close-out-pipeline.md and docs/remote-validation.md first. Never touch
 - 2026-11-21T09:13:39Z · needs_input
 - 2026-11-21T09:17:16Z · message_delivered: 1 message(s)
 - 2026-11-21T09:48:54Z · CTO nudge: held — machine under pressure (system load is high (4.3× per CPU, limit 3×) — waiting for headroom before starting more work)
+- 2026-11-21T10:04:43Z · CTO nudge: held — machine under pressure (system load is high (5.8× per CPU, limit 3×) — waiting for headroom before starting more work)
