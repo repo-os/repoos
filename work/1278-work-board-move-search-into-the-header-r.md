@@ -11,7 +11,7 @@ branch: feat/work-board-move-search-into-the-header-r
 cli_override: github copilot
 model_override: default
 created_at: "2026-11-20T08:46:27Z"
-updated_at: "2026-11-21T18:00:44Z"
+updated_at: "2026-11-21T18:12:08Z"
 handoff_signal_retry_count: 2
 review_rounds: 1
 review_passes: 1
@@ -232,3 +232,4 @@ Start from src/ui-app/src/components/BoardQueueSearch.vue and the Work view head
 - 2026-11-21T16:07:57Z · agent exited with an error (copilot) · Copilot exited with an error. Open Raw CLI error for details. (CLI: error: Execution failed: Failed to get response from the AI model; retried 5 times (total retry wait time: 7.90 seconds) (Request-ID 0B1B:39A208:4EE70C3:575A8A9:6B01C10B) Last error: 408 Timed out reading request body. Try again, or use a smaller request size.)
 - 2026-11-21T16:07:57Z · engineer crash recovery: resuming github copilot + default (1/3 crashes in 30m) · Copilot exited with an error. Open Raw CLI error for details. (CLI: error: Execution failed: Failed to get response from the AI model; retried 5 times (total retry wait time: 7.90 seconds) (Request-ID 0B1B:39A208:4EE70C3:575A8A9:6B01C10B…
 - 2026-11-21T18:00:44Z · needs_input
+- 2026-11-21T18:12:08Z · CTO nudge: held — machine under pressure (system load is high (3.9× per CPU, limit 3×) — waiting for headroom before starting more work)
