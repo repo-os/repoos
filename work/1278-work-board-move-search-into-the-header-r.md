@@ -156,3 +156,4 @@ Start from src/ui-app/src/components/BoardQueueSearch.vue and the Work view head
 - 2026-11-21T01:08:32Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-21T01:11:54Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-21T01:11:55Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code unknown) · last assistant: The prior work already covers the basic placement and responsive fixture work, but the review flagged two substantive gaps: header alignment was only approximated by the fixture, and Pipeline could retain an invisible query. `workQueueFilt… · stderr: Reading additional input from stdin...
+- 2026-11-21T01:11:55Z · message_delivered: 1 message(s)
