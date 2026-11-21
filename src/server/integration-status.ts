@@ -71,7 +71,9 @@ export interface IntegrationSnapshot {
   queueEnqueuedAt?: Record<string, string>;
   /**
    * Queue position, wait time and the active job blocking each queued close-out
-   * (#0897) — "why is this waiting?" in one place.
+   * (#0897) — "why is this waiting?" in one place. `position` is publish order
+   * (#1275): it counts the jobs already validating in parallel, so it matches
+   * the API's `queuePosition`.
    */
   queueDetail?: {
     taskId: string;
@@ -210,11 +212,13 @@ export function buildIntegrationSnapshot(
   const blockerElapsedMs = Number.isFinite(nowMs)
     ? Math.max(0, nowMs - Date.parse(blockerStartedAt))
     : null;
-  const queueDetail = queuedJobs.map((job, i) => {
+  const queueDetail = queuedJobs.map((job) => {
     const enqueuedMs = Date.parse(job.enqueuedAt);
     return {
       taskId: job.taskId,
-      position: i + 1,
+      // Publish order over every live job, not over the unstarted ones: a job
+      // validating in parallel ahead of this one still publishes first (#1275).
+      position: live.indexOf(job),
       enqueuedAt: job.enqueuedAt,
       waitedMs: Number.isFinite(nowMs) && Number.isFinite(enqueuedMs) ? nowMs - enqueuedMs : 0,
       // The active job is the publish head (#1275): queued jobs publish after

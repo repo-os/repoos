@@ -179,7 +179,10 @@ describe("parallel validation coordination (#1275)", () => {
     expect(snap.parallel?.map((p) => p.taskId)).toEqual(["0002"]);
     expect(snap.parallel?.[0].phase).toBe("validating");
     expect(snap.queue).toEqual(["0003"]);
-    expect(snap.queueDetail?.map((q) => q.position)).toEqual([1]);
+    // 0002 validates ahead of 0003 and publishes first, so 0003 is third in
+    // publish order (0001 head = 0), not first among the unstarted jobs.
+    expect(snap.queueDetail?.map((q) => q.position)).toEqual([2]);
+    expect(snap.queueDetail?.[0].blockerTaskId).toBe("0001");
   });
 
   it("a validated job parked for its turn is labelled waiting, not publishing", () => {
