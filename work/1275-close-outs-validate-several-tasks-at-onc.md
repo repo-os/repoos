@@ -11,7 +11,7 @@ branch: feat/close-outs-validate-several-tasks-at-onc
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T07:42:13Z"
-updated_at: "2026-11-21T00:52:10Z"
+updated_at: "2026-11-21T02:54:18Z"
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-11-20T11:18:52.239Z: repoos check failed: vite v8.2.0 building client environment for production..."
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
@@ -326,3 +326,4 @@ Read docs/close-out-pipeline.md and docs/remote-validation.md first. Never touch
 - 2026-11-21T00:52:09Z · agent exited with an error (claude) · ✗ Server finalization stopped at check: repoos check failed: ◆ Check plan. The same worktree can be resumed and retried. Open Raw CLI error for details. (CLI: ✗ Server finalization stopped at check: repoos check failed: ◆ Check plan. The same worktree can be resumed and retried.)
 - 2026-11-21T00:52:09Z · engineer crash recovery: resuming claude code + haiku (1/3 crashes in 30m) · ✗ Server finalization stopped at check: repoos check failed: ◆ Check plan. The same worktree can be resumed and retried. Open Raw CLI error for details. (CLI: ✗ Server finalization stopped at check: repoos check failed: ◆ Check plan. The…
 - 2026-11-21T00:52:10Z · needs_input
+- 2026-11-21T02:54:18Z · CTO nudge: held — machine under pressure (system load is high (3.8× per CPU, limit 3×) — waiting for headroom before starting more work)
