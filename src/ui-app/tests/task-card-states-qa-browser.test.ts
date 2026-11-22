@@ -15,10 +15,9 @@
  * Set `QA_SHOTS=<dir>` to save a full-page screenshot per fixture and width.
  */
 import { resolve } from "node:path";
-import { mkdirSync, readFileSync } from "node:fs";
+import { mkdirSync } from "node:fs";
 import { readdir, readFile } from "node:fs/promises";
 import { webkit, type Browser, type Page } from "@playwright/test";
-import { compileStyle, parse } from "@vue/compiler-sfc";
 import { mount } from "@vue/test-utils";
 import { createPinia, setActivePinia, type Pinia } from "pinia";
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
@@ -122,6 +121,15 @@ const FIXTURES: Record<string, { over: Partial<Task>; paused?: boolean }> = {
       areas: ["web", "core", "server"],
     },
   },
+  "feature-long-id": {
+    over: {
+      id: "123456789",
+      title: "Feature card with a long id and a p1 badge",
+      status: "ready",
+      type: "feature",
+      priority: "p1",
+    },
+  },
   "missing-fields": {
     over: {
       id: "1419",
@@ -187,7 +195,6 @@ afterEach(() => {
 describe("Task card states at 375/768/1280 (WebKit, fixtures)", () => {
   let browser: Browser;
   let globalCss: string;
-  let cardCss: string;
   const markups = new Map<string, string>();
 
   beforeAll(async () => {
@@ -197,26 +204,10 @@ describe("Task card states at 375/768/1280 (WebKit, fixtures)", () => {
     const cssAsset = (await readdir(assetDir)).find((name) => /^index-.*\.css$/.test(name));
     if (!cssAsset) throw new Error("Built global UI stylesheet was not found");
     globalCss = await readFile(resolve(assetDir, cssAsset), "utf8");
-    cardCss = scopedCss(markups.get("baseline")!, "copyable-number", "CopyableNumber");
   });
   afterAll(async () => {
     await browser?.close();
   });
-
-  /** Compiled scoped CSS for one child component, keyed off a marker class. */
-  function scopedCss(markup: string, markerClass: string, component: string): string {
-    const source = readFileSync(resolve(uiRoot, `src/components/${component}.vue`), "utf8");
-    const style = parse(source, { filename: component }).descriptor.styles[0]?.content ?? "";
-    const marker = markup.indexOf(markerClass);
-    if (marker < 0) return "";
-    const tagStart = markup.lastIndexOf("<", marker);
-    const tag = markup.slice(tagStart, markup.indexOf(">", marker));
-    const scopeId = tag.match(/data-v-[a-f0-9]+/)?.[0];
-    if (!scopeId) throw new Error(`${component} scope ID was not present on .${markerClass}`);
-    const compiled = compileStyle({ filename: component, id: scopeId, source: style });
-    if (compiled.errors.length) throw compiled.errors[0]!;
-    return compiled.code;
-  }
 
   /** One card in a column of the width the board gives it at this viewport. */
   async function openCard(name: string, width: number): Promise<Page> {
@@ -224,7 +215,7 @@ describe("Task card states at 375/768/1280 (WebKit, fixtures)", () => {
     await page.setViewportSize({ width, height: 900 });
     await page.setContent(
       `<meta name="viewport" content="width=device-width, initial-scale=1.0">` +
-        `<style>${globalCss}</style><style>${cardCss}</style>` +
+        `<style>${globalCss}</style>` +
         `<style>html, body { width: 100%; margin: 0; } *, *::before, *::after { animation: none !important; transition: none !important; }</style>` +
         `<main style="padding:12px"><div style="width:${CARD_WIDTH[width as (typeof VIEWPORTS)[number]]}px">${markups.get(name)}</div></main>`,
     );
@@ -317,6 +308,65 @@ describe("Task card states at 375/768/1280 (WebKit, fixtures)", () => {
         await page.close();
       }
     }
+  });
+
+  it.each(
+    VIEWPORTS.flatMap((width) => Object.keys(FIXTURES).map((name) => [name, width] as const)),
+  )("%s top line stays on one row at %spx (#1279)", async (name, width) => {
+    const page = await openCard(name, width);
+    try {
+      const row = await page
+        .locator(".tc-top-line")
+        .first()
+        .evaluate((el) => {
+          const children = [...el.children] as HTMLElement[];
+          return {
+            rowHeight: el.getBoundingClientRect().height,
+            tallestChild: Math.max(...children.map((c) => c.getBoundingClientRect().height)),
+          };
+        });
+      // A wrapped flex row is taller than its tallest control; a control that
+      // wraps its own text is taller than one line of the card's chips.
+      expect(row.rowHeight, `${name} top line wraps at ${width}px`).toBeLessThanOrEqual(
+        row.tallestChild + 1,
+      );
+      expect(row.tallestChild, `${name} top line item wraps at ${width}px`).toBeLessThanOrEqual(24);
+    } finally {
+      await page.close();
+    }
+  });
+});
+
+describe("Task card top line (jsdom, measured fit)", () => {
+  /** The type chip's text, with its clipping stubbed (jsdom has no layout). */
+  async function typeChipText(name: string, type: string, clipped: boolean) {
+    vi.spyOn(Element.prototype, "scrollWidth", "get").mockImplementation(function (this: Element) {
+      return clipped && this.textContent?.trim() === type ? 120 : 40;
+    });
+    vi.spyOn(Element.prototype, "clientWidth", "get").mockReturnValue(60);
+    const dom = document.createElement("div");
+    dom.innerHTML = await cardMarkup(name);
+    return dom.querySelector(`.tc-top-line [data-tip="${type}"]`)?.textContent?.trim();
+  }
+
+  it.each([
+    ["feature-long-id", "feature", true, "feat"],
+    ["feature-long-id", "feature", false, "feature"],
+    ["baseline", "bug", true, "bug"],
+  ])(
+    "%s type %s (clipped: %s) shows %s; only feature ever shortens (#1279)",
+    async (name, type, clipped, shown) => {
+      expect(await typeChipText(name, type, clipped)).toBe(shown);
+    },
+  );
+
+  it("the number is plain text, not a copy button, on the board card (#1279)", async () => {
+    const dom = document.createElement("div");
+    dom.innerHTML = await cardMarkup("baseline");
+    const number = dom.querySelector(".tc-top-line")?.firstElementChild;
+    expect(number?.tagName).toBe("SPAN");
+    expect(number?.textContent?.trim()).toBe("#1401");
+    expect(dom.querySelector(".copyable-number")).toBeNull();
   });
 });
 

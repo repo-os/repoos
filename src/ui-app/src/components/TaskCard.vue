@@ -21,7 +21,6 @@ import {
 import RestartTaskDialog from "./RestartTaskDialog.vue";
 import ActivityIndicator from "./ActivityIndicator.vue";
 import DoneErrorCard from "./DoneErrorCard.vue";
-import CopyableNumber from "./CopyableNumber.vue";
 import AgentModelModal from "./AgentModelModal.vue";
 import HotfixBadge from "./HotfixBadge.vue";
 import { confirmDependencyOverride } from "../lib/task-dependencies";
@@ -456,6 +455,39 @@ const dragging = ref(false);
 /** Root card element — needed to read/seed FLIP rects for the glide (#0292). */
 const rootEl = ref<HTMLElement | null>(null);
 
+/**
+ * The top line (number, type, tags, priority, robot) stays on one row (#1279).
+ * "feature" shortens to "feat" only while the full word would be clipped, so
+ * the fit is measured after each render and re-checked when the card resizes.
+ */
+const topLineEl = ref<HTMLElement | null>(null);
+const typeChipEl = ref<HTMLElement | null>(null);
+const typeCompact = ref(false);
+const typeLabel = computed(() =>
+  typeCompact.value && props.task.type === "feature" ? "feat" : props.task.type,
+);
+let topLineObserver: ResizeObserver | null = null;
+
+function fitTopLine(): void {
+  typeCompact.value = false;
+  void nextTick(() => {
+    const chip = typeChipEl.value;
+    if (chip && chip.scrollWidth > chip.clientWidth + 1) typeCompact.value = true;
+  });
+}
+
+watch(
+  () => [
+    props.task.id,
+    props.task.type,
+    props.task.priority,
+    props.task.hotfix,
+    props.task.needsMerge,
+  ],
+  fitTopLine,
+  { flush: "post" },
+);
+
 /** Resolve the "reduce motion" system preference; true means animations off. */
 function prefersReducedMotion(): boolean {
   return (
@@ -516,6 +548,15 @@ onMounted(() => {
   }
   syncCardRemotePoll(id, props.task.status, repo.isRunning(id));
 });
+
+onMounted(() => {
+  fitTopLine();
+  if ("ResizeObserver" in window && topLineEl.value) {
+    topLineObserver = new ResizeObserver(() => fitTopLine());
+    topLineObserver.observe(topLineEl.value);
+  }
+});
+onBeforeUnmount(() => topLineObserver?.disconnect());
 
 let handoffStatusPoll: number | undefined;
 watch(
@@ -1649,29 +1690,34 @@ async function openDebuggerFromError(): Promise<void> {
     @dragend="onDragEnd"
   >
     <div class="flex min-w-0 flex-1 flex-col p-[13px]">
-      <div class="flex flex-wrap items-center gap-x-[7px] gap-y-[6px]">
-        <CopyableNumber
-          :label="`#${task.id}`"
-          :path="`/work?task=${encodeURIComponent(task.id)}`"
-          :aria-label="`Copy link to task ${task.id}`"
-        />
+      <div ref="topLineEl" class="tc-top-line flex min-w-0 flex-nowrap items-center gap-x-[7px]">
         <span
+          class="shrink-0 whitespace-nowrap font-mono text-[11px] font-bold tracking-[0.04em] text-[var(--txt-dim)]"
+          >#{{ task.id }}</span
+        >
+        <span
+          ref="typeChipEl"
           class="min-w-0 max-w-full truncate rounded-md border border-border bg-[var(--chip-bg)] px-2 py-[2px] font-mono text-[9.5px] text-[var(--txt-dim)]"
           :data-tip="task.type"
-          >{{ task.type }}</span
+          >{{ typeLabel }}</span
         >
         <span
           v-if="task.status === 'review' && task.needsMerge"
-          class="tc-merge"
+          class="tc-merge min-w-0 truncate"
           title="branch drifted from main — move to done to sync and merge"
           >needs merge</span
         >
-        <HotfixBadge v-if="task.hotfix" :target="task.hotfixTarget" :branch="task.branch" />
-        <span class="ml-auto flex items-center gap-[6px]">
+        <HotfixBadge
+          v-if="task.hotfix"
+          class="shrink-0"
+          :target="task.hotfixTarget"
+          :branch="task.branch"
+        />
+        <span class="ml-auto flex shrink-0 items-center gap-[6px]">
           <button
             ref="agentTrigger"
             type="button"
-            class="tc-agent-btn"
+            class="tc-agent-btn shrink-0"
             :class="{ open: agentPanelOpen }"
             :aria-expanded="agentPanelOpen"
             :aria-controls="agentTriggerControls"
@@ -1709,7 +1755,7 @@ async function openDebuggerFromError(): Promise<void> {
             </svg>
           </button>
           <span
-            class="rounded-[5px] px-[6px] py-[2px] font-mono text-[9px] font-bold"
+            class="shrink-0 whitespace-nowrap rounded-[5px] px-[6px] py-[2px] font-mono text-[9px] font-bold"
             :class="task.priority"
             >{{ task.priority }}</span
           >
