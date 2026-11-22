@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-11-22T09:59:59Z"
-review_passes: 5
+last_close_out_gate_ms: 1294444
+last_close_out_gate_at: "2026-11-22T10:28:26.581Z"
 id: "1278"
 title: "Work board: move search into the header row, half width, drop the search chip"
 type: feature
@@ -13,6 +13,8 @@ branch: feat/work-board-move-search-into-the-header-r
 cli_override: github copilot
 model_override: default
 created_at: "2026-11-20T08:46:27Z"
+updated_at: "2026-11-22T10:28:26Z"
+review_passes: 5
 review_rounds: 2
 handoff_signal_retry_count: 2
 review_failed_report_retries: 0
@@ -378,4 +380,5 @@ Start from src/ui-app/src/components/BoardQueueSearch.vue and the Work view head
 - 2026-11-22T09:59:06Z · status active→review
 - 2026-11-22T09:59:06Z · message_queued at 2026-11-22T09:59:06.550Z
 - 2026-11-22T09:59:59Z · note: review pass 8: good to go
+- 2026-11-22T10:28:26Z · close-out gate completed in 1294s
 
