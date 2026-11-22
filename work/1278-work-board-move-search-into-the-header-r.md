@@ -265,3 +265,4 @@ Start from src/ui-app/src/components/BoardQueueSearch.vue and the Work view head
 - 2026-11-22T04:09:03Z · CTO nudge: held — remote validation is running
 - 2026-11-22T04:10:17Z · note: adopted orphaned engineer pid 17172
 - 2026-11-22T04:11:32Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code unknown · last assistant: **Handoff blocked:** the scoped check failed on remote WebKit inbox overflow at 768px and 1280px; those cases pass locally. The worktree is clean but read-only while in review, so I couldn’t investigate further. · stderr: (empty)
+- 2026-11-22T04:11:33Z · note: handoff requested (cli)
