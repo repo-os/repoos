@@ -513,3 +513,4 @@ Read docs/close-out-pipeline.md and docs/remote-validation.md first. Never touch
 - 2026-11-22T09:01:24Z · CTO nudge: held — remote validation is running
 - 2026-11-22T09:09:45Z · CTO nudge: held — handoff gate is running
 - 2026-11-22T09:23:43Z · handoff failed · remote validation failed: test failure: tests/activity-animation-size-config.test.ts > activity animation size config (#0813, pixels #0816) > round-trips the pixel value through the Settings write path and rejects bad steps, tests/allowlist-groups.test.ts > config loading with a group (#1132) > joins and leaves a group through the config route, tests/areas-settings.test.ts > Settings PATCH for [areas] (#0583) > writes the declared vocabulary as [[areas]] rows on thinkpad — fix it in the feature branch and re-run the gate
+- 2026-11-22T09:23:43Z · message_queued at 2026-11-22T09:23:43.663Z
