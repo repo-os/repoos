@@ -3,6 +3,9 @@ id: "1275"
 title: "Close-outs: validate several tasks at once on different runner machines"
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: "`needs some work` — checkout concurrency, timeout, failure recovery and status defects block sign-off."
 priority: p1
 area: [server, core]
 assigned_to: ai
@@ -530,3 +533,4 @@ Read docs/close-out-pipeline.md and docs/remote-validation.md first. Never touch
 - 2026-11-22T10:12:00Z · CTO nudge: held — handoff gate is running
 - 2026-11-22T10:28:26Z · status active→review
 - 2026-11-22T10:30:12Z · note: review pass 4: needs some work
+- 2026-11-22T10:30:12Z · needs_input
