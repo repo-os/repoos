@@ -14,7 +14,7 @@ branch: feat/easter-eggs-bundle-rename-review-history
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T10:35:33Z"
-updated_at: "2026-11-22T17:25:48Z"
+updated_at: "2026-11-22T17:38:01Z"
 last_close_out_gate_ms: 1103638
 last_close_out_gate_at: "2026-11-22T17:25:18.389Z"
 review_passes: 7
@@ -187,3 +187,4 @@ Copy change only. Never touch repoos.toml. Headless Playwright only.
 - 2026-11-22T17:16:32Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-22T17:25:18Z · close-out gate completed in 1104s
 - 2026-11-22T17:25:48Z · status done→done, release:success
+- 2026-11-22T17:38:01Z · message_dropped: 1 queued message(s) discarded — task is done
