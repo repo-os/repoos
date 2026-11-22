@@ -184,7 +184,11 @@ describe("scheduler under pressure and cancellation (#1275)", () => {
     },
     {
       name: "a cancelled job later in the queue is torn down even when the limit is full",
-      jobs: [job("01", "validating"), job("02", "queued"), job("03", "queued", { cancelled: true })],
+      jobs: [
+        job("01", "validating"),
+        job("02", "queued"),
+        job("03", "queued", { cancelled: true }),
+      ],
       running: ["01"],
       limit: 1,
       holdExtra: false,
@@ -201,9 +205,9 @@ describe("scheduler under pressure and cancellation (#1275)", () => {
   ];
 
   it.each(cases)("$name", ({ jobs, running, limit, holdExtra, expected }) => {
-    expect(
-      selectCloseOutStarts({ jobs, running: new Set(running), limit, holdExtra }),
-    ).toEqual(expected);
+    expect(selectCloseOutStarts({ jobs, running: new Set(running), limit, holdExtra })).toEqual(
+      expected,
+    );
   });
 });
 

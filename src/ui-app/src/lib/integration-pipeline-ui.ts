@@ -289,10 +289,7 @@ export function integrationActiveCopy(
   };
 }
 
-function integrationCloseOutElapsedTip(
-  active: IntegrationRunningEntry,
-  elapsedMs: number,
-): string {
+function integrationCloseOutElapsedTip(active: IntegrationRunningEntry, elapsedMs: number): string {
   const dur = formatDuration(elapsedMs);
   const headline = dur === "0s" ? "Close-out running just now" : `Close-out running ${dur}`;
   const stamp = fmtFullDateTime(active.lastProgressAt ?? active.startedAt);

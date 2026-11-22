@@ -679,9 +679,7 @@ async function fileSetupTask(): Promise<void> {
           :title="'#' + p.taskId + ' ' + p.phase"
           >#{{ p.taskId }} ·
           {{
-            p.phase === "publishing"
-              ? "waiting for publish turn"
-              : integrationStageLabel(p.stage)
+            p.phase === "publishing" ? "waiting for publish turn" : integrationStageLabel(p.stage)
           }}</span
         >
       </div>
