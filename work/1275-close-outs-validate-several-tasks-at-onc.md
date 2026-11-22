@@ -11,7 +11,7 @@ branch: feat/close-outs-validate-several-tasks-at-onc
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T07:42:13Z"
-updated_at: "2026-11-22T08:25:08Z"
+updated_at: "2026-11-22T08:25:17Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-22T07:43:02.260Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Pipeline shows a job validating alongside the active close-out (Also running) (target \"default\"): state \"integration:parallelValidations\" did not render on target \"default\" — /checks?tab=now shows no task card (http://127.0.0.1:35993/checks?tab=now&shotState=integration%3AparallelValidations)"
 review_rounds: 1
@@ -489,3 +489,4 @@ Read docs/close-out-pipeline.md and docs/remote-validation.md first. Never touch
 - 2026-11-22T08:21:32Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: The idle-machine gate rerun is still going. I'll hold the handoff until it reports an exit code, since the handoff line claims a green gate. Where things stand: - **Merged main** into the branch with no conflicts. The task file already mat… · stderr: (empty)
 - 2026-11-22T08:21:32Z · message_delivered: 1 message(s)
 - 2026-11-22T08:25:08Z · body
+- 2026-11-22T08:25:17Z · message_queued at 2026-11-22T08:25:17.435Z
