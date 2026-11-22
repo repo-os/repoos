@@ -15,7 +15,7 @@ import {
   type JobPhase,
 } from "../integration-job.js";
 import { buildIntegrationSnapshot } from "../integration-status.js";
-import { CloseOutOrchestrator } from "../integration-orchestrator.js";
+import { CANCEL_REASON, CloseOutOrchestrator } from "../integration-orchestrator.js";
 import { DEFAULT_CONFIG, getConfigSchema } from "../../core/config.js";
 
 /** Minimal job record for pure scheduler tests (no disk). */
@@ -323,6 +323,56 @@ describe("parallel validation coordination (#1275)", () => {
       baseMainSha: "deadbeef",
       candidateSha: "cafe",
     });
+  });
+});
+
+describe("cancelled parked publisher (#1275)", () => {
+  const task = (id: string): Task => ({ id, branch: `feat/${id}` }) as unknown as Task;
+
+  it("tears down a cancelled job waiting for its turn instead of parking it again", async () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-parked-cancel-"));
+    try {
+      const repo = join(root, "repo");
+      mkdirSync(repo, { recursive: true });
+      const git = (args: string) => execSync(`git -C ${repo} ${args}`, { stdio: "ignore" });
+      git("init -b main");
+      git("config user.email t@example.com");
+      git("config user.name T");
+      writeFileSync(join(repo, "README.md"), "# repo\n");
+      git("add README.md");
+      git('commit -m "init"');
+
+      const repoCoordinator = createJobCoordinator(repo);
+      repoCoordinator.enqueue(task("0001"));
+      repoCoordinator.enqueue(task("0002"));
+      // 0001 is still validating, so 0002 has the candidate ready but no turn.
+      repoCoordinator.updateJob("0001", { phase: "validating", startedAt: "2026-11-20T00:00:05Z" });
+      repoCoordinator.updateJob("0002", {
+        phase: "publishing",
+        startedAt: "2026-11-20T00:00:06Z",
+        baseMainSha: "deadbeef",
+        candidateSha: "cafe",
+      });
+
+      const orchestrator = new CloseOutOrchestrator(
+        { root: repo, cacheDir: ".repoos" } as unknown as RepoOSConfig,
+        repoCoordinator,
+      );
+      // The stop lands after the run's entry checkpoint, i.e. in the window
+      // where validation has promoted the job to publishing: the first poll
+      // sees no cancel, every later poll sees one.
+      let polls = 0;
+      (orchestrator as unknown as { isCancelled: (id: string) => boolean }).isCancelled = () =>
+        ++polls > 1;
+      const result = await orchestrator.processTask("0002");
+
+      expect(result).toEqual({ ok: false, reason: CANCEL_REASON });
+      expect(repoCoordinator.getJob("0002")).toBeNull();
+      // The head is untouched: cancelling a parked job never disturbs the run ahead.
+      expect(repoCoordinator.getJob("0001")?.phase).toBe("validating");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 });
 

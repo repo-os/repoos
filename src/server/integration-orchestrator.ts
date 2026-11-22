@@ -1798,6 +1798,11 @@ export class CloseOutOrchestrator {
         // finished validating ahead of an earlier one stays parked here, with
         // its candidate intact, and the server re-runs it when the head's run
         // ends. Nothing is written, so the job's phase and attempt are unchanged.
+        // A parked job the user stopped tears down now, not when the head ends:
+        // its candidate is throwaway and nothing has merged (#1275 review).
+        if (job.cancelled || this.isCancelled(job.taskId)) {
+          return this.cancelJob(job);
+        }
         if (!hasPublishTurn(this.coordinator.allJobs(), job.taskId)) {
           this.logger?.integration(job.taskId, "info", "validated — waiting for publish turn", {
             headTaskId: publishTurnTaskId(this.coordinator.allJobs()),
