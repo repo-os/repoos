@@ -60,6 +60,34 @@ describe("built-in role prompts (#0872)", () => {
     expect(reviewer).toMatch(/repeated classes/);
   });
 
+  it("makes the reviewer report unrequested user-visible UI as blocking for a human to confirm (#1283)", () => {
+    const reviewer = promptFor("reviewer");
+    expect(reviewer).toMatch(/user-visible UI the task body does not name/);
+    expect(reviewer).toMatch(/List each one under Bugs as blocking/);
+    expect(reviewer).toMatch(/do not approve it/);
+  });
+
+  it("tells the engineer to ask via needs-input before building unrequested UI (#1283)", () => {
+    const engineer = promptFor("engineer");
+    expect(engineer).toMatch(/Do not build user-visible UI the task body does not name/);
+    expect(engineer).toContain("repoos update <id> --needs-input true");
+    expect(engineer).toMatch(/do not hand off, and end your turn/);
+    expect(engineer).toMatch(/A QA pass fixes defects only and files new-UI ideas as proposals/);
+  });
+
+  it("links AGENTS.md to the unrequested-UI rule with both examples documented (#1283)", () => {
+    const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
+    const agents = readFileSync(join(repoRoot, "AGENTS.md"), "utf8");
+    const rules = readFileSync(join(repoRoot, "docs", "agent-workflow-rules.md"), "utf8");
+    expect(agents).toMatch(/No unrequested UI\./);
+    expect(agents).toContain(
+      "docs/agent-workflow-rules.md#unrequested-ui-needs-human-confirmation-1283",
+    );
+    expect(rules).toMatch(/## Unrequested UI needs human confirmation \(#1283\)/);
+    expect(rules).toMatch(/#1189/);
+    expect(rules).toMatch(/#1259/);
+  });
+
   it("gives the engineer the shot, fix-the-class, check and handoff rules", () => {
     const engineer = promptFor("engineer");
     expect(engineer).toContain("repoos update <id> --shots");
