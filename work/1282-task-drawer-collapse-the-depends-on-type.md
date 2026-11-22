@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-22T15:33:58.176Z: repoos check failed: ui verification failed (5 issue(s)): [request] HTTP 404 for http://127.0.0.1:45775/api/tasks/1282 (http://127.0.0.1:45775/api/tasks/1282); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:45775/api/tasks/1282); [missing-target] Task drawer Details tab with the collapsed metadata summary (target \"default\"): highlight [data-test-id=\"task-meta-summary\"] matched nothing on /work?task=1282 (http://127.0.0.1:45775/work?task… (truncated)"
 id: "1282"
 title: "Task drawer: collapse the Depends on, type, priority, area and story block into a one or two line summary that opens a modal"
 type: feature
@@ -74,3 +76,4 @@ Start from TaskDrawer.vue and TaskDependencyPicker.vue. This is a requested rede
 - 2026-11-22T15:33:54Z · note: ui verification failed: ui verification failed (5 issue(s)): [request] HTTP 404 for http://127.0.0.1:45775/api/tasks/1282 (http://127.0.0.1:45775/api/tasks/1282); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:45775/api/tasks/1282); [missing-target] Task drawer Details tab with the collapsed metadata summary (target "default"): highlight [data-test-id="task-meta-summary"] matched nothing on /work?task=1282 (http://127.0.0.1:45775/work?t
 - 2026-11-22T15:33:55Z · message_queued at 2026-11-22T15:33:55.032Z
 - 2026-11-22T15:33:58Z · message_delivered: 1 message(s)
+
