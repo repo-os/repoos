@@ -2,7 +2,7 @@
 id: "1284"
 title: "Mac Hub: Local server will not start (env: node: No such file or directory) and removing then re-adding it crashes the app"
 type: bug
-status: active
+status: review
 priority: p1
 area: macos
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/mac-hub-local-server-will-not-start-env-
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-22T03:29:23Z"
-updated_at: "2026-11-22T12:27:08Z"
+updated_at: "2026-11-22T12:41:09Z"
 ---
 ## Problem
 In the native RepoOS Hub Mac app, starting the local server for the repo called divot repoos fails with the dialog 'Local server: env: node: No such file or directory'. Removing that server and adding it again makes the app crash. The user could not start the server or recover from inside the app.
@@ -40,3 +40,4 @@ Look in the macos Hub app sources and the local-server launcher. Never touch rep
 - 2026-11-22T03:29:29Z · status inbox→ready
 - 2026-11-22T12:27:08Z · cli_override, model_override
 - 2026-11-22T12:27:08Z · status ready→active, branch
+- 2026-11-22T12:41:09Z · status active→review
