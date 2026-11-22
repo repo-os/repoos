@@ -3,9 +3,6 @@ id: "1276"
 title: Close-out validation log should show live progress
 type: feature
 status: review
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: `needs some work` — the host is clipped and retries can reset the close-out timeout budget.
 priority: p1
 area: [server, core]
 assigned_to: ai
@@ -14,7 +11,7 @@ branch: feat/close-out-validation-log-should-show-liv
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T07:42:21Z"
-updated_at: "2026-11-22T08:34:38Z"
+updated_at: "2026-11-22T08:34:39Z"
 review_passes: 6
 last_check_failure: "repoos check at 2026-11-22T07:13:31.180Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 review_failed_report_retries: 0
@@ -264,3 +261,4 @@ Related: #1272 (timer should count from validation start). Never touch repoos.to
 - 2026-11-22T08:31:29Z · status active→review
 - 2026-11-22T08:31:32Z · message_queued at 2026-11-22T08:31:32.226Z
 - 2026-11-22T08:34:38Z · note: review pass 12: needs some work
+- 2026-11-22T08:34:39Z · needs_input
