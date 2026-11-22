@@ -11,7 +11,7 @@ branch: feat/close-outs-validate-several-tasks-at-onc
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T07:42:13Z"
-updated_at: "2026-11-22T05:00:16Z"
+updated_at: "2026-11-22T05:12:26Z"
 review_rounds: 1
 review_passes: 1
 last_check_failure: "repoos check at 2026-11-20T11:18:52.239Z: repoos check failed: vite v8.2.0 building client environment for production..."
@@ -440,3 +440,4 @@ Read docs/close-out-pipeline.md and docs/remote-validation.md first. Never touch
 - 2026-11-22T04:58:22Z · orphaned run process stopped · pid 33566 · /opt/homebrew/bin/bun /Users/nick/.bun/bin/repoos check · cpu 1s · age 3m
 - 2026-11-22T04:58:37Z · orphaned run process stopped · pid 36962 · ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new -o ConnectTimeout=15 -o ServerAliveInterval · cpu 0s · age 3m
 - 2026-11-22T05:00:16Z · CTO nudge: held — handoff gate is running
+- 2026-11-22T05:12:26Z · handoff failed · remote validation failed: test failure: tests/mtd-cancel.test.ts > Stop MTD cancellation (#0459) > POST /api/tasks/:id/done/cancel handler (#0459) > cancels a queued job and drops it from the pipeline on mini — fix it in the feature branch and re-run the gate
