@@ -11,7 +11,7 @@ branch: feat/rule-tasks-must-get-human-confirmation-b
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-22T03:22:46Z"
-updated_at: "2026-11-22T13:32:55Z"
+updated_at: "2026-11-22T13:34:09Z"
 ---
 ## Problem
 QA-pass and follow-up tasks have added new user-facing UI that no human asked for (for example the Depends on task picker from #1189 and the desktop Work board search from #1259). It landed silently and the human only noticed later.
@@ -39,3 +39,4 @@ Never edit repoos.toml; if the engineer instructions live there, describe the ex
 - 2026-11-22T13:32:54Z · status active→review
 - 2026-11-22T13:32:55Z · message_queued at 2026-11-22T13:32:55.112Z
 - 2026-11-22T13:32:55Z · note: shots: skipped — the diff (6 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-11-22T13:34:09Z · note: review pass 1: good to go
