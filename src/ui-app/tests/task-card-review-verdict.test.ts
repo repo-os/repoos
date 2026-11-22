@@ -160,7 +160,7 @@ describe("TaskCard review-passed hint reflects the actual verdict", () => {
         props: { task: makeTask(), dragEnabled: false },
         global: { plugins: [pinia] },
       });
-      expect(wrapper.get('[data-test-id="task-card-refresh-evidence"]').exists()).toBe(true);
+      expect(wrapper.find('[data-test-id="task-card-refresh-evidence"]').exists()).toBe(true);
     });
   });
 
