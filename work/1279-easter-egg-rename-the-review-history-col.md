@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-11-22T13:01:44Z"
-review_passes: 3
 id: "1279"
 title: "Easter eggs bundle: rename review history column to Issues"
 type: feature
-status: review
+status: active
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 needs_input_detail: "`needs some work` — the review-history capture shows an empty state, not the renamed column."
@@ -18,6 +16,8 @@ branch: feat/easter-eggs-bundle-rename-review-history
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T10:35:33Z"
+updated_at: "2026-11-22T13:07:30Z"
+review_passes: 3
 handoff_signal_retry_count: 1
 review_rounds: 2
 last_check_failure: "repoos check at 2026-11-22T12:01:07.968Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Review pass history: last column now reads Issues (target \"default\"): highlight .review-history-table matched nothing on /work?task=9999&tab=review (http://127.0.0.1:41827/work?task=9999&tab=review&shotState=drawer%3AreviewPasses)"
@@ -116,4 +116,4 @@ Copy change only. Never touch repoos.toml. Headless Playwright only.
 - 2026-11-22T13:00:09Z · message_queued at 2026-11-22T13:00:09.030Z
 - 2026-11-22T13:01:44Z · note: review pass 3: needs some work
 - 2026-11-22T13:01:44Z · needs_input
-
+- 2026-11-22T13:07:30Z · status review→active
