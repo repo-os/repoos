@@ -11,12 +11,15 @@ branch: feat/close-out-validation-log-should-show-liv
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T07:42:21Z"
-updated_at: "2026-11-21T00:28:32Z"
+updated_at: "2026-11-22T03:07:07Z"
+last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (appeared: src/server/close-out-progress.ts, src/server/remote-validation.ts) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
+last_handoff_failure_sha: 186ed2e4093e9e4c85434660b275d6c18b482f03
 review_passes: 4
 last_check_failure: "repoos check at 2026-11-20T21:01:31.328Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Close-out drawer with live step, host, and attempt (target \"default\"): loading state detected: loading text \"Loading changes…\" on /work?task=9999&tab=changes (http://127.0.0.1:43237/work?task=9999&tab=changes&shotState=drawer%3AcloseOutRemoteTests)"
 review_failed_report_retries: 0
 review_rounds: 2
 handoff_signal_retry_count: 2
+dev_error_count: 3
 ---
 ## Problem
 During a close-out the integration log (.repoos/logs/integration/<id>-<n>.log) is not written for the running attempt: #1258's log was last modified hours earlier while its job had been validating for ~55 minutes. Drivers and the UI cannot tell whether a close-out is running, waiting for a host slot, retrying after a timeout, or stuck. The card timer also appears to count from an earlier start.
@@ -146,3 +149,40 @@ Related: #1272 (timer should count from validation start). Never touch repoos.to
 - 2026-11-21T00:26:55Z · note: handoff requested (cli)
 - 2026-11-21T00:28:06Z · message_delivered: 1 message(s)
 - 2026-11-21T00:28:32Z · CTO nudge: held — handoff gate is running
+- 2026-11-21T00:39:33Z · message_queued at 2026-11-21T00:39:33.227Z
+- 2026-11-21T00:39:33Z · handoff failed · task-file handoff failed at check · the worktree changed while the gate was running (appeared: src/server/close-out-progress.ts, src/server/remote-validation.ts) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
+- 2026-11-21T00:42:46Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-21T00:42:47Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: The handoff check for #1276 is still running on the remote runner after about 12 minutes of run time. That's within the range for a full-suite run, so I'm not treating it as stuck. The worktree is still read-only until it finishes, so the … · stderr: 2026-11-20T21:26:43.201153Z ERROR codex_core::util: Custom tool call output is missing for call id: call_eb4148a93ce844cbaa40f3969f0dc612
+- 2026-11-21T00:42:47Z · status active→review
+- 2026-11-21T00:42:47Z · message_delivered: 1 message(s)
+- 2026-11-21T00:43:33Z · message_queued at 2026-11-21T00:43:33.001Z
+- 2026-11-21T00:43:33Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-21T00:48:32Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-21T00:51:40Z · agent exited with an error (claude) · Claude exited with an error. Open Raw CLI error for details. (CLI: 2026-11-20T21:26:43.201153Z ERROR codex_core::util: Custom tool call output is missing for call id: call_eb4148a93ce844cbaa40f3969f0dc612)
+- 2026-11-21T02:28:20Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-21T15:38:27Z · needs_input
+- 2026-11-21T15:38:33Z · message_delivered: 1 message(s)
+- 2026-11-21T16:36:46Z · message_queued at 2026-11-21T16:36:46.643Z
+- 2026-11-21T16:36:46Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-21T17:09:32Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-21T18:00:45Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-21T19:44:16Z · agent exited with an error (claude) · the agent process exited with an error — open the task to see the full output
+- 2026-11-21T19:59:48Z · watchdog: restarting engineer because a queued message waited 203m with no live process
+- 2026-11-21T20:31:54Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — task-file handoff failed at review · Engineering report draft is missing: .repoos/engineering-report-drafts/1276.md · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-11-21T20:31:54Z · watchdog: check wait escalated · waiting: system load is high (4.0× per CPU, limit 3×) — waiting for headroom before starting more work; wait exceeds the handoff deadline for 32m · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-11-22T00:06:00Z · needs_input
+- 2026-11-22T00:06:00Z · message_delivered: 1 message(s)
+- 2026-11-22T01:54:55Z · agent exited with an error (claude) · Claude exited with an error. Open Raw CLI error for details. (CLI: ✗ Review request ignored: the last engineer turn exited with an error and never emitted its handoff signal. The task stays active and the engineer is resumed.)
+- 2026-11-22T02:20:07Z · watchdog: restarting engineer after 16m with no live process
+- 2026-11-22T02:50:18Z · watchdog: check wait escalated · waiting: system load is high (5.7× per CPU, limit 3×) — waiting for headroom before starting more work; wait exceeds the handoff deadline for 30m · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-11-22T02:50:55Z · needs_input
+- 2026-11-22T02:50:55Z · message_queued at 2026-11-22T02:50:55.973Z
+- 2026-11-22T02:51:03Z · watchdog: check wait escalated · waiting: system load is high (5.7× per CPU, limit 3×) — waiting for headroom before starting more work; wait exceeds the handoff deadline for 30m · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-11-22T02:51:25Z · needs_input
+- 2026-11-22T02:51:33Z · watchdog: check wait escalated · waiting: system load is high (5.7× per CPU, limit 3×) — waiting for headroom before starting more work; wait exceeds the handoff deadline for 31m · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-11-22T02:52:12Z · needs_input
+- 2026-11-22T02:54:05Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-22T03:04:49Z · queued message undelivered for 14m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-22T03:04:50Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: The scoped check is still running in the background. The monitor will notify me when it finishes, so I'll wait for that before handing off. · stderr: (empty)
+- 2026-11-22T03:04:51Z · note: handoff requested (cli)
+- 2026-11-22T03:07:07Z · message_delivered: 1 message(s)

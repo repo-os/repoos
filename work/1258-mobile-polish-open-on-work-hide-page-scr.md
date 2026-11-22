@@ -11,12 +11,14 @@ branch: feat/mobile-polish-open-on-work-hide-page-scr
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T00:15:33Z"
-updated_at: "2026-11-21T00:32:46Z"
+updated_at: "2026-11-22T03:07:07Z"
 review_passes: 4
 review_failed_report_retries: 0
 last_check_failure: "repoos check at 2026-11-20T09:49:11.145Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Work is the home page; header row controls share one height (target \"default\"): loading state detected: loading indicator [aria-busy=\"true\"] on /work (http://127.0.0.1:34337/work)"
 review_rounds: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-11-21T00:32:46.891Z\",\"reason\":\"clean-exit-without-handoff\"}]"
+dev_error_count: 5
+engineer_crash_log: "[{\"cli\":\"claude code\",\"model\":\"haiku\",\"at\":\"2026-11-21T23:17:08.288Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 On a phone (seen on the Android Hub app, Mission Control page):
@@ -177,3 +179,71 @@ Screenshot attached shows the current mobile header and Mission Control. Do not 
 - 2026-11-21T00:27:08Z · message_delivered: 1 message(s)
 - 2026-11-21T00:27:41Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: I stopped without handing off. The task can't land until someone resolves a git merge that is still open in this worktree. **Blocker:** `.git/worktrees/.../MERGE_HEAD` is set (merging `00bc3e766`), so RepoOS's handoff commit fails with "ca… · stderr: (empty)
 - 2026-11-21T00:32:46Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 1/3
+- 2026-11-21T03:11:15Z · CTO nudge: held — machine under pressure (system load is high (3.5× per CPU, limit 3×) — waiting for headroom before starting more work)
+- 2026-11-21T03:28:06Z · CTO nudge: held — machine under pressure (CPU idle is 0% (below 5%) — holding new work until the machine has idle CPU; system load is high (3.3× per CPU, limit 3×) — waiting for headroom before starting more work)
+- 2026-11-21T03:44:16Z · CTO nudge: held — machine under pressure (CPU idle is 0% (below 5%) — holding new work until the machine has idle CPU; system load is high (3.2× per CPU, limit 3×) — waiting for headroom before starting more work)
+- 2026-11-21T04:01:44Z · CTO nudge: held — machine under pressure (CPU idle is 0% (below 5%) — holding new work until the machine has idle CPU; system load is high (3.0× per CPU, limit 3×) — waiting for headroom before starting more work)
+- 2026-11-21T04:12:16Z · CTO nudge: held — machine under pressure (CPU idle is 1% (below 5%) — holding new work until the machine has idle CPU)
+- 2026-11-21T05:02:04Z · agent exited with an error (claude) · Claude exited with an error. Open Raw CLI error for details. (CLI: ✗ Server finalization stopped at commit: git commit failed: fatal: cannot do a partial commit during a merge.. The same worktree can be resumed and retried.)
+- 2026-11-21T05:02:04Z · engineer crash recovery: resuming claude code + haiku (1/3 crashes in 30m) · Claude exited with an error. Open Raw CLI error for details. (CLI: ✗ Server finalization stopped at commit: git commit failed: fatal: cannot do a partial commit during a merge.. The same worktree can be resumed and retried.)
+- 2026-11-21T07:47:20Z · needs_input
+- 2026-11-21T09:13:29Z · message_queued at 2026-11-21T09:13:29.806Z
+- 2026-11-21T09:13:29Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-21T09:13:30Z · agent exited with an error (claude) · Claude exited with an error. Open Raw CLI error for details. (CLI: ✗ Server finalization stopped at commit: git commit failed: fatal: cannot do a partial commit during a merge.. The same worktree can be resumed and retried.)
+- 2026-11-21T09:13:30Z · engineer crash recovery: resuming claude code + haiku (1/3 crashes in 30m) · Claude exited with an error. Open Raw CLI error for details. (CLI: ✗ Server finalization stopped at commit: git commit failed: fatal: cannot do a partial commit during a merge.. The same worktree can be resumed and retried.)
+- 2026-11-21T09:13:35Z · needs_input
+- 2026-11-21T09:13:35Z · message_delivered: 1 message(s)
+- 2026-11-21T11:09:07Z · agent exited with an error (claude) · Claude exited with an error. Open Raw CLI error for details. (CLI: ✗ Server finalization stopped at commit: git commit failed: fatal: cannot do a partial commit during a merge.. The same worktree can be resumed and retried.)
+- 2026-11-21T11:09:07Z · engineer crash recovery: resuming claude code + haiku (1/3 crashes in 30m) · Claude exited with an error. Open Raw CLI error for details. (CLI: ✗ Server finalization stopped at commit: git commit failed: fatal: cannot do a partial commit during a merge.. The same worktree can be resumed and retried.)
+- 2026-11-21T14:22:29Z · needs_input
+- 2026-11-21T15:12:10Z · message_queued at 2026-11-21T15:12:10.014Z
+- 2026-11-21T15:12:10Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-21T15:23:18Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-21T15:50:16Z · body
+- 2026-11-21T15:51:07Z · message_queued at 2026-11-21T15:51:07.604Z
+- 2026-11-21T15:54:07Z · watchdog: restarting engineer because a queued message waited 3m with no live process
+- 2026-11-21T15:54:09Z · message_delivered: 1 message(s)
+- 2026-11-21T18:12:08Z · CTO nudge: held — machine under pressure (system load is high (3.9× per CPU, limit 3×) — waiting for headroom before starting more work)
+- 2026-11-21T18:30:08Z · CTO nudge: held — machine under pressure (system load is high (3.6× per CPU, limit 3×) — waiting for headroom before starting more work)
+- 2026-11-21T18:47:48Z · agent exited with an error (claude) · ✗ Server finalization stopped at commit: stray repoos.toml on task branch: repoos.toml differs from main. Open Raw CLI error for details. (CLI: ✗ Server finalization stopped at commit: stray repoos.toml on task branch: repoos.toml differs from main
++
++[[budget.allowlist]]
++cli = "opencode"
++models = ["opencode-go/deepseek-v4.1-flash", "opencode-go/glm-5.3-flash", "opencode-go/mimo-v2.6-flash", "deepinfra/deepseek-ai/DeepSeek-V4.1-Flash"]
++pausedModels = [{ model = "opencode-go/mimo-v2.6-flash" }, { model = "deepinfra/deepseek-ai/DeepSeek-V4.1-Flash", pausedReason = "No credits" }]
++[[budget.allowlist]]
++cli = "github copilot"
++models = ["default"]
++paused = true
++pausedReason = "Waiting for model list fix"
++[[budget.allowlist]]
++cli = "cursor"
++models = ["composer-2.5", "grok-4.7-low"]
++[[budget.allowlist]]
++cli = "codex"
++models = ["gpt-6-luna", "gpt-6.1-terra"]. Revert it with: git checkout main -- repoos.toml. The same worktree can be resumed and retried.)
+- 2026-11-21T18:47:48Z · engineer crash recovery: resuming claude code + haiku (1/3 crashes in 30m) · ✗ Server finalization stopped at commit: stray repoos.toml on task branch: repoos.toml differs from main. Open Raw CLI error for details. (CLI: ✗ Server finalization stopped at commit: stray repoos.toml on task branch: repoos.toml differ…
+- 2026-11-21T21:15:13Z · needs_input
+- 2026-11-21T22:32:23Z · CTO nudge: held — machine under pressure (system load is high (4.7× per CPU, limit 3×) — waiting for headroom before starting more work)
+- 2026-11-21T23:17:08Z · agent exited with an error (claude) · ✗ Server finalization stopped at commit: stray repoos.toml on task branch: repoos.toml differs from main. Open Raw CLI error for details. (CLI: ✗ Server finalization stopped at commit: stray repoos.toml on task branch: repoos.toml differs from main
++
++[[budget.allowlist]]
++cli = "opencode"
++models = ["opencode-go/deepseek-v4.1-flash", "opencode-go/glm-5.3-flash", "opencode-go/mimo-v2.6-flash", "deepinfra/deepseek-ai/DeepSeek-V4.1-Flash"]
++pausedModels = [{ model = "opencode-go/mimo-v2.6-flash" }, { model = "deepinfra/deepseek-ai/DeepSeek-V4.1-Flash", pausedReason = "No credits" }]
++[[budget.allowlist]]
++cli = "github copilot"
++models = ["default"]
++paused = true
++pausedReason = "Waiting for model list fix"
++[[budget.allowlist]]
++cli = "cursor"
++models = ["composer-2.5", "grok-4.7-low"]
++[[budget.allowlist]]
++cli = "codex"
++models = ["gpt-6-luna", "gpt-6.1-terra"]. Revert it with: git checkout main -- repoos.toml. The same worktree can be resumed and retried.)
+- 2026-11-21T23:17:08Z · engineer crash recovery: resuming claude code + haiku (1/3 crashes in 30m) · ✗ Server finalization stopped at commit: stray repoos.toml on task branch: repoos.toml differs from main. Open Raw CLI error for details. (CLI: ✗ Server finalization stopped at commit: stray repoos.toml on task branch: repoos.toml differ…
+- 2026-11-22T02:50:06Z · needs_input
+- 2026-11-22T02:50:54Z · message_queued at 2026-11-22T02:50:54.788Z
+- 2026-11-22T02:54:05Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-22T03:07:07Z · engineer stopped by request
