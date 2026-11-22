@@ -11,7 +11,7 @@ branch: feat/work-board-move-search-into-the-header-r
 cli_override: github copilot
 model_override: default
 created_at: "2026-11-20T08:46:27Z"
-updated_at: "2026-11-22T00:50:35Z"
+updated_at: "2026-11-22T01:08:11Z"
 handoff_signal_retry_count: 2
 review_rounds: 1
 review_passes: 1
@@ -246,3 +246,4 @@ Start from src/ui-app/src/components/BoardQueueSearch.vue and the Work view head
 - 2026-11-22T00:18:09Z · CTO nudge: held — machine under pressure (CPU idle is 0% (below 5%) — holding new work until the machine has idle CPU)
 - 2026-11-22T00:33:17Z · CTO nudge: held — machine under pressure (CPU idle is 0% (below 5%) — holding new work until the machine has idle CPU; system load is high (3.4× per CPU, limit 3×) — waiting for headroom before starting more work)
 - 2026-11-22T00:50:35Z · CTO nudge: held — machine under pressure (CPU idle is 2% (below 5%) — holding new work until the machine has idle CPU; system load is high (5.9× per CPU, limit 3×) — waiting for headroom before starting more work)
+- 2026-11-22T01:08:11Z · CTO nudge: held — machine under pressure (CPU idle is 4% (below 5%) — holding new work until the machine has idle CPU; system load is high (5.4× per CPU, limit 3×) — waiting for headroom before starting more work)
