@@ -5064,6 +5064,8 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "closeOut.candidate",
   "closeOut.installCommand",
   "closeOut.postPublishCommand",
+  // How many close-outs validate at once; publishing stays serial (#1275)
+  "maxParallelValidations",
   "worktrees.candidate",
   "worktrees.installCommand",
   "attention.spendAlertUsd",
