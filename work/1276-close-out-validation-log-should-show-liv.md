@@ -188,3 +188,4 @@ Related: #1272 (timer should count from validation start). Never touch repoos.to
 - 2026-11-22T03:07:07Z · message_delivered: 1 message(s)
 - 2026-11-22T03:09:03Z · CTO nudge: held — handoff gate is running
 - 2026-11-22T03:34:51Z · message_queued at 2026-11-22T03:34:51.482Z
+- 2026-11-22T03:34:51Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
