@@ -2,7 +2,7 @@
 id: "1279"
 title: "Easter eggs bundle: rename review history column to Issues"
 type: feature
-status: review
+status: active
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 needs_input_detail: `needs some work` — narrow cards can lose the required type label.
@@ -16,7 +16,7 @@ branch: feat/easter-eggs-bundle-rename-review-history
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T10:35:33Z"
-updated_at: "2026-11-22T14:53:04Z"
+updated_at: "2026-11-22T15:06:55Z"
 review_passes: 6
 last_check_failure: "repoos check at 2026-11-22T14:04:01.314Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 handoff_signal_retry_count: 1
@@ -146,4 +146,4 @@ Copy change only. Never touch repoos.toml. Headless Playwright only.
 - 2026-11-22T14:31:03Z · message_queued at 2026-11-22T14:31:03.663Z
 - 2026-11-22T14:32:15Z · note: review pass 6: needs some work
 - 2026-11-22T14:32:16Z · needs_input
-
+- 2026-11-22T15:06:55Z · status review→active
