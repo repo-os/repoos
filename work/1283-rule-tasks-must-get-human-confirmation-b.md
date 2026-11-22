@@ -2,14 +2,14 @@
 id: "1283"
 title: "Rule: tasks must get human confirmation before adding new UI nobody asked for"
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: docs
-assigned_to: ""
+assigned_to: ai
 created_by: t@t
 branch: ""
 created_at: "2026-11-22T03:22:46Z"
-updated_at: "2026-11-22T03:22:46Z"
+updated_at: "2026-11-22T03:22:51Z"
 ---
 ## Problem
 QA-pass and follow-up tasks have added new user-facing UI that no human asked for (for example the Depends on task picker from #1189 and the desktop Work board search from #1259). It landed silently and the human only noticed later.
@@ -29,3 +29,4 @@ Never edit repoos.toml; if the engineer instructions live there, describe the ex
 ## Activity
 
 - 2026-11-22T03:22:46Z · created · t@t
+- 2026-11-22T03:22:51Z · status inbox→ready
