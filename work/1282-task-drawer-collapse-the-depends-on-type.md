@@ -11,7 +11,7 @@ branch: feat/task-drawer-collapse-the-depends-on-type
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-22T03:22:33Z"
-updated_at: "2026-11-22T15:53:01Z"
+updated_at: "2026-11-22T15:56:20Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-22T15:33:58.176Z: repoos check failed: ui verification failed (5 issue(s)): [request] HTTP 404 for http://127.0.0.1:45775/api/tasks/1282 (http://127.0.0.1:45775/api/tasks/1282); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:45775/api/tasks/1282); [missing-target] Task drawer Details tab with the collapsed metadata summary (target \"default\"): highlight [data-test-id=\"task-meta-summary\"] matched nothing on /work?task=1282 (http://127.0.0.1:45775/work?task… (truncated)"
 ---
@@ -50,10 +50,10 @@ Start from TaskDrawer.vue and TaskDependencyPicker.vue. This is a requested rede
 "highlight": "[data-test-id=\"task-meta-modal\"]",
 "steps": [
 {
-  "click": "[data-test-id=\"task-meta-summary\"]"
+"click": "[data-test-id=\"task-meta-summary\"]"
 },
 {
-  "waitMs": 300
+"waitMs": 300
 }
 ],
 "state": "drawer:taskDetailsSummary"
@@ -81,3 +81,4 @@ Start from TaskDrawer.vue and TaskDependencyPicker.vue. This is a requested rede
 - 2026-11-22T15:34:33Z · body
 - 2026-11-22T15:53:01Z · message_queued at 2026-11-22T15:53:01.252Z
 - 2026-11-22T15:53:01Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-22T15:56:20Z · CTO nudge: held — an undelivered message is already queued
