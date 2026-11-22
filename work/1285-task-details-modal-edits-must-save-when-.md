@@ -11,7 +11,7 @@ branch: feat/task-details-modal-edits-must-save-when-
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-22T18:21:14Z"
-updated_at: "2026-11-22T19:08:44Z"
+updated_at: "2026-11-22T19:12:15Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -102,3 +102,4 @@ Modal and draft code is in src/ui-app/src/components/TaskDrawer.vue (metaModalOp
 - 2026-11-22T19:03:53Z · status review→active
 - 2026-11-22T19:03:55Z · CTO nudge: held — remote validation is running
 - 2026-11-22T19:08:44Z · body
+- 2026-11-22T19:12:15Z · CTO nudge: held — handoff gate is running
