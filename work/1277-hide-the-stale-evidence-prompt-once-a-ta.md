@@ -11,7 +11,7 @@ branch: feat/hide-the-stale-evidence-prompt-once-a-ta
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T08:26:19Z"
-updated_at: "2026-11-22T15:30:39Z"
+updated_at: "2026-11-22T15:30:40Z"
 review_rounds: 1
 review_passes: 4
 last_check_failure: "repoos check at 2026-11-22T13:48:50.335Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
@@ -117,3 +117,4 @@ Also (Nick): on the card and drawer, show only the Refresh evidence button; do n
 - 2026-11-22T15:26:56Z · note: handoff requested (cli)
 - 2026-11-22T15:26:58Z · message_queued at 2026-11-22T15:26:58.521Z
 - 2026-11-22T15:30:39Z · note: ui verification failed: ui verification failed (2 issue(s)): [request] HTTP 404 for http://127.0.0.1:33135/api/tasks/9998/handoff-status (http://127.0.0.1:33135/api/tasks/9998/handoff-status); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:33135/api/tasks/9998/handoff-status)
+- 2026-11-22T15:30:40Z · message_queued at 2026-11-22T15:30:40.043Z
