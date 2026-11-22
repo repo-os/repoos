@@ -297,6 +297,9 @@ function readJob(root: string, taskId: string): IntegrationJob | null {
       failedPhase: stored.failedPhase,
       enqueuedAt: stored.enqueuedAt,
       startedAt: stored.startedAt,
+      // The monotonic budget anchor must survive every read-modify-write, or a
+      // retry (advanceAttempt, resync) would restart the close-out deadline (#0573, #1276).
+      budgetMonotonicStartNs: stored.budgetMonotonicStartNs,
       baseMainSha: stored.baseMainSha,
       branchSha: stored.branchSha,
       handoffSha: stored.handoffSha ?? null,

@@ -248,10 +248,13 @@ function integrationActiveCopyBase(
   // idle timer still catches a job that reports nothing for a long time.
   const stalled = active.progressStale === true || (idle !== null && idle >= stallMs);
   const ctx = integrationAttemptContext(active);
-  const withCtx = (label: string): string => (ctx ? `${label} · ${ctx}` : label);
+  const retry = integrationRetryNote(active);
+  // Attempt and host come BEFORE the long retry reason, so a clamped card or a
+  // clipped drawer drops the reason first and never the host (#1276 review).
+  const withCtx = (label: string): string =>
+    `${label}${ctx ? ` · ${ctx}` : ""}${retry ? ` · ${retry}` : ""}`;
   const stage = integrationStageLabel(active.stage);
   const step = active.step ?? stage;
-  const retry = integrationRetryNote(active);
   if (stalled) {
     const dur = idle !== null ? ` ${formatDuration(idle)}` : "";
     // Name the step it stopped on and why this attempt is running, so the card
@@ -259,7 +262,7 @@ function integrationActiveCopyBase(
     // with no recorded step yet keeps the plain stall label.
     const stalledStep = active.step ? `${active.step} · ` : "";
     return {
-      label: withCtx(`stalled · ${stalledStep}no progress${dur}${retry ? ` · ${retry}` : ""}`),
+      label: withCtx(`stalled · ${stalledStep}no progress${dur}`),
       title:
         "Close-out has not reported stage progress in a while — it may be hung. Cancel to return the task to review, or retry to stop and enqueue a fresh attempt.",
       stalled: true,
@@ -272,7 +275,7 @@ function integrationActiveCopyBase(
     return {
       // A live in-stage detail line — the #0782 bundle upload or a #0799
       // heartbeat naming the current long stage (e.g. "remote tests").
-      label: withCtx(`integrating · ${step} · ${detail}${retry ? ` · ${retry}` : ""}`),
+      label: withCtx(`integrating · ${step} · ${detail}`),
       title:
         "Close-out is working — the detail line shows the current step. Progress refreshes every few seconds; the job is only flagged stalled when nothing arrives for a while.",
       stalled: false,
@@ -281,7 +284,7 @@ function integrationActiveCopyBase(
   }
   return {
     // The live step (#1276) names the work more precisely than the coarse stage.
-    label: withCtx(`integrating · ${step}${retry ? ` · ${retry}` : ""}`),
+    label: withCtx(`integrating · ${step}`),
     title:
       active.stage === "resolve-conflict"
         ? "Resolving an integration conflict against current main in an isolated candidate — the original review is preserved and only the resolution delta is reviewed."

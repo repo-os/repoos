@@ -476,6 +476,33 @@ describe("pipeline snapshot and card copy (#1276)", () => {
     expect(integrationPipelineStalled(snap({ progressStale: true }), T0 + 5_000)).toBe(true);
   });
 
+  it("puts attempt and host before the long retry reason, in live and stalled labels (#1276 review)", () => {
+    const base = {
+      empty: false,
+      active: {
+        taskId: "1276",
+        stage: "check" as const,
+        failed: false,
+        startedAt: new Date(T0).toISOString(),
+        lastProgressAt: new Date(T0).toISOString(),
+        attempt: 2,
+        step: CLOSE_OUT_STEP.runningTests,
+        host: "10.0.0.7",
+        previousFailure: { attempt: 1, reason: "a long reason that a narrow card will clamp" },
+      },
+      queue: [],
+      at: new Date(T0).toISOString(),
+    };
+    const live = integrationActiveCopy(base as IntegrationPipelineSnapshot, T0 + 5_000).label;
+    expect(live.indexOf("on 10.0.0.7")).toBeGreaterThan(-1);
+    expect(live.indexOf("on 10.0.0.7")).toBeLessThan(live.indexOf("a long reason"));
+    const stalled = integrationActiveCopy(
+      { ...base, active: { ...base.active, progressStale: true } } as IntegrationPipelineSnapshot,
+      T0 + 5_000,
+    ).label;
+    expect(stalled.indexOf("on 10.0.0.7")).toBeLessThan(stalled.indexOf("a long reason"));
+  });
+
   it("the status bar title names the step, host and attempt, with the elapsed time", () => {
     const snap = {
       empty: false,
@@ -738,6 +765,28 @@ describe("retries, slot waits and write failures (#1276 review round 2)", () => 
     const run = registry.get("1276")!;
     expect(run).toMatchObject({ stage: "test", testProgress: { done: 3, total: 84 } });
     expect(stepForRemoteRun(run)).toContain("(3/84)");
+  });
+
+  it("a retry keeps the monotonic budget anchor so it shares the close-out deadline (#1276 review)", () => {
+    const coordinator = createJobCoordinator(root);
+    const job = coordinator.enqueue({ id: "1276", branch: "feat/x" } as any)!;
+    const anchor = "123456789000";
+    coordinator.updateJob(
+      "1276",
+      {
+        phase: "validating",
+        startedAt: new Date(T0).toISOString(),
+        budgetMonotonicStartNs: anchor,
+      },
+      job.attempt,
+    );
+    // The anchor survives a plain read-modify-write...
+    expect(coordinator.getJob("1276")!.budgetMonotonicStartNs).toBe(anchor);
+    // ...and a retry attempt, even though the attempt's own start moves.
+    const next = coordinator.advanceAttempt("1276", job.attempt!, "local check failed");
+    expect(next!.budgetMonotonicStartNs).toBe(anchor);
+    expect(coordinator.getJob("1276")!.budgetMonotonicStartNs).toBe(anchor);
+    expect(next!.startedAt).not.toBe(new Date(T0).toISOString());
   });
 
   it("starts the next attempt in a running close-out with its reason and a fresh start", () => {
