@@ -3,14 +3,8 @@ id: "1279"
 title: "Easter eggs bundle: rename review history column to Issues"
 type: feature
 status: review
-needs_input: true
-needs_input_reason: review-failed
-needs_input_detail: "the github copilot agent exited without output: Copilot emitted an unknown protocol event \"commands.changed\". Copilot emitted an unknown protocol event \"instruction.update\". error: You have exceeded your monthly quota (Request ID: 00000-ec6776ba-6288-42b2-8abe-a7285b0c345e)"
 human_step_override: Cleared needs-human-step flag (sticky until acceptance criteria change)
 human_step_override_key: 8dbfd6ac
-debug_tldr: "GitHub Copilot reviewer hit its monthly quota — choose a different reviewer agent (or raise the quota), then re-run review."
-debug_tldr_at: "2026-11-22T16:07:11Z"
-debug_tldr_key: "review-failed|the github copilot agent exited without output: Copilot emitted an unknown protocol event \"commands.changed\". Copilot emitted an unknown protocol event \"instruction.update\". error: You have exceeded your monthly quota (Request ID: 00000-ec6776ba-6288-42b2-8abe-a7285b0c345e)"
 priority: p3
 area: web
 assigned_to: ai
@@ -19,7 +13,7 @@ branch: feat/easter-eggs-bundle-rename-review-history
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T10:35:33Z"
-updated_at: "2026-11-22T16:07:11Z"
+updated_at: "2026-11-22T16:26:52Z"
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-11-22T15:39:50.253Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_failed_report_retries: 2
@@ -179,3 +173,4 @@ Copy change only. Never touch repoos.toml. Headless Playwright only.
 - 2026-11-22T16:06:52Z · needs_input (review-failed) cleared for review again by hello@repoos.org
 - 2026-11-22T16:07:01Z · note: review pass 11: failed — no usable report
 - 2026-11-22T16:07:02Z · needs_input
+- 2026-11-22T16:26:52Z · needs_input (review-failed) cleared for review again by hello@repoos.org
