@@ -1085,6 +1085,34 @@ describe("shot preview board fixtures (#0743)", () => {
     vi.unstubAllGlobals();
   });
 
+  it("keeps the seeded review history when loadReview runs during a capture (#1279)", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const repo = useRepoStore();
+    window.history.replaceState(
+      {},
+      "",
+      "/work?task=9999&tab=review&shotState=drawer%3AreviewPasses",
+    );
+    applyShotPreviewFixture(repo, "drawer:reviewPasses");
+    // The drawer loads the review on open; the synthetic id has no server record,
+    // so the response is empty and must not replace the seeded passes.
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({
+        ok: true,
+        status: 200,
+        json: async () => ({ ok: true, running: false, enabled: true, review: null, history: [] }),
+      })),
+    );
+
+    await repo.loadReview(SHOT_PREVIEW_FIXTURE_TASK_ID);
+
+    expect(repo.reviewFor(SHOT_PREVIEW_FIXTURE_TASK_ID)?.history?.length).toBe(2);
+    vi.unstubAllGlobals();
+    window.history.replaceState({}, "", "/");
+  });
+
   it("keeps fixture-seeded running cards when fetchRunning runs during a capture (#1058)", async () => {
     const pinia = createPinia();
     setActivePinia(pinia);

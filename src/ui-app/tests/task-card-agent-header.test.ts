@@ -36,7 +36,8 @@ describe("task card agent button placement", () => {
     await nextTick();
     const headerRobot = wrapper.find('[data-test-id="task-card-agent-btn"]');
     expect(headerRobot.exists()).toBe(true);
-    expect(headerRobot.element.closest(".flex.flex-wrap.items-center")).toBeTruthy();
+    // The top line is one non-wrapping row (#1279); the robot lives in it.
+    expect(headerRobot.element.closest(".tc-top-line.flex-nowrap")).toBeTruthy();
     wrapper.unmount();
 
     repo.handoffSteps[task.id] = "check";

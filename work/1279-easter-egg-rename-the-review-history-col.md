@@ -1,14 +1,13 @@
 ---
-last_close_out_gate_ms: 1103638
-last_close_out_gate_at: "2026-11-22T17:25:18.389Z"
 id: "1279"
 title: "Easter eggs bundle: rename review history column to Issues"
 type: feature
-status: review
+status: done
 human_step_override: Cleared needs-human-step flag (sticky until acceptance criteria change)
 human_step_override_key: 8dbfd6ac
 priority: p3
 area: web
+merged_commit: 6484ad7238459d7da0b28d3f16cb736d6c9840c8
 assigned_to: ai
 created_by: t@t
 branch: feat/easter-eggs-bundle-rename-review-history
@@ -16,6 +15,8 @@ cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T10:35:33Z"
 updated_at: "2026-11-22T17:25:18Z"
+last_close_out_gate_ms: 1103638
+last_close_out_gate_at: "2026-11-22T17:25:18.389Z"
 review_passes: 7
 review_failed_report_retries: 0
 check_retry_count: 2

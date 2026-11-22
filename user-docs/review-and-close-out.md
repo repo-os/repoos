@@ -85,8 +85,8 @@ After the configured freeze threshold (four completed passes by default),
 non-blocking suggestions can be filed as a separate task with **Create follow-up
 task** in the review panel or `repoos review followup <id>`. RepoOS never creates that task without this
 explicit action. The panel labels progress as “round N of ~4” and keeps the
-individual pass history, including the finding classes, available above the
-report.
+individual pass history, with an **Issues** column that lists each pass's
+issue classes, available above the report.
 
 When the latest current review says `needs some work`, has no blocking Bugs,
 and its verdict is the only failed landing check, the drawer offers **Land

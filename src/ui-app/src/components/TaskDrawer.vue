@@ -7066,7 +7066,7 @@ watch(
                     <th class="ta-left">agent</th>
                     <th class="ta-left">model</th>
                     <th class="ta-left">verdict</th>
-                    <th class="ta-left">finding classes</th>
+                    <th class="ta-left">Issues</th>
                   </tr>
                 </thead>
                 <tbody>
