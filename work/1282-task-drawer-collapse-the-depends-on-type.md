@@ -11,7 +11,7 @@ branch: feat/task-drawer-collapse-the-depends-on-type
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-22T03:22:33Z"
-updated_at: "2026-11-22T17:18:01Z"
+updated_at: "2026-11-22T17:19:39Z"
 review_rounds: 1
 review_passes: 1
 last_check_failure: "repoos check at 2026-11-22T16:32:10.445Z: repoos check failed: ui verification failed (12 issue(s)): [request] HTTP 404 for http://127.0.0.1:38147/api/tasks/1282/diff-stats (http://127.0.0.1:38147/api/tasks/1282/diff-stats); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:38147/api/tasks/1282/diff-stats); [request] HTTP 404 for http://127.0.0.1:38147/api/tasks/1282/handoff-status (http://127.0.0.1:38147/api/tasks/1282/handoff-status); [request] Failed to load resource: the serve… (truncated)"
@@ -113,3 +113,4 @@ Start from TaskDrawer.vue and TaskDependencyPicker.vue. This is a requested rede
 - 2026-11-22T17:16:31Z · note: ui verification passed: 2 of 2 shots captured with clean console
 - 2026-11-22T17:16:32Z · message_queued at 2026-11-22T17:16:32.652Z
 - 2026-11-22T17:18:01Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-22T17:19:39Z · watchdog: restarting engineer because a queued message waited 3m with no live process
