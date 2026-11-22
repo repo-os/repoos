@@ -354,3 +354,4 @@ Start from src/ui-app/src/components/BoardQueueSearch.vue and the Work view head
 - 2026-11-22T08:25:19Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-22T08:25:39Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: **Blocked:** the latest scoped check failed on remote WebKit overflow. The task’s live status is unclear, and the worktree copy says `review`; it must be confirmed active before further edits. · stderr: (empty)
 - 2026-11-22T08:30:19Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-22T08:32:51Z · note: handoff requested (cli)
