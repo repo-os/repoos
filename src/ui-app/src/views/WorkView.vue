@@ -938,7 +938,12 @@ function openHeld(task: Task): void {
   flex: 1 1 320px;
   min-width: 0;
   align-items: center;
-  justify-content: flex-end;
+  /* Not flex-end (#1278): Radix renders a hidden native <select> for the sort
+     control, and with flex-end its static position sits past the right edge, which
+     widened the whole document by its own width on the runners' browsers. The
+     search controls below take the spare room, so the actions still read as
+     right-aligned. */
+  justify-content: flex-start;
   gap: 10px;
   flex-wrap: wrap;
 }

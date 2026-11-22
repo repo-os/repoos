@@ -235,6 +235,11 @@ describe("Work header sizing (#1278 review)", () => {
     expect(view).toMatch(/\.work-header-copy \.page-title\s*\{[^}]*white-space:\s*nowrap/);
   });
 
+  it("does not right-justify the header actions (hidden select would widen the page)", () => {
+    const actions = view.match(/\.work-header-actions\s*\{[^}]*\}/)?.[0] ?? "";
+    expect(actions).not.toMatch(/justify-content:\s*flex-end/);
+  });
+
   it("lets the search grow into spare header room, up to 210px", () => {
     const controls = view.match(/\.work-header-search-controls\s*\{[^}]*\}/)?.[0] ?? "";
     expect(controls).toMatch(/flex:\s*1\s+1\s+auto/);
