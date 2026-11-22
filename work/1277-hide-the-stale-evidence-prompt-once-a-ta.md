@@ -2,7 +2,7 @@
 id: "1277"
 title: Hide the stale-evidence prompt once a task is queued or moving to done
 type: feature
-status: review
+status: active
 priority: p3
 area: web
 assigned_to: ai
@@ -11,10 +11,10 @@ branch: feat/hide-the-stale-evidence-prompt-once-a-ta
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T08:26:19Z"
-updated_at: "2026-11-22T14:53:03Z"
+updated_at: "2026-11-22T14:53:04Z"
+review_rounds: 1
 review_passes: 4
 last_check_failure: "repoos check at 2026-11-22T13:48:50.335Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
-review_rounds: 1
 ---
 ## Problem
 A review card that is already queued for close-out (Moving to done, queued #N) still shows 'Stale evidence is the only finding · repoos verify <id>' and a Refresh evidence button. Once close-out is queued or running the evidence prompt is noise, and clicking it would start a new review on a task that is mid-close-out.
@@ -107,3 +107,4 @@ Also (Nick): on the card and drawer, show only the Refresh evidence button; do n
 - 2026-11-22T14:33:55Z · message_queued at 2026-11-22T14:33:55.184Z
 - 2026-11-22T14:34:41Z · note: review pass 4: needs some work
 - 2026-11-22T14:53:03Z · message_delivered: 1 message(s)
+- 2026-11-22T14:53:04Z · status review→active
