@@ -253,3 +253,4 @@ Screenshot attached shows the current mobile header and Mission Control. Do not 
 - 2026-11-22T03:29:03Z · CTO nudge: held — handoff gate is running
 - 2026-11-22T03:50:58Z · note: ui verification passed: 1 of 1 shot captured with clean console
 - 2026-11-22T03:51:00Z · status active→review
+- 2026-11-22T03:51:00Z · message_queued at 2026-11-22T03:51:00.520Z
