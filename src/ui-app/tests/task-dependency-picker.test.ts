@@ -33,14 +33,16 @@ describe("TaskDependencyPicker", () => {
     expect(wrapper.find(".dependency-none").text()).toBe("None");
     expect(wrapper.find(".dependency-selected").exists()).toBe(false);
 
-    await wrapper.setProps({ modelValue: ["0102"] });
-    const chips = wrapper.findAll(".dependency-chip");
+    const selected = mount(TaskDependencyPicker, {
+      props: { id: "deps", tasks, modelValue: ["0102"] },
+    });
+    const chips = selected.findAll(".dependency-chip");
     expect(chips).toHaveLength(1);
     expect(chips[0]!.text()).toContain("#0102");
     expect(chips[0]!.text()).toContain("Write docs");
-    expect(wrapper.find(".dependency-none").exists()).toBe(false);
+    expect(selected.find(".dependency-none").exists()).toBe(false);
     // The chips come before the search input, so what is set reads first.
-    const order = wrapper.element.querySelectorAll(".dependency-selected, input");
+    const order = selected.element.querySelectorAll(".dependency-selected, input");
     expect(order[0]!.classList.contains("dependency-selected")).toBe(true);
   });
 

@@ -99,7 +99,7 @@ export async function openTaskDetailsModal(wrapper: VueWrapper): Promise<HTMLEle
   const selector = '[data-test-id="task-meta-modal"]';
   const modal =
     document.body.querySelector<HTMLElement>(selector) ??
-    wrapper.element.querySelector<HTMLElement>(selector);
+    (wrapper.element as Element).querySelector<HTMLElement>(selector);
   if (!modal) throw new Error("task details modal did not open");
   return modal;
 }
