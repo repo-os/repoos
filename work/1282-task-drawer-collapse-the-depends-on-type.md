@@ -102,3 +102,4 @@ Start from TaskDrawer.vue and TaskDependencyPicker.vue. This is a requested rede
 - 2026-11-22T16:38:01Z · CTO nudge: held — handoff gate is running
 - 2026-11-22T16:54:42Z · note: ui verification passed: 2 of 2 shots captured with clean console
 - 2026-11-22T16:54:43Z · status active→review
+- 2026-11-22T16:54:43Z · message_queued at 2026-11-22T16:54:43.873Z
