@@ -11,7 +11,7 @@ branch: feat/task-details-modal-edits-must-save-when-
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-22T18:21:14Z"
-updated_at: "2026-11-22T18:54:21Z"
+updated_at: "2026-11-22T18:58:52Z"
 ---
 ## Problem
 #1282 moved Type, Priority, Area, Story/Assigned to and Depends on into a modal. The modal edits the drawer's unsaved draft and only says 'Changes are saved with the drawer's Save bar'. Nick opened the modal, changed a value, pressed Done, and the change did not stick (the card still showed the old value) because the drawer's Save bar was never pressed: it sits behind the modal and is easy to miss.
@@ -90,3 +90,4 @@ Modal and draft code is in src/ui-app/src/components/TaskDrawer.vue (metaModalOp
 - 2026-11-22T18:54:21Z · message_queued at 2026-11-22T18:54:21.404Z
 - 2026-11-22T18:54:21Z · handoff failed · task-file handoff failed at review · Engineering report draft is missing: .repoos/engineering-report-drafts/1285.md
 - 2026-11-22T18:54:21Z · message_delivered: 1 message(s)
+- 2026-11-22T18:58:52Z · body
