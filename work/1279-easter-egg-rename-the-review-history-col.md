@@ -169,3 +169,4 @@ Copy change only. Never touch repoos.toml. Headless Playwright only.
 - 2026-11-22T15:39:45Z · note: review pass 10: failed — no usable report
 - 2026-11-22T15:39:45Z · needs_input
 - 2026-11-22T15:39:47Z · message_queued at 2026-11-22T15:39:47.105Z
+- 2026-11-22T15:39:47Z · note: shots: failed — browser capture cancelled
