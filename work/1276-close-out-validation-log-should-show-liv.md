@@ -2,7 +2,7 @@
 id: "1276"
 title: Close-out validation log should show live progress
 type: feature
-status: active
+status: review
 priority: p1
 area: [server, core]
 assigned_to: ai
@@ -221,4 +221,4 @@ Related: #1272 (timer should count from validation start). Never touch repoos.to
 - 2026-11-22T05:52:08Z · handoff failed · task-file handoff failed at review · Engineering report draft is missing: .repoos/engineering-report-drafts/1276.md
 - 2026-11-22T06:07:05Z · note: handoff requested (cli)
 - 2026-11-22T06:10:32Z · note: ui verification passed: 1 of 1 shot captured with clean console
-- 2026-11-22T06:10:34Z · engineer stopped by request
+- 2026-11-22T06:10:34Z · status active→review
