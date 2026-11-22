@@ -2,7 +2,7 @@
 id: "1276"
 title: Close-out validation log should show live progress
 type: feature
-status: active
+status: review
 priority: p1
 area: [server, core]
 assigned_to: ai
@@ -192,3 +192,4 @@ Related: #1272 (timer should count from validation start). Never touch repoos.to
 - 2026-11-22T03:39:03Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-22T03:50:35Z · queued message undelivered for 16m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-22T03:50:35Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: The last #1276 handoff failed with "server-side finalization timed out". A new handoff run is 11 minutes into its remote run, and the worktree is still locked. The drawer fixture edit and the final handoff are on hold. Task status is still… · stderr: (empty)
+- 2026-11-22T03:50:35Z · status active→review
