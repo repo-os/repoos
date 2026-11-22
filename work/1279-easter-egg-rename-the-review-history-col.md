@@ -3,6 +3,9 @@ id: "1279"
 title: "Easter eggs bundle: rename review history column to Issues"
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: "`needs some work` — the review-history capture shows an empty state, not the renamed column."
 human_step_override: Cleared needs-human-step flag (sticky until acceptance criteria change)
 human_step_override_key: 8dbfd6ac
 priority: p3
@@ -112,3 +115,4 @@ Copy change only. Never touch repoos.toml. Headless Playwright only.
 - 2026-11-22T13:00:08Z · status active→review
 - 2026-11-22T13:00:09Z · message_queued at 2026-11-22T13:00:09.030Z
 - 2026-11-22T13:01:44Z · note: review pass 3: needs some work
+- 2026-11-22T13:01:44Z · needs_input
