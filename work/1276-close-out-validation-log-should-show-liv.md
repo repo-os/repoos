@@ -221,3 +221,4 @@ Related: #1272 (timer should count from validation start). Never touch repoos.to
 - 2026-11-22T06:10:32Z · note: ui verification passed: 1 of 1 shot captured with clean console
 - 2026-11-22T06:10:34Z · status active→review
 - 2026-11-22T06:10:34Z · message_queued at 2026-11-22T06:10:34.578Z
+- 2026-11-22T06:10:34Z · handoff_deferred: 2 queued message(s) must be read before review
