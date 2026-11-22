@@ -130,6 +130,17 @@ const FIXTURES: Record<string, { over: Partial<Task>; paused?: boolean }> = {
       priority: "p1",
     },
   },
+  "hotfix-long-id": {
+    over: {
+      id: "123456789",
+      title: "Hotfix on main with a long id, a feature type and a p1 badge",
+      status: "active",
+      type: "feature",
+      priority: "p1",
+      hotfix: true,
+      hotfixTarget: "main",
+    },
+  },
   "missing-fields": {
     over: {
       id: "1419",
@@ -359,6 +370,42 @@ describe("Task card top line (jsdom, measured fit)", () => {
       expect(await typeChipText(name, type, clipped)).toBe(shown);
     },
   );
+
+  it("re-fits the type label when the hotfix target changes (#1279)", async () => {
+    let clipped = false;
+    vi.spyOn(Element.prototype, "scrollWidth", "get").mockImplementation(function (this: Element) {
+      return clipped && this.textContent?.trim() === "feature" ? 120 : 40;
+    });
+    vi.spyOn(Element.prototype, "clientWidth", "get").mockReturnValue(60);
+    const task = makeTask({
+      id: "1420",
+      status: "active",
+      type: "feature",
+      priority: "p1",
+      hotfix: true,
+      hotfixTarget: "branch",
+    });
+    const pinia: Pinia = createPinia();
+    setActivePinia(pinia);
+    vi.stubGlobal("EventSource", FakeEventSource);
+    stubFetch(task);
+    await useRepoStore().init();
+    const wrapper = mount(TaskCard, {
+      props: { task, dragEnabled: false },
+      global: { plugins: [pinia] },
+    });
+    const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
+    await settle();
+    const chipText = () => wrapper.find(".tc-top-line [data-tip='feature']").text();
+    expect(chipText()).toBe("feature");
+
+    clipped = true;
+    // The props type from `withDefaults` does not accept a partial `task` here.
+    await wrapper.setProps({ task: { ...task, hotfixTarget: "main" } } as never);
+    await settle();
+    expect(chipText()).toBe("feat");
+    wrapper.unmount();
+  });
 
   it("the number is plain text, not a copy button, on the board card (#1279)", async () => {
     const dom = document.createElement("div");

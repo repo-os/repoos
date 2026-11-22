@@ -481,7 +481,9 @@ watch(
     props.task.id,
     props.task.type,
     props.task.priority,
+    props.task.status,
     props.task.hotfix,
+    props.task.hotfixTarget,
     props.task.needsMerge,
   ],
   fitTopLine,
@@ -1692,7 +1694,7 @@ async function openDebuggerFromError(): Promise<void> {
     <div class="flex min-w-0 flex-1 flex-col p-[13px]">
       <div ref="topLineEl" class="tc-top-line flex min-w-0 flex-nowrap items-center gap-x-[7px]">
         <span
-          class="shrink-0 whitespace-nowrap font-mono text-[11px] font-bold tracking-[0.04em] text-[var(--txt-dim)]"
+          class="min-w-0 truncate font-mono text-[11px] font-bold tracking-[0.04em] text-[var(--txt-dim)]"
           >#{{ task.id }}</span
         >
         <span
@@ -1709,7 +1711,7 @@ async function openDebuggerFromError(): Promise<void> {
         >
         <HotfixBadge
           v-if="task.hotfix"
-          class="shrink-0"
+          class="min-w-0 max-w-full truncate"
           :target="task.hotfixTarget"
           :branch="task.branch"
         />
