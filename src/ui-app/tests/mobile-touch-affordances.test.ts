@@ -133,12 +133,10 @@ describe("mobile web polish (#1139)", () => {
       /@media \(min-width: 720px\) and \(max-width: 900px\)\s*\{[\s\S]*?\.nav-item \.nav-label[\s\S]*?display:\s*none/s,
     );
     expect(sidebar).toContain('class="nav-label"');
-    // Headers wrap their toolbars rather than clipping "Pipeline".
+    // Work keeps search beside its title while its toolbar can wrap.
     expect(workView).toContain('class="work-header-actions"');
-    expect(workView).toMatch(/\.work-header\s*\{[^}]*flex-wrap:\s*wrap/s);
-    expect(workView).toMatch(
-      /@media \(max-width: 900px\)\s*\{[\s\S]*?\.work-header-actions\s*\{[^}]*width:\s*100%/s,
-    );
+    expect(workView).toMatch(/\.work-header-actions\s*\{[^}]*flex-wrap:\s*wrap/s);
+    expect(workView).toMatch(/\.work-header-actions\s*\{[^}]*min-width:\s*0/s);
     expect(css).toMatch(
       /@media \(min-width: 720px\) and \(max-width: 900px\)\s*\{[\s\S]*?\.page-header\s*\{[^}]*flex-wrap:\s*wrap/s,
     );

@@ -117,10 +117,18 @@ async function failAllWith500(page: SmokePage): Promise<void> {
 async function expectNoHorizontalOverflow(page: SmokePage, width: number): Promise<void> {
   await page.setViewportSize({ width, height: 900 });
   await page.waitForTimeout(150);
-  const overflow = await page.evaluate(
-    () => document.documentElement.scrollWidth - window.innerWidth,
+  const { overflow, elements } = await page.evaluate(() => ({
+    overflow: document.documentElement.scrollWidth - window.innerWidth,
+    elements: Array.from(document.body.querySelectorAll<HTMLElement>("*"))
+      .filter((el) => el.getBoundingClientRect().right > window.innerWidth + 1)
+      .slice(0, 12)
+      .map(
+        (el) => `${el.tagName}.${el.className} at ${Math.round(el.getBoundingClientRect().right)}`,
+      ),
+  }));
+  expect(overflow, `horizontal overflow at ${width}px: ${elements.join(", ")}`).toBeLessThanOrEqual(
+    1,
   );
-  expect(overflow, `horizontal overflow at ${width}px`).toBeLessThanOrEqual(1);
 }
 
 describeBrowser("slow network and offline QA (#1226)", () => {

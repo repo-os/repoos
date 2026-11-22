@@ -364,6 +364,7 @@ describe.skipIf(!existsSync(webkit.executablePath()))(
      *  a clipped filter is a control the reader cannot find (#1237). */
     async function audit(page: Page): Promise<{
       documentWidth: number;
+      documentOverflow: string[];
       overflowers: string[];
       clippedControls: string[];
       links: string[];
@@ -435,6 +436,10 @@ describe.skipIf(!existsSync(webkit.executablePath()))(
         );
         return {
           documentWidth: document.documentElement.scrollWidth,
+          documentOverflow: Array.from(document.body.querySelectorAll<HTMLElement>("*"))
+            .filter((el) => el.getBoundingClientRect().right > vw + 1)
+            .slice(0, 12)
+            .map((el) => `${describe(el)} at ${Math.round(el.getBoundingClientRect().right)}`),
           overflowers,
           clippedControls,
           links,
@@ -446,9 +451,10 @@ describe.skipIf(!existsSync(webkit.executablePath()))(
       const result = await audit(page);
       expect(result.overflowers, `${what} at ${width}px has off-viewport elements`).toEqual([]);
       expect(result.clippedControls, `${what} at ${width}px clips a control`).toEqual([]);
-      expect(result.documentWidth, `${what} at ${width}px widens the document`).toBeLessThanOrEqual(
-        width + 1,
-      );
+      expect(
+        result.documentWidth,
+        `${what} at ${width}px widens the document: ${result.documentOverflow.join(", ")}`,
+      ).toBeLessThanOrEqual(width + 1);
       // A dead link lands on the catch-all redirect (`/`) rather than failing, so
       // resolve each internal href and insist it matches a real route.
       const dead = result.links.filter((href) => !isLiveRoute(href));
