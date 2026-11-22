@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 1189581
-last_close_out_gate_at: "2026-11-22T14:52:29.971Z"
 id: "1283"
 title: "Rule: tasks must get human confirmation before adding new UI nobody asked for"
 type: feature
-status: review
+status: done
 priority: p2
 area: docs
+merged_commit: 26ba68b41bfd4493440cc39cd6e1bac76690ca10
 assigned_to: ai
 created_by: t@t
 branch: feat/rule-tasks-must-get-human-confirmation-b
@@ -14,6 +13,8 @@ cli_override: claude code
 model_override: haiku
 created_at: "2026-11-22T03:22:46Z"
 updated_at: "2026-11-22T14:52:29Z"
+last_close_out_gate_ms: 1189581
+last_close_out_gate_at: "2026-11-22T14:52:29.971Z"
 review_passes: 1
 ---
 ## Problem

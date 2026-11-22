@@ -151,6 +151,32 @@ close-out pipeline. Housekeeping failures that waste rounds are #1076
 (stray other-task bookkeeping in branches) and #1061 (bookkeeping commits
 invalidating checks); neither is handled by this feature.
 
+## Unrequested UI needs human confirmation (#1283)
+
+Tasks that add or materially change user-visible UI beyond what their own body
+explicitly asks for must not build it silently. Two examples landed that way and
+the human noticed only later:
+
+- The **Depends on** task picker added by #1189, a QA-pass follow-up.
+- The desktop **Work board search** added by #1259.
+
+The rule has three parts:
+
+- **Engineers stop and ask.** Before building UI the body does not name (a new
+  picker, search box, control, screen, or a materially changed visible
+  behaviour), flag the task with `repoos update <id> --needs-input true
+  --questions "<the proposal>"`, do not hand off, and end the turn. The
+  engineer prompt in `DEFAULT_AGENTS` (`src/core/config.ts`) carries this text.
+- **Reviewers report it as blocking.** The reviewer prompt, also in
+  `DEFAULT_AGENTS`, tells the reviewer to find new UI the diff adds that the
+  body does not name and list each one under `## Bugs`, to be confirmed by a
+  human. It applies on the light bar too. The reviewer does not approve it.
+- **QA passes fix, they don't add.** A QA pass may fix defects in the UI the
+  task covers. New-UI ideas found during the pass become proposals in a
+  follow-up task, marked for human confirmation, and are not built.
+
+Tests: `src/ui-app/tests/default-agent-prompts.test.ts`.
+
 ## Definition of done: the check plan in detail
 
 ## Definition of done
