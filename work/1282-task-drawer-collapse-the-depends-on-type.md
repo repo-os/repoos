@@ -11,7 +11,7 @@ branch: feat/task-drawer-collapse-the-depends-on-type
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-22T03:22:33Z"
-updated_at: "2026-11-22T15:18:17Z"
+updated_at: "2026-11-22T15:26:03Z"
 ---
 ## Problem
 The metadata block at the top of the task drawer (Depends on picker with a long task list, Type, Priority, Area, Story) takes a large amount of vertical space above the spec. A human rarely edits these, so most of the time it just pushes the content down.
@@ -35,24 +35,24 @@ Start from TaskDrawer.vue and TaskDependencyPicker.vue. This is a requested rede
 ```json
 [
 {
-  "label": "Task drawer Details tab with the collapsed metadata summary",
-  "target": "default",
-  "route": "/work?task=1282",
-  "highlight": "[data-test-id=\"task-meta-summary\"]"
+"label": "Task drawer Details tab with the collapsed metadata summary",
+"target": "default",
+"route": "/work?task=1282",
+"highlight": "[data-test-id=\"task-meta-summary\"]"
 },
 {
-  "label": "Task details modal opened from the summary, with Depends on chips, Type, Priority, Area and Story",
-  "target": "default",
-  "route": "/work?task=1282",
-  "highlight": "[data-test-id=\"task-meta-modal\"]",
-  "steps": [
-    {
-      "click": "[data-test-id=\"task-meta-summary\"]"
-    },
-    {
-      "waitMs": 300
-    }
-  ]
+"label": "Task details modal opened from the summary, with Depends on chips, Type, Priority, Area and Story",
+"target": "default",
+"route": "/work?task=1282",
+"highlight": "[data-test-id=\"task-meta-modal\"]",
+"steps": [
+  {
+    "click": "[data-test-id=\"task-meta-summary\"]"
+  },
+  {
+    "waitMs": 300
+  }
+]
 }
 ]
 ```
@@ -69,3 +69,4 @@ Start from TaskDrawer.vue and TaskDependencyPicker.vue. This is a requested rede
 - 2026-11-22T15:07:01Z · cli_override, model_override
 - 2026-11-22T15:07:03Z · status ready→active, branch
 - 2026-11-22T15:18:17Z · body
+- 2026-11-22T15:26:03Z · body
