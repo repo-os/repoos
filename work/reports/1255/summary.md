@@ -1,3 +1,14 @@
+---
+id: summary
+title: summary
+type: feature
+status: inbox
+priority: p2
+area: general
+assigned_to: ai
+created_by: ""
+branch: ""
+---
 ## TL;DR
 
 Task 1255 was a QA pass over the update-available banner, version display, release notes modal and restart notice at 375/768/1280 px, with fixes for whatever it found. It shipped a 599-line headless WebKit harness (`docs/qa/measure-update-banner.mjs`), a QA record (`docs/qa/2026-11-update-banner-qa.md`), copy/layout/fixture fixes in `ReleaseUpdateNotification.vue`, and a shared list-marker rule plus a source-scanning guard test covering every markdown surface in the UI. It took 4 engineer rounds and 5 review passes (4 × "needs some work", then "good to go"); most of the review friction came from the list-marker fix being applied one surface at a time instead of as a class. Done 2026-11-20T03:16:41Z, merged as commit `65f6c7a2e16abadb6d49111e9ba4cd197b4bb73a`.
@@ -22,8 +33,8 @@ What shipped, in plain English:
 - **Review passes:** 5, all by `opencode-go/glm-5.3-flash`: passes 1–4 `needs some work`, pass 5 `good to go`.
 - **Restarts/swaps:** none recorded, except one incident: at 23:58:35Z the runner adopted an orphaned engineer process (pid 71438).
 - **Tokens and cost** (from the recorded sessions table; incomplete):
-  - Reviewer: 5 sessions, 51–201 s each (580 s total), tokens 84,578 / 35,399 / 14,376 / 42,047 / 67,578 (243,978 summed), cost $0.07142301 / $0.01279113 / $0.0099808 / $0.01812051 / $0.04031143 ($0.15262688 summed).
-  - Engineer: only one session has recorded stats (the errored round-3→4 session: 4,200 s, 66,624 tokens, $2.36605539). The other engineer sessions' tokens and costs are not recorded.
+- Reviewer: 5 sessions, 51–201 s each (580 s total), tokens 84,578 / 35,399 / 14,376 / 42,047 / 67,578 (243,978 summed), cost $0.07142301 / $0.01279113 / $0.0099808 / $0.01812051 / $0.04031143 ($0.15262688 summed).
+- Engineer: only one session has recorded stats (the errored round-3→4 session: 4,200 s, 66,624 tokens, $2.36605539). The other engineer sessions' tokens and costs are not recorded.
 - **Close-out gate:** completed in 1,400 s.
 
 ## What went wrong

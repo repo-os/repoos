@@ -1,18 +1,21 @@
 ---
-updated_at: "2026-11-20T06:08:15Z"
-review_passes: 3
 id: "1262"
 title: "QA pass: Checks page and check history views"
 type: feature
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: f2dd45a7b595b3b563f0c4fc3baba00f8602aa1f
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-checks-page-and-check-history-vi
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T02:26:53Z"
+updated_at: "2026-11-20T09:44:55Z"
+last_close_out_gate_ms: 997601
+last_close_out_gate_at: "2026-11-20T09:31:20.791Z"
+review_passes: 3
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-20T04:55:08.051Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 1
@@ -105,4 +108,6 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 - 2026-11-20T05:02:38Z · message_queued at 2026-11-20T05:02:38.735Z
 - 2026-11-20T06:03:55Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-20T06:08:15Z · note: review pass 3: good to go
-
+- 2026-11-20T09:31:20Z · close-out gate completed in 998s
+- 2026-11-20T09:33:06Z · status done→done, release:success
+- 2026-11-20T09:44:55Z · message_dropped: 1 queued message(s) discarded — task is done

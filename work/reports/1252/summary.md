@@ -1,3 +1,14 @@
+---
+id: summary
+title: summary
+type: feature
+status: inbox
+priority: p2
+area: general
+assigned_to: ai
+created_by: ""
+branch: ""
+---
 ## TL;DR
 
 Task 1252 was a QA pass over error pages, 404 routes and deep links to tasks, tabs and settings. It found two real defects: unknown URLs silently redirected to the dashboard, and an unknown `?task=` id failed silently on the desktop Work page (the phone layout already had a fallback). Both were fixed with a friendly not-found view and a persistent "task isn't on the board" notice, covered by a route-table test and a headless WebKit layout test at 375/768/1280 px. The QA write-up is in `docs/qa/2026-11-deep-links-404-qa.md`, with code-read rows clearly labelled where a browser was not driven. One engineering round, one review pass (`good to go`), clean close-out, done and released.
@@ -21,9 +32,9 @@ Reviewer verdict: **good to go**. The task closed as **done** with `release:succ
 - **Engineering rounds:** 1 (round 1 at 2026-11-19T23:19:21Z, Claude Code, model `haiku`). No restarts or model swaps recorded.
 - **Review rounds:** 1 (pass 1 at 2026-11-19T23:21:22Z, verdict `good to go`, opencode, model `opencode-go/glm-5.3-flash`).
 - **Agents and models per role:**
-  - engineer — `haiku` via Claude Code; session 2199 s, 34,862 tokens, cost $0.15855831.
-  - reviewer — `opencode-go/glm-5.3-flash`; session 116 s, 47,972 tokens, cost $0.02092443.
-  - routing — Model router (jev), 0 s, tokens/cost not recorded.
+- engineer — `haiku` via Claude Code; session 2199 s, 34,862 tokens, cost $0.15855831.
+- reviewer — `opencode-go/glm-5.3-flash`; session 116 s, 47,972 tokens, cost $0.02092443.
+- routing — Model router (jev), 0 s, tokens/cost not recorded.
 - **Totals (engineer + reviewer, where recorded):** 82,834 tokens, $0.17948274.
 - **Wall-clock, created → done:** 2026-11-19T22:27:09Z → 2026-11-20T01:05:17Z, about 2 h 38 m.
 - **Close-out gate:** completed in 1077 s (finished 2026-11-20T01:04:28Z).

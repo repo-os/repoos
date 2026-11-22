@@ -2,16 +2,19 @@
 id: "1269"
 title: "QA pass: command palette and global keyboard shortcuts"
 type: feature
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: 086cae63bd2a5f53d4805f2bfb09dab9bc2e02d1
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-command-palette-and-global-keybo
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T05:08:53Z"
-updated_at: "2026-11-20T06:43:16Z"
+updated_at: "2026-11-20T11:17:04Z"
+last_close_out_gate_ms: 858497
+last_close_out_gate_at: "2026-11-20T11:15:11.869Z"
 review_passes: 3
 review_rounds: 2
 ---
@@ -99,3 +102,9 @@ Keep changes small. Never touch repoos.toml. Never open a visible browser.
 - 2026-11-20T06:25:52Z · note: review pass 3: good to go
 - 2026-11-20T06:43:16Z · note: ui verification passed: 1 of 1 shot captured with clean console
 - 2026-11-20T06:43:16Z · message_queued at 2026-11-20T06:43:16.377Z
+- 2026-11-20T07:46:52Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-20T10:37:05Z · watchdog: check wait escalated · waiting: waiting for serialized local fallback (1 ahead, position 2); slot holder 49112 is dead for 16m · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-11-20T10:42:06Z · watchdog: check wait ended or recovered — cleared needs_input
+- 2026-11-20T11:15:11Z · close-out gate completed in 858s
+- 2026-11-20T11:15:29Z · message_dropped: 1 queued message(s) discarded — task is done
+- 2026-11-20T11:17:04Z · status done→done, release:success
