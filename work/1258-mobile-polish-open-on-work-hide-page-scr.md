@@ -12,7 +12,7 @@ branch: feat/mobile-polish-open-on-work-hide-page-scr
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T00:15:33Z"
-updated_at: "2026-11-22T04:10:14Z"
+updated_at: "2026-11-22T04:12:19Z"
 last_close_out_gate_ms: 178030
 last_close_out_gate_at: "2026-11-22T04:09:48.756Z"
 review_passes: 5
@@ -260,3 +260,4 @@ Screenshot attached shows the current mobile header and Mission Control. Do not 
 - 2026-11-22T03:53:10Z · note: review pass 8: good to go
 - 2026-11-22T04:09:48Z · close-out gate completed in 178s
 - 2026-11-22T04:10:14Z · status done→done, release:success
+- 2026-11-22T04:12:19Z · message_dropped: 1 queued message(s) discarded — task is done
