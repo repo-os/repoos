@@ -11,7 +11,7 @@ branch: feat/hide-the-stale-evidence-prompt-once-a-ta
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T08:26:19Z"
-updated_at: "2026-11-22T14:08:39Z"
+updated_at: "2026-11-22T14:08:41Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-22T13:48:50.335Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 review_passes: 3
@@ -100,3 +100,4 @@ Also (Nick): on the card and drawer, show only the Refresh evidence button; do n
 - 2026-11-22T13:48:50Z · message_delivered: 1 message(s)
 - 2026-11-22T14:08:36Z · status review→active
 - 2026-11-22T14:08:39Z · engineer stopped by request
+- 2026-11-22T14:08:41Z · orphaned run process stopped · pid 18008 · /opt/homebrew/Cellar/bun/1.4.2/bin/bun /Users/nick/code/nick/repoos/dist/core/heavy-wrap.js /Users/n · cpu 0s · age 20m
