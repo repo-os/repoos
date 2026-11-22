@@ -2,7 +2,7 @@
 id: "1279"
 title: "Easter eggs bundle: rename review history column to Issues"
 type: feature
-status: review
+status: active
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 needs_input_detail: `needs some work` — the fit fallback abbreviates feature when the full label fits.
@@ -16,7 +16,7 @@ branch: feat/easter-eggs-bundle-rename-review-history
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T10:35:33Z"
-updated_at: "2026-11-22T13:30:05Z"
+updated_at: "2026-11-22T13:47:09Z"
 review_passes: 4
 handoff_signal_retry_count: 1
 review_rounds: 2
@@ -128,3 +128,4 @@ Copy change only. Never touch repoos.toml. Headless Playwright only.
 - 2026-11-22T13:30:04Z · note: review pass 4: needs some work
 - 2026-11-22T13:30:04Z · needs_input
 - 2026-11-22T13:30:05Z · message_queued at 2026-11-22T13:30:05.873Z
+- 2026-11-22T13:47:09Z · status review→active
