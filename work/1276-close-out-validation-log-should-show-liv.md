@@ -171,3 +171,4 @@ Related: #1272 (timer should count from validation start). Never touch repoos.to
 - 2026-11-21T20:31:54Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — task-file handoff failed at review · Engineering report draft is missing: .repoos/engineering-report-drafts/1276.md · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
 - 2026-11-21T20:31:54Z · watchdog: check wait escalated · waiting: system load is high (4.0× per CPU, limit 3×) — waiting for headroom before starting more work; wait exceeds the handoff deadline for 32m · next step: investigate the abnormal wait; the flag clears when the check starts
 - 2026-11-22T00:06:00Z · needs_input
+- 2026-11-22T00:06:00Z · message_delivered: 1 message(s)
