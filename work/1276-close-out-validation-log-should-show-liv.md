@@ -209,3 +209,4 @@ Related: #1272 (timer should count from validation start). Never touch repoos.to
 - 2026-11-22T05:05:08Z · orphaned run process stopped · pid 71252 · sleep 60 · cpu 0s · age 19s
 - 2026-11-22T05:09:17Z · note: handoff requested (cli)
 - 2026-11-22T05:26:15Z · message_queued at 2026-11-22T05:26:15.590Z
+- 2026-11-22T05:26:15Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: tests/work-board-large-perf-browser.test.ts > Work board with 1200 tasks (WebKit, generated fixture) > opens, filters, and scrolls at 375px within budget on bee — fix it in the feature branch and re-run the gate
