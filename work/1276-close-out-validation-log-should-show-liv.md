@@ -11,7 +11,7 @@ branch: feat/close-out-validation-log-should-show-liv
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T07:42:21Z"
-updated_at: "2026-11-22T03:46:54Z"
+updated_at: "2026-11-22T03:50:35Z"
 last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
 last_handoff_failure_sha: 3ca9875eed16235b7b687deb9ef4651aa6004256
 review_passes: 4
@@ -190,3 +190,4 @@ Related: #1272 (timer should count from validation start). Never touch repoos.to
 - 2026-11-22T03:34:51Z · message_queued at 2026-11-22T03:34:51.482Z
 - 2026-11-22T03:34:51Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
 - 2026-11-22T03:39:03Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-22T03:50:35Z · queued message undelivered for 16m and the engineer produced no output — ending the turn so it is delivered
