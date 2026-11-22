@@ -11,7 +11,7 @@ branch: feat/hide-the-stale-evidence-prompt-once-a-ta
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T08:26:19Z"
-updated_at: "2026-11-22T16:47:14Z"
+updated_at: "2026-11-22T16:48:05Z"
 review_failed_report_retries: 2
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-22T15:57:20.978Z: repoos check failed: reused check inputs changed during handoff — run the check again"
@@ -138,3 +138,4 @@ Also (Nick): on the card and drawer, show only the Refresh evidence button; do n
 - 2026-11-22T16:27:02Z · note: review pass 8: failed — no usable report
 - 2026-11-22T16:27:03Z · needs_input
 - 2026-11-22T16:47:14Z · needs_input (review-failed) cleared for review again by hello@repoos.org
+- 2026-11-22T16:48:05Z · note: review pass 9: needs some work — clamped by automated verification: browser verification: Handoff browser verification recorded 2 blocking issue(s): [request] HTTP 404 for http://127.0.0.1:33135/api/tasks/9998/handoff-status; [request] Failed to load resource: the server responded with a status of 404 (Not Found)
