@@ -11,7 +11,7 @@ branch: feat/mac-hub-local-server-will-not-start-env-
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-22T03:29:23Z"
-updated_at: "2026-11-22T13:34:03Z"
+updated_at: "2026-11-22T13:34:40Z"
 review_passes: 4
 review_rounds: 2
 ---
