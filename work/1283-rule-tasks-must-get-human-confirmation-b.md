@@ -2,7 +2,7 @@
 id: "1283"
 title: "Rule: tasks must get human confirmation before adding new UI nobody asked for"
 type: feature
-status: active
+status: review
 priority: p2
 area: docs
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/rule-tasks-must-get-human-confirmation-b
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-22T03:22:46Z"
-updated_at: "2026-11-22T12:27:03Z"
+updated_at: "2026-11-22T13:32:54Z"
 ---
 ## Problem
 QA-pass and follow-up tasks have added new user-facing UI that no human asked for (for example the Depends on task picker from #1189 and the desktop Work board search from #1259). It landed silently and the human only noticed later.
@@ -34,3 +34,4 @@ Never edit repoos.toml; if the engineer instructions live there, describe the ex
 - 2026-11-22T03:22:51Z · status inbox→ready
 - 2026-11-22T12:27:02Z · cli_override, model_override
 - 2026-11-22T12:27:03Z · status ready→active, branch
+- 2026-11-22T13:32:54Z · status active→review
