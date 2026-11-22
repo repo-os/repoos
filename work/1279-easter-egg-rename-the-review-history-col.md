@@ -13,7 +13,7 @@ branch: feat/easter-eggs-bundle-rename-review-history
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T10:35:33Z"
-updated_at: "2026-11-22T12:29:19Z"
+updated_at: "2026-11-22T12:30:35Z"
 review_rounds: 1
 review_passes: 1
 last_check_failure: "repoos check at 2026-11-22T12:01:07.968Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Review pass history: last column now reads Issues (target \"default\"): highlight .review-history-table matched nothing on /work?task=9999&tab=review (http://127.0.0.1:41827/work?task=9999&tab=review&shotState=drawer%3AreviewPasses)"
@@ -95,3 +95,4 @@ Copy change only. Never touch repoos.toml. Headless Playwright only.
 - 2026-11-22T12:29:18Z · note: ui verification passed: 2 of 2 shots captured with clean console (1 shot warning)
 - 2026-11-22T12:29:19Z · status active→review
 - 2026-11-22T12:29:19Z · message_queued at 2026-11-22T12:29:19.926Z
+- 2026-11-22T12:30:35Z · note: review pass 2: needs some work
