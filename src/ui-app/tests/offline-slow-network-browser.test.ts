@@ -114,13 +114,38 @@ async function failAllWith500(page: SmokePage): Promise<void> {
   });
 }
 
-async function expectNoHorizontalOverflow(page: SmokePage, width: number): Promise<void> {
+async function expectNoHorizontalOverflow(
+  page: SmokePage,
+  width: number,
+  work = false,
+): Promise<void> {
   await page.setViewportSize({ width, height: 900 });
+  if (work) {
+    await page.waitForFunction(
+      () =>
+        window.innerWidth < 720
+          ? document.querySelector('[data-testid="mobile-work-queue"]') !== null
+          : document.querySelector(".work-page") !== null,
+      { timeout: 10_000 },
+    );
+  }
   await page.waitForTimeout(150);
-  const overflow = await page.evaluate(
-    () => document.documentElement.scrollWidth - window.innerWidth,
+  const { overflow, elements } = await page.evaluate(() => ({
+    overflow: document.documentElement.scrollWidth - window.innerWidth,
+    elements: Array.from(document.body.querySelectorAll<HTMLElement>("*"))
+      .filter((el) => el.scrollWidth > el.clientWidth + 1)
+      .slice(0, 20)
+      .map(
+        (el) =>
+          `${el.tagName}.${el.className} x=${Math.round(el.getBoundingClientRect().left)} width=${el.clientWidth}/${el.scrollWidth} overflow=${getComputedStyle(el).overflowX}`,
+      )
+      .concat(
+        `html=${document.documentElement.clientWidth}/${document.documentElement.scrollWidth} body=${document.body.clientWidth}/${document.body.scrollWidth}`,
+      ),
+  }));
+  expect(overflow, `horizontal overflow at ${width}px: ${elements.join(", ")}`).toBeLessThanOrEqual(
+    1,
   );
-  expect(overflow, `horizontal overflow at ${width}px`).toBeLessThanOrEqual(1);
 }
 
 describeBrowser("slow network and offline QA (#1226)", () => {
@@ -159,7 +184,7 @@ describeBrowser("slow network and offline QA (#1226)", () => {
       });
       expect(banner.title).toContain("is not running");
 
-      for (const width of VIEWPORTS) await expectNoHorizontalOverflow(page, width);
+      for (const width of VIEWPORTS) await expectNoHorizontalOverflow(page, width, true);
       expect(bootErrors).toEqual([]);
     } finally {
       await page.close();

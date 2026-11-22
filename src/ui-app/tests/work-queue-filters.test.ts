@@ -1,3 +1,6 @@
+import { readFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import {
   clearWorkQueueFilterQuery,
@@ -55,7 +58,7 @@ describe("work queue filters", () => {
     ).toBe(true);
   });
 
-  it("reports active filters and one chip per set filter", () => {
+  it("reports active filters and one chip per set filter, with no chip for the search (#1278)", () => {
     expect(hasActiveWorkQueueFilters(NO_WORK_QUEUE_FILTERS)).toBe(false);
     const filters = {
       query: " login ",
@@ -66,7 +69,6 @@ describe("work queue filters", () => {
     };
     expect(hasActiveWorkQueueFilters(filters)).toBe(true);
     expect(workQueueFilterChips(filters).map((chip) => chip.key)).toEqual([
-      "q",
       "priority",
       "area",
       "story",
@@ -104,9 +106,10 @@ describe("work queue filters", () => {
       expect(workQueueFilterChips(filters)).toEqual([]);
       expect(matchesWorkQueueFilters(task({}), filters)).toBe(true);
     }
-    expect(workQueueFilterChips(readWorkQueueFilters({ q: "#0001" }))[0]?.label).toBe(
-      "Search: #0001",
-    );
+    // An active search is still a filter (Clear filters removes it).
+    const search = readWorkQueueFilters({ q: "#0001" });
+    expect(hasActiveWorkQueueFilters(search)).toBe(true);
+    expect(workQueueFilterChips(search)).toEqual([]);
   });
 
   it("clear keeps null and repeated values of keys it does not own", () => {
@@ -218,5 +221,28 @@ describe("work queue filters", () => {
     const query = { q: "old", tab: "changes" };
     withWorkQueueSearch(query, "");
     expect(query).toEqual({ q: "old", tab: "changes" });
+  });
+});
+
+describe("Work header sizing (#1278 review)", () => {
+  const here = dirname(fileURLToPath(import.meta.url));
+  const view = readFileSync(resolve(here, "../src/views/WorkView.vue"), "utf8");
+  const search = readFileSync(resolve(here, "../src/components/BoardQueueSearch.vue"), "utf8");
+
+  it("keeps the title at its natural width instead of a fixed narrow column", () => {
+    const copy = view.match(/\.work-header-copy\s*\{[^}]*\}/)?.[0] ?? "";
+    expect(copy).not.toMatch(/flex:\s*0\s+1\s+\d+px/);
+    expect(view).toMatch(/\.work-header-copy \.page-title\s*\{[^}]*white-space:\s*nowrap/);
+  });
+
+  it("does not right-justify the header actions (hidden select would widen the page)", () => {
+    const actions = view.match(/\.work-header-actions\s*\{[^}]*\}/)?.[0] ?? "";
+    expect(actions).not.toMatch(/justify-content:\s*flex-end/);
+  });
+
+  it("lets the search grow into spare header room, up to 210px", () => {
+    const controls = view.match(/\.work-header-search-controls\s*\{[^}]*\}/)?.[0] ?? "";
+    expect(controls).toMatch(/flex:\s*1\s+1\s+auto/);
+    expect(search).toMatch(/max-width:\s*210px/);
   });
 });

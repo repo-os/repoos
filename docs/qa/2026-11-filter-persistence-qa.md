@@ -73,9 +73,9 @@ No case was skipped.
 
 ## Behavior on the board, pipeline and unusable values
 
-- **Pipeline** does not filter. The chip bar still appears above it, with a
-  note that the view doesn't apply these filters, so a filtered link never
-  looks like a full list.
+- **Pipeline** does not filter. The search stays visible in the header, and
+  the filter bar notes that the view doesn't apply these filters, so a filtered
+  link never looks like a full list.
 - **Unusable URL values** (`priority` other than p0-p3, `mine` other than `1`,
   a `status` that is not a single board column, including a bare or repeated
   `status`, a `sort` other than newest or oldest)
