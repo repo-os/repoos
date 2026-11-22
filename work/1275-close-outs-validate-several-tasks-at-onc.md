@@ -487,3 +487,4 @@ Read docs/close-out-pipeline.md and docs/remote-validation.md first. Never touch
 - 2026-11-22T08:15:17Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-22T08:21:30Z · queued message undelivered for 11m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-22T08:21:32Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: The idle-machine gate rerun is still going. I'll hold the handoff until it reports an exit code, since the handoff line claims a green gate. Where things stand: - **Merged main** into the branch with no conflicts. The task file already mat… · stderr: (empty)
+- 2026-11-22T08:21:32Z · message_delivered: 1 message(s)
