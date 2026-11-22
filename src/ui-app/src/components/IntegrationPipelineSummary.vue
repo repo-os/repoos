@@ -133,10 +133,12 @@ function queueWait(ms: number): string {
     </template>
 
     <p v-else class="ips-active">
-      <span class="ips-active-label">Close-out in progress</span>
+      <span class="ips-active-label">{{
+        queue.length ? "Queued — waiting for the next close-out to start" : "Close-out in progress"
+      }}</span>
     </p>
 
-    <div v-if="parallel.length" class="ips-queue">
+    <div v-if="parallel.length" class="ips-queue ips-parallel">
       <span class="ips-queue-label">Also running</span>
       <span v-for="p in parallel" :key="p.taskId" class="ips-chip">
         #{{ p.taskId }} ·
@@ -150,7 +152,7 @@ function queueWait(ms: number): string {
     <div v-if="showQueue" class="ips-queue">
       <span class="ips-queue-label">Queued behind</span>
       <span v-for="q in queueDetail" :key="q.taskId" class="ips-chip">
-        #{{ q.taskId }} · pos {{ q.position }} · {{ queueWait(q.waitedMs)
+        #{{ q.taskId }} · position {{ q.position }} · waited {{ queueWait(q.waitedMs)
         }}<template v-if="q.blockerTaskId">
           · ahead: #{{ q.blockerTaskId }} {{ q.blockerPhase }}</template
         >
@@ -281,6 +283,22 @@ function queueWait(ms: number): string {
   font-size: 12px;
 }
 .ips-queue-label {
+  color: var(--txt-faint);
+}
+/* Same divider and label treatment as the queue row above it, so the local
+   slot chips read as a second line of the pipeline, not a stray heading. */
+.ips-local-slots {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--border);
+  font-size: 12px;
+}
+.ips-local-slots > strong {
+  font-weight: 500;
   color: var(--txt-faint);
 }
 .ips-chip {

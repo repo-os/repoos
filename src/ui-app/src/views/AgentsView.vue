@@ -907,6 +907,7 @@ onUnmounted(() => {
 
           <div class="agent-add">
             <Input
+              aria-label="Name of a new team agent"
               v-model="newName"
               placeholder="e.g. data analyst"
               class="w-[220px]"

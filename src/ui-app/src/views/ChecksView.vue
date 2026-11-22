@@ -121,6 +121,10 @@ const localSlotHolders = ref<
   }>
 >([]);
 const localSlotQueue = ref<Array<{ taskId: string; position: number; since: string }>>([]);
+// Until the first read lands the slots are unknown, not free; a failed read
+// keeps the last known holders and says so instead of reading as "none".
+const localSlotsLoaded = ref(false);
+const localSlotsError = ref("");
 const activeCheckRuns = ref<TaskCheckRun[]>([]);
 const slotToRelease = ref<(typeof localSlotHolders.value)[number] | null>(null);
 const slotActionNotice = ref("");
@@ -157,8 +161,12 @@ async function loadLocalSlotHolders(): Promise<void> {
     }>("/api/local-check-slots");
     localSlotHolders.value = Array.isArray(result.holders) ? result.holders : [];
     localSlotQueue.value = Array.isArray(result.queue) ? result.queue : [];
-  } catch {
-    localSlotHolders.value = [];
+    localSlotsError.value = "";
+  } catch (e) {
+    localSlotsError.value =
+      e instanceof Error ? e.message : "The server did not return the local check slots.";
+  } finally {
+    localSlotsLoaded.value = true;
   }
 }
 
@@ -435,7 +443,11 @@ const RESULT_ICON: Record<string, string> = {
         </section>
         <section class="ck-local-slots" aria-label="Local check slots">
           <h2>Local check slots</h2>
-          <p v-if="!localSlotHolders.some((holder) => holder.pid)">
+          <p v-if="!localSlotsLoaded" class="ck-loading">Checking local check slots…</p>
+          <p v-else-if="localSlotsError" class="ck-err" role="alert">
+            Could not load local check slots: {{ localSlotsError }}
+          </p>
+          <p v-else-if="!localSlotHolders.some((holder) => holder.pid)">
             No local check slots are currently in use.
           </p>
           <article v-for="holder in localSlotHolders" :key="holder.slot" class="ck-local-slot">
@@ -458,9 +470,9 @@ const RESULT_ICON: Record<string, string> = {
             </template>
             <span v-else> · free</span>
           </article>
-          <p v-for="(queued, index) in localSlotQueue" :key="queued.taskId">
+          <p v-for="(queued, index) in localSlotQueue" :key="queued.taskId" class="ck-queue-row">
             Queue {{ index + 1 }} · #{{ queued.taskId }} · position {{ queued.position }} · waiting
-            {{ fmtDuration(Date.now() - Date.parse(queued.since)) }}
+            {{ fmtDuration(Math.max(0, Date.now() - Date.parse(queued.since))) }}
           </p>
           <p v-if="slotActionNotice" class="ck-slot-notice" role="status">
             {{ slotActionNotice }}
@@ -480,7 +492,10 @@ const RESULT_ICON: Record<string, string> = {
       <template v-else-if="activeTab === 'plan'">
         <PageSkeleton :loading="loading && !plan" kind="table" />
         <p v-if="error && plan" class="ck-err" role="status">Refresh failed: {{ error }}</p>
-        <p v-else-if="error" class="ck-err" role="alert">{{ error }}</p>
+        <template v-else-if="error">
+          <p class="ck-err" role="alert">{{ error }}</p>
+          <Button variant="ghost" size="sm" @click="load">Try again</Button>
+        </template>
 
         <template v-if="plan">
           <!-- Controls: which profile, and the changed-path fast mode. -->
@@ -603,7 +618,8 @@ const RESULT_ICON: Record<string, string> = {
                   }}</span>
                 </div>
 
-                <code class="ck-step-cmd">{{ describe(s) }}</code>
+                <!-- Scrolls sideways on a phone: focusable so a keyboard can reach it. -->
+                <code class="ck-step-cmd" tabindex="0">{{ describe(s) }}</code>
 
                 <dl class="ck-step-meta">
                   <div>
@@ -660,7 +676,7 @@ const RESULT_ICON: Record<string, string> = {
                   >
                     {{ openOutput === s.name ? "Hide" : "Show" }} last output
                   </button>
-                  <pre v-if="openOutput === s.name" class="ck-output">{{
+                  <pre v-if="openOutput === s.name" class="ck-output" tabindex="0">{{
                     resultFor(s.name)!.output
                   }}</pre>
                 </template>
@@ -745,8 +761,16 @@ const RESULT_ICON: Record<string, string> = {
   color: var(--txt-dim);
   font-size: 12px;
 }
+/* The paragraph rule above is a class plus an element; these two outrank it so
+   a failed load and an action result keep their red and green. */
+.ck-local-slots > .ck-err {
+  color: var(--red);
+}
+.ck-local-slots > .ck-slot-notice {
+  color: var(--green);
+}
 .ck-local-slot,
-.ck-local-slots > p:not(:first-of-type) {
+.ck-queue-row {
   display: flex;
   align-items: center;
   flex-wrap: wrap;

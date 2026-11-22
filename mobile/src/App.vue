@@ -36,6 +36,7 @@ import SettingsView from "./components/SettingsView.vue";
 import AddServerView from "./components/AddServerView.vue";
 import TailnetDiscoveryView from "./components/TailnetDiscoveryView.vue";
 import BottomSheet from "./components/BottomSheet.vue";
+import DevUpdateDialog from "./components/DevUpdateDialog.vue";
 import LockOverlay from "./components/LockOverlay.vue";
 import { loadHubDevUpdateConfig, resolveShellPlatform } from "./platform";
 import { fixtureInitialRoute, readHubFixture } from "./fixture";
@@ -362,24 +363,12 @@ async function onLockScope(scope: "reopen" | "server") {
       />
     </main>
 
-    <div v-if="devUpdate" class="update-backdrop" role="presentation">
-      <section
-        class="update-dialog"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="dev-update-title"
-      >
-        <h2 id="dev-update-title">A new dev build is available</h2>
-        <p>Commit {{ devUpdate.commit.slice(0, 7) }}</p>
-        <ul v-if="devUpdate.notes.length">
-          <li v-for="note in devUpdate.notes" :key="note">{{ note }}</li>
-        </ul>
-        <div class="update-actions">
-          <button type="button" class="btn-primary" @click="openDevUpdateApk">Download now</button>
-          <button type="button" class="btn-ghost" @click="deferDevUpdate">Later</button>
-        </div>
-      </section>
-    </div>
+    <DevUpdateDialog
+      v-if="devUpdate"
+      :update="devUpdate"
+      @download="openDevUpdateApk"
+      @later="deferDevUpdate"
+    />
 
     <BottomSheet :open="sheetOpen" title="Edit server" @close="closeSheet">
       <label class="field sheet-field">

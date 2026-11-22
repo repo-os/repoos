@@ -112,6 +112,8 @@ export function integrationPipelineRole(
 ): IntegrationPipelineRole {
   if (!snap || snap.empty) return null;
   if (snap.active?.taskId === taskId && !snap.active.failed) return "active";
+  // A job validating alongside the active one is running, not waiting (#1275).
+  if (snap.parallel?.some((p) => p.taskId === taskId)) return "active";
   if (snap.queue.includes(taskId)) return "queued";
   return null;
 }
@@ -120,6 +122,11 @@ export function integrationQueuePosition(
   snap: IntegrationPipelineSnapshot,
   taskId: string,
 ): { position: number; behindTaskId: string | null } | null {
+  // Publish order over every live job (#1275): a job validating alongside the
+  // active one still occupies its place in line, so count from queueDetail
+  // rather than the unstarted `queue` alone.
+  const detail = snap.queueDetail?.find((q) => q.taskId === taskId);
+  if (detail) return { position: detail.position, behindTaskId: snap.active?.taskId ?? null };
   const idx = snap.queue.indexOf(taskId);
   if (idx < 0) return null;
   return {

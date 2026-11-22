@@ -1876,7 +1876,11 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     const limit = Math.max(1, config.maxParallelValidations ?? 2);
     // The pressure guard holds only *extra* concurrency: the first run always
     // starts, as the single-job pipeline always did.
-    const holdExtra = closeOutRunning.size >= 1 && pressureReason(config) !== null;
+    // Consulted whenever work is waiting, not only while a run is live: with
+    // none running, the first start is taken and the hold then stops every
+    // start after it in this same pass.
+    const waiting = pendingCloseOutJobs(jobs).some((j) => !closeOutRunning.has(j.taskId));
+    const holdExtra = waiting && pressureReason(config) !== null;
     for (const taskId of selectCloseOutStarts({
       jobs,
       running: closeOutRunning,
@@ -1886,8 +1890,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       void runCloseOut(taskId);
     }
     // A pressure hold must not strand queued work: re-check on a timer.
-    const waiting = pendingCloseOutJobs(jobs).some((j) => !closeOutRunning.has(j.taskId));
-    if (holdExtra && waiting && !closeOutHoldTimer) {
+    if (holdExtra && !closeOutHoldTimer) {
       closeOutHoldTimer = setTimeout(() => {
         closeOutHoldTimer = null;
         pumpCloseOutJobs();

@@ -53,6 +53,9 @@ export const SHOT_PREVIEW_FIXTURE_IDS = [
   // #0819 — active close-out plus 15 succeeded duration samples so the
   // integration timer tooltip shows "Median … · 15 runs" on a fresh preview.
   "integration:median15",
+  // #1275 — an active close-out, one job validating alongside it, and one queued
+  // behind both, so the pipeline shows "Also running" and a publish-order position.
+  "integration:parallelValidations",
   "card:doneError",
   "board:withReviewTask",
   // #1183 — first-run Work queue with no task cards.

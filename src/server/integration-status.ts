@@ -7,7 +7,12 @@
  * existing job data plus whichever progress `DoneStep` was last reported for
  * each task by the close-out orchestrator.
  */
-import type { IntegrationJob, IntegrationPhaseTiming, JobCoordinator } from "./integration-job.js";
+import {
+  attemptIsExecuting,
+  type IntegrationJob,
+  type IntegrationPhaseTiming,
+  type JobCoordinator,
+} from "./integration-job.js";
 import type { DoneStep } from "./done.js";
 import type { PipelineCheckPlan } from "./check-plan-info.js";
 
@@ -71,9 +76,7 @@ export interface IntegrationSnapshot {
   queueEnqueuedAt?: Record<string, string>;
   /**
    * Queue position, wait time and the active job blocking each queued close-out
-   * (#0897) — "why is this waiting?" in one place. `position` is publish order
-   * (#1275): it counts the jobs already validating in parallel, so it matches
-   * the API's `queuePosition`.
+   * (#0897) — "why is this waiting?" in one place.
    */
   queueDetail?: {
     taskId: string;
@@ -167,16 +170,22 @@ export function buildIntegrationSnapshot(
   const live = coordinator
     .allJobs()
     .filter((job) => !job.cancelled && job.phase !== "done" && job.phase !== "failed");
-  const inFlight = live[0] ?? null;
+  // The active job is the one that has left the queue: `startedAt` is set when
+  // its validation starts (queued → syncing in the orchestrator). A job still
+  // waiting has no start, so it is listed in the queue with its position and
+  // never shown as active with a clock running from its enqueue time (#1272).
+  const inFlight =
+    live.find((job): job is IntegrationJob & { startedAt: string } => attemptIsExecuting(job)) ??
+    null;
   const queue: string[] = [];
   const queueEnqueuedAt: Record<string, string> = {};
   const queuedJobs: IntegrationJob[] = [];
-
   const parallel: NonNullable<IntegrationSnapshot["parallel"]> = [];
+
   for (const job of live) {
     if (inFlight && job.taskId === inFlight.taskId) continue;
     // A started job is validating alongside the active one (#1275), not waiting.
-    if (job.startedAt) {
+    if (attemptIsExecuting(job)) {
       parallel.push({
         taskId: job.taskId,
         phase: job.phase,
@@ -191,43 +200,42 @@ export function buildIntegrationSnapshot(
     queuedJobs.push(job);
   }
 
-  if (!inFlight) {
-    return {
-      empty: queue.length === 0,
-      active: null,
-      queue,
-      queueEnqueuedAt: queue.length ? queueEnqueuedAt : undefined,
-      checkPlan,
-      at,
-    };
-  }
-
-  const failed = inFlight.phase === "failed";
-  const startedAt = inFlight.startedAt ?? inFlight.enqueuedAt;
-  const lastProgressAt = reportedAt[inFlight.taskId] ?? startedAt;
-  const activePhaseStartedAt = inFlight.phaseStartedAt ?? startedAt;
   const nowMs = Date.parse(at);
-  const activeElapsed = Number.isFinite(nowMs) ? nowMs - Date.parse(activePhaseStartedAt) : null;
-  const blockerStartedAt = startedAt;
-  const blockerElapsedMs = Number.isFinite(nowMs)
-    ? Math.max(0, nowMs - Date.parse(blockerStartedAt))
-    : null;
-  const queueDetail = queuedJobs.map((job) => {
+  const blockerElapsedMs =
+    inFlight && Number.isFinite(nowMs) ? Math.max(0, nowMs - Date.parse(inFlight.startedAt)) : null;
+  // Position is publish order over every live job (the head is 0), the same
+  // numbering as the integration-job API's queuePosition (#1275).
+  const publishOrder = new Map(live.map((job, index) => [job.taskId, index]));
+  const queueDetail = queuedJobs.map((job, i) => {
     const enqueuedMs = Date.parse(job.enqueuedAt);
     return {
       taskId: job.taskId,
-      // Publish order over every live job, not over the unstarted ones: a job
-      // validating in parallel ahead of this one still publishes first (#1275).
-      position: live.indexOf(job),
+      position: publishOrder.get(job.taskId) ?? i,
       enqueuedAt: job.enqueuedAt,
       waitedMs: Number.isFinite(nowMs) && Number.isFinite(enqueuedMs) ? nowMs - enqueuedMs : 0,
-      // The active job is the publish head (#1275): queued jobs publish after
-      // it, not after the ones behind them. Validation slots are a separate limit.
-      blockerTaskId: inFlight.taskId,
-      blockerPhase: inFlight.phase,
+      // The active job holds the single close-out pipeline slot; every queued
+      // job waits on it, not on the ones behind it (#0897). With no active job
+      // yet there is no blocker clock either (#1272).
+      blockerTaskId: inFlight?.taskId ?? null,
+      blockerPhase: inFlight?.phase ?? null,
       blockerElapsedMs,
     };
   });
+  const queueFields = {
+    queue,
+    queueEnqueuedAt: queue.length ? queueEnqueuedAt : undefined,
+    queueDetail: queueDetail.length ? queueDetail : undefined,
+  };
+
+  if (!inFlight) {
+    return { empty: queue.length === 0, active: null, ...queueFields, checkPlan, at };
+  }
+
+  const failed = inFlight.phase === "failed";
+  const startedAt = inFlight.startedAt;
+  const lastProgressAt = reportedAt[inFlight.taskId] ?? startedAt;
+  const activePhaseStartedAt = inFlight.phaseStartedAt ?? startedAt;
+  const activeElapsed = Number.isFinite(nowMs) ? nowMs - Date.parse(activePhaseStartedAt) : null;
   return {
     empty: false,
     active: {
@@ -244,9 +252,7 @@ export function buildIntegrationSnapshot(
       phaseTimings: inFlight.phaseTimings,
     },
     parallel: parallel.length ? parallel : undefined,
-    queue,
-    queueEnqueuedAt: queue.length ? queueEnqueuedAt : undefined,
-    queueDetail: queueDetail.length ? queueDetail : undefined,
+    ...queueFields,
     checkPlan,
     at,
   };

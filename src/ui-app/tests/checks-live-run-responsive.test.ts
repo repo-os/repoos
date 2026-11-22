@@ -88,6 +88,17 @@ describe.skipIf(!existsSync(webkit.executablePath()))(
       server = await createServer({
         configFile: resolve(__dirname, "../vite.config.ts"),
         server: { host: "127.0.0.1", port: 0, strictPort: false },
+        // Vite only scans index.html for dependencies by default. Listing the
+        // fixture entries here bundles their dependencies before the first
+        // page loads; otherwise a late discovery re-hashes the bundle and the
+        // page's already-loaded `vue.js` / `pinia.js` requests return 504
+        // "Outdated Optimize Dep", and the view never mounts.
+        optimizeDeps: {
+          entries: [
+            "tests/fixtures/checks-live-run-responsive.ts",
+            "tests/fixtures/checks-live-run-store-stub.ts",
+          ],
+        },
         plugins: [
           {
             name: "checks-live-run-store",
@@ -118,7 +129,9 @@ describe.skipIf(!existsSync(webkit.executablePath()))(
       options: { releaseFails?: boolean } = {},
     ): Promise<Page> {
       const page = await browser.newPage({ viewport: { width, height: 900 } });
-      page.setDefaultTimeout(5000);
+      // The first page of a run cold-loads the Checks view through Vite, which
+      // can outlast a 5 s budget on a loaded machine. Layout checks are unchanged.
+      page.setDefaultTimeout(30_000);
       const seed = liveRunSeed(liveState);
       await page.route("**/api/**", async (route) => {
         const url = new URL(route.request().url());

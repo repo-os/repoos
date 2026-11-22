@@ -105,6 +105,13 @@ describe("selectCloseOutStarts (#1275)", () => {
     ]);
   });
 
+  it("starts a cancelled parked publisher so its teardown does not wait on the head", () => {
+    const jobs = [job("01", "validating"), job("02", "publishing", { cancelled: true })];
+    expect(
+      selectCloseOutStarts({ jobs, running: new Set(["01"]), limit: 4, holdExtra: false }),
+    ).toEqual(["02"]);
+  });
+
   it("pressure guard holds extra concurrency but never the first run", () => {
     const jobs = [job("01", "queued"), job("02", "queued")];
     expect(selectCloseOutStarts({ jobs, running: new Set(), limit: 2, holdExtra: true })).toEqual([

@@ -318,7 +318,11 @@ async function runNow(): Promise<void> {
         <span class="agent-badge">built-in</span>
         <AgentRunStatus :run="lastRun ?? null" :cli="effectiveCli" :model="effectiveModel" />
       </div>
-      <Switch :checked="state.enabled" @update:checked="toggleEnabled" />
+      <Switch
+        :aria-label="`Enable ${agentMeta.name}`"
+        :checked="state.enabled"
+        @update:checked="toggleEnabled"
+      />
     </div>
     <div class="agent-body">
       <div class="agent-field">

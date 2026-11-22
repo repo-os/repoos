@@ -11,7 +11,8 @@ project switches and clear-all, at 375, 768 and 1280 px.
   `mine`, `sort`, `status`), so a reload restores it.
 - Widths of 720 px and up render the **desktop board**. Before this pass it
   ignored those URL filters silently. It now applies them and shows them in a
-  chip bar with a clear control (`BoardQueueFilters`).
+  chip bar with a clear control (`BoardQueueFilters`). #1259 adds a search
+  box above that bar (`BoardQueueSearch`) that writes `q` to the same URL key.
 
 Every check runs against fixtures in
 `src/ui-app/tests/work-filter-persistence-qa-browser.test.ts`:
@@ -75,10 +76,19 @@ No case was skipped.
 - **Pipeline** does not filter. The chip bar still appears above it, with a
   note that the view doesn't apply these filters, so a filtered link never
   looks like a full list.
-- **Unusable URL values** (`priority` other than p0-p3, `mine` other than `1`)
+- **Unusable URL values** (`priority` other than p0-p3, `mine` other than `1`,
+  a `status` that is not a single board column, including a bare or repeated
+  `status`, a `sort` other than newest or oldest)
   are not applied. Each one shows a dashed "Ignored" chip, and Clear filters
-  removes it. Mobile-only values in the phone queue are unchanged.
-- **Clear filters** removes only the five queue keys. Every other query entry
+  removes it. Phone-only statuses (`attention`, `held`, `archived`, `human`,
+  `all`) get that notice on the board, so none is dropped silently (#1260).
+  The phone queue still applies them itself.
+- **Sort on the board (#1260).** `sort=newest|oldest` in the URL orders every
+  column by last update and shows a "Sort:" chip. It overrides the board's Sort
+  control while present, and picking a sort in that control drops the URL one.
+- **Clear filters** removes the five queue keys, the URL sort, and any status
+  the board ignores. A board status column (`draft`, `inbox`, `ready`, `active`,
+  `review`, `done`) is kept, since it has its own bar. Every other query entry
   is kept as it was, including bare `?key` (null) values and repeated values.
 
 ## Gaps not fixed (follow-up tasks filed)
@@ -89,10 +99,12 @@ No case was skipped.
   served from its own origin, so storage is already separated per project in
   practice. A same-origin project switch would share these keys. Namespacing
   them by `health.projectName` needs a read after health loads. Not changed.
-- **No search input at 720 px and up.** Filed as #1259.
-- **Mobile-only status values and the queue sort on the board.** Filed as
-  #1260. Until then, `?status=attention|held|archived|human|all` shows every
-  task with no chip, and `sort=oldest` is not applied on the board.
+- **Quick-filter controls on the board.** The board's search box (#1259)
+  writes `q` only. `priority`, `area`, `story` and `mine` are still set from
+  the phone queue or a link, and the board shows them as chips.
+- **Mobile-only status values and the queue sort on the board.** Fixed in
+  #1260; see "Behavior on the board" above. The 375 px phone queue still owns
+  these values and applies them itself.
 
 ## Not covered by a test
 

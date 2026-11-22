@@ -1775,6 +1775,33 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
       ];
       break;
     }
+    case "integration:parallelValidations": {
+      ensureFixtureTask(repo, "review");
+      const startedAt = new Date(Date.now() - 4 * 60 * 1000).toISOString();
+      const at = nowIso();
+      repo.integration = {
+        ...activePipeline(SHOT_PREVIEW_FIXTURE_TASK_ID, null, startedAt, at),
+        parallel: [
+          { taskId: "0002", phase: "validating", stage: "check", startedAt, detail: null },
+        ],
+        queue: ["0003"],
+        queueDetail: [
+          {
+            taskId: "0003",
+            position: 2,
+            enqueuedAt: startedAt,
+            waitedMs: 0,
+            blockerTaskId: SHOT_PREVIEW_FIXTURE_TASK_ID,
+            blockerPhase: "validating",
+            blockerElapsedMs: 0,
+          },
+        ],
+      };
+      pinnedIntegration = repo.integration;
+      // Expanded, so the pipeline summary (with "Also running") is on screen.
+      useUiStore().setIntegrationBarCollapsed(false);
+      break;
+    }
     case "integration:median15": {
       ensureFixtureTask(repo, "review");
       const startedAt = new Date(Date.now() - 4 * 60 * 1000).toISOString();

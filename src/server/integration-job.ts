@@ -172,7 +172,9 @@ export function selectCloseOutStarts(input: {
   let inFlight = input.running.size;
   for (const job of pendingCloseOutJobs(input.jobs)) {
     if (input.running.has(job.taskId)) continue;
-    if (job.phase === "publishing" && job.taskId !== turn) continue;
+    // A cancelled parked publisher still starts: its run tears the job down
+    // without publishing, instead of waiting behind a stalled head.
+    if (job.phase === "publishing" && job.taskId !== turn && !job.cancelled) continue;
     if (inFlight >= Math.max(1, input.limit)) break;
     if (inFlight >= 1 && input.holdExtra) break;
     picks.push(job.taskId);
