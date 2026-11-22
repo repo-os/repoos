@@ -11,7 +11,7 @@ branch: feat/close-out-validation-log-should-show-liv
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T07:42:21Z"
-updated_at: "2026-11-22T09:10:51Z"
+updated_at: "2026-11-22T09:12:44Z"
 review_passes: 7
 last_check_failure: "repoos check at 2026-11-22T07:13:31.180Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 review_failed_report_retries: 0
@@ -271,3 +271,4 @@ Related: #1272 (timer should count from validation start). Never touch repoos.to
 - 2026-11-22T09:10:50Z · message_queued at 2026-11-22T09:10:50.764Z
 - 2026-11-22T09:10:51Z · handoff failed · task-file handoff failed at review · Engineering report draft is missing: .repoos/engineering-report-drafts/1276.md
 - 2026-11-22T09:10:51Z · message_delivered: 2 message(s)
+- 2026-11-22T09:12:44Z · CTO nudge: held — handoff gate is running
