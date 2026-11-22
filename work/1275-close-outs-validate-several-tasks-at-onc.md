@@ -2,7 +2,7 @@
 id: "1275"
 title: "Close-outs: validate several tasks at once on different runner machines"
 type: feature
-status: active
+status: review
 priority: p1
 area: [server, core]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/close-outs-validate-several-tasks-at-onc
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T07:42:13Z"
-updated_at: "2026-11-22T12:01:49Z"
+updated_at: "2026-11-22T12:01:50Z"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/decimal-number-fields.test.ts > numeric enum select fields (#1161) > accepts number and string forms for maxParallelValidations, tests/done-guard-orchestrator.test.ts > publish-time dirty-main guard (#0211) > refuses publication while a hotfix owns the main checkout, tests/raw-config-route.test.ts > config raw routes (#0375) > writes valid TOML and reloads config + index on thinkpad — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: 60ac16c8a6d5bc23420d03188aa81a9bb64e9d8e
 review_passes: 3
@@ -541,3 +541,4 @@ Read docs/close-out-pipeline.md and docs/remote-validation.md first. Never touch
 - 2026-11-22T11:28:34Z · message_delivered: 1 message(s)
 - 2026-11-22T11:41:56Z · CTO nudge: held — handoff gate is running
 - 2026-11-22T12:01:49Z · note: ui verification passed: 2 of 2 shots captured with clean console (1 shot warning)
+- 2026-11-22T12:01:50Z · status active→review
