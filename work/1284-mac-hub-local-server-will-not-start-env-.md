@@ -60,3 +60,4 @@ Look in the macos Hub app sources and the local-server launcher. Never touch rep
 - 2026-11-22T12:55:28Z · body
 - 2026-11-22T12:56:46Z · status active→review
 - 2026-11-22T12:56:46Z · message_queued at 2026-11-22T12:56:46.422Z
+- 2026-11-22T12:56:46Z · note: shots: skipped — Docs site skipped: no docs shot declared
