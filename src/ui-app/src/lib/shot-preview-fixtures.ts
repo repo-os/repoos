@@ -2709,12 +2709,11 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
       document.documentElement.setAttribute(SHOT_PREVIEW_APPLIED_ATTR, fixture);
       break;
     case "drawer:taskDetailsSummary": {
-      // #1282 — open the Details tab on a seeded task so the collapsed metadata
-      // summary (and, on click, its modal) is on screen. Seeds the ?task= id so
-      // the capture never requests a task that is off the preview board.
-      const drawerId = shotPreviewDrawerTaskIdFromLocation(window.location);
-      ensureFixtureTask(repo, "active", {}, drawerId);
-      const task = repo.tasks.find((t) => t.id === drawerId);
+      // #1282 — open the Details tab on the seeded fixture task (#9999). Only
+      // that id is exempt from the server-backed endpoint fetches (diff-stats,
+      // shots, ui-verification, handoff-status), so a real off-board id 404s.
+      ensureFixtureTask(repo, "active");
+      const task = repo.tasks.find((t) => t.id === SHOT_PREVIEW_FIXTURE_TASK_ID);
       if (task) {
         const ui = useUiStore();
         ui.open(task);
