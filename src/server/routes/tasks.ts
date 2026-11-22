@@ -4787,7 +4787,10 @@ export const getIntegrationJob: RouteHandler = (ctx, _req, res, params) => {
       progressStale:
         job.phase !== "done" &&
         job.phase !== "failed" &&
-        progressIsStale(job.lastProgressAt, Date.now()),
+        progressIsStale(
+          job.lastProgressAt ?? (job.progressLogPath ? job.startedAt : null),
+          Date.now(),
+        ),
       progressLogPath: job.progressLogPath ?? null,
       previousFailure: job.previousFailure ?? null,
       queuePosition: queuePos,

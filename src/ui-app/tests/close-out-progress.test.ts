@@ -811,6 +811,49 @@ describe("retries, slot waits and write failures (#1276 review round 2)", () => 
     expect(snap.active).toMatchObject({ progressStale: true, lastProgressAt: iso(now - 1_000) });
   });
 
+  it("flags an attempt whose first progress write failed, judged from its start (#1276 review)", () => {
+    const iso = (ms: number) => new Date(ms).toISOString();
+    const coordinator = createJobCoordinator(root);
+    const job = coordinator.enqueue({ id: "1276", branch: "feat/x" } as any)!;
+    // The recorder attached (progressLogPath set) but never wrote a timestamp.
+    coordinator.updateJob(
+      "1276",
+      {
+        phase: "validating",
+        startedAt: iso(T0),
+        progressLogPath: progressLogPathFor("1276", job.attempt!),
+      },
+      job.attempt,
+    );
+    const now = T0 + PROGRESS_STALE_MS + 1_000;
+    // A fresh stage event must not hide it.
+    const snap = buildIntegrationSnapshot(
+      coordinator,
+      {},
+      undefined,
+      { "1276": iso(now - 1_000) },
+      {},
+      iso(now),
+    );
+    expect(snap.active).toMatchObject({ progressStale: true });
+  });
+
+  it("does not flag a legacy attempt that has no progress log and no timestamp", () => {
+    const iso = (ms: number) => new Date(ms).toISOString();
+    const coordinator = createJobCoordinator(root);
+    const job = coordinator.enqueue({ id: "1276", branch: "feat/x" } as any)!;
+    coordinator.updateJob("1276", { phase: "validating", startedAt: iso(T0) }, job.attempt);
+    const snap = buildIntegrationSnapshot(
+      coordinator,
+      {},
+      undefined,
+      {},
+      {},
+      iso(T0 + 10 * PROGRESS_STALE_MS),
+    );
+    expect(snap.active).toMatchObject({ progressStale: false });
+  });
+
   it("the stalled label names the step it stopped on and the retry reason", () => {
     const snap = {
       empty: false,

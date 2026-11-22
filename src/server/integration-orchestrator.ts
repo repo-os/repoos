@@ -792,6 +792,27 @@ export function parseCheckStepHeading(text: string): string | null {
   return last;
 }
 
+/**
+ * Latest local test-count marker (`::repoos-check-progress::{"testsDone":N,"testsTotal":M}`)
+ * in streamed check output, so the close-out step shows the local suite's done/total
+ * the same way remote runs do (#1276). Takes the LAST marker; null when none or when
+ * the counts are missing. Exported for tests.
+ */
+export function parseCheckTestProgress(text: string): { done: number; total: number } | null {
+  const matches = [...stripAnsi(text).matchAll(/::repoos-check-progress::(\{[^\n\r]+\})/g)];
+  for (let i = matches.length - 1; i >= 0; i--) {
+    try {
+      const parsed = JSON.parse(matches[i]![1]!) as { testsDone?: unknown; testsTotal?: unknown };
+      if (typeof parsed.testsDone === "number" && typeof parsed.testsTotal === "number") {
+        return { done: parsed.testsDone, total: parsed.testsTotal };
+      }
+    } catch {
+      // A truncated marker at the buffer edge: fall back to an earlier one.
+    }
+  }
+  return null;
+}
+
 export interface ProcessRunResult {
   status: number | null;
   stdout: string;
@@ -3445,17 +3466,25 @@ export class CloseOutOrchestrator {
         // of the coarse "check" stage while a long step runs. The chunk buffer
         // tolerates a heading split across two stream reads.
         let currentCheckStep = "running check";
+        let currentTestProgress: { done: number; total: number } | null = null;
         let checkStepBuffer = "";
         const noteCheckStep = (chunk: string): void => {
           checkStepBuffer = (checkStepBuffer + chunk).slice(-2000);
           const heading = parseCheckStepHeading(checkStepBuffer);
           if (heading) currentCheckStep = heading;
+          // Local test counts (#1276): show done/total like a remote run does.
+          const tests = parseCheckTestProgress(checkStepBuffer);
+          if (tests) currentTestProgress = tests;
         };
         const checkLabel = (): string | null => {
-          this.reportStep(
+          const base =
             currentCheckStep === "running check"
               ? CLOSE_OUT_STEP.checks
-              : `${CLOSE_OUT_STEP.checks} · ${currentCheckStep}`,
+              : `${CLOSE_OUT_STEP.checks} · ${currentCheckStep}`;
+          this.reportStep(
+            currentTestProgress
+              ? `${base} · tests ${currentTestProgress.done}/${currentTestProgress.total}`
+              : base,
           );
           return currentCheckStep;
         };
@@ -3571,8 +3600,25 @@ export class CloseOutOrchestrator {
               // fallback run cannot fit in a budget that has no time left, and the
               // timeout classification below is the real result.
               outcome = "fallback";
+              // Each rerun is a new attempt that records why it runs (#1276).
+              if (
+                !this.beginRetryAttempt(
+                  job,
+                  "local check failed — retrying with the globally linked repoos",
+                )
+              ) {
+                return { checkRes: { ...checkRes, cancelled: true }, outcome };
+              }
               checkRes = await rawCheck("repoos", ["check", ...args], env);
               if (checkRes.status !== 0 && !this.pipelineTimedOut(job)) {
+                if (
+                  !this.beginRetryAttempt(
+                    job,
+                    "global repoos check failed — retrying with bun run repoos",
+                  )
+                ) {
+                  return { checkRes: { ...checkRes, cancelled: true }, outcome };
+                }
                 checkRes = await rawCheck("bun", ["run", "repoos", "check", ...args], env);
               }
             }
@@ -3621,6 +3667,16 @@ export class CloseOutOrchestrator {
           // record rather than repeating the scoped note.
           fullEnv.REPOOS_CHECK_GATE_NOTE =
             "scoped close-out gate failed — re-ran the full suite once before failing the close-out";
+          // The full rerun is a new attempt that records why it runs (#1276).
+          if (
+            !this.beginRetryAttempt(
+              job,
+              "scoped close-out gate failed — re-running the full suite once",
+            )
+          ) {
+            checkHandle?.done(checkRes.status);
+            return { ok: false, cancelled: true, reason: CANCEL_REASON };
+          }
           const retry = await this.withStageHeartbeat(job.taskId, checkLabel, () =>
             runGatePass(baseCheckArgs, fullEnv),
           );

@@ -237,7 +237,14 @@ export function buildIntegrationSnapshot(
   // has written, so a legacy record without progress is not flagged.
   const lastProgressAt =
     latestIso(reportedAt[inFlight.taskId], inFlight.lastProgressAt) ?? startedAt;
-  const progressStale = progressIsStale(inFlight.lastProgressAt, nowMs);
+  // A recorder-attached attempt (it has a progress log) that never wrote a
+  // timestamp means its first write failed: judge it from the attempt start so
+  // the card cannot look healthy forever (#1276). A legacy record without a
+  // progress log is still not flagged.
+  const progressStale = progressIsStale(
+    inFlight.lastProgressAt ?? (inFlight.progressLogPath ? startedAt : null),
+    nowMs,
+  );
   const activePhaseStartedAt = inFlight.phaseStartedAt ?? startedAt;
   const activeElapsed = Number.isFinite(nowMs) ? nowMs - Date.parse(activePhaseStartedAt) : null;
   return {
