@@ -11,7 +11,7 @@ branch: feat/close-outs-validate-several-tasks-at-onc
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T07:42:13Z"
-updated_at: "2026-11-22T07:37:51Z"
+updated_at: "2026-11-22T07:40:16Z"
 last_check_failure: "repoos check at 2026-11-22T06:51:14.612Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Pipeline shows a job validating alongside the active close-out (Also running) (target \"default\"): state \"integration:parallelValidations\" did not render on target \"default\" — /checks shows no task card (http://127.0.0.1:46721/checks?tab=now)"
 review_rounds: 1
 review_passes: 1
@@ -472,3 +472,4 @@ Read docs/close-out-pipeline.md and docs/remote-validation.md first. Never touch
 - 2026-11-22T07:15:13Z · message_delivered: 1 message(s)
 - 2026-11-22T07:17:43Z · body
 - 2026-11-22T07:37:51Z · body
+- 2026-11-22T07:40:16Z · CTO nudge: held — handoff gate is running
