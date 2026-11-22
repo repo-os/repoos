@@ -313,7 +313,7 @@ const ignoredQueueFilters = computed(() => ignoredWorkQueueFilterChips(route.que
 const boardQueueSort = computed(() => readWorkQueueSort(route.query));
 /**
  * The bar shows for an applied quick filter or sort, or a URL value that was not
- * applied. On the board a search alone never shows it: the search box has its own
+ * applied. A search alone never shows it: the search box has its own
  * clear (x) button, and a bar that appeared with only "Clear filters" took a full
  * row and shifted the columns down.
  */
@@ -321,9 +321,7 @@ const queueBarVisible = computed(
   () =>
     hasActiveWorkQueueFilters({ ...queueFilters.value, query: "" }) ||
     boardQueueSort.value !== null ||
-    ignoredQueueFilters.value.length > 0 ||
-    // The pipeline does not apply a search, so it still says so (the board needs no note).
-    (effectiveView.value !== "board" && queueFiltersActive.value),
+    ignoredQueueFilters.value.length > 0,
 );
 function clearQueueFilters(): void {
   void router.replace({ query: clearWorkQueueFilterQuery(route.query) });
@@ -595,6 +593,7 @@ function openHeld(task: Task): void {
       <div class="work-header-actions">
         <div class="work-header-search-controls">
           <BoardQueueSearch
+            v-if="effectiveView === 'board'"
             :model-value="queueFilters.query"
             @update:model-value="setQueueSearch"
           />
@@ -724,8 +723,10 @@ function openHeld(task: Task): void {
       <router-link to="/work" class="filter-clear">Show all statuses</router-link>
     </div>
 
+    <!-- The pipeline neither filters nor searches, so it shows neither the search
+         box nor this bar; the URL values are kept for when the user returns to Board. -->
     <BoardQueueFilters
-      v-if="queueBarVisible"
+      v-if="queueBarVisible && effectiveView === 'board'"
       :filters="queueFilters"
       :sort="boardQueueSort"
       :ignored="ignoredQueueFilters"

@@ -217,36 +217,27 @@ describe("Work board queue filters on desktop (768 / 1280 px)", () => {
     expect(chipKeys(reloaded)).toEqual(["area"]);
   });
 
-  it("pipeline shows the active filters with a note that it does not apply them", async () => {
+  it("the pipeline shows neither the search box nor the filter bar", async () => {
     window.localStorage.setItem("repoos.work.view-mode", "pipeline");
-    const wrapper = mountDesktop({ q: "login" });
+    const wrapper = mountDesktop({ q: "login", priority: "p1" });
     await flushPromises();
-    const bar = wrapper.find(".board-queue-filters");
-    expect(bar.exists()).toBe(true);
-    expect(chipKeys(wrapper)).toEqual([]);
-    expect(wrapper.get<HTMLInputElement>('[data-testid="board-queue-search"]').element.value).toBe(
-      "login",
-    );
-    expect(bar.find(".board-queue-filter-note").exists()).toBe(true);
-    expect(bar.find(".filter-clear").exists()).toBe(true);
-    await bar.find(".filter-clear").trigger("click");
-    expect(routeState.router.replace).toHaveBeenCalledWith({ query: {} });
+    expect(wrapper.find(".board-queue-filters").exists()).toBe(false);
+    expect(wrapper.find('[data-testid="board-queue-search"]').exists()).toBe(false);
   });
 
-  it("keeps the search visible when switching between Board and Pipeline", async () => {
+  it("the search comes back, with its text, when switching from Pipeline to Board", async () => {
     const wrapper = mountDesktop({ q: "login" });
     await flushPromises();
     for (const view of ["Pipeline", "Board"]) {
       const toggle = wrapper.findAll(".view-toggle-btn").find((button) => button.text() === view);
       expect(toggle).toBeDefined();
       await toggle!.trigger("click");
-      expect(
-        wrapper.get<HTMLInputElement>('[data-testid="board-queue-search"]').element.value,
-      ).toBe("login");
-      expect(chipKeys(wrapper)).toEqual([]);
-      // Only the pipeline needs the "does not apply" bar; the board shows none.
-      expect(wrapper.find(".filter-clear").exists()).toBe(view === "Pipeline");
+      expect(wrapper.find('[data-testid="board-queue-search"]').exists()).toBe(view === "Board");
+      expect(wrapper.find(".board-queue-filters").exists()).toBe(false);
     }
+    expect(wrapper.get<HTMLInputElement>('[data-testid="board-queue-search"]').element.value).toBe(
+      "login",
+    );
     expect(visibleIds(wrapper)).toEqual(["0001"]);
   });
 
@@ -327,8 +318,8 @@ describe("Work board queue filters on desktop (768 / 1280 px)", () => {
       },
     });
     await flushPromises();
-    const search = wrapper.get<HTMLInputElement>('[data-testid="board-queue-search"]');
-    expect(search.element.value).toBe("login");
+    // The pipeline has no search box; the URL value is kept for the board.
+    expect(wrapper.find('[data-testid="board-queue-search"]').exists()).toBe(false);
     const boardButton = wrapper
       .findAll(".view-toggle-btn")
       .find((button) => button.text() === "Board");
