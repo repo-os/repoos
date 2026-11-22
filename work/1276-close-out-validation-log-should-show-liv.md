@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-22T07:13:31.180Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 id: "1276"
 title: Close-out validation log should show live progress
 type: feature
@@ -13,7 +15,6 @@ model_override: haiku
 created_at: "2026-11-20T07:42:21Z"
 updated_at: "2026-11-22T07:13:31Z"
 review_passes: 5
-last_check_failure: "repoos check at 2026-11-20T21:01:31.328Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Close-out drawer with live step, host, and attempt (target \"default\"): loading state detected: loading text \"Loading changes…\" on /work?task=9999&tab=changes (http://127.0.0.1:43237/work?task=9999&tab=changes&shotState=drawer%3AcloseOutRemoteTests)"
 review_failed_report_retries: 0
 review_rounds: 2
 handoff_signal_retry_count: 2
@@ -243,3 +244,4 @@ Related: #1272 (timer should count from validation start). Never touch repoos.to
 - 2026-11-22T07:06:56Z · needs_input (review-rounds-exhausted) cleared for review again by human
 - 2026-11-22T07:13:28Z · message_queued at 2026-11-22T07:13:28.018Z
 - 2026-11-22T07:13:31Z · message_delivered: 1 message(s)
+
