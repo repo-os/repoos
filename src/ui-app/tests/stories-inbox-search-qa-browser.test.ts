@@ -439,6 +439,21 @@ describe.skipIf(!existsSync(webkit.executablePath()))(
           document.body.querySelectorAll("a[href^='/']"),
           (a) => a.getAttribute("href") ?? "",
         );
+        const fixed = Array.from(document.body.querySelectorAll<HTMLElement>("*")).filter(
+          (el) => getComputedStyle(el).position === "fixed",
+        );
+        const fixedEffects = fixed.map((el) => {
+          const display = el.style.display;
+          el.style.display = "none";
+          const width = document.documentElement.scrollWidth;
+          el.style.display = display;
+          return `${describe(el)}:${width}`;
+        });
+        const noPseudo = document.createElement("style");
+        noPseudo.textContent = "*, *::before, *::after { content: none !important }";
+        document.head.append(noPseudo);
+        const withoutPseudo = document.documentElement.scrollWidth;
+        noPseudo.remove();
         return {
           documentWidth: document.documentElement.scrollWidth,
           documentOverflow: Array.from(document.body.querySelectorAll<HTMLElement>("*"))
@@ -450,6 +465,7 @@ describe.skipIf(!existsSync(webkit.executablePath()))(
             )
             .concat(
               `html=${document.documentElement.clientWidth}/${document.documentElement.scrollWidth} body=${document.body.clientWidth}/${document.body.scrollWidth}`,
+              `without pseudo=${withoutPseudo}; fixed=${fixedEffects.join(" ")}`,
             ),
           overflowers,
           clippedControls,
