@@ -3,6 +3,9 @@ id: "1279"
 title: "Easter eggs bundle: rename review history column to Issues"
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-failed
+needs_input_detail: "the github copilot agent exited without output: Copilot emitted an unknown protocol event \"commands.changed\". Copilot emitted an unknown protocol event \"instruction.update\". error: You have exceeded your monthly quota (Request ID: 00000-5a0c9c3a-a0e8-451a-9039-f45a098f5e96)"
 human_step_override: Cleared needs-human-step flag (sticky until acceptance criteria change)
 human_step_override_key: 8dbfd6ac
 priority: p3
@@ -164,3 +167,4 @@ Copy change only. Never touch repoos.toml. Headless Playwright only.
 - 2026-11-22T15:37:44Z · body
 - 2026-11-22T15:38:45Z · status active→review
 - 2026-11-22T15:39:45Z · note: review pass 10: failed — no usable report
+- 2026-11-22T15:39:45Z · needs_input
