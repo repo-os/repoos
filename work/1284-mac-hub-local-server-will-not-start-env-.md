@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-11-22T13:17:11Z"
-review_passes: 4
 id: "1284"
 title: "Mac Hub: Local server will not start (env: node: No such file or directory) and removing then re-adding it crashes the app"
 type: bug
-status: review
+status: active
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 needs_input_detail: `needs some work` — runtime selection can ignore an explicit Bun path or choose unsupported Node.
@@ -16,6 +14,8 @@ branch: feat/mac-hub-local-server-will-not-start-env-
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-22T03:29:23Z"
+updated_at: "2026-11-22T13:27:10Z"
+review_passes: 4
 review_rounds: 2
 ---
 ## Problem
@@ -76,4 +76,4 @@ Look in the macos Hub app sources and the local-server launcher. Never touch rep
 - 2026-11-22T13:15:09Z · message_queued at 2026-11-22T13:15:09.484Z
 - 2026-11-22T13:17:10Z · note: review pass 4: needs some work
 - 2026-11-22T13:17:10Z · needs_input
-
+- 2026-11-22T13:27:10Z · status review→active
