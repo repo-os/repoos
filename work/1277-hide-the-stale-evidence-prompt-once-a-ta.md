@@ -114,3 +114,4 @@ Also (Nick): on the card and drawer, show only the Refresh evidence button; do n
 - 2026-11-22T15:06:03Z · message_delivered: 1 message(s)
 - 2026-11-22T15:06:56Z · body
 - 2026-11-22T15:26:54Z · engineer stopped by request
+- 2026-11-22T15:26:56Z · note: handoff requested (cli)
