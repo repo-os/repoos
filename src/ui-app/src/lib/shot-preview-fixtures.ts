@@ -1834,6 +1834,33 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
       pinnedIntegration = repo.integration;
       // Expanded, so the pipeline summary (with "Also running") is on screen.
       useUiStore().setIntegrationBarCollapsed(false);
+      // A running merge-gate check on the fixture card, so the Checks "now" tab
+      // lists it and the card renders (same shape as pipeline:checksProgress).
+      repo.taskChecks[SHOT_PREVIEW_FIXTURE_TASK_ID] = [
+        {
+          id: "shot-parallel-validations-1275",
+          taskId: SHOT_PREVIEW_FIXTURE_TASK_ID,
+          kind: "merge-gate",
+          startedAt: new Date(Date.now() - 133_000).toISOString(),
+          finishedAt: null,
+          durationMs: null,
+          running: true,
+          passed: null,
+          code: null,
+          output: "",
+          scope: "changed:main",
+          machine: "remote host",
+          stepsDone: 3,
+          stepsTotal: 9,
+          currentStep: 4,
+          stepName: "tests",
+          testsDone: 3,
+          testsTotal: 680,
+          testsPass: 1,
+          lastProgressAt: new Date().toISOString(),
+        },
+      ];
+      setShotPreviewAppliedAttr(fixture);
       break;
     }
     case "integration:median15": {
