@@ -112,8 +112,12 @@ describe("Work Queue category visibility (#1141)", () => {
     const searchChildren = Array.from(searchControls.children);
     expect(wrapper.find(".client-board-link").exists()).toBe(false);
     const controlsIndex = children.indexOf(searchControls);
-    const searchIndex = searchChildren.findIndex((el) => el.classList.contains("board-queue-search"));
-    const visibilityIndex = searchChildren.findIndex((el) => el.classList.contains("queue-visibility"));
+    const searchIndex = searchChildren.findIndex((el) =>
+      el.classList.contains("board-queue-search"),
+    );
+    const visibilityIndex = searchChildren.findIndex((el) =>
+      el.classList.contains("queue-visibility"),
+    );
     const collapseIndex = children.findIndex(
       (el) => el.tagName === "BUTTON" && el.getAttribute("aria-label")?.includes("columns"),
     );

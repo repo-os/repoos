@@ -232,9 +232,9 @@ describe("Work board queue filters on desktop (768 / 1280 px)", () => {
       const toggle = wrapper.findAll(".view-toggle-btn").find((button) => button.text() === view);
       expect(toggle).toBeDefined();
       await toggle!.trigger("click");
-      expect(wrapper.get<HTMLInputElement>('[data-testid="board-queue-search"]').element.value).toBe(
-        "login",
-      );
+      expect(
+        wrapper.get<HTMLInputElement>('[data-testid="board-queue-search"]').element.value,
+      ).toBe("login");
       expect(chipKeys(wrapper)).toEqual([]);
       expect(wrapper.find(".filter-clear").exists()).toBe(true);
     }
