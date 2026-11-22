@@ -2,7 +2,7 @@
 id: "1282"
 title: "Task drawer: collapse the Depends on, type, priority, area and story block into a one or two line summary that opens a modal"
 type: feature
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -119,3 +119,4 @@ Start from TaskDrawer.vue and TaskDependencyPicker.vue. This is a requested rede
 - 2026-11-22T17:38:01Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-22T17:41:09Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-22T17:41:10Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: The first scoped `repoos check` run was stopped at the 10-minute background limit, so it has no pass or fail result. I've re-started it with a 2-hour limit. I'll hand off only after it reports a result. What's done so far: - **Report draft… · stderr: (empty)
+- 2026-11-22T17:41:10Z · status active→review
