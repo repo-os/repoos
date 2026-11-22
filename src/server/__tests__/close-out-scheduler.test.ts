@@ -119,6 +119,17 @@ describe("CloseOutScheduler (#1275)", () => {
     });
   }
 
+  it("keeps enqueue order when requests land in the same millisecond (#1275)", () => {
+    // Back-to-back enqueues usually share a millisecond. Ties must still resolve
+    // in enqueue order, not in filename order, so publication cannot overtake.
+    for (const id of ["0003", "0001", "0002", "0010"]) coordinator.enqueue(task(id));
+    const jobs = coordinator.allJobs();
+
+    expect(jobs.map((j) => j.taskId)).toEqual(["0003", "0001", "0002", "0010"]);
+    const stamps = jobs.map((j) => Date.parse(j.enqueuedAt));
+    for (let i = 1; i < stamps.length; i++) expect(stamps[i]).toBeGreaterThan(stamps[i - 1]);
+  });
+
   it("overlaps validations up to the limit, starting in queue order", async () => {
     coordinator.enqueue(task("0001"));
     coordinator.enqueue(task("0002"));
