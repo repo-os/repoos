@@ -193,7 +193,8 @@ PATH. Nothing in the test runs `repoos`.
 - Removing a server saves the registry first and only then drops its in-memory web data
   store, so a failed save keeps the server's sign-in. A failed save also restores the
   in-memory registry, so a later unrelated save cannot persist the change the user was
-  told failed. Adding or editing a server rolls back the same way. Deleting also resyncs
+  told failed. Adding or editing a server rolls back the same way, including the
+  retained-workspace and residency-order state that the save path touches. Deleting also resyncs
   the attention and cross-server search state, which previously kept the removed entry.
 - Removal does **not** call `WKWebsiteDataStore.remove(forIdentifier:)`. In an isolated
   XCTest host that call crashed WebKit's `WebsiteDataStoreIO` thread (EXC_BAD_ACCESS) even

@@ -25,7 +25,7 @@ final class HubAppState: ObservableObject {
     let crossServerTaskSearch: HubCrossServerTaskSearchEngine
     private var document = ServerRegistryDocument()
     private var volatileHealthByServerID: [UUID: VolatileServerHealth] = [:]
-    private var workspaceResidencyLRU: [UUID] = []
+    private(set) var workspaceResidencyLRU: [UUID] = []
     private var workspaceResidencyPressure: HubWorkspaceWebViewResidency.MemoryPressureLevel?
 
     private struct VolatileServerHealth {
@@ -652,8 +652,12 @@ final class HubAppState: ObservableObject {
                 return "Could not verify the server."
             }
 
+            // Everything this save touches before the write, so a failed write can undo it.
             let previous = document
             let previousSelection = selectedServerID
+            let previousRetained = retainedWorkspaceServerIDs
+            let previousResidencyLRU = workspaceResidencyLRU
+            let previousVolatileHealth = volatileHealthByServerID
             let now = Date()
             let group = draft.groupName.trimmingCharacters(in: .whitespacesAndNewlines)
             let normalizedGroup = group.isEmpty ? nil : group
@@ -713,6 +717,9 @@ final class HubAppState: ObservableObject {
                 // matches what is on disk.
                 document = previous
                 selectedServerID = previousSelection
+                retainedWorkspaceServerIDs = previousRetained
+                workspaceResidencyLRU = previousResidencyLRU
+                volatileHealthByServerID = previousVolatileHealth
                 hubGlobalPreferences = document.hubGlobalPreferences
                 publishEntries()
                 throw error

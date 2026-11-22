@@ -164,11 +164,47 @@ final class ServerRegistryStoreTests: XCTestCase {
         let saved = try await saveDraft(state, origin: "localhost:7171")
         XCTAssertNil(saved)
 
+        let retainedBefore = state.retainedWorkspaceServerIDs
+        let residencyBefore = state.workspaceResidencyLRU
         try setDirectoryWritable(false)
         defer { try? setDirectoryWritable(true) }
         let error = try await saveDraft(state, origin: "localhost:7172")
         XCTAssertEqual(error, "Could not save the server locally.")
         XCTAssertEqual(state.entries.count, 1, "the failed add is not shown")
+        XCTAssertEqual(state.retainedWorkspaceServerIDs, retainedBefore, "no phantom retained workspace")
+        XCTAssertEqual(state.workspaceResidencyLRU, residencyBefore, "no phantom LRU entry")
+    }
+
+    @MainActor
+    func testFailedEditRestoresNameAndResidencyState() async throws {
+        let state = HubAppState(
+            store: ServerRegistryStore(directoryURL: directoryURL),
+            healthChecker: RemoveReAddHealthChecker(projectName: "divot repoos"),
+            attentionCoordinator: HubAttentionCoordinator(notificationCenter: RemoveReAddNotificationCenter())
+        )
+        let saved = try await saveDraft(state, origin: "localhost:7171")
+        XCTAssertNil(saved)
+        let server = try XCTUnwrap(state.entries.first)
+        let retainedBefore = state.retainedWorkspaceServerIDs
+        let residencyBefore = state.workspaceResidencyLRU
+
+        try setDirectoryWritable(false)
+        defer { try? setDirectoryWritable(true) }
+        let error = await state.saveFromEditor(
+            ServerEditorDraft(
+                mode: .edit(server),
+                name: "Renamed",
+                originText: "localhost:7171",
+                groupName: "",
+                accentColorHex: "",
+                iconSymbolName: "",
+                isPinned: false
+            )
+        )
+        XCTAssertEqual(error, "Could not save the server locally.")
+        XCTAssertEqual(state.entries.first?.name, "divot repoos", "the failed rename is not shown")
+        XCTAssertEqual(state.retainedWorkspaceServerIDs, retainedBefore)
+        XCTAssertEqual(state.workspaceResidencyLRU, residencyBefore)
     }
 
     @MainActor
