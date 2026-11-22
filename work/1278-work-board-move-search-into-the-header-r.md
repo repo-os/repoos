@@ -376,4 +376,4 @@ Start from src/ui-app/src/components/BoardQueueSearch.vue and the Work view head
 - 2026-11-22T09:31:50Z · note: handoff requested (cli)
 - 2026-11-22T09:59:04Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
 - 2026-11-22T09:59:06Z · status active→review
-
+- 2026-11-22T09:59:06Z · message_queued at 2026-11-22T09:59:06.550Z
