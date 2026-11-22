@@ -266,3 +266,4 @@ Related: #1272 (timer should count from validation start). Never touch repoos.to
 - 2026-11-22T08:47:08Z · status review→active
 - 2026-11-22T08:47:10Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-22T08:47:11Z · needs_input
+- 2026-11-22T08:47:54Z · note: handoff requested (cli)
