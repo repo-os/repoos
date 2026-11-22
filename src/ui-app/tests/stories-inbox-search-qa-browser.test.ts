@@ -454,6 +454,24 @@ describe.skipIf(!existsSync(webkit.executablePath()))(
         document.head.append(noPseudo);
         const withoutPseudo = document.documentElement.scrollWidth;
         noPseudo.remove();
+        const traceOverflow = (parent: Element, depth: number): string[] => {
+          if (depth > 8) return [];
+          const result: string[] = [];
+          for (const child of Array.from(parent.children)) {
+            if (!(child instanceof HTMLElement)) continue;
+            const before = document.documentElement.scrollWidth;
+            const display = child.style.display;
+            child.style.display = "none";
+            const after = document.documentElement.scrollWidth;
+            child.style.display = display;
+            if (after < before) {
+              result.push(`${" ".repeat(depth)}${describe(child)} ${before}->${after}`);
+              result.push(...traceOverflow(child, depth + 1));
+            }
+          }
+          return result;
+        };
+        const overflowTrace = traceOverflow(document.body, 0);
         return {
           documentWidth: document.documentElement.scrollWidth,
           documentOverflow: Array.from(document.body.querySelectorAll<HTMLElement>("*"))
@@ -466,6 +484,7 @@ describe.skipIf(!existsSync(webkit.executablePath()))(
             .concat(
               `html=${document.documentElement.clientWidth}/${document.documentElement.scrollWidth} body=${document.body.clientWidth}/${document.body.scrollWidth}`,
               `without pseudo=${withoutPseudo}; fixed=${fixedEffects.join(" ")}`,
+              `trace=${overflowTrace.join(" | ")}`,
             ),
           overflowers,
           clippedControls,
