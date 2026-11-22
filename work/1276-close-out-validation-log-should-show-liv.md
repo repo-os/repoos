@@ -4,8 +4,8 @@ title: Close-out validation log should show live progress
 type: feature
 status: active
 needs_input: true
-needs_input_reason: review-human-attention
-needs_input_detail: Review pass 6 still found issues (human flag after 5 passes). The reviewer was asked to summarise the repeated bug classes — read the newest report and decide whether to keep iterating or rescope.
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: `needs some work` — the host is clipped and retries can reset the close-out timeout budget.
 priority: p1
 area: [server, core]
 assigned_to: ai
