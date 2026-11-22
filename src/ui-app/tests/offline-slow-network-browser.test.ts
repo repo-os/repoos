@@ -114,8 +114,21 @@ async function failAllWith500(page: SmokePage): Promise<void> {
   });
 }
 
-async function expectNoHorizontalOverflow(page: SmokePage, width: number): Promise<void> {
+async function expectNoHorizontalOverflow(
+  page: SmokePage,
+  width: number,
+  work = false,
+): Promise<void> {
   await page.setViewportSize({ width, height: 900 });
+  if (work) {
+    await page.waitForFunction(
+      () =>
+        window.innerWidth < 720
+          ? document.querySelector('[data-testid="mobile-work-queue"]') !== null
+          : document.querySelector(".work-page") !== null,
+      { timeout: 10_000 },
+    );
+  }
   await page.waitForTimeout(150);
   const { overflow, elements } = await page.evaluate(() => ({
     overflow: document.documentElement.scrollWidth - window.innerWidth,
@@ -167,7 +180,7 @@ describeBrowser("slow network and offline QA (#1226)", () => {
       });
       expect(banner.title).toContain("is not running");
 
-      for (const width of VIEWPORTS) await expectNoHorizontalOverflow(page, width);
+      for (const width of VIEWPORTS) await expectNoHorizontalOverflow(page, width, true);
       expect(bootErrors).toEqual([]);
     } finally {
       await page.close();

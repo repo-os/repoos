@@ -85,6 +85,10 @@ function scopedCss(component: string, source: string, markup: string, markerClas
 const storiesSource = readFileSync(resolve(uiRoot, "src/views/StoriesView.vue"), "utf8");
 const workSource = readFileSync(resolve(uiRoot, "src/views/WorkView.vue"), "utf8");
 const queueSource = readFileSync(resolve(uiRoot, "src/components/MobileWorkQueue.vue"), "utf8");
+const boardSearchSource = readFileSync(
+  resolve(uiRoot, "src/components/BoardQueueSearch.vue"),
+  "utf8",
+);
 
 /** Scoped CSS for a captured page: every SFC the fixture renders. */
 function pageScopedCss(markup: string): string {
@@ -94,6 +98,7 @@ function pageScopedCss(markup: string): string {
     scopedCss("WorkView.vue", workSource, markup, "work-page"),
     scopedCss("WorkView.vue", workSource, markup, "mobile-detail-state"),
     scopedCss("MobileWorkQueue.vue", queueSource, markup, "mobile-work"),
+    scopedCss("BoardQueueSearch.vue", boardSearchSource, markup, "board-search-row"),
   ].join("\n");
 }
 
