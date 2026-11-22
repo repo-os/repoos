@@ -12,7 +12,7 @@ branch: feat/work-board-move-search-into-the-header-r
 cli_override: github copilot
 model_override: default
 created_at: "2026-11-20T08:46:27Z"
-updated_at: "2026-11-22T10:28:56Z"
+updated_at: "2026-11-22T11:28:33Z"
 last_close_out_gate_ms: 1294444
 last_close_out_gate_at: "2026-11-22T10:28:26.581Z"
 review_passes: 5
@@ -355,3 +355,4 @@ Start from src/ui-app/src/components/BoardQueueSearch.vue and the Work view head
 - 2026-11-22T09:59:59Z · note: review pass 8: good to go
 - 2026-11-22T10:28:26Z · close-out gate completed in 1294s
 - 2026-11-22T10:28:56Z · status done→done, release:success
+- 2026-11-22T11:28:33Z · message_dropped: 2 queued message(s) discarded — task is done
