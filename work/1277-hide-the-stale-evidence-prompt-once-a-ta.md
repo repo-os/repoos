@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-22T11:53:55.847Z: repoos check failed: ui verification failed (2 issue(s)): [route] auto: matched src/ui-app/** · phone 390x844: declared route / but the browser landed on /work (login or redirect?) (captured http://127.0.0.1:38563/work) (http://127.0.0.1:38563/work); [route] auto: matched src/ui-app/** · desktop 1280x800: declared route / but the browser landed on /work (login or redirect?) (captured http://127.0.0.1:38563/work) (http://127.0.0.1:38563/work)"
 id: "1277"
 title: Hide the stale-evidence prompt once a task is queued or moving to done
 type: feature
@@ -44,3 +46,4 @@ Also (Nick): on the card and drawer, show only the Refresh evidence button; do n
 - 2026-11-22T11:53:52Z · note: ui verification failed: ui verification failed (2 issue(s)): [route] auto: matched src/ui-app/** · phone 390x844: declared route / but the browser landed on /work (login or redirect?) (captured http://127.0.0.1:38563/work) (http://127.0.0.1:38563/work); [route] auto: matched src/ui-app/** · desktop 1280x800: declared route / but the browser landed on /work (login or redirect?) (captured http://127.0.0.1:38563/work) (http://127.0.0.1:38563/work)
 - 2026-11-22T11:53:52Z · message_queued at 2026-11-22T11:53:52.697Z
 - 2026-11-22T11:53:55Z · message_delivered: 1 message(s)
+
