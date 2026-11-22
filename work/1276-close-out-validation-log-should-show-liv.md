@@ -12,8 +12,6 @@ cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T07:42:21Z"
 updated_at: "2026-11-22T03:54:03Z"
-last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
-last_handoff_failure_sha: 3ca9875eed16235b7b687deb9ef4651aa6004256
 review_passes: 4
 last_check_failure: "repoos check at 2026-11-20T21:01:31.328Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Close-out drawer with live step, host, and attempt (target \"default\"): loading state detected: loading text \"Loading changes…\" on /work?task=9999&tab=changes (http://127.0.0.1:43237/work?task=9999&tab=changes&shotState=drawer%3AcloseOutRemoteTests)"
 review_failed_report_retries: 0
@@ -198,3 +196,4 @@ Related: #1272 (timer should count from validation start). Never touch repoos.to
 - 2026-11-22T03:51:02Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-22T03:54:02Z · note: ui verification passed: 1 of 1 shot captured with clean console
 - 2026-11-22T03:54:03Z · note: handoff requested (cli)
+
