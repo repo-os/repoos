@@ -2,7 +2,7 @@
 id: "1277"
 title: Hide the stale-evidence prompt once a task is queued or moving to done
 type: feature
-status: active
+status: review
 priority: p3
 area: web
 assigned_to: ai
@@ -174,4 +174,4 @@ Also (Nick): on the card and drawer, show only the Refresh evidence button; do n
 - 2026-11-22T18:35:43Z · note: handoff requested (cli)
 - 2026-11-22T18:37:15Z · CTO nudge: held — handoff gate is running
 - 2026-11-22T18:59:30Z · note: ui verification passed: 1 of 1 shot captured with clean console
-- 2026-11-22T18:59:31Z · engineer stopped by request
+- 2026-11-22T18:59:31Z · status active→review
