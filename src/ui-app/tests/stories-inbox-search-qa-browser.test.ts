@@ -343,7 +343,7 @@ describe.skipIf(!existsSync(webkit.executablePath()))(
         `<meta name="viewport" content="width=device-width, initial-scale=1.0">` +
           `<style>${css}</style><style>${pageScopedCss(markup)}</style>` +
           `<style>html, body { width: 100%; margin: 0; } *, *::before, *::after { animation: none !important; transition: none !important; }</style>` +
-          `<div class="app-shell${narrow ? " is-narrow" : ""}"><div class="body"><div class="main">${markup}</div></div></div>`,
+          `<div class="app-shell${narrow ? " is-narrow" : ""}"><div class="body"><aside class="sidebar"></aside><main class="main">${markup}</main></div></div>`,
       );
       const shots = process.env.QA_SHOTS;
       if (shots) {
