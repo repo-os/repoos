@@ -11,7 +11,7 @@ branch: feat/close-outs-validate-several-tasks-at-onc
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T07:42:13Z"
-updated_at: "2026-11-22T04:58:22Z"
+updated_at: "2026-11-22T04:58:37Z"
 review_rounds: 1
 review_passes: 1
 last_check_failure: "repoos check at 2026-11-20T11:18:52.239Z: repoos check failed: vite v8.2.0 building client environment for production..."
@@ -438,3 +438,4 @@ Read docs/close-out-pipeline.md and docs/remote-validation.md first. Never touch
 - 2026-11-22T04:58:18Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: The scoped check is running in the background, and the monitor will report its exit line and any failures. I'm not requesting handoff until that result is in. · stderr: (empty)
 - 2026-11-22T04:58:22Z · message_delivered: 1 message(s)
 - 2026-11-22T04:58:22Z · orphaned run process stopped · pid 33566 · /opt/homebrew/bin/bun /Users/nick/.bun/bin/repoos check · cpu 1s · age 3m
+- 2026-11-22T04:58:37Z · orphaned run process stopped · pid 36962 · ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new -o ConnectTimeout=15 -o ServerAliveInterval · cpu 0s · age 3m
