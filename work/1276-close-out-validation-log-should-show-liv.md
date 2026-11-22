@@ -2,7 +2,7 @@
 id: "1276"
 title: Close-out validation log should show live progress
 type: feature
-status: active
+status: review
 priority: p1
 area: [server, core]
 assigned_to: ai
@@ -196,4 +196,4 @@ Related: #1272 (timer should count from validation start). Never touch repoos.to
 - 2026-11-22T03:51:02Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-22T03:54:02Z · note: ui verification passed: 1 of 1 shot captured with clean console
 - 2026-11-22T03:54:03Z · note: handoff requested (cli)
-
+- 2026-11-22T03:54:03Z · status active→review
