@@ -284,3 +284,4 @@ Start from src/ui-app/src/components/BoardQueueSearch.vue and the Work view head
 - 2026-11-22T05:19:20Z · message_delivered: 1 message(s)
 - 2026-11-22T05:27:02Z · message_queued at 2026-11-22T05:27:02.064Z
 - 2026-11-22T05:27:06Z · engineer stopped by request
+- 2026-11-22T05:27:07Z · note: handoff requested (cli)
