@@ -226,7 +226,7 @@ without reading the server log.
   card, status bar and drawer tooltip show the same reason as "Attempt 2 — attempt 1
   failed: …".
 - **Steps.** `queued for host slot` (waiting for a runner slot), `bundling and
-  uploading`, `building candidate`, `running tests` (with remote done/total test
+  uploading`, `installing dependencies`, `building candidate`, `running tests` (with remote done/total test
   file progress when available), `syncing with
   main`, `running checks · <step>` (local gate), `publishing to main`,
   `cleaning up`, and `remote validation`. The runner's combined build-and-test

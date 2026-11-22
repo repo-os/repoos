@@ -63,7 +63,7 @@ describe("stepForRemoteStage (#1276)", () => {
     // `run` is the runner's combined build-and-test command until its first
     // test marker: the step is the remote validation, not "running tests" (#1276 review).
     ["run", CLOSE_OUT_STEP.remote],
-    ["install", CLOSE_OUT_STEP.runningTests],
+    ["install", CLOSE_OUT_STEP.installing],
     ["test", CLOSE_OUT_STEP.runningTests],
     ["tests", CLOSE_OUT_STEP.runningTests],
     ["build", CLOSE_OUT_STEP.building],

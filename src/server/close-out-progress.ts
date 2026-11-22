@@ -50,6 +50,7 @@ export const CLOSE_OUT_STEP = {
   remote: "remote validation",
   queuedForHost: "queued for host slot",
   bundling: "bundling and uploading",
+  installing: "installing dependencies",
   runningTests: "running tests",
   checks: "running checks",
   publishing: "publishing to main",
@@ -74,6 +75,7 @@ export function stepForRemoteStage(stage: string | null | undefined): string | n
     case "run":
       return CLOSE_OUT_STEP.remote;
     case "install":
+      return CLOSE_OUT_STEP.installing;
     case "test":
     case "tests":
       return CLOSE_OUT_STEP.runningTests;
