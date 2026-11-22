@@ -11,7 +11,7 @@ branch: feat/close-out-validation-log-should-show-liv
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T07:42:21Z"
-updated_at: "2026-11-22T03:50:36Z"
+updated_at: "2026-11-22T03:51:02Z"
 last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
 last_handoff_failure_sha: 3ca9875eed16235b7b687deb9ef4651aa6004256
 review_passes: 4
@@ -194,3 +194,4 @@ Related: #1272 (timer should count from validation start). Never touch repoos.to
 - 2026-11-22T03:50:35Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: The last #1276 handoff failed with "server-side finalization timed out". A new handoff run is 11 minutes into its remote run, and the worktree is still locked. The drawer fixture edit and the final handoff are on hold. Task status is still… · stderr: (empty)
 - 2026-11-22T03:50:35Z · status active→review
 - 2026-11-22T03:50:36Z · message_delivered: 1 message(s)
+- 2026-11-22T03:51:02Z · message_queued at 2026-11-22T03:51:02.555Z
