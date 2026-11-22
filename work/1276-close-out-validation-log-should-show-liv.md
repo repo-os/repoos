@@ -11,7 +11,7 @@ branch: feat/close-out-validation-log-should-show-liv
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T07:42:21Z"
-updated_at: "2026-11-22T03:07:07Z"
+updated_at: "2026-11-22T03:09:03Z"
 last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (appeared: src/server/close-out-progress.ts, src/server/remote-validation.ts) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 last_handoff_failure_sha: 186ed2e4093e9e4c85434660b275d6c18b482f03
 review_passes: 4
@@ -186,3 +186,4 @@ Related: #1272 (timer should count from validation start). Never touch repoos.to
 - 2026-11-22T03:04:50Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: The scoped check is still running in the background. The monitor will notify me when it finishes, so I'll wait for that before handing off. · stderr: (empty)
 - 2026-11-22T03:04:51Z · note: handoff requested (cli)
 - 2026-11-22T03:07:07Z · message_delivered: 1 message(s)
+- 2026-11-22T03:09:03Z · CTO nudge: held — handoff gate is running
