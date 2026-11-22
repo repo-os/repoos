@@ -133,10 +133,14 @@ async function expectNoHorizontalOverflow(
   const { overflow, elements } = await page.evaluate(() => ({
     overflow: document.documentElement.scrollWidth - window.innerWidth,
     elements: Array.from(document.body.querySelectorAll<HTMLElement>("*"))
-      .filter((el) => el.getBoundingClientRect().right > window.innerWidth + 1)
-      .slice(0, 12)
+      .filter((el) => el.scrollWidth > el.clientWidth + 1)
+      .slice(0, 20)
       .map(
-        (el) => `${el.tagName}.${el.className} at ${Math.round(el.getBoundingClientRect().right)}`,
+        (el) =>
+          `${el.tagName}.${el.className} x=${Math.round(el.getBoundingClientRect().left)} width=${el.clientWidth}/${el.scrollWidth} overflow=${getComputedStyle(el).overflowX}`,
+      )
+      .concat(
+        `html=${document.documentElement.clientWidth}/${document.documentElement.scrollWidth} body=${document.body.clientWidth}/${document.body.scrollWidth}`,
       ),
   }));
   expect(overflow, `horizontal overflow at ${width}px: ${elements.join(", ")}`).toBeLessThanOrEqual(

@@ -442,9 +442,15 @@ describe.skipIf(!existsSync(webkit.executablePath()))(
         return {
           documentWidth: document.documentElement.scrollWidth,
           documentOverflow: Array.from(document.body.querySelectorAll<HTMLElement>("*"))
-            .filter((el) => el.getBoundingClientRect().right > vw + 1)
-            .slice(0, 12)
-            .map((el) => `${describe(el)} at ${Math.round(el.getBoundingClientRect().right)}`),
+            .filter((el) => el.scrollWidth > el.clientWidth + 1)
+            .slice(0, 20)
+            .map(
+              (el) =>
+                `${describe(el)} x=${Math.round(el.getBoundingClientRect().left)} width=${el.clientWidth}/${el.scrollWidth} overflow=${getComputedStyle(el).overflowX}`,
+            )
+            .concat(
+              `html=${document.documentElement.clientWidth}/${document.documentElement.scrollWidth} body=${document.body.clientWidth}/${document.body.scrollWidth}`,
+            ),
           overflowers,
           clippedControls,
           links,
