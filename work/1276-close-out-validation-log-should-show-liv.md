@@ -2,7 +2,7 @@
 id: "1276"
 title: Close-out validation log should show live progress
 type: feature
-status: active
+status: review
 priority: p1
 area: [server, core]
 assigned_to: ai
@@ -273,3 +273,4 @@ Related: #1272 (timer should count from validation start). Never touch repoos.to
 - 2026-11-22T09:10:51Z · message_delivered: 2 message(s)
 - 2026-11-22T09:12:44Z · CTO nudge: held — handoff gate is running
 - 2026-11-22T09:27:21Z · note: handoff requested (cli)
+- 2026-11-22T09:27:21Z · status active→review
