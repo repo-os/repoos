@@ -52,3 +52,4 @@ Look in the macos Hub app sources and the local-server launcher. Never touch rep
 - 2026-11-22T12:43:34Z · message_delivered: 1 message(s)
 - 2026-11-22T12:48:37Z · body
 - 2026-11-22T12:50:06Z · status active→review
+- 2026-11-22T12:50:06Z · message_queued at 2026-11-22T12:50:06.797Z
