@@ -66,6 +66,7 @@ import { extractReviewReportSections } from "../../../core/review-report-section
 import { PRIORITIES, TASK_TYPES } from "../../../core/types.js";
 import {
   integrationActiveCopy,
+  integrationEvidencePromptHidden,
   integrationQueuedCopy,
   integrationPipelineRole,
   integrationProgressCardLabel,
@@ -2369,6 +2370,11 @@ const inPipeline = computed(() => {
   if (!ui.active || !snap) return false;
   return snap.active?.taskId === ui.active.id || snap.queue.includes(ui.active.id);
 });
+
+/** Hides Refresh evidence while a close-out is queued or running (#1277). Unlike `inPipeline`, a failed job does not count, so the button returns. */
+const evidencePromptHidden = computed(
+  () => !!ui.active && integrationEvidencePromptHidden(repo.integration, ui.active.id),
+);
 
 /** Last successful merge-gate duration on this task (#0679), for close-out tuning. */
 const lastCloseOutGateLabel = computed(() => {
@@ -7359,7 +7365,7 @@ watch(
                    gitignored attachments tree. -->
               <div class="changes-summary-actions">
                 <Button
-                  v-if="ui.active?.status === 'review'"
+                  v-if="ui.active?.status === 'review' && !evidencePromptHidden"
                   variant="outline"
                   size="sm"
                   data-test-id="refresh-evidence"

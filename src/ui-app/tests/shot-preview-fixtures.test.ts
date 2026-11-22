@@ -622,6 +622,18 @@ describe("shot preview board fixtures (#0743)", () => {
     expect(repo.reviews["0832"]?.report?.markdown).toContain("contrast audit");
   });
 
+  it("seeds a stale-only review queued behind another close-out (#1277)", () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const repo = useRepoStore();
+    applyShotPreviewFixture(repo, "card:staleEvidenceQueued");
+    expect(repo.reviews[SHOT_PREVIEW_FIXTURE_TASK_ID]?.report?.markdown).toContain(
+      "STALE-EVIDENCE-ONLY",
+    );
+    expect(repo.integration?.queue).toEqual([SHOT_PREVIEW_FIXTURE_TASK_ID]);
+    expect(repo.integration?.active?.taskId).not.toBe(SHOT_PREVIEW_FIXTURE_TASK_ID);
+  });
+
   it("seeds check-wait escalation detail for clamp shots (#1034)", () => {
     const pinia = createPinia();
     setActivePinia(pinia);
@@ -1214,6 +1226,8 @@ describe("shot preview board fixtures (#0743)", () => {
 
   it("recognizes client-seeded pipeline fixture task ids", () => {
     expect(isShotPreviewSeededTaskId("9999")).toBe(true);
+    // The close-out blocker queued ahead of the #1277 card has no server record.
+    expect(isShotPreviewSeededTaskId("9998")).toBe(true);
     expect(isShotPreviewSeededTaskId("pipe-review")).toBe(true);
     expect(isShotPreviewSeededTaskId("0980-3")).toBe(true);
     expect(isShotPreviewSeededTaskId("1062")).toBe(false);

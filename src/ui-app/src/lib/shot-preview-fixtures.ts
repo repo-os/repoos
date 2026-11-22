@@ -4,6 +4,7 @@
 import { ref } from "vue";
 import { SERVER_UNREACHABLE_MESSAGE } from "../api";
 import {
+  SHOT_PREVIEW_BLOCKER_TASK_ID,
   SHOT_PREVIEW_FIXTURE_QUERY,
   SHOT_PREVIEW_FIXTURE_TASK_ID,
   SHOT_PREVIEW_APPLIED_ATTR,
@@ -47,6 +48,7 @@ const DEBUG_LOGS_FIXTURE_MESSAGE =
 /** Client-only task ids seeded by preview board/pipeline fixtures (never on the API). */
 export function isShotPreviewSeededTaskId(taskId: string): boolean {
   if (taskId === SHOT_PREVIEW_FIXTURE_TASK_ID) return true;
+  if (taskId === SHOT_PREVIEW_BLOCKER_TASK_ID) return true;
   if (taskId.startsWith("pipe-")) return true;
   if (/^0980-\d+$/.test(taskId)) return true;
   return false;
@@ -2261,6 +2263,45 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
           },
         },
       };
+      break;
+    }
+    case "card:staleEvidenceQueued": {
+      // #1277 — a stale-only review queued for close-out. The card must hide the
+      // stale-evidence notice and Refresh evidence while the job waits.
+      ensureFixtureTask(repo, "review", { title: "Stale evidence during close-out" });
+      repo.reviews = {
+        ...repo.reviews,
+        [SHOT_PREVIEW_FIXTURE_TASK_ID]: {
+          running: false,
+          enabled: true,
+          lines: [],
+          report: {
+            id: SHOT_PREVIEW_FIXTURE_TASK_ID,
+            at: new Date().toISOString(),
+            agent: "reviewer",
+            cli: "opencode",
+            model: "default",
+            branch: "feat/shot-preview-fixture",
+            state: "ok",
+            markdown: "## Verdict\nneeds some work. STALE-EVIDENCE-ONLY\n",
+          },
+        },
+      };
+      // Genuinely queued: another task's close-out is running, and this task
+      // waits behind it in the FIFO queue. The status bar is collapsed so its
+      // popover does not cover the card footer the capture is about.
+      // No branch: like every fixture card, this one must not fetch handoff-status
+      // for an id the server does not know (#0768).
+      ensureFixtureTask(
+        repo,
+        "active",
+        { title: "Close-out running for another task", branch: "" },
+        SHOT_PREVIEW_BLOCKER_TASK_ID,
+      );
+      const pipeline = activePipeline(SHOT_PREVIEW_BLOCKER_TASK_ID, "validating");
+      repo.integration = { ...pipeline, queue: [SHOT_PREVIEW_FIXTURE_TASK_ID] };
+      pinnedIntegration = repo.integration;
+      useUiStore().setIntegrationBarCollapsed(true);
       break;
     }
     case "card:checkWaitDetail":
