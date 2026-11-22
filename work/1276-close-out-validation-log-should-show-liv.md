@@ -3,6 +3,9 @@ id: "1276"
 title: Close-out validation log should show live progress
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-human-attention
+needs_input_detail: Review pass 7 still found issues (human flag after 5 passes). The reviewer was asked to summarise the repeated bug classes — read the newest report and decide whether to keep iterating or rescope.
 priority: p1
 area: [server, core]
 assigned_to: ai
@@ -261,4 +264,5 @@ Related: #1272 (timer should count from validation start). Never touch repoos.to
 - 2026-11-22T08:31:29Z · status active→review
 - 2026-11-22T08:31:32Z · message_queued at 2026-11-22T08:31:32.226Z
 - 2026-11-22T08:34:38Z · note: review pass 12: needs some work
+- 2026-11-22T08:34:39Z · needs_input
 - 2026-11-22T08:34:39Z · needs_input
