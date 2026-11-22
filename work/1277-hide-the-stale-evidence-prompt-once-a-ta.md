@@ -175,3 +175,4 @@ Also (Nick): on the card and drawer, show only the Refresh evidence button; do n
 - 2026-11-22T18:37:15Z · CTO nudge: held — handoff gate is running
 - 2026-11-22T18:59:30Z · note: ui verification passed: 1 of 1 shot captured with clean console
 - 2026-11-22T18:59:31Z · status active→review
+- 2026-11-22T18:59:31Z · message_queued at 2026-11-22T18:59:31.492Z
