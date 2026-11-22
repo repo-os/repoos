@@ -11,7 +11,7 @@ branch: feat/close-outs-validate-several-tasks-at-onc
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T07:42:13Z"
-updated_at: "2026-11-22T06:30:52Z"
+updated_at: "2026-11-22T06:30:55Z"
 review_rounds: 1
 review_passes: 1
 last_check_failure: "repoos check at 2026-11-20T11:18:52.239Z: repoos check failed: vite v8.2.0 building client environment for production..."
@@ -459,3 +459,4 @@ Read docs/close-out-pipeline.md and docs/remote-validation.md first. Never touch
 - 2026-11-22T06:10:16Z · CTO nudge: held — handoff gate is running
 - 2026-11-22T06:30:52Z · note: ui verification failed: ui verification failed (1 issue(s)): [missing-target] Pipeline shows a job validating alongside the active close-out (Also running) (target "default"): highlight .ips-parallel matched nothing on /work (http://127.0.0.1:41431/work?shotState=integration%3AparallelValidations)
 - 2026-11-22T06:30:52Z · message_queued at 2026-11-22T06:30:52.348Z
+- 2026-11-22T06:30:55Z · message_delivered: 1 message(s)
