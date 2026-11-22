@@ -11,7 +11,7 @@ branch: feat/hide-the-stale-evidence-prompt-once-a-ta
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T08:26:19Z"
-updated_at: "2026-11-22T12:16:15Z"
+updated_at: "2026-11-22T12:21:56Z"
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-11-22T12:15:49.397Z: repoos check failed: ui verification failed: runner result omitted the UI verification record: ui verification: capture of /work failed — screenshot: Timeout 4993.291999999994ms exceeded."
 ---
@@ -33,11 +33,11 @@ Also (Nick): on the card and drawer, show only the Refresh evidence button; do n
 ```json
 [
 {
-  "label": "Queued close-out card hides the stale-evidence notice and Refresh evidence",
-  "target": "default",
-  "route": "/work",
-  "highlight": "[data-task-id=\"9999\"]",
-  "state": "card:staleEvidenceQueued"
+"label": "Queued close-out card hides the stale-evidence notice and Refresh evidence",
+"target": "default",
+"route": "/work",
+"highlight": "[data-task-id=\"9999\"]",
+"state": "card:staleEvidenceQueued"
 }
 ]
 ```
@@ -65,3 +65,4 @@ Also (Nick): on the card and drawer, show only the Refresh evidence button; do n
 - 2026-11-22T12:15:46Z · message_queued at 2026-11-22T12:15:46.285Z
 - 2026-11-22T12:15:49Z · message_delivered: 1 message(s)
 - 2026-11-22T12:16:15Z · body
+- 2026-11-22T12:21:56Z · message_queued at 2026-11-22T12:21:56.470Z
