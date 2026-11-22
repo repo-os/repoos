@@ -146,3 +146,4 @@ Copy change only. Never touch repoos.toml. Headless Playwright only.
 - 2026-11-22T15:06:55Z · status review→active
 - 2026-11-22T15:06:57Z · needs_input
 - 2026-11-22T15:06:57Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-22T15:06:57Z · message_delivered: 1 message(s)
