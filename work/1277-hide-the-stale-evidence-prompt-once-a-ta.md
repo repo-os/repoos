@@ -147,3 +147,4 @@ Also (Nick): on the card and drawer, show only the Refresh evidence button; do n
 - 2026-11-22T17:43:58Z · handoff failed · task-file handoff failed at verify · ui verification failed (2 issue(s)): [request] HTTP 404 for http://127.0.0.1:45887/api/tasks/9998/handoff-status (http://127.0.0.1:45887/api/tasks/9998/handoff-status); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:45887/api/tasks/9998/handoff-status)
 - 2026-11-22T17:43:58Z · message_delivered: 2 message(s)
 - 2026-11-22T17:53:01Z · message_queued at 2026-11-22T17:53:01.629Z
+- 2026-11-22T17:53:01Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
