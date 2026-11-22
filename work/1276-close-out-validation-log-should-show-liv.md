@@ -1,5 +1,4 @@
 ---
-last_check_failure: "repoos check at 2026-11-22T07:13:31.180Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 id: "1276"
 title: Close-out validation log should show live progress
 type: feature
@@ -12,7 +11,8 @@ branch: feat/close-out-validation-log-should-show-liv
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T07:42:21Z"
-updated_at: "2026-11-22T07:13:31Z"
+updated_at: "2026-11-22T07:26:32Z"
+last_check_failure: "repoos check at 2026-11-22T07:13:31.180Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 review_passes: 5
 review_failed_report_retries: 0
 review_rounds: 2
@@ -243,5 +243,4 @@ Related: #1272 (timer should count from validation start). Never touch repoos.to
 - 2026-11-22T07:06:56Z · needs_input (review-rounds-exhausted) cleared for review again by human
 - 2026-11-22T07:13:28Z · message_queued at 2026-11-22T07:13:28.018Z
 - 2026-11-22T07:13:31Z · message_delivered: 1 message(s)
-
-
+- 2026-11-22T07:26:32Z · note: ui verification passed: 1 of 1 shot captured with clean console
