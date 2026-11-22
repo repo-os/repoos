@@ -1,6 +1,4 @@
 ---
-check_retry_count: 1
-last_check_failure: "repoos check at 2026-11-22T13:48:50.335Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 id: "1277"
 title: Hide the stale-evidence prompt once a task is queued or moving to done
 type: feature
@@ -13,7 +11,9 @@ branch: feat/hide-the-stale-evidence-prompt-once-a-ta
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T08:26:19Z"
-updated_at: "2026-11-22T13:48:50Z"
+updated_at: "2026-11-22T14:07:00Z"
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-22T13:48:50.335Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 review_passes: 3
 review_rounds: 1
 ---
