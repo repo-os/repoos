@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/decimal-number-fields.test.ts > numeric enum select fields (#1161) > accepts number and string forms for maxParallelValidations, tests/done-guard-orchestrator.test.ts > publish-time dirty-main guard (#0211) > refuses publication while a hotfix owns the main checkout, tests/raw-config-route.test.ts > config raw routes (#0375) > writes valid TOML and reloads config + index on thinkpad — fix it in the feature branch and re-run the gate"
+last_handoff_failure_sha: 60ac16c8a6d5bc23420d03188aa81a9bb64e9d8e
 id: "1275"
 title: "Close-outs: validate several tasks at once on different runner machines"
 type: feature
@@ -536,3 +538,4 @@ Read docs/close-out-pipeline.md and docs/remote-validation.md first. Never touch
 - 2026-11-22T11:11:26Z · note: handoff requested (cli)
 - 2026-11-22T11:28:33Z · message_queued at 2026-11-22T11:28:33.863Z
 - 2026-11-22T11:28:33Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: tests/decimal-number-fields.test.ts > numeric enum select fields (#1161) > accepts number and string forms for maxParallelValidations, tests/done-guard-orchestrator.test.ts > publish-time dirty-main guard (#0211) > refuses publication while a hotfix owns the main checkout, tests/raw-config-route.test.ts > config raw routes (#0375) > writes valid TOML and reloads config + index on thinkpad — fix it in the feature branch and re-run the gate
+
