@@ -551,6 +551,7 @@ const TASK_CHECK_PROGRESS_FIXTURES: ReadonlySet<ShotPreviewFixtureId> = new Set(
   "card:handoffStaleActive",
   "drawer:checksProgress",
   "pipeline:checksProgress",
+  "integration:parallelValidations",
 ]);
 
 /** Preview fixtures that pin a live `taskChecks` row on #9999 (#1054 pipeline shot). */
@@ -1785,6 +1786,31 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
       if (!repo.runningIds.includes(SHOT_PREVIEW_FIXTURE_TASK_ID)) {
         repo.runningIds = [...repo.runningIds, SHOT_PREVIEW_FIXTURE_TASK_ID];
       }
+      // The Checks "now" tab lists running checks as cards, so the fixture task
+      // needs a live check row for the pipeline's "Also running" strip to share
+      // the screen with a card (the same seeding `checks:progress` uses).
+      repo.taskChecks[SHOT_PREVIEW_FIXTURE_TASK_ID] = [
+        {
+          id: "shot-check-parallel-validations",
+          taskId: SHOT_PREVIEW_FIXTURE_TASK_ID,
+          kind: "handoff-finalize",
+          startedAt: new Date(Date.now() - 4 * 60_000).toISOString(),
+          finishedAt: null,
+          durationMs: null,
+          running: true,
+          passed: null,
+          code: null,
+          output: "",
+          scope: "changed:main",
+          machine: "air",
+          stepsDone: 3,
+          stepsTotal: 12,
+          currentStep: 4,
+          stepName: "build",
+          lastProgressAt: new Date(Date.now() - 15_000).toISOString(),
+          attempt: 1,
+        },
+      ];
       const startedAt = new Date(Date.now() - 4 * 60 * 1000).toISOString();
       const at = nowIso();
       repo.integration = {
