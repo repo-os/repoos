@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-22T14:32:16Z"
-review_passes: 6
 id: "1279"
 title: "Easter eggs bundle: rename review history column to Issues"
 type: feature
@@ -18,6 +16,8 @@ branch: feat/easter-eggs-bundle-rename-review-history
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T10:35:33Z"
+updated_at: "2026-11-22T14:53:04Z"
+review_passes: 6
 last_check_failure: "repoos check at 2026-11-22T14:04:01.314Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 handoff_signal_retry_count: 1
 review_rounds: 2
