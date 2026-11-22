@@ -2288,7 +2288,14 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
       // Genuinely queued: another task's close-out is running, and this task
       // waits behind it in the FIFO queue. The status bar is collapsed so its
       // popover does not cover the card footer the capture is about.
-      ensureFixtureTask(repo, "active", { title: "Close-out running for another task" }, "9998");
+      // No branch: like every fixture card, this one must not fetch handoff-status
+      // for an id the server does not know (#0768).
+      ensureFixtureTask(
+        repo,
+        "active",
+        { title: "Close-out running for another task", branch: "" },
+        "9998",
+      );
       const pipeline = activePipeline("9998", "validating");
       repo.integration = { ...pipeline, queue: [SHOT_PREVIEW_FIXTURE_TASK_ID] };
       pinnedIntegration = repo.integration;
