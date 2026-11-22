@@ -478,3 +478,4 @@ Read docs/close-out-pipeline.md and docs/remote-validation.md first. Never touch
 - 2026-11-22T07:42:59Z · message_queued at 2026-11-22T07:42:59.083Z
 - 2026-11-22T07:43:02Z · message_delivered: 1 message(s)
 - 2026-11-22T08:02:27Z · handoff failed · remote validation failed: test failure: gate exit 1 on thinkpad — fix it in the feature branch and re-run the gate
+- 2026-11-22T08:02:27Z · message_queued at 2026-11-22T08:02:27.944Z
