@@ -27,7 +27,13 @@ import WorkView from "../src/views/WorkView.vue";
 import { useRepoStore } from "../src/stores/repo";
 import * as apiMod from "../src/api";
 import type { Task } from "../src/types";
-import type { WorkQueueFilters } from "../src/lib/workQueueFilters";
+import {
+  ignoredWorkQueueFilterChips,
+  NO_WORK_QUEUE_FILTERS,
+  type WorkQueueFilterChip,
+  type WorkQueueFilters,
+  type WorkQueueSort,
+} from "../src/lib/workQueueFilters";
 
 const uiRoot = resolve(__dirname, "..");
 
@@ -62,8 +68,10 @@ function workViewStubs() {
     RouterLink: { template: "<a><slot /></a>" },
     Button: buttonStub,
     Select: selectStub,
-    SelectTrigger: selectStub,
-    SelectContent: selectStub,
+    // The real sort trigger is 210px wide (WorkView), and its menu stays closed.
+    // Keep both in the header's layout so the row fits as it does in the app.
+    SelectTrigger: { template: "<div><slot /></div>" },
+    SelectContent: { template: "<div hidden><slot /></div>" },
     SelectItem: selectStub,
     SelectViewport: selectStub,
     SelectValue: selectStub,
@@ -169,7 +177,7 @@ afterEach(() => {
 });
 
 describe("Work board queue filters on desktop (768 / 1280 px)", () => {
-  it("applies the URL search and priority to the board and shows them as chips", async () => {
+  it("applies the URL search and priority and shows only the priority chip", async () => {
     const wrapper = mountDesktop({ q: "login", priority: "p1" });
     await flushPromises();
     expect(visibleIds(wrapper)).toEqual(["0001"]);
@@ -208,6 +216,9 @@ describe("Work board queue filters on desktop (768 / 1280 px)", () => {
     const bar = wrapper.find(".board-queue-filters");
     expect(bar.exists()).toBe(true);
     expect(chipKeys(wrapper)).toEqual([]);
+    expect(wrapper.get<HTMLInputElement>('[data-testid="board-queue-search"]').element.value).toBe(
+      "login",
+    );
     expect(bar.find(".board-queue-filter-note").exists()).toBe(true);
     expect(bar.find(".filter-clear").exists()).toBe(true);
   });
@@ -271,12 +282,23 @@ describe("Work board queue filters on desktop (768 / 1280 px)", () => {
     });
   });
 
-  it("the board search box is not shown on the pipeline, which does not filter", async () => {
+  it("keeps the query visible and clearable when switching between views", async () => {
     window.localStorage.setItem("repoos.work.view-mode", "pipeline");
     const wrapper = mountDesktop({ q: "login" });
     await flushPromises();
-    expect(wrapper.find('[data-testid="board-queue-search"]').exists()).toBe(false);
-    expect(wrapper.find(".board-queue-filters").exists()).toBe(true);
+    const search = wrapper.get<HTMLInputElement>('[data-testid="board-queue-search"]');
+    expect(search.element.value).toBe("login");
+    const boardButton = wrapper
+      .findAll(".view-toggle-btn")
+      .find((button) => button.text() === "Board");
+    expect(boardButton).toBeDefined();
+    await boardButton!.trigger("click");
+    expect(wrapper.get<HTMLInputElement>('[data-testid="board-queue-search"]').element.value).toBe(
+      "login",
+    );
+    expect(visibleIds(wrapper)).toEqual(["0001"]);
+    await wrapper.get('[data-testid="board-queue-search-clear"]').trigger("click");
+    expect(routeState.router.replace).toHaveBeenCalledWith({ query: {} });
   });
 
   it("a fresh project (new origin, no URL filters) starts unfiltered", async () => {
@@ -291,6 +313,108 @@ describe("Work board queue filters on desktop (768 / 1280 px)", () => {
     await flushPromises();
     expect(next.find(".board-queue-filters").exists()).toBe(false);
     expect(visibleIds(next)).toEqual(["0900"]);
+  });
+});
+
+// #1260: the board applies the queue sort and shows phone-only status values
+// as ignored notices, so no URL value on a board width is dropped silently.
+describe("Work board applies the queue sort and notices phone-only status (#1260)", () => {
+  /** Dated fixtures so the sort has a visible order: 0003 is oldest, 0002 newest. */
+  function datedTasks(): void {
+    useRepoStore().tasks = [
+      task("0001", { updated_at: "2026-11-02T00:00:00Z" }),
+      task("0002", { updated_at: "2026-11-03T00:00:00Z" }),
+      task("0003", { updated_at: "2026-11-01T00:00:00Z" }),
+    ];
+  }
+
+  for (const width of [768, 1280]) {
+    it(`applies sort=oldest on the board at ${width}px and shows it as a chip`, async () => {
+      stubViewport(width);
+      datedTasks();
+      const wrapper = mountDesktop({ sort: "oldest" });
+      await flushPromises();
+      expect(visibleIds(wrapper)).toEqual(["0003", "0001", "0002"]);
+      expect(chipKeys(wrapper)).toEqual(["sort"]);
+      expect(wrapper.find(".board-queue-filters").text()).toContain("Sort: Oldest updated");
+    });
+
+    it(`shows a notice for a phone-only status and keeps every task at ${width}px`, async () => {
+      stubViewport(width);
+      datedTasks();
+      const wrapper = mountDesktop({ status: "held" });
+      await flushPromises();
+      expect(visibleIds(wrapper).sort()).toEqual(["0001", "0002", "0003"]);
+      const notice = wrapper.find('.board-queue-filters [data-filter-key="status"]');
+      expect(notice.text()).toBe("Ignored filter: status=held (not a board column)");
+      expect(notice.classes()).toContain("filter-chip-ignored");
+    });
+  }
+
+  it("Clear removes the applied sort and the ignored status, and keeps the drawer", async () => {
+    datedTasks();
+    const wrapper = mountDesktop({ sort: "oldest", status: "held", task: "0001" });
+    await flushPromises();
+    expect(chipKeys(wrapper)).toEqual(["sort", "status"]);
+    await wrapper.find(".board-queue-filters .filter-clear").trigger("click");
+    expect(routeState.router.replace).toHaveBeenCalledWith({ query: { task: "0001" } });
+  });
+
+  it("the Sort control shows the URL sort, not the stored order, while the URL sets one", async () => {
+    datedTasks();
+    useRepoStore().setSortOrder("recent");
+    routeState.query = { sort: "oldest" };
+    const wrapper = mount(WorkView, {
+      global: {
+        stubs: {
+          ...workViewStubs(),
+          Select: {
+            props: ["modelValue"],
+            template: "<div class='sort-select' :data-model='String(modelValue)'><slot /></div>",
+          },
+        },
+      },
+    });
+    mounted.push(wrapper);
+    await flushPromises();
+    expect(wrapper.find(".sort-select").attributes("data-model")).toBe("null");
+    expect(visibleIds(wrapper)).toEqual(["0003", "0001", "0002"]);
+  });
+
+  it("a board status column is applied and keeps its own bar, not a notice", async () => {
+    datedTasks();
+    const wrapper = mountDesktop({ status: "ready" });
+    await flushPromises();
+    expect(wrapper.find(".board-queue-filters").exists()).toBe(false);
+    expect(wrapper.find(".filter-bar").text()).toContain("Ready");
+  });
+
+  it("the phone queue owns sort and status at 375px, so the board bar is not rendered", async () => {
+    stubViewport(375);
+    datedTasks();
+    const wrapper = mountDesktop({ sort: "oldest", status: "held" });
+    await flushPromises();
+    expect(wrapper.find(".board-queue-filters").exists()).toBe(false);
+  });
+
+  it("the phone queue applies sort=oldest and labels it", async () => {
+    routeState.query = { sort: "oldest" };
+    const wrapper = mount(MobileWorkQueue, {
+      global: {
+        stubs: {
+          Button: buttonStub,
+          Select: selectStub,
+          SelectTrigger: selectStub,
+          SelectContent: selectStub,
+          SelectItem: selectStub,
+          SelectViewport: selectStub,
+          SelectValue: selectStub,
+        },
+      },
+    });
+    mounted.push(wrapper);
+    await flushPromises();
+    expect(wrapper.find(".mobile-sort").text()).toContain("Oldest");
   });
 });
 
@@ -376,7 +500,11 @@ describe("Board filter chip bar at 375 / 768 / 1280 px (WebKit, fixtures)", () =
     filters: WorkQueueFilters,
     width: number,
     label: string,
-    extra: { ignored?: { key: string; label: string; ignored: boolean }[]; applied?: boolean } = {},
+    extra: {
+      ignored?: WorkQueueFilterChip[];
+      applied?: boolean;
+      sort?: WorkQueueSort | null;
+    } = {},
   ): Promise<Page> {
     const wrapper = mount(BoardQueueFilters, { props: { filters, ...extra } });
     const markup = wrapper.html();
@@ -412,6 +540,38 @@ describe("Board filter chip bar at 375 / 768 / 1280 px (WebKit, fixtures)", () =
   };
 
   for (const width of [375, 768, 1280]) {
+    it(`shows the applied sort and the status notice inside ${width}px (#1260)`, async () => {
+      const page = await openChipBar(NO_WORK_QUEUE_FILTERS, width, "sort-and-status", {
+        sort: "oldest",
+        ignored: ignoredWorkQueueFilterChips({ status: "held" }),
+      });
+      try {
+        const labels = await page
+          .locator(".board-queue-filters [data-filter-key]")
+          .allTextContents();
+        expect(labels).toEqual([
+          "Sort: Oldest updated",
+          "Ignored filter: status=held (not a board column)",
+        ]);
+        expect(
+          await page
+            .locator(".board-queue-filters [data-filter-key='status']")
+            .getAttribute("class"),
+        ).toContain("filter-chip-ignored");
+        const off = await page.evaluate(() => {
+          const limit = window.innerWidth;
+          return Array.from(document.querySelectorAll(".board-queue-filters *"))
+            .map((el) => ({ el, r: (el as HTMLElement).getBoundingClientRect() }))
+            .filter(({ r }) => !(r.width === 0 && r.height === 0))
+            .filter(({ r }) => r.left < -0.5 || r.right > limit + 0.5)
+            .map(({ el }) => el.className || el.tagName);
+        });
+        expect(off, `chips off-viewport at ${width}px`).toEqual([]);
+      } finally {
+        await page.close();
+      }
+    });
+
     it(`keeps every chip and Clear filters inside ${width}px`, async () => {
       const page = await openChipBar(longFilters, width, "long-filters");
       try {
@@ -543,7 +703,9 @@ describe("Board filter chip bar at 375 / 768 / 1280 px (WebKit, fixtures)", () =
           result.limit,
         );
         expect(result.off, `search box off-viewport at ${width}px`).toEqual([]);
-        expect(result.inputWidth, `search input too narrow at ${width}px`).toBeGreaterThan(120);
+        // The header search is 150px at its narrowest (the sidebar-open title row),
+        // which leaves its input about 75px for the icon and clear control.
+        expect(result.inputWidth, `search input too narrow at ${width}px`).toBeGreaterThan(60);
         expect(await page.locator('[data-testid="board-queue-search-clear"]').isVisible()).toBe(
           true,
         );
@@ -588,8 +750,10 @@ describe("Board filter chip bar at 375 / 768 / 1280 px (WebKit, fixtures)", () =
 
   // #1278: the search sits in the header row beside the toggles. At these widths
   // the header copy, search, toggles, sort, view switch and New task must not
-  // overflow the page or collide with each other.
-  for (const width of [720, 768, 900, 1000]) {
+  // overflow the page or collide with each other. The page is rendered inside
+  // the app shell (a sidebar column, 60px at 720-900px and 210px above), so the
+  // header gets the same width the real page does.
+  for (const width of [720, 768, 900, 1000, 1280]) {
     it(`keeps the Work header row free of overflow and collisions at ${width}px`, async () => {
       const wrapper = mountDesktop({ q: "login" });
       await flushPromises();
@@ -608,7 +772,9 @@ describe("Board filter chip bar at 375 / 768 / 1280 px (WebKit, fixtures)", () =
           `<meta name="viewport" content="width=device-width, initial-scale=1.0">` +
             `<style>${globalCss}</style><style>${css}</style>` +
             `<style>html, body { width: 100%; margin: 0; } *, *::before, *::after { animation: none !important; transition: none !important; }</style>` +
-            `<div class="main" style="padding: 16px">${markup}</div>`,
+            `<div class="body" style="min-height: 900px">` +
+            `<aside class="sidebar"></aside>` +
+            `<main class="main"><div class="work-page">${markup}</div></main></div>`,
         );
         const shots = process.env.QA_SHOTS;
         if (shots) {
@@ -643,6 +809,10 @@ describe("Board filter chip bar at 375 / 768 / 1280 px (WebKit, fixtures)", () =
             }
           }
           const search = document.querySelector<HTMLElement>(".board-queue-search");
+          const searchTop = Math.round(search?.getBoundingClientRect().top ?? -1);
+          const toggleTop = Math.round(
+            document.querySelector(".queue-visibility")?.getBoundingClientRect().top ?? -2,
+          );
           return {
             scrollWidth: document.documentElement.scrollWidth,
             limit,
@@ -650,6 +820,11 @@ describe("Board filter chip bar at 375 / 768 / 1280 px (WebKit, fixtures)", () =
             off,
             collisions,
             searchWidth: search?.getBoundingClientRect().width ?? 0,
+            searchTop,
+            toggleTop,
+            titleBottom: Math.round(
+              document.querySelector(".work-header-copy")?.getBoundingClientRect().bottom ?? -1,
+            ),
           };
         });
         expect(result.headerExists).toBe(true);
@@ -660,7 +835,14 @@ describe("Board filter chip bar at 375 / 768 / 1280 px (WebKit, fixtures)", () =
         expect(result.collisions, `header items collide at ${width}px`).toEqual([]);
         // Half of the old 420px search, so about 210px (#1278).
         expect(result.searchWidth, `search not half width at ${width}px`).toBeLessThanOrEqual(210);
-        expect(result.searchWidth, `search too narrow at ${width}px`).toBeGreaterThan(150);
+        expect(result.searchWidth, `search too narrow at ${width}px`).toBeGreaterThanOrEqual(150);
+        expect(result.searchTop, `search dropped below the title at ${width}px`).toBeLessThan(
+          result.titleBottom,
+        );
+        expect(
+          Math.abs(result.searchTop - result.toggleTop),
+          `search is off the toggles' row at ${width}px`,
+        ).toBeLessThanOrEqual(2);
         expect(await page.locator(".client-board-link").count()).toBe(0);
       } finally {
         await page.close();

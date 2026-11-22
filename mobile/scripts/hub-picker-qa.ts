@@ -20,12 +20,15 @@ import { chromium, type Page, type Route } from "@playwright/test";
 const BASE = process.env.QA_BASE_URL ?? "http://localhost:5188";
 const BASE_ORIGIN = new URL(BASE).origin;
 
-// Phone portrait and landscape, plus tablet portrait and landscape.
+// Phone portrait and landscape, tablet portrait and landscape, and the desktop
+// width where the picker sits in its centred 560px column (#1271).
 const VIEWPORTS = [
   { label: "phone 360x800", width: 360, height: 800 },
+  { label: "phone 375x812", width: 375, height: 812 },
   { label: "phone 412x915", width: 412, height: 915 },
   { label: "tablet 768x1024", width: 768, height: 1024 },
   { label: "tablet 1024x768", width: 1024, height: 768 },
+  { label: "desktop 1280x800", width: 1280, height: 800 },
 ];
 
 const JSON_HEADERS = { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" };

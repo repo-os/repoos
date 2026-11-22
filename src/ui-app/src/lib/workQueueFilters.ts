@@ -6,6 +6,21 @@ import type { Task } from "../types";
  * these controls; the desktop board reads the same URL keys so a filter that
  * arrives from a phone or a shared link is applied and shown at every width.
  */
+
+/** Status columns the board filters by (`?status=`). Any other value is a
+ *  phone-only queue view (attention, held, archived, human, all) or not a
+ *  status at all, so the board shows it as an ignored notice. */
+export const BOARD_STATUS_FILTER_IDS = [
+  "draft",
+  "inbox",
+  "ready",
+  "active",
+  "review",
+  "done",
+] as const;
+
+/** The queue's sort, by last update. Absent `sort` leaves the board's own sort. */
+export type WorkQueueSort = "newest" | "oldest";
 export interface WorkQueueFilters {
   /** Raw search text; `#` and case are normalised when matching. */
   query: string;
@@ -50,6 +65,24 @@ export function readWorkQueueFilters(query: Record<string, unknown>): WorkQueueF
   };
 }
 
+/** The sort the URL asks for, or null when `sort` is absent or not a known value. */
+export function readWorkQueueSort(query: Record<string, unknown>): WorkQueueSort | null {
+  const sort = firstString(query.sort);
+  return sort === "newest" || sort === "oldest" ? sort : null;
+}
+
+/** Newest or oldest first by last update: the order the phone queue has always used. */
+export function sortWorkQueueTasks(tasks: Task[], order: WorkQueueSort): Task[] {
+  return [...tasks].sort((a, b) => {
+    const compared = (a.updated_at ?? "").localeCompare(b.updated_at ?? "");
+    return order === "newest" ? -compared : compared;
+  });
+}
+
+function isBoardStatus(value: string): boolean {
+  return (BOARD_STATUS_FILTER_IDS as readonly string[]).includes(value);
+}
+
 export function taskAreaNames(task: Task): string[] {
   return parseTaskAreas(task.areas?.length ? task.areas : task.area);
 }
@@ -92,16 +125,26 @@ export function hasActiveWorkQueueFilters(filters: WorkQueueFilters): boolean {
 }
 
 export interface WorkQueueFilterChip {
-  key: (typeof WORK_QUEUE_FILTER_KEYS)[number];
+  key: (typeof WORK_QUEUE_FILTER_KEYS)[number] | "status" | "sort";
   label: string;
   /** True for a URL value that was not applied. */
   ignored?: boolean;
 }
 
+/** The label for a URL sort, shared by the chip and the Sort control's placeholder. */
+export function workQueueSortLabel(sort: WorkQueueSort): string {
+  return sort === "oldest" ? "Sort: Oldest updated" : "Sort: Newest updated";
+}
+
+/** A chip for the board's applied sort, so a sorted board never looks like the default. */
+export function workQueueSortChip(sort: WorkQueueSort | null): WorkQueueFilterChip | null {
+  if (!sort) return null;
+  return { key: "sort", label: workQueueSortLabel(sort) };
+}
+
 /**
- * One chip per quick filter that is set, in the order the controls appear. The
- * search has no chip (#1278): the search box in the board header shows it, and
- * Clear filters still removes it.
+ * One chip per quick filter that is set, in the order the controls appear.
+ * Search is represented by the input in the board header, never a chip (#1278).
  */
 export function workQueueFilterChips(filters: WorkQueueFilters): WorkQueueFilterChip[] {
   const chips: WorkQueueFilterChip[] = [];
@@ -118,9 +161,10 @@ export function workQueueFilterChips(filters: WorkQueueFilters): WorkQueueFilter
 }
 
 /**
- * Present URL values the reader cannot use: a priority that is not p0-p3, or a
- * `mine` other than `1`. They are not applied, so each one gets a notice chip
- * and Clear filters removes it, instead of the board silently ignoring it.
+ * Present URL values the reader cannot use: a priority that is not p0-p3, a
+ * `mine` other than `1`, a status that is not a board column, or a sort that is
+ * not newest/oldest. They are not applied, so each one gets a notice chip and
+ * Clear filters removes it, instead of the board silently ignoring it.
  */
 export function ignoredWorkQueueFilterChips(query: Record<string, unknown>): WorkQueueFilterChip[] {
   const chips: WorkQueueFilterChip[] = [];
@@ -137,17 +181,50 @@ export function ignoredWorkQueueFilterChips(query: Record<string, unknown>): Wor
       ignored: true,
     });
   }
+  const status = ignoredStatusText(query.status);
+  if (status !== null) {
+    const reason = Array.isArray(query.status) ? "use one status" : "not a board column";
+    chips.push({
+      key: "status",
+      label: `Ignored filter: status=${status} (${reason})`,
+      ignored: true,
+    });
+  }
+  const sort = firstString(query.sort);
+  if (sort && !readWorkQueueSort({ sort })) {
+    chips.push({
+      key: "sort",
+      label: `Ignored filter: sort=${sort} (only newest or oldest applies)`,
+      ignored: true,
+    });
+  }
   return chips;
 }
 
 /**
- * A copy of the route query with only the queue filter keys removed. Every
- * other entry, including null (bare `?key`) and repeated values, is kept as-is.
+ * The `status` text the board cannot apply, or null when it applies one. The
+ * board filters only by a single board column, so a bare or empty key, an
+ * unknown value and a repeated key are all notices, never silent.
+ */
+function ignoredStatusText(raw: unknown): string | null {
+  if (raw === undefined) return null;
+  if (typeof raw === "string" && isBoardStatus(raw)) return null;
+  if (Array.isArray(raw)) return raw.map((value) => value ?? "").join(", ");
+  return raw === null ? "" : String(raw);
+}
+
+/**
+ * A copy of the route query with the queue filter keys removed, plus the board's
+ * `sort` and any status the board ignores (those are shown in the same bar). A
+ * board status column, and every other entry, including null (bare `?key`) and
+ * other repeated values, is kept as-is.
  */
 export function clearWorkQueueFilterQuery(query: Record<string, unknown>): Record<string, unknown> {
   const next: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(query)) {
     if ((WORK_QUEUE_FILTER_KEYS as readonly string[]).includes(key)) continue;
+    if (key === "sort") continue;
+    if (key === "status" && ignoredStatusText(value) !== null) continue;
     next[key] = value;
   }
   return next;

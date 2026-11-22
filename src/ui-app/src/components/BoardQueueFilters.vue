@@ -2,29 +2,39 @@
 import { computed } from "vue";
 import {
   workQueueFilterChips,
+  workQueueSortChip,
   type WorkQueueFilterChip,
   type WorkQueueFilters,
+  type WorkQueueSort,
 } from "../lib/workQueueFilters";
 
 const props = withDefaults(
   defineProps<{
     filters: WorkQueueFilters;
+    /** The URL's sort, applied to the board; null leaves the board's own sort. */
+    sort?: WorkQueueSort | null;
     /** URL values that were present but not usable. */
     ignored?: WorkQueueFilterChip[];
     /** False on a view that does not filter (the pipeline), so the bar says so. */
     applied?: boolean;
   }>(),
-  { ignored: () => [], applied: true },
+  { sort: null, ignored: () => [], applied: true },
 );
 const emit = defineEmits<{ clear: [] }>();
 
-const chips = computed(() => [...workQueueFilterChips(props.filters), ...props.ignored]);
+const sortChip = computed(() => workQueueSortChip(props.sort));
+const chips = computed(() => [
+  ...workQueueFilterChips(props.filters),
+  ...(sortChip.value ? [sortChip.value] : []),
+  ...props.ignored,
+]);
 </script>
 
 <template>
-  <!-- Shown whenever a search or quick filter is in the URL, so no view hides
-       tasks silently. Clear removes only the queue filter keys; status and sort
-       stay as they are. -->
+  <!-- Shown whenever a search, quick filter, sort or ignored value is in the URL,
+       so no view hides tasks or drops a value silently. Clear removes the queue
+       filter keys, the board sort and any ignored status; a board status column
+       stays, since it has its own bar. -->
   <div class="filter-bar board-queue-filters" role="group" aria-label="Active board filters">
     <ul class="board-queue-filter-chips">
       <li v-for="chip in chips" :key="`${chip.key}-${chip.label}`">
@@ -37,7 +47,7 @@ const chips = computed(() => [...workQueueFilterChips(props.filters), ...props.i
       </li>
     </ul>
     <p v-if="!applied" class="board-queue-filter-note">
-      This view doesn't apply these filters. Switch to Board to filter tasks.
+      This view doesn't apply these filters or sort. Switch to Board to apply them.
     </p>
     <button type="button" class="filter-clear" @click="emit('clear')">Clear filters</button>
   </div>

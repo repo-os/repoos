@@ -73,13 +73,22 @@ No case was skipped.
 
 ## Behavior on the board, pipeline and unusable values
 
-- **Pipeline** does not filter. The chip bar still appears above it, with a
-  note that the view doesn't apply these filters, so a filtered link never
-  looks like a full list.
-- **Unusable URL values** (`priority` other than p0-p3, `mine` other than `1`)
+- **Pipeline** does not filter. The search stays visible in the header, and
+  the filter bar notes that the view doesn't apply these filters, so a filtered
+  link never looks like a full list.
+- **Unusable URL values** (`priority` other than p0-p3, `mine` other than `1`,
+  a `status` that is not a single board column, including a bare or repeated
+  `status`, a `sort` other than newest or oldest)
   are not applied. Each one shows a dashed "Ignored" chip, and Clear filters
-  removes it. Mobile-only values in the phone queue are unchanged.
-- **Clear filters** removes only the five queue keys. Every other query entry
+  removes it. Phone-only statuses (`attention`, `held`, `archived`, `human`,
+  `all`) get that notice on the board, so none is dropped silently (#1260).
+  The phone queue still applies them itself.
+- **Sort on the board (#1260).** `sort=newest|oldest` in the URL orders every
+  column by last update and shows a "Sort:" chip. It overrides the board's Sort
+  control while present, and picking a sort in that control drops the URL one.
+- **Clear filters** removes the five queue keys, the URL sort, and any status
+  the board ignores. A board status column (`draft`, `inbox`, `ready`, `active`,
+  `review`, `done`) is kept, since it has its own bar. Every other query entry
   is kept as it was, including bare `?key` (null) values and repeated values.
 
 ## Gaps not fixed (follow-up tasks filed)
@@ -93,9 +102,9 @@ No case was skipped.
 - **Quick-filter controls on the board.** The board's search box (#1259)
   writes `q` only. `priority`, `area`, `story` and `mine` are still set from
   the phone queue or a link, and the board shows them as chips.
-- **Mobile-only status values and the queue sort on the board.** Filed as
-  #1260. Until then, `?status=attention|held|archived|human|all` shows every
-  task with no chip, and `sort=oldest` is not applied on the board.
+- **Mobile-only status values and the queue sort on the board.** Fixed in
+  #1260; see "Behavior on the board" above. The 375 px phone queue still owns
+  these values and applies them itself.
 
 ## Not covered by a test
 
