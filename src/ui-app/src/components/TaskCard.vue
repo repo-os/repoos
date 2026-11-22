@@ -460,8 +460,9 @@ const rootEl = ref<HTMLElement | null>(null);
  * one row (#1279), and nothing on it is cut short. When the row cannot hold
  * everything, it gives way in this order, each step measured after render:
  * 1. "feature" becomes "feat";
- * 2. the hotfix and merge badges move to the chip row under the title;
- * 3. the type is hidden if it still clips.
+ * 2. the hotfix and merge badges move to the chip row under the title, and the
+ *    full word is tried again, so "feat" stays only if "feature" still clips;
+ * 3. the type is hidden if even "feat" still clips.
  * The id, priority and robot never shrink. The fit re-runs when the card
  * resizes or the state that changes the row's content changes.
  */
@@ -494,7 +495,14 @@ function fitTopLine(): void {
       if (clipped(typeChipEl.value)) typeCompact.value = true;
     },
     () => {
-      if (badgeClipped()) badgesBelow.value = true;
+      // Moving the badges frees the row, so the full word is tried again.
+      if (badgeClipped()) {
+        badgesBelow.value = true;
+        typeCompact.value = false;
+      }
+    },
+    () => {
+      if (clipped(typeChipEl.value)) typeCompact.value = true;
     },
     () => {
       if (clipped(typeChipEl.value)) typeHidden.value = true;

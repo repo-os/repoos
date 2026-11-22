@@ -410,6 +410,37 @@ describe("Task card top line (jsdom, measured fit)", () => {
     expect(topLine?.querySelector('[data-tip="feature"]')?.textContent?.trim()).toBe("feature");
   });
 
+  it("restores the full type once the badges move and it fits (#1279)", async () => {
+    // The badges clip, and "feature" clips only while they share the top line.
+    vi.spyOn(Element.prototype, "scrollWidth", "get").mockImplementation(function (this: Element) {
+      if (this.classList.contains("hotfix-badge") || this.classList.contains("tc-merge"))
+        return 120;
+      const crowded = !!this.closest(".tc-top-line")?.querySelector(".hotfix-badge, .tc-merge");
+      return this.textContent?.trim() === "feature" && crowded ? 120 : 40;
+    });
+    vi.spyOn(Element.prototype, "clientWidth", "get").mockReturnValue(60);
+    const dom = document.createElement("div");
+    dom.innerHTML = await cardMarkup("review-hotfix-merge");
+    expect(dom.querySelector('.tc-top-line [data-tip="feature"]')?.textContent?.trim()).toBe(
+      "feature",
+    );
+    expect(dom.querySelector(".tc-top-line .hotfix-badge, .tc-top-line .tc-merge")).toBeNull();
+  });
+
+  it("uses feat only when the full word still clips after the badges move (#1279)", async () => {
+    vi.spyOn(Element.prototype, "scrollWidth", "get").mockImplementation(function (this: Element) {
+      if (this.classList.contains("hotfix-badge") || this.classList.contains("tc-merge"))
+        return 120;
+      return this.textContent?.trim() === "feature" ? 120 : 40;
+    });
+    vi.spyOn(Element.prototype, "clientWidth", "get").mockReturnValue(60);
+    const dom = document.createElement("div");
+    dom.innerHTML = await cardMarkup("review-hotfix-merge");
+    expect(dom.querySelector('.tc-top-line [data-tip="feature"]')?.textContent?.trim()).toBe(
+      "feat",
+    );
+  });
+
   it("re-fits the type label when the hotfix target changes (#1279)", async () => {
     let clipped = false;
     vi.spyOn(Element.prototype, "scrollWidth", "get").mockImplementation(function (this: Element) {
