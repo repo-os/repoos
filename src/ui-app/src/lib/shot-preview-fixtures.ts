@@ -1776,7 +1776,15 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
       break;
     }
     case "integration:parallelValidations": {
-      ensureFixtureTask(repo, "review");
+      // A running task card, so the Checks "now" tab has a card to show (#1275).
+      ensureFixtureTask(repo, "active", {
+        title: "Close-out validating alongside the active one",
+        priority: "p2",
+        branch: "feat/shot-fixture",
+      });
+      if (!repo.runningIds.includes(SHOT_PREVIEW_FIXTURE_TASK_ID)) {
+        repo.runningIds = [...repo.runningIds, SHOT_PREVIEW_FIXTURE_TASK_ID];
+      }
       const startedAt = new Date(Date.now() - 4 * 60 * 1000).toISOString();
       const at = nowIso();
       repo.integration = {
