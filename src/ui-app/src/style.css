@@ -377,6 +377,16 @@
   z-index: 50;
   padding-top: var(--safe-top);
   height: calc(54px + var(--safe-top));
+  /* One height for every control in the header row (project chip, search,
+     bell, theme, help, account) so they line up and centre (#1258). */
+  --topbar-control-h: 30px;
+}
+/* Touch-sized header controls on phones, landscape phones and small tablets
+   (#1139). Every header control reads this token, so they all grow together. */
+@media (max-width: 900px) {
+  .topbar {
+    --topbar-control-h: 44px;
+  }
 }
 .logo-mark {
   width: 30px;
@@ -419,11 +429,14 @@
   display: flex;
   align-items: center;
   gap: 7px;
-  padding: 6px 11px;
-  border-radius: 9px;
+  height: var(--topbar-control-h);
+  padding: 0 12px;
+  /* A stadium, like the search field beside it (#1258). */
+  border-radius: 999px;
   background: var(--panel);
   border: 1px solid var(--border);
-  font-size: 11.5px;
+  font-size: 13px;
+  font-weight: 600;
   color: var(--txt-dim);
   cursor: pointer;
   font-family: inherit;
@@ -432,6 +445,7 @@
 }
 .repo-pill .mono {
   color: var(--txt);
+  font-weight: 700;
 }
 .spacer {
   flex: 1;
@@ -512,8 +526,8 @@
 .theme-toggle {
   display: grid;
   place-items: center;
-  width: 30px;
-  height: 30px;
+  width: var(--topbar-control-h);
+  height: var(--topbar-control-h);
   flex-shrink: 0;
   border-radius: 50%;
   border: 1px solid var(--border-bright);
@@ -538,7 +552,8 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 10px;
+  height: var(--topbar-control-h);
+  padding: 0 10px;
   border-radius: 999px;
   background: var(--panel);
   border: 1px solid var(--border);
@@ -597,18 +612,6 @@
 }
 /* #1139: touch-sized header controls on phone layouts, landscape phones and
    small tablets. The shell's compact nav still uses this pointer-sized row. */
-@media (max-width: 900px) {
-  .theme-toggle {
-    width: 44px;
-    height: 44px;
-  }
-  .repo-pill {
-    min-height: 44px;
-  }
-  .search-input {
-    min-height: 44px;
-  }
-}
 @media (max-width: 719.98px) {
   .topbar {
     gap: 6px;
@@ -621,14 +624,13 @@
     display: none;
   }
   .search-wrap {
-    flex: 0 0 44px;
-    width: 44px;
-    max-width: 44px;
-    min-width: 44px;
+    flex: 0 0 var(--topbar-control-h);
+    width: var(--topbar-control-h);
+    max-width: var(--topbar-control-h);
+    min-width: var(--topbar-control-h);
   }
   .search-input {
-    width: 44px;
-    height: 44px;
+    width: var(--topbar-control-h);
     padding: 0;
     justify-content: center;
   }
@@ -17929,5 +17931,25 @@
   /* Empty-state rows in the palette are keyboard instructions, not results. */
   .search-row-hint {
     display: none;
+  }
+}
+
+/* #1258: on phones the routed page is the scrollport, and its visible scrollbar
+   took a strip from the right gutter only, so the left and right gutters did
+   not match. Hide the bar on phone widths; touch and keyboard scrolling are
+   unchanged, and desktop keeps its scrollbars. The few pages that reserved
+   3px of right padding for that bar drop it here, so both gutters are equal.
+   Placed last so it beats the base `.page-scroll-body` and `.agents-tab-content`
+   rules above it. */
+@media (max-width: 719.98px) {
+  .main > :not(.spin) {
+    scrollbar-width: none;
+  }
+  .main > :not(.spin)::-webkit-scrollbar {
+    display: none;
+  }
+  .page-scroll-body,
+  .agents-tab-content {
+    padding-right: 0;
   }
 }

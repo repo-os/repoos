@@ -296,8 +296,8 @@ watch(open, (o) => {
   position: relative;
   display: grid;
   place-items: center;
-  width: 30px;
-  height: 30px;
+  width: var(--topbar-control-h);
+  height: var(--topbar-control-h);
   flex-shrink: 0;
   border-radius: 50%;
   border: 1px solid var(--border-bright);
@@ -470,10 +470,6 @@ watch(open, (o) => {
 /* #1139: the bell and the rows inside its popover are touch controls on
    phones/tablets; keep them at least 44x44. */
 @media (max-width: 900px) {
-  .notice-bell-trigger {
-    width: 44px;
-    height: 44px;
-  }
   .notice-pop-action {
     min-width: 44px;
     min-height: 44px;

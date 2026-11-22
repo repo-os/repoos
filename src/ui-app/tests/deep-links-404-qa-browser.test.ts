@@ -89,7 +89,7 @@ describe("Error pages and deep-link fallbacks at 375/768/1280 (WebKit, fixtures)
       slug: "unknown-route",
       render: () => mountCase(NotFoundView, "/no-such-page?x=1"),
       expectText: ["This page doesn't exist", "/no-such-page?x=1"],
-      wayBack: ["Go to Work", "Dashboard"],
+      wayBack: ["Go to Work", "Mission Control"],
     },
     {
       name: "missing task (deleted or never existed)",

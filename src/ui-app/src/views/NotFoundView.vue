@@ -14,7 +14,9 @@ const route = useRoute();
       :message="`Nothing is at ${route.fullPath}. The link may be mistyped, or the page may have moved.`"
     >
       <router-link class="route-notice-link" to="/work">Go to Work</router-link>
-      <router-link class="route-notice-link route-notice-link-quiet" to="/">Dashboard</router-link>
+      <router-link class="route-notice-link route-notice-link-quiet" to="/control"
+        >Mission Control</router-link
+      >
     </RouteNotice>
   </div>
 </template>
