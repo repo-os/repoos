@@ -94,3 +94,4 @@ Modal and draft code is in src/ui-app/src/components/TaskDrawer.vue (metaModalOp
 - 2026-11-22T19:02:15Z · CTO nudge: held — handoff gate is running
 - 2026-11-22T19:03:19Z · note: ui verification passed: 2 of 2 shots captured with clean console
 - 2026-11-22T19:03:20Z · status active→review
+- 2026-11-22T19:03:20Z · message_queued at 2026-11-22T19:03:20.393Z
