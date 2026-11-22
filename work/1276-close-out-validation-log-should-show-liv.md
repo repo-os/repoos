@@ -11,7 +11,7 @@ branch: feat/close-out-validation-log-should-show-liv
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T07:42:21Z"
-updated_at: "2026-11-22T05:43:53Z"
+updated_at: "2026-11-22T05:47:32Z"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/work-board-large-perf-browser.test.ts > Work board with 1200 tasks (WebKit, generated fixture) > opens, filters, and scrolls at 375px within budget on bee — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: 84f91719ed676c04d4bcad6115cd3c3f824beccd
 review_passes: 4
