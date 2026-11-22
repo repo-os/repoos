@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/mobile-touch-affordances.test.ts > mobile web polish (#1139) > fits landscape phones and 768px tablets without clipping, tests/offline-slow-network-browser.test.ts > slow network and offline QA (#1226) > offline: Work shows a plain-English failure, no endless skeleton, usable at every width, tests/stories-inbox-search-qa-browser.test.ts > #1237 Stories / Inbox / Search QA at 375/768/1280 (WebKit, fixtures) > inbox board fits at 768px with the full 220 long-titled cards on bee — fix it in the feature branch and re-run the gate"
+last_handoff_failure_sha: 67aeac7a84eb16deb06d045c1bb846ff24b7842f
 id: "1278"
 title: "Work board: move search into the header row, half width, drop the search chip"
 type: feature
@@ -258,3 +260,4 @@ Start from src/ui-app/src/components/BoardQueueSearch.vue and the Work view head
 - 2026-11-22T03:49:03Z · CTO nudge: held — handoff gate is running
 - 2026-11-22T03:54:08Z · status active→review
 - 2026-11-22T04:06:13Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: tests/mobile-touch-affordances.test.ts > mobile web polish (#1139) > fits landscape phones and 768px tablets without clipping, tests/offline-slow-network-browser.test.ts > slow network and offline QA (#1226) > offline: Work shows a plain-English failure, no endless skeleton, usable at every width, tests/stories-inbox-search-qa-browser.test.ts > #1237 Stories / Inbox / Search QA at 375/768/1280 (WebKit, fixtures) > inbox board fits at 768px with the full 220 long-titled cards on bee — fix it in the feature branch and re-run the gate
+
