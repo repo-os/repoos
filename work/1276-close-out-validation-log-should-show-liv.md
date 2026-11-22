@@ -2,7 +2,7 @@
 id: "1276"
 title: Close-out validation log should show live progress
 type: feature
-status: review
+status: active
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: "Claude exited with an error. Open Raw CLI error for details. (CLI: ✗ Review request ignored: the last engineer turn exited with an error and never emitted its handoff signal. The task stays active and the engineer is resumed.)"
@@ -176,4 +176,3 @@ Related: #1272 (timer should count from validation start). Never touch repoos.to
 - 2026-11-22T00:06:00Z · needs_input
 - 2026-11-22T00:06:00Z · message_delivered: 1 message(s)
 - 2026-11-22T01:54:55Z · agent exited with an error (claude) · Claude exited with an error. Open Raw CLI error for details. (CLI: ✗ Review request ignored: the last engineer turn exited with an error and never emitted its handoff signal. The task stays active and the engineer is resumed.)
-- 2026-11-22T01:54:55Z · status active→review
