@@ -7,13 +7,11 @@ human_step_override: Cleared needs-human-step flag (sticky until acceptance crit
 human_step_override_key: 5384b92b
 priority: p2
 area: core
-story: MacOS Native App
-depends_on: ["0160"]
 assigned_to: ai
 created_by: t@t
 branch: ""
 created_at: "2026-11-20T02:34:13Z"
-updated_at: "2026-11-22T18:35:04Z"
+updated_at: "2026-11-22T18:35:26Z"
 ---
 ## Problem
 When a task starts, RepoOS scans the acceptance criteria for keywords such as "device", "physical", "credentials", "accounts" and "third-party registration". On a match it refuses the start with `needs_input_reason: needs-human-step` and asks for a split. The match is purely lexical, so it gives false positives and agents end up rewording criteria to dodge it, which defeats its purpose.
@@ -51,3 +49,4 @@ Sample phrases that must still be caught: "verify on a real handset", "needs a s
 - 2026-11-20T19:50:04Z · status inbox→ready
 - 2026-11-22T18:28:05Z · story
 - 2026-11-22T18:35:04Z · depends_on
+- 2026-11-22T18:35:26Z · story, depends_on
