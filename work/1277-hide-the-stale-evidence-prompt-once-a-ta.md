@@ -11,7 +11,7 @@ branch: feat/hide-the-stale-evidence-prompt-once-a-ta
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T08:26:19Z"
-updated_at: "2026-11-22T12:25:05Z"
+updated_at: "2026-11-22T12:26:56Z"
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-11-22T12:15:49.397Z: repoos check failed: ui verification failed: runner result omitted the UI verification record: ui verification: capture of /work failed — screenshot: Timeout 4993.291999999994ms exceeded."
 ---
@@ -70,3 +70,4 @@ Also (Nick): on the card and drawer, show only the Refresh evidence button; do n
 - 2026-11-22T12:25:05Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-22T12:25:05Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: The scoped check is running in the background. I'll hand off once it passes. The capture of `/work` timed out at 5 s on the screenshot step. The shot selected the fixture card, and Playwright's element screenshot waits for the element to b… · stderr: (empty)
 - 2026-11-22T12:25:05Z · message_delivered: 1 message(s)
+- 2026-11-22T12:26:56Z · message_queued at 2026-11-22T12:26:56.413Z
