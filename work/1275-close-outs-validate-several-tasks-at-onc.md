@@ -441,3 +441,4 @@ Read docs/close-out-pipeline.md and docs/remote-validation.md first. Never touch
 - 2026-11-22T04:58:37Z · orphaned run process stopped · pid 36962 · ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new -o ConnectTimeout=15 -o ServerAliveInterval · cpu 0s · age 3m
 - 2026-11-22T05:00:16Z · CTO nudge: held — handoff gate is running
 - 2026-11-22T05:12:26Z · handoff failed · remote validation failed: test failure: tests/mtd-cancel.test.ts > Stop MTD cancellation (#0459) > POST /api/tasks/:id/done/cancel handler (#0459) > cancels a queued job and drops it from the pipeline on mini — fix it in the feature branch and re-run the gate
+- 2026-11-22T05:12:26Z · message_queued at 2026-11-22T05:12:26.897Z
