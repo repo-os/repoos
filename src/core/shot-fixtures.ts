@@ -275,6 +275,8 @@ export const SHOT_PREVIEW_FIXTURE_QUERY = "shotState";
 
 /** Task id used by card/board fixtures so selectors can target one stable card. */
 export const SHOT_PREVIEW_FIXTURE_TASK_ID = "9999";
+/** The other task whose close-out runs ahead of the fixture card (#1277). */
+export const SHOT_PREVIEW_BLOCKER_TASK_ID = "9998";
 
 export function isShotPreviewFixtureId(value: string): value is ShotPreviewFixtureId {
   return (SHOT_PREVIEW_FIXTURE_IDS as readonly string[]).includes(value);

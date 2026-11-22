@@ -1187,6 +1187,8 @@ describe("shot preview board fixtures (#0743)", () => {
 
   it("recognizes client-seeded pipeline fixture task ids", () => {
     expect(isShotPreviewSeededTaskId("9999")).toBe(true);
+    // The close-out blocker queued ahead of the #1277 card has no server record.
+    expect(isShotPreviewSeededTaskId("9998")).toBe(true);
     expect(isShotPreviewSeededTaskId("pipe-review")).toBe(true);
     expect(isShotPreviewSeededTaskId("0980-3")).toBe(true);
     expect(isShotPreviewSeededTaskId("1062")).toBe(false);

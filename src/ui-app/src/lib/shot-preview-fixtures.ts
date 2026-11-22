@@ -4,6 +4,7 @@
 import { ref } from "vue";
 import { SERVER_UNREACHABLE_MESSAGE } from "../api";
 import {
+  SHOT_PREVIEW_BLOCKER_TASK_ID,
   SHOT_PREVIEW_FIXTURE_QUERY,
   SHOT_PREVIEW_FIXTURE_TASK_ID,
   SHOT_PREVIEW_APPLIED_ATTR,
@@ -47,6 +48,7 @@ const DEBUG_LOGS_FIXTURE_MESSAGE =
 /** Client-only task ids seeded by preview board/pipeline fixtures (never on the API). */
 export function isShotPreviewSeededTaskId(taskId: string): boolean {
   if (taskId === SHOT_PREVIEW_FIXTURE_TASK_ID) return true;
+  if (taskId === SHOT_PREVIEW_BLOCKER_TASK_ID) return true;
   if (taskId.startsWith("pipe-")) return true;
   if (/^0980-\d+$/.test(taskId)) return true;
   return false;
@@ -2294,9 +2296,9 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
         repo,
         "active",
         { title: "Close-out running for another task", branch: "" },
-        "9998",
+        SHOT_PREVIEW_BLOCKER_TASK_ID,
       );
-      const pipeline = activePipeline("9998", "validating");
+      const pipeline = activePipeline(SHOT_PREVIEW_BLOCKER_TASK_ID, "validating");
       repo.integration = { ...pipeline, queue: [SHOT_PREVIEW_FIXTURE_TASK_ID] };
       pinnedIntegration = repo.integration;
       useUiStore().setIntegrationBarCollapsed(true);
