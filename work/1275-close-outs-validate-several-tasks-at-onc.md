@@ -451,3 +451,4 @@ Read docs/close-out-pipeline.md and docs/remote-validation.md first. Never touch
 - 2026-11-22T05:48:54Z · body
 - 2026-11-22T05:55:16Z · CTO nudge: held — machine under pressure (system load is high (4.1× per CPU, limit 3×) — waiting for headroom before starting more work)
 - 2026-11-22T06:00:16Z · message_queued at 2026-11-22T06:00:16.243Z
+- 2026-11-22T06:00:16Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
