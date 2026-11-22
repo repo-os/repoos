@@ -49,12 +49,12 @@ Start from TaskDrawer.vue and TaskDependencyPicker.vue. This is a requested rede
 "route": "/work?task=9999",
 "highlight": "[data-test-id=\"task-meta-modal\"]",
 "steps": [
-  {
-    "click": "[data-test-id=\"task-meta-summary\"]"
-  },
-  {
-    "waitMs": 300
-  }
+{
+  "click": "[data-test-id=\"task-meta-summary\"]"
+},
+{
+  "waitMs": 300
+}
 ],
 "state": "drawer:taskDetailsSummary"
 }
@@ -99,3 +99,4 @@ Start from TaskDrawer.vue and TaskDependencyPicker.vue. This is a requested rede
 - 2026-11-22T16:32:10Z · message_delivered: 1 message(s)
 - 2026-11-22T16:32:47Z · body
 - 2026-11-22T16:33:01Z · message_queued at 2026-11-22T16:33:01.349Z
+- 2026-11-22T16:33:01Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
