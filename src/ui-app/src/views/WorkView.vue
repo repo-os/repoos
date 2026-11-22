@@ -311,12 +311,19 @@ const ignoredQueueFilters = computed(() => ignoredWorkQueueFilterChips(route.que
 /** The queue's sort (`sort=newest|oldest`), applied to every column. Absent, the
  *  board keeps its own Sort control. */
 const boardQueueSort = computed(() => readWorkQueueSort(route.query));
-/** The bar shows for an applied filter or sort, or a URL value that was not applied. */
+/**
+ * The bar shows for an applied quick filter or sort, or a URL value that was not
+ * applied. On the board a search alone never shows it: the search box has its own
+ * clear (x) button, and a bar that appeared with only "Clear filters" took a full
+ * row and shifted the columns down.
+ */
 const queueBarVisible = computed(
   () =>
-    queueFiltersActive.value ||
+    hasActiveWorkQueueFilters({ ...queueFilters.value, query: "" }) ||
     boardQueueSort.value !== null ||
-    ignoredQueueFilters.value.length > 0,
+    ignoredQueueFilters.value.length > 0 ||
+    // The pipeline does not apply a search, so it still says so (the board needs no note).
+    (effectiveView.value !== "board" && queueFiltersActive.value),
 );
 function clearQueueFilters(): void {
   void router.replace({ query: clearWorkQueueFilterQuery(route.query) });

@@ -189,6 +189,14 @@ describe("Work board queue filters on desktop (768 / 1280 px)", () => {
     expect(wrapper.find(".board-queue-filters").text()).toContain("Priority: P1");
   });
 
+  it("a search alone shows no filter bar on the board: the search box has its own clear", async () => {
+    const wrapper = mountDesktop({ q: "login" });
+    await flushPromises();
+    expect(visibleIds(wrapper)).toEqual(["0001"]);
+    expect(wrapper.find(".board-queue-filters").exists()).toBe(false);
+    expect(wrapper.find('[data-testid="board-queue-search-clear"]').exists()).toBe(true);
+  });
+
   it("shows no chip bar and hides nothing without queue filters", async () => {
     const wrapper = mountDesktop({});
     await flushPromises();
@@ -236,7 +244,8 @@ describe("Work board queue filters on desktop (768 / 1280 px)", () => {
         wrapper.get<HTMLInputElement>('[data-testid="board-queue-search"]').element.value,
       ).toBe("login");
       expect(chipKeys(wrapper)).toEqual([]);
-      expect(wrapper.find(".filter-clear").exists()).toBe(true);
+      // Only the pipeline needs the "does not apply" bar; the board shows none.
+      expect(wrapper.find(".filter-clear").exists()).toBe(view === "Pipeline");
     }
     expect(visibleIds(wrapper)).toEqual(["0001"]);
   });
