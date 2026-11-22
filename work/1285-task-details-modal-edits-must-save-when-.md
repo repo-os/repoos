@@ -3,9 +3,6 @@ id: "1285"
 title: "Task details modal: edits must save when the modal closes"
 type: bug
 status: inbox
-needs_input: true
-needs_input_reason: underspecified
-needs_input_detail: "missing sections: Notes for AI"
 priority: p2
 area: web
 assigned_to: ai
@@ -34,3 +31,4 @@ Modal and draft code is in src/ui-app/src/components/TaskDrawer.vue (metaModalOp
 - 2026-11-22T18:21:14Z · created · t@t
 - 2026-11-22T18:21:15Z · needs_input
 - 2026-11-22T18:21:21Z · body: Notes for AI (added)
+- 2026-11-22T18:21:21Z · needs_input
