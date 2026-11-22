@@ -4980,6 +4980,10 @@ export const cancelDone: RouteHandler = async (ctx, _req, res, params) => {
   if (!alreadyCancelled && job.phase === "queued") {
     jobCoordinator.removeJob(id);
   }
+  // A job parked for its publish turn (#1275) has no live run, so nothing else
+  // would tear it down until the head finishes. Wake the scheduler now: a
+  // cancelled parked job starts and cleans up without waiting on the head.
+  ctx.triggerJobProcessing();
 
   // Keep the close-out fence in place until the orchestrator has observed the
   // cancellation, reaped its process group, removed the candidate, and dropped

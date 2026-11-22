@@ -68,6 +68,8 @@ export interface IntegrationSnapshot {
     phase: string;
     stage: string | null;
     startedAt: string | null;
+    /** When this job last reported progress (ISO), for its own stall timer. */
+    lastProgressAt: string | null;
     detail: string | null;
   }[];
   /** Task ids queued behind the active job, in FIFO order (not yet started). */
@@ -191,6 +193,7 @@ export function buildIntegrationSnapshot(
         phase: job.phase,
         stage: stageForJob(job, reported[job.taskId]),
         startedAt: job.startedAt,
+        lastProgressAt: reportedAt[job.taskId] ?? job.startedAt,
         detail: reportedDetail[job.taskId] ?? null,
       });
       continue;

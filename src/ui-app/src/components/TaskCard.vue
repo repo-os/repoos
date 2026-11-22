@@ -648,6 +648,7 @@ watch(
       props.task.id,
       repo.integration?.active?.taskId,
       repo.integration?.queue,
+      repo.integration?.parallel,
       repo.isRunning(props.task.id),
       repo.isQueued(props.task.id),
       repo.handoffInFlight(props.task.id),
@@ -792,7 +793,9 @@ const pipelineRole = computed(() => integrationPipelineRole(repo.integration, pr
 
 const inPipeline = computed(() => pipelineRole.value !== null);
 
-const pipelineStalled = computed(() => integrationPipelineStalled(repo.integration, now.value));
+const pipelineStalled = computed(() =>
+  integrationPipelineStalled(repo.integration, now.value, undefined, props.task.id),
+);
 
 const pipelineRecoverBusy = ref(false);
 
@@ -1110,7 +1113,8 @@ const hint = computed<CardHint | null>(() => {
     if (role && snap) {
       const slow = slowCheck.value;
       if (role === "active") {
-        const copy = integrationActiveCopy(snap, now.value);
+        // This card's own run, which may be validating alongside the head (#1275).
+        const copy = integrationActiveCopy(snap, now.value, undefined, t.id);
         const fullLabel = slow && !copy.stalled ? `${copy.label} · slow` : copy.label;
         return {
           label: integrationProgressCardLabel(fullLabel),

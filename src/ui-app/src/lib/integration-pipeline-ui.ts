@@ -118,6 +118,31 @@ export function integrationPipelineRole(
   return null;
 }
 
+/**
+ * A job that has started: the active head or one validating alongside it
+ * (#1275). Both show a clock, a stage and a stall timer, so the card, drawer
+ * and pipeline read the same fields whichever slot the job is in.
+ */
+export interface IntegrationRunningEntry {
+  taskId: string;
+  stage: string | null;
+  detail?: string | null;
+  startedAt: string | null;
+  lastProgressAt?: string | null;
+  failed?: boolean;
+}
+
+/** The running entry for `taskId`, or null when that job has not started. */
+export function integrationRunningEntry(
+  snap: IntegrationPipelineSnapshot | null | undefined,
+  taskId: string,
+): IntegrationRunningEntry | null {
+  if (!snap) return null;
+  if (snap.active?.taskId === taskId) return snap.active;
+  const parallel = snap.parallel?.find((p) => p.taskId === taskId);
+  return parallel ?? null;
+}
+
 export function integrationQueuePosition(
   snap: IntegrationPipelineSnapshot,
   taskId: string,
@@ -129,8 +154,11 @@ export function integrationQueuePosition(
   if (detail) return { position: detail.position, behindTaskId: snap.active?.taskId ?? null };
   const idx = snap.queue.indexOf(taskId);
   if (idx < 0) return null;
+  // Fallback for snapshots without queueDetail: count the started jobs ahead
+  // (the active head and any parallel validations), as the server does.
+  const started = snap.active ? 1 + (snap.parallel?.length ?? 0) : 0;
   return {
-    position: idx + 1,
+    position: started + idx + (snap.active ? 0 : 1),
     behindTaskId: snap.active?.taskId ?? null,
   };
 }
@@ -151,7 +179,7 @@ export function integrationElapsedMs(
 
 /** Ms since the active job last reported pipeline progress, or null when not applicable. */
 export function integrationIdleMs(
-  active: IntegrationPipelineSnapshot["active"],
+  active: IntegrationRunningEntry | null | undefined,
   nowMs: number,
 ): number | null {
   if (!active || active.failed) return null;
@@ -161,12 +189,18 @@ export function integrationIdleMs(
   return Number.isFinite(ms) && ms >= 0 ? ms : null;
 }
 
+/**
+ * Whether a started close-out has gone quiet. Without `taskId` this checks the
+ * active head (the status bar's job); with it, that job's own progress, so a
+ * parallel validation is judged by its own stall timer (#1275).
+ */
 export function integrationPipelineStalled(
   snap: IntegrationPipelineSnapshot | null | undefined,
   nowMs: number,
   stallMs = DEFAULT_INTEGRATION_STALL_MS,
+  taskId?: string,
 ): boolean {
-  const active = snap?.active;
+  const active = taskId ? integrationRunningEntry(snap, taskId) : snap?.active;
   if (!active || active.failed) return false;
   const idle = integrationIdleMs(active, nowMs);
   return idle !== null && idle >= stallMs;
@@ -206,13 +240,18 @@ export function integrationProgressCardLabel(label: string): string {
   return out;
 }
 
-/** Active-job copy for the board card and pipeline bar (#0740). */
+/**
+ * Active-job copy for the board card and pipeline bar (#0740). With `taskId`,
+ * the copy describes that job's own run, so a card for a job validating in
+ * parallel shows its stage and clock, not the head's (#1275).
+ */
 export function integrationActiveCopy(
   snap: IntegrationPipelineSnapshot,
   nowMs: number,
   stallMs = DEFAULT_INTEGRATION_STALL_MS,
+  taskId?: string,
 ): IntegrationActiveCopy {
-  const active = snap.active!;
+  const active = (taskId ? integrationRunningEntry(snap, taskId) : null) ?? snap.active!;
   const idle = integrationIdleMs(active, nowMs);
   const stalled = idle !== null && idle >= stallMs;
   if (stalled) {
@@ -251,7 +290,7 @@ export function integrationActiveCopy(
 }
 
 function integrationCloseOutElapsedTip(
-  active: NonNullable<IntegrationPipelineSnapshot["active"]>,
+  active: IntegrationRunningEntry,
   elapsedMs: number,
 ): string {
   const dur = formatDuration(elapsedMs);

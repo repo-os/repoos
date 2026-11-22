@@ -6,9 +6,12 @@ import {
   integrationMedianChip,
   integrationMedianDuration,
   integrationMedianTip,
+  integrationPipelineRole,
   integrationPipelineStalled,
   integrationProgressCardLabel,
+  integrationQueuePosition,
   integrationQueuedCopy,
+  integrationRunningEntry,
 } from "../src/lib/integration-pipeline-ui";
 import type { CloseOutOutcomeEvent, IntegrationPipelineSnapshot } from "../src/types";
 
@@ -187,5 +190,82 @@ describe("integration median + countdown (#0814)", () => {
     expect(integrationCountdownLabel(26_000, 120_000)).toBe("T-01:34");
     expect(integrationCountdownLabel(125_000, 120_000)).toBe("T+00:05");
     expect(integrationCountdownLabel(0, 3_723_000)).toBe("T-1:02:03");
+  });
+});
+
+describe("parallel validations in the UI (#1275)", () => {
+  const NOW = Date.parse("2026-10-07T13:02:27.000Z");
+  const parallelJob = (
+    taskId: string,
+    over: Partial<NonNullable<IntegrationPipelineSnapshot["parallel"]>[number]> = {},
+  ) => ({
+    taskId,
+    phase: "validating",
+    stage: "merge",
+    startedAt: "2026-10-07T13:00:00.000Z",
+    lastProgressAt: "2026-10-07T13:00:00.000Z",
+    detail: null,
+    ...over,
+  });
+
+  it("a parallel job's copy shows its own stage and clock, not the head's", () => {
+    const pipeline = snap(
+      { parallel: [parallelJob("0731", { stage: "check" })] },
+      { taskId: "0730", stage: "build" },
+    );
+    expect(integrationActiveCopy(pipeline, NOW).label).toBe("integrating · build");
+    expect(integrationActiveCopy(pipeline, NOW, undefined, "0731").label).toBe(
+      "integrating · check",
+    );
+  });
+
+  it("stall for a parallel job is judged by its own progress, not the head's", () => {
+    const pipeline = snap(
+      { parallel: [parallelJob("0731", { lastProgressAt: "2026-10-07T12:55:00.000Z" })] },
+      { lastProgressAt: "2026-10-07T13:02:00.000Z" },
+    );
+    expect(integrationPipelineStalled(pipeline, NOW)).toBe(false);
+    expect(integrationPipelineStalled(pipeline, NOW, undefined, "0731")).toBe(true);
+    expect(integrationActiveCopy(pipeline, NOW, undefined, "0731").stalled).toBe(true);
+  });
+
+  it("a validating job is running (active role), not queued", () => {
+    const pipeline = snap({ parallel: [parallelJob("0731")] }, { taskId: "0730" });
+    expect(integrationPipelineRole(pipeline, "0731")).toBe("active");
+    expect(integrationRunningEntry(pipeline, "0731")?.stage).toBe("merge");
+    expect(integrationRunningEntry(pipeline, "0999")).toBeNull();
+  });
+
+  // Fallback position (no queueDetail) counts every started job ahead, so a
+  // queued task behind a parallel validation is not understated (#1275).
+  const positionCases: Array<{
+    name: string;
+    over: Partial<IntegrationPipelineSnapshot>;
+    active: boolean;
+    expected: number;
+  }> = [
+    {
+      name: "behind the head only",
+      over: { queue: ["0740"] },
+      active: true,
+      expected: 1,
+    },
+    {
+      name: "behind the head and one parallel validation",
+      over: { queue: ["0740"], parallel: [parallelJob("0731")] },
+      active: true,
+      expected: 2,
+    },
+    {
+      name: "no head: the first queued task is #1",
+      over: { queue: ["0740", "0741"] },
+      active: false,
+      expected: 1,
+    },
+  ];
+  it.each(positionCases)("queue position fallback: $name", ({ over, active, expected }) => {
+    const pipeline = active ? snap(over, { taskId: "0730" }) : snap(over);
+    if (!active) pipeline.active = null;
+    expect(integrationQueuePosition(pipeline, "0740")?.position).toBe(expected);
   });
 });

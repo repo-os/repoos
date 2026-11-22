@@ -31,6 +31,11 @@ so 11 queued tasks took about 4 hours and one slow job blocked all of them.
   to `publishing`, keeps its candidate, and parks (`awaiting publish turn`) without
   writing anything. The pump starts it once it becomes the head. A failed or
   cancelled head leaves the queue, so it never blocks the jobs behind it.
+- **Stop a parked job.** `POST /api/tasks/:id/done/cancel` marks the job cancelled
+  and wakes the pump. A cancelled job never validates, so the scheduler starts its
+  teardown (candidate and record) regardless of the concurrency limit or a pressure
+  hold, and it does not wait for the head to finish. The cancel request waits only
+  for that teardown.
 - **Stale base is never published.** Publish still compares the job's
   `baseMainSha` with `main` under `repoLock`/`rootLock`. Bookkeeping-only drift
   publishes directly (`mainDriftIsBookkeepingOnly`, #0386). Any real code drift
@@ -56,7 +61,10 @@ so 11 queued tasks took about 4 hours and one slow job blocked all of them.
   Read `phase` for what a job is doing. `validating` jobs can sit at any position,
   and a `publishing` job that is not at position `0` is parked. The pipeline
   snapshot lists the head as `active`, other started jobs as `parallel` ("Also
-  running" in the status bar), and only unstarted jobs as `queue`.
+  running" in the status bar and pipeline summary), and only unstarted jobs as
+  `queue`. Each parallel entry carries its own `stage`, `startedAt` and
+  `lastProgressAt`, so its card, drawer and stall warning describe that job, not the
+  head. `queueDetail.position` and the UI fallback both count started jobs ahead.
 - **Settings.** `maxParallelValidations` (Settings → General → Close-out). It is
   documented in `user-docs/configuration.md`.
 

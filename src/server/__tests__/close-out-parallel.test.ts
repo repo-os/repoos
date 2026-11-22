@@ -131,6 +131,82 @@ describe("selectCloseOutStarts (#1275)", () => {
   });
 });
 
+describe("scheduler under pressure and cancellation (#1275)", () => {
+  // Table-driven: each row is one pump pass over a job list (what the server
+  // computes on every change). `holdExtra` is the memory pressure guard.
+  const cases: Array<{
+    name: string;
+    jobs: IntegrationJob[];
+    running: string[];
+    limit: number;
+    holdExtra: boolean;
+    expected: string[];
+  }> = [
+    {
+      name: "no run in flight and pressure holds: only the first run starts",
+      jobs: [job("01", "queued"), job("02", "queued"), job("03", "queued")],
+      running: [],
+      limit: 3,
+      holdExtra: true,
+      expected: ["01"],
+    },
+    {
+      name: "a run is in flight and pressure holds: no extra run starts",
+      jobs: [job("01", "validating"), job("02", "queued")],
+      running: ["01"],
+      limit: 3,
+      holdExtra: true,
+      expected: [],
+    },
+    {
+      name: "no pressure: extra runs fill the limit in queue order",
+      jobs: [job("01", "queued"), job("02", "queued"), job("03", "queued")],
+      running: [],
+      limit: 2,
+      holdExtra: false,
+      expected: ["01", "02"],
+    },
+    {
+      name: "the limit counts in-flight runs",
+      jobs: [job("01", "validating"), job("02", "queued"), job("03", "queued")],
+      running: ["01"],
+      limit: 2,
+      holdExtra: false,
+      expected: ["02"],
+    },
+    {
+      name: "a cancelled parked publisher is torn down behind a running head, under pressure",
+      jobs: [job("01", "validating"), job("02", "publishing", { cancelled: true })],
+      running: ["01"],
+      limit: 1,
+      holdExtra: true,
+      expected: ["02"],
+    },
+    {
+      name: "a cancelled job later in the queue is torn down even when the limit is full",
+      jobs: [job("01", "validating"), job("02", "queued"), job("03", "queued", { cancelled: true })],
+      running: ["01"],
+      limit: 1,
+      holdExtra: false,
+      expected: ["03"],
+    },
+    {
+      name: "a parked publisher that is not the head stays parked, even when not cancelled",
+      jobs: [job("01", "validating"), job("02", "publishing")],
+      running: ["01"],
+      limit: 2,
+      holdExtra: false,
+      expected: [],
+    },
+  ];
+
+  it.each(cases)("$name", ({ jobs, running, limit, holdExtra, expected }) => {
+    expect(
+      selectCloseOutStarts({ jobs, running: new Set(running), limit, holdExtra }),
+    ).toEqual(expected);
+  });
+});
+
 describe("publish turn (#1275)", () => {
   it("only the head of the pending queue may publish", () => {
     const jobs = [job("01", "validating"), job("02", "publishing"), job("03", "queued")];

@@ -882,7 +882,8 @@ const integrationCardLabel = computed(() => {
   if (!task || !snap) return null;
   const role = integrationPipelineRole(snap, task.id);
   if (role === "active") {
-    const copy = integrationActiveCopy(snap, checkNow.value);
+    // This task's own run, which may be validating alongside the head (#1275).
+    const copy = integrationActiveCopy(snap, checkNow.value, undefined, task.id);
     const slow = !!notices.slowRunByTask[task.id];
     const label = slow && !copy.stalled ? `${copy.label} · slow` : copy.label;
     return integrationProgressCardLabel(label);

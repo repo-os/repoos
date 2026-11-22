@@ -160,6 +160,9 @@ export function hasPublishTurn(jobs: IntegrationJob[], taskId: string): boolean 
  *   is picked up again when the head's run ends.
  * - `holdExtra` (the memory pressure guard is holding new work) stops any start
  *   beyond the first concurrent run. The first run is never held, as before.
+ * - A cancelled job is only torn down (its candidate and record), never
+ *   validated. It starts whatever the limit or hold says, so a stop request
+ *   never waits behind a stalled head or a pressure hold, and it takes no slot.
  */
 export function selectCloseOutStarts(input: {
   jobs: IntegrationJob[];
@@ -169,14 +172,20 @@ export function selectCloseOutStarts(input: {
 }): string[] {
   const picks: string[] = [];
   const turn = publishTurnTaskId(input.jobs);
+  const max = Math.max(1, input.limit);
   let inFlight = input.running.size;
   for (const job of pendingCloseOutJobs(input.jobs)) {
     if (input.running.has(job.taskId)) continue;
-    // A cancelled parked publisher still starts: its run tears the job down
-    // without publishing, instead of waiting behind a stalled head.
-    if (job.phase === "publishing" && job.taskId !== turn && !job.cancelled) continue;
-    if (inFlight >= Math.max(1, input.limit)) break;
-    if (inFlight >= 1 && input.holdExtra) break;
+    if (job.cancelled) {
+      picks.push(job.taskId);
+      continue;
+    }
+    if (job.phase === "publishing" && job.taskId !== turn) continue;
+    // Scan rather than break: the limit and hold are the same for every job
+    // here, so this picks the same jobs, but a cancelled job later in the queue
+    // still gets its teardown.
+    if (inFlight >= max) continue;
+    if (inFlight >= 1 && input.holdExtra) continue;
     picks.push(job.taskId);
     inFlight++;
   }

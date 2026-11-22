@@ -1446,6 +1446,7 @@ export interface IntegrationPipelineSnapshot {
     phase: string;
     stage: string | null;
     startedAt: string | null;
+    lastProgressAt?: string | null;
     detail: string | null;
   }[];
   /** Task ids queued behind the active job, in FIFO order (not yet started). */
