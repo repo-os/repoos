@@ -80,7 +80,9 @@ describe("built-in role prompts (#0872)", () => {
     const agents = readFileSync(join(repoRoot, "AGENTS.md"), "utf8");
     const rules = readFileSync(join(repoRoot, "docs", "agent-workflow-rules.md"), "utf8");
     expect(agents).toMatch(/No unrequested UI\./);
-    expect(agents).toContain("docs/agent-workflow-rules.md#unrequested-ui-needs-human-confirmation-1283");
+    expect(agents).toContain(
+      "docs/agent-workflow-rules.md#unrequested-ui-needs-human-confirmation-1283",
+    );
     expect(rules).toMatch(/## Unrequested UI needs human confirmation \(#1283\)/);
     expect(rules).toMatch(/#1189/);
     expect(rules).toMatch(/#1259/);

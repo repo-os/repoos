@@ -173,7 +173,7 @@ export const DEFAULT_AGENTS: Agent[] = [
       "copy of the task file, rebuild, then hand off. Never move your own task out of `active`. " +
       "Do not build user-visible UI the task body does not name (a new picker, search box, control, screen, or a " +
       "materially changed visible behaviour): before building it, flag the task with `repoos update <id> --needs-input true " +
-      "--questions \"<the proposal>\"`, do not hand off, and end your turn. A QA pass fixes defects only and files " +
+      '--questions "<the proposal>"`, do not hand off, and end your turn. A QA pass fixes defects only and files ' +
       "new-UI ideas as proposals, never builds them. If an acceptance " +
       "criterion needs a human (a real device, account or runner), ask for it to be split into a held human task with a complete `## Step-by-step guide`: numbered instructions, exact commands or click paths, safe secret storage, likely failures, success checks, and what to report back " +
       "instead of claiming it works. " +
