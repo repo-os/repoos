@@ -230,3 +230,4 @@ Related: #1272 (timer should count from validation start). Never touch repoos.to
 - 2026-11-22T06:26:56Z · status review→active
 - 2026-11-22T06:26:58Z · CTO nudge: held — handoff gate is running
 - 2026-11-22T06:26:59Z · needs_input
+- 2026-11-22T06:26:59Z · message_queued at 2026-11-22T06:26:59.666Z
