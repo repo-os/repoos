@@ -11,7 +11,7 @@ branch: feat/hide-the-stale-evidence-prompt-once-a-ta
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T08:26:19Z"
-updated_at: "2026-11-22T17:57:13Z"
+updated_at: "2026-11-22T17:57:14Z"
 review_passes: 5
 review_failed_report_retries: 0
 last_check_failure: "repoos check at 2026-11-22T15:57:20.978Z: repoos check failed: reused check inputs changed during handoff — run the check again"
@@ -149,3 +149,4 @@ Also (Nick): on the card and drawer, show only the Refresh evidence button; do n
 - 2026-11-22T17:53:01Z · message_queued at 2026-11-22T17:53:01.629Z
 - 2026-11-22T17:53:01Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-22T17:57:13Z · queued message undelivered for 4m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-22T17:57:14Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: The scoped check is still in its test phase (about 78k lines of output), and I'm waiting for its exit code. I'll request handoff once it reports `exit=0`. · stderr: (empty)
