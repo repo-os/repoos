@@ -2,7 +2,7 @@
 id: "1285"
 title: "Task details modal: edits must save when the modal closes"
 type: bug
-status: review
+status: active
 priority: p2
 area: web
 assigned_to: ai
