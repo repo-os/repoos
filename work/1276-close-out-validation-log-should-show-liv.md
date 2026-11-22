@@ -3,6 +3,9 @@ id: "1276"
 title: Close-out validation log should show live progress
 type: feature
 status: active
+needs_input: true
+needs_input_reason: review-human-attention
+needs_input_detail: Review pass 6 still found issues (human flag after 5 passes). The reviewer was asked to summarise the repeated bug classes — read the newest report and decide whether to keep iterating or rescope.
 priority: p1
 area: [server, core]
 assigned_to: ai
@@ -248,3 +251,4 @@ Related: #1272 (timer should count from validation start). Never touch repoos.to
 - 2026-11-22T07:27:42Z · engineer stopped by request
 - 2026-11-22T07:27:46Z · orphaned run process stopped · pid 50519 · /opt/homebrew/bin/bun /Users/nick/.bun/bin/repoos check · cpu 14s · age 14m
 - 2026-11-22T07:27:47Z · note: review pass 11: needs some work
+- 2026-11-22T07:27:47Z · needs_input
