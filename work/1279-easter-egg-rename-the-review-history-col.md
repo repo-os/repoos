@@ -13,7 +13,7 @@ branch: feat/easter-eggs-bundle-rename-review-history
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T10:35:33Z"
-updated_at: "2026-11-22T11:55:16Z"
+updated_at: "2026-11-22T11:56:56Z"
 ---
 ## Problem
 The review pass history table in the task drawer has a column headed 'finding classes', which means little to a reader. It is useful as a quick view of what is wrong when a pass is not good to go.
@@ -35,18 +35,18 @@ Copy change only. Never touch repoos.toml. Headless Playwright only.
 ```json
 [
 {
-  "label": "Review pass history: last column now reads Issues",
-  "target": "default",
-  "route": "/work?task=9999&tab=review",
-  "highlight": ".review-history-table",
-  "state": "drawer:reviewPasses"
+"label": "Review pass history: last column now reads Issues",
+"target": "default",
+"route": "/work?task=9999&tab=review",
+"highlight": ".review-history-table",
+"state": "drawer:reviewPasses"
 },
 {
-  "label": "Board cards: task number is plain text on a one-line top row",
-  "target": "default",
-  "route": "/work",
-  "highlight": ".task-card .tc-top-line",
-  "state": "board:cardChips"
+"label": "Board cards: task number is plain text on a one-line top row",
+"target": "default",
+"route": "/work",
+"highlight": ".task-card .tc-top-line",
+"state": "board:cardChips"
 }
 ]
 ```
@@ -74,3 +74,4 @@ Copy change only. Never touch repoos.toml. Headless Playwright only.
 - 2026-11-22T11:37:14Z · status ready→active, branch
 - 2026-11-22T11:54:19Z · body
 - 2026-11-22T11:55:16Z · body
+- 2026-11-22T11:56:56Z · CTO nudge: held — handoff gate is running
