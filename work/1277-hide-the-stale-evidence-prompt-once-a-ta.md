@@ -11,7 +11,7 @@ branch: feat/hide-the-stale-evidence-prompt-once-a-ta
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T08:26:19Z"
-updated_at: "2026-11-22T14:33:55Z"
+updated_at: "2026-11-22T14:34:41Z"
 last_check_failure: "repoos check at 2026-11-22T13:48:50.335Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 review_passes: 3
 review_rounds: 1
@@ -105,3 +105,4 @@ Also (Nick): on the card and drawer, show only the Refresh evidence button; do n
 - 2026-11-22T14:33:53Z · note: ui verification passed: 1 of 1 shot captured with clean console
 - 2026-11-22T14:33:54Z · status active→review
 - 2026-11-22T14:33:55Z · message_queued at 2026-11-22T14:33:55.184Z
+- 2026-11-22T14:34:41Z · note: review pass 4: needs some work
