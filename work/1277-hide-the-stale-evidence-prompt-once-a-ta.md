@@ -87,3 +87,4 @@ Also (Nick): on the card and drawer, show only the Refresh evidence button; do n
 - 2026-11-22T13:09:28Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-22T13:14:32Z · message_delivered: 1 message(s)
 - 2026-11-22T13:26:56Z · message_queued at 2026-11-22T13:26:56.435Z
+- 2026-11-22T13:26:56Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
