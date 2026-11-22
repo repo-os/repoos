@@ -7,10 +7,13 @@ private struct FakeFileSystem: LocalRepoOSFileSystem {
     var executables: Set<String> = []
     var shebangs: [String: String] = [:]
     var symlinks: [String: String] = [:]
+    /// Directory path → names of its entries, for version-manager install trees.
+    var listings: [String: [String]] = [:]
 
     func isExecutable(atPath path: String) -> Bool { executables.contains(path) }
     func firstLine(atPath path: String) -> String? { shebangs[path] }
     func resolvedPath(_ path: String) -> String { symlinks[path] ?? path }
+    func entryNames(atPath path: String) -> [String] { listings[path] ?? [] }
 }
 
 final class LocalRepoOSLaunchPlannerTests: XCTestCase {
@@ -157,6 +160,128 @@ final class LocalRepoOSLaunchPlannerTests: XCTestCase {
         )
 
         XCTAssertEqual(plan.arguments, [inherited, "service", "start"])
+    }
+
+    /// A Node installed by nvm, with `repoos` installed beside it by npm, as seen from Finder.
+    func testNvmInstalledRepoosAndNodeAreFoundFromFinder() throws {
+        let nvmBin = "/Users/tester/.nvm/versions/node/v20.11.0/bin"
+        let nvmRepoos = nvmBin + "/repoos"
+        let fs = FakeFileSystem(
+            executables: [nvmRepoos, nvmBin + "/node"],
+            shebangs: [nvmRepoos: "#!/usr/bin/env node"],
+            listings: ["/Users/tester/.nvm/versions/node": ["v20.11.0"]]
+        )
+
+        let plan = try LocalRepoOSLaunchPlanner.plan(
+            arguments: ["service", "start"],
+            environment: environment(),
+            fileSystem: fs
+        )
+
+        XCTAssertEqual(plan.executable, nvmBin + "/node")
+        XCTAssertEqual(plan.arguments, ["--no-warnings", nvmRepoos, "service", "start"])
+        let path = plan.environment["PATH"]?.split(separator: ":").map(String.init) ?? []
+        XCTAssertEqual(path.first, nvmBin, "the child PATH starts with the runtime's directory")
+    }
+
+    func testNewestNvmVersionWinsByNumericOrder() throws {
+        let v9 = "/Users/tester/.nvm/versions/node/v9.5.0/bin"
+        let v20 = "/Users/tester/.nvm/versions/node/v20.11.0/bin"
+        let fs = FakeFileSystem(
+            executables: [v9 + "/node", v20 + "/node", v20 + "/repoos"],
+            shebangs: [v20 + "/repoos": "#!/usr/bin/env node"],
+            listings: ["/Users/tester/.nvm/versions/node": ["v9.5.0", "v20.11.0"]]
+        )
+
+        let plan = try LocalRepoOSLaunchPlanner.plan(
+            arguments: ["service", "start"],
+            environment: environment(),
+            fileSystem: fs
+        )
+
+        XCTAssertEqual(plan.executable, v20 + "/node", "v20 is newer than v9 even though it sorts before it as text")
+    }
+
+    func testNvmDirEnvironmentVariableIsHonored() throws {
+        let root = "/opt/nvm/versions/node/v22.1.0/bin"
+        let fs = FakeFileSystem(
+            executables: [root + "/repoos", root + "/node"],
+            shebangs: [root + "/repoos": "#!/usr/bin/env node"],
+            listings: ["/opt/nvm/versions/node": ["v22.1.0"]]
+        )
+
+        let plan = try LocalRepoOSLaunchPlanner.plan(
+            arguments: ["service", "start"],
+            environment: environment(extra: ["NVM_DIR": "/opt/nvm"]),
+            fileSystem: fs
+        )
+
+        XCTAssertEqual(plan.executable, root + "/node")
+    }
+
+    func testMiseInstalledNodeAndBunAreFound() throws {
+        let miseNode = "/Users/tester/.local/share/mise/installs/node/22.1.0/bin"
+        let fs = FakeFileSystem(
+            executables: ["/Users/tester/.local/bin/repoos", miseNode + "/node"],
+            shebangs: ["/Users/tester/.local/bin/repoos": "#!/usr/bin/env node"],
+            listings: ["/Users/tester/.local/share/mise/installs/node": ["22.1.0"]]
+        )
+
+        let plan = try LocalRepoOSLaunchPlanner.plan(
+            arguments: ["service", "start"],
+            environment: environment(),
+            fileSystem: fs
+        )
+
+        XCTAssertEqual(plan.executable, miseNode + "/node")
+    }
+
+    func testMiseInstalledBunIsPreferredOverNode() throws {
+        let miseBin = "/Users/tester/.local/share/mise/installs/bun/1.1.0/bin"
+        let fs = FakeFileSystem(
+            executables: [homebrewRepoos, miseBin + "/bun", homebrewNode],
+            shebangs: [homebrewRepoos: "#!/usr/bin/env node"],
+            listings: ["/Users/tester/.local/share/mise/installs/bun": ["1.1.0"]]
+        )
+
+        let plan = try LocalRepoOSLaunchPlanner.plan(
+            arguments: ["service", "start"],
+            environment: environment(),
+            fileSystem: fs
+        )
+
+        XCTAssertEqual(plan.executable, miseBin + "/bun")
+    }
+
+    func testAsdfInstalledNodeIsFound() throws {
+        let asdfBin = "/Users/tester/.asdf/installs/nodejs/20.0.0/bin"
+        let fs = FakeFileSystem(
+            executables: [homebrewRepoos, asdfBin + "/node"],
+            shebangs: [homebrewRepoos: "#!/usr/bin/env node"],
+            listings: ["/Users/tester/.asdf/installs/nodejs": ["20.0.0"]]
+        )
+
+        let plan = try LocalRepoOSLaunchPlanner.plan(
+            arguments: ["service", "start"],
+            environment: environment(),
+            fileSystem: fs
+        )
+
+        XCTAssertEqual(plan.executable, asdfBin + "/node")
+    }
+
+    func testVersionManagerWithNoInstallsStillReportsRuntimeMissing() throws {
+        let fs = FakeFileSystem(
+            executables: [homebrewRepoos],
+            shebangs: [homebrewRepoos: "#!/usr/bin/env node"],
+            listings: ["/Users/tester/.nvm/versions/node": []]
+        )
+
+        XCTAssertThrowsError(
+            try LocalRepoOSLaunchPlanner.plan(arguments: ["service", "start"], environment: environment(), fileSystem: fs)
+        ) { error in
+            XCTAssertEqual(error as? LocalRepoOSLaunchError, .runtimeMissing)
+        }
     }
 
     func testShellLauncherRunsDirectlyBecauseItFindsItsOwnRuntime() throws {

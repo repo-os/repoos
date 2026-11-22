@@ -171,11 +171,14 @@ directory`). `LocalRepoOSLaunchPlanner` (task #1284) therefore never executes a
 JavaScript entry through its shebang:
 
 - It finds `repoos` in `/opt/homebrew/bin`, `~/.bun/bin`, `/usr/local/bin`,
-  `~/.local/bin`, then the inherited PATH. Symlinks are resolved to the real entry.
+  `~/.local/bin`, then the Node and Bun bin directories of version managers (nvm under
+  `$NVM_DIR` or `~/.nvm`, mise, and asdf; newest version first), then the inherited PATH.
+  Symlinks are resolved to the real entry.
 - A shell launcher (the curl-installed `~/.local/bin/repoos`) runs directly; it probes
   its own runtimes.
 - Otherwise it runs `<runtime> <entry>` with an explicit runtime: `REPOOS_BUN_PATH`,
-  then Bun in the known locations (Bun is the default), then Node. `REPOOS_RUNTIME=node`
+  then Bun (Bun is the default), then Node. A runtime in the same directory as the
+  chosen `repoos` comes first, so an npm-installed `repoos` runs under its own Node. `REPOOS_RUNTIME=node`
   pins Node.
 - The child's PATH gets the runtime's directory and the standard bin directories, so
   the CLI's own subprocesses resolve `node` and `bun`.

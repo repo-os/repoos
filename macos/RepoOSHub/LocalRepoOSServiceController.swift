@@ -80,6 +80,8 @@ protocol LocalRepoOSFileSystem {
     func firstLine(atPath path: String) -> String?
     /// The file a symlink ultimately points at; the path itself otherwise.
     func resolvedPath(_ path: String) -> String
+    /// Names of the entries in a directory, or empty when it is missing or unreadable.
+    func entryNames(atPath path: String) -> [String]
 }
 
 struct LiveLocalRepoOSFileSystem: LocalRepoOSFileSystem {
@@ -97,6 +99,10 @@ struct LiveLocalRepoOSFileSystem: LocalRepoOSFileSystem {
 
     func resolvedPath(_ path: String) -> String {
         URL(fileURLWithPath: path).resolvingSymlinksInPath().path
+    }
+
+    func entryNames(atPath path: String) -> [String] {
+        (try? FileManager.default.contentsOfDirectory(atPath: path)) ?? []
     }
 }
 
@@ -118,7 +124,7 @@ enum LocalRepoOSLaunchError: LocalizedError, Equatable {
         case .repoosNotInstalled:
             return "RepoOS isn't installed, so the Hub can't start a local server. "
                 + "Install RepoOS, then try again. The Hub looks for the repoos command in "
-                + "/opt/homebrew/bin, ~/.bun/bin, /usr/local/bin and ~/.local/bin."
+                + "/opt/homebrew/bin, ~/.bun/bin, /usr/local/bin, ~/.local/bin, and your nvm, mise and asdf installs."
         case .runtimeMissing:
             return "The Hub couldn't find Bun or Node.js, which the repoos command needs. "
                 + "Install Bun (https://bun.sh), or Node.js 20.6 or newer, then try again. "
@@ -143,7 +149,13 @@ enum LocalRepoOSLaunchPlanner {
     ) throws -> LocalRepoOSLaunchPlan {
         let home = environment["HOME"].flatMap { $0.isEmpty ? nil : $0 } ?? NSHomeDirectory()
         let inheritedPath = environment["PATH"].map(pathEntries) ?? []
-        let searchDirectories = knownBinDirectories(home: home) + inheritedPath
+        let knownDirectories = knownBinDirectories(home: home)
+        let versionDirectories = versionManagerBinDirectories(
+            home: home,
+            environment: environment,
+            fileSystem: fileSystem
+        )
+        let searchDirectories = knownDirectories + versionDirectories + inheritedPath
 
         let repoosCandidates = searchDirectories.map { $0 + "/repoos" }
         guard let repoos = repoosCandidates.first(where: fileSystem.isExecutable(atPath:)) else {
@@ -161,15 +173,25 @@ enum LocalRepoOSLaunchPlanner {
         var leading: [String] = []
         var runtimeDirectory: String?
         if !isShellLauncher {
-            let runtime = try resolveRuntime(environment: environment, home: home, searchDirectories: searchDirectories, fileSystem: fileSystem)
+            let runtime = try resolveRuntime(
+                environment: environment,
+                home: home,
+                siblingDirectory: (repoos as NSString).deletingLastPathComponent,
+                searchDirectories: searchDirectories,
+                fileSystem: fileSystem
+            )
             executable = runtime.path
             runtimeDirectory = (runtime.path as NSString).deletingLastPathComponent
             if runtime.isNode { leading.append("--no-warnings") }
             leading.append(entry)
         }
 
+        // The child gets the runtime's directory first, then every directory the
+        // planner searched, so the CLI's own subprocesses resolve `node` and `bun`.
         let path = uniquePath(
-            [runtimeDirectory].compactMap { $0 } + knownBinDirectories(home: home) + ["/usr/bin", "/bin", "/usr/sbin", "/sbin"] + inheritedPath
+            [runtimeDirectory].compactMap { $0 }
+                + knownDirectories + versionDirectories
+                + ["/usr/bin", "/bin", "/usr/sbin", "/sbin"] + inheritedPath
         )
         var childEnvironment = environment
         childEnvironment["PATH"] = path.joined(separator: ":")
@@ -182,9 +204,12 @@ enum LocalRepoOSLaunchPlanner {
     }
 
     /// Bun first (the repo's default), Node only when pinned or Bun is missing.
+    /// A runtime beside `repoos` wins over the general search: an npm-installed
+    /// `repoos` in an nvm version directory must run under that same Node.
     private static func resolveRuntime(
         environment: [String: String],
         home: String,
+        siblingDirectory: String,
         searchDirectories: [String],
         fileSystem: LocalRepoOSFileSystem
     ) throws -> Runtime {
@@ -194,12 +219,12 @@ enum LocalRepoOSLaunchPlanner {
             if let explicit = environment["REPOOS_BUN_PATH"], !explicit.isEmpty {
                 bunCandidates.append(explicit)
             }
-            bunCandidates += searchDirectories.map { $0 + "/bun" }
+            bunCandidates += [siblingDirectory + "/bun"] + searchDirectories.map { $0 + "/bun" }
             if let bun = bunCandidates.first(where: fileSystem.isExecutable(atPath:)) {
                 return Runtime(path: bun, isNode: false)
             }
         }
-        let nodeCandidates = [home + "/.local/share/mise/shims/node", "/opt/homebrew/bin/node", "/usr/local/bin/node", "/usr/bin/node"]
+        let nodeCandidates = [siblingDirectory + "/node", home + "/.local/share/mise/shims/node", "/opt/homebrew/bin/node", "/usr/local/bin/node", "/usr/bin/node"]
             + searchDirectories.map { $0 + "/node" }
         guard let node = nodeCandidates.first(where: fileSystem.isExecutable(atPath:)) else {
             throw LocalRepoOSLaunchError.runtimeMissing
@@ -215,6 +240,32 @@ enum LocalRepoOSLaunchPlanner {
             "/usr/local/bin",
             home + "/.local/bin",
         ]
+    }
+
+    /// bin directories of Node and Bun installed by version managers: nvm, mise and asdf.
+    /// Each version tree is listed newest first, so a `repoos` that npm installed under
+    /// an nvm version is found, and so is the Node beside it.
+    private static func versionManagerBinDirectories(
+        home: String,
+        environment: [String: String],
+        fileSystem: LocalRepoOSFileSystem
+    ) -> [String] {
+        let nvmRoot = environment["NVM_DIR"].flatMap { $0.isEmpty ? nil : $0 } ?? home + "/.nvm"
+        let miseRoot = home + "/.local/share/mise"
+        let asdfRoot = home + "/.asdf"
+        return versionBinDirectories(root: nvmRoot + "/versions/node", fileSystem: fileSystem)
+            + [miseRoot + "/shims"]
+            + versionBinDirectories(root: miseRoot + "/installs/node", fileSystem: fileSystem)
+            + versionBinDirectories(root: miseRoot + "/installs/bun", fileSystem: fileSystem)
+            + [asdfRoot + "/shims"]
+            + versionBinDirectories(root: asdfRoot + "/installs/nodejs", fileSystem: fileSystem)
+            + versionBinDirectories(root: asdfRoot + "/installs/bun", fileSystem: fileSystem)
+    }
+
+    private static func versionBinDirectories(root: String, fileSystem: LocalRepoOSFileSystem) -> [String] {
+        fileSystem.entryNames(atPath: root)
+            .sorted { $0.compare($1, options: .numeric) == .orderedDescending }
+            .map { root + "/" + $0 + "/bin" }
     }
 
     private static func pathEntries(_ path: String) -> [String] {
