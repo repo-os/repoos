@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 178030
-last_close_out_gate_at: "2026-11-22T04:09:48.756Z"
 id: "1258"
 title: "Mobile polish: open on Work, hide page scrollbar, even-height header row"
 type: bug
-status: review
+status: done
 priority: p2
 area: [web, mobile]
+merged_commit: 83dbaf73b02355a0e7624d515465327b4157eab7
 assigned_to: ai
 created_by: t@t
 branch: feat/mobile-polish-open-on-work-hide-page-scr
@@ -14,6 +13,8 @@ cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T00:15:33Z"
 updated_at: "2026-11-22T04:09:48Z"
+last_close_out_gate_ms: 178030
+last_close_out_gate_at: "2026-11-22T04:09:48.756Z"
 review_passes: 5
 review_failed_report_retries: 0
 last_check_failure: "repoos check at 2026-11-20T09:49:11.145Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Work is the home page; header row controls share one height (target \"default\"): loading state detected: loading indicator [aria-busy=\"true\"] on /work (http://127.0.0.1:34337/work)"

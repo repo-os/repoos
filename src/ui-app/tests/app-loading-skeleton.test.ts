@@ -76,7 +76,8 @@ describe("repo loading skeleton", () => {
     for (const path of ["/inputs", "/client-board"]) {
       expect(loadingSkeletonKind(path)).toBe("inputBoard");
     }
-    expect(loadingSkeletonKind("/")).toBe("dashboard");
+    expect(loadingSkeletonKind("/control")).toBe("dashboard");
+    expect(loadingSkeletonKind("/")).toBe("board");
     expect(loadingSkeletonKind("/checks")).toBe("table");
     expect(loadingSkeletonKind("/agents")).toBe("cards");
     expect(loadingSkeletonKind("/dev")).toBe("targets");
@@ -125,7 +126,7 @@ describe("repo loading skeleton", () => {
     const stories = readFileSync(resolve(__dirname, "../src/views/StoriesView.vue"), "utf8");
     expect(dashboard.match(/class="page-scroll-body"/g)).toHaveLength(1);
     expect(stories).toMatch(/v-for="story in visibleStories"/);
-    expect(loadingSkeletonKind("/")).toBe("dashboard");
+    expect(loadingSkeletonKind("/control")).toBe("dashboard");
     expect(loadingSkeletonKind("/stories")).toBe("rows");
   });
 
@@ -375,7 +376,7 @@ describe("repo loading skeleton", () => {
   });
 
   it("gives every standard page a title to keep above its skeleton", () => {
-    for (const path of ["/", "/work", "/inputs", "/stories", "/checks", "/releases"]) {
+    for (const path of ["/", "/control", "/work", "/inputs", "/stories", "/checks", "/releases"]) {
       expect(loadingPageHeader(path)?.title, path).toBeTruthy();
     }
     for (const path of ["/deployments", "/dev", "/secrets", "/agents", "/settings", "/repo"]) {

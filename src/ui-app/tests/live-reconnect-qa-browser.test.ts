@@ -164,7 +164,8 @@ describe("Control dashboard live recovery at 375/768/1280 (WebKit, fixtures)", (
       fixture.boardRefusals = 0;
       const page = await browser.newPage({ viewport: { width, height: 812 } });
       try {
-        await page.goto(baseUrl + "/");
+        // Mission Control lives at /control; `/` now redirects to Work (#1258).
+        await page.goto(baseUrl + "/control");
         await page
           .locator(".stat-link", { hasText: "ready to start" })
           .waitFor({ state: "visible", timeout: 30_000 });

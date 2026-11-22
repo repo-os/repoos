@@ -794,7 +794,7 @@ export function makeAuditFixture(): string {
     for (const taskId of ["0001", "0002"]) {
       localShotStore(config, taskId).save({
         target: "default",
-        route: "/",
+        route: "/control",
         label: "Dashboard",
         provenance: "declared: Dashboard",
         data: PNG_1PX,
@@ -836,10 +836,10 @@ export function makeAuditFixture(): string {
         captureDetails: [
           {
             target: "default",
-            route: "/",
+            route: "/control",
             label: "Dashboard",
-            url: "http://127.0.0.1:0/",
-            finalRoute: "/",
+            url: "http://127.0.0.1:0/control",
+            finalRoute: "/control",
             routeMatched: true,
             assertions: [],
             assertionsPassed: 0,
@@ -963,7 +963,7 @@ function makeScreens(url: string): ScreenState[] {
     );
   };
   return [
-    { name: "dashboard", prepare: (p) => gotoApp(p, url, "/") },
+    { name: "dashboard", prepare: (p) => gotoApp(p, url, "/control") },
     {
       name: "board",
       prepare: async (p) => {

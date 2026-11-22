@@ -21,7 +21,7 @@ describe("route table: unknown paths and deep links", () => {
   });
 
   it.each([
-    ["/", "dashboard"],
+    ["/control", "dashboard"],
     ["/work", "work"],
     ["/work?task=1252&tab=changes", "work"],
     ["/settings?tab=notifications&section=general", "settings"],
