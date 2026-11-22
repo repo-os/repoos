@@ -1,6 +1,4 @@
 ---
-check_retry_count: 1
-last_check_failure: "repoos check at 2026-11-22T11:53:55.847Z: repoos check failed: ui verification failed (2 issue(s)): [route] auto: matched src/ui-app/** · phone 390x844: declared route / but the browser landed on /work (login or redirect?) (captured http://127.0.0.1:38563/work) (http://127.0.0.1:38563/work); [route] auto: matched src/ui-app/** · desktop 1280x800: declared route / but the browser landed on /work (login or redirect?) (captured http://127.0.0.1:38563/work) (http://127.0.0.1:38563/work)"
 id: "1277"
 title: Hide the stale-evidence prompt once a task is queued or moving to done
 type: feature
@@ -13,7 +11,9 @@ branch: feat/hide-the-stale-evidence-prompt-once-a-ta
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T08:26:19Z"
-updated_at: "2026-11-22T11:53:55Z"
+updated_at: "2026-11-22T11:54:42Z"
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-22T11:53:55.847Z: repoos check failed: ui verification failed (2 issue(s)): [route] auto: matched src/ui-app/** · phone 390x844: declared route / but the browser landed on /work (login or redirect?) (captured http://127.0.0.1:38563/work) (http://127.0.0.1:38563/work); [route] auto: matched src/ui-app/** · desktop 1280x800: declared route / but the browser landed on /work (login or redirect?) (captured http://127.0.0.1:38563/work) (http://127.0.0.1:38563/work)"
 ---
 ## Problem
 A review card that is already queued for close-out (Moving to done, queued #N) still shows 'Stale evidence is the only finding · repoos verify <id>' and a Refresh evidence button. Once close-out is queued or running the evidence prompt is noise, and clicking it would start a new review on a task that is mid-close-out.
@@ -28,6 +28,20 @@ While a task has an active or queued close-out job, the card and drawer hide the
 
 ## Notes for AI
 Also (Nick): on the card and drawer, show only the Refresh evidence button; do not show the repoos verify <id> command text. Shorten the notice text to just: Stale evidence. Update any tests that assert the old wording. Never touch repoos.toml. Headless Playwright only.
+
+## Shots
+```json
+[
+{
+  "label": "Queued close-out card hides the stale-evidence notice and Refresh evidence",
+  "target": "default",
+  "route": "/work",
+  "selector": "[data-task-id=\"9999\"]",
+  "highlight": "[data-task-id=\"9999\"]",
+  "state": "card:staleEvidenceQueued"
+}
+]
+```
 
 ## Screenshots
 
@@ -46,4 +60,4 @@ Also (Nick): on the card and drawer, show only the Refresh evidence button; do n
 - 2026-11-22T11:53:52Z · note: ui verification failed: ui verification failed (2 issue(s)): [route] auto: matched src/ui-app/** · phone 390x844: declared route / but the browser landed on /work (login or redirect?) (captured http://127.0.0.1:38563/work) (http://127.0.0.1:38563/work); [route] auto: matched src/ui-app/** · desktop 1280x800: declared route / but the browser landed on /work (login or redirect?) (captured http://127.0.0.1:38563/work) (http://127.0.0.1:38563/work)
 - 2026-11-22T11:53:52Z · message_queued at 2026-11-22T11:53:52.697Z
 - 2026-11-22T11:53:55Z · message_delivered: 1 message(s)
-
+- 2026-11-22T11:54:42Z · body
