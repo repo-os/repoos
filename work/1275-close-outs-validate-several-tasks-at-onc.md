@@ -2,7 +2,7 @@
 id: "1275"
 title: "Close-outs: validate several tasks at once on different runner machines"
 type: feature
-status: active
+status: review
 priority: p1
 area: [server, core]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/close-outs-validate-several-tasks-at-onc
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T07:42:13Z"
-updated_at: "2026-11-22T08:02:30Z"
+updated_at: "2026-11-22T08:59:48Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-22T07:43:02.260Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Pipeline shows a job validating alongside the active close-out (Also running) (target \"default\"): state \"integration:parallelValidations\" did not render on target \"default\" — /checks?tab=now shows no task card (http://127.0.0.1:35993/checks?tab=now&shotState=integration%3AparallelValidations)"
 review_rounds: 1
@@ -482,3 +482,4 @@ Read docs/close-out-pipeline.md and docs/remote-validation.md first. Never touch
 - 2026-11-22T08:02:27Z · message_queued at 2026-11-22T08:02:27.944Z
 - 2026-11-22T08:02:28Z · watchdog: auto-resumed engineer to read a deferred handoff message · resume 1/3
 - 2026-11-22T08:02:30Z · message_delivered: 1 message(s)
+- 2026-11-22T08:59:48Z · status active→review
