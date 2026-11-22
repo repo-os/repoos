@@ -157,3 +157,4 @@ Also (Nick): on the card and drawer, show only the Refresh evidence button; do n
 - 2026-11-22T17:59:11Z · body
 - 2026-11-22T18:14:52Z · note: adopted orphaned engineer pid 59902
 - 2026-11-22T18:19:51Z · message_queued at 2026-11-22T18:19:51.483Z
+- 2026-11-22T18:19:51Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
