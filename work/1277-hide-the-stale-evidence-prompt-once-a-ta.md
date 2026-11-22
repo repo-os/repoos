@@ -2,7 +2,7 @@
 id: "1277"
 title: Hide the stale-evidence prompt once a task is queued or moving to done
 type: feature
-status: active
+status: review
 priority: p3
 area: web
 assigned_to: ai
@@ -150,3 +150,4 @@ Also (Nick): on the card and drawer, show only the Refresh evidence button; do n
 - 2026-11-22T17:53:01Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-22T17:57:13Z · queued message undelivered for 4m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-22T17:57:14Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: The scoped check is still in its test phase (about 78k lines of output), and I'm waiting for its exit code. I'll request handoff once it reports `exit=0`. · stderr: (empty)
+- 2026-11-22T17:57:14Z · status active→review
