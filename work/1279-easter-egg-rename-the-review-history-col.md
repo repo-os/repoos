@@ -1,4 +1,6 @@
 ---
+last_close_out_gate_ms: 1103638
+last_close_out_gate_at: "2026-11-22T17:25:18.389Z"
 id: "1279"
 title: "Easter eggs bundle: rename review history column to Issues"
 type: feature
@@ -13,7 +15,7 @@ branch: feat/easter-eggs-bundle-rename-review-history
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T10:35:33Z"
-updated_at: "2026-11-22T17:16:32Z"
+updated_at: "2026-11-22T17:25:18Z"
 review_passes: 7
 review_failed_report_retries: 0
 check_retry_count: 2
@@ -182,3 +184,5 @@ Copy change only. Never touch repoos.toml. Headless Playwright only.
 - 2026-11-22T16:47:15Z · needs_input (review-failed) cleared for review again by hello@repoos.org
 - 2026-11-22T16:47:57Z · note: review pass 14: good to go
 - 2026-11-22T17:16:32Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-22T17:25:18Z · close-out gate completed in 1104s
+
