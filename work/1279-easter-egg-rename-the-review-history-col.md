@@ -140,3 +140,4 @@ Copy change only. Never touch repoos.toml. Headless Playwright only.
 - 2026-11-22T14:09:01Z · note: handoff requested (cli)
 - 2026-11-22T14:31:01Z · note: ui verification passed: 2 of 2 shots captured with clean console (1 shot warning)
 - 2026-11-22T14:31:03Z · status active→review
+- 2026-11-22T14:31:03Z · message_queued at 2026-11-22T14:31:03.663Z
