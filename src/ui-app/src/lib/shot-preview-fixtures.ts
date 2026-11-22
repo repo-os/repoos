@@ -2585,6 +2585,16 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
         nowIso(),
       );
       if (building && repo.integration.active) repo.integration.active.stage = "build";
+      // The remote-tests drawer names the live step, the runner host and the
+      // attempt, with the failure the retry replaces (#1276 review).
+      if (!building && repo.integration.active) {
+        Object.assign(repo.integration.active, {
+          step: "running tests (27/84)",
+          host: "bee",
+          attempt: 2,
+          previousFailure: { attempt: 1, reason: "host problem on mini" },
+        });
+      }
       pinnedIntegration = repo.integration;
       break;
     }
