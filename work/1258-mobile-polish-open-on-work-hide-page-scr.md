@@ -2,7 +2,7 @@
 id: "1258"
 title: "Mobile polish: open on Work, hide page scrollbar, even-height header row"
 type: bug
-status: active
+status: review
 priority: p2
 area: [web, mobile]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/mobile-polish-open-on-work-hide-page-scr
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T00:15:33Z"
-updated_at: "2026-11-22T03:26:05Z"
+updated_at: "2026-11-22T03:51:00Z"
 review_passes: 4
 review_failed_report_retries: 0
 last_check_failure: "repoos check at 2026-11-20T09:49:11.145Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Work is the home page; header row controls share one height (target \"default\"): loading state detected: loading indicator [aria-busy=\"true\"] on /work (http://127.0.0.1:34337/work)"
@@ -251,3 +251,4 @@ Screenshot attached shows the current mobile header and Mission Control. Do not 
 - 2026-11-22T03:24:03Z · message_queued at 2026-11-22T03:24:03.832Z
 - 2026-11-22T03:24:04Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-22T03:26:05Z · body
+- 2026-11-22T03:51:00Z · status active→review
