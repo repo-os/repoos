@@ -11,7 +11,7 @@ branch: feat/close-out-validation-log-should-show-liv
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T07:42:21Z"
-updated_at: "2026-11-22T07:27:42Z"
+updated_at: "2026-11-22T07:27:46Z"
 last_check_failure: "repoos check at 2026-11-22T07:13:31.180Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 review_passes: 5
 review_failed_report_retries: 0
@@ -246,3 +246,4 @@ Related: #1272 (timer should count from validation start). Never touch repoos.to
 - 2026-11-22T07:26:32Z · note: ui verification passed: 1 of 1 shot captured with clean console
 - 2026-11-22T07:27:39Z · status review→active
 - 2026-11-22T07:27:42Z · engineer stopped by request
+- 2026-11-22T07:27:46Z · orphaned run process stopped · pid 50519 · /opt/homebrew/bin/bun /Users/nick/.bun/bin/repoos check · cpu 14s · age 14m
