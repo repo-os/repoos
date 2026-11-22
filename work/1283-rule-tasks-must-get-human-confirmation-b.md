@@ -38,3 +38,4 @@ Never edit repoos.toml; if the engineer instructions live there, describe the ex
 - 2026-11-22T13:30:47Z · body
 - 2026-11-22T13:32:54Z · status active→review
 - 2026-11-22T13:32:55Z · message_queued at 2026-11-22T13:32:55.112Z
+- 2026-11-22T13:32:55Z · note: shots: skipped — the diff (6 changed paths) touches no capture target's globs — no UI change to capture
