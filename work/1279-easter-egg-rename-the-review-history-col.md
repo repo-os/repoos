@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "1279"
 title: "Easter eggs bundle: rename review history column to Issues"
 type: feature
@@ -99,3 +100,4 @@ Copy change only. Never touch repoos.toml. Headless Playwright only.
 - 2026-11-22T12:30:36Z · status review→active
 - 2026-11-22T12:30:38Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-22T12:35:53Z · message_queued at 2026-11-22T12:35:53.562Z
+
