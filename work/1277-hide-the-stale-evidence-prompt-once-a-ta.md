@@ -6,6 +6,9 @@ status: review
 needs_input: true
 needs_input_reason: review-failed
 needs_input_detail: "the github copilot agent exited without output: Copilot emitted an unknown protocol event \"commands.changed\". Copilot emitted an unknown protocol event \"instruction.update\". error: You have exceeded your monthly quota (Request ID: 00000-c3b3d50f-827f-4f67-8b7a-1a853a7c427b)"
+debug_tldr: GitHub Copilot reviewer hit its monthly quota — switch the reviewer agent to another allowed pair and re-run review.
+debug_tldr_at: "2026-11-22T16:27:08Z"
+debug_tldr_key: "review-failed|the github copilot agent exited without output: Copilot emitted an unknown protocol event \"commands.changed\". Copilot emitted an unknown protocol event \"instruction.update\". error: You have exceeded your monthly quota (Request ID: 00000-c3b3d50f-827f-4f67-8b7a-1a853a7c427b)"
 priority: p3
 area: web
 assigned_to: ai
@@ -14,7 +17,7 @@ branch: feat/hide-the-stale-evidence-prompt-once-a-ta
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T08:26:19Z"
-updated_at: "2026-11-22T16:27:03Z"
+updated_at: "2026-11-22T16:27:08Z"
 review_failed_report_retries: 2
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-22T15:57:20.978Z: repoos check failed: reused check inputs changed during handoff — run the check again"
