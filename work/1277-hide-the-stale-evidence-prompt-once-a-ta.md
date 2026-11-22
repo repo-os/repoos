@@ -12,7 +12,7 @@ branch: feat/hide-the-stale-evidence-prompt-once-a-ta
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T08:26:19Z"
-updated_at: "2026-11-22T19:23:57Z"
+updated_at: "2026-11-22T19:24:18Z"
 last_close_out_gate_ms: 1024824
 last_close_out_gate_at: "2026-11-22T19:23:57.107Z"
 review_passes: 6
@@ -181,4 +181,4 @@ Also (Nick): on the card and drawer, show only the Refresh evidence button; do n
 - 2026-11-22T18:59:31Z · message_queued at 2026-11-22T18:59:31.492Z
 - 2026-11-22T19:00:00Z · note: review pass 10: good to go
 - 2026-11-22T19:23:57Z · close-out gate completed in 1025s
-
+- 2026-11-22T19:24:18Z · status done→done, release:success
