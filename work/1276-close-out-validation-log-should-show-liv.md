@@ -2,10 +2,7 @@
 id: "1276"
 title: Close-out validation log should show live progress
 type: feature
-status: review
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: "`needs some work` — local retry and progress reporting, and initial write-failure detection, remain incomplete."
+status: active
 priority: p1
 area: [server, core]
 assigned_to: ai
@@ -14,7 +11,9 @@ branch: feat/close-out-validation-log-should-show-liv
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T07:42:21Z"
-updated_at: "2026-11-22T04:10:17Z"
+updated_at: "2026-11-22T05:27:03Z"
+last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/work-board-large-perf-browser.test.ts > Work board with 1200 tasks (WebKit, generated fixture) > opens, filters, and scrolls at 375px within budget on bee — fix it in the feature branch and re-run the gate"
+last_handoff_failure_sha: 84f91719ed676c04d4bcad6115cd3c3f824beccd
 review_passes: 4
 last_check_failure: "repoos check at 2026-11-20T21:01:31.328Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Close-out drawer with live step, host, and attempt (target \"default\"): loading state detected: loading text \"Loading changes…\" on /work?task=9999&tab=changes (http://127.0.0.1:43237/work?task=9999&tab=changes&shotState=drawer%3AcloseOutRemoteTests)"
 review_failed_report_retries: 0
@@ -201,3 +200,16 @@ Related: #1272 (timer should count from validation start). Never touch repoos.to
 - 2026-11-22T03:54:03Z · note: handoff requested (cli)
 - 2026-11-22T03:54:03Z · status active→review
 - 2026-11-22T04:10:17Z · needs_input
+- 2026-11-22T04:55:16Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-22T04:57:49Z · status review→active
+- 2026-11-22T04:57:50Z · needs_input
+- 2026-11-22T05:04:24Z · orphaned run process stopped · pid 69366 · sleep 60 · cpu 0s · age 12s
+- 2026-11-22T05:04:24Z · orphaned run process stopped · pid 69664 · sleep 60 · cpu 0s · age 7s
+- 2026-11-22T05:04:25Z · orphaned run process stopped · pid 69759 · sleep 60 · cpu 0s · age 6s
+- 2026-11-22T05:04:29Z · orphaned run process stopped · pid 69802 · sleep 60 · cpu 0s · age 6s
+- 2026-11-22T05:04:54Z · orphaned run process stopped · pid 70205 · sleep 60 · cpu 0s · age 30s
+- 2026-11-22T05:05:08Z · orphaned run process stopped · pid 71252 · sleep 60 · cpu 0s · age 19s
+- 2026-11-22T05:09:17Z · note: handoff requested (cli)
+- 2026-11-22T05:26:15Z · message_queued at 2026-11-22T05:26:15.590Z
+- 2026-11-22T05:26:15Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: tests/work-board-large-perf-browser.test.ts > Work board with 1200 tasks (WebKit, generated fixture) > opens, filters, and scrolls at 375px within budget on bee — fix it in the feature branch and re-run the gate
+- 2026-11-22T05:27:03Z · message_delivered: 2 message(s)

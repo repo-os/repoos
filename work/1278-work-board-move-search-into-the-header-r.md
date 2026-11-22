@@ -11,9 +11,9 @@ branch: feat/work-board-move-search-into-the-header-r
 cli_override: github copilot
 model_override: default
 created_at: "2026-11-20T08:46:27Z"
-updated_at: "2026-11-22T04:40:16Z"
-last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/mobile-touch-affordances.test.ts > mobile web polish (#1139) > fits landscape phones and 768px tablets without clipping, tests/offline-slow-network-browser.test.ts > slow network and offline QA (#1226) > offline: Work shows a plain-English failure, no endless skeleton, usable at every width, tests/stories-inbox-search-qa-browser.test.ts > #1237 Stories / Inbox / Search QA at 375/768/1280 (WebKit, fixtures) > inbox board fits at 768px with the full 220 long-titled cards on thinkpad — fix it in the feature branch and re-run the gate"
-last_handoff_failure_sha: 76f88c388fe586603f79a1c45019c2d11832fb89
+updated_at: "2026-11-22T05:27:08Z"
+last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/offline-slow-network-browser.test.ts > slow network and offline QA (#1226) > offline: Work shows a plain-English failure, no endless skeleton, usable at every width, tests/stories-inbox-search-qa-browser.test.ts > #1237 Stories / Inbox / Search QA at 375/768/1280 (WebKit, fixtures) > inbox board fits at 768px with the full 220 long-titled cards, tests/stories-inbox-search-qa-browser.test.ts > #1237 Stories / Inbox / Search QA at 375/768/1280 (WebKit, fixtures) > inbox board fits at 1280px with the full 220 long-titled cards on thinkpad — fix it in the feature branch and re-run the gate"
+last_handoff_failure_sha: 0850343bd91f62487b8cbf932686829cb56c59fb
 review_rounds: 2
 review_passes: 2
 handoff_signal_retry_count: 2
@@ -273,3 +273,15 @@ Start from src/ui-app/src/components/BoardQueueSearch.vue and the Work view head
 - 2026-11-22T04:39:48Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: **Handoff blocked:** remote WebKit still reports overflow; the latest scoped check failed. The worktree is now read-only in review, so it must return to active before I can finish the fixes. · stderr: (empty)
 - 2026-11-22T04:39:49Z · note: handoff requested (cli)
 - 2026-11-22T04:40:16Z · CTO nudge: held — handoff gate is running
+- 2026-11-22T04:56:50Z · message_queued at 2026-11-22T04:56:50.224Z
+- 2026-11-22T04:56:50Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: tests/offline-slow-network-browser.test.ts > slow network and offline QA (#1226) > offline: Work shows a plain-English failure, no endless skeleton, usable at every width, tests/stories-inbox-search-qa-browser.test.ts > #1237 Stories / Inbox / Search QA at 375/768/1280 (WebKit, fixtures) > inbox board fits at 768px with the full 220 long-titled cards, tests/stories-inbox-search-qa-browser.test.ts > #1237 Stories / Inbox / Search QA at 375/768/1280 (WebKit, fixtures) > inbox board fits at 1280px with the full 220 long-titled cards on bee — fix it in the feature branch and re-run the gate
+- 2026-11-22T04:56:50Z · message_delivered: 1 message(s)
+- 2026-11-22T05:02:00Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: **Handoff blocked:** remote WebKit still reports horizontal overflow, although the affected tests pass locally. The check made the worktree read-only, so further investigation requires it to return to active. · stderr: (empty)
+- 2026-11-22T05:02:01Z · note: handoff requested (cli)
+- 2026-11-22T05:05:16Z · CTO nudge: held — handoff gate is running
+- 2026-11-22T05:19:20Z · message_queued at 2026-11-22T05:19:20.445Z
+- 2026-11-22T05:19:20Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: tests/offline-slow-network-browser.test.ts > slow network and offline QA (#1226) > offline: Work shows a plain-English failure, no endless skeleton, usable at every width, tests/stories-inbox-search-qa-browser.test.ts > #1237 Stories / Inbox / Search QA at 375/768/1280 (WebKit, fixtures) > inbox board fits at 768px with the full 220 long-titled cards, tests/stories-inbox-search-qa-browser.test.ts > #1237 Stories / Inbox / Search QA at 375/768/1280 (WebKit, fixtures) > inbox board fits at 1280px with the full 220 long-titled cards on thinkpad — fix it in the feature branch and re-run the gate
+- 2026-11-22T05:19:20Z · message_delivered: 1 message(s)
+- 2026-11-22T05:27:02Z · message_queued at 2026-11-22T05:27:02.064Z
+- 2026-11-22T05:27:06Z · engineer stopped by request
+- 2026-11-22T05:27:07Z · note: handoff requested (cli)
