@@ -135,6 +135,8 @@ export const SHOT_PREVIEW_FIXTURE_IDS = [
   "drawer:humanGuideWarning",
   // #0832 — review task with review-rounds-exhausted and a long verdict summary.
   "card:reviewRoundsExhausted",
+  // #1277 — review card whose close-out is validating: no stale-evidence notice or Refresh evidence.
+  "card:staleEvidenceQueued",
   // #1034 — check-wait escalation with a long queue diagnostic on card and drawer.
   "card:checkWaitDetail",
   "drawer:checkWaitDetail",

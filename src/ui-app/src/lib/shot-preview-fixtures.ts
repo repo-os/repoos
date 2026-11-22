@@ -2263,6 +2263,36 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
       };
       break;
     }
+    case "card:staleEvidenceQueued": {
+      // #1277 — a stale-only review whose close-out is validating. The card must
+      // hide the stale-evidence notice and Refresh evidence while the job runs.
+      ensureFixtureTask(repo, "review", { title: "Stale evidence during close-out" });
+      repo.reviews = {
+        ...repo.reviews,
+        [SHOT_PREVIEW_FIXTURE_TASK_ID]: {
+          running: false,
+          enabled: true,
+          lines: [],
+          report: {
+            id: SHOT_PREVIEW_FIXTURE_TASK_ID,
+            at: new Date().toISOString(),
+            agent: "reviewer",
+            cli: "opencode",
+            model: "default",
+            branch: "feat/shot-preview-fixture",
+            state: "ok",
+            markdown: "## Verdict\nneeds some work. STALE-EVIDENCE-ONLY\n",
+          },
+        },
+      };
+      const pipeline = activePipeline(SHOT_PREVIEW_FIXTURE_TASK_ID, "validating");
+      repo.integration = {
+        ...pipeline,
+        active: { ...pipeline.active!, phase: "validating" },
+      };
+      pinnedIntegration = repo.integration;
+      break;
+    }
     case "card:checkWaitDetail":
     case "drawer:checkWaitDetail": {
       const longWait =
