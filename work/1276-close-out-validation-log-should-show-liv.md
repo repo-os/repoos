@@ -3,9 +3,6 @@ id: "1276"
 title: Close-out validation log should show live progress
 type: feature
 status: review
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: `needs some work` — the live host is clipped from the captured drawer and can be clipped on the card.
 priority: p1
 area: [server, core]
 assigned_to: ai
@@ -14,7 +11,7 @@ branch: feat/close-out-validation-log-should-show-liv
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T07:42:21Z"
-updated_at: "2026-11-22T07:04:02Z"
+updated_at: "2026-11-22T07:06:56Z"
 review_passes: 5
 last_check_failure: "repoos check at 2026-11-20T21:01:31.328Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Close-out drawer with live step, host, and attempt (target \"default\"): loading state detected: loading text \"Loading changes…\" on /work?task=9999&tab=changes (http://127.0.0.1:43237/work?task=9999&tab=changes&shotState=drawer%3AcloseOutRemoteTests)"
 review_failed_report_retries: 0
@@ -243,3 +240,4 @@ Related: #1272 (timer should count from validation start). Never touch repoos.to
 - 2026-11-22T06:43:28Z · status active→review
 - 2026-11-22T06:43:29Z · needs_input
 - 2026-11-22T07:04:00Z · note: ui verification passed: 1 of 1 shot captured with clean console
+- 2026-11-22T07:06:56Z · needs_input (review-rounds-exhausted) cleared for review again by human
