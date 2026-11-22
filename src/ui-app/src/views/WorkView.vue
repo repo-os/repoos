@@ -917,6 +917,9 @@ function openHeld(task: Task): void {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
+  /* Wrap the actions under the title when the row is too narrow, instead of
+     overflowing: runner browsers render wider fonts than a Mac (#1278). */
+  flex-wrap: wrap;
   gap: 16px;
   margin-bottom: 20px;
 }
@@ -932,7 +935,7 @@ function openHeld(task: Task): void {
 }
 .work-header-actions {
   display: flex;
-  flex: 1 1 0;
+  flex: 1 1 320px;
   min-width: 0;
   align-items: center;
   justify-content: flex-end;
