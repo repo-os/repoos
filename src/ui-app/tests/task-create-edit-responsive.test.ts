@@ -250,7 +250,8 @@ describe.each(VIEWPORTS)("task create/edit interactions at %i px", (width) => {
       expect(p0Option).toBeDefined();
       pointerClick(p0Option as HTMLElement);
       await flush();
-      await new DOMWrapper(modal.querySelector(".task-meta-modal-actions button")!).trigger(
+      // The modal saves on its own: no second click on the drawer's Save bar.
+      await new DOMWrapper(modal.querySelector('[data-test-id="task-meta-save"]')!).trigger(
         "click",
       );
       await flush();
@@ -258,9 +259,9 @@ describe.each(VIEWPORTS)("task create/edit interactions at %i px", (width) => {
       expect(summary).toContain("chore · p0");
       expect(summary).toContain("web, docs");
       expect(summary).toContain("depends on #0002");
-
-      await wrapper.get(".save-bar button:last-child").trigger("click");
-      await flush();
+      expect(document.body.querySelector('[data-test-id="task-meta-modal"]')).toBeNull();
+      expect(wrapper.find(".save-bar").exists()).toBe(false);
+      expect(patch).toHaveBeenCalledTimes(1);
       expect(patch).toHaveBeenCalledWith(
         "0001",
         expect.objectContaining({
@@ -270,6 +271,39 @@ describe.each(VIEWPORTS)("task create/edit interactions at %i px", (width) => {
           dependsOn: ["0002"],
         }),
       );
+    } finally {
+      wrapper.unmount();
+    }
+  });
+
+  it("discards the details modal's edits on Cancel and saves nothing", async () => {
+    await setViewport(width);
+    const task = makeTask({ dependsOn: [] });
+    const wrapper = await mountDrawer(task);
+    try {
+      const ui = useUiStore();
+      const repo = useRepoStore();
+      const patch = vi.spyOn(repo, "patchTask").mockResolvedValue(task);
+      ui.open(task);
+      ui.activeTab = "details";
+      await flush();
+      repo.tasks = [task, makeTask({ id: "0002", title: "Prerequisite" })];
+      await flush();
+      const before = wrapper.get('[data-test-id="task-meta-summary"]').text();
+      const modal = await openTaskDetailsModal(wrapper);
+      await new DOMWrapper(
+        modal.querySelector(".task-dependency-picker .dependency-option")!,
+      ).trigger("click");
+      await flush();
+      expect(modal.querySelector(".dependency-selected")?.textContent).toContain("Prerequisite");
+      const cancel = [
+        ...modal.querySelectorAll<HTMLElement>(".task-meta-modal-actions button"),
+      ].find((b) => b.textContent?.trim() === "Cancel")!;
+      await new DOMWrapper(cancel).trigger("click");
+      await flush();
+      expect(patch).not.toHaveBeenCalled();
+      expect(wrapper.get('[data-test-id="task-meta-summary"]').text()).toBe(before);
+      expect(wrapper.find(".save-bar").exists()).toBe(false);
     } finally {
       wrapper.unmount();
     }

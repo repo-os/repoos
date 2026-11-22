@@ -2979,6 +2979,52 @@ async function saveDraft(): Promise<void> {
   }
 }
 
+/** The fields the Task details modal edits (#1282); title and body are not among them. */
+const META_FIELDS = ["type", "priority", "area", "story", "assignedTo", "dependsOn"] as const;
+
+/** Revert the modal's fields to the saved values; unsaved title/body edits stay. */
+function revertMetaDraft(): void {
+  for (const k of META_FIELDS) {
+    if (k === "dependsOn") draft.dependsOn = [...original.dependsOn];
+    else draft[k] = original[k];
+  }
+}
+
+/**
+ * Save only what the Task details modal edits, then close it. The drawer's own
+ * Save bar still owns the title and body, so those edits are left unsaved.
+ */
+async function saveMetaModal(): Promise<void> {
+  if (!ui.active) return;
+  const changed = changedFields().filter((k) => (META_FIELDS as readonly string[]).includes(k));
+  if (changed.length === 0) {
+    metaModalOpen.value = false;
+    return;
+  }
+  const patch: Record<string, string | string[]> = {};
+  for (const k of changed) patch[k] = draft[k];
+  ui.saving = true;
+  try {
+    await repo.patchTask(ui.active.id, patch);
+    for (const k of changed) {
+      if (k === "dependsOn") original.dependsOn = [...draft.dependsOn];
+      else original[k] = draft[k];
+    }
+    metaModalOpen.value = false;
+  } catch (err) {
+    // Keep the modal open with the edits so nothing the user typed is lost.
+    repo.onError(err);
+  } finally {
+    ui.saving = false;
+  }
+}
+
+/** Closing the modal any way but Save (Cancel, X, Escape, click outside) discards its edits. */
+function onMetaModalOpen(open: boolean): void {
+  if (!open && metaModalOpen.value) revertMetaDraft();
+  metaModalOpen.value = open;
+}
+
 function cancelDraft(): void {
   if (ui.active) initDraft(ui.active);
 }
@@ -6424,7 +6470,7 @@ watch(
           :class="{ 'transition-success': transitioned }"
         >
           <!-- #1282: the metadata block collapses to a one-button summary; the
-               edit controls live in the modal below (same draft, same Save bar). -->
+               edit controls live in the modal below and save with its own Save button. -->
           <button
             type="button"
             class="task-meta-summary"
@@ -7930,16 +7976,16 @@ watch(
     </DialogContent>
   </Dialog>
 
-  <!-- #1282: the collapsed details block's edit controls. They edit the same
-       draft as before, so the drawer's Save bar still saves them. -->
-  <Dialog :open="metaModalOpen" @update:open="(value) => (metaModalOpen = value)">
+  <!-- #1282: the collapsed details block's edit controls. Save patches only
+       these fields; Cancel, X and Escape revert them. -->
+  <Dialog :open="metaModalOpen" @update:open="onMetaModalOpen">
     <DialogOverlay />
     <DialogContent class="task-meta-modal" data-test-id="task-meta-modal">
       <div class="task-meta-modal-head">
         <div class="task-meta-modal-head-text">
           <DialogTitle>Task details</DialogTitle>
           <DialogDescription class="task-meta-modal-desc">
-            Changes are saved with the drawer's Save bar.
+            Save applies your changes to the task.
           </DialogDescription>
         </div>
         <DialogClose class="close-x" aria-label="Close">
@@ -8044,7 +8090,18 @@ watch(
         </div>
       </div>
       <div class="task-meta-modal-actions">
-        <Button variant="default" size="sm" @click="metaModalOpen = false">Done</Button>
+        <Button variant="outline" size="sm" :disabled="ui.saving" @click="onMetaModalOpen(false)">
+          Cancel
+        </Button>
+        <Button
+          variant="default"
+          size="sm"
+          :disabled="ui.saving"
+          data-test-id="task-meta-save"
+          @click="saveMetaModal"
+        >
+          Save
+        </Button>
       </div>
     </DialogContent>
   </Dialog>

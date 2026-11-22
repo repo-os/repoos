@@ -17337,6 +17337,7 @@
 .task-meta-modal-actions {
   display: flex;
   justify-content: flex-end;
+  gap: 8px;
   padding: 18px 24px 22px;
 }
 @media (max-width: 480px) {
