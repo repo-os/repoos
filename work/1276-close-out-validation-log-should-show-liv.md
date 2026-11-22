@@ -3,6 +3,9 @@ id: "1276"
 title: Close-out validation log should show live progress
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: `needs some work` — the live host is clipped from the captured drawer and can be clipped on the card.
 priority: p1
 area: [server, core]
 assigned_to: ai
@@ -226,3 +229,4 @@ Related: #1272 (timer should count from validation start). Never touch repoos.to
 - 2026-11-22T06:10:35Z · ↻ resuming engineer to read queued message
 - 2026-11-22T06:10:35Z · message_delivered: 3 message(s)
 - 2026-11-22T06:11:45Z · note: review pass 10: needs some work
+- 2026-11-22T06:11:45Z · needs_input
