@@ -11,7 +11,7 @@ branch: feat/close-out-validation-log-should-show-liv
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T07:42:21Z"
-updated_at: "2026-11-22T05:52:07Z"
+updated_at: "2026-11-22T05:52:08Z"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/work-board-large-perf-browser.test.ts > Work board with 1200 tasks (WebKit, generated fixture) > opens, filters, and scrolls at 375px within budget on bee — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: 84f91719ed676c04d4bcad6115cd3c3f824beccd
 review_passes: 4
@@ -218,3 +218,4 @@ Related: #1272 (timer should count from validation start). Never touch repoos.to
 - 2026-11-22T05:50:16Z · CTO nudge: held — handoff gate is running
 - 2026-11-22T05:52:06Z · note: ui verification passed: 1 of 1 shot captured with clean console
 - 2026-11-22T05:52:07Z · message_queued at 2026-11-22T05:52:07.969Z
+- 2026-11-22T05:52:08Z · handoff failed · task-file handoff failed at review · Engineering report draft is missing: .repoos/engineering-report-drafts/1276.md
