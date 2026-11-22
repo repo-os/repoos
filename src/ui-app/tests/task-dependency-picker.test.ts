@@ -26,6 +26,24 @@ describe("TaskDependencyPicker", () => {
     expect(wrapper.emitted("update:modelValue")?.at(-1)?.[0]).toEqual(["0101"]);
   });
 
+  it("shows None when nothing is selected and selected prerequisites as chips above the search", async () => {
+    const wrapper = mount(TaskDependencyPicker, {
+      props: { id: "deps", tasks, modelValue: [] },
+    });
+    expect(wrapper.find(".dependency-none").text()).toBe("None");
+    expect(wrapper.find(".dependency-selected").exists()).toBe(false);
+
+    await wrapper.setProps({ modelValue: ["0102"] });
+    const chips = wrapper.findAll(".dependency-chip");
+    expect(chips).toHaveLength(1);
+    expect(chips[0]!.text()).toContain("#0102");
+    expect(chips[0]!.text()).toContain("Write docs");
+    expect(wrapper.find(".dependency-none").exists()).toBe(false);
+    // The chips come before the search input, so what is set reads first.
+    const order = wrapper.element.querySelectorAll(".dependency-selected, input");
+    expect(order[0]!.classList.contains("dependency-selected")).toBe(true);
+  });
+
   it("removes a previously selected prerequisite", async () => {
     const wrapper = mount(TaskDependencyPicker, {
       props: { id: "deps", tasks, modelValue: ["0101"] },

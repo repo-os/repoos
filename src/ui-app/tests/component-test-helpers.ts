@@ -1,3 +1,4 @@
+import type { VueWrapper } from "@vue/test-utils";
 import { nextTick } from "vue";
 import type { Task } from "../src/types";
 
@@ -83,4 +84,22 @@ export const json = async (data: unknown) => ({
 /** Flush Vue's nextTick queue to process async updates */
 export async function flush(iterations = 8): Promise<void> {
   for (let i = 0; i < iterations; i++) await nextTick();
+}
+
+/**
+ * Opens the collapsed Task details summary's edit modal (#1282) and returns its
+ * root. Radix portals the modal to <body>, so callers query the returned node
+ * (or `document.body`) instead of the mounted wrapper.
+ */
+export async function openTaskDetailsModal(wrapper: VueWrapper): Promise<HTMLElement> {
+  await wrapper.get('[data-test-id="task-meta-summary"]').trigger("click");
+  await flush();
+  // A wrapper mounted without attachTo (and with teleport stubbed) keeps the
+  // modal inside its own element; an attached one portals it to <body>.
+  const selector = '[data-test-id="task-meta-modal"]';
+  const modal =
+    document.body.querySelector<HTMLElement>(selector) ??
+    wrapper.element.querySelector<HTMLElement>(selector);
+  if (!modal) throw new Error("task details modal did not open");
+  return modal;
 }

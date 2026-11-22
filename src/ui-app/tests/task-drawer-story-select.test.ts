@@ -5,7 +5,7 @@
 import { readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { mount, type VueWrapper } from "@vue/test-utils";
+import { DOMWrapper, mount, type VueWrapper } from "@vue/test-utils";
 import { createPinia, setActivePinia, type Pinia } from "pinia";
 import { createRouter, createMemoryHistory } from "vue-router";
 import { nextTick } from "vue";
@@ -14,7 +14,13 @@ import Select from "../src/components/ui/select/root.vue";
 import { useConfigStore } from "../src/stores/config";
 import { useRepoStore } from "../src/stores/repo";
 import { useUiStore } from "../src/stores/ui";
-import { EMPTY_COUNTS, FakeEventSource, json, makeTask } from "./component-test-helpers";
+import {
+  EMPTY_COUNTS,
+  FakeEventSource,
+  json,
+  makeTask,
+  openTaskDetailsModal,
+} from "./component-test-helpers";
 import type { Task } from "../src/types";
 
 async function flush(): Promise<void> {
@@ -91,18 +97,20 @@ describe("task drawer story select (#0525)", () => {
     stubApi(task);
     wrapper = await mountDrawer(pinia, task, true);
 
-    const details = wrapper.find(".drawer-body");
-    expect(details.text()).not.toContain("Assigned to");
-    expect(details.find("datalist#story-options").exists()).toBe(false);
+    // #1282: the collapsed summary names the story; the controls live in the modal.
+    expect(wrapper.get('[data-test-id="task-meta-summary"]').text()).toContain("Alpha slice");
+    const details = await openTaskDetailsModal(wrapper);
+    expect(details.textContent).not.toContain("Assigned to");
+    expect(details.querySelector("datalist#story-options")).toBeNull();
 
-    const areaRow = details.find("#et-area").element.closest(".field-row");
+    const areaRow = details.querySelector("#et-area")!.closest(".field-row");
     expect(areaRow, "Area should sit in a field-row with Story").toBeTruthy();
     expect(areaRow!.querySelector("#et-story")).toBeTruthy();
     expect(areaRow!.querySelector("#et-assignee")).toBeFalsy();
 
-    const storyTrigger = wrapper.find("#et-story");
-    expect(storyTrigger.attributes("role")).toBe("combobox");
-    expect(storyTrigger.text()).toContain("Alpha slice");
+    const storyTrigger = details.querySelector<HTMLElement>("#et-story")!;
+    expect(storyTrigger.getAttribute("role")).toBe("combobox");
+    expect(storyTrigger.textContent).toContain("Alpha slice");
 
     const drawerSource = readFileSync(
       join(resolve(__dirname, ".."), "src/components/TaskDrawer.vue"),
@@ -114,12 +122,12 @@ describe("task drawer story select (#0525)", () => {
       '<SelectItem v-for="name in storyOptions" :key="name" :value="name">',
     );
 
-    const openBtn = wrapper.find('button[aria-label^="Open story"]');
-    expect(openBtn.exists()).toBe(true);
-    expect(openBtn.text()).toBe("go to story ↗");
-    expect(openBtn.element.parentElement?.classList.contains("field-header")).toBe(true);
-    expect(storyTrigger.element.parentElement).toBe(openBtn.element.parentElement?.parentElement);
-    expect(openBtn.attributes("aria-label")).toBe('Open story "Alpha slice" (#0001)');
+    const openBtn = details.querySelector<HTMLElement>('button[aria-label^="Open story"]')!;
+    expect(openBtn).toBeTruthy();
+    expect(openBtn.textContent?.trim()).toBe("go to story ↗");
+    expect(openBtn.parentElement?.classList.contains("field-header")).toBe(true);
+    expect(storyTrigger.parentElement).toBe(openBtn.parentElement?.parentElement);
+    expect(openBtn.getAttribute("aria-label")).toBe('Open story "Alpha slice" (#0001)');
   });
 
   it("hides the go-to-story button when the task has no story", async () => {
@@ -129,8 +137,9 @@ describe("task drawer story select (#0525)", () => {
     const task = makeTask({ story: "", assignedTo: "ai" });
     stubApi(task);
     wrapper = await mountDrawer(pinia, task, true);
+    await openTaskDetailsModal(wrapper);
 
-    expect(wrapper.find('button[aria-label^="Open story"]').exists()).toBe(false);
+    expect(document.body.querySelector('button[aria-label^="Open story"]')).toBeNull();
   });
 
   it("closes the drawer and navigates to the story panel", async () => {
@@ -144,7 +153,10 @@ describe("task drawer story select (#0525)", () => {
     const router = wrapper.vm.$router;
     const push = vi.spyOn(router, "push");
 
-    await wrapper.find('button[aria-label^="Open story"]').trigger("click");
+    await openTaskDetailsModal(wrapper);
+    await new DOMWrapper(document.body.querySelector('button[aria-label^="Open story"]')!).trigger(
+      "click",
+    );
     await flush();
 
     expect(ui.active).toBeNull();
@@ -161,7 +173,10 @@ describe("task drawer story select (#0525)", () => {
     const router = wrapper.vm.$router;
     const push = vi.spyOn(router, "push");
 
-    await wrapper.find('button[aria-label^="Open story"]').trigger("click");
+    await openTaskDetailsModal(wrapper);
+    await new DOMWrapper(document.body.querySelector('button[aria-label^="Open story"]')!).trigger(
+      "click",
+    );
     await flush();
 
     expect(push).toHaveBeenCalledWith({ name: "stories", query: { story: "tag only" } });
@@ -175,11 +190,11 @@ describe("task drawer story select (#0525)", () => {
     stubApi(task);
     wrapper = await mountDrawer(pinia, task, false);
 
-    const details = wrapper.find(".drawer-body");
-    expect(details.text()).toContain("Assigned to");
-    expect(details.find("#et-story").exists()).toBe(false);
-    expect(details.find("#et-assignee").exists()).toBe(true);
-    expect(wrapper.find('button[aria-label^="Open story"]').exists()).toBe(false);
+    const details = await openTaskDetailsModal(wrapper);
+    expect(details.textContent).toContain("Assigned to");
+    expect(details.querySelector("#et-story")).toBeNull();
+    expect(details.querySelector("#et-assignee")).not.toBeNull();
+    expect(details.querySelector('button[aria-label^="Open story"]')).toBeNull();
   });
 
   it("with stories disabled, hides the go-to-story button even when the task has a story", async () => {
@@ -190,8 +205,9 @@ describe("task drawer story select (#0525)", () => {
     stubApi(task);
     wrapper = await mountDrawer(pinia, task, false);
 
-    expect(wrapper.find("#et-story").exists()).toBe(false);
-    expect(wrapper.find('button[aria-label^="Open story"]').exists()).toBe(false);
+    await openTaskDetailsModal(wrapper);
+    expect(document.body.querySelector("#et-story")).toBeNull();
+    expect(document.body.querySelector('button[aria-label^="Open story"]')).toBeNull();
   });
 
   it("navigates to the story without saving unsaved drawer edits", async () => {
@@ -208,7 +224,8 @@ describe("task drawer story select (#0525)", () => {
     // The area field is a multi-select picker (#0583): opening the panel and
     // committing a free-text selection is how an edit becomes unsaved here.
     // The panel teleports to <body> (the drawer's dialog layer), so look there.
-    await wrapper.find("#et-area").trigger("click");
+    const details = await openTaskDetailsModal(wrapper);
+    await new DOMWrapper(details.querySelector("#et-area")!).trigger("click");
     const pickerInput = document.body.querySelector(
       'input[aria-label="Add a custom area"]',
     ) as HTMLInputElement | null;
@@ -221,7 +238,9 @@ describe("task drawer story select (#0525)", () => {
     await flush();
     expect(wrapper.find(".save-bar").exists()).toBe(true);
 
-    await wrapper.find('button[aria-label^="Open story"]').trigger("click");
+    await new DOMWrapper(details.querySelector('button[aria-label^="Open story"]')!).trigger(
+      "click",
+    );
     await flush();
 
     expect(patchSpy).not.toHaveBeenCalled();
