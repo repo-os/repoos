@@ -2708,6 +2708,20 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
       repo.setHandoffError(SHOT_PREVIEW_FIXTURE_TASK_ID, "Fixture handoff check failed");
       document.documentElement.setAttribute(SHOT_PREVIEW_APPLIED_ATTR, fixture);
       break;
+    case "drawer:taskDetailsSummary": {
+      // #1282 — open the Details tab on the seeded fixture task (#9999). Only
+      // that id is exempt from the server-backed endpoint fetches (diff-stats,
+      // shots, ui-verification, handoff-status), so a real off-board id 404s.
+      ensureFixtureTask(repo, "active");
+      const task = repo.tasks.find((t) => t.id === SHOT_PREVIEW_FIXTURE_TASK_ID);
+      if (task) {
+        const ui = useUiStore();
+        ui.open(task);
+        ui.activeTab = "details";
+      }
+      setShotPreviewAppliedAttr("drawer:taskDetailsSummary");
+      break;
+    }
     case "drawer:activeRequirements": {
       // #0817 — show Update requirements on an active task without mutating
       // board status on main. Prefer the real task from `?task=` so capture

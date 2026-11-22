@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { mount, type VueWrapper } from "@vue/test-utils";
+import { DOMWrapper, mount, type VueWrapper } from "@vue/test-utils";
 import { createPinia, setActivePinia } from "pinia";
 import { createMemoryHistory, createRouter } from "vue-router";
 import { defineComponent, h, nextTick, ref } from "vue";
@@ -8,7 +8,14 @@ import TaskDependencyPicker from "../src/components/TaskDependencyPicker.vue";
 import { useConfigStore } from "../src/stores/config";
 import { useRepoStore } from "../src/stores/repo";
 import { useUiStore } from "../src/stores/ui";
-import { EMPTY_COUNTS, FakeEventSource, flush, json, makeTask } from "./component-test-helpers";
+import {
+  EMPTY_COUNTS,
+  FakeEventSource,
+  flush,
+  json,
+  makeTask,
+  openTaskDetailsModal,
+} from "./component-test-helpers";
 
 const VIEWPORTS = [375, 768, 1280] as const;
 
@@ -183,7 +190,7 @@ describe.each(VIEWPORTS)("task create/edit interactions at %i px", (width) => {
     }
   });
 
-  it("edits priority, area and prerequisite from the task details fixture", async () => {
+  it("edits type, priority, area and prerequisite in the details modal, then saves", async () => {
     await setViewport(width);
     const task = makeTask({ dependsOn: [] });
     const wrapper = await mountDrawer(task);
@@ -196,12 +203,21 @@ describe.each(VIEWPORTS)("task create/edit interactions at %i px", (width) => {
       await flush();
       repo.tasks = [task, makeTask({ id: "0002", title: "Prerequisite" })];
       await flush();
-      expect(wrapper.find("#et-dependencies").exists()).toBe(true);
+      // #1282: the block is collapsed by default; its edit controls live in the modal.
+      expect(wrapper.get('[data-test-id="task-meta-summary"]').text()).toContain("no dependencies");
+      expect(wrapper.find("#et-dependencies").exists()).toBe(false);
+      const modal = await openTaskDetailsModal(wrapper);
+      expect(modal.querySelector("#et-dependencies")).not.toBeNull();
+      expect(modal.querySelector(".dependency-none")?.textContent).toContain("None");
+
       // The standalone dependency-picker fixture exercises add/remove; seed
       // the edit draft here so save persists its selected prerequisite.
-
-      await wrapper.get(".task-dependency-picker .dependency-option").trigger("click");
-      await wrapper.get("#et-area").trigger("click");
+      await new DOMWrapper(
+        modal.querySelector(".task-dependency-picker .dependency-option")!,
+      ).trigger("click");
+      await flush();
+      expect(modal.querySelector(".dependency-selected")?.textContent).toContain("Prerequisite");
+      await new DOMWrapper(modal.querySelector("#et-area")!).trigger("click");
       await flush();
       const docsOption = [...document.querySelectorAll('[role="option"]')].find(
         (option) => option.textContent?.trim() === "docs",
@@ -209,13 +225,24 @@ describe.each(VIEWPORTS)("task create/edit interactions at %i px", (width) => {
       expect(docsOption).toBeDefined();
       docsOption!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
       await flush();
-      await wrapper.get("#et-area").trigger("click");
+      await new DOMWrapper(modal.querySelector("#et-area")!).trigger("click");
       await flush();
 
-      const priorityField = wrapper
-        .findAll(".field")
-        .find((field) => field.text().includes("Priority"))!;
-      pointerClick(priorityField.get('[role="combobox"]').element as HTMLElement);
+      const fieldFor = (label: string) =>
+        [...modal.querySelectorAll<HTMLElement>(".field")].find((field) =>
+          field.textContent?.includes(label),
+        )!;
+      pointerClick(fieldFor("Type").querySelector('[role="combobox"]') as HTMLElement);
+      await flush();
+      // makeTask defaults to type "bug", so pick a different type to change it.
+      const choreOption = [...document.querySelectorAll('[role="option"]')].find(
+        (option) => option.textContent?.trim() === "chore",
+      );
+      expect(choreOption).toBeDefined();
+      pointerClick(choreOption as HTMLElement);
+      await flush();
+
+      pointerClick(fieldFor("Priority").querySelector('[role="combobox"]') as HTMLElement);
       await flush();
       const p0Option = [...document.querySelectorAll('[role="option"]')].find(
         (option) => option.textContent?.trim() === "p0",
@@ -223,11 +250,21 @@ describe.each(VIEWPORTS)("task create/edit interactions at %i px", (width) => {
       expect(p0Option).toBeDefined();
       pointerClick(p0Option as HTMLElement);
       await flush();
+      await new DOMWrapper(modal.querySelector(".task-meta-modal-actions button")!).trigger(
+        "click",
+      );
+      await flush();
+      const summary = wrapper.get('[data-test-id="task-meta-summary"]').text();
+      expect(summary).toContain("chore · p0");
+      expect(summary).toContain("web, docs");
+      expect(summary).toContain("depends on #0002");
+
       await wrapper.get(".save-bar button:last-child").trigger("click");
       await flush();
       expect(patch).toHaveBeenCalledWith(
         "0001",
         expect.objectContaining({
+          type: "chore",
           priority: "p0",
           area: "web, docs",
           dependsOn: ["0002"],

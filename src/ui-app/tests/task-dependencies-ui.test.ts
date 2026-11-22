@@ -1,12 +1,12 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { mount } from "@vue/test-utils";
+import { DOMWrapper, mount } from "@vue/test-utils";
 import { createPinia, setActivePinia } from "pinia";
 import { createMemoryHistory, createRouter } from "vue-router";
 import TaskDrawer from "../src/components/TaskDrawer.vue";
 import { useRepoStore } from "../src/stores/repo";
 import { useUiStore } from "../src/stores/ui";
 import type { Task } from "../src/types";
-import { EMPTY_COUNTS, flush } from "./component-test-helpers";
+import { EMPTY_COUNTS, flush, openTaskDetailsModal } from "./component-test-helpers";
 
 const prerequisite = { id: "0101", title: "Prerequisite task", status: "ready" } as Task;
 const current = {
@@ -110,7 +110,9 @@ describe("task dependency editing", () => {
     const ui = useUiStore();
     ui.open(current);
     await flush();
-    await wrapper.get(".dependency-option").trigger("click");
+    // #1282: the prerequisite picker lives in the Task details modal.
+    const modal = await openTaskDetailsModal(wrapper);
+    await new DOMWrapper(modal.querySelector(".dependency-option")!).trigger("click");
     await wrapper
       .findAll("button")
       .find((button) => button.text() === "Save")!
