@@ -1,6 +1,4 @@
 ---
-check_retry_count: 1
-last_check_failure: "repoos check at 2026-11-22T06:30:55.539Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Pipeline shows a job validating alongside the active close-out (Also running) (target \"default\"): highlight .ips-parallel matched nothing on /work (http://127.0.0.1:41431/work?shotState=integration%3AparallelValidations)"
 id: "1275"
 title: "Close-outs: validate several tasks at once on different runner machines"
 type: feature
@@ -13,7 +11,9 @@ branch: feat/close-outs-validate-several-tasks-at-onc
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T07:42:13Z"
-updated_at: "2026-11-22T06:30:55Z"
+updated_at: "2026-11-22T06:31:11Z"
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-22T06:30:55.539Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Pipeline shows a job validating alongside the active close-out (Also running) (target \"default\"): highlight .ips-parallel matched nothing on /work (http://127.0.0.1:41431/work?shotState=integration%3AparallelValidations)"
 review_rounds: 1
 review_passes: 1
 handoff_signal_retry_count: 2
@@ -39,17 +39,17 @@ Read docs/close-out-pipeline.md and docs/remote-validation.md first. Never touch
 ```json
 [
 {
-"label": "Pipeline shows a job validating alongside the active close-out (Also running)",
-"target": "default",
-"route": "/work",
-"highlight": ".ips-parallel",
-"state": "integration:parallelValidations"
+  "label": "Pipeline shows a job validating alongside the active close-out (Also running)",
+  "target": "default",
+  "route": "/checks",
+  "highlight": ".ips-parallel",
+  "state": "integration:parallelValidations"
 },
 {
-"label": "Parallel close-out validations setting in the close-out section",
-"target": "default",
-"route": "/settings",
-"highlight": "[data-config-key=\"maxParallelValidations\"]"
+  "label": "Parallel close-out validations setting in the close-out section",
+  "target": "default",
+  "route": "/settings",
+  "highlight": "[data-config-key=\"maxParallelValidations\"]"
 }
 ]
 ```
@@ -461,4 +461,4 @@ Read docs/close-out-pipeline.md and docs/remote-validation.md first. Never touch
 - 2026-11-22T06:30:52Z · note: ui verification failed: ui verification failed (1 issue(s)): [missing-target] Pipeline shows a job validating alongside the active close-out (Also running) (target "default"): highlight .ips-parallel matched nothing on /work (http://127.0.0.1:41431/work?shotState=integration%3AparallelValidations)
 - 2026-11-22T06:30:52Z · message_queued at 2026-11-22T06:30:52.348Z
 - 2026-11-22T06:30:55Z · message_delivered: 1 message(s)
-
+- 2026-11-22T06:31:11Z · body
