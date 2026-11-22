@@ -11,7 +11,7 @@ branch: feat/hide-the-stale-evidence-prompt-once-a-ta
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T08:26:19Z"
-updated_at: "2026-11-22T12:27:16Z"
+updated_at: "2026-11-22T12:29:21Z"
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-11-22T12:15:49.397Z: repoos check failed: ui verification failed: runner result omitted the UI verification record: ui verification: capture of /work failed — screenshot: Timeout 4993.291999999994ms exceeded."
 ---
@@ -74,3 +74,4 @@ Also (Nick): on the card and drawer, show only the Refresh evidence button; do n
 - 2026-11-22T12:26:56Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-22T12:27:07Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-22T12:27:16Z · note: handoff requested (cli)
+- 2026-11-22T12:29:21Z · CTO nudge: held — handoff gate is running
