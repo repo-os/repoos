@@ -11,7 +11,7 @@ branch: feat/work-board-move-search-into-the-header-r
 cli_override: github copilot
 model_override: default
 created_at: "2026-11-20T08:46:27Z"
-updated_at: "2026-11-22T08:48:01Z"
+updated_at: "2026-11-22T08:48:04Z"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/work-board-large-perf-browser.test.ts > Work board with 1200 tasks (WebKit, generated fixture) > opens, filters, and scrolls at 768px within budget, tests/stories-inbox-search-qa-browser.test.ts > #1237 Stories / Inbox / Search QA at 375/768/1280 (WebKit, fixtures) > inbox board fits at 768px with the full 220 long-titled cards, tests/stories-inbox-search-qa-browser.test.ts > #1237 Stories / Inbox / Search QA at 375/768/1280 (WebKit, fixtures) > inbox board fits at 1280px with the full 220 long-titled cards on mini — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: 9c5c6c1523f851b517fdd51c188e7a2b929519b2
 review_rounds: 2
@@ -359,3 +359,4 @@ Start from src/ui-app/src/components/BoardQueueSearch.vue and the Work view head
 - 2026-11-22T08:36:27Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: **Blocked:** the remote check still fails on overflow. Diagnostics traced it to the header’s native select, but the worktree became read-only after the check, preventing a fix. · stderr: (empty)
 - 2026-11-22T08:36:28Z · status active→review
 - 2026-11-22T08:48:01Z · status review→active
+- 2026-11-22T08:48:04Z · CTO nudge: held — handoff gate is running
