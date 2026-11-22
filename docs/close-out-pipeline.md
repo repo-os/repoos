@@ -35,7 +35,8 @@ so 11 queued tasks took about 4 hours and one slow job blocked all of them.
   and wakes the pump. A cancelled job never validates, so the scheduler starts its
   teardown (candidate and record) regardless of the concurrency limit or a pressure
   hold, and it does not wait for the head to finish. The cancel request waits only
-  for that teardown.
+  for that teardown. A job cancelled after validation but before its publish turn
+  tears down at the publish step too, instead of parking again.
 - **Stale base is never published.** Publish still compares the job's
   `baseMainSha` with `main` under `repoLock`/`rootLock`. Bookkeeping-only drift
   publishes directly (`mainDriftIsBookkeepingOnly`, #0386). Any real code drift
