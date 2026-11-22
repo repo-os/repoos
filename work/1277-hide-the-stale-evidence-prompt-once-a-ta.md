@@ -11,7 +11,7 @@ branch: feat/hide-the-stale-evidence-prompt-once-a-ta
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T08:26:19Z"
-updated_at: "2026-11-22T18:32:15Z"
+updated_at: "2026-11-22T18:35:26Z"
 review_passes: 5
 review_failed_report_retries: 0
 last_check_failure: "repoos check at 2026-11-22T15:57:20.978Z: repoos check failed: reused check inputs changed during handoff — run the check again"
@@ -167,3 +167,4 @@ Also (Nick): on the card and drawer, show only the Refresh evidence button; do n
 - 2026-11-22T18:27:16Z · note: adopted orphaned engineer pid 57668
 - 2026-11-22T18:32:15Z · message_queued at 2026-11-22T18:32:15.469Z
 - 2026-11-22T18:32:15Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-22T18:35:26Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
