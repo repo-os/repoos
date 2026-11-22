@@ -435,3 +435,4 @@ Read docs/close-out-pipeline.md and docs/remote-validation.md first. Never touch
 - 2026-11-22T04:55:16Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-22T04:57:51Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-22T04:58:18Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-22T04:58:18Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: The scoped check is running in the background, and the monitor will report its exit line and any failures. I'm not requesting handoff until that result is in. · stderr: (empty)
