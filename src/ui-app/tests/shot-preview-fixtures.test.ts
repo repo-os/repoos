@@ -622,7 +622,7 @@ describe("shot preview board fixtures (#0743)", () => {
     expect(repo.reviews["0832"]?.report?.markdown).toContain("contrast audit");
   });
 
-  it("seeds a stale-only review whose close-out is validating (#1277)", () => {
+  it("seeds a stale-only review queued behind another close-out (#1277)", () => {
     const pinia = createPinia();
     setActivePinia(pinia);
     const repo = useRepoStore();
@@ -630,8 +630,8 @@ describe("shot preview board fixtures (#0743)", () => {
     expect(repo.reviews[SHOT_PREVIEW_FIXTURE_TASK_ID]?.report?.markdown).toContain(
       "STALE-EVIDENCE-ONLY",
     );
-    expect(repo.integration?.active?.taskId).toBe(SHOT_PREVIEW_FIXTURE_TASK_ID);
-    expect(repo.integration?.active?.phase).toBe("validating");
+    expect(repo.integration?.queue).toEqual([SHOT_PREVIEW_FIXTURE_TASK_ID]);
+    expect(repo.integration?.active?.taskId).not.toBe(SHOT_PREVIEW_FIXTURE_TASK_ID);
   });
 
   it("seeds check-wait escalation detail for clamp shots (#1034)", () => {

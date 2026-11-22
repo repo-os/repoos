@@ -527,6 +527,31 @@ describe("Changes → UI changes rows (#0611)", () => {
     expect(running.find('[data-test-id="refresh-evidence"]').exists()).toBe(true);
   });
 
+  it("hides Refresh evidence while this task is queued behind another close-out (#1277)", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    installFetch();
+    vi.stubGlobal("EventSource", FakeEventSource);
+    shotsPayload = [makeShot()];
+    useRepoStore(pinia).integration = {
+      empty: false,
+      queue: ["0001"],
+      at: "2026-11-22T12:00:00.000Z",
+      active: {
+        taskId: "0002",
+        stage: null,
+        failed: false,
+        startedAt: "2026-11-22T12:00:00.000Z",
+        lastProgressAt: "2026-11-22T12:00:00.000Z",
+        phase: "validating",
+      },
+    };
+    const wrapper = await mountChanges(pinia, makeTask({ status: "review" }));
+    await wrapper.find('[data-test-id="changes-tab-ui"]').trigger("click");
+    await flushPromises();
+    expect(wrapper.find('[data-test-id="refresh-evidence"]').exists()).toBe(false);
+  });
+
   it("orders UI changes toolbar actions with Add shot on the right (#0778)", async () => {
     const pinia = createPinia();
     setActivePinia(pinia);

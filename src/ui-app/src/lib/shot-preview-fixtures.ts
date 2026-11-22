@@ -2264,8 +2264,8 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
       break;
     }
     case "card:staleEvidenceQueued": {
-      // #1277 — a stale-only review whose close-out is validating. The card must
-      // hide the stale-evidence notice and Refresh evidence while the job runs.
+      // #1277 — a stale-only review queued for close-out. The card must hide the
+      // stale-evidence notice and Refresh evidence while the job waits.
       ensureFixtureTask(repo, "review", { title: "Stale evidence during close-out" });
       repo.reviews = {
         ...repo.reviews,
@@ -2285,12 +2285,14 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
           },
         },
       };
-      const pipeline = activePipeline(SHOT_PREVIEW_FIXTURE_TASK_ID, "validating");
-      repo.integration = {
-        ...pipeline,
-        active: { ...pipeline.active!, phase: "validating" },
-      };
+      // Genuinely queued: another task's close-out is running, and this task
+      // waits behind it in the FIFO queue. The status bar is collapsed so its
+      // popover does not cover the card footer the capture is about.
+      ensureFixtureTask(repo, "active", { title: "Close-out running for another task" }, "9998");
+      const pipeline = activePipeline("9998", "validating");
+      repo.integration = { ...pipeline, queue: [SHOT_PREVIEW_FIXTURE_TASK_ID] };
       pinnedIntegration = repo.integration;
+      useUiStore().setIntegrationBarCollapsed(true);
       break;
     }
     case "card:checkWaitDetail":
