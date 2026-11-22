@@ -2,7 +2,7 @@
 id: "1276"
 title: Close-out validation log should show live progress
 type: feature
-status: active
+status: review
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 needs_input_detail: `needs some work` — the host is clipped and retries can reset the close-out timeout budget.
@@ -14,7 +14,7 @@ branch: feat/close-out-validation-log-should-show-liv
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T07:42:21Z"
-updated_at: "2026-11-22T08:31:28Z"
+updated_at: "2026-11-22T08:31:29Z"
 review_passes: 6
 last_check_failure: "repoos check at 2026-11-22T07:13:31.180Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 review_failed_report_retries: 0
@@ -261,4 +261,4 @@ Related: #1272 (timer should count from validation start). Never touch repoos.to
 - 2026-11-22T07:50:16Z · CTO nudge: held — handoff gate is running
 - 2026-11-22T08:07:08Z · note: handoff requested (cli)
 - 2026-11-22T08:31:24Z · note: ui verification passed: 1 of 1 shot captured with clean console
-- 2026-11-22T08:31:28Z · engineer stopped by request
+- 2026-11-22T08:31:29Z · status active→review
