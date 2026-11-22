@@ -142,3 +142,4 @@ Also (Nick): on the card and drawer, show only the Refresh evidence button; do n
 - 2026-11-22T16:50:51Z · note: ui verification failed: ui verification failed (2 issue(s)): [request] HTTP 404 for http://127.0.0.1:41519/api/tasks/9998/handoff-status (http://127.0.0.1:41519/api/tasks/9998/handoff-status); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:41519/api/tasks/9998/handoff-status)
 - 2026-11-22T17:19:41Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-22T17:26:55Z · status review→active
+- 2026-11-22T17:27:00Z · note: handoff requested (cli)
