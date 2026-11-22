@@ -2,7 +2,10 @@
 id: "1276"
 title: Close-out validation log should show live progress
 type: feature
-status: active
+status: review
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "Claude exited with an error. Open Raw CLI error for details. (CLI: ✗ Review request ignored: the last engineer turn exited with an error and never emitted its handoff signal. The task stays active and the engineer is resumed.)"
 priority: p1
 area: [server, core]
 assigned_to: ai
@@ -11,7 +14,7 @@ branch: feat/close-out-validation-log-should-show-liv
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T07:42:21Z"
-updated_at: "2026-11-22T00:06:00Z"
+updated_at: "2026-11-22T01:54:55Z"
 last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (appeared: src/server/close-out-progress.ts, src/server/remote-validation.ts) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 last_handoff_failure_sha: 186ed2e4093e9e4c85434660b275d6c18b482f03
 review_passes: 4
@@ -19,7 +22,7 @@ last_check_failure: "repoos check at 2026-11-20T21:01:31.328Z: repoos check fail
 review_failed_report_retries: 0
 review_rounds: 2
 handoff_signal_retry_count: 2
-dev_error_count: 2
+dev_error_count: 3
 ---
 ## Problem
 During a close-out the integration log (.repoos/logs/integration/<id>-<n>.log) is not written for the running attempt: #1258's log was last modified hours earlier while its job had been validating for ~55 minutes. Drivers and the UI cannot tell whether a close-out is running, waiting for a host slot, retrying after a timeout, or stuck. The card timer also appears to count from an earlier start.
@@ -172,3 +175,5 @@ Related: #1272 (timer should count from validation start). Never touch repoos.to
 - 2026-11-21T20:31:54Z · watchdog: check wait escalated · waiting: system load is high (4.0× per CPU, limit 3×) — waiting for headroom before starting more work; wait exceeds the handoff deadline for 32m · next step: investigate the abnormal wait; the flag clears when the check starts
 - 2026-11-22T00:06:00Z · needs_input
 - 2026-11-22T00:06:00Z · message_delivered: 1 message(s)
+- 2026-11-22T01:54:55Z · agent exited with an error (claude) · Claude exited with an error. Open Raw CLI error for details. (CLI: ✗ Review request ignored: the last engineer turn exited with an error and never emitted its handoff signal. The task stays active and the engineer is resumed.)
+- 2026-11-22T01:54:55Z · status active→review
