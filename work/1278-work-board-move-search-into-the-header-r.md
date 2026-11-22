@@ -2,7 +2,7 @@
 id: "1278"
 title: "Work board: move search into the header row, half width, drop the search chip"
 type: feature
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/work-board-move-search-into-the-header-r
 cli_override: github copilot
 model_override: default
 created_at: "2026-11-20T08:46:27Z"
-updated_at: "2026-11-22T03:49:03Z"
+updated_at: "2026-11-22T03:54:08Z"
 handoff_signal_retry_count: 2
 review_rounds: 1
 review_passes: 1
@@ -257,3 +257,4 @@ Start from src/ui-app/src/components/BoardQueueSearch.vue and the Work view head
 - 2026-11-22T03:07:10Z · engineer stopped by request
 - 2026-11-22T03:46:57Z · note: handoff requested (cli)
 - 2026-11-22T03:49:03Z · CTO nudge: held — handoff gate is running
+- 2026-11-22T03:54:08Z · status active→review
