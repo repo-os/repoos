@@ -11,7 +11,7 @@ branch: feat/task-drawer-collapse-the-depends-on-type
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-22T03:22:33Z"
-updated_at: "2026-11-22T16:08:31Z"
+updated_at: "2026-11-22T16:09:25Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-22T15:33:58.176Z: repoos check failed: ui verification failed (5 issue(s)): [request] HTTP 404 for http://127.0.0.1:45775/api/tasks/1282 (http://127.0.0.1:45775/api/tasks/1282); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:45775/api/tasks/1282); [missing-target] Task drawer Details tab with the collapsed metadata summary (target \"default\"): highlight [data-test-id=\"task-meta-summary\"] matched nothing on /work?task=1282 (http://127.0.0.1:45775/work?task… (truncated)"
 ---
@@ -92,3 +92,4 @@ Start from TaskDrawer.vue and TaskDependencyPicker.vue. This is a requested rede
 - 2026-11-22T16:08:22Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: The scoped check is running in the background and will notify me when it exits. My previous attempt was cut off by my own 590-second wrapper while remote validation was still running the full suite, so no verdict exists yet. I'm waiting fo… · stderr: (empty)
 - 2026-11-22T16:08:25Z · orphaned run process stopped · pid 28768 · /opt/homebrew/bin/bun /Users/nick/.bun/bin/repoos check · cpu 8s · age 12m
 - 2026-11-22T16:08:31Z · message_delivered: 1 message(s)
+- 2026-11-22T16:09:25Z · orphaned run process stopped · pid 38431 · ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new -o ConnectTimeout=15 -o ServerAliveInterval · cpu 0s · age 11m
