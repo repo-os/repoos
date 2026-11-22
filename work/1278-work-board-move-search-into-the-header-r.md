@@ -11,7 +11,7 @@ branch: feat/work-board-move-search-into-the-header-r
 cli_override: github copilot
 model_override: default
 created_at: "2026-11-20T08:46:27Z"
-updated_at: "2026-11-22T03:07:10Z"
+updated_at: "2026-11-22T03:07:44Z"
 handoff_signal_retry_count: 2
 review_rounds: 1
 review_passes: 1
