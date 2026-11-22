@@ -267,6 +267,69 @@ curl -s http://localhost:7171/api/integration-jobs   # every job in the queue
 
 Fields that matter: `phase`, `reason` (only present when `failed`), `baseMainSha`,
 `branchSha`, `handoffSha` (feature HEAD at handoff, when recorded), `candidateSha`.
+While an attempt runs, the live fields below say what it is doing right now.
+
+## Live attempt progress (#1276)
+
+Every processing run of a close-out attempt streams its progress, so a driver can
+tell "running", "waiting for a host slot", "retrying" and "stopped writing" apart
+without reading the server log.
+
+- **Log.** Each attempt appends to `.repoos/logs/integration/<id>-attempt-<n>.log`:
+  a start line, one line per step change (`step: <step> · host: <host>`), a
+  `heartbeat` line at least every 15 seconds while the attempt is active, and an
+  end line naming the outcome (`published`, or the failure reason). This is
+  separate from the per-check output log (`<id>-<checkAttempt>.log`, #0428), which
+  holds one failed gate run's full transcript.
+- **Job record and API.** `GET /api/tasks/<id>/integration-job` returns `attempt`
+  (the generation, which goes up on every retry), `step`, `host` (`local` or the
+  remote runner host), `lastProgressAt`, `progressStale`, `progressLogPath`,
+  `startedAt` (when this attempt began processing) and `previousFailure` (`attempt`,
+  `reason`, `failedAt` of the attempt this one replaced, set only on a retry). The
+  card, status bar and drawer tooltip show the same reason as "Attempt 2 — attempt 1
+  failed: …".
+- **Steps.** `queued for host slot` (waiting for a runner slot), `bundling and
+  uploading`, `installing dependencies`, `building candidate`, `running tests` (with remote done/total test
+  file progress when available), `syncing with
+  main`, `running checks · <step>` (local gate), `publishing to main`,
+  `cleaning up`, and `remote validation`. The runner's combined build-and-test
+  command reports as `remote validation` until its first test marker, then moves to
+  `running tests`, so a remote build is never labelled as tests. A job waiting in
+  the close-out queue has no running attempt yet, so its `step` and `lastProgressAt`
+  are null and `progressStale` is false.
+- **Slot wait and host.** A remote run waiting for a runner slot reports `queued for
+  host slot` with no host (`host` is null). Once it holds a slot the step names that
+  host. Local steps report `local`. The host is also read from the live remote run on
+  each progress poll, so a failover to another runner is picked up.
+- **Stale.** `progressStale` is true when the attempt's own last progress write is 90
+  seconds old or more. Only that write counts: a fresh stage event does not mask a
+  recorder that stopped writing. A heartbeat writes every 15 seconds, so a stale
+  value means the writer stopped, which is usually a hung close-out, not a slow
+  step. A quiet remote test run still heartbeats and is not flagged. The card and
+  drawer label a stale attempt `stalled · <step> · no progress …` and append the
+  retry reason when the attempt is one, alongside the host and attempt.
+- **Retries.** A rerun inside a running close-out is a new attempt, not a silent second
+  pass. That covers a failed validation rerun, a scoped remote run's full-suite rerun,
+  and a host failover. The job record moves to attempt `n+1` with `previousFailure`
+  naming the reason and `startedAt` set to the retry's start; the recorder closes
+  `attempt-<n>.log` with `retried as attempt <n+1>: <reason>` and opens
+  `attempt-<n+1>.log`. The timeout budget does not reset, so a retry still spends the
+  same close-out budget (#0573). A retry after a failed job is a new enqueue, as
+  before, and carries `previousFailure` the same way.
+- **Live push.** Every persisted write (a step or host change, or a heartbeat) emits the
+  pipeline snapshot at once, so the UI sees a live `lastProgressAt` even while a
+  stage is quiet. A finished attempt's record is final: the recorder never writes to a
+  `done` or `failed` job. A failed log append or job-record write is retried on the
+  next write, with its step, host and log line kept. `lastProgressAt` is stamped only
+  when the log line landed, and the saved heartbeat advances only when the record
+  write did too. Failures are reported to the integration logger; the close-out
+  itself continues. A cancelled attempt does not set `previousFailure`.
+
+Helpers: `src/server/close-out-progress.ts` (recorder, step names, slot step, stale
+rule, `beginAttempt`); `advanceAttempt` in `src/server/integration-job.ts` starts the
+next attempt; the orchestrator reports steps through `reportStep` and `reportSlot`,
+starts retries through `beginRetryAttempt`, and the recorder wraps each `processJob`
+run. Tests: `src/ui-app/tests/close-out-progress.test.ts`.
 
 ## Handoff snapshot and worktree integrity (#0598)
 

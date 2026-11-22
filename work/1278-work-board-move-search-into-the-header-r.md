@@ -1,8 +1,10 @@
 ---
+updated_at: "2026-11-22T09:59:59Z"
+review_passes: 5
 id: "1278"
 title: "Work board: move search into the header row, half width, drop the search chip"
 type: feature
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -11,11 +13,7 @@ branch: feat/work-board-move-search-into-the-header-r
 cli_override: github copilot
 model_override: default
 created_at: "2026-11-20T08:46:27Z"
-updated_at: "2026-11-22T08:00:27Z"
-last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/work-board-large-perf-browser.test.ts > Work board with 1200 tasks (WebKit, generated fixture) > opens, filters, and scrolls at 768px within budget, tests/stories-inbox-search-qa-browser.test.ts > #1237 Stories / Inbox / Search QA at 375/768/1280 (WebKit, fixtures) > inbox board fits at 768px with the full 220 long-titled cards, tests/stories-inbox-search-qa-browser.test.ts > #1237 Stories / Inbox / Search QA at 375/768/1280 (WebKit, fixtures) > inbox board fits at 1280px with the full 220 long-titled cards on mini — fix it in the feature branch and re-run the gate"
-last_handoff_failure_sha: 9c5c6c1523f851b517fdd51c188e7a2b929519b2
 review_rounds: 2
-review_passes: 2
 handoff_signal_retry_count: 2
 review_failed_report_retries: 0
 dev_error_count: 17
@@ -343,3 +341,41 @@ Start from src/ui-app/src/components/BoardQueueSearch.vue and the Work view head
 - 2026-11-22T07:55:26Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: **Blocked:** remote WebKit overflow fails the scoped check. The worktree remains read-only in review; it must return to active for fixes. · stderr: (empty)
 - 2026-11-22T08:00:16Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-22T08:00:26Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: **Blocked:** the scoped check fails on remote WebKit overflow. The worktree must return to active before I can fix it. · stderr: (empty)
+- 2026-11-22T08:05:17Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-22T08:05:35Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: **Blocked:** remote WebKit overflow fails the scoped check. The read-only worktree must return to active for fixes. · stderr: (empty)
+- 2026-11-22T08:10:19Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-22T08:10:37Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: **Blocked:** the scoped check fails on remote WebKit overflow. The worktree remains read-only in review; it must return to active for fixes. · stderr: (empty)
+- 2026-11-22T08:15:18Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-22T08:15:28Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: **Blocked:** remote WebKit overflow fails the scoped check. The worktree must return to active before I can fix it. · stderr: (empty)
+- 2026-11-22T08:20:17Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-22T08:20:36Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: **Blocked:** the latest handoff failed on remote WebKit tests. The task’s worktree copy still says `review`, so I can’t edit it until RepoOS returns the task to `active`. · stderr: (empty)
+- 2026-11-22T08:25:19Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-22T08:25:39Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: **Blocked:** the latest scoped check failed on remote WebKit overflow. The task’s live status is unclear, and the worktree copy says `review`; it must be confirmed active before further edits. · stderr: (empty)
+- 2026-11-22T08:30:19Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-22T08:32:51Z · note: handoff requested (cli)
+- 2026-11-22T08:35:18Z · CTO nudge: held — handoff gate is running
+- 2026-11-22T08:36:27Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: **Blocked:** the remote check still fails on overflow. Diagnostics traced it to the header’s native select, but the worktree became read-only after the check, preventing a fix. · stderr: (empty)
+- 2026-11-22T08:36:28Z · status active→review
+- 2026-11-22T08:48:01Z · status review→active
+- 2026-11-22T08:48:04Z · CTO nudge: held — handoff gate is running
+- 2026-11-22T08:49:06Z · status active→review
+- 2026-11-22T08:55:04Z · message_queued at 2026-11-22T08:55:04.032Z
+- 2026-11-22T08:55:04Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: tests/offline-slow-network-browser.test.ts > slow network and offline QA (#1226) > offline: Work shows a plain-English failure, no endless skeleton, usable at every width, tests/stories-inbox-search-qa-browser.test.ts > #1237 Stories / Inbox / Search QA at 375/768/1280 (WebKit, fixtures) > inbox board fits at 768px with the full 220 long-titled cards, tests/stories-inbox-search-qa-browser.test.ts > #1237 Stories / Inbox / Search QA at 375/768/1280 (WebKit, fixtures) > inbox board fits at 1280px with the full 220 long-titled cards on bee — fix it in the feature branch and re-run the gate
+- 2026-11-22T08:55:05Z · note: review pass 6: needs some work
+- 2026-11-22T08:55:05Z · needs_input
+- 2026-11-22T09:09:42Z · status review→active
+- 2026-11-22T09:09:42Z · watchdog: restarting engineer because a queued message waited 15m with no live process
+- 2026-11-22T09:09:45Z · message_delivered: 1 message(s)
+- 2026-11-22T09:09:46Z · engineer stopped by request
+- 2026-11-22T09:09:50Z · note: handoff requested (cli)
+- 2026-11-22T09:12:41Z · status active→review
+- 2026-11-22T09:26:52Z · message_queued at 2026-11-22T09:26:52.224Z
+- 2026-11-22T09:26:52Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: tests/offline-slow-network-browser.test.ts > slow network and offline QA (#1226) > offline: Work shows a plain-English failure, no endless skeleton, usable at every width, tests/stories-inbox-search-qa-browser.test.ts > #1237 Stories / Inbox / Search QA at 375/768/1280 (WebKit, fixtures) > inbox board fits at 768px with the full 220 long-titled cards, tests/stories-inbox-search-qa-browser.test.ts > #1237 Stories / Inbox / Search QA at 375/768/1280 (WebKit, fixtures) > inbox board fits at 1280px with the full 220 long-titled cards on bee — fix it in the feature branch and re-run the gate
+- 2026-11-22T09:26:53Z · note: review pass 7: good to go
+- 2026-11-22T09:29:08Z · status review→active
+- 2026-11-22T09:31:50Z · note: handoff requested (cli)
+- 2026-11-22T09:59:04Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
+- 2026-11-22T09:59:06Z · status active→review
+- 2026-11-22T09:59:06Z · message_queued at 2026-11-22T09:59:06.550Z
+- 2026-11-22T09:59:59Z · note: review pass 8: good to go
+

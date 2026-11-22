@@ -2,20 +2,20 @@
 id: "1276"
 title: Close-out validation log should show live progress
 type: feature
-status: active
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: `needs some work` — the host is clipped and retries can reset the close-out timeout budget.
+status: done
 priority: p1
 area: [server, core]
+merged_commit: e6549fd6e78f349035e3a11f0214205c9e9d9739
 assigned_to: ai
 created_by: t@t
 branch: feat/close-out-validation-log-should-show-liv
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T07:42:21Z"
-updated_at: "2026-11-22T07:50:16Z"
-review_passes: 6
+updated_at: "2026-11-22T10:03:03Z"
+last_close_out_gate_ms: 915882
+last_close_out_gate_at: "2026-11-22T10:02:19.573Z"
+review_passes: 8
 last_check_failure: "repoos check at 2026-11-22T07:13:31.180Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 review_failed_report_retries: 0
 review_rounds: 2
@@ -259,3 +259,29 @@ Related: #1272 (timer should count from validation start). Never touch repoos.to
 - 2026-11-22T07:49:07Z · handoff failed · task-file handoff failed at review · Engineering report draft is missing: .repoos/engineering-report-drafts/1276.md
 - 2026-11-22T07:49:07Z · message_delivered: 1 message(s)
 - 2026-11-22T07:50:16Z · CTO nudge: held — handoff gate is running
+- 2026-11-22T08:07:08Z · note: handoff requested (cli)
+- 2026-11-22T08:31:24Z · note: ui verification passed: 1 of 1 shot captured with clean console
+- 2026-11-22T08:31:29Z · status active→review
+- 2026-11-22T08:31:32Z · message_queued at 2026-11-22T08:31:32.226Z
+- 2026-11-22T08:34:38Z · note: review pass 12: needs some work
+- 2026-11-22T08:34:39Z · needs_input
+- 2026-11-22T08:34:39Z · needs_input
+- 2026-11-22T08:47:08Z · status review→active
+- 2026-11-22T08:47:10Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-22T08:47:11Z · needs_input
+- 2026-11-22T08:47:54Z · note: handoff requested (cli)
+- 2026-11-22T09:10:49Z · note: ui verification passed: 1 of 1 shot captured with clean console
+- 2026-11-22T09:10:50Z · message_queued at 2026-11-22T09:10:50.764Z
+- 2026-11-22T09:10:51Z · handoff failed · task-file handoff failed at review · Engineering report draft is missing: .repoos/engineering-report-drafts/1276.md
+- 2026-11-22T09:10:51Z · message_delivered: 2 message(s)
+- 2026-11-22T09:12:44Z · CTO nudge: held — handoff gate is running
+- 2026-11-22T09:27:21Z · note: handoff requested (cli)
+- 2026-11-22T09:27:21Z · status active→review
+- 2026-11-22T09:27:45Z · handoff failed · task-file handoff failed at commit · could not unstage generated artifacts: fatal: Unable to create '/Users/nick/code/nick/repoos/.git/worktrees/close-out-validation-log-should-show-liv/index.lock': File exists. · Another git process seems to be running in this repository, or the lock file may be stale
+- 2026-11-22T09:27:50Z · note: shots: failed — browser capture cancelled
+- 2026-11-22T09:46:46Z · note: ui verification passed: 1 of 1 shot captured with clean console
+- 2026-11-22T09:46:48Z · note: review pass 13: good to go
+- 2026-11-22T09:46:49Z · message_queued at 2026-11-22T09:46:49.692Z
+- 2026-11-22T10:02:19Z · close-out gate completed in 916s
+- 2026-11-22T10:02:24Z · message_dropped: 1 queued message(s) discarded — task is done
+- 2026-11-22T10:03:03Z · status done→done, release:success

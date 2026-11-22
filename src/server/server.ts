@@ -1870,6 +1870,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         applyPipelineDetail(reportedDetail, reportedStageAt, taskId, detail);
         emitIntegration();
       },
+      // #1276: a step or host change is pushed at once, so a driver sees
+      // "queued for host slot" or the runner host without waiting for a stage.
+      () => emitIntegration(),
     );
 
   /** Start every close-out the scheduler allows; called whenever a job changes. */

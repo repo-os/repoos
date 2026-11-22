@@ -89,6 +89,23 @@ export interface IntegrationJob {
    * at the untruncated transcript. Absent for non-check failures.
    */
   logPath?: string;
+  /**
+   * The step the running attempt is on, e.g. "queued for host slot" (#1276).
+   * Written by its progress recorder (`close-out-progress.ts`); absent before the
+   * attempt starts processing and on legacy records.
+   */
+  step?: string;
+  /** Where {@link step} runs: `local` or a remote runner host (#1276). */
+  host?: string;
+  /** When the running attempt last wrote progress (ISO) (#1276). */
+  lastProgressAt?: string;
+  /** Repo-relative path to this attempt's live progress log (#1276). */
+  progressLogPath?: string;
+  /**
+   * Why the attempt this record replaced failed, set when a retry enqueues a new
+   * attempt (#1276). Lets the UI show "attempt 2 · after attempt 1 timed out".
+   */
+  previousFailure?: { attempt: number; reason?: string; failedAt?: string };
   /** Debugger one-line tl;dr for this failure (#0595), cleared on retry. */
   debugTldr?: string;
   /** When {@link debugTldr} was generated (ISO-8601 UTC). */
@@ -257,6 +274,12 @@ export interface JobCoordinator {
   ): IntegrationJob | null;
 
   /**
+   * Start the next attempt inside a running close-out (#1276). Returns the new
+   * record, or `null` when `fromAttempt` is no longer the task's current attempt.
+   */
+  advanceAttempt(taskId: string, fromAttempt: number, reason: string): IntegrationJob | null;
+
+  /**
    * Remove a job from the queue (after successful cleanup, explicit
    * cancellation, or a moot/reconciled failure). With `expectedAttempt`, the
    * removal is refused when the current job has been superseded (#0736).
@@ -356,6 +379,9 @@ function readJob(root: string, taskId: string): IntegrationJob | null {
       failedPhase: stored.failedPhase,
       enqueuedAt: stored.enqueuedAt,
       startedAt: stored.startedAt,
+      // The monotonic budget anchor must survive every read-modify-write, or a
+      // retry (advanceAttempt, resync) would restart the close-out deadline (#0573, #1276).
+      budgetMonotonicStartNs: stored.budgetMonotonicStartNs,
       baseMainSha: stored.baseMainSha,
       branchSha: stored.branchSha,
       handoffSha: stored.handoffSha ?? null,
@@ -363,6 +389,11 @@ function readJob(root: string, taskId: string): IntegrationJob | null {
       failedAt: stored.failedAt,
       reason: stored.reason,
       logPath: stored.logPath,
+      step: stored.step,
+      host: stored.host,
+      lastProgressAt: stored.lastProgressAt,
+      progressLogPath: stored.progressLogPath,
+      previousFailure: stored.previousFailure,
       debugTldr: stored.debugTldr,
       debugTldrAt: stored.debugTldrAt,
       debugTldrKey: stored.debugTldrKey,
@@ -458,11 +489,52 @@ export function createJobCoordinator(root: string): JobCoordinator {
         // attempt's durable gate log keeps a distinct filename (#0428) instead
         // of the new run clobbering the failed one's `<id>-1.log`.
         checkAttempt: existing?.checkAttempt,
+        // The failed attempt this one replaces, so the new attempt can show why
+        // it is running again (#1276). Only a failure is a retry; a cancelled or
+        // finished record is not.
+        ...(existing?.phase === "failed"
+          ? {
+              previousFailure: {
+                attempt: jobAttempt(existing),
+                reason: existing.reason,
+                failedAt: existing.failedAt,
+              },
+            }
+          : {}),
         // debugTldr* must not carry over — a retry is a fresh failure episode (#0595).
       };
       writeJob(root, job);
       writeGeneration(root, task.id, job.attempt ?? 1);
       return job;
+    },
+
+    /**
+     * Start the next attempt inside a running close-out (#1276): a rerun after a
+     * failed gate or a host failover is a new attempt that records why, not a
+     * silent second pass. The attempt's own start (`startedAt`) moves to now; the
+     * timeout budget (`budgetMonotonicStartNs`) does not, so a retry still spends
+     * the same budget (#0573). Fenced like every attempt write: returns `null`
+     * when `fromAttempt` is no longer the task's current attempt, or when the
+     * attempt was cancelled: a cancel stops the run, it never starts another
+     * attempt on the same record (#0736).
+     */
+    advanceAttempt(taskId: string, fromAttempt: number, reason: string): IntegrationJob | null {
+      const existing = readJob(root, taskId);
+      if (!existing || existing.cancelled || jobAttempt(existing) !== fromAttempt) return null;
+      const now = new Date().toISOString();
+      const next: IntegrationJob = {
+        ...existing,
+        attempt: Math.max(fromAttempt, readGeneration(root, taskId)) + 1,
+        startedAt: now,
+        previousFailure: { attempt: fromAttempt, reason, failedAt: now },
+        step: undefined,
+        host: undefined,
+        lastProgressAt: undefined,
+        progressLogPath: undefined,
+      };
+      writeJob(root, next);
+      writeGeneration(root, taskId, next.attempt ?? fromAttempt + 1);
+      return next;
     },
 
     getJob(taskId: string): IntegrationJob | null {

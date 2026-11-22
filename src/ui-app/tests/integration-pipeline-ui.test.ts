@@ -59,6 +59,35 @@ describe("integration-pipeline-ui (#0740)", () => {
     expect(copy.stalled).toBe(false);
   });
 
+  it("keeps the recorded step ahead of generic detail and shows every attempt plus retry reason", () => {
+    const now = Date.parse("2026-10-07T13:02:27.000Z");
+    const pipeline = snap(
+      {},
+      {
+        stage: "check",
+        step: "queued for host slot",
+        host: "runner-1",
+        attempt: 2,
+        detail: "remote validation",
+        previousFailure: { attempt: 1, reason: "host timed out" },
+      },
+    );
+    const copy = integrationActiveCopy(pipeline, now);
+    expect(copy.label).toContain("queued for host slot");
+    expect(copy.label).toContain("on runner-1");
+    expect(copy.label).toContain("attempt 2");
+    expect(copy.label).toContain("host timed out");
+    expect(copy.label.indexOf("queued for host slot")).toBeLessThan(
+      copy.label.indexOf("remote validation"),
+    );
+
+    const first = integrationActiveCopy(
+      snap({}, { step: "building candidate", host: "local", attempt: 1 }),
+      now,
+    );
+    expect(first.label).toContain("local · attempt 1");
+  });
+
   it("renders queued position behind the active task", () => {
     const pipeline = snap({ queue: ["0720", "0712"] }, { taskId: "0730", stage: "check" });
     const queued = integrationQueuedCopy(pipeline, "0720");
@@ -118,7 +147,7 @@ describe("integration-pipeline-ui (#0740)", () => {
     );
     const copy = integrationActiveCopy(pipeline, now);
     expect(copy.stalled).toBe(false);
-    expect(copy.label).toMatch(/^integrating · uploading bundle 27 MB · 45s/);
+    expect(copy.label).toMatch(/^integrating · check · uploading bundle 27 MB · 45s/);
   });
 
   it("puts stage and percent first on card labels (#0995 E1)", () => {

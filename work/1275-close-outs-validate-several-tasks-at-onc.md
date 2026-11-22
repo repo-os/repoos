@@ -2,7 +2,7 @@
 id: "1275"
 title: "Close-outs: validate several tasks at once on different runner machines"
 type: feature
-status: review
+status: active
 priority: p1
 area: [server, core]
 assigned_to: ai
@@ -11,11 +11,10 @@ branch: feat/close-outs-validate-several-tasks-at-onc
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T07:42:13Z"
-updated_at: "2026-11-22T08:59:48Z"
-check_retry_count: 1
-last_check_failure: "repoos check at 2026-11-22T07:43:02.260Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Pipeline shows a job validating alongside the active close-out (Also running) (target \"default\"): state \"integration:parallelValidations\" did not render on target \"default\" — /checks?tab=now shows no task card (http://127.0.0.1:35993/checks?tab=now&shotState=integration%3AparallelValidations)"
-review_rounds: 1
-review_passes: 1
+updated_at: "2026-11-22T10:12:00Z"
+review_rounds: 2
+review_passes: 2
+last_check_failure: "repoos check at 2026-11-22T08:35:01.967Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Pipeline shows a job validating alongside the active close-out (Also running) (target \"default\"): state \"integration:parallelValidations\" did not render on target \"default\" — /checks?tab=now shows no task card (http://127.0.0.1:45407/checks?tab=now&shotState=integration%3AparallelValidations)"
 handoff_signal_retry_count: 2
 dev_error_count: 8
 engineer_stall_resume_log: "[{\"at\":\"2026-11-22T08:02:28.295Z\",\"reason\":\"handoff-deferred\"}]"
@@ -44,12 +43,12 @@ Read docs/close-out-pipeline.md and docs/remote-validation.md first. Never touch
 "target": "default",
 "route": "/checks?tab=now",
 "highlight": ".ips-parallel",
-"state": "integration:parallelValidations"
+"state": "pipeline:parallelValidations"
 },
 {
 "label": "Parallel close-out validations setting in the close-out section",
 "target": "default",
-"route": "/settings?tab=general&section=close-out",
+"route": "/settings",
 "highlight": "[data-config-key=\"maxParallelValidations\"]"
 }
 ]
@@ -482,4 +481,50 @@ Read docs/close-out-pipeline.md and docs/remote-validation.md first. Never touch
 - 2026-11-22T08:02:27Z · message_queued at 2026-11-22T08:02:27.944Z
 - 2026-11-22T08:02:28Z · watchdog: auto-resumed engineer to read a deferred handoff message · resume 1/3
 - 2026-11-22T08:02:30Z · message_delivered: 1 message(s)
-- 2026-11-22T08:59:48Z · status active→review
+- 2026-11-22T08:10:17Z · message_queued at 2026-11-22T08:10:17.458Z
+- 2026-11-22T08:10:17Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-22T08:15:17Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-22T08:21:30Z · queued message undelivered for 11m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-22T08:21:32Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: The idle-machine gate rerun is still going. I'll hold the handoff until it reports an exit code, since the handoff line claims a green gate. Where things stand: - **Merged main** into the branch with no conflicts. The task file already mat… · stderr: (empty)
+- 2026-11-22T08:21:32Z · message_delivered: 1 message(s)
+- 2026-11-22T08:25:08Z · body
+- 2026-11-22T08:25:17Z · message_queued at 2026-11-22T08:25:17.435Z
+- 2026-11-22T08:25:17Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-22T08:28:19Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-22T08:28:20Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: The local scoped check is running in the background, and the monitor will report the exit line and any failing tests. I'm not requesting handoff until I know what the thinkpad gate hit. · stderr: (empty)
+- 2026-11-22T08:28:21Z · message_delivered: 1 message(s)
+- 2026-11-22T08:28:51Z · orphaned run process stopped · pid 70927 · /opt/homebrew/bin/bun /Users/nick/.bun/bin/repoos check · cpu 5s · age 7m
+- 2026-11-22T08:29:13Z · orphaned run process stopped · pid 71948 · ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new -o ConnectTimeout=15 -o ServerAliveInterval · cpu 0s · age 6m
+- 2026-11-22T08:30:17Z · CTO nudge: held — handoff gate is running
+- 2026-11-22T08:34:57Z · note: ui verification failed: ui verification failed (1 issue(s)): [missing-target] Pipeline shows a job validating alongside the active close-out (Also running) (target "default"): state "integration:parallelValidations" did not render on target "default" — /checks?tab=now shows no task card (http://127.0.0.1:45407/checks?tab=now&shotState=integration%3AparallelValidations)
+- 2026-11-22T08:34:58Z · message_queued at 2026-11-22T08:34:58.155Z
+- 2026-11-22T08:35:01Z · message_delivered: 1 message(s)
+- 2026-11-22T08:35:17Z · message_queued at 2026-11-22T08:35:17.500Z
+- 2026-11-22T08:35:17Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-22T08:36:10Z · body
+- 2026-11-22T08:36:30Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-22T08:40:17Z · CTO nudge: held — handoff gate is running
+- 2026-11-22T08:59:46Z · note: ui verification passed: 2 of 2 shots captured with clean console (1 shot warning)
+- 2026-11-22T08:59:49Z · status active→review
+- 2026-11-22T08:59:49Z · message_queued at 2026-11-22T08:59:49.403Z
+- 2026-11-22T09:01:20Z · note: review pass 2: needs some work
+- 2026-11-22T09:01:21Z · message_delivered: 1 message(s)
+- 2026-11-22T09:01:21Z · status review→active
+- 2026-11-22T09:01:24Z · CTO nudge: held — remote validation is running
+- 2026-11-22T09:09:45Z · CTO nudge: held — handoff gate is running
+- 2026-11-22T09:23:43Z · handoff failed · remote validation failed: test failure: tests/activity-animation-size-config.test.ts > activity animation size config (#0813, pixels #0816) > round-trips the pixel value through the Settings write path and rejects bad steps, tests/allowlist-groups.test.ts > config loading with a group (#1132) > joins and leaves a group through the config route, tests/areas-settings.test.ts > Settings PATCH for [areas] (#0583) > writes the declared vocabulary as [[areas]] rows on thinkpad — fix it in the feature branch and re-run the gate
+- 2026-11-22T09:23:43Z · message_queued at 2026-11-22T09:23:43.663Z
+- 2026-11-22T09:25:17Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-22T09:26:44Z · watchdog: restarting engineer because a queued message waited 3m with no live process
+- 2026-11-22T09:26:47Z · message_delivered: 1 message(s)
+- 2026-11-22T10:02:25Z · message_queued at 2026-11-22T10:02:25.346Z
+- 2026-11-22T10:02:25Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-22T10:03:08Z · note: adopted orphaned engineer pid 15987
+- 2026-11-22T10:06:52Z · queued message undelivered for 4m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-22T10:07:07Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code unknown) · last assistant: The scoped `repoos check` is still running, at 195 of 622 tests and passing so far. A Monitor is watching for its exit, and I'll read the result when it reports. I haven't requested handoff yet, because the check hasn't passed. · stderr: (empty)
+- 2026-11-22T10:07:07Z · status active→review
+- 2026-11-22T10:07:08Z · message_delivered: 1 message(s)
+- 2026-11-22T10:07:10Z · note: handoff requested (cli)
+- 2026-11-22T10:07:27Z · status active→review
+- 2026-11-22T10:11:57Z · status review→active
+- 2026-11-22T10:12:00Z · CTO nudge: held — handoff gate is running

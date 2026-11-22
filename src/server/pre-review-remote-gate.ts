@@ -16,7 +16,7 @@ import {
   REPOOS_BROWSER_STEPS_REMOTE,
 } from "../core/browser-offload.js";
 import { runGit, uncommittedWorkFiles, workFileFilter } from "../core/git.js";
-import type { RemoteValidator, UploadProgressInfo } from "./remote-validation.js";
+import type { RemoteSlotState, RemoteValidator, UploadProgressInfo } from "./remote-validation.js";
 import type { RunnerHealthNotice } from "../core/runner-health.js";
 import {
   FULL_BUNDLE_BYTES_ESTIMATE,
@@ -232,6 +232,10 @@ export async function runRemotePreReviewGate(params: {
    * in-stage upload detail here. Not fired when the upload fails.
    */
   onUploadComplete?: () => void;
+  /** Host-slot wait and hold, passed through to the remote validator (#1276). */
+  onSlotState?: (slot: RemoteSlotState) => void;
+  /** A host failover retried the run; the reason is the failure it retries (#1276). */
+  onRetry?: (reason: string) => void;
 }): Promise<RemotePreReviewOutcome> {
   const rv = params.config.remoteValidation;
   if (!rv?.enabled) return { kind: "skip" };
@@ -288,6 +292,8 @@ export async function runRemotePreReviewGate(params: {
       ? { uploadProgressIntervalMs: params.uploadProgressIntervalMs }
       : {}),
     ...(params.onUploadComplete ? { onUploadComplete: params.onUploadComplete } : {}),
+    ...(params.onSlotState ? { onSlotState: params.onSlotState } : {}),
+    ...(params.onRetry ? { onRetry: params.onRetry } : {}),
   });
   if (remote.ok) {
     return {
