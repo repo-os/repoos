@@ -142,12 +142,12 @@ export function workQueueSortChip(sort: WorkQueueSort | null): WorkQueueFilterCh
   return { key: "sort", label: workQueueSortLabel(sort) };
 }
 
-/** One chip per filter that is set, in the order the controls appear. */
+/**
+ * One chip per quick filter that is set, in the order the controls appear.
+ * Search is represented by the input in the board header, never a chip (#1278).
+ */
 export function workQueueFilterChips(filters: WorkQueueFilters): WorkQueueFilterChip[] {
   const chips: WorkQueueFilterChip[] = [];
-  if (searchNeedle(filters.query)) {
-    chips.push({ key: "q", label: `Search: ${filters.query.trim()}` });
-  }
   if (filters.priority)
     chips.push({ key: "priority", label: `Priority: ${filters.priority.toUpperCase()}` });
   if (filters.area !== "any" && filters.area !== "") {

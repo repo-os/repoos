@@ -1648,7 +1648,7 @@ async function openDebuggerFromError(): Promise<void> {
     @dragstart="onDragStart"
     @dragend="onDragEnd"
   >
-    <div class="flex flex-1 flex-col p-[13px]">
+    <div class="flex min-w-0 flex-1 flex-col p-[13px]">
       <div class="flex flex-wrap items-center gap-x-[7px] gap-y-[6px]">
         <CopyableNumber
           :label="`#${task.id}`"
@@ -1716,7 +1716,7 @@ async function openDebuggerFromError(): Promise<void> {
         </span>
       </div>
 
-      <h3 class="mt-[11px] line-clamp-2 text-[13px] font-semibold leading-[1.4]">
+      <h3 class="mt-[11px] line-clamp-2 break-words text-[13px] font-semibold leading-[1.4]">
         {{ task.title }}
       </h3>
 

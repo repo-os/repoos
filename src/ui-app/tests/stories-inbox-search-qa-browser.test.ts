@@ -85,6 +85,10 @@ function scopedCss(component: string, source: string, markup: string, markerClas
 const storiesSource = readFileSync(resolve(uiRoot, "src/views/StoriesView.vue"), "utf8");
 const workSource = readFileSync(resolve(uiRoot, "src/views/WorkView.vue"), "utf8");
 const queueSource = readFileSync(resolve(uiRoot, "src/components/MobileWorkQueue.vue"), "utf8");
+const boardSearchSource = readFileSync(
+  resolve(uiRoot, "src/components/BoardQueueSearch.vue"),
+  "utf8",
+);
 
 /** Scoped CSS for a captured page: every SFC the fixture renders. */
 function pageScopedCss(markup: string): string {
@@ -94,6 +98,7 @@ function pageScopedCss(markup: string): string {
     scopedCss("WorkView.vue", workSource, markup, "work-page"),
     scopedCss("WorkView.vue", workSource, markup, "mobile-detail-state"),
     scopedCss("MobileWorkQueue.vue", queueSource, markup, "mobile-work"),
+    scopedCss("BoardQueueSearch.vue", boardSearchSource, markup, "board-search-row"),
   ].join("\n");
 }
 
@@ -343,7 +348,7 @@ describe.skipIf(!existsSync(webkit.executablePath()))(
         `<meta name="viewport" content="width=device-width, initial-scale=1.0">` +
           `<style>${css}</style><style>${pageScopedCss(markup)}</style>` +
           `<style>html, body { width: 100%; margin: 0; } *, *::before, *::after { animation: none !important; transition: none !important; }</style>` +
-          `<div class="app-shell${narrow ? " is-narrow" : ""}"><div class="body"><div class="main">${markup}</div></div></div>`,
+          `<div class="app-shell${narrow ? " is-narrow" : ""}"><div class="body"><aside class="sidebar"></aside><main class="main">${markup}</main></div></div>`,
       );
       const shots = process.env.QA_SHOTS;
       if (shots) {
@@ -364,6 +369,7 @@ describe.skipIf(!existsSync(webkit.executablePath()))(
      *  a clipped filter is a control the reader cannot find (#1237). */
     async function audit(page: Page): Promise<{
       documentWidth: number;
+      documentOverflow: string[];
       overflowers: string[];
       clippedControls: string[];
       links: string[];
@@ -433,8 +439,53 @@ describe.skipIf(!existsSync(webkit.executablePath()))(
           document.body.querySelectorAll("a[href^='/']"),
           (a) => a.getAttribute("href") ?? "",
         );
+        const fixed = Array.from(document.body.querySelectorAll<HTMLElement>("*")).filter(
+          (el) => getComputedStyle(el).position === "fixed",
+        );
+        const fixedEffects = fixed.map((el) => {
+          const display = el.style.display;
+          el.style.display = "none";
+          const width = document.documentElement.scrollWidth;
+          el.style.display = display;
+          return `${describe(el)}:${width}`;
+        });
+        const noPseudo = document.createElement("style");
+        noPseudo.textContent = "*, *::before, *::after { content: none !important }";
+        document.head.append(noPseudo);
+        const withoutPseudo = document.documentElement.scrollWidth;
+        noPseudo.remove();
+        const traceOverflow = (parent: Element, depth: number): string[] => {
+          if (depth > 8) return [];
+          const result: string[] = [];
+          for (const child of Array.from(parent.children)) {
+            if (!(child instanceof HTMLElement)) continue;
+            const before = document.documentElement.scrollWidth;
+            const display = child.style.display;
+            child.style.display = "none";
+            const after = document.documentElement.scrollWidth;
+            child.style.display = display;
+            if (after < before) {
+              result.push(`${" ".repeat(depth)}${describe(child)} ${before}->${after}`);
+              result.push(...traceOverflow(child, depth + 1));
+            }
+          }
+          return result;
+        };
+        const overflowTrace = traceOverflow(document.body, 0);
         return {
           documentWidth: document.documentElement.scrollWidth,
+          documentOverflow: Array.from(document.body.querySelectorAll<HTMLElement>("*"))
+            .filter((el) => el.scrollWidth > el.clientWidth + 1)
+            .slice(0, 20)
+            .map(
+              (el) =>
+                `${describe(el)} x=${Math.round(el.getBoundingClientRect().left)} width=${el.clientWidth}/${el.scrollWidth} overflow=${getComputedStyle(el).overflowX}`,
+            )
+            .concat(
+              `html=${document.documentElement.clientWidth}/${document.documentElement.scrollWidth} body=${document.body.clientWidth}/${document.body.scrollWidth}`,
+              `without pseudo=${withoutPseudo}; fixed=${fixedEffects.join(" ")}`,
+              `trace=${overflowTrace.join(" | ")}`,
+            ),
           overflowers,
           clippedControls,
           links,
@@ -446,9 +497,10 @@ describe.skipIf(!existsSync(webkit.executablePath()))(
       const result = await audit(page);
       expect(result.overflowers, `${what} at ${width}px has off-viewport elements`).toEqual([]);
       expect(result.clippedControls, `${what} at ${width}px clips a control`).toEqual([]);
-      expect(result.documentWidth, `${what} at ${width}px widens the document`).toBeLessThanOrEqual(
-        width + 1,
-      );
+      expect(
+        result.documentWidth,
+        `${what} at ${width}px widens the document: ${result.documentOverflow.join(", ")}`,
+      ).toBeLessThanOrEqual(width + 1);
       // A dead link lands on the catch-all redirect (`/`) rather than failing, so
       // resolve each internal href and insist it matches a real route.
       const dead = result.links.filter((href) => !isLiveRoute(href));
@@ -583,6 +635,7 @@ describe.skipIf(!existsSync(webkit.executablePath()))(
           const state = await page.evaluate(() => ({
             chip: document.querySelector(".filter-chip")?.textContent ?? "",
             clear: document.querySelector("a.filter-clear")?.getAttribute("href") ?? "",
+            // The Client board link is hidden on the Work page (#1278).
             boardLink: document.querySelector("a.client-board-link")?.getAttribute("href") ?? "",
             cards: document.querySelectorAll(".task-card").length,
             colLabel: document.querySelector(".col-label")?.textContent ?? "",
@@ -590,7 +643,7 @@ describe.skipIf(!existsSync(webkit.executablePath()))(
           expect(state.chip.replace(/\s+/g, " ")).toContain(`Inbox · ${INBOX_COUNT}`);
           // Links on the filtered view stay live, not dead.
           expect(state.clear).toBe("/work");
-          expect(state.boardLink).toBe("/client-board");
+          expect(state.boardLink).toBe("");
           expect(state.cards).toBe(INBOX_COUNT);
           expect(state.colLabel).toContain("Inbox");
         } finally {

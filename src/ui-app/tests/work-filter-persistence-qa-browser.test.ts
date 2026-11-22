@@ -68,8 +68,10 @@ function workViewStubs() {
     RouterLink: { template: "<a><slot /></a>" },
     Button: buttonStub,
     Select: selectStub,
-    SelectTrigger: selectStub,
-    SelectContent: selectStub,
+    // The real sort trigger is 210px wide (WorkView), and its menu stays closed.
+    // Keep both in the header's layout so the row fits as it does in the app.
+    SelectTrigger: { template: "<div><slot /></div>" },
+    SelectContent: { template: "<div hidden><slot /></div>" },
     SelectItem: selectStub,
     SelectViewport: selectStub,
     SelectValue: selectStub,
@@ -175,12 +177,15 @@ afterEach(() => {
 });
 
 describe("Work board queue filters on desktop (768 / 1280 px)", () => {
-  it("applies the URL search and priority to the board and shows them as chips", async () => {
+  it("applies the URL search and priority and shows only the priority chip", async () => {
     const wrapper = mountDesktop({ q: "login", priority: "p1" });
     await flushPromises();
     expect(visibleIds(wrapper)).toEqual(["0001"]);
-    expect(chipKeys(wrapper)).toEqual(["q", "priority"]);
-    expect(wrapper.find(".board-queue-filters").text()).toContain("Search: login");
+    expect(chipKeys(wrapper)).toEqual(["priority"]);
+    expect(
+      (wrapper.find('[data-testid="board-queue-search"]').element as HTMLInputElement).value,
+    ).toBe("login");
+    expect(wrapper.find(".board-queue-filters").text()).not.toContain("Search:");
     expect(wrapper.find(".board-queue-filters").text()).toContain("Priority: P1");
   });
 
@@ -201,7 +206,7 @@ describe("Work board queue filters on desktop (768 / 1280 px)", () => {
     await flushPromises();
     expect(visibleIds(reloaded)).toEqual(before);
     expect(before).toEqual(["0003"]);
-    expect(chipKeys(reloaded)).toEqual(["q", "area"]);
+    expect(chipKeys(reloaded)).toEqual(["area"]);
   });
 
   it("pipeline shows the active filters with a note that it does not apply them", async () => {
@@ -210,8 +215,30 @@ describe("Work board queue filters on desktop (768 / 1280 px)", () => {
     await flushPromises();
     const bar = wrapper.find(".board-queue-filters");
     expect(bar.exists()).toBe(true);
-    expect(chipKeys(wrapper)).toEqual(["q"]);
+    expect(chipKeys(wrapper)).toEqual([]);
+    expect(wrapper.get<HTMLInputElement>('[data-testid="board-queue-search"]').element.value).toBe(
+      "login",
+    );
     expect(bar.find(".board-queue-filter-note").exists()).toBe(true);
+    expect(bar.find(".filter-clear").exists()).toBe(true);
+    await bar.find(".filter-clear").trigger("click");
+    expect(routeState.router.replace).toHaveBeenCalledWith({ query: {} });
+  });
+
+  it("keeps the search visible when switching between Board and Pipeline", async () => {
+    const wrapper = mountDesktop({ q: "login" });
+    await flushPromises();
+    for (const view of ["Pipeline", "Board"]) {
+      const toggle = wrapper.findAll(".view-toggle-btn").find((button) => button.text() === view);
+      expect(toggle).toBeDefined();
+      await toggle!.trigger("click");
+      expect(
+        wrapper.get<HTMLInputElement>('[data-testid="board-queue-search"]').element.value,
+      ).toBe("login");
+      expect(chipKeys(wrapper)).toEqual([]);
+      expect(wrapper.find(".filter-clear").exists()).toBe(true);
+    }
+    expect(visibleIds(wrapper)).toEqual(["0001"]);
   });
 
   it("an unusable URL value shows an ignored chip and Clear removes it", async () => {
@@ -273,12 +300,37 @@ describe("Work board queue filters on desktop (768 / 1280 px)", () => {
     });
   });
 
-  it("the board search box is not shown on the pipeline, which does not filter", async () => {
+  it("keeps the query visible and clearable when switching between views", async () => {
     window.localStorage.setItem("repoos.work.view-mode", "pipeline");
-    const wrapper = mountDesktop({ q: "login" });
+    routeState.query = { q: "login" };
+    const wrapper = mount(WorkView, {
+      global: {
+        stubs: {
+          ...workViewStubs(),
+          Button: false,
+          Select: false,
+          SelectTrigger: false,
+          SelectContent: false,
+          SelectItem: false,
+          SelectViewport: false,
+          SelectValue: false,
+        },
+      },
+    });
     await flushPromises();
-    expect(wrapper.find('[data-testid="board-queue-search"]').exists()).toBe(false);
-    expect(wrapper.find(".board-queue-filters").exists()).toBe(true);
+    const search = wrapper.get<HTMLInputElement>('[data-testid="board-queue-search"]');
+    expect(search.element.value).toBe("login");
+    const boardButton = wrapper
+      .findAll(".view-toggle-btn")
+      .find((button) => button.text() === "Board");
+    expect(boardButton).toBeDefined();
+    await boardButton!.trigger("click");
+    expect(wrapper.get<HTMLInputElement>('[data-testid="board-queue-search"]').element.value).toBe(
+      "login",
+    );
+    expect(visibleIds(wrapper)).toEqual(["0001"]);
+    await wrapper.get('[data-testid="board-queue-search-clear"]').trigger("click");
+    expect(routeState.router.replace).toHaveBeenCalledWith({ query: {} });
   });
 
   it("a fresh project (new origin, no URL filters) starts unfiltered", async () => {
@@ -570,7 +622,8 @@ describe("Board filter chip bar at 375 / 768 / 1280 px (WebKit, fixtures)", () =
         );
         expect(result.off, `chips off-viewport at ${width}px`).toEqual([]);
         expect(await page.locator(".board-queue-filters .filter-clear").isVisible()).toBe(true);
-        expect(await page.locator(".board-queue-filters [data-filter-key]").count()).toBe(5);
+        // Four quick-filter chips: the search has no chip (#1278).
+        expect(await page.locator(".board-queue-filters [data-filter-key]").count()).toBe(4);
       } finally {
         await page.close();
       }
@@ -612,7 +665,21 @@ describe("Board filter chip bar at 375 / 768 / 1280 px (WebKit, fixtures)", () =
     it(`shows the short set of chips at ${width}px without wrapping the clear control away`, async () => {
       const page = await openChipBar(shortFilters, width, "short-filters");
       try {
-        expect(await page.locator(".board-queue-filters [data-filter-key]").count()).toBe(2);
+        expect(await page.locator(".board-queue-filters [data-filter-key]").count()).toBe(1);
+        expect(await page.locator(".board-queue-filters .filter-clear").isVisible()).toBe(true);
+      } finally {
+        await page.close();
+      }
+    });
+
+    it(`shows Clear filters and no chip when only the search is set at ${width}px`, async () => {
+      const page = await openChipBar(
+        { query: "login", priority: "", area: "any", story: "any", mine: false },
+        width,
+        "search-only",
+      );
+      try {
+        expect(await page.locator(".board-queue-filters [data-filter-key]").count()).toBe(0);
         expect(await page.locator(".board-queue-filters .filter-clear").isVisible()).toBe(true);
       } finally {
         await page.close();
@@ -668,7 +735,9 @@ describe("Board filter chip bar at 375 / 768 / 1280 px (WebKit, fixtures)", () =
           result.limit,
         );
         expect(result.off, `search box off-viewport at ${width}px`).toEqual([]);
-        expect(result.inputWidth, `search input too narrow at ${width}px`).toBeGreaterThan(120);
+        // The header search is 150px at its narrowest (the sidebar-open title row),
+        // which leaves its input about 75px for the icon and clear control.
+        expect(result.inputWidth, `search input too narrow at ${width}px`).toBeGreaterThan(60);
         expect(await page.locator('[data-testid="board-queue-search-clear"]').isVisible()).toBe(
           true,
         );
@@ -682,6 +751,136 @@ describe("Board filter chip bar at 375 / 768 / 1280 px (WebKit, fixtures)", () =
       try {
         expect(await page.locator('[data-testid="board-queue-search"]').isVisible()).toBe(true);
         expect(await page.locator('[data-testid="board-queue-search-clear"]').count()).toBe(0);
+      } finally {
+        await page.close();
+      }
+    });
+  }
+
+  /** The scoped `<style>` blocks of one SFC, compiled under the scope id its markup carries. */
+  function scopedStyles(component: string, scopeId: string): string {
+    const source = readFileSync(resolve(uiRoot, component), "utf8");
+    const blocks = parse(source, { filename: component }).descriptor.styles.filter((s) => s.scoped);
+    return blocks
+      .map((block) => {
+        const compiled = compileStyle({ filename: component, id: scopeId, source: block.content });
+        if (compiled.errors.length) throw compiled.errors[0]!;
+        return compiled.code;
+      })
+      .join("\n");
+  }
+
+  /** The scope id an element carries, e.g. `data-v-1a2b3c`. */
+  function scopeIdOf(wrapper: ReturnType<typeof mountDesktop>, selector: string): string {
+    const el = wrapper.get(selector).element;
+    const id = Array.from(el.attributes)
+      .map((attr) => attr.name)
+      .find((name) => name.startsWith("data-v-"));
+    if (!id) throw new Error(`${selector} has no scope ID`);
+    return id;
+  }
+
+  // #1278: the search sits in the header row beside the toggles. At these widths
+  // the header copy, search, toggles, sort, view switch and New task must not
+  // overflow the page or collide with each other. The page is rendered inside
+  // the app shell (a sidebar column, 60px at 720-900px and 210px above), so the
+  // header gets the same width the real page does.
+  for (const width of [720, 768, 900, 1000, 1280]) {
+    it(`keeps the Work header row free of overflow and collisions at ${width}px`, async () => {
+      const wrapper = mountDesktop({ q: "login" });
+      await flushPromises();
+      const markup = wrapper.get(".work-header").html();
+      const workScope = scopeIdOf(wrapper, ".work-header");
+      const searchScope = scopeIdOf(wrapper, ".board-queue-search");
+      const css = [
+        scopedStyles("src/views/WorkView.vue", workScope),
+        scopedStyles("src/components/BoardQueueSearch.vue", searchScope),
+      ].join("\n");
+      wrapper.unmount();
+
+      const page = await browser.newPage({ viewport: { width, height: 900 } });
+      try {
+        await page.setContent(
+          `<meta name="viewport" content="width=device-width, initial-scale=1.0">` +
+            `<style>${globalCss}</style><style>${css}</style>` +
+            `<style>html, body { width: 100%; margin: 0; } *, *::before, *::after { animation: none !important; transition: none !important; }</style>` +
+            `<div class="body" style="min-height: 900px">` +
+            `<aside class="sidebar"></aside>` +
+            `<main class="main"><div class="work-page">${markup}</div></main></div>`,
+        );
+        const shots = process.env.QA_SHOTS;
+        if (shots) {
+          mkdirSync(shots, { recursive: true });
+          await page.screenshot({
+            path: resolve(shots, `work-header-${width}.jpg`),
+            fullPage: true,
+          });
+        }
+        const result = await page.evaluate(() => {
+          const header = document.querySelector(".work-header");
+          const parts = [
+            ...Array.from(document.querySelectorAll(".work-header-copy")),
+            ...Array.from(
+              document.querySelectorAll(
+                ".work-header-actions > :not(.work-header-search-controls), .work-header-search-controls > *",
+              ),
+            ),
+          ]
+            .map((el) => ({ name: el.className || el.tagName, rect: el.getBoundingClientRect() }))
+            .filter((p) => p.rect.width > 0 && p.rect.height > 0);
+          const limit = window.innerWidth;
+          const off = parts
+            .filter((p) => p.rect.left < -0.5 || p.rect.right > limit + 0.5)
+            .map((p) => String(p.name));
+          const collisions: string[] = [];
+          for (let i = 0; i < parts.length; i += 1) {
+            for (let j = i + 1; j < parts.length; j += 1) {
+              const a = parts[i]!.rect;
+              const b = parts[j]!.rect;
+              const overlapX = Math.min(a.right, b.right) - Math.max(a.left, b.left);
+              const overlapY = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
+              if (overlapX > 0.5 && overlapY > 0.5) {
+                collisions.push(`${parts[i]!.name} x ${parts[j]!.name}`);
+              }
+            }
+          }
+          const search = document.querySelector<HTMLElement>(".board-queue-search");
+          const searchTop = Math.round(search?.getBoundingClientRect().top ?? -1);
+          const toggleTop = Math.round(
+            document.querySelector(".queue-visibility")?.getBoundingClientRect().top ?? -2,
+          );
+          return {
+            scrollWidth: document.documentElement.scrollWidth,
+            limit,
+            headerExists: header !== null,
+            off,
+            collisions,
+            searchWidth: search?.getBoundingClientRect().width ?? 0,
+            searchTop,
+            toggleTop,
+            titleTop: Math.round(
+              document.querySelector(".page-title")?.getBoundingClientRect().top ?? -1,
+            ),
+          };
+        });
+        expect(result.headerExists).toBe(true);
+        expect(result.scrollWidth, `document overflows at ${width}px`).toBeLessThanOrEqual(
+          result.limit,
+        );
+        expect(result.off, `header item off-viewport at ${width}px`).toEqual([]);
+        expect(result.collisions, `header items collide at ${width}px`).toEqual([]);
+        // Half of the old 420px search, so about 210px (#1278).
+        expect(result.searchWidth, `search not half width at ${width}px`).toBeLessThanOrEqual(210);
+        expect(result.searchWidth, `search too narrow at ${width}px`).toBeGreaterThanOrEqual(150);
+        expect(
+          Math.abs(result.searchTop - result.titleTop),
+          `search is not aligned with the title row at ${width}px`,
+        ).toBeLessThanOrEqual(2);
+        expect(
+          Math.abs(result.searchTop - result.toggleTop),
+          `search is off the toggles' row at ${width}px`,
+        ).toBeLessThanOrEqual(2);
+        expect(await page.locator(".client-board-link").count()).toBe(0);
       } finally {
         await page.close();
       }

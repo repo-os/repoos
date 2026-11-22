@@ -56,8 +56,14 @@ function update(value: string): void {
 </template>
 
 <style scoped>
+/* Half the old 420px width (#1278). It grows to 210px when the header row has
+   room and gives width back before the row wraps, so the row's intrinsic width
+   is the 150px base, not the maximum. */
 .board-queue-search {
-  width: min(100%, 420px);
+  flex: 1 1 150px;
+  width: 150px;
+  min-width: 150px;
+  max-width: 210px;
 }
 .board-search-row {
   display: flex;
