@@ -2,7 +2,7 @@
 id: "1279"
 title: "Easter eggs bundle: rename review history column to Issues"
 type: feature
-status: active
+status: review
 human_step_override: Cleared needs-human-step flag (sticky until acceptance criteria change)
 human_step_override_key: 8dbfd6ac
 priority: p3
@@ -13,7 +13,7 @@ branch: feat/easter-eggs-bundle-rename-review-history
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T10:35:33Z"
-updated_at: "2026-11-22T12:29:18Z"
+updated_at: "2026-11-22T12:29:19Z"
 review_rounds: 1
 review_passes: 1
 last_check_failure: "repoos check at 2026-11-22T12:01:07.968Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Review pass history: last column now reads Issues (target \"default\"): highlight .review-history-table matched nothing on /work?task=9999&tab=review (http://127.0.0.1:41827/work?task=9999&tab=review&shotState=drawer%3AreviewPasses)"
@@ -93,3 +93,4 @@ Copy change only. Never touch repoos.toml. Headless Playwright only.
 - 2026-11-22T12:25:10Z · body
 - 2026-11-22T12:26:56Z · CTO nudge: held — handoff gate is running
 - 2026-11-22T12:29:18Z · note: ui verification passed: 2 of 2 shots captured with clean console (1 shot warning)
+- 2026-11-22T12:29:19Z · status active→review
