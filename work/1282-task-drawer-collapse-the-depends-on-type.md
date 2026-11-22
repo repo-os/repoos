@@ -1,6 +1,4 @@
 ---
-check_retry_count: 1
-last_check_failure: "repoos check at 2026-11-22T15:33:58.176Z: repoos check failed: ui verification failed (5 issue(s)): [request] HTTP 404 for http://127.0.0.1:45775/api/tasks/1282 (http://127.0.0.1:45775/api/tasks/1282); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:45775/api/tasks/1282); [missing-target] Task drawer Details tab with the collapsed metadata summary (target \"default\"): highlight [data-test-id=\"task-meta-summary\"] matched nothing on /work?task=1282 (http://127.0.0.1:45775/work?task… (truncated)"
 id: "1282"
 title: "Task drawer: collapse the Depends on, type, priority, area and story block into a one or two line summary that opens a modal"
 type: feature
@@ -13,7 +11,9 @@ branch: feat/task-drawer-collapse-the-depends-on-type
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-22T03:22:33Z"
-updated_at: "2026-11-22T15:33:58Z"
+updated_at: "2026-11-22T15:34:33Z"
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-22T15:33:58.176Z: repoos check failed: ui verification failed (5 issue(s)): [request] HTTP 404 for http://127.0.0.1:45775/api/tasks/1282 (http://127.0.0.1:45775/api/tasks/1282); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:45775/api/tasks/1282); [missing-target] Task drawer Details tab with the collapsed metadata summary (target \"default\"): highlight [data-test-id=\"task-meta-summary\"] matched nothing on /work?task=1282 (http://127.0.0.1:45775/work?task… (truncated)"
 ---
 ## Problem
 The metadata block at the top of the task drawer (Depends on picker with a long task list, Type, Priority, Area, Story) takes a large amount of vertical space above the spec. A human rarely edits these, so most of the time it just pushes the content down.
@@ -37,24 +37,26 @@ Start from TaskDrawer.vue and TaskDependencyPicker.vue. This is a requested rede
 ```json
 [
 {
-"label": "Task drawer Details tab with the collapsed metadata summary",
-"target": "default",
-"route": "/work?task=1282",
-"highlight": "[data-test-id=\"task-meta-summary\"]"
+  "label": "Task drawer Details tab with the collapsed metadata summary",
+  "target": "default",
+  "route": "/work?task=1282",
+  "highlight": "[data-test-id=\"task-meta-summary\"]",
+  "state": "drawer:taskDetailsSummary"
 },
 {
-"label": "Task details modal opened from the summary, with Depends on chips, Type, Priority, Area and Story",
-"target": "default",
-"route": "/work?task=1282",
-"highlight": "[data-test-id=\"task-meta-modal\"]",
-"steps": [
-{
-"click": "[data-test-id=\"task-meta-summary\"]"
-},
-{
-"waitMs": 300
-}
-]
+  "label": "Task details modal opened from the summary, with Depends on chips, Type, Priority, Area and Story",
+  "target": "default",
+  "route": "/work?task=1282",
+  "highlight": "[data-test-id=\"task-meta-modal\"]",
+  "steps": [
+    {
+      "click": "[data-test-id=\"task-meta-summary\"]"
+    },
+    {
+      "waitMs": 300
+    }
+  ],
+  "state": "drawer:taskDetailsSummary"
 }
 ]
 ```
@@ -76,4 +78,4 @@ Start from TaskDrawer.vue and TaskDependencyPicker.vue. This is a requested rede
 - 2026-11-22T15:33:54Z · note: ui verification failed: ui verification failed (5 issue(s)): [request] HTTP 404 for http://127.0.0.1:45775/api/tasks/1282 (http://127.0.0.1:45775/api/tasks/1282); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:45775/api/tasks/1282); [missing-target] Task drawer Details tab with the collapsed metadata summary (target "default"): highlight [data-test-id="task-meta-summary"] matched nothing on /work?task=1282 (http://127.0.0.1:45775/work?t
 - 2026-11-22T15:33:55Z · message_queued at 2026-11-22T15:33:55.032Z
 - 2026-11-22T15:33:58Z · message_delivered: 1 message(s)
-
+- 2026-11-22T15:34:33Z · body
