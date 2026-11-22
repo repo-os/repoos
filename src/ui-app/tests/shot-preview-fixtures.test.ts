@@ -990,6 +990,18 @@ describe("shot preview board fixtures (#0743)", () => {
     expect(task!.branch).toBe("");
   });
 
+  it("drawer:taskDetailsSummary seeds the off-board ?task= id and opens its Details tab (#1282)", () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const repo = useRepoStore();
+    window.history.replaceState({}, "", "/work?task=1282&shotState=drawer%3AtaskDetailsSummary");
+    applyShotPreviewFixture(repo, "drawer:taskDetailsSummary");
+    const task = repo.tasks.find((t) => t.id === "1282");
+    expect(task).toBeDefined();
+    expect(repo.tasks.find((t) => t.id === SHOT_PREVIEW_FIXTURE_TASK_ID)).toBeUndefined();
+    expect(useUiStore().activeTab).toBe("details");
+  });
+
   it("drawer:activeRequirements seeds #9999 when ?task=9999 is not on the board (#0817)", () => {
     const pinia = createPinia();
     setActivePinia(pinia);

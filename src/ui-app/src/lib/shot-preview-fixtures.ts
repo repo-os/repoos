@@ -2708,6 +2708,21 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
       repo.setHandoffError(SHOT_PREVIEW_FIXTURE_TASK_ID, "Fixture handoff check failed");
       document.documentElement.setAttribute(SHOT_PREVIEW_APPLIED_ATTR, fixture);
       break;
+    case "drawer:taskDetailsSummary": {
+      // #1282 — open the Details tab on a seeded task so the collapsed metadata
+      // summary (and, on click, its modal) is on screen. Seeds the ?task= id so
+      // the capture never requests a task that is off the preview board.
+      const drawerId = shotPreviewDrawerTaskIdFromLocation(window.location);
+      ensureFixtureTask(repo, "active", {}, drawerId);
+      const task = repo.tasks.find((t) => t.id === drawerId);
+      if (task) {
+        const ui = useUiStore();
+        ui.open(task);
+        ui.activeTab = "details";
+      }
+      setShotPreviewAppliedAttr("drawer:taskDetailsSummary");
+      break;
+    }
     case "drawer:activeRequirements": {
       // #0817 — show Update requirements on an active task without mutating
       // board status on main. Prefer the real task from `?task=` so capture
