@@ -2,7 +2,7 @@
 id: "1278"
 title: "Work board: move search into the header row, half width, drop the search chip"
 type: feature
-status: review
+status: active
 priority: p2
 area: web
 assigned_to: ai
@@ -291,4 +291,3 @@ Start from src/ui-app/src/components/BoardQueueSearch.vue and the Work view head
 - 2026-11-22T06:07:47Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: **Handoff blocked:** remote WebKit still reports overflow, and the scoped check failed. The worktree is read-only in review; it must return to active for further fixes. · stderr: (empty)
 - 2026-11-22T06:10:16Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-22T06:10:25Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: **Blocked:** the scoped check failed on remote WebKit overflow. The worktree is read-only in review; it must return to active before I can continue fixing it. · stderr: (empty)
-- 2026-11-22T06:10:25Z · status active→review
