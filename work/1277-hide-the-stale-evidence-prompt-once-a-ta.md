@@ -126,3 +126,4 @@ Also (Nick): on the card and drawer, show only the Refresh evidence button; do n
 - 2026-11-22T15:56:17Z · status active→review
 - 2026-11-22T15:57:16Z · note: review pass 5: failed — no usable report
 - 2026-11-22T15:57:17Z · message_queued at 2026-11-22T15:57:17.783Z
+- 2026-11-22T15:57:17Z · note: shots: failed — browser capture cancelled
