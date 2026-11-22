@@ -3,6 +3,9 @@ id: "1279"
 title: "Easter eggs bundle: rename review history column to Issues"
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-human-attention
+needs_input_detail: Review pass 6 still found issues (human flag after 5 passes). The reviewer was asked to summarise the repeated bug classes — read the newest report and decide whether to keep iterating or rescope.
 human_step_override: Cleared needs-human-step flag (sticky until acceptance criteria change)
 human_step_override_key: 8dbfd6ac
 priority: p3
@@ -13,7 +16,7 @@ branch: feat/easter-eggs-bundle-rename-review-history
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T10:35:33Z"
-updated_at: "2026-11-22T14:32:15Z"
+updated_at: "2026-11-22T14:32:16Z"
 last_check_failure: "repoos check at 2026-11-22T14:04:01.314Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_passes: 5
 handoff_signal_retry_count: 1
@@ -142,3 +145,4 @@ Copy change only. Never touch repoos.toml. Headless Playwright only.
 - 2026-11-22T14:31:03Z · status active→review
 - 2026-11-22T14:31:03Z · message_queued at 2026-11-22T14:31:03.663Z
 - 2026-11-22T14:32:15Z · note: review pass 6: needs some work
+- 2026-11-22T14:32:16Z · needs_input
