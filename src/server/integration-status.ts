@@ -203,14 +203,17 @@ export function buildIntegrationSnapshot(
   const nowMs = Date.parse(at);
   const blockerElapsedMs =
     inFlight && Number.isFinite(nowMs) ? Math.max(0, nowMs - Date.parse(inFlight.startedAt)) : null;
-  // Position is publish order over every live job (the head is 0), the same
-  // numbering as the integration-job API's queuePosition (#1275).
+  // Position is the 1-based line rank over every live job (#1275): a job that is
+  // validating alongside the active one still occupies its place, so a queued job
+  // behind it counts that job. A validating active job holds slot 0 when present,
+  // so with none running the first queued job is still #1 (#1272).
   const publishOrder = new Map(live.map((job, index) => [job.taskId, index]));
+  const slotOffset = inFlight ? 0 : 1;
   const queueDetail = queuedJobs.map((job, i) => {
     const enqueuedMs = Date.parse(job.enqueuedAt);
     return {
       taskId: job.taskId,
-      position: publishOrder.get(job.taskId) ?? i,
+      position: (publishOrder.get(job.taskId) ?? i) + slotOffset,
       enqueuedAt: job.enqueuedAt,
       waitedMs: Number.isFinite(nowMs) && Number.isFinite(enqueuedMs) ? nowMs - enqueuedMs : 0,
       // The active job holds the single close-out pipeline slot; every queued
