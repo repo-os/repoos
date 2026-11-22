@@ -255,3 +255,4 @@ Start from src/ui-app/src/components/BoardQueueSearch.vue and the Work view head
 - 2026-11-22T02:51:29Z · engineer stopped by request
 - 2026-11-22T03:04:50Z · message_delivered: 2 message(s)
 - 2026-11-22T03:07:10Z · engineer stopped by request
+- 2026-11-22T03:46:57Z · note: handoff requested (cli)
