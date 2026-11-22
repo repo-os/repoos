@@ -31,6 +31,7 @@ export const BOARD_MEDIUM_BREAKPOINT_PX = 1250;
 /** Every routed path the app shell can open while the repo index loads. */
 export const LOADING_SKELETON_ROUTES = [
   "/",
+  "/control",
   "/work",
   "/client-board",
   "/inputs",
@@ -51,9 +52,10 @@ export const LOADING_SKELETON_ROUTES = [
  */
 export function loadingSkeletonKind(path: string): LoadingSkeletonKind {
   const route = path.split("?")[0] ?? "/";
-  if (route === "/work" || route.startsWith("/work/")) return "board";
+  // "/" redirects to Work (#1258), so its first paint is the board.
+  if (route === "/work" || route === "/" || route.startsWith("/work/")) return "board";
   if (route === "/inputs" || route === "/client-board") return "inputBoard";
-  if (route === "/") return "dashboard";
+  if (route === "/control") return "dashboard";
   if (route === "/checks" || route === "/secrets") return "table";
   if (route === "/agents" || route === "/releases") return "cards";
   if (route === "/dev") return "targets";
@@ -72,8 +74,8 @@ export interface LoadingPageHeader {
 /** Static page chrome rendered by the app-level loading shell. */
 export function loadingPageHeader(path: string): LoadingPageHeader | null {
   const route = path.split("?")[0] ?? "/";
-  if (route === "/") return { title: "Mission Control", desc: "Live from your repo" };
-  if (route === "/work" || route.startsWith("/work/")) {
+  if (route === "/control") return { title: "Mission Control", desc: "Live from your repo" };
+  if (route === "/" || route === "/work" || route.startsWith("/work/")) {
     return { title: "Work Queue", desc: "Repo-native tasks" };
   }
   if (route === "/client-board")

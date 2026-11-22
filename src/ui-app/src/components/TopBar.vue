@@ -577,8 +577,8 @@ watch(repoName, () => {
 .help-menu-trigger {
   display: grid;
   place-items: center;
-  width: 30px;
-  height: 30px;
+  width: var(--topbar-control-h);
+  height: var(--topbar-control-h);
   flex-shrink: 0;
   border-radius: 50%;
   border: 1px solid var(--border-bright);
@@ -629,8 +629,8 @@ watch(repoName, () => {
 .user-menu-trigger {
   display: grid;
   place-items: center;
-  width: 30px;
-  height: 30px;
+  width: var(--topbar-control-h);
+  height: var(--topbar-control-h);
   flex-shrink: 0;
   border-radius: 50%;
   border: 1px solid var(--border-bright);
@@ -704,11 +704,6 @@ watch(repoName, () => {
     height: 44px;
     margin-inline: -6px;
   }
-  .help-menu-trigger,
-  .user-menu-trigger {
-    width: 44px;
-    height: 44px;
-  }
   .help-menu-link {
     display: flex;
     align-items: center;
@@ -731,7 +726,6 @@ watch(repoName, () => {
   .repo-pill {
     width: 100%;
     min-width: 0;
-    min-height: 44px;
     padding: 0 8px;
     justify-content: flex-start;
     overflow: hidden;

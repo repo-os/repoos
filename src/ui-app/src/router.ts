@@ -18,7 +18,10 @@ export const router = createRouter({
       component: () => import("./views/LoginView.vue"),
       meta: { public: true },
     },
-    { path: "/", name: "dashboard", component: () => import("./views/DashboardView.vue") },
+    // Work is the home page (#1258): opening the app root, or the Hub's start
+    // URL, lands there. Mission Control keeps its own path under /control.
+    { path: "/", redirect: "/work" },
+    { path: "/control", name: "dashboard", component: () => import("./views/DashboardView.vue") },
     { path: "/work", name: "work", component: () => import("./views/WorkView.vue") },
     {
       path: "/client-board",

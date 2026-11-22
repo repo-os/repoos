@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-22T03:53:10Z"
-review_passes: 5
 id: "1258"
 title: "Mobile polish: open on Work, hide page scrollbar, even-height header row"
 type: bug
@@ -13,11 +11,14 @@ branch: feat/mobile-polish-open-on-work-hide-page-scr
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T00:15:33Z"
+updated_at: "2026-11-22T03:51:00Z"
+review_passes: 4
 review_failed_report_retries: 0
 last_check_failure: "repoos check at 2026-11-20T09:49:11.145Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Work is the home page; header row controls share one height (target \"default\"): loading state detected: loading indicator [aria-busy=\"true\"] on /work (http://127.0.0.1:34337/work)"
 review_rounds: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-11-21T00:32:46.891Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 dev_error_count: 5
+engineer_crash_log: "[{\"cli\":\"claude code\",\"model\":\"haiku\",\"at\":\"2026-11-21T23:17:08.288Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 On a phone (seen on the Android Hub app, Mission Control page):
@@ -250,9 +251,4 @@ Screenshot attached shows the current mobile header and Mission Control. Do not 
 - 2026-11-22T03:24:03Z · message_queued at 2026-11-22T03:24:03.832Z
 - 2026-11-22T03:24:04Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-22T03:26:05Z · body
-- 2026-11-22T03:29:03Z · CTO nudge: held — handoff gate is running
-- 2026-11-22T03:50:58Z · note: ui verification passed: 1 of 1 shot captured with clean console
 - 2026-11-22T03:51:00Z · status active→review
-- 2026-11-22T03:51:00Z · message_queued at 2026-11-22T03:51:00.520Z
-- 2026-11-22T03:53:10Z · note: review pass 8: good to go
-
