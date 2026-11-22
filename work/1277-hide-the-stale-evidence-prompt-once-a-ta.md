@@ -3,6 +3,9 @@ id: "1277"
 title: Hide the stale-evidence prompt once a task is queued or moving to done
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-failed
+needs_input_detail: "the github copilot agent exited without output: Copilot emitted an unknown protocol event \"commands.changed\". Copilot emitted an unknown protocol event \"instruction.update\". error: You have exceeded your monthly quota (Request ID: 00000-72ad7c2e-c34d-4a1f-9f8f-53cec4e7503f)"
 priority: p3
 area: web
 assigned_to: ai
@@ -132,3 +135,4 @@ Also (Nick): on the card and drawer, show only the Refresh evidence button; do n
 - 2026-11-22T16:16:49Z · body
 - 2026-11-22T16:17:35Z · note: review pass 6: failed — no usable report
 - 2026-11-22T16:17:49Z · note: review pass 7: failed — no usable report
+- 2026-11-22T16:17:49Z · needs_input
