@@ -11,7 +11,7 @@ branch: feat/hide-the-stale-evidence-prompt-once-a-ta
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T08:26:19Z"
-updated_at: "2026-11-22T11:51:56Z"
+updated_at: "2026-11-22T11:53:52Z"
 ---
 ## Problem
 A review card that is already queued for close-out (Moving to done, queued #N) still shows 'Stale evidence is the only finding · repoos verify <id>' and a Refresh evidence button. Once close-out is queued or running the evidence prompt is noise, and clicking it would start a new review on a task that is mid-close-out.
@@ -41,3 +41,4 @@ Also (Nick): on the card and drawer, show only the Refresh evidence button; do n
 - 2026-11-22T11:37:09Z · status ready→active, branch
 - 2026-11-22T11:47:11Z · body
 - 2026-11-22T11:51:56Z · CTO nudge: held — handoff gate is running
+- 2026-11-22T11:53:52Z · note: ui verification failed: ui verification failed (2 issue(s)): [route] auto: matched src/ui-app/** · phone 390x844: declared route / but the browser landed on /work (login or redirect?) (captured http://127.0.0.1:38563/work) (http://127.0.0.1:38563/work); [route] auto: matched src/ui-app/** · desktop 1280x800: declared route / but the browser landed on /work (login or redirect?) (captured http://127.0.0.1:38563/work) (http://127.0.0.1:38563/work)
