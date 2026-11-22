@@ -221,6 +221,24 @@ describe("Work board queue filters on desktop (768 / 1280 px)", () => {
     );
     expect(bar.find(".board-queue-filter-note").exists()).toBe(true);
     expect(bar.find(".filter-clear").exists()).toBe(true);
+    await bar.find(".filter-clear").trigger("click");
+    expect(routeState.router.replace).toHaveBeenCalledWith({ query: {} });
+  });
+
+  it("keeps the search visible when switching between Board and Pipeline", async () => {
+    const wrapper = mountDesktop({ q: "login" });
+    await flushPromises();
+    for (const view of ["Pipeline", "Board"]) {
+      const toggle = wrapper.findAll(".view-toggle-btn").find((button) => button.text() === view);
+      expect(toggle).toBeDefined();
+      await toggle!.trigger("click");
+      expect(wrapper.get<HTMLInputElement>('[data-testid="board-queue-search"]').element.value).toBe(
+        "login",
+      );
+      expect(chipKeys(wrapper)).toEqual([]);
+      expect(wrapper.find(".filter-clear").exists()).toBe(true);
+    }
+    expect(visibleIds(wrapper)).toEqual(["0001"]);
   });
 
   it("an unusable URL value shows an ignored chip and Clear removes it", async () => {
@@ -284,7 +302,21 @@ describe("Work board queue filters on desktop (768 / 1280 px)", () => {
 
   it("keeps the query visible and clearable when switching between views", async () => {
     window.localStorage.setItem("repoos.work.view-mode", "pipeline");
-    const wrapper = mountDesktop({ q: "login" });
+    routeState.query = { q: "login" };
+    const wrapper = mount(WorkView, {
+      global: {
+        stubs: {
+          ...workViewStubs(),
+          Button: false,
+          Select: false,
+          SelectTrigger: false,
+          SelectContent: false,
+          SelectItem: false,
+          SelectViewport: false,
+          SelectValue: false,
+        },
+      },
+    });
     await flushPromises();
     const search = wrapper.get<HTMLInputElement>('[data-testid="board-queue-search"]');
     expect(search.element.value).toBe("login");
@@ -788,7 +820,11 @@ describe("Board filter chip bar at 375 / 768 / 1280 px (WebKit, fixtures)", () =
           const header = document.querySelector(".work-header");
           const parts = [
             ...Array.from(document.querySelectorAll(".work-header-copy")),
-            ...Array.from(document.querySelectorAll(".work-header-actions > *")),
+            ...Array.from(
+              document.querySelectorAll(
+                ".work-header-actions > :not(.work-header-search-controls), .work-header-search-controls > *",
+              ),
+            ),
           ]
             .map((el) => ({ name: el.className || el.tagName, rect: el.getBoundingClientRect() }))
             .filter((p) => p.rect.width > 0 && p.rect.height > 0);
@@ -822,8 +858,8 @@ describe("Board filter chip bar at 375 / 768 / 1280 px (WebKit, fixtures)", () =
             searchWidth: search?.getBoundingClientRect().width ?? 0,
             searchTop,
             toggleTop,
-            titleBottom: Math.round(
-              document.querySelector(".work-header-copy")?.getBoundingClientRect().bottom ?? -1,
+            titleTop: Math.round(
+              document.querySelector(".page-title")?.getBoundingClientRect().top ?? -1,
             ),
           };
         });
@@ -836,9 +872,10 @@ describe("Board filter chip bar at 375 / 768 / 1280 px (WebKit, fixtures)", () =
         // Half of the old 420px search, so about 210px (#1278).
         expect(result.searchWidth, `search not half width at ${width}px`).toBeLessThanOrEqual(210);
         expect(result.searchWidth, `search too narrow at ${width}px`).toBeGreaterThanOrEqual(150);
-        expect(result.searchTop, `search dropped below the title at ${width}px`).toBeLessThan(
-          result.titleBottom,
-        );
+        expect(
+          Math.abs(result.searchTop - result.titleTop),
+          `search is not aligned with the title row at ${width}px`,
+        ).toBeLessThanOrEqual(2);
         expect(
           Math.abs(result.searchTop - result.toggleTop),
           `search is off the toggles' row at ${width}px`,

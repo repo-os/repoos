@@ -302,7 +302,7 @@ const hiddenTaskIds = computed<ReadonlySet<string>>(() => {
 // ── #1257 Queue search and quick filters on the board ─────────────────
 // The phone queue writes search and quick filters to the URL (#1138). A
 // phone-width session or a shared link can carry them to a wider screen, so the
-// board applies the same filters and shows them in a chip bar with a clear
+// board applies the same filters and shows quick-filter chips with a clear
 // control. At 720px and up the board also has a search box (#1259) that writes
 // `q` to the same URL key, so a search set on a wide screen survives a reload.
 const queueFilters = computed(() => readWorkQueueFilters(route.query));
@@ -333,10 +333,6 @@ function setBoardSortOrder(order: SortOrder): void {
 function setQueueSearch(text: string): void {
   void router.replace({ query: withWorkQueueSearch(route.query, text) });
 }
-/** #1278: the Client board link is hidden on this page for now. The
- *  /client-board route and its page are untouched; set this to true to show it. */
-const showClientBoardLink = false;
-
 /** The board's per-status task list with the queue filters, the URL sort and the
  *  hidden categories applied. */
 function visibleByStatus(status: string): Task[] {
@@ -590,42 +586,44 @@ function openHeld(task: Task): void {
         </div>
       </div>
       <div class="work-header-actions">
-        <BoardQueueSearch :model-value="queueFilters.query" @update:model-value="setQueueSearch" />
-        <RouterLink v-if="showClientBoardLink" to="/client-board" class="client-board-link"
-          >Client board</RouterLink
-        >
-        <div
-          v-if="effectiveView === 'board'"
-          class="view-toggle queue-visibility"
-          role="group"
-          aria-label="Show or hide human and held tasks"
-        >
-          <button
-            type="button"
-            class="queue-visibility-btn"
-            :class="{ active: humanVisible }"
-            :aria-pressed="humanVisible"
-            :aria-label="humanVisible ? 'Hide human-assigned tasks' : 'Show human-assigned tasks'"
-            data-testid="toggle-human-visibility"
-            @click="toggleHumanVisible"
+        <div class="work-header-search-controls">
+          <BoardQueueSearch
+            :model-value="queueFilters.query"
+            @update:model-value="setQueueSearch"
+          />
+          <div
+            v-if="effectiveView === 'board'"
+            class="view-toggle queue-visibility"
+            role="group"
+            aria-label="Show or hide human and held tasks"
           >
-            <EyeOff v-if="!humanVisible" class="size-3.5" aria-hidden="true" />
-            <Eye v-else class="size-3.5" aria-hidden="true" />
-            <span>Human</span>
-          </button>
-          <button
-            type="button"
-            class="queue-visibility-btn"
-            :class="{ active: heldVisible }"
-            :aria-pressed="heldVisible"
-            :aria-label="heldVisible ? 'Hide held tasks' : 'Show held tasks'"
-            data-testid="toggle-held-visibility"
-            @click="toggleHeldVisible"
-          >
-            <EyeOff v-if="!heldVisible" class="size-3.5" aria-hidden="true" />
-            <Eye v-else class="size-3.5" aria-hidden="true" />
-            <span>Held</span>
-          </button>
+            <button
+              type="button"
+              class="queue-visibility-btn"
+              :class="{ active: humanVisible }"
+              :aria-pressed="humanVisible"
+              :aria-label="humanVisible ? 'Hide human-assigned tasks' : 'Show human-assigned tasks'"
+              data-testid="toggle-human-visibility"
+              @click="toggleHumanVisible"
+            >
+              <EyeOff v-if="!humanVisible" class="size-3.5" aria-hidden="true" />
+              <Eye v-else class="size-3.5" aria-hidden="true" />
+              <span>Human</span>
+            </button>
+            <button
+              type="button"
+              class="queue-visibility-btn"
+              :class="{ active: heldVisible }"
+              :aria-pressed="heldVisible"
+              :aria-label="heldVisible ? 'Hide held tasks' : 'Show held tasks'"
+              data-testid="toggle-held-visibility"
+              @click="toggleHeldVisible"
+            >
+              <EyeOff v-if="!heldVisible" class="size-3.5" aria-hidden="true" />
+              <Eye v-else class="size-3.5" aria-hidden="true" />
+              <span>Held</span>
+            </button>
+          </div>
         </div>
         <Button
           v-if="!statusFilter && effectiveView === 'board'"
@@ -936,6 +934,13 @@ function openHeld(task: Task): void {
   gap: 10px;
   flex-wrap: wrap;
 }
+.work-header-search-controls {
+  display: flex;
+  flex: 0 1 auto;
+  min-width: 0;
+  align-items: center;
+  gap: 10px;
+}
 /* Pipeline | Board switch — same styled toggle as the Inputs page List | Board. */
 .view-toggle {
   display: inline-flex;
@@ -981,18 +986,6 @@ function openHeld(task: Task): void {
    integration status bar never covers the last board rows. */
 .ibar-spacer {
   height: 150px;
-}
-</style>
-
-<style scoped>
-.client-board-link {
-  color: var(--cyan);
-  font-size: 13px;
-  white-space: nowrap;
-}
-.client-board-link:focus-visible {
-  outline: 2px solid var(--cyan);
-  outline-offset: 3px;
 }
 </style>
 
