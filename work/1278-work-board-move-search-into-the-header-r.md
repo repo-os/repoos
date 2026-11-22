@@ -369,3 +369,4 @@ Start from src/ui-app/src/components/BoardQueueSearch.vue and the Work view head
 - 2026-11-22T09:09:42Z · watchdog: restarting engineer because a queued message waited 15m with no live process
 - 2026-11-22T09:09:45Z · message_delivered: 1 message(s)
 - 2026-11-22T09:09:46Z · engineer stopped by request
+- 2026-11-22T09:09:50Z · note: handoff requested (cli)
