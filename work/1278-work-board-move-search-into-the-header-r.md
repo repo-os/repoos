@@ -18,7 +18,6 @@ review_passes: 1
 review_failed_report_retries: 0
 dev_error_count: 17
 engineer_failover: "{\"cli\":\"github copilot\",\"model\":\"default\"}"
-engineer_crash_log: "[{\"cli\":\"github copilot\",\"model\":\"default\",\"at\":\"2026-11-22T01:08:12.028Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 The new desktop board search (#1259) sits on its own row below the page title, takes a lot of width, and shows a redundant 'Search: web' chip under it while typing.
