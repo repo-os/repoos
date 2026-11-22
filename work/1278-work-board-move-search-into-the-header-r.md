@@ -11,7 +11,7 @@ branch: feat/work-board-move-search-into-the-header-r
 cli_override: github copilot
 model_override: default
 created_at: "2026-11-20T08:46:27Z"
-updated_at: "2026-11-22T09:59:06Z"
+updated_at: "2026-11-22T09:59:59Z"
 review_passes: 4
 review_rounds: 2
 handoff_signal_retry_count: 2
@@ -377,3 +377,4 @@ Start from src/ui-app/src/components/BoardQueueSearch.vue and the Work view head
 - 2026-11-22T09:59:04Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
 - 2026-11-22T09:59:06Z · status active→review
 - 2026-11-22T09:59:06Z · message_queued at 2026-11-22T09:59:06.550Z
+- 2026-11-22T09:59:59Z · note: review pass 8: good to go
