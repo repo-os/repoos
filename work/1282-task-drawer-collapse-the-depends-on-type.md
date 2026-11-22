@@ -8,8 +8,10 @@ area: web
 assigned_to: ai
 created_by: t@t
 branch: ""
+cli_override: claude code
+model_override: haiku
 created_at: "2026-11-22T03:22:33Z"
-updated_at: "2026-11-22T03:22:43Z"
+updated_at: "2026-11-22T15:07:01Z"
 ---
 ## Problem
 The metadata block at the top of the task drawer (Depends on picker with a long task list, Type, Priority, Area, Story) takes a large amount of vertical space above the spec. A human rarely edits these, so most of the time it just pushes the content down.
@@ -38,3 +40,4 @@ Start from TaskDrawer.vue and TaskDependencyPicker.vue. This is a requested rede
 - 2026-11-22T03:22:33Z · created · t@t
 - 2026-11-22T03:22:34Z · screenshots
 - 2026-11-22T03:22:43Z · status inbox→ready
+- 2026-11-22T15:07:01Z · cli_override, model_override
