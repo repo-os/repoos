@@ -2,7 +2,7 @@
 id: "1285"
 title: "Task details modal: edits must save when the modal closes"
 type: bug
-status: review
+status: active
 priority: p2
 area: web
 assigned_to: ai
@@ -11,7 +11,8 @@ branch: feat/task-details-modal-edits-must-save-when-
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-22T18:21:14Z"
-updated_at: "2026-11-22T19:03:52Z"
+updated_at: "2026-11-22T19:03:53Z"
+review_rounds: 1
 review_passes: 1
 ---
 ## Problem
@@ -98,3 +99,4 @@ Modal and draft code is in src/ui-app/src/components/TaskDrawer.vue (metaModalOp
 - 2026-11-22T19:03:20Z · message_queued at 2026-11-22T19:03:20.393Z
 - 2026-11-22T19:03:52Z · note: review pass 1: needs some work
 - 2026-11-22T19:03:52Z · message_delivered: 1 message(s)
+- 2026-11-22T19:03:53Z · status review→active
