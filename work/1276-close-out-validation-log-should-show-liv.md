@@ -270,3 +270,4 @@ Related: #1272 (timer should count from validation start). Never touch repoos.to
 - 2026-11-22T09:10:49Z · note: ui verification passed: 1 of 1 shot captured with clean console
 - 2026-11-22T09:10:50Z · message_queued at 2026-11-22T09:10:50.764Z
 - 2026-11-22T09:10:51Z · handoff failed · task-file handoff failed at review · Engineering report draft is missing: .repoos/engineering-report-drafts/1276.md
+- 2026-11-22T09:10:51Z · message_delivered: 2 message(s)
