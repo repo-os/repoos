@@ -11,7 +11,7 @@ branch: feat/work-board-move-search-into-the-header-r
 cli_override: github copilot
 model_override: default
 created_at: "2026-11-20T08:46:27Z"
-updated_at: "2026-11-22T04:06:14Z"
+updated_at: "2026-11-22T04:09:03Z"
 review_rounds: 2
 review_passes: 2
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/mobile-touch-affordances.test.ts > mobile web polish (#1139) > fits landscape phones and 768px tablets without clipping, tests/offline-slow-network-browser.test.ts > slow network and offline QA (#1226) > offline: Work shows a plain-English failure, no endless skeleton, usable at every width, tests/stories-inbox-search-qa-browser.test.ts > #1237 Stories / Inbox / Search QA at 375/768/1280 (WebKit, fixtures) > inbox board fits at 768px with the full 220 long-titled cards on bee — fix it in the feature branch and re-run the gate"
@@ -262,3 +262,4 @@ Start from src/ui-app/src/components/BoardQueueSearch.vue and the Work view head
 - 2026-11-22T04:06:13Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: tests/mobile-touch-affordances.test.ts > mobile web polish (#1139) > fits landscape phones and 768px tablets without clipping, tests/offline-slow-network-browser.test.ts > slow network and offline QA (#1226) > offline: Work shows a plain-English failure, no endless skeleton, usable at every width, tests/stories-inbox-search-qa-browser.test.ts > #1237 Stories / Inbox / Search QA at 375/768/1280 (WebKit, fixtures) > inbox board fits at 768px with the full 220 long-titled cards on bee — fix it in the feature branch and re-run the gate
 - 2026-11-22T04:06:14Z · note: review pass 5: needs some work
 - 2026-11-22T04:06:14Z · status review→active
+- 2026-11-22T04:09:03Z · CTO nudge: held — remote validation is running
