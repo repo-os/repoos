@@ -12,7 +12,7 @@ branch: feat/close-out-validation-log-should-show-liv
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T07:42:21Z"
-updated_at: "2026-11-22T10:02:19Z"
+updated_at: "2026-11-22T10:02:24Z"
 last_close_out_gate_ms: 915882
 last_close_out_gate_at: "2026-11-22T10:02:19.573Z"
 review_passes: 8
@@ -283,4 +283,4 @@ Related: #1272 (timer should count from validation start). Never touch repoos.to
 - 2026-11-22T09:46:48Z · note: review pass 13: good to go
 - 2026-11-22T09:46:49Z · message_queued at 2026-11-22T09:46:49.692Z
 - 2026-11-22T10:02:19Z · close-out gate completed in 916s
-
+- 2026-11-22T10:02:24Z · message_dropped: 1 queued message(s) discarded — task is done
