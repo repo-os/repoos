@@ -3,6 +3,9 @@ id: "1278"
 title: "Work board: move search into the header row, half width, drop the search chip"
 type: feature
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "• Run 'gh auth login' to authenticate with the GitHub CLI. Open Raw CLI error for details. (CLI: • Run 'gh auth login' to authenticate with the GitHub CLI)"
 priority: p2
 area: web
 assigned_to: ai
@@ -11,14 +14,14 @@ branch: feat/work-board-move-search-into-the-header-r
 cli_override: github copilot
 model_override: default
 created_at: "2026-11-20T08:46:27Z"
-updated_at: "2026-11-22T01:08:11Z"
+updated_at: "2026-11-22T01:08:12Z"
 handoff_signal_retry_count: 2
 review_rounds: 1
 review_passes: 1
 review_failed_report_retries: 0
-dev_error_count: 16
+dev_error_count: 17
 engineer_failover: "{\"cli\":\"github copilot\",\"model\":\"default\"}"
-engineer_crash_log: "[{\"cli\":\"github copilot\",\"model\":\"default\",\"at\":\"2026-11-21T22:02:21.911Z\",\"kind\":\"dev-error\"}]"
+engineer_crash_log: "[{\"cli\":\"github copilot\",\"model\":\"default\",\"at\":\"2026-11-22T01:08:12.028Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 The new desktop board search (#1259) sits on its own row below the page title, takes a lot of width, and shows a redundant 'Search: web' chip under it while typing.
@@ -247,3 +250,5 @@ Start from src/ui-app/src/components/BoardQueueSearch.vue and the Work view head
 - 2026-11-22T00:33:17Z · CTO nudge: held — machine under pressure (CPU idle is 0% (below 5%) — holding new work until the machine has idle CPU; system load is high (3.4× per CPU, limit 3×) — waiting for headroom before starting more work)
 - 2026-11-22T00:50:35Z · CTO nudge: held — machine under pressure (CPU idle is 2% (below 5%) — holding new work until the machine has idle CPU; system load is high (5.9× per CPU, limit 3×) — waiting for headroom before starting more work)
 - 2026-11-22T01:08:11Z · CTO nudge: held — machine under pressure (CPU idle is 4% (below 5%) — holding new work until the machine has idle CPU; system load is high (5.4× per CPU, limit 3×) — waiting for headroom before starting more work)
+- 2026-11-22T01:08:11Z · agent exited with an error (copilot) · • Run 'gh auth login' to authenticate with the GitHub CLI. Open Raw CLI error for details. (CLI: • Run 'gh auth login' to authenticate with the GitHub CLI)
+- 2026-11-22T01:08:12Z · engineer crash recovery: resuming github copilot + default (1/3 crashes in 30m) · • Run 'gh auth login' to authenticate with the GitHub CLI. Open Raw CLI error for details. (CLI: • Run 'gh auth login' to authenticate with the GitHub CLI)
