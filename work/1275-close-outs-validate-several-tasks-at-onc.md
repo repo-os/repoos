@@ -11,7 +11,7 @@ branch: feat/close-outs-validate-several-tasks-at-onc
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T07:42:13Z"
-updated_at: "2026-11-22T10:07:07Z"
+updated_at: "2026-11-22T10:07:08Z"
 review_rounds: 2
 review_passes: 2
 last_check_failure: "repoos check at 2026-11-22T08:35:01.967Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Pipeline shows a job validating alongside the active close-out (Also running) (target \"default\"): state \"integration:parallelValidations\" did not render on target \"default\" — /checks?tab=now shows no task card (http://127.0.0.1:45407/checks?tab=now&shotState=integration%3AparallelValidations)"
@@ -523,3 +523,4 @@ Read docs/close-out-pipeline.md and docs/remote-validation.md first. Never touch
 - 2026-11-22T10:06:52Z · queued message undelivered for 4m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-22T10:07:07Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code unknown) · last assistant: The scoped `repoos check` is still running, at 195 of 622 tests and passing so far. A Monitor is watching for its exit, and I'll read the result when it reports. I haven't requested handoff yet, because the check hasn't passed. · stderr: (empty)
 - 2026-11-22T10:07:07Z · status active→review
+- 2026-11-22T10:07:08Z · message_delivered: 1 message(s)
