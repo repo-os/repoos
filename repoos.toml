@@ -461,6 +461,7 @@ workflow = ".github/workflows/release.yml"
 # Keys: name (required), kind (npm | homebrew | github-release | custom),
 # url (source link; {tag}/{version} allowed), package, repository, versionUrl,
 # versionRegex, install (one-line array of independently copyable commands).
+notesWhenReady = "publish"
 [[distribution]]
 name = "GitHub Releases"
 kind = "github-release"
