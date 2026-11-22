@@ -375,3 +375,4 @@ Start from src/ui-app/src/components/BoardQueueSearch.vue and the Work view head
 - 2026-11-22T09:26:52Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: tests/offline-slow-network-browser.test.ts > slow network and offline QA (#1226) > offline: Work shows a plain-English failure, no endless skeleton, usable at every width, tests/stories-inbox-search-qa-browser.test.ts > #1237 Stories / Inbox / Search QA at 375/768/1280 (WebKit, fixtures) > inbox board fits at 768px with the full 220 long-titled cards, tests/stories-inbox-search-qa-browser.test.ts > #1237 Stories / Inbox / Search QA at 375/768/1280 (WebKit, fixtures) > inbox board fits at 1280px with the full 220 long-titled cards on bee — fix it in the feature branch and re-run the gate
 - 2026-11-22T09:26:53Z · note: review pass 7: good to go
 - 2026-11-22T09:29:08Z · status review→active
+- 2026-11-22T09:31:50Z · note: handoff requested (cli)
