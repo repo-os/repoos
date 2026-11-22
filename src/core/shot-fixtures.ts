@@ -55,7 +55,7 @@ export const SHOT_PREVIEW_FIXTURE_IDS = [
   "integration:median15",
   // #1275 — an active close-out, one job validating alongside it, and one queued
   // behind both, so the pipeline shows "Also running" and a publish-order position.
-  "integration:parallelValidations",
+  "pipeline:parallelValidations",
   "card:doneError",
   "board:withReviewTask",
   // #1183 — first-run Work queue with no task cards.

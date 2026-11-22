@@ -551,7 +551,7 @@ const TASK_CHECK_PROGRESS_FIXTURES: ReadonlySet<ShotPreviewFixtureId> = new Set(
   "card:handoffStaleActive",
   "drawer:checksProgress",
   "pipeline:checksProgress",
-  "integration:parallelValidations",
+  "pipeline:parallelValidations",
 ]);
 
 /** Preview fixtures that pin a live `taskChecks` row on #9999 (#1054 pipeline shot). */
@@ -1776,7 +1776,7 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
       ];
       break;
     }
-    case "integration:parallelValidations": {
+    case "pipeline:parallelValidations": {
       // A running task card, so the Checks "now" tab has a card to show (#1275).
       ensureFixtureTask(repo, "active", {
         title: "Close-out validating alongside the active one",
