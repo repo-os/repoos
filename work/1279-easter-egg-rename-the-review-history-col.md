@@ -3,6 +3,9 @@ id: "1279"
 title: "Easter eggs bundle: rename review history column to Issues"
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: `needs some work` — the fit fallback abbreviates feature when the full label fits.
 human_step_override: Cleared needs-human-step flag (sticky until acceptance criteria change)
 human_step_override_key: 8dbfd6ac
 priority: p3
@@ -123,3 +126,4 @@ Copy change only. Never touch repoos.toml. Headless Playwright only.
 - 2026-11-22T13:21:19Z · status active→review
 - 2026-11-22T13:30:02Z · note: ui verification passed: 2 of 2 shots captured with clean console (1 shot warning)
 - 2026-11-22T13:30:04Z · note: review pass 4: needs some work
+- 2026-11-22T13:30:04Z · needs_input
