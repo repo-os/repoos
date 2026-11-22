@@ -1,4 +1,6 @@
 ---
+check_retry_count: 2
+last_check_failure: "repoos check at 2026-11-22T15:39:50.253Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 id: "1279"
 title: "Easter eggs bundle: rename review history column to Issues"
 type: feature
@@ -18,8 +20,6 @@ model_override: haiku
 created_at: "2026-11-20T10:35:33Z"
 updated_at: "2026-11-22T15:39:50Z"
 review_failed_report_retries: 2
-check_retry_count: 1
-last_check_failure: "repoos check at 2026-11-22T15:18:08.488Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_passes: 6
 handoff_signal_retry_count: 1
 review_rounds: 2
@@ -171,3 +171,4 @@ Copy change only. Never touch repoos.toml. Headless Playwright only.
 - 2026-11-22T15:39:47Z · message_queued at 2026-11-22T15:39:47.105Z
 - 2026-11-22T15:39:47Z · note: shots: failed — browser capture cancelled
 - 2026-11-22T15:39:50Z · message_delivered: 1 message(s)
+
