@@ -130,6 +130,11 @@ export interface IntegrationRunningEntry {
   startedAt: string | null;
   lastProgressAt?: string | null;
   failed?: boolean;
+  attempt?: number;
+  step?: string | null;
+  host?: string | null;
+  progressStale?: boolean;
+  previousFailure?: { attempt: number; reason?: string; failedAt?: string } | null;
 }
 
 /** The running entry for `taskId`, or null when that job has not started. */
@@ -250,9 +255,7 @@ export function integrationProgressCardLabel(label: string): string {
  * "on <host> · attempt N" for the active attempt (#1276). Host is named when it
  * is a remote runner; every attempt is identified, including attempt one.
  */
-export function integrationAttemptContext(
-  active: NonNullable<IntegrationPipelineSnapshot["active"]>,
-): string {
+export function integrationAttemptContext(active: IntegrationRunningEntry): string {
   const parts: string[] = [];
   if (active.host) parts.push(active.host === "local" ? "local" : `on ${active.host}`);
   if (active.attempt) parts.push(`attempt ${active.attempt}`);
@@ -263,9 +266,7 @@ export function integrationAttemptContext(
  * Why this attempt is running again (#1276): the reason the attempt it replaced
  * failed. Null for a first attempt or when no reason was recorded.
  */
-export function integrationRetryNote(
-  active: NonNullable<IntegrationPipelineSnapshot["active"]>,
-): string | null {
+export function integrationRetryNote(active: IntegrationRunningEntry): string | null {
   const prev = active.previousFailure;
   if (!active.attempt || active.attempt <= 1 || !prev) return null;
   const reason = prev.reason?.split("\n")[0]?.trim();
@@ -300,7 +301,7 @@ export function integrationActiveCopy(
 }
 
 function integrationActiveCopyBase(
-  active: NonNullable<IntegrationPipelineSnapshot["active"]>,
+  active: IntegrationRunningEntry,
   nowMs: number,
   stallMs: number,
 ): IntegrationActiveCopy {

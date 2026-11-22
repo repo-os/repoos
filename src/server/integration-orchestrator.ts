@@ -822,15 +822,21 @@ export function parseCheckTestProgress(text: string): { done: number; total: num
  */
 export function shiftBudgetAnchorPastWait(
   anchorNs: string | null | undefined,
-  parkedSinceIso: string | null | undefined,
-  nowMs: number,
+  parkedAtNs: string | null | undefined,
   nowNs: bigint,
 ): string | null {
-  if (!anchorNs || !parkedSinceIso) return null;
-  const parkedSince = Date.parse(parkedSinceIso);
-  if (!Number.isFinite(parkedSince)) return null;
-  const waitedNs = BigInt(Math.max(0, Math.round((nowMs - parkedSince) * 1e6)));
-  let shifted = BigInt(anchorNs) + waitedNs;
+  if (!anchorNs || !parkedAtNs) return null;
+  let parkedAt: bigint;
+  let anchor: bigint;
+  try {
+    parkedAt = BigInt(parkedAtNs);
+    anchor = BigInt(anchorNs);
+  } catch {
+    return null;
+  }
+  // A mark from a previous boot (clock went backwards) is unusable.
+  if (parkedAt > nowNs) return null;
+  let shifted = anchor + (nowNs - parkedAt);
   if (shifted > nowNs) shifted = nowNs;
   return shifted.toString();
 }
@@ -1530,6 +1536,57 @@ export class CloseOutOrchestrator {
     return { ok: false, reason: CANCEL_REASON };
   }
 
+  /**
+   * Fail a job whose run kept crashing, through the normal failure path so the
+   * candidate is torn down, the review lock restored and the task's review
+   * status preserved (#1275 review). Throws when there is nothing to fail.
+   */
+  async failCrashed(taskId: string, reason: string): Promise<void> {
+    const job = this.coordinator.getJob(taskId);
+    if (!job || job.phase === "done" || job.phase === PHASE_FAILED) return;
+    this.ownedAttempt = job.attempt ?? jobAttempt(job);
+    await this.failOrReconcile(job, job.phase, reason);
+    const after = this.coordinator.getJob(taskId);
+    if (after && after.phase !== PHASE_FAILED && after.phase !== "done") {
+      throw new Error("crashed close-out could not be failed");
+    }
+  }
+
+  /**
+   * Run `fn` while holding the publish locks that own the live main checkout
+   * (#1275 review). With several close-outs in flight, any write to main outside
+   * a lock can collide with another job's publish. Returns false (and runs
+   * nothing) when the locks cannot be taken in time. Reentrancy-safe: it is only
+   * called when this task does not already hold them.
+   */
+  private async withMainCheckout(
+    taskId: string,
+    fn: () => void | Promise<void>,
+    waitMs = 90_000,
+  ): Promise<boolean> {
+    const deadline = Date.now() + waitMs;
+    let haveRepo = !this.repoLock;
+    let haveRoot = !this.rootLock;
+    while (Date.now() < deadline) {
+      if (!haveRepo && this.repoLock?.acquire(taskId)) haveRepo = true;
+      if (haveRepo && !haveRoot && this.rootLock?.acquire(taskId, "close-out")) haveRoot = true;
+      if (haveRepo && haveRoot) break;
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+    if (!(haveRepo && haveRoot)) {
+      if (haveRepo) this.repoLock?.release(taskId);
+      this.logger?.integration(taskId, "warn", "main checkout busy — skipped a bookkeeping write");
+      return false;
+    }
+    try {
+      await fn();
+      return true;
+    } finally {
+      if (this.rootLock) this.rootLock.release(taskId);
+      if (this.repoLock) this.repoLock.release(taskId);
+    }
+  }
+
   private async failOrReconcile(
     job: IntegrationJob,
     failedPhase: JobPhase,
@@ -1577,12 +1634,14 @@ export class CloseOutOrchestrator {
       this.ownedAttempt,
     );
     if (!recorded) return { ok: false, reason };
-    restoreWorktreeReviewLockAfterFailedCloseOut(
-      this.config.root,
-      this.config.cacheDir ?? ".repoos",
-      job.taskId,
-    );
-    await preserveClosingTaskReviewStatusOnMain(this.config, job.taskId, this.getTask);
+    await this.withMainCheckout(job.taskId, async () => {
+      restoreWorktreeReviewLockAfterFailedCloseOut(
+        this.config.root,
+        this.config.cacheDir ?? ".repoos",
+        job.taskId,
+      );
+      await preserveClosingTaskReviewStatusOnMain(this.config, job.taskId, this.getTask);
+    });
     // A budget-exhausted close-out is recorded as a `failed` job (so it stays
     // retryable) but reported as a distinct `timedOut` outcome (#0640): the
     // bell's advice differs from a real gate failure.
@@ -1907,16 +1966,20 @@ export class CloseOutOrchestrator {
         // fail here while main is still untouched.
         if (this.pipelineTimedOut(job)) return this.timeoutJob(job);
         if (validateRes.gateDurationMs && validateRes.gateDurationMs > 0) {
-          recordCloseOutGateTimingStats(
-            this.config.root,
-            this.config.cacheDir,
-            validateRes.gateDurationMs,
-          );
+          const gateMs = validateRes.gateDurationMs;
+          recordCloseOutGateTimingStats(this.config.root, this.config.cacheDir, gateMs);
           const absPath =
             this.getTask?.(job.taskId)?.absPath ??
             findTaskFileById(root, this.config.workDir, job.taskId);
           if (absPath) {
-            recordTaskCloseOutGateDuration(this.config, absPath, validateRes.gateDurationMs);
+            // The bookkeeping commit writes to main: take the publish locks so it
+            // cannot collide with another job's publish (#1275 review). Visibility
+            // only, so a short wait is enough.
+            await this.withMainCheckout(
+              job.taskId,
+              () => recordTaskCloseOutGateDuration(this.config, absPath, gateMs),
+              15_000,
+            );
           }
         }
         const promoted = this.coordinator.updateJob(
@@ -1924,6 +1987,7 @@ export class CloseOutOrchestrator {
           {
             phase: "publishing",
             candidateSha: validateRes.candidateSha,
+            parkedAtNs: process.hrtime.bigint().toString(),
           },
           this.ownedAttempt,
         );
@@ -1960,14 +2024,16 @@ export class CloseOutOrchestrator {
             job.budgetMonotonicStartNs;
           const shifted = shiftBudgetAnchorPastWait(
             anchorNs,
-            job.phaseStartedAt,
-            Date.now(),
+            this.coordinator.getJob(job.taskId)?.parkedAtNs ?? job.parkedAtNs,
             process.hrtime.bigint(),
           );
-          if (shifted) {
+          // Clear the mark whether or not it shifted, so it is used once.
+          {
             const turn = this.coordinator.updateJob(
               job.taskId,
-              { budgetMonotonicStartNs: shifted },
+              shifted
+                ? { budgetMonotonicStartNs: shifted, parkedAtNs: null }
+                : { parkedAtNs: null },
               this.ownedAttempt,
             );
             if (!turn) return { ok: false, reason: "close-out attempt superseded before publish" };

@@ -193,7 +193,7 @@ import {
   conflictResolutionSnapshot,
   createResolutionProvenanceStore,
 } from "../conflict-resolution.js";
-import { jobAttempt, pendingCloseOutJobs } from "../integration-job.js";
+import { isParkedPublisher, jobAttempt, pendingCloseOutJobs } from "../integration-job.js";
 import { progressIsStale } from "../close-out-progress.js";
 import { createCloseOutOutcomeStore } from "../close-out-outcome.js";
 import { resolvePipelineCheckPlan } from "../check-plan-info.js";
@@ -4787,6 +4787,7 @@ export const getIntegrationJob: RouteHandler = (ctx, _req, res, params) => {
       progressStale:
         job.phase !== "done" &&
         job.phase !== "failed" &&
+        !isParkedPublisher(jobCoordinator.allJobs(), job) &&
         progressIsStale(
           job.lastProgressAt ?? (job.progressLogPath ? job.startedAt : null),
           Date.now(),

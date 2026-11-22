@@ -1458,6 +1458,11 @@ export interface IntegrationPipelineSnapshot {
     startedAt: string | null;
     lastProgressAt?: string | null;
     detail: string | null;
+    attempt?: number;
+    step?: string | null;
+    host?: string | null;
+    progressStale?: boolean;
+    previousFailure?: { attempt: number; reason?: string; failedAt?: string } | null;
   }[];
   /** Task ids queued behind the active job, in FIFO order (not yet started). */
   queue: string[];

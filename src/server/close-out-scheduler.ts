@@ -39,9 +39,11 @@ export interface CloseOutSchedulerOptions {
   /**
    * Called once when a job's run has thrown {@link MAX_RUN_CRASHES} times in a
    * row. The owner must take the job out of the queue (fail it), or publication
-   * behind it would wait on a job that can never finish.
+   * behind it would wait on a job that can never finish. If the hand-off throws
+   * or rejects, the job is not abandoned: it is retried after a long backoff and
+   * handed off again on its next crash.
    */
-  onGiveUp?: (taskId: string, error: unknown) => void;
+  onGiveUp?: (taskId: string, error: unknown) => void | Promise<void>;
   /** Clock, injectable for tests. */
   now?: () => number;
 }
@@ -128,16 +130,21 @@ export class CloseOutScheduler {
         this.crashes.delete(taskId);
         this.coolingUntil.delete(taskId);
       })
-      .catch((error: unknown) => {
+      .catch(async (error: unknown) => {
         const count = (this.crashes.get(taskId) ?? 0) + 1;
         if (count >= MAX_RUN_CRASHES) {
           this.crashes.delete(taskId);
           this.coolingUntil.delete(taskId);
           this.abandoned.add(taskId);
           try {
-            this.options.onGiveUp?.(taskId, error);
+            await this.options.onGiveUp?.(taskId, error);
           } catch {
-            /* giving up must never throw into the scheduler */
+            // The hand-off failed, so the job is still pending in the queue.
+            // Do not abandon it for good: back off long, and give up again on
+            // its very next crash.
+            this.abandoned.delete(taskId);
+            this.crashes.set(taskId, MAX_RUN_CRASHES - 1);
+            this.coolingUntil.set(taskId, (this.options.now ?? Date.now)() + CRASH_BACKOFF_MAX_MS);
           }
           return;
         }

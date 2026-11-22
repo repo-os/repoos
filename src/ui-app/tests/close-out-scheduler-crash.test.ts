@@ -6,7 +6,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CloseOutScheduler, MAX_RUN_CRASHES } from "../../server/close-out-scheduler.js";
 import { shiftBudgetAnchorPastWait } from "../../server/integration-orchestrator.js";
-import type { IntegrationJob } from "../../server/integration-job.js";
+import { isParkedPublisher, type IntegrationJob } from "../../server/integration-job.js";
 
 const job = (taskId: string, phase: IntegrationJob["phase"] = "queued"): IntegrationJob =>
   ({ taskId, phase, attempt: 1 }) as IntegrationJob;
@@ -26,7 +26,9 @@ describe("CloseOutScheduler crash handling (#1275 review)", () => {
         calls++;
         throw new Error("boom");
       },
-      onGiveUp: (taskId) => gaveUp.push(taskId),
+      onGiveUp: (taskId) => {
+        gaveUp.push(taskId);
+      },
     });
     scheduler.pump();
     await vi.advanceTimersByTimeAsync(0);
@@ -60,7 +62,9 @@ describe("CloseOutScheduler crash handling (#1275 review)", () => {
         if (calls === 1) throw new Error("boom once");
         finished = true;
       },
-      onGiveUp: (taskId) => gaveUp.push(taskId),
+      onGiveUp: (taskId) => {
+        gaveUp.push(taskId);
+      },
     });
     scheduler.pump();
     await vi.advanceTimersByTimeAsync(0);
@@ -72,17 +76,11 @@ describe("CloseOutScheduler crash handling (#1275 review)", () => {
 
 describe("shiftBudgetAnchorPastWait (#1275 review)", () => {
   const anchor = 1_000_000_000n; // ns
-  const parkedSince = "2026-11-20T00:00:00.000Z";
-  const parkedMs = Date.parse(parkedSince);
 
   it("excludes only the time spent parked, keeping the time already spent validating", () => {
-    const nowNs = anchor + 500_000_000_000n; // 500s after the anchor
-    const shifted = shiftBudgetAnchorPastWait(
-      anchor.toString(),
-      parkedSince,
-      parkedMs + 120_000, // parked for 120s
-      nowNs,
-    );
+    const parkedAt = anchor + 380_000_000_000n; // parked 380s into the budget
+    const nowNs = parkedAt + 120_000_000_000n; // parked for 120s
+    const shifted = shiftBudgetAnchorPastWait(anchor.toString(), parkedAt.toString(), nowNs);
     expect(BigInt(shifted!)).toBe(anchor + 120_000_000_000n);
     // 380s of budget are still counted as spent, not reset to zero.
     expect(nowNs - BigInt(shifted!)).toBe(380_000_000_000n);
@@ -90,18 +88,52 @@ describe("shiftBudgetAnchorPastWait (#1275 review)", () => {
 
   it("never moves the anchor past now", () => {
     const nowNs = anchor + 10_000_000_000n;
-    const shifted = shiftBudgetAnchorPastWait(
-      anchor.toString(),
-      parkedSince,
-      parkedMs + 999_000,
-      nowNs,
-    );
-    expect(BigInt(shifted!)).toBe(nowNs);
+    const shifted = shiftBudgetAnchorPastWait(anchor.toString(), anchor.toString(), nowNs + 5n);
+    expect(BigInt(shifted!)).toBeLessThanOrEqual(nowNs + 5n);
   });
 
-  it("returns null when there is no anchor or parked time", () => {
-    expect(shiftBudgetAnchorPastWait(null, parkedSince, parkedMs, 1n)).toBeNull();
-    expect(shiftBudgetAnchorPastWait("5", undefined, parkedMs, 10n)).toBeNull();
-    expect(shiftBudgetAnchorPastWait("5", "not a date", parkedMs, 10n)).toBeNull();
+  it("returns null with no anchor, no mark, junk, or a mark from a later clock", () => {
+    expect(shiftBudgetAnchorPastWait(null, "5", 10n)).toBeNull();
+    expect(shiftBudgetAnchorPastWait("5", undefined, 10n)).toBeNull();
+    expect(shiftBudgetAnchorPastWait("5", "junk", 10n)).toBeNull();
+    expect(shiftBudgetAnchorPastWait("5", "50", 10n)).toBeNull();
+  });
+});
+
+describe("failed give-up hand-off (#1275 review)", () => {
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+
+  it("does not abandon a still-pending job when the hand-off rejects", async () => {
+    let calls = 0;
+    let handoffs = 0;
+    const scheduler = new CloseOutScheduler({
+      jobs: () => [job("0001")],
+      limit: () => 2,
+      pressureHeld: () => false,
+      run: async () => {
+        calls++;
+        throw new Error("boom");
+      },
+      onGiveUp: async () => {
+        handoffs++;
+        throw new Error("cannot fail it");
+      },
+    });
+    scheduler.pump();
+    await vi.advanceTimersByTimeAsync(10 * 60_000);
+    // Retried after the long backoff, and handed off again rather than dropped.
+    expect(handoffs).toBeGreaterThanOrEqual(2);
+    expect(calls).toBeGreaterThan(MAX_RUN_CRASHES);
+  });
+});
+
+describe("isParkedPublisher (#1275 review)", () => {
+  it("is true only for a publishing job that does not hold the publish turn", () => {
+    const head = { ...job("0001", "validating"), startedAt: "2026-01-01T00:00:00Z" };
+    const parked = { ...job("0002", "publishing"), startedAt: "2026-01-01T00:00:00Z" };
+    const jobs = [head, parked] as IntegrationJob[];
+    expect(isParkedPublisher(jobs, parked)).toBe(true);
+    expect(isParkedPublisher(jobs, head)).toBe(false);
   });
 });

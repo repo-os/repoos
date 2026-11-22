@@ -67,6 +67,13 @@ export interface IntegrationJob {
    * budget uses monotonic elapsed time so system sleep does not consume it.
    */
   budgetMonotonicStartNs?: string | null;
+  /**
+   * `process.hrtime.bigint()` when the job finished validating and entered
+   * `publishing` (#1275). The wait for the publish turn is measured from it on
+   * the same monotonic clock as the budget, and it is cleared once used so a
+   * restart can never shift the budget anchor twice.
+   */
+  parkedAtNs?: string | null;
   /** Main checkout SHA at validation start (null if not yet validated) */
   baseMainSha: string | null;
   /** Feature branch SHA being merged */
@@ -162,6 +169,14 @@ export function publishTurnTaskId(jobs: IntegrationJob[]): string | null {
 }
 
 /** Whether `taskId` may publish now (see {@link publishTurnTaskId}). */
+/**
+ * A job that finished validating and waits for its publish turn writes no
+ * progress on purpose, so it must never be judged stalled (#1275 review).
+ */
+export function isParkedPublisher(jobs: IntegrationJob[], job: IntegrationJob): boolean {
+  return job.phase === "publishing" && !hasPublishTurn(jobs, job.taskId);
+}
+
 export function hasPublishTurn(jobs: IntegrationJob[], taskId: string): boolean {
   return publishTurnTaskId(jobs) === taskId;
 }
@@ -382,6 +397,7 @@ function readJob(root: string, taskId: string): IntegrationJob | null {
       // The monotonic budget anchor must survive every read-modify-write, or a
       // retry (advanceAttempt, resync) would restart the close-out deadline (#0573, #1276).
       budgetMonotonicStartNs: stored.budgetMonotonicStartNs,
+      parkedAtNs: stored.parkedAtNs,
       baseMainSha: stored.baseMainSha,
       branchSha: stored.branchSha,
       handoffSha: stored.handoffSha ?? null,

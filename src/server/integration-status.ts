@@ -9,6 +9,7 @@
  */
 import {
   attemptIsExecuting,
+  isParkedPublisher,
   jobAttempt,
   type IntegrationJob,
   type IntegrationPhaseTiming,
@@ -95,6 +96,12 @@ export interface IntegrationSnapshot {
     /** When this job last reported progress (ISO), for its own stall timer. */
     lastProgressAt: string | null;
     detail: string | null;
+    /** Attempt, host, step and retry reason, as for the active job (#1276). */
+    attempt?: number;
+    step?: string | null;
+    host?: string | null;
+    progressStale?: boolean;
+    previousFailure?: IntegrationJob["previousFailure"] | null;
   }[];
   /** Task ids queued behind the active job, in FIFO order (not yet started). */
   queue: string[];
@@ -217,8 +224,18 @@ export function buildIntegrationSnapshot(
         phase: job.phase,
         stage: stageForJob(job, reported[job.taskId]),
         startedAt: job.startedAt,
-        lastProgressAt: reportedAt[job.taskId] ?? job.startedAt,
+        lastProgressAt: latestIso(reportedAt[job.taskId], job.lastProgressAt) ?? job.startedAt,
         detail: reportedDetail[job.taskId] ?? null,
+        attempt: jobAttempt(job),
+        step: job.step ?? null,
+        host: job.host ?? null,
+        progressStale:
+          !isParkedPublisher(live, job) &&
+          progressIsStale(
+            job.lastProgressAt ?? (job.progressLogPath ? job.startedAt : null),
+            Date.parse(at),
+          ),
+        previousFailure: job.previousFailure ?? null,
       });
       continue;
     }
@@ -274,10 +291,12 @@ export function buildIntegrationSnapshot(
   // timestamp means its first write failed: judge it from the attempt start so
   // the card cannot look healthy forever (#1276). A legacy record without a
   // progress log is still not flagged.
-  const progressStale = progressIsStale(
-    inFlight.lastProgressAt ?? (inFlight.progressLogPath ? startedAt : null),
-    nowMs,
-  );
+  const progressStale =
+    !isParkedPublisher(live, inFlight) &&
+    progressIsStale(
+      inFlight.lastProgressAt ?? (inFlight.progressLogPath ? startedAt : null),
+      nowMs,
+    );
   const activePhaseStartedAt = inFlight.phaseStartedAt ?? startedAt;
   const activeElapsed = Number.isFinite(nowMs) ? nowMs - Date.parse(activePhaseStartedAt) : null;
   return {

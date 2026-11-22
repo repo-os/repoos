@@ -1981,17 +1981,14 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   };
 
   // A job whose run keeps crashing is failed so it leaves the queue (#1275).
-  const failCrashedCloseOut = (taskId: string, error: unknown): void => {
+  const failCrashedCloseOut = async (taskId: string, error: unknown): Promise<void> => {
     const job = jobCoordinator.getJob(taskId);
     if (!job || job.phase === "done" || job.phase === "failed") return;
     const message = error instanceof Error ? error.message : String(error);
     const reason = `close-out run crashed repeatedly: ${message}`;
-    jobCoordinator.updateJob(taskId, {
-      phase: "failed",
-      failedPhase: job.phase,
-      failedAt: new Date().toISOString(),
-      reason,
-    });
+    // The normal failure path: candidate teardown, review-lock restore, board
+    // status preserved. A throw here is surfaced so the scheduler retries.
+    await newCloseOutOrchestrator(taskId).failCrashed(taskId, reason);
     emitEvent({
       type: "task.progress",
       id: taskId,
