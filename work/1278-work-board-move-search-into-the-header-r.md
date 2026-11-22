@@ -11,7 +11,7 @@ branch: feat/work-board-move-search-into-the-header-r
 cli_override: github copilot
 model_override: default
 created_at: "2026-11-20T08:46:27Z"
-updated_at: "2026-11-22T04:56:50Z"
+updated_at: "2026-11-22T05:02:00Z"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/offline-slow-network-browser.test.ts > slow network and offline QA (#1226) > offline: Work shows a plain-English failure, no endless skeleton, usable at every width, tests/stories-inbox-search-qa-browser.test.ts > #1237 Stories / Inbox / Search QA at 375/768/1280 (WebKit, fixtures) > inbox board fits at 768px with the full 220 long-titled cards, tests/stories-inbox-search-qa-browser.test.ts > #1237 Stories / Inbox / Search QA at 375/768/1280 (WebKit, fixtures) > inbox board fits at 1280px with the full 220 long-titled cards on bee — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: b82b94b4282965a56d2c19c1572c5d1888a6a31c
 review_rounds: 2
@@ -276,3 +276,4 @@ Start from src/ui-app/src/components/BoardQueueSearch.vue and the Work view head
 - 2026-11-22T04:56:50Z · message_queued at 2026-11-22T04:56:50.224Z
 - 2026-11-22T04:56:50Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: tests/offline-slow-network-browser.test.ts > slow network and offline QA (#1226) > offline: Work shows a plain-English failure, no endless skeleton, usable at every width, tests/stories-inbox-search-qa-browser.test.ts > #1237 Stories / Inbox / Search QA at 375/768/1280 (WebKit, fixtures) > inbox board fits at 768px with the full 220 long-titled cards, tests/stories-inbox-search-qa-browser.test.ts > #1237 Stories / Inbox / Search QA at 375/768/1280 (WebKit, fixtures) > inbox board fits at 1280px with the full 220 long-titled cards on bee — fix it in the feature branch and re-run the gate
 - 2026-11-22T04:56:50Z · message_delivered: 1 message(s)
+- 2026-11-22T05:02:00Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: **Handoff blocked:** remote WebKit still reports horizontal overflow, although the affected tests pass locally. The check made the worktree read-only, so further investigation requires it to return to active. · stderr: (empty)
