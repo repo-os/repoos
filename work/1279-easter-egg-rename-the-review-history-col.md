@@ -94,3 +94,4 @@ Copy change only. Never touch repoos.toml. Headless Playwright only.
 - 2026-11-22T12:26:56Z · CTO nudge: held — handoff gate is running
 - 2026-11-22T12:29:18Z · note: ui verification passed: 2 of 2 shots captured with clean console (1 shot warning)
 - 2026-11-22T12:29:19Z · status active→review
+- 2026-11-22T12:29:19Z · message_queued at 2026-11-22T12:29:19.926Z
