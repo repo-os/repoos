@@ -1,4 +1,6 @@
 ---
+check_retry_count: 2
+last_check_failure: "repoos check at 2026-11-22T12:15:49.397Z: repoos check failed: ui verification failed: runner result omitted the UI verification record: ui verification: capture of /work failed — screenshot: Timeout 4993.291999999994ms exceeded."
 id: "1277"
 title: Hide the stale-evidence prompt once a task is queued or moving to done
 type: feature
@@ -12,7 +14,6 @@ cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T08:26:19Z"
 updated_at: "2026-11-22T12:15:49Z"
-last_check_failure: "repoos check at 2026-11-22T11:53:55.847Z: repoos check failed: ui verification failed (2 issue(s)): [route] auto: matched src/ui-app/** · phone 390x844: declared route / but the browser landed on /work (login or redirect?) (captured http://127.0.0.1:38563/work) (http://127.0.0.1:38563/work); [route] auto: matched src/ui-app/** · desktop 1280x800: declared route / but the browser landed on /work (login or redirect?) (captured http://127.0.0.1:38563/work) (http://127.0.0.1:38563/work)"
 ---
 ## Problem
 A review card that is already queued for close-out (Moving to done, queued #N) still shows 'Stale evidence is the only finding · repoos verify <id>' and a Refresh evidence button. Once close-out is queued or running the evidence prompt is noise, and clicking it would start a new review on a task that is mid-close-out.
@@ -64,3 +65,4 @@ Also (Nick): on the card and drawer, show only the Refresh evidence button; do n
 - 2026-11-22T12:14:43Z · CTO nudge: held — handoff gate is running
 - 2026-11-22T12:15:46Z · message_queued at 2026-11-22T12:15:46.285Z
 - 2026-11-22T12:15:49Z · message_delivered: 1 message(s)
+
