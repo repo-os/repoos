@@ -3464,6 +3464,9 @@ export const useRepoStore = defineStore("repo", () => {
    * (agent disabled, never reviewed) simply has no report to show.
    */
   async function loadReview(id: string): Promise<void> {
+    // The shot fixture seeds the review history; a fetch for the synthetic id
+    // would replace it with an empty state (#1279).
+    if (isSeededShotFixtureTask(id)) return;
     try {
       const r = await api<{
         ok: boolean;

@@ -445,6 +445,9 @@ describe("review pass selection and identity (#1003)", () => {
     expect(wrapper.findAll(".review-history-row")[0]?.classes()).toContain("is-selected");
     expect(wrapper.findAll(".review-history-row")[0]?.attributes("aria-pressed")).toBe("true");
     expect(wrapper.find(".review-history-reviewer").text()).toBe("Codex");
+    // The last column lists each pass's issue classes (#1279).
+    const headers = wrapper.findAll(".review-history-table th").map((th) => th.text());
+    expect(headers.at(-1)).toBe("Issues");
 
     await wrapper.findAll(".review-history-row")[1]!.trigger("click");
     await flush();
