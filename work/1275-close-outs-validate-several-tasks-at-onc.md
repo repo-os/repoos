@@ -518,3 +518,4 @@ Read docs/close-out-pipeline.md and docs/remote-validation.md first. Never touch
 - 2026-11-22T09:26:44Z · watchdog: restarting engineer because a queued message waited 3m with no live process
 - 2026-11-22T09:26:47Z · message_delivered: 1 message(s)
 - 2026-11-22T10:02:25Z · message_queued at 2026-11-22T10:02:25.346Z
+- 2026-11-22T10:02:25Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
