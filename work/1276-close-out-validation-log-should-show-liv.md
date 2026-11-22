@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-22T07:27:48Z"
-review_passes: 6
 id: "1276"
 title: Close-out validation log should show live progress
 type: feature
@@ -16,6 +14,8 @@ branch: feat/close-out-validation-log-should-show-liv
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T07:42:21Z"
+updated_at: "2026-11-22T07:28:01Z"
+review_passes: 6
 last_check_failure: "repoos check at 2026-11-22T07:13:31.180Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 review_failed_report_retries: 0
 review_rounds: 2
@@ -252,4 +252,4 @@ Related: #1272 (timer should count from validation start). Never touch repoos.to
 - 2026-11-22T07:27:46Z · orphaned run process stopped · pid 50519 · /opt/homebrew/bin/bun /Users/nick/.bun/bin/repoos check · cpu 14s · age 14m
 - 2026-11-22T07:27:47Z · note: review pass 11: needs some work
 - 2026-11-22T07:27:47Z · needs_input
-
+- 2026-11-22T07:28:01Z · orphaned run process stopped · pid 54793 · ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new -o ConnectTimeout=15 -o ServerAliveInterval · cpu 0s · age 13m
