@@ -110,3 +110,4 @@ Modal and draft code is in src/ui-app/src/components/TaskDrawer.vue (metaModalOp
 - 2026-11-22T19:26:47Z · held, held-reason, held-by, held-at
 - 2026-11-22T19:46:42Z · note: ui verification passed: 2 of 2 shots captured with clean console
 - 2026-11-22T19:46:43Z · message_queued at 2026-11-22T19:46:43.465Z
+- 2026-11-22T19:46:43Z · handoff failed · handoff recovery attempted · finalization failed
