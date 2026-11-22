@@ -2,7 +2,7 @@
 id: "1279"
 title: "Easter eggs bundle: rename review history column to Issues"
 type: feature
-status: active
+status: review
 human_step_override: Cleared needs-human-step flag (sticky until acceptance criteria change)
 human_step_override_key: 8dbfd6ac
 priority: p3
@@ -13,7 +13,7 @@ branch: feat/easter-eggs-bundle-rename-review-history
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T10:35:33Z"
-updated_at: "2026-11-22T14:01:37Z"
+updated_at: "2026-11-22T14:02:53Z"
 review_passes: 4
 handoff_signal_retry_count: 1
 review_rounds: 2
@@ -130,3 +130,4 @@ Copy change only. Never touch repoos.toml. Headless Playwright only.
 - 2026-11-22T13:47:12Z · needs_input
 - 2026-11-22T13:47:13Z · message_delivered: 1 message(s)
 - 2026-11-22T14:01:37Z · body
+- 2026-11-22T14:02:53Z · status active→review
