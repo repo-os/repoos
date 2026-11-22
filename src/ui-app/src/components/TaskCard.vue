@@ -30,6 +30,7 @@ import { resolveEffectiveAgent } from "../lib/effective-agent";
 import { closeOutFailureCutoff, isStaleDoneError } from "../lib/closeOutAttempt";
 import {
   integrationActiveCopy,
+  integrationEvidencePromptHidden,
   integrationProgressCardLabel,
   integrationPipelineRole,
   integrationPipelineStalled,
@@ -1051,10 +1052,12 @@ function cardHintUsesLineClamp(h: CardHint): boolean {
 const reviewVerdict = computed(() =>
   parseReviewVerdict(repo.reviewFor(props.task.id)?.report?.markdown),
 );
+/** Hidden while a close-out is queued or running (#1277): a refresh would start a review mid-close-out. */
 const staleEvidenceOnly = computed(() => {
   const report = repo.reviewFor(props.task.id)?.report;
   return (
     props.task.status === "review" &&
+    !integrationEvidencePromptHidden(repo.integration, props.task.id) &&
     report?.state === "ok" &&
     report.markdown.includes("STALE-EVIDENCE-ONLY")
   );
@@ -2046,7 +2049,7 @@ async function openDebuggerFromError(): Promise<void> {
       </button>
       <div v-if="staleEvidenceOnly" class="w-full border-t border-[var(--border)] p-2">
         <p class="px-2 pb-2 text-center font-mono text-[10px] text-[var(--txt-dim)]">
-          Stale evidence is the only finding · <code>repoos verify {{ task.id }}</code>
+          Stale evidence
         </p>
         <button
           type="button"

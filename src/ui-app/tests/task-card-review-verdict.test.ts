@@ -10,7 +10,7 @@ import { mount } from "@vue/test-utils";
 import { createPinia, setActivePinia } from "pinia";
 import TaskCard from "../src/components/TaskCard.vue";
 import { useRepoStore } from "../src/stores/repo";
-import type { Task } from "../src/types";
+import type { IntegrationPipelineSnapshot, Task } from "../src/types";
 
 const makeTask = (over: Partial<Task> = {}): Task => ({
   id: "0001",
@@ -81,7 +81,87 @@ describe("TaskCard review-passed hint reflects the actual verdict", () => {
     expect(wrapper.get('[data-test-id="task-card-refresh-evidence"]').text()).toContain(
       "Refresh evidence",
     );
-    expect(wrapper.text()).toContain("repoos verify 0001");
+    expect(wrapper.text()).toContain("Stale evidence");
+    expect(wrapper.text()).not.toContain("repoos verify");
+  });
+
+  describe("stale-evidence prompt during close-out (#1277)", () => {
+    const stalePinia = (integration: IntegrationPipelineSnapshot | null) => {
+      const pinia = createPinia();
+      setActivePinia(pinia);
+      const repo = useRepoStore();
+      repo.reviews = {
+        "0001": {
+          running: false,
+          enabled: true,
+          lines: [],
+          report: report("## Verdict\nneeds some work. STALE-EVIDENCE-ONLY"),
+        },
+      };
+      repo.integration = integration;
+      return pinia;
+    };
+    const pipeline = (
+      active: IntegrationPipelineSnapshot["active"],
+      queue: string[] = [],
+    ): IntegrationPipelineSnapshot => ({
+      empty: false,
+      queue,
+      at: "2026-11-22T12:00:00.000Z",
+      active,
+    });
+    const job = (over: Partial<NonNullable<IntegrationPipelineSnapshot["active"]>>) => ({
+      taskId: "0001",
+      stage: null,
+      failed: false,
+      startedAt: "2026-11-22T12:00:00.000Z",
+      lastProgressAt: "2026-11-22T12:00:00.000Z",
+      ...over,
+    });
+
+    it("hides the notice and Refresh evidence while queued behind another close-out", () => {
+      const pinia = stalePinia(pipeline(job({ taskId: "0002" }), ["0001"]));
+      const wrapper = mount(TaskCard, {
+        props: { task: makeTask(), dragEnabled: false },
+        global: { plugins: [pinia] },
+      });
+      expect(wrapper.find('[data-test-id="task-card-refresh-evidence"]').exists()).toBe(false);
+      expect(wrapper.text()).not.toContain("Stale evidence");
+    });
+
+    it.each(["syncing", "validating", "publishing", "cleanup"])(
+      "hides the notice and Refresh evidence while the job is in %s",
+      (phase) => {
+        const pinia = stalePinia(pipeline(job({ phase })));
+        const wrapper = mount(TaskCard, {
+          props: { task: makeTask(), dragEnabled: false },
+          global: { plugins: [pinia] },
+        });
+        expect(wrapper.find('[data-test-id="task-card-refresh-evidence"]').exists()).toBe(false);
+        expect(wrapper.text()).not.toContain("Stale evidence");
+      },
+    );
+
+    it("shows the notice and Refresh evidence again after the job fails", () => {
+      const pinia = stalePinia(pipeline(job({ phase: "validating", failed: true })));
+      const wrapper = mount(TaskCard, {
+        props: { task: makeTask(), dragEnabled: false },
+        global: { plugins: [pinia] },
+      });
+      expect(wrapper.get('[data-test-id="task-card-refresh-evidence"]').text()).toContain(
+        "Refresh evidence",
+      );
+      expect(wrapper.text()).toContain("Stale evidence");
+    });
+
+    it("shows the notice when no close-out involves the task", () => {
+      const pinia = stalePinia(pipeline(job({ taskId: "0002", phase: "validating" })));
+      const wrapper = mount(TaskCard, {
+        props: { task: makeTask(), dragEnabled: false },
+        global: { plugins: [pinia] },
+      });
+      expect(wrapper.get('[data-test-id="task-card-refresh-evidence"]').exists()).toBe(true);
+    });
   });
 
   it("shows the green ready hint and glow when the verdict is 'good to go'", () => {
