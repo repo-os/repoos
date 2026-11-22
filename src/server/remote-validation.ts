@@ -381,6 +381,18 @@ export interface ValidateOptions {
    * in-stage upload detail here. Not fired when the upload fails.
    */
   onUploadComplete?: () => void;
+  /**
+   * Fired when the run starts waiting for a host slot and again once it holds
+   * one (#1276). Before this, a run queued for a slot was not registered, so
+   * the close-out could not show the wait.
+   */
+  onSlotState?: (slot: RemoteSlotState) => void;
+  /**
+   * Fired when a host failover retries the run on another host (#1276), with
+   * the failure that caused it. The caller starts a new close-out attempt that
+   * records it.
+   */
+  onRetry?: (reason: string) => void;
   /** Wall-clock / stall caps for bundle upload (#0917). */
   uploadLimits?: BundleUploadLimits;
   /** Host display name for upload progress (#0917). */
@@ -652,6 +664,9 @@ export interface RemoteValidator {
   taskActivity?(taskId: string): RemoteTaskActivity | null;
 }
 
+/** A run's place in the host pool: waiting for a slot, or holding one on a host (#1276). */
+export type RemoteSlotState = { state: "queued" } | { state: "acquired"; host: string };
+
 /** One in-flight remote run, as the slow-run detector (#0720) needs it. */
 export interface ActiveRemoteRunInfo {
   taskId: string;
@@ -663,6 +678,8 @@ export interface ActiveRemoteRunInfo {
   lastProgressAt?: string;
   /** e.g. `bundle`, `upload`, `queue`, `lock`, `run`, `install`, `test`. */
   stage: string | null;
+  /** Live test-file progress parsed from RepoOS check telemetry. */
+  testProgress?: { done: number; total: number };
   uploadBytes: number | null;
   uploadSeconds: number | null;
   /** What the job belongs to (#0897). Absent on older callers → `checks`. */
@@ -733,6 +750,33 @@ export class ActiveRemoteRunRegistry {
   touch(taskId: string): void {
     const run = this.runs.get(taskId);
     if (run) run.lastProgressAt = new Date().toISOString();
+  }
+
+  setTestProgress(taskId: string, done: number, total: number): void {
+    const run = this.runs.get(taskId);
+    if (!run) return;
+    // The runner's combined build-and-test command stays in `run` until its
+    // first test marker. From there the run is testing, so the phase timing and
+    // the close-out step move on to the test stage (#1276 review).
+    if (run.stage === "run") {
+      this.set({ ...run, stage: "test", testProgress: { done, total } }, taskId);
+      return;
+    }
+    run.testProgress = { done, total };
+  }
+}
+
+/** Parse the structured progress marker emitted by the RepoOS test wrapper. */
+function parseTestProgress(output: string): { done: number; total: number } | null {
+  const matches = [...output.matchAll(/::repoos-check-progress::(\{[^\n]+\})/g)];
+  const raw = matches.at(-1)?.[1];
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw) as { testsDone?: unknown; testsTotal?: unknown };
+    if (typeof parsed.testsDone !== "number" || typeof parsed.testsTotal !== "number") return null;
+    return { done: parsed.testsDone, total: parsed.testsTotal };
+  } catch {
+    return null;
   }
 }
 
@@ -4015,6 +4059,9 @@ export class RemoteValidationRunner implements RemoteValidator {
       this.activeRunRegistry.touch(opts.taskId);
       pushTimingOutputChunk(s, fileTimingCollector, caseTimingCollector);
       validateStreamBuf += s;
+      const testProgress = parseTestProgress(validateStreamBuf);
+      if (testProgress)
+        this.activeRunRegistry.setTestProgress(opts.taskId, testProgress.done, testProgress.total);
       recordValidateStartupReapedCaptures(this.config.root, validateStreamBuf, validateReapSeen, {
         host: emitHost.ip || undefined,
         defaultTaskId: opts.taskId,
@@ -6853,6 +6900,15 @@ export class TailscaleRunner implements RemoteValidator {
         ? { ...summary, runnerNotices: [...(summary.runnerNotices ?? []), ...notices] }
         : summary;
 
+    // Slot-wait observation (#1276): an observer that throws never changes the run.
+    const notifySlot = (state: RemoteSlotState): void => {
+      try {
+        opts.onSlotState?.(state);
+      } catch {
+        /* observation only */
+      }
+    };
+
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       let slot: HostSlot;
       try {
@@ -6879,8 +6935,10 @@ export class TailscaleRunner implements RemoteValidator {
               phase: "queued",
               message: note.trim(),
             });
+            notifySlot({ state: "queued" });
           },
         });
+        notifySlot({ state: "acquired", host: slot.host.host });
       } catch (e) {
         if (captureCancelled()) return cancelled();
         const detail = e instanceof Error ? e.message : String(e);
@@ -6972,6 +7030,13 @@ export class TailscaleRunner implements RemoteValidator {
             message: retryNote,
             host: slot.host.host,
           });
+          // The failure is what the next attempt's record shows as the reason
+          // it is running again (#1276); the retry note alone says nothing about it.
+          try {
+            opts.onRetry?.(summary.detail ?? retryNote);
+          } catch {
+            /* observation only */
+          }
           continue; // the slot releases in `finally`
         }
         return summary;
@@ -7487,6 +7552,13 @@ export class TailscaleRunner implements RemoteValidator {
         const emitStream = (s: string): void => {
           this.activeRunRegistry.touch(opts.taskId);
           streamBuf += s;
+          const testProgress = parseTestProgress(streamBuf);
+          if (testProgress)
+            this.activeRunRegistry.setTestProgress(
+              opts.taskId,
+              testProgress.done,
+              testProgress.total,
+            );
           recordValidateStartupReapedCaptures(this.config.root, streamBuf, validateReapSeen, {
             host: host.ip,
             defaultTaskId: opts.taskId,
