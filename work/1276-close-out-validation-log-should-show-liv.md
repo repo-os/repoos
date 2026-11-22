@@ -11,7 +11,7 @@ branch: feat/close-out-validation-log-should-show-liv
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T07:42:21Z"
-updated_at: "2026-11-22T07:13:28Z"
+updated_at: "2026-11-22T07:13:31Z"
 review_passes: 5
 last_check_failure: "repoos check at 2026-11-20T21:01:31.328Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Close-out drawer with live step, host, and attempt (target \"default\"): loading state detected: loading text \"Loading changes…\" on /work?task=9999&tab=changes (http://127.0.0.1:43237/work?task=9999&tab=changes&shotState=drawer%3AcloseOutRemoteTests)"
 review_failed_report_retries: 0
@@ -242,3 +242,4 @@ Related: #1272 (timer should count from validation start). Never touch repoos.to
 - 2026-11-22T07:04:00Z · note: ui verification passed: 1 of 1 shot captured with clean console
 - 2026-11-22T07:06:56Z · needs_input (review-rounds-exhausted) cleared for review again by human
 - 2026-11-22T07:13:28Z · message_queued at 2026-11-22T07:13:28.018Z
+- 2026-11-22T07:13:31Z · message_delivered: 1 message(s)
