@@ -94,3 +94,4 @@ Start from TaskDrawer.vue and TaskDependencyPicker.vue. This is a requested rede
 - 2026-11-22T16:09:25Z · orphaned run process stopped · pid 38431 · ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new -o ConnectTimeout=15 -o ServerAliveInterval · cpu 0s · age 11m
 - 2026-11-22T16:13:01Z · CTO nudge: held — handoff gate is running
 - 2026-11-22T16:32:07Z · note: ui verification failed: ui verification failed (12 issue(s)): [request] HTTP 404 for http://127.0.0.1:38147/api/tasks/1282/diff-stats (http://127.0.0.1:38147/api/tasks/1282/diff-stats); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:38147/api/tasks/1282/diff-stats); [request] HTTP 404 for http://127.0.0.1:38147/api/tasks/1282/handoff-status (http://127.0.0.1:38147/api/tasks/1282/handoff-status); [request] Failed to load resource: the se
+- 2026-11-22T16:32:07Z · message_queued at 2026-11-22T16:32:07.306Z
