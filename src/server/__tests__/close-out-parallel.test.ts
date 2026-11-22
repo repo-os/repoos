@@ -32,8 +32,6 @@ function job(taskId: string, phase: JobPhase, extra: Partial<IntegrationJob> = {
   };
 }
 
-const ids = (jobs: IntegrationJob[]) => jobs.map((j) => j.taskId);
-
 describe("selectCloseOutStarts (#1275)", () => {
   it("overlaps validation: starts up to the limit in queue order", () => {
     const jobs = [job("01", "queued"), job("02", "queued"), job("03", "queued")];

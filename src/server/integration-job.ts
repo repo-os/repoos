@@ -181,6 +181,14 @@ export function selectCloseOutStarts(input: {
       continue;
     }
     if (job.phase === "publishing" && job.taskId !== turn) continue;
+    // The head that is ready to publish validates nothing, so it takes no
+    // validation slot and the pressure guard does not hold it. Otherwise a slow
+    // validation could block the publish behind it (#1275).
+    if (job.phase === "publishing") {
+      picks.push(job.taskId);
+      inFlight++;
+      continue;
+    }
     // Scan rather than break: the limit and hold are the same for every job
     // here, so this picks the same jobs, but a cancelled job later in the queue
     // still gets its teardown.
@@ -278,6 +286,20 @@ const VERSION = 1;
 
 interface StoredJob extends IntegrationJob {
   version: number;
+}
+
+/** Every job record on disk, unsorted. */
+function readAllJobs(root: string): IntegrationJob[] {
+  ensureJobsDir(root);
+  const dir = join(root, JOBS_DIR);
+  if (!existsSync(dir)) return [];
+  const jobs: IntegrationJob[] = [];
+  for (const file of readdirSync(dir)) {
+    if (!file.endsWith(".json")) continue;
+    const job = readJob(root, file.slice(0, -5));
+    if (job) jobs.push(job);
+  }
+  return jobs;
 }
 
 function jobPath(root: string, taskId: string): string {
@@ -406,7 +428,15 @@ export function createJobCoordinator(root: string): JobCoordinator {
         return existing;
       }
 
-      const enqueuedAt = new Date().toISOString();
+      // Strictly after the newest queued job, so two requests in the same
+      // millisecond keep their order instead of tying on the timestamp (#1275).
+      const newest = Math.max(
+        0,
+        ...readAllJobs(root)
+          .map((j) => Date.parse(j.enqueuedAt))
+          .filter(Number.isFinite),
+      );
+      const enqueuedAt = new Date(Math.max(Date.now(), newest + 1)).toISOString();
       const job: IntegrationJob = {
         taskId: task.id,
         // A fresh attempt gets a new, MONOTONIC generation so a late callback
@@ -440,18 +470,12 @@ export function createJobCoordinator(root: string): JobCoordinator {
     },
 
     allJobs(): IntegrationJob[] {
-      ensureJobsDir(root);
-      const dir = join(root, JOBS_DIR);
-      if (!existsSync(dir)) return [];
-
-      const jobs: IntegrationJob[] = [];
-      for (const file of readdirSync(dir)) {
-        if (!file.endsWith(".json")) continue;
-        const taskId = file.slice(0, -5);
-        const job = readJob(root, taskId);
-        if (job) jobs.push(job);
-      }
-      return jobs.sort((a, b) => a.enqueuedAt.localeCompare(b.enqueuedAt));
+      const jobs = readAllJobs(root);
+      // Publish order is enqueue order. Stamps are strictly increasing (see
+      // `enqueue`), so the id is only a deterministic tie-break (#1275).
+      return jobs.sort(
+        (a, b) => a.enqueuedAt.localeCompare(b.enqueuedAt) || a.taskId.localeCompare(b.taskId),
+      );
     },
 
     peekNext(): IntegrationJob | null {

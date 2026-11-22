@@ -1572,6 +1572,11 @@ export class CloseOutOrchestrator {
     // write below is scoped to it, so a late callback from a superseded
     // attempt is refused instead of mutating the task's newer job.
     this.ownedAttempt = job.attempt ?? jobAttempt(this.coordinator.getJob(job.taskId));
+    // Whether this run resumes a job parked for its publish turn (#1275). Only
+    // that wait is excluded from the budget; a publish reached in the same run
+    // as its validation keeps the attempt's budget, so drift resyncs cannot
+    // keep resetting it.
+    const resumedFromTurnWait = job.phase === "publishing";
 
     this.logger?.integration(job.taskId, "info", `Processing job phase: ${job.phase}`, {
       taskId: job.taskId,
@@ -1812,13 +1817,15 @@ export class CloseOutOrchestrator {
         // Queue wait never counts against the close-out budget (#1275): the
         // publish step gets a fresh budget once its turn comes. Validation was
         // already budget-checked before promotion, so nothing is skipped.
-        const turn = this.coordinator.updateJob(
-          job.taskId,
-          { budgetMonotonicStartNs: process.hrtime.bigint().toString() },
-          this.ownedAttempt,
-        );
-        if (!turn) return { ok: false, reason: "close-out attempt superseded before publish" };
-        job = turn;
+        if (resumedFromTurnWait) {
+          const turn = this.coordinator.updateJob(
+            job.taskId,
+            { budgetMonotonicStartNs: process.hrtime.bigint().toString() },
+            this.ownedAttempt,
+          );
+          if (!turn) return { ok: false, reason: "close-out attempt superseded before publish" };
+          job = turn;
+        }
         const pubRes = await this.publishCandidate(job);
         if (pubRes.cancelled) return this.cancelJob(job);
         if (pubRes.timedOut) return this.timeoutJob(job);

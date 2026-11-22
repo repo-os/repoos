@@ -212,13 +212,7 @@ import { pmChatSessionTaskId, clearPmChatSession, isPmWorking } from "./pm-runs.
 import { attachPendingPmImages } from "./pm-attachments.js";
 import { clearStoryPmChat, isStoryPmWorking } from "../core/story-definition-files.js";
 import { completeTask, type DoneStep, type CloseOutLock } from "./done.js";
-import {
-  closeOutPending,
-  createJobCoordinator,
-  pendingCloseOutJobs,
-  selectCloseOutStarts,
-  type JobCoordinator,
-} from "./integration-job.js";
+import { closeOutPending, createJobCoordinator, type JobCoordinator } from "./integration-job.js";
 import { createCloseOutOutcomeStore } from "./close-out-outcome.js";
 import { createAttentionEventStore } from "./attention-events.js";
 import { createCtoActionRateStore } from "./cto-action-rates.js";
@@ -231,6 +225,7 @@ import {
 } from "./attention-notify.js";
 import { setProcessGroupSignalFailureHandler } from "../core/process-group.js";
 import { CloseOutOrchestrator } from "./integration-orchestrator.js";
+import { CloseOutScheduler } from "./close-out-scheduler.js";
 import { createRemoteValidator, type RemoteValidator } from "./remote-validation.js";
 import { hostLockJobsForTask, taskRemoteActivityForCard } from "./active-task-card.js";
 import { computeSlowRunFlags } from "./attention-feed.js";
@@ -1783,8 +1778,16 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // lives on the instance. Publishing is gated to the head of the queue inside
   // the orchestrator, so merges stay serial in queue order and a job whose base
   // moved is re-validated before it can publish.
-  const closeOutRunning = new Set<string>();
-  let closeOutHoldTimer: ReturnType<typeof setTimeout> | null = null;
+  // The scheduler decides which queued jobs run and when (#1275); each run is
+  // `runCloseOut`, and the scheduler pumps again whenever a run ends.
+  const closeOutScheduler = new CloseOutScheduler({
+    jobs: () => jobCoordinator.allJobs(),
+    limit: () => config.maxParallelValidations ?? 2,
+    // The pressure guard holds only extra concurrency, and only while work waits.
+    pressureHeld: () => pressureReason(config) !== null,
+    run: (taskId) => runCloseOut(taskId),
+    onChange: () => emitIntegration(),
+  });
 
   const newCloseOutOrchestrator = (runTaskId: string): CloseOutOrchestrator =>
     new CloseOutOrchestrator(
@@ -1872,37 +1875,11 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   /** Start every close-out the scheduler allows; called whenever a job changes. */
   const pumpCloseOutJobs = (): void => {
     if (isPreviewChild) return;
-    const jobs = jobCoordinator.allJobs();
-    const limit = Math.max(1, config.maxParallelValidations ?? 2);
-    // The pressure guard holds only *extra* concurrency: the first run always
-    // starts, as the single-job pipeline always did.
-    // Consulted whenever work is waiting, not only while a run is live: with
-    // none running, the first start is taken and the hold then stops every
-    // start after it in this same pass.
-    const waiting = pendingCloseOutJobs(jobs).some((j) => !closeOutRunning.has(j.taskId));
-    const holdExtra = waiting && pressureReason(config) !== null;
-    for (const taskId of selectCloseOutStarts({
-      jobs,
-      running: closeOutRunning,
-      limit,
-      holdExtra,
-    })) {
-      void runCloseOut(taskId);
-    }
-    // A pressure hold must not strand queued work: re-check on a timer.
-    if (holdExtra && !closeOutHoldTimer) {
-      closeOutHoldTimer = setTimeout(() => {
-        closeOutHoldTimer = null;
-        pumpCloseOutJobs();
-      }, 30_000);
-      closeOutHoldTimer.unref?.();
-    }
-    emitIntegration();
+    closeOutScheduler.pump();
   };
 
   /** Run one job's validate/publish pass, then let the scheduler pick the next. */
   const runCloseOut = async (taskId: string): Promise<void> => {
-    closeOutRunning.add(taskId);
     const jobBefore = jobCoordinator.getJob(taskId);
     let result: Awaited<ReturnType<CloseOutOrchestrator["processTask"]>> | undefined;
     // Defer auto-reload for the duration of this run: a close-out runs its own
@@ -1915,7 +1892,6 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     } catch (err) {
       console.error("Job processor error:", err);
     } finally {
-      closeOutRunning.delete(taskId);
       closeOutLock.release();
     }
     try {
@@ -1992,11 +1968,6 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       }
     } catch (err) {
       console.error("Job processor error:", err);
-    } finally {
-      // Reflect the post-job pipeline state (job now done/failed, or the next
-      // queued job becoming active) in the pinned status bar (0207), and start
-      // whatever the freed slot or the published head now allows.
-      pumpCloseOutJobs();
     }
   };
 

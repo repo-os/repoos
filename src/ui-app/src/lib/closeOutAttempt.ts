@@ -10,8 +10,10 @@ export function closeOutAttemptStartedAt(
   taskId: string,
   pipeline: IntegrationPipelineSnapshot | null,
 ): string | null {
-  if (pipeline?.active?.taskId !== taskId) return null;
-  return pipeline.active.startedAt ?? null;
+  if (pipeline?.active?.taskId === taskId) return pipeline.active.startedAt ?? null;
+  // Validating alongside the active close-out (#1275): its own start counts.
+  const running = pipeline?.parallel?.find((p) => p.taskId === taskId);
+  return running?.startedAt ?? null;
 }
 
 /**

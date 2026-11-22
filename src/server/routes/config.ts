@@ -1040,6 +1040,9 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
   const vocabularyBefore = effectiveAreaNames(repoos.config);
   applyLoadedConfig(repoos, loadConfigAfterServerWrite(config.root, config.cacheDir));
   ctx.remoteValidator?.applyConfig?.();
+  // A raised maxParallelValidations (#1275) must start queued work now, not on
+  // the next unrelated close-out event. The pump is a no-op when nothing waits.
+  ctx.triggerJobProcessing();
 
   // Advisory drift warning (#0583/#0587): any config write that changes the
   // effective area vocabulary is surfaced here. Comparing before/after makes

@@ -200,6 +200,11 @@ export function integrationPipelineStalled(
   stallMs = DEFAULT_INTEGRATION_STALL_MS,
   taskId?: string,
 ): boolean {
+  // A publisher parked for its turn (#1275) is waiting on the head, not stalled:
+  // it has nothing running to be idle, so it gets no recovery prompt.
+  if (taskId && snap?.parallel?.some((p) => p.taskId === taskId && p.phase === "publishing")) {
+    return false;
+  }
   const active = taskId ? integrationRunningEntry(snap, taskId) : snap?.active;
   if (!active || active.failed) return false;
   const idle = integrationIdleMs(active, nowMs);

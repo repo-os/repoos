@@ -676,7 +676,7 @@ async function fileSetupTask(): Promise<void> {
           v-for="p in parallel"
           :key="p.taskId"
           class="ibar-chip mono"
-          :title="'#' + p.taskId + ' ' + p.phase"
+          :aria-label="'#' + p.taskId + ' ' + p.phase"
           >#{{ p.taskId }} ·
           {{
             p.phase === "publishing" ? "waiting for publish turn" : integrationStageLabel(p.stage)
