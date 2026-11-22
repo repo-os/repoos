@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 443077
-last_close_out_gate_at: "2026-11-22T18:14:13.321Z"
 id: "1282"
 title: "Task drawer: collapse the Depends on, type, priority, area and story block into a one or two line summary that opens a modal"
 type: feature
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: 86051088df0301fadbc24e01864ddefaf53e020b
 assigned_to: ai
 created_by: t@t
 branch: feat/task-drawer-collapse-the-depends-on-type
@@ -14,6 +13,8 @@ cli_override: claude code
 model_override: haiku
 created_at: "2026-11-22T03:22:33Z"
 updated_at: "2026-11-22T18:14:13Z"
+last_close_out_gate_ms: 443077
+last_close_out_gate_at: "2026-11-22T18:14:13.321Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-22T18:11:21.286Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 review_passes: 2

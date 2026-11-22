@@ -68,7 +68,11 @@ describe("real task drawer layout (WebKit)", () => {
     return compiled.code;
   }
 
-  async function renderDrawerMarkup(width: number, editing: boolean): Promise<string> {
+  async function renderDrawerMarkup(
+    width: number,
+    editing: boolean,
+    openModal = false,
+  ): Promise<string> {
     Object.defineProperty(window, "innerWidth", { configurable: true, value: width });
     Object.defineProperty(document.documentElement, "clientWidth", {
       configurable: true,
@@ -126,14 +130,23 @@ describe("real task drawer layout (WebKit)", () => {
       await wrapper.findAll(".drawer-tabs button")[1]!.trigger("click");
     }
     await flush();
+    if (openModal) {
+      // #1282: the collapsed Task details block opens its edit modal on click.
+      await wrapper.get('[data-test-id="task-meta-summary"]').trigger("click");
+      await flush();
+    }
     const markup = document.body.innerHTML;
     taskDrawerCss = compileScopedStyle(markup, "drawer-wrap drawer", "TaskDrawer", taskDrawerStyle);
-    dependencyPickerCss = compileScopedStyle(
-      markup,
-      "task-dependency-picker",
-      "TaskDependencyPicker",
-      dependencyPickerStyle,
-    );
+    // The picker only renders in the create panel and the open modal; the
+    // collapsed edit drawer has none, so keep the last compiled picker style.
+    if (markup.includes('class="task-dependency-picker"')) {
+      dependencyPickerCss = compileScopedStyle(
+        markup,
+        "task-dependency-picker",
+        "TaskDependencyPicker",
+        dependencyPickerStyle,
+      );
+    }
     wrapper.unmount();
     document.body.innerHTML = "";
     vi.unstubAllGlobals();
@@ -218,6 +231,49 @@ describe("real task drawer layout (WebKit)", () => {
     }
   }
 
+  /** The task details edit modal (#1282) fits the viewport and its controls are reachable. */
+  async function checkActualModal(page: Page, markup: string, width: number): Promise<void> {
+    await page.setViewportSize({ width, height: 900 });
+    await page.setContent(
+      `<meta name="viewport" content="width=device-width, initial-scale=1.0"><style>${globalCss}</style><style>${taskDrawerCss}</style><style>${dependencyPickerCss}</style><style>html, body { width: 100%; margin: 0; } *, *::before, *::after { animation: none !important; transition: none !important; }</style>${markup}`,
+    );
+    const modal = page.locator('[data-test-id="task-meta-modal"]');
+    await modal.waitFor();
+    const geometry = await modal.evaluate((element) => {
+      const rect = element.getBoundingClientRect();
+      return {
+        left: rect.left,
+        right: rect.right,
+        top: rect.top,
+        bottom: rect.bottom,
+        viewportWidth: window.innerWidth,
+        viewportHeight: window.innerHeight,
+      };
+    });
+    expect(geometry.left, JSON.stringify(geometry)).toBeGreaterThanOrEqual(0);
+    expect(geometry.right, JSON.stringify(geometry)).toBeLessThanOrEqual(
+      geometry.viewportWidth + 1,
+    );
+    expect(geometry.top, JSON.stringify(geometry)).toBeGreaterThanOrEqual(0);
+    expect(geometry.bottom, JSON.stringify(geometry)).toBeLessThanOrEqual(
+      geometry.viewportHeight + 1,
+    );
+
+    const controls = modal.locator('button, input:not([type="hidden"]), [role="combobox"]');
+    for (let index = 0; index < (await controls.count()); index++) {
+      const control = controls.nth(index);
+      if (!(await control.isVisible())) continue;
+      await control.evaluate((element) => element.scrollIntoView({ block: "center" }));
+      const rect = await control.boundingBox();
+      if (!rect || rect.width === 0 || rect.height === 0) continue;
+      expect(rect.x, `modal control ${index} is reachable on the left`).toBeGreaterThanOrEqual(0);
+      expect(
+        rect.x + rect.width,
+        `modal control ${index} is reachable on the right`,
+      ).toBeLessThanOrEqual(geometry.viewportWidth + 1);
+    }
+  }
+
   it.each(VIEWPORTS)("measures the real create and edit drawer at %i px", async (width) => {
     const page = await browser.newPage({ viewport: { width, height: 900 } });
     try {
@@ -228,10 +284,27 @@ describe("real task drawer layout (WebKit)", () => {
       expect(createMarkup).toContain('type="file"');
       await checkActualDrawer(page, createMarkup, width);
 
+      // #1282: collapsed by default: one summary button, no inline edit controls.
       const editMarkup = await renderDrawerMarkup(width, true);
-      expect(editMarkup).toContain('id="et-dependencies"');
-      expect(editMarkup).toContain('id="et-area"');
+      expect(editMarkup).toContain('data-test-id="task-meta-summary"');
+      expect(editMarkup).not.toContain('id="et-dependencies"');
+      expect(editMarkup).not.toContain('id="et-area"');
       await checkActualDrawer(page, editMarkup, width);
+      const summaryLines = await page
+        .locator(".task-meta-summary-text")
+        .evaluate(
+          (element) =>
+            element.getBoundingClientRect().height /
+            parseFloat(getComputedStyle(element).lineHeight),
+        );
+      expect(summaryLines, "summary fits in two lines").toBeLessThanOrEqual(2.05);
+
+      // The modal the summary opens carries the same controls as before.
+      const modalMarkup = await renderDrawerMarkup(width, true, true);
+      expect(modalMarkup).toContain('data-test-id="task-meta-modal"');
+      expect(modalMarkup).toContain('id="et-dependencies"');
+      expect(modalMarkup).toContain('id="et-area"');
+      await checkActualModal(page, modalMarkup, width);
     } finally {
       await page.close();
     }
