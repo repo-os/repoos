@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { integrationPipelineStalled } from "../src/lib/integration-pipeline-ui";
+import {
+  integrationActiveCopy,
+  integrationPipelineStalled,
+} from "../src/lib/integration-pipeline-ui";
 import { closeOutAttemptStartedAt } from "../src/lib/closeOutAttempt";
 
 /** A snapshot with one active close-out and one publisher parked behind it (#1275). */
@@ -48,5 +51,25 @@ describe("parked and parallel close-outs in the pipeline UI (#1275)", () => {
     expect(closeOutAttemptStartedAt("0002", snapshot("validating"))).toBe(
       "2026-11-20T00:00:00.000Z",
     );
+  });
+
+  it("the card and drawer copy for a parked publisher is not labelled stalled (#1275 review)", () => {
+    const copy = integrationActiveCopy(
+      snapshot("publishing"),
+      threeMinutesLater,
+      undefined,
+      "0002",
+    );
+    expect(copy.stalled).toBe(false);
+    expect(copy.label).toBe("validated · waiting for its publish turn");
+    expect(copy.label).not.toMatch(/stalled/i);
+    // A parallel job that is still validating is judged by its own timer as before.
+    const validating = integrationActiveCopy(
+      snapshot("validating"),
+      threeMinutesLater,
+      undefined,
+      "0002",
+    );
+    expect(validating.label).not.toBe("validated · waiting for its publish turn");
   });
 });

@@ -284,6 +284,16 @@ export function integrationActiveCopy(
   taskId?: string,
 ): IntegrationActiveCopy {
   const active = (taskId ? integrationRunningEntry(snap, taskId) : null) ?? snap.active!;
+  // A publisher parked for its turn (#1275) is waiting on the head, not stalled:
+  // it has nothing running to be idle, so it never reads as stalled.
+  if (taskId && snap.parallel?.some((p) => p.taskId === taskId && p.phase === "publishing")) {
+    return {
+      label: "validated · waiting for its publish turn",
+      title:
+        "This close-out passed validation and is waiting for the task ahead of it to publish first. Nothing is stuck; it publishes as soon as it is next.",
+      stalled: false,
+    };
+  }
   const copy = integrationActiveCopyBase(active, nowMs, stallMs);
   const note = integrationRetryNote(active);
   return note ? { ...copy, title: `${copy.title}\n${note}` } : copy;

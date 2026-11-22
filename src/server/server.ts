@@ -1786,6 +1786,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     // The pressure guard holds only extra concurrency, and only while work waits.
     pressureHeld: () => pressureReason(config) !== null,
     run: (taskId) => runCloseOut(taskId),
+    onGiveUp: (taskId, error) => failCrashedCloseOut(taskId, error),
     onChange: () => emitIntegration(),
   });
 
@@ -1890,10 +1891,14 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     // down the very server orchestrating it (see CloseOutLock above
     // `completeTask`). With parallel runs the lock is held while any run is live.
     closeOutLock.acquire();
+    let crash: { error: unknown } | null = null;
     try {
       result = await newCloseOutOrchestrator(taskId).processTask(taskId);
     } catch (err) {
       console.error("Job processor error:", err);
+      // Remembered and rethrown below, so the scheduler sees the crash, backs
+      // off and eventually gives up instead of a silent success (#1275 review).
+      crash = { error: err };
     } finally {
       closeOutLock.release();
     }
@@ -1972,6 +1977,30 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     } catch (err) {
       console.error("Job processor error:", err);
     }
+    if (crash) throw crash.error;
+  };
+
+  // A job whose run keeps crashing is failed so it leaves the queue (#1275).
+  const failCrashedCloseOut = (taskId: string, error: unknown): void => {
+    const job = jobCoordinator.getJob(taskId);
+    if (!job || job.phase === "done" || job.phase === "failed") return;
+    const message = error instanceof Error ? error.message : String(error);
+    const reason = `close-out run crashed repeatedly: ${message}`;
+    jobCoordinator.updateJob(taskId, {
+      phase: "failed",
+      failedPhase: job.phase,
+      failedAt: new Date().toISOString(),
+      reason,
+    });
+    emitEvent({
+      type: "task.progress",
+      id: taskId,
+      step: "failed",
+      detail: reason,
+      phase: job.phase,
+      at: new Date().toISOString(),
+    });
+    emitIntegration();
   };
 
   // Initialize job processing (runs after emitEvent is available) (0118)

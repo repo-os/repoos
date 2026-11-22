@@ -813,6 +813,28 @@ export function parseCheckTestProgress(text: string): { done: number; total: num
   return null;
 }
 
+/**
+ * Move a close-out's monotonic budget anchor forward by the time the job spent
+ * parked waiting for its publish turn, so only the wait is excluded from the
+ * budget and the time already spent validating still counts (#1275 review). The
+ * anchor never moves past `nowNs`. Returns null when there is nothing to shift
+ * (no anchor, or no usable parked-since time). Exported for tests.
+ */
+export function shiftBudgetAnchorPastWait(
+  anchorNs: string | null | undefined,
+  parkedSinceIso: string | null | undefined,
+  nowMs: number,
+  nowNs: bigint,
+): string | null {
+  if (!anchorNs || !parkedSinceIso) return null;
+  const parkedSince = Date.parse(parkedSinceIso);
+  if (!Number.isFinite(parkedSince)) return null;
+  const waitedNs = BigInt(Math.max(0, Math.round((nowMs - parkedSince) * 1e6)));
+  let shifted = BigInt(anchorNs) + waitedNs;
+  if (shifted > nowNs) shifted = nowNs;
+  return shifted.toString();
+}
+
 export interface ProcessRunResult {
   status: number | null;
   stdout: string;
@@ -1928,17 +1950,29 @@ export class CloseOutOrchestrator {
           });
           return { ok: true, reason: "awaiting publish turn" };
         }
-        // Queue wait never counts against the close-out budget (#1275): the
-        // publish step gets a fresh budget once its turn comes. Validation was
-        // already budget-checked before promotion, so nothing is skipped.
+        // Queue wait never counts against the close-out budget (#1275). Only the
+        // wait is excluded: the budget anchor moves forward by the time spent
+        // parked, so the time already spent validating still counts and a job
+        // cannot exceed the configured ceiling by parking (#1275 review).
         if (resumedFromTurnWait) {
-          const turn = this.coordinator.updateJob(
-            job.taskId,
-            { budgetMonotonicStartNs: process.hrtime.bigint().toString() },
-            this.ownedAttempt,
+          const anchorNs =
+            this.coordinator.getJob(job.taskId)?.budgetMonotonicStartNs ??
+            job.budgetMonotonicStartNs;
+          const shifted = shiftBudgetAnchorPastWait(
+            anchorNs,
+            job.phaseStartedAt,
+            Date.now(),
+            process.hrtime.bigint(),
           );
-          if (!turn) return { ok: false, reason: "close-out attempt superseded before publish" };
-          job = turn;
+          if (shifted) {
+            const turn = this.coordinator.updateJob(
+              job.taskId,
+              { budgetMonotonicStartNs: shifted },
+              this.ownedAttempt,
+            );
+            if (!turn) return { ok: false, reason: "close-out attempt superseded before publish" };
+            job = turn;
+          }
         }
         this.reportStep(CLOSE_OUT_STEP.publishing);
         const pubRes = await this.publishCandidate(job);
