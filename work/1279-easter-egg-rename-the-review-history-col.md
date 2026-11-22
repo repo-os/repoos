@@ -13,7 +13,7 @@ branch: feat/easter-eggs-bundle-rename-review-history
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T10:35:33Z"
-updated_at: "2026-11-22T15:27:10Z"
+updated_at: "2026-11-22T15:27:12Z"
 review_failed_report_retries: 2
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-22T15:18:08.488Z: repoos check failed: reused check inputs changed during handoff — run the check again"
