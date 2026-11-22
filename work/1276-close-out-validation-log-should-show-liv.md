@@ -2,7 +2,7 @@
 id: "1276"
 title: Close-out validation log should show live progress
 type: feature
-status: active
+status: review
 priority: p1
 area: [server, core]
 assigned_to: ai
@@ -235,3 +235,4 @@ Related: #1272 (timer should count from validation start). Never touch repoos.to
 - 2026-11-22T06:43:17Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-22T06:43:17Z · message_queued at 2026-11-22T06:43:17.764Z
 - 2026-11-22T06:43:18Z · ↻ resuming engineer to read queued message
+- 2026-11-22T06:43:18Z · status active→review
