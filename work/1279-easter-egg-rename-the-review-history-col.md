@@ -8,6 +8,9 @@ needs_input_reason: review-failed
 needs_input_detail: "the github copilot agent exited without output: Copilot emitted an unknown protocol event \"instruction.update\". error: You have exceeded your monthly quota (Request ID: 00000-ac804f17-fcc0-4398-9aa1-21bc04ede5b2) Stopped 2 process(es) this turn spawned outside its process group (PIDs: 23446, 23447)."
 human_step_override: Cleared needs-human-step flag (sticky until acceptance criteria change)
 human_step_override_key: 8dbfd6ac
+debug_tldr: GitHub Copilot reviewer hit its monthly quota — switch to a different reviewer agent and retry the review.
+debug_tldr_at: "2026-11-22T15:18:39Z"
+debug_tldr_key: "review-failed|the github copilot agent exited without output: Copilot emitted an unknown protocol event \"instruction.update\". error: You have exceeded your monthly quota (Request ID: 00000-ac804f17-fcc0-4398-9aa1-21bc04ede5b2) Stopped 2 process(es) this turn spawned outside its process group (PIDs: 23446, 23447)."
 priority: p3
 area: web
 assigned_to: ai
@@ -16,7 +19,7 @@ branch: feat/easter-eggs-bundle-rename-review-history
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T10:35:33Z"
-updated_at: "2026-11-22T15:18:32Z"
+updated_at: "2026-11-22T15:18:39Z"
 review_failed_report_retries: 2
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-22T15:18:08.488Z: repoos check failed: reused check inputs changed during handoff — run the check again"
