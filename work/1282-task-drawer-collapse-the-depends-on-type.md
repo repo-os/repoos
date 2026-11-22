@@ -11,7 +11,7 @@ branch: feat/task-drawer-collapse-the-depends-on-type
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-22T03:22:33Z"
-updated_at: "2026-11-22T15:26:03Z"
+updated_at: "2026-11-22T15:33:01Z"
 ---
 ## Problem
 The metadata block at the top of the task drawer (Depends on picker with a long task list, Type, Priority, Area, Story) takes a large amount of vertical space above the spec. A human rarely edits these, so most of the time it just pushes the content down.
@@ -46,12 +46,12 @@ Start from TaskDrawer.vue and TaskDependencyPicker.vue. This is a requested rede
 "route": "/work?task=1282",
 "highlight": "[data-test-id=\"task-meta-modal\"]",
 "steps": [
-  {
-    "click": "[data-test-id=\"task-meta-summary\"]"
-  },
-  {
-    "waitMs": 300
-  }
+{
+  "click": "[data-test-id=\"task-meta-summary\"]"
+},
+{
+  "waitMs": 300
+}
 ]
 }
 ]
@@ -70,3 +70,4 @@ Start from TaskDrawer.vue and TaskDependencyPicker.vue. This is a requested rede
 - 2026-11-22T15:07:03Z · status ready→active, branch
 - 2026-11-22T15:18:17Z · body
 - 2026-11-22T15:26:03Z · body
+- 2026-11-22T15:33:01Z · CTO nudge: held — handoff gate is running
