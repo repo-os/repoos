@@ -1,8 +1,10 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-22T07:13:31.180Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 id: "1276"
 title: Close-out validation log should show live progress
 type: feature
-status: active
+status: review
 priority: p1
 area: [server, core]
 assigned_to: ai
@@ -11,11 +13,8 @@ branch: feat/close-out-validation-log-should-show-liv
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T07:42:21Z"
-updated_at: "2026-11-22T05:27:03Z"
-last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/work-board-large-perf-browser.test.ts > Work board with 1200 tasks (WebKit, generated fixture) > opens, filters, and scrolls at 375px within budget on bee — fix it in the feature branch and re-run the gate"
-last_handoff_failure_sha: 84f91719ed676c04d4bcad6115cd3c3f824beccd
-review_passes: 4
-last_check_failure: "repoos check at 2026-11-20T21:01:31.328Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Close-out drawer with live step, host, and attempt (target \"default\"): loading state detected: loading text \"Loading changes…\" on /work?task=9999&tab=changes (http://127.0.0.1:43237/work?task=9999&tab=changes&shotState=drawer%3AcloseOutRemoteTests)"
+updated_at: "2026-11-22T07:13:31Z"
+review_passes: 5
 review_failed_report_retries: 0
 review_rounds: 2
 handoff_signal_retry_count: 2
@@ -213,3 +212,36 @@ Related: #1272 (timer should count from validation start). Never touch repoos.to
 - 2026-11-22T05:26:15Z · message_queued at 2026-11-22T05:26:15.590Z
 - 2026-11-22T05:26:15Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: tests/work-board-large-perf-browser.test.ts > Work board with 1200 tasks (WebKit, generated fixture) > opens, filters, and scrolls at 375px within budget on bee — fix it in the feature branch and re-run the gate
 - 2026-11-22T05:27:03Z · message_delivered: 2 message(s)
+- 2026-11-22T05:43:53Z · body
+- 2026-11-22T05:47:33Z · note: handoff requested (cli)
+- 2026-11-22T05:50:16Z · CTO nudge: held — handoff gate is running
+- 2026-11-22T05:52:06Z · note: ui verification passed: 1 of 1 shot captured with clean console
+- 2026-11-22T05:52:07Z · message_queued at 2026-11-22T05:52:07.969Z
+- 2026-11-22T05:52:08Z · handoff failed · task-file handoff failed at review · Engineering report draft is missing: .repoos/engineering-report-drafts/1276.md
+- 2026-11-22T06:07:05Z · note: handoff requested (cli)
+- 2026-11-22T06:10:32Z · note: ui verification passed: 1 of 1 shot captured with clean console
+- 2026-11-22T06:10:34Z · status active→review
+- 2026-11-22T06:10:34Z · message_queued at 2026-11-22T06:10:34.578Z
+- 2026-11-22T06:10:34Z · handoff_deferred: 2 queued message(s) must be read before review
+- 2026-11-22T06:10:34Z · message_queued at 2026-11-22T06:10:34.939Z
+- 2026-11-22T06:10:35Z · ↻ resuming engineer to read queued message
+- 2026-11-22T06:10:35Z · message_delivered: 3 message(s)
+- 2026-11-22T06:11:45Z · note: review pass 10: needs some work
+- 2026-11-22T06:11:45Z · needs_input
+- 2026-11-22T06:26:56Z · status review→active
+- 2026-11-22T06:26:58Z · CTO nudge: held — handoff gate is running
+- 2026-11-22T06:26:59Z · needs_input
+- 2026-11-22T06:26:59Z · message_queued at 2026-11-22T06:26:59.666Z
+- 2026-11-22T06:43:17Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-22T06:43:17Z · message_queued at 2026-11-22T06:43:17.764Z
+- 2026-11-22T06:43:18Z · ↻ resuming engineer to read queued message
+- 2026-11-22T06:43:18Z · status active→review
+- 2026-11-22T06:43:18Z · message_delivered: 2 message(s)
+- 2026-11-22T06:43:19Z · note: handoff requested (cli)
+- 2026-11-22T06:43:28Z · status active→review
+- 2026-11-22T06:43:29Z · needs_input
+- 2026-11-22T07:04:00Z · note: ui verification passed: 1 of 1 shot captured with clean console
+- 2026-11-22T07:06:56Z · needs_input (review-rounds-exhausted) cleared for review again by human
+- 2026-11-22T07:13:28Z · message_queued at 2026-11-22T07:13:28.018Z
+- 2026-11-22T07:13:31Z · message_delivered: 1 message(s)
+
