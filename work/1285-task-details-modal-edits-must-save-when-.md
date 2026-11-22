@@ -88,3 +88,4 @@ Modal and draft code is in src/ui-app/src/components/TaskDrawer.vue (metaModalOp
 - 2026-11-22T18:37:15Z · CTO nudge: held — handoff gate is running
 - 2026-11-22T18:54:20Z · note: ui verification passed: 2 of 2 shots captured with clean console
 - 2026-11-22T18:54:21Z · message_queued at 2026-11-22T18:54:21.404Z
+- 2026-11-22T18:54:21Z · handoff failed · task-file handoff failed at review · Engineering report draft is missing: .repoos/engineering-report-drafts/1285.md
