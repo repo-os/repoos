@@ -101,3 +101,4 @@ Also (Nick): on the card and drawer, show only the Refresh evidence button; do n
 - 2026-11-22T14:08:36Z · status review→active
 - 2026-11-22T14:08:39Z · engineer stopped by request
 - 2026-11-22T14:08:41Z · orphaned run process stopped · pid 18008 · /opt/homebrew/Cellar/bun/1.4.2/bin/bun /Users/nick/code/nick/repoos/dist/core/heavy-wrap.js /Users/n · cpu 0s · age 20m
+- 2026-11-22T14:08:44Z · note: handoff requested (cli)
