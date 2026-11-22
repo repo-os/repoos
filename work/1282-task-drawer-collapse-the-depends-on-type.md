@@ -12,7 +12,7 @@ branch: feat/task-drawer-collapse-the-depends-on-type
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-22T03:22:33Z"
-updated_at: "2026-11-22T18:14:13Z"
+updated_at: "2026-11-22T18:14:49Z"
 last_close_out_gate_ms: 443077
 last_close_out_gate_at: "2026-11-22T18:14:13.321Z"
 check_retry_count: 1
@@ -133,4 +133,4 @@ Start from TaskDrawer.vue and TaskDependencyPicker.vue. This is a requested rede
 - 2026-11-22T18:11:18Z · message_queued at 2026-11-22T18:11:18.132Z
 - 2026-11-22T18:11:21Z · message_delivered: 1 message(s)
 - 2026-11-22T18:14:13Z · close-out gate completed in 443s
-
+- 2026-11-22T18:14:49Z · status done→done, release:success
