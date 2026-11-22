@@ -11,7 +11,7 @@ branch: feat/mobile-polish-open-on-work-hide-page-scr
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T00:15:33Z"
-updated_at: "2026-11-22T03:51:00Z"
+updated_at: "2026-11-22T03:53:10Z"
 review_passes: 4
 review_failed_report_retries: 0
 last_check_failure: "repoos check at 2026-11-20T09:49:11.145Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Work is the home page; header row controls share one height (target \"default\"): loading state detected: loading indicator [aria-busy=\"true\"] on /work (http://127.0.0.1:34337/work)"
@@ -254,3 +254,4 @@ Screenshot attached shows the current mobile header and Mission Control. Do not 
 - 2026-11-22T03:50:58Z · note: ui verification passed: 1 of 1 shot captured with clean console
 - 2026-11-22T03:51:00Z · status active→review
 - 2026-11-22T03:51:00Z · message_queued at 2026-11-22T03:51:00.520Z
+- 2026-11-22T03:53:10Z · note: review pass 8: good to go
