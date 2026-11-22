@@ -38,10 +38,10 @@ Modal and draft code is in src/ui-app/src/components/TaskDrawer.vue (metaModalOp
 "highlight": "[data-test-id=\"task-meta-modal\"]",
 "steps": [
 {
-  "click": "[data-test-id=\"task-meta-summary\"]"
+"click": "[data-test-id=\"task-meta-summary\"]"
 },
 {
-  "waitMs": 300
+"waitMs": 300
 }
 ],
 "state": "drawer:taskDetailsSummary",
@@ -56,10 +56,10 @@ Modal and draft code is in src/ui-app/src/components/TaskDrawer.vue (metaModalOp
 "highlight": "[data-test-id=\"task-meta-modal\"]",
 "steps": [
 {
-  "click": "[data-test-id=\"task-meta-summary\"]"
+"click": "[data-test-id=\"task-meta-summary\"]"
 },
 {
-  "waitMs": 300
+"waitMs": 300
 }
 ],
 "state": "drawer:taskDetailsSummary",
