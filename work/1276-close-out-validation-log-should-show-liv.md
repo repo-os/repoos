@@ -2,7 +2,7 @@
 id: "1276"
 title: Close-out validation log should show live progress
 type: feature
-status: active
+status: review
 priority: p1
 area: [server, core]
 assigned_to: ai
@@ -184,3 +184,4 @@ Related: #1272 (timer should count from validation start). Never touch repoos.to
 - 2026-11-22T02:54:05Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-22T03:04:49Z · queued message undelivered for 14m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-22T03:04:50Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: The scoped check is still running in the background. The monitor will notify me when it finishes, so I'll wait for that before handing off. · stderr: (empty)
+- 2026-11-22T03:04:50Z · status active→review
