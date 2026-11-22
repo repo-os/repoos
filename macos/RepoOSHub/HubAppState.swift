@@ -151,15 +151,21 @@ final class HubAppState: ObservableObject {
             crossServerTaskSearch.configure(entries: entries)
         } catch {
             // Keep the unreadable file on disk. Otherwise the empty document below
-            // would be saved over it on the next change.
-            let setAside = store.setAsideUnreadableRegistry()
+            // would be saved over it on the next change. If the file can't be moved
+            // aside, the store blocks saves, so the empty document is never written.
             document = ServerRegistryDocument()
             volatileHealthByServerID.removeAll()
             entries = []
             selectedServerID = nil
-            lastConnectionMessage = setAside.map {
-                "Your saved server list couldn't be read, so it was moved to \($0). Add your servers again."
-            } ?? "Your saved server list couldn't be read. Add your servers again."
+            do {
+                let setAside = try store.setAsideUnreadableRegistry()
+                lastConnectionMessage = setAside.map {
+                    "Your saved server list couldn't be read, so it was moved to \($0). Add your servers again."
+                } ?? "Your saved server list couldn't be read. Add your servers again."
+            } catch {
+                lastConnectionMessage = "Your saved server list couldn't be read or moved aside, so changes are paused. "
+                    + "Check the servers.json file in the Hub's Application Support folder."
+            }
         }
     }
 
@@ -584,12 +590,16 @@ final class HubAppState: ObservableObject {
 
     func deleteServer(_ entry: ServerEntry) {
         // Registry first: if the save fails the server still exists, so its cookies
-        // and web storage must survive too. Only then drop the per-server state.
+        // and web storage must survive too. Restore the in-memory document on failure,
+        // so a later unrelated save cannot persist a removal the user was told failed.
+        let previous = document
         do {
             try store.removeEntry(id: entry.id, document: &document)
             pruneOrphanNavigationMetadata()
             try store.save(document)
         } catch {
+            document = previous
+            hubGlobalPreferences = document.hubGlobalPreferences
             lastConnectionMessage = "Could not remove the server from the local registry."
             return
         }
@@ -642,6 +652,8 @@ final class HubAppState: ObservableObject {
                 return "Could not verify the server."
             }
 
+            let previous = document
+            let previousSelection = selectedServerID
             let now = Date()
             let group = draft.groupName.trimmingCharacters(in: .whitespacesAndNewlines)
             let normalizedGroup = group.isEmpty ? nil : group
@@ -694,7 +706,17 @@ final class HubAppState: ObservableObject {
                 noteWorkspaceUsed(entry.id)
             }
 
-            try store.save(document)
+            do {
+                try store.save(document)
+            } catch {
+                // The edit was applied in memory before the write; undo it so the UI
+                // matches what is on disk.
+                document = previous
+                selectedServerID = previousSelection
+                hubGlobalPreferences = document.hubGlobalPreferences
+                publishEntries()
+                throw error
+            }
             syncAttentionCoordinator()
             crossServerTaskSearch.configure(entries: entries)
             lastConnectionMessage = nil

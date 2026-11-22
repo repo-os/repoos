@@ -94,13 +94,96 @@ final class ServerRegistryStoreTests: XCTestCase {
         try Data("{ not json".utf8).write(to: fileURL)
 
         XCTAssertThrowsError(try store.load())
-        let moved = store.setAsideUnreadableRegistry(now: Date(timeIntervalSince1970: 0))
+        let moved = try store.setAsideUnreadableRegistry(now: Date(timeIntervalSince1970: 0))
 
         XCTAssertNotNil(moved)
         XCTAssertFalse(FileManager.default.fileExists(atPath: fileURL.path))
         let preserved = try Data(contentsOf: directoryURL.appendingPathComponent(moved ?? ""))
         XCTAssertEqual(String(data: preserved, encoding: .utf8), "{ not json")
-        XCTAssertNil(store.setAsideUnreadableRegistry(), "nothing left to move")
+        XCTAssertNil(try store.setAsideUnreadableRegistry(), "nothing left to move")
+    }
+
+    func testFailedQuarantineBlocksSavesSoTheFileSurvives() throws {
+        let store = ServerRegistryStore(directoryURL: directoryURL)
+        let fileURL = directoryURL.appendingPathComponent("servers.json")
+        try Data("{ not json".utf8).write(to: fileURL)
+        XCTAssertThrowsError(try store.load())
+
+        try setDirectoryWritable(false)
+        defer { try? setDirectoryWritable(true) }
+        XCTAssertThrowsError(try store.setAsideUnreadableRegistry())
+        XCTAssertThrowsError(try store.save(ServerRegistryDocument())) { error in
+            XCTAssertEqual(error as? ServerRegistryStoreError, .unreadableRegistry)
+        }
+
+        try setDirectoryWritable(true)
+        XCTAssertThrowsError(try store.save(ServerRegistryDocument()), "blocked stays blocked")
+        XCTAssertEqual(try String(contentsOf: fileURL, encoding: .utf8), "{ not json")
+    }
+
+    /// Makes the registry directory unwritable so the next save fails.
+    private func setDirectoryWritable(_ writable: Bool) throws {
+        try FileManager.default.setAttributes(
+            [.posixPermissions: writable ? 0o700 : 0o500],
+            ofItemAtPath: directoryURL.path
+        )
+    }
+
+    @MainActor
+    func testFailedDeleteRestoresTheServerAndIsNotPersistedLater() async throws {
+        let state = HubAppState(
+            store: ServerRegistryStore(directoryURL: directoryURL),
+            healthChecker: RemoveReAddHealthChecker(projectName: "divot repoos"),
+            attentionCoordinator: HubAttentionCoordinator(notificationCenter: RemoveReAddNotificationCenter())
+        )
+        let first = try await saveDraft(state, origin: "localhost:7171")
+        XCTAssertNil(first)
+        let server = try XCTUnwrap(state.entries.first)
+
+        try setDirectoryWritable(false)
+        defer { try? setDirectoryWritable(true) }
+        state.deleteServer(server)
+        XCTAssertEqual(state.entries.map(\.id), [server.id], "a failed removal keeps the server visible")
+        XCTAssertNotNil(state.lastConnectionMessage)
+
+        try setDirectoryWritable(true)
+        let second = try await saveDraft(state, origin: "localhost:7172")
+        XCTAssertNil(second)
+        let persisted = try ServerRegistryStore(directoryURL: directoryURL).load()
+        XCTAssertEqual(Set(persisted.entries.map(\.id)).count, 2, "the failed removal must not be persisted")
+        XCTAssertTrue(persisted.entries.contains { $0.id == server.id })
+    }
+
+    @MainActor
+    func testFailedEditSaveRestoresTheDisplayedRegistry() async throws {
+        let state = HubAppState(
+            store: ServerRegistryStore(directoryURL: directoryURL),
+            healthChecker: RemoveReAddHealthChecker(projectName: "divot repoos"),
+            attentionCoordinator: HubAttentionCoordinator(notificationCenter: RemoveReAddNotificationCenter())
+        )
+        let saved = try await saveDraft(state, origin: "localhost:7171")
+        XCTAssertNil(saved)
+
+        try setDirectoryWritable(false)
+        defer { try? setDirectoryWritable(true) }
+        let error = try await saveDraft(state, origin: "localhost:7172")
+        XCTAssertEqual(error, "Could not save the server locally.")
+        XCTAssertEqual(state.entries.count, 1, "the failed add is not shown")
+    }
+
+    @MainActor
+    private func saveDraft(_ state: HubAppState, origin: String) async throws -> String? {
+        await state.saveFromEditor(
+            ServerEditorDraft(
+                mode: .add,
+                name: "",
+                originText: origin,
+                groupName: "",
+                accentColorHex: "",
+                iconSymbolName: "",
+                isPinned: false
+            )
+        )
     }
 
     @MainActor
