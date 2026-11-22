@@ -12,7 +12,7 @@ branch: feat/rule-tasks-must-get-human-confirmation-b
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-22T03:22:46Z"
-updated_at: "2026-11-22T14:52:29Z"
+updated_at: "2026-11-22T14:52:59Z"
 last_close_out_gate_ms: 1189581
 last_close_out_gate_at: "2026-11-22T14:52:29.971Z"
 review_passes: 1
@@ -46,4 +46,4 @@ Never edit repoos.toml; if the engineer instructions live there, describe the ex
 - 2026-11-22T13:34:09Z · note: review pass 1: good to go
 - 2026-11-22T14:33:54Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-22T14:52:29Z · close-out gate completed in 1190s
-
+- 2026-11-22T14:52:59Z · status done→done, release:success
