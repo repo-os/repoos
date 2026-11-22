@@ -19,6 +19,7 @@ import { applyPipelineDetail, buildIntegrationSnapshot } from "../../server/inte
 import type { IntegrationPipelineSnapshot } from "../src/types";
 import {
   parseCheckStepHeading,
+  parseCheckTestProgress,
   startStageHeartbeat,
 } from "../../server/integration-orchestrator.js";
 import {
@@ -94,6 +95,28 @@ describe("parseCheckStepHeading (#0799)", () => {
 
   it("returns null when there is no heading", () => {
     expect(parseCheckStepHeading("just some output\n")).toBeNull();
+  });
+});
+
+describe("parseCheckTestProgress (#1276)", () => {
+  it("reads the latest local test-count marker", () => {
+    const text =
+      '::repoos-check-progress::{"testsDone":10,"testsTotal":800}\nsome output\n' +
+      '::repoos-check-progress::{"testsDone":22,"testsTotal":807,"testsPass":22}\n';
+    expect(parseCheckTestProgress(text)).toEqual({ done: 22, total: 807 });
+  });
+
+  it("falls back to an earlier marker when the latest is truncated", () => {
+    const text =
+      '::repoos-check-progress::{"testsDone":5,"testsTotal":50}\n::repoos-check-progress::{"testsDo';
+    expect(parseCheckTestProgress(text)).toEqual({ done: 5, total: 50 });
+  });
+
+  it("returns null without counts", () => {
+    expect(parseCheckTestProgress("no markers here")).toBeNull();
+    expect(
+      parseCheckTestProgress('::repoos-check-progress::{"stepsDone":1,"stepsTotal":20}'),
+    ).toBeNull();
   });
 });
 

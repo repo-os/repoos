@@ -24,6 +24,13 @@ import { resolveDefaultBranch } from "../core/repo-log.js";
 import type { RepoOSConfig, Task } from "../core/types.js";
 import type { IntegrationJob, JobCoordinator, JobPhase } from "./integration-job.js";
 import { jobAttempt } from "./integration-job.js";
+import {
+  CLOSE_OUT_STEP,
+  CloseOutProgressRecorder,
+  LOCAL_HOST,
+  progressWritable,
+  stepForSlotState,
+} from "./close-out-progress.js";
 import type { CloseOutOutcome, CloseOutOutcomeEvent } from "./close-out-outcome.js";
 import type { RepositoryLock, RootLock } from "./repo-lock.js";
 import type { Logger } from "../core/logger.js";
@@ -74,7 +81,7 @@ import {
 export { hasDependencyInputChange } from "../core/dependency-install.js";
 import type { DoneStep } from "./done.js";
 import { redactSecrets, stripAnsi } from "./done.js";
-import type { RemoteValidator, UploadProgressInfo } from "./remote-validation.js";
+import type { RemoteSlotState, RemoteValidator, UploadProgressInfo } from "./remote-validation.js";
 import { formatBundleUploadDetail } from "./bundle-upload.js";
 import {
   checkEnvAfterRemoteGate,
@@ -785,6 +792,27 @@ export function parseCheckStepHeading(text: string): string | null {
   return last;
 }
 
+/**
+ * Latest local test-count marker (`::repoos-check-progress::{"testsDone":N,"testsTotal":M}`)
+ * in streamed check output, so the close-out step shows the local suite's done/total
+ * the same way remote runs do (#1276). Takes the LAST marker; null when none or when
+ * the counts are missing. Exported for tests.
+ */
+export function parseCheckTestProgress(text: string): { done: number; total: number } | null {
+  const matches = [...stripAnsi(text).matchAll(/::repoos-check-progress::(\{[^\n\r]+\})/g)];
+  for (let i = matches.length - 1; i >= 0; i--) {
+    try {
+      const parsed = JSON.parse(matches[i]![1]!) as { testsDone?: unknown; testsTotal?: unknown };
+      if (typeof parsed.testsDone === "number" && typeof parsed.testsTotal === "number") {
+        return { done: parsed.testsDone, total: parsed.testsTotal };
+      }
+    } catch {
+      // A truncated marker at the buffer edge: fall back to an earlier one.
+    }
+  }
+  return null;
+}
+
 export interface ProcessRunResult {
   status: number | null;
   stdout: string;
@@ -1009,6 +1037,12 @@ export class CloseOutOrchestrator {
   private ownedAttempt: number | undefined = undefined;
 
   /**
+   * The live progress recorder for the run in flight (#1276). Set for the span
+   * of one `processJob` call; `reportStep` is a no-op without it.
+   */
+  private progress: CloseOutProgressRecorder | undefined = undefined;
+
+  /**
    * Tasks whose `status: done` this process stamped into the publish commit
    * (#0886). Only these may be reverted on failure — a task that was already
    * done from an earlier close-out must stay moot/untouched.
@@ -1088,6 +1122,12 @@ export class CloseOutOrchestrator {
      * callers are unaffected.
      */
     private onStageHeartbeat?: (taskId: string, detail: string) => void,
+    /**
+     * Fired when an attempt's step or host changes (#1276), so the pipeline
+     * snapshot reaches the UI at once rather than on the next stage event.
+     * Observation only. Appended last so existing callers are unaffected.
+     */
+    private onAttemptProgress?: (taskId: string) => void,
   ) {}
 
   /** Discard any in-flight resolution provenance for a task (#0692). */
@@ -1550,7 +1590,78 @@ export class CloseOutOrchestrator {
     return this.processJob(job);
   }
 
+  /**
+   * One processing run of the job's current attempt (#1276). Streams the run's
+   * step, host and heartbeat to the attempt's progress log and job record, and
+   * closes the log with the run's outcome. Observation only: it never changes
+   * what the phases do.
+   */
   private async processJob(job: IntegrationJob): Promise<{ ok: boolean; reason?: string }> {
+    const attempt = job.attempt ?? jobAttempt(this.coordinator.getJob(job.taskId));
+    const recorder = new CloseOutProgressRecorder({
+      root: this.config.root,
+      taskId: job.taskId,
+      attempt,
+      persist: (patch, patchAttempt) => {
+        // A terminal record is final: a late heartbeat must not stamp a
+        // `failed` or `done` job with a live step or a fresh timestamp (#1276).
+        if (!progressWritable(this.coordinator.getJob(job.taskId)?.phase)) return false;
+        return !!this.coordinator.updateJob(job.taskId, patch, patchAttempt);
+      },
+      onWriteError: (error) =>
+        this.logger?.integration(job.taskId, "warn", "close-out progress write failed", {
+          error: String(error),
+        }),
+      remoteRun: () =>
+        this.remoteValidator?.activeRemoteRuns?.().find((run) => run.taskId === job.taskId),
+      onChange: () => this.onAttemptProgress?.(job.taskId),
+    });
+    this.progress = recorder;
+    recorder.start();
+    let outcome = "stopped before finishing";
+    try {
+      const result = await this.runJobPhases(job);
+      outcome = result.ok ? "published" : (result.reason ?? "failed");
+      return result;
+    } finally {
+      recorder.stop(outcome);
+      this.progress = undefined;
+    }
+  }
+
+  /** Report the run's current step to its progress log and job record (#1276). */
+  private reportStep(step: string, host: string | null = LOCAL_HOST): void {
+    this.progress?.setStep(step, host);
+  }
+
+  /**
+   * Report a remote run's place in the host pool (#1276): waiting for a slot
+   * (no host yet) or holding one on a named host.
+   */
+  private reportSlot(slot: RemoteSlotState): void {
+    const { step, host } = stepForSlotState(slot);
+    this.reportStep(step, host);
+  }
+
+  /**
+   * Start a new attempt for a retry inside this run (#1276): the job record and
+   * the progress log both move to it, carrying the reason the previous attempt
+   * failed. Returns `false` when this run no longer owns the job (#0736), in
+   * which case the caller must stop without rerunning anything.
+   */
+  private beginRetryAttempt(job: IntegrationJob, reason: string): boolean {
+    // No ownership claim (a direct single-phase call): there is no job generation
+    // to advance, so the rerun proceeds as it always did (#0736).
+    if (this.ownedAttempt === undefined) return true;
+    const next = this.coordinator.advanceAttempt(job.taskId, this.ownedAttempt, reason);
+    if (!next) return false;
+    this.ownedAttempt = jobAttempt(next);
+    this.progress?.beginAttempt(this.ownedAttempt, reason);
+    this.onAttemptProgress?.(job.taskId);
+    return true;
+  }
+
+  private async runJobPhases(job: IntegrationJob): Promise<{ ok: boolean; reason?: string }> {
     const root = this.config.root;
 
     // Pin the execution generation this run owns (#0736). Every coordinator
@@ -1608,6 +1719,7 @@ export class CloseOutOrchestrator {
 
       // Syncing phase: ensure the candidate worktree exists and is up to date with main.
       if (job.phase === "syncing") {
+        this.reportStep(CLOSE_OUT_STEP.syncing);
         const syncRes = await this.syncCandidate(job);
         if (syncRes.cancelled) return this.cancelJob(job);
         if (syncRes.timedOut) return this.timeoutJob(job);
@@ -1702,6 +1814,8 @@ export class CloseOutOrchestrator {
           if (this.pipelineTimedOut(job)) return this.timeoutJob(job);
           const firstReason = validateRes.reason ?? "unknown";
           const firstChecks = validateRes.failedChecks;
+          // The rerun is a new attempt that records why it runs (#1276).
+          if (!this.beginRetryAttempt(job, firstReason)) return this.cancelJob(job);
           validateRes = await this.validateCandidate(job);
           if (validateRes.cancelled) return this.cancelJob(job);
           if (validateRes.timedOut) return this.timeoutJob(job);
@@ -1777,6 +1891,7 @@ export class CloseOutOrchestrator {
 
       // Publishing phase: merge candidate to live main, holding the repo lock.
       if (job.phase === "publishing") {
+        this.reportStep(CLOSE_OUT_STEP.publishing);
         const pubRes = await this.publishCandidate(job);
         if (pubRes.cancelled) return this.cancelJob(job);
         if (pubRes.timedOut) return this.timeoutJob(job);
@@ -1814,6 +1929,7 @@ export class CloseOutOrchestrator {
 
       // Cleanup phase: remove candidate worktree, delete candidate branch, remove task worktree.
       if (job.phase === "cleanup") {
+        this.reportStep(CLOSE_OUT_STEP.cleanup);
         const cleanRes = await this.cleanup(job);
         if (!cleanRes.ok) {
           // Log but don't fail: the merge succeeded, so task is done even if cleanup is messy.
@@ -3026,6 +3142,7 @@ export class CloseOutOrchestrator {
         // A long build reports nothing between the "build" stage events; the
         // heartbeat keeps the card live instead of reading as a hang (#0799).
         const buildLabel = (): string => "building candidate";
+        this.reportStep(CLOSE_OUT_STEP.building);
         let buildRes = await this.withStageHeartbeat(job.taskId, buildLabel, () =>
           runProcess("bun", ["run", "build"], {
             cwd: wtPath,
@@ -3146,6 +3263,13 @@ export class CloseOutOrchestrator {
                 /* observation must never break close-out */
               }
             },
+            // Waiting for a host slot, then holding one (#1276).
+            onSlotState: (slot) => this.reportSlot(slot),
+            // A host failover reruns the suite on another host: a new attempt
+            // that says which failure it is retrying (#1276).
+            onRetry: (reason) => {
+              this.beginRetryAttempt(job, reason);
+            },
           });
 
         const scopedRemoteRef =
@@ -3169,6 +3293,8 @@ export class CloseOutOrchestrator {
           }
         };
         const remoteGateLabel = (): string | null => (remoteUploading ? null : "remote tests");
+        // No host yet: the slot callbacks name the host once one is held (#1276).
+        this.reportStep(CLOSE_OUT_STEP.remote, null);
         remoteGateOutcome = await this.withStageHeartbeat(job.taskId, remoteGateLabel, () =>
           runRemoteGateAndClear(scopedRemoteRef),
         );
@@ -3193,6 +3319,12 @@ export class CloseOutOrchestrator {
             "scoped remote close-out gate failed — re-running the full suite once on the runner before failing the close-out",
             { detail: remoteGateOutcome.detail },
           );
+          // The full-suite rerun is a new attempt that records the scoped failure (#1276).
+          if (
+            !this.beginRetryAttempt(job, remoteGateOutcome.detail ?? "scoped remote tests failed")
+          ) {
+            return this.cancelJob(job);
+          }
           remoteGateOutcome = await this.withStageHeartbeat(job.taskId, remoteGateLabel, () =>
             runRemoteGateAndClear(),
           );
@@ -3334,13 +3466,28 @@ export class CloseOutOrchestrator {
         // of the coarse "check" stage while a long step runs. The chunk buffer
         // tolerates a heading split across two stream reads.
         let currentCheckStep = "running check";
+        let currentTestProgress: { done: number; total: number } | null = null;
         let checkStepBuffer = "";
         const noteCheckStep = (chunk: string): void => {
           checkStepBuffer = (checkStepBuffer + chunk).slice(-2000);
           const heading = parseCheckStepHeading(checkStepBuffer);
           if (heading) currentCheckStep = heading;
+          // Local test counts (#1276): show done/total like a remote run does.
+          const tests = parseCheckTestProgress(checkStepBuffer);
+          if (tests) currentTestProgress = tests;
         };
-        const checkLabel = (): string | null => currentCheckStep;
+        const checkLabel = (): string | null => {
+          const base =
+            currentCheckStep === "running check"
+              ? CLOSE_OUT_STEP.checks
+              : `${CLOSE_OUT_STEP.checks} · ${currentCheckStep}`;
+          this.reportStep(
+            currentTestProgress
+              ? `${base} · tests ${currentTestProgress.done}/${currentTestProgress.total}`
+              : base,
+          );
+          return currentCheckStep;
+        };
         const rawCheck = (
           cli: string,
           args: string[],
@@ -3453,8 +3600,25 @@ export class CloseOutOrchestrator {
               // fallback run cannot fit in a budget that has no time left, and the
               // timeout classification below is the real result.
               outcome = "fallback";
+              // Each rerun is a new attempt that records why it runs (#1276).
+              if (
+                !this.beginRetryAttempt(
+                  job,
+                  "local check failed — retrying with the globally linked repoos",
+                )
+              ) {
+                return { checkRes: { ...checkRes, cancelled: true }, outcome };
+              }
               checkRes = await rawCheck("repoos", ["check", ...args], env);
               if (checkRes.status !== 0 && !this.pipelineTimedOut(job)) {
+                if (
+                  !this.beginRetryAttempt(
+                    job,
+                    "global repoos check failed — retrying with bun run repoos",
+                  )
+                ) {
+                  return { checkRes: { ...checkRes, cancelled: true }, outcome };
+                }
                 checkRes = await rawCheck("bun", ["run", "repoos", "check", ...args], env);
               }
             }
@@ -3462,6 +3626,7 @@ export class CloseOutOrchestrator {
           return { checkRes, outcome };
         };
 
+        this.reportStep(CLOSE_OUT_STEP.checks);
         let { checkRes, outcome } = await this.withStageHeartbeat(job.taskId, checkLabel, () =>
           runGatePass(baseCheckArgs, checkEnv),
         );
@@ -3502,6 +3667,16 @@ export class CloseOutOrchestrator {
           // record rather than repeating the scoped note.
           fullEnv.REPOOS_CHECK_GATE_NOTE =
             "scoped close-out gate failed — re-ran the full suite once before failing the close-out";
+          // The full rerun is a new attempt that records why it runs (#1276).
+          if (
+            !this.beginRetryAttempt(
+              job,
+              "scoped close-out gate failed — re-running the full suite once",
+            )
+          ) {
+            checkHandle?.done(checkRes.status);
+            return { ok: false, cancelled: true, reason: CANCEL_REASON };
+          }
           const retry = await this.withStageHeartbeat(job.taskId, checkLabel, () =>
             runGatePass(baseCheckArgs, fullEnv),
           );

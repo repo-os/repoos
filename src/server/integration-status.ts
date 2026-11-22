@@ -9,12 +9,23 @@
  */
 import {
   attemptIsExecuting,
+  jobAttempt,
   type IntegrationJob,
   type IntegrationPhaseTiming,
   type JobCoordinator,
 } from "./integration-job.js";
 import type { DoneStep } from "./done.js";
 import type { PipelineCheckPlan } from "./check-plan-info.js";
+import { progressIsStale } from "./close-out-progress.js";
+
+/** The later of two optional ISO timestamps (ignores a missing or unparsable one). */
+function latestIso(a: string | undefined | null, b: string | undefined | null): string | undefined {
+  const aMs = a ? Date.parse(a) : Number.NaN;
+  const bMs = b ? Date.parse(b) : Number.NaN;
+  if (!Number.isFinite(aMs)) return Number.isFinite(bMs) ? (b ?? undefined) : undefined;
+  if (!Number.isFinite(bMs)) return a ?? undefined;
+  return bMs > aMs ? (b ?? undefined) : (a ?? undefined);
+}
 
 /** The discrete stages surfaced to the user, in pipeline order (#0207). */
 export const PIPELINE_STAGES: readonly string[] = [
@@ -57,6 +68,19 @@ export interface IntegrationSnapshot {
     phaseElapsedMs?: number | null;
     /** Time spent in every phase so far, oldest first (#0897). */
     phaseTimings?: IntegrationPhaseTiming[];
+    /** The attempt generation this run belongs to, for retries (#1276). */
+    attempt?: number;
+    /** Fine-grained step, e.g. "queued for host slot" (#1276). */
+    step?: string | null;
+    /** Where {@link step} runs: `local` or a remote host (#1276). */
+    host?: string | null;
+    /**
+     * True when the attempt's last progress write is older than
+     * PROGRESS_STALE_MS: the writer stopped, so the run may be stuck (#1276).
+     */
+    progressStale?: boolean;
+    /** Why the attempt this one replaced failed, for a retry (#1276). */
+    previousFailure?: { attempt: number; reason?: string; failedAt?: string } | null;
   } | null;
   /** Task ids queued behind the active job, in FIFO order. */
   queue: string[];
@@ -206,7 +230,21 @@ export function buildIntegrationSnapshot(
 
   const failed = inFlight.phase === "failed";
   const startedAt = inFlight.startedAt;
-  const lastProgressAt = reportedAt[inFlight.taskId] ?? startedAt;
+  // The newest of the stage events and the attempt's own progress writes is the
+  // "last seen alive" shown to the user (#1276). Staleness is judged on the
+  // attempt's own progress writer alone: a fresh stage event must not mask a
+  // recorder that stopped writing. Staleness is only judged once the recorder
+  // has written, so a legacy record without progress is not flagged.
+  const lastProgressAt =
+    latestIso(reportedAt[inFlight.taskId], inFlight.lastProgressAt) ?? startedAt;
+  // A recorder-attached attempt (it has a progress log) that never wrote a
+  // timestamp means its first write failed: judge it from the attempt start so
+  // the card cannot look healthy forever (#1276). A legacy record without a
+  // progress log is still not flagged.
+  const progressStale = progressIsStale(
+    inFlight.lastProgressAt ?? (inFlight.progressLogPath ? startedAt : null),
+    nowMs,
+  );
   const activePhaseStartedAt = inFlight.phaseStartedAt ?? startedAt;
   const activeElapsed = Number.isFinite(nowMs) ? nowMs - Date.parse(activePhaseStartedAt) : null;
   return {
@@ -223,6 +261,11 @@ export function buildIntegrationSnapshot(
       phaseStartedAt: activePhaseStartedAt,
       phaseElapsedMs: activeElapsed != null && activeElapsed >= 0 ? activeElapsed : null,
       phaseTimings: inFlight.phaseTimings,
+      attempt: jobAttempt(inFlight),
+      step: inFlight.step ?? null,
+      host: inFlight.host ?? null,
+      progressStale,
+      previousFailure: inFlight.previousFailure ?? null,
     },
     ...queueFields,
     checkPlan,
