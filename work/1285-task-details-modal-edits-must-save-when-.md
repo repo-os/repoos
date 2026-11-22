@@ -82,3 +82,4 @@ Modal and draft code is in src/ui-app/src/components/TaskDrawer.vue (metaModalOp
 - 2026-11-22T18:23:25Z · body
 - 2026-11-22T18:25:24Z · engineer stopped by request
 - 2026-11-22T18:30:28Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-11-22T18:30:28Z · note: handoff requested (cli)
