@@ -9,6 +9,7 @@ import { useRepoStore } from "../src/stores/repo";
 import { invalidatePageDataPrefix } from "../src/composables/page-data-cache";
 import {
   checksActivityLive,
+  integrationPipelineLive,
   parseChecksTab,
   resolveChecksDefaultTab,
 } from "../src/lib/checks-page";
@@ -79,6 +80,18 @@ describe("checks-page tab helpers (#0738)", () => {
     expect(parseChecksTab("now")).toBe("now");
     expect(parseChecksTab("plan")).toBe("plan");
     expect(parseChecksTab("nope")).toBeNull();
+  });
+
+  it("counts a job validating alongside the active one as live (#1275)", () => {
+    const parallelOnly = {
+      empty: false,
+      active: null,
+      queue: [],
+      parallel: [{ taskId: "2", phase: "validating", stage: null, startedAt: null, detail: null }],
+      at: "",
+    };
+    expect(integrationPipelineLive(parallelOnly as never)).toBe(true);
+    expect(integrationPipelineLive({ empty: true, active: null, queue: [], at: "" })).toBe(false);
   });
 
   it("picks Now when activity is live and Runs when idle", () => {
