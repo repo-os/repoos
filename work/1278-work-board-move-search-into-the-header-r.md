@@ -1,6 +1,4 @@
 ---
-last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/offline-slow-network-browser.test.ts > slow network and offline QA (#1226) > offline: Work shows a plain-English failure, no endless skeleton, usable at every width, tests/stories-inbox-search-qa-browser.test.ts > #1237 Stories / Inbox / Search QA at 375/768/1280 (WebKit, fixtures) > inbox board fits at 768px with the full 220 long-titled cards, tests/stories-inbox-search-qa-browser.test.ts > #1237 Stories / Inbox / Search QA at 375/768/1280 (WebKit, fixtures) > inbox board fits at 1280px with the full 220 long-titled cards on bee — fix it in the feature branch and re-run the gate"
-last_handoff_failure_sha: 1ef7216528baf7a90a345708f375ae2ca1ddc1bd
 id: "1278"
 title: "Work board: move search into the header row, half width, drop the search chip"
 type: feature
@@ -13,7 +11,9 @@ branch: feat/work-board-move-search-into-the-header-r
 cli_override: github copilot
 model_override: default
 created_at: "2026-11-20T08:46:27Z"
-updated_at: "2026-11-22T08:55:04Z"
+updated_at: "2026-11-22T08:55:05Z"
+last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/offline-slow-network-browser.test.ts > slow network and offline QA (#1226) > offline: Work shows a plain-English failure, no endless skeleton, usable at every width, tests/stories-inbox-search-qa-browser.test.ts > #1237 Stories / Inbox / Search QA at 375/768/1280 (WebKit, fixtures) > inbox board fits at 768px with the full 220 long-titled cards, tests/stories-inbox-search-qa-browser.test.ts > #1237 Stories / Inbox / Search QA at 375/768/1280 (WebKit, fixtures) > inbox board fits at 1280px with the full 220 long-titled cards on bee — fix it in the feature branch and re-run the gate"
+last_handoff_failure_sha: 1ef7216528baf7a90a345708f375ae2ca1ddc1bd
 review_rounds: 2
 review_passes: 2
 handoff_signal_retry_count: 2
@@ -363,4 +363,4 @@ Start from src/ui-app/src/components/BoardQueueSearch.vue and the Work view head
 - 2026-11-22T08:49:06Z · status active→review
 - 2026-11-22T08:55:04Z · message_queued at 2026-11-22T08:55:04.032Z
 - 2026-11-22T08:55:04Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: tests/offline-slow-network-browser.test.ts > slow network and offline QA (#1226) > offline: Work shows a plain-English failure, no endless skeleton, usable at every width, tests/stories-inbox-search-qa-browser.test.ts > #1237 Stories / Inbox / Search QA at 375/768/1280 (WebKit, fixtures) > inbox board fits at 768px with the full 220 long-titled cards, tests/stories-inbox-search-qa-browser.test.ts > #1237 Stories / Inbox / Search QA at 375/768/1280 (WebKit, fixtures) > inbox board fits at 1280px with the full 220 long-titled cards on bee — fix it in the feature branch and re-run the gate
-
+- 2026-11-22T08:55:05Z · note: review pass 6: needs some work
