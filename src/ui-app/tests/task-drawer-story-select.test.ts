@@ -190,6 +190,11 @@ describe("task drawer story select (#0525)", () => {
     stubApi(task);
     wrapper = await mountDrawer(pinia, task, false);
 
+    // The collapsed summary names the assignee the modal edits, and no story.
+    const summary = wrapper.get('[data-test-id="task-meta-summary"]').text();
+    expect(summary).toContain("ai");
+    expect(summary).not.toContain("no story");
+
     const details = await openTaskDetailsModal(wrapper);
     expect(details.textContent).toContain("Assigned to");
     expect(details.querySelector("#et-story")).toBeNull();

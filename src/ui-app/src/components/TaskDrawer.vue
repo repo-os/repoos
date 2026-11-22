@@ -2597,7 +2597,10 @@ const metaSummary = computed(() =>
     draft.type,
     draft.priority,
     draft.area || "no area",
-    ...(storiesEnabled.value ? [assignedStoryName.value || "no story"] : []),
+    // The modal edits Story when stories are on and Assigned to when they are off.
+    ...(storiesEnabled.value
+      ? [assignedStoryName.value || "no story"]
+      : [draft.assignedTo || "unassigned"]),
     draft.dependsOn.length
       ? `depends on ${draft.dependsOn.map((id) => `#${id}`).join(", ")}`
       : "no dependencies",
