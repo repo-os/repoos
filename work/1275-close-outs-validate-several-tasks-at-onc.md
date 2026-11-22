@@ -2,7 +2,7 @@
 id: "1275"
 title: "Close-outs: validate several tasks at once on different runner machines"
 type: feature
-status: active
+status: review
 priority: p1
 area: [server, core]
 assigned_to: ai
@@ -522,3 +522,4 @@ Read docs/close-out-pipeline.md and docs/remote-validation.md first. Never touch
 - 2026-11-22T10:03:08Z · note: adopted orphaned engineer pid 15987
 - 2026-11-22T10:06:52Z · queued message undelivered for 4m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-22T10:07:07Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code unknown) · last assistant: The scoped `repoos check` is still running, at 195 of 622 tests and passing so far. A Monitor is watching for its exit, and I'll read the result when it reports. I haven't requested handoff yet, because the check hasn't passed. · stderr: (empty)
+- 2026-11-22T10:07:07Z · status active→review
