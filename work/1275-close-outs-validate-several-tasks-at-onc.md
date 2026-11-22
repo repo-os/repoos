@@ -483,3 +483,4 @@ Read docs/close-out-pipeline.md and docs/remote-validation.md first. Never touch
 - 2026-11-22T08:02:28Z · watchdog: auto-resumed engineer to read a deferred handoff message · resume 1/3
 - 2026-11-22T08:02:30Z · message_delivered: 1 message(s)
 - 2026-11-22T08:10:17Z · message_queued at 2026-11-22T08:10:17.458Z
+- 2026-11-22T08:10:17Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
