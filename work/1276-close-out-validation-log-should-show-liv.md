@@ -12,8 +12,6 @@ cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T07:42:21Z"
 updated_at: "2026-11-22T06:10:34Z"
-last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/work-board-large-perf-browser.test.ts > Work board with 1200 tasks (WebKit, generated fixture) > opens, filters, and scrolls at 375px within budget on bee — fix it in the feature branch and re-run the gate"
-last_handoff_failure_sha: 84f91719ed676c04d4bcad6115cd3c3f824beccd
 review_passes: 4
 last_check_failure: "repoos check at 2026-11-20T21:01:31.328Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Close-out drawer with live step, host, and attempt (target \"default\"): loading state detected: loading text \"Loading changes…\" on /work?task=9999&tab=changes (http://127.0.0.1:43237/work?task=9999&tab=changes&shotState=drawer%3AcloseOutRemoteTests)"
 review_failed_report_retries: 0
@@ -222,3 +220,4 @@ Related: #1272 (timer should count from validation start). Never touch repoos.to
 - 2026-11-22T06:07:05Z · note: handoff requested (cli)
 - 2026-11-22T06:10:32Z · note: ui verification passed: 1 of 1 shot captured with clean console
 - 2026-11-22T06:10:34Z · status active→review
+
