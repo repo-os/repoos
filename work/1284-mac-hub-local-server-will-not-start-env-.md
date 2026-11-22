@@ -14,7 +14,7 @@ branch: feat/mac-hub-local-server-will-not-start-env-
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-22T03:29:23Z"
-updated_at: "2026-11-22T13:27:10Z"
+updated_at: "2026-11-22T13:27:12Z"
 review_passes: 4
 review_rounds: 2
 ---
@@ -77,3 +77,4 @@ Look in the macos Hub app sources and the local-server launcher. Never touch rep
 - 2026-11-22T13:17:10Z · note: review pass 4: needs some work
 - 2026-11-22T13:17:10Z · needs_input
 - 2026-11-22T13:27:10Z · status review→active
+- 2026-11-22T13:27:12Z · CTO nudge: held — an undelivered message is already queued
