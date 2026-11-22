@@ -14,7 +14,7 @@ branch: feat/close-outs-validate-several-tasks-at-onc
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T07:42:13Z"
-updated_at: "2026-11-22T13:07:33Z"
+updated_at: "2026-11-22T14:53:02Z"
 review_passes: 4
 review_rounds: 2
 last_check_failure: "repoos check at 2026-11-22T08:35:01.967Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Pipeline shows a job validating alongside the active close-out (Also running) (target \"default\"): state \"integration:parallelValidations\" did not render on target \"default\" — /checks?tab=now shows no task card (http://127.0.0.1:45407/checks?tab=now&shotState=integration%3AparallelValidations)"
