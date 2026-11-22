@@ -8,8 +8,10 @@ area: docs
 assigned_to: ai
 created_by: t@t
 branch: ""
+cli_override: claude code
+model_override: haiku
 created_at: "2026-11-22T03:22:46Z"
-updated_at: "2026-11-22T03:22:51Z"
+updated_at: "2026-11-22T12:27:02Z"
 ---
 ## Problem
 QA-pass and follow-up tasks have added new user-facing UI that no human asked for (for example the Depends on task picker from #1189 and the desktop Work board search from #1259). It landed silently and the human only noticed later.
@@ -30,3 +32,4 @@ Never edit repoos.toml; if the engineer instructions live there, describe the ex
 
 - 2026-11-22T03:22:46Z · created · t@t
 - 2026-11-22T03:22:51Z · status inbox→ready
+- 2026-11-22T12:27:02Z · cli_override, model_override
