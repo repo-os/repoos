@@ -430,3 +430,12 @@ enum RepoAccentColorPreference {
         return .unsupported
     }
 }
+
+extension Sequence where Element: Identifiable, Element.ID: Hashable {
+    /// Keyed by id without trapping. `Dictionary(uniqueKeysWithValues:)` aborts the
+    /// app on a duplicate id; a registry that was half-written or edited by hand
+    /// can hold one, so the first entry wins instead.
+    func indexedByID() -> [Element.ID: Element] {
+        Dictionary(map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+    }
+}

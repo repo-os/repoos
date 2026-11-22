@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 2724187
-last_close_out_gate_at: "2026-11-22T14:32:23.400Z"
 id: "1284"
 title: "Mac Hub: Local server will not start (env: node: No such file or directory) and removing then re-adding it crashes the app"
 type: bug
-status: review
+status: done
 priority: p1
 area: macos
+merged_commit: 5d1c9d7b46d1efb5d2bb821eb50dae9cfdb09eec
 assigned_to: ai
 created_by: t@t
 branch: feat/mac-hub-local-server-will-not-start-env-
@@ -14,6 +13,8 @@ cli_override: claude code
 model_override: haiku
 created_at: "2026-11-22T03:29:23Z"
 updated_at: "2026-11-22T14:32:23Z"
+last_close_out_gate_ms: 2724187
+last_close_out_gate_at: "2026-11-22T14:32:23.400Z"
 review_passes: 5
 review_rounds: 2
 ---

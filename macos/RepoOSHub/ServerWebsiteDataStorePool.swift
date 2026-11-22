@@ -37,18 +37,13 @@ final class ServerWebsiteDataStorePool {
         }
     }
 
-    func removeStore(for serverID: UUID) {
-        lock.lock()
-        stores.removeValue(forKey: serverID)
-        lock.unlock()
-        if #available(macOS 14.0, *) {
-            Task {
-                try? await WKWebsiteDataStore.remove(forIdentifier: serverID)
-            }
-        }
-    }
-
     /// Drops the in-memory handle for one server. On-disk identifier-backed storage is unchanged.
+    ///
+    /// Deleting a server calls this and deliberately does **not** call
+    /// `WKWebsiteDataStore.remove(forIdentifier:)`: in #1284's repro that call crashed
+    /// WebKit's `WebsiteDataStoreIO` thread (EXC_BAD_ACCESS), and remove-then-re-add
+    /// is the reported crash. The removed server's cookies stay on disk, orphaned,
+    /// until a verified cleanup path exists (human-verify follow-up).
     func releaseCachedStore(for serverID: UUID) {
         lock.lock()
         stores.removeValue(forKey: serverID)

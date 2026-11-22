@@ -23,7 +23,10 @@ final class HubCrossServerTaskSearchEngine: ObservableObject {
     }
 
     func configure(entries: [ServerEntry]) {
-        let nextHealthByServerID = Dictionary(uniqueKeysWithValues: entries.map { ($0.id, $0.lastHealth) })
+        let nextHealthByServerID = Dictionary(
+            entries.map { ($0.id, $0.lastHealth) },
+            uniquingKeysWith: { first, _ in first }
+        )
         let healthChanged = nextHealthByServerID != healthByServerID
         self.entries = entries
         healthByServerID = nextHealthByServerID
