@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: t@t
 branch: ""
 created_at: "2026-11-22T18:21:14Z"
-updated_at: "2026-11-22T18:21:15Z"
+updated_at: "2026-11-22T18:21:21Z"
 ---
 ## Problem
 #1282 moved Type, Priority, Area, Story/Assigned to and Depends on into a modal. The modal edits the drawer's unsaved draft and only says 'Changes are saved with the drawer's Save bar'. Nick opened the modal, changed a value, pressed Done, and the change did not stick (the card still showed the old value) because the drawer's Save bar was never pressed: it sits behind the modal and is easy to miss.
@@ -26,7 +26,11 @@ The modal saves what it edits. Replace Done with Save and Cancel: Save patches t
 - A test covers save and cancel for at least one field and for dependencies.
 - Declare shots at phone and desktop width of the modal with Save and Cancel visible.
 
+## Notes for AI
+Modal and draft code is in src/ui-app/src/components/TaskDrawer.vue (metaModalOpen, saveDraft, changedFields, metaSummary). Patch only the modal's fields from the modal's Save, so unsaved title/body edits are not saved by it.
+
 ## Activity
 
 - 2026-11-22T18:21:14Z · created · t@t
 - 2026-11-22T18:21:15Z · needs_input
+- 2026-11-22T18:21:21Z · body: Notes for AI (added)
