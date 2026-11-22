@@ -3,9 +3,6 @@ id: "1284"
 title: "Mac Hub: Local server will not start (env: node: No such file or directory) and removing then re-adding it crashes the app"
 type: bug
 status: active
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: `needs some work` — Finder launches still miss RepoOS/runtime locations supported by the project’s launcher.
 priority: p1
 area: macos
 assigned_to: ai
@@ -14,7 +11,7 @@ branch: feat/mac-hub-local-server-will-not-start-env-
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-22T03:29:23Z"
-updated_at: "2026-11-22T13:07:42Z"
+updated_at: "2026-11-22T13:07:43Z"
 review_passes: 3
 review_rounds: 2
 ---
@@ -68,3 +65,4 @@ Look in the macos Hub app sources and the local-server launcher. Never touch rep
 - 2026-11-22T12:58:52Z · needs_input
 - 2026-11-22T13:07:40Z · status review→active
 - 2026-11-22T13:07:42Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-22T13:07:43Z · needs_input
