@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-22T14:04:01.314Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 id: "1279"
 title: "Easter eggs bundle: rename review history column to Issues"
 type: feature
@@ -17,7 +19,6 @@ updated_at: "2026-11-22T14:04:00Z"
 review_passes: 5
 handoff_signal_retry_count: 1
 review_rounds: 2
-last_check_failure: "repoos check at 2026-11-22T12:01:07.968Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Review pass history: last column now reads Issues (target \"default\"): highlight .review-history-table matched nothing on /work?task=9999&tab=review (http://127.0.0.1:41827/work?task=9999&tab=review&shotState=drawer%3AreviewPasses)"
 ---
 ## Problem
 The review pass history table in the task drawer has a column headed 'finding classes', which means little to a reader. It is useful as a quick view of what is wrong when a pass is not good to go.
@@ -134,3 +135,4 @@ Copy change only. Never touch repoos.toml. Headless Playwright only.
 - 2026-11-22T14:03:56Z · note: review pass 5: needs some work
 - 2026-11-22T14:03:57Z · message_queued at 2026-11-22T14:03:57.944Z
 - 2026-11-22T14:04:00Z · message_delivered: 1 message(s)
+
