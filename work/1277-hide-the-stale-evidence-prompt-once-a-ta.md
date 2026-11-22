@@ -11,7 +11,7 @@ branch: feat/hide-the-stale-evidence-prompt-once-a-ta
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T08:26:19Z"
-updated_at: "2026-11-22T17:26:56Z"
+updated_at: "2026-11-22T17:27:00Z"
 review_passes: 5
 review_failed_report_retries: 0
 check_retry_count: 1
