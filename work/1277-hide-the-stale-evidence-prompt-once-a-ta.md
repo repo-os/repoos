@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 1024824
-last_close_out_gate_at: "2026-11-22T19:23:57.107Z"
 id: "1277"
 title: Hide the stale-evidence prompt once a task is queued or moving to done
 type: feature
-status: review
+status: done
 priority: p3
 area: web
+merged_commit: c004a5a0d031321ed700e2374e3c90c52c45c72a
 assigned_to: ai
 created_by: t@t
 branch: feat/hide-the-stale-evidence-prompt-once-a-ta
@@ -14,6 +13,8 @@ cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T08:26:19Z"
 updated_at: "2026-11-22T19:23:57Z"
+last_close_out_gate_ms: 1024824
+last_close_out_gate_at: "2026-11-22T19:23:57.107Z"
 review_passes: 6
 review_failed_report_retries: 0
 last_check_failure: "repoos check at 2026-11-22T15:57:20.978Z: repoos check failed: reused check inputs changed during handoff — run the check again"

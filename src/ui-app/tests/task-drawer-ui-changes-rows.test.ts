@@ -19,9 +19,10 @@ import { flushPromises, mount } from "@vue/test-utils";
 import { createPinia, setActivePinia, type Pinia } from "pinia";
 import { createRouter, createMemoryHistory } from "vue-router";
 import TaskDrawer from "../src/components/TaskDrawer.vue";
+import { useRepoStore } from "../src/stores/repo";
 import { useUiStore } from "../src/stores/ui";
 import { describeStep, describeSteps, shotRows } from "../src/lib/shot-rows";
-import type { ShotMeta, Task } from "../src/types";
+import type { IntegrationPipelineSnapshot, ShotMeta, Task } from "../src/types";
 
 const EMPTY_COUNTS = { draft: 0, inbox: 0, ready: 0, active: 0, review: 0, done: 0 };
 
@@ -493,6 +494,62 @@ describe("Changes → UI changes rows (#0611)", () => {
     await wrapper.find('[data-test-id="changes-tab-ui"]').trigger("click");
     expect(wrapper.find(".ui-changes").exists()).toBe(true);
     expect(wrapper.text()).toContain("Add shot");
+  });
+
+  it("hides Refresh evidence while a close-out is validating, and shows it once the job fails (#1277)", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    installFetch();
+    vi.stubGlobal("EventSource", FakeEventSource);
+    shotsPayload = [makeShot()];
+    const integration = (failed: boolean): IntegrationPipelineSnapshot => ({
+      empty: false,
+      queue: [],
+      at: "2026-11-22T12:00:00.000Z",
+      active: {
+        taskId: "0001",
+        stage: null,
+        failed,
+        startedAt: "2026-11-22T12:00:00.000Z",
+        lastProgressAt: "2026-11-22T12:00:00.000Z",
+        phase: "validating",
+      },
+    });
+    useRepoStore(pinia).integration = integration(false);
+    const running = await mountChanges(pinia, makeTask({ status: "review" }));
+    await running.find('[data-test-id="changes-tab-ui"]').trigger("click");
+    await flushPromises();
+    expect(running.find('[data-test-id="refresh-evidence"]').exists()).toBe(false);
+    expect(running.find('[data-test-id="add-shot"]').exists()).toBe(true);
+
+    useRepoStore(pinia).integration = integration(true);
+    await flushPromises();
+    expect(running.find('[data-test-id="refresh-evidence"]').exists()).toBe(true);
+  });
+
+  it("hides Refresh evidence while this task is queued behind another close-out (#1277)", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    installFetch();
+    vi.stubGlobal("EventSource", FakeEventSource);
+    shotsPayload = [makeShot()];
+    useRepoStore(pinia).integration = {
+      empty: false,
+      queue: ["0001"],
+      at: "2026-11-22T12:00:00.000Z",
+      active: {
+        taskId: "0002",
+        stage: null,
+        failed: false,
+        startedAt: "2026-11-22T12:00:00.000Z",
+        lastProgressAt: "2026-11-22T12:00:00.000Z",
+        phase: "validating",
+      },
+    };
+    const wrapper = await mountChanges(pinia, makeTask({ status: "review" }));
+    await wrapper.find('[data-test-id="changes-tab-ui"]').trigger("click");
+    await flushPromises();
+    expect(wrapper.find('[data-test-id="refresh-evidence"]').exists()).toBe(false);
   });
 
   it("orders UI changes toolbar actions with Add shot on the right (#0778)", async () => {

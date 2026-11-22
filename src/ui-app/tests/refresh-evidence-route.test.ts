@@ -57,6 +57,7 @@ function context(task: Task, root: string, overrides: Record<string, unknown> = 
     runner: { isRunning: () => false },
     reviews: { isRunning: () => false },
     closeOutLock: { closingOut: () => false },
+    jobCoordinator: { getJob: () => null },
     rootLock: { acquire: () => true, release: vi.fn() },
     previews: {},
     logger: { task: vi.fn() },
@@ -180,6 +181,19 @@ describe("POST /api/tasks/:id/verify guards", () => {
     expect(res.result()).toMatchObject({
       status: 409,
       body: { error: expect.stringContaining("only be refreshed in review") },
+    });
+  });
+
+  it("refuses verify while this task's close-out is queued, not yet running (#1277)", async () => {
+    const root = gitRoot();
+    const res = response();
+    const queued = context(makeTask(root, "review"), root, {
+      jobCoordinator: { getJob: () => ({ taskId: "0766", phase: "queued" }) },
+    });
+    await refreshTaskEvidence(queued, {} as never, res as never, { param1: "0766" });
+    expect(res.result()).toMatchObject({
+      status: 409,
+      body: { error: expect.stringContaining("being closed out") },
     });
   });
 
@@ -916,6 +930,31 @@ describe("POST /api/tasks/:id/verify capture flows", () => {
         isReviewRunning: () => false,
       },
       activeTask,
+    );
+    gateSpy.mockRestore();
+    expect(refreshed).toBe(false);
+    expect(captured).toBe(false);
+  });
+
+  it("automatic refresh stands down while this task's close-out is queued (#1277)", async () => {
+    const { root, config, task } = commandRepo(RUN_COMMAND);
+    let captured = false;
+    const gateSpy = vi.spyOn(uiHandoffGate, "runUiHandoffGate").mockImplementation(async () => {
+      captured = true;
+      return { ok: true, detail: "ok", evidencePath: "" };
+    });
+    const refreshed = await automaticStaleEvidenceRefresh(
+      {
+        config: { ...config, uiVerification: { enabled: true, autoRefreshStaleOnce: true } },
+        rootLock: { acquire: () => true, release: () => true } as unknown as RootLock,
+        closingOut: () => false,
+        closeOutQueued: (id) => id === task.id,
+        log: () => {},
+        getReviewTask: () => task,
+        isAgentRunning: () => false,
+        isReviewRunning: () => false,
+      },
+      task,
     );
     gateSpy.mockRestore();
     expect(refreshed).toBe(false);

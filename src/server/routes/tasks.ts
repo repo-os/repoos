@@ -193,7 +193,7 @@ import {
   conflictResolutionSnapshot,
   createResolutionProvenanceStore,
 } from "../conflict-resolution.js";
-import { jobAttempt, pendingCloseOutJobs } from "../integration-job.js";
+import { jobAttempt, pendingCloseOutJobs, taskCloseOutPending } from "../integration-job.js";
 import { progressIsStale } from "../close-out-progress.js";
 import { createCloseOutOutcomeStore } from "../close-out-outcome.js";
 import { resolvePipelineCheckPlan } from "../check-plan-info.js";
@@ -1524,6 +1524,11 @@ export interface AutomaticStaleEvidenceRefreshDeps {
   rootLock: RootLock;
   /** True while a close-out owns the repo; the refresh must stand down. */
   closingOut: () => boolean;
+  /**
+   * True while this task's own close-out job is queued or running (#1277).
+   * Optional so callers without a job coordinator keep the global lock only.
+   */
+  closeOutQueued?: (taskId: string) => boolean;
   /** Task log sink. */
   log: TaskLog;
   /**
@@ -1573,10 +1578,11 @@ export async function automaticStaleEvidenceRefresh(
   task: Task,
 ): Promise<boolean> {
   const { config, previews, rootLock, closingOut, log } = deps;
+  const closeOutBusy = (): boolean => closingOut() || (deps.closeOutQueued?.(task.id) ?? false);
   if (!task.branch) return false;
 
   const locked = await withEvidenceRefreshLock(task.id, async () => {
-    if (closingOut()) return false;
+    if (closeOutBusy()) return false;
     const worktree = await getGitWorker(config.root).worktreePath(task.branch!);
     if (!worktree) return false;
     if (!rootLock.acquire(task.id, "close-out")) return false;
@@ -1587,7 +1593,7 @@ export async function automaticStaleEvidenceRefresh(
       const current = deps.getReviewTask(task.id) ?? task;
       if (current.status !== "review" || current.isArchived) return false;
       if (deps.isAgentRunning(task.id) || deps.isReviewRunning(task.id)) return false;
-      if (closingOut()) return false;
+      if (closeOutBusy()) return false;
 
       const headResult = await getGitWorker(config.root).runGit(
         worktree,
@@ -1642,10 +1648,11 @@ export async function automaticEvidenceGapRepair(
   task: Task,
 ): Promise<boolean> {
   const { config, previews, rootLock, closingOut, log } = deps;
+  const closeOutBusy = (): boolean => closingOut() || (deps.closeOutQueued?.(task.id) ?? false);
   if (!task.branch) return false;
 
   const locked = await withEvidenceRefreshLock(task.id, async () => {
-    if (closingOut()) return false;
+    if (closeOutBusy()) return false;
     const worktree = await getGitWorker(config.root).worktreePath(task.branch!);
     if (!worktree) return false;
     if (!rootLock.acquire(task.id, "close-out")) return false;
@@ -1653,7 +1660,7 @@ export async function automaticEvidenceGapRepair(
       const current = deps.getReviewTask(task.id) ?? task;
       if (current.status !== "review" || current.isArchived) return false;
       if (deps.isAgentRunning(task.id) || deps.isReviewRunning(task.id)) return false;
-      if (closingOut()) return false;
+      if (closeOutBusy()) return false;
 
       const dirty = await getGitWorker(config.root).runGit(
         worktree,
@@ -1702,6 +1709,8 @@ export const refreshTaskEvidence: RouteHandler = async (ctx, _req, res, params) 
   if (!task.branch) return json(res, 409, { error: `Task #${id} has no branch to refresh` });
   if (closeOutLock.closingOut())
     return json(res, 409, { error: "A close-out is active; wait for it to finish" });
+  if (taskCloseOutPending(ctx.jobCoordinator, id))
+    return json(res, 409, { error: closingOutRefusal(id) });
   if (!tryBeginEvidenceRefresh(id)) {
     return json(res, 409, { error: `Evidence refresh for #${id} is already running` });
   }

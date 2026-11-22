@@ -212,7 +212,12 @@ import { pmChatSessionTaskId, clearPmChatSession, isPmWorking } from "./pm-runs.
 import { attachPendingPmImages } from "./pm-attachments.js";
 import { clearStoryPmChat, isStoryPmWorking } from "../core/story-definition-files.js";
 import { completeTask, type DoneStep, type CloseOutLock } from "./done.js";
-import { closeOutPending, createJobCoordinator, type JobCoordinator } from "./integration-job.js";
+import {
+  closeOutPending,
+  createJobCoordinator,
+  taskCloseOutPending,
+  type JobCoordinator,
+} from "./integration-job.js";
 import { createCloseOutOutcomeStore } from "./close-out-outcome.js";
 import { createAttentionEventStore } from "./attention-events.js";
 import { createCtoActionRateStore } from "./cto-action-rates.js";
@@ -2575,6 +2580,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           remoteTransport: remoteBrowserEvidenceTransport(config, remoteValidator),
           rootLock,
           closingOut: () => closeOutLock.closingOut(),
+          closeOutQueued: (id) => taskCloseOutPending(jobCoordinator, id),
           log: (id, level, message) => {
             logger.task(id, level, message);
           },
@@ -2592,6 +2598,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           remoteTransport: remoteBrowserEvidenceTransport(config, remoteValidator),
           rootLock,
           closingOut: () => closeOutLock.closingOut(),
+          closeOutQueued: (id) => taskCloseOutPending(jobCoordinator, id),
           log: (id, level, message) => {
             logger.task(id, level, message);
           },
