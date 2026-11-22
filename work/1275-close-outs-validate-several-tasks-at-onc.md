@@ -11,12 +11,14 @@ branch: feat/close-outs-validate-several-tasks-at-onc
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T07:42:13Z"
-updated_at: "2026-11-22T07:15:13Z"
-last_check_failure: "repoos check at 2026-11-22T06:51:14.612Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Pipeline shows a job validating alongside the active close-out (Also running) (target \"default\"): state \"integration:parallelValidations\" did not render on target \"default\" — /checks shows no task card (http://127.0.0.1:46721/checks?tab=now)"
+updated_at: "2026-11-22T08:02:30Z"
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-22T07:43:02.260Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Pipeline shows a job validating alongside the active close-out (Also running) (target \"default\"): state \"integration:parallelValidations\" did not render on target \"default\" — /checks?tab=now shows no task card (http://127.0.0.1:35993/checks?tab=now&shotState=integration%3AparallelValidations)"
 review_rounds: 1
 review_passes: 1
 handoff_signal_retry_count: 2
 dev_error_count: 8
+engineer_stall_resume_log: "[{\"at\":\"2026-11-22T08:02:28.295Z\",\"reason\":\"handoff-deferred\"}]"
 ---
 ## Problem
 The close-out queue runs one job at a time (queuePosition 0 validating, everything else queued) even when other runner machines (bee, mini) are idle. A full validation takes 20-25 minutes, so 11 queued tasks means about 4 hours, and one slow or failing job blocks all of them. Observed 2026-11-20: thinkpad ran #1258 for ~55 min while bee and mini had free slots and 10 green tasks waited.
@@ -47,7 +49,7 @@ Read docs/close-out-pipeline.md and docs/remote-validation.md first. Never touch
 {
 "label": "Parallel close-out validations setting in the close-out section",
 "target": "default",
-"route": "/settings",
+"route": "/settings?tab=general&section=close-out",
 "highlight": "[data-config-key=\"maxParallelValidations\"]"
 }
 ]
@@ -470,3 +472,13 @@ Read docs/close-out-pipeline.md and docs/remote-validation.md first. Never touch
 - 2026-11-22T07:12:03Z · message_queued at 2026-11-22T07:12:03.989Z
 - 2026-11-22T07:15:11Z · watchdog: restarting engineer because a queued message waited 3m with no live process
 - 2026-11-22T07:15:13Z · message_delivered: 1 message(s)
+- 2026-11-22T07:17:43Z · body
+- 2026-11-22T07:37:51Z · body
+- 2026-11-22T07:40:16Z · CTO nudge: held — handoff gate is running
+- 2026-11-22T07:42:58Z · note: ui verification failed: ui verification failed (1 issue(s)): [missing-target] Pipeline shows a job validating alongside the active close-out (Also running) (target "default"): state "integration:parallelValidations" did not render on target "default" — /checks?tab=now shows no task card (http://127.0.0.1:35993/checks?tab=now&shotState=integration%3AparallelValidations)
+- 2026-11-22T07:42:59Z · message_queued at 2026-11-22T07:42:59.083Z
+- 2026-11-22T07:43:02Z · message_delivered: 1 message(s)
+- 2026-11-22T08:02:27Z · handoff failed · remote validation failed: test failure: gate exit 1 on thinkpad — fix it in the feature branch and re-run the gate
+- 2026-11-22T08:02:27Z · message_queued at 2026-11-22T08:02:27.944Z
+- 2026-11-22T08:02:28Z · watchdog: auto-resumed engineer to read a deferred handoff message · resume 1/3
+- 2026-11-22T08:02:30Z · message_delivered: 1 message(s)

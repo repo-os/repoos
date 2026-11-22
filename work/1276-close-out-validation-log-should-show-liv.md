@@ -1,10 +1,11 @@
 ---
-check_retry_count: 1
-last_check_failure: "repoos check at 2026-11-22T07:13:31.180Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 id: "1276"
 title: Close-out validation log should show live progress
 type: feature
-status: review
+status: active
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: `needs some work` — the host is clipped and retries can reset the close-out timeout budget.
 priority: p1
 area: [server, core]
 assigned_to: ai
@@ -13,8 +14,9 @@ branch: feat/close-out-validation-log-should-show-liv
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T07:42:21Z"
-updated_at: "2026-11-22T07:13:31Z"
-review_passes: 5
+updated_at: "2026-11-22T07:50:16Z"
+review_passes: 6
+last_check_failure: "repoos check at 2026-11-22T07:13:31.180Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 review_failed_report_retries: 0
 review_rounds: 2
 handoff_signal_retry_count: 2
@@ -244,4 +246,16 @@ Related: #1272 (timer should count from validation start). Never touch repoos.to
 - 2026-11-22T07:06:56Z · needs_input (review-rounds-exhausted) cleared for review again by human
 - 2026-11-22T07:13:28Z · message_queued at 2026-11-22T07:13:28.018Z
 - 2026-11-22T07:13:31Z · message_delivered: 1 message(s)
-
+- 2026-11-22T07:26:32Z · note: ui verification passed: 1 of 1 shot captured with clean console
+- 2026-11-22T07:27:39Z · status review→active
+- 2026-11-22T07:27:42Z · engineer stopped by request
+- 2026-11-22T07:27:46Z · orphaned run process stopped · pid 50519 · /opt/homebrew/bin/bun /Users/nick/.bun/bin/repoos check · cpu 14s · age 14m
+- 2026-11-22T07:27:47Z · note: review pass 11: needs some work
+- 2026-11-22T07:27:47Z · needs_input
+- 2026-11-22T07:28:01Z · orphaned run process stopped · pid 54793 · ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new -o ConnectTimeout=15 -o ServerAliveInterval · cpu 0s · age 13m
+- 2026-11-22T07:30:46Z · note: handoff requested (cli)
+- 2026-11-22T07:49:06Z · note: ui verification passed: 1 of 1 shot captured with clean console
+- 2026-11-22T07:49:07Z · message_queued at 2026-11-22T07:49:07.239Z
+- 2026-11-22T07:49:07Z · handoff failed · task-file handoff failed at review · Engineering report draft is missing: .repoos/engineering-report-drafts/1276.md
+- 2026-11-22T07:49:07Z · message_delivered: 1 message(s)
+- 2026-11-22T07:50:16Z · CTO nudge: held — handoff gate is running
