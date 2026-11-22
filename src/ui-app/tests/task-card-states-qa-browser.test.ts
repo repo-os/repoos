@@ -375,21 +375,23 @@ describe("Task card top line (jsdom, measured fit)", () => {
   it.each([
     ["feature-long-id", "feature", true, "feat"],
     ["feature-long-id", "feature", false, "feature"],
-    // Only feature shortens; any other type that still clips is hidden.
-    ["baseline", "bug", true, undefined],
+    // Only feature shortens; any other type keeps its own text.
+    ["baseline", "bug", true, "bug"],
   ])("%s type %s (clipped: %s) shows %s (#1279)", async (name, type, clipped, shown) => {
     expect(await typeChipText(name, type, clipped)).toBe(shown);
   });
 
-  it("hides the type when even feat is clipped; the id keeps its text (#1279)", async () => {
-    // Every type chip (full word or feat) reports clipping, so the type gives way.
+  it("keeps the type on the top line when even feat clips (#1279)", async () => {
+    // Every type chip (full word or feat) reports clipping; the chip stays and
+    // falls back to its short form, truncated by CSS as a last resort.
     vi.spyOn(Element.prototype, "scrollWidth", "get").mockImplementation(function (this: Element) {
       return this.getAttribute("data-tip") === "feature" ? 120 : 40;
     });
     vi.spyOn(Element.prototype, "clientWidth", "get").mockReturnValue(60);
     const dom = document.createElement("div");
     dom.innerHTML = await cardMarkup("feature-long-id");
-    expect(dom.querySelector('.tc-top-line [data-tip="feature"]')).toBeNull();
+    const chip = dom.querySelector('.tc-top-line [data-tip="feature"]');
+    expect(chip?.textContent?.trim()).toBe("feat");
     expect(dom.querySelector(".tc-top-line")?.textContent).toContain("#123456789");
   });
 

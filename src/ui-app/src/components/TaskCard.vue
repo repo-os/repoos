@@ -461,15 +461,15 @@ const rootEl = ref<HTMLElement | null>(null);
  * everything, it gives way in this order, each step measured after render:
  * 1. "feature" becomes "feat";
  * 2. the hotfix and merge badges move to the chip row under the title, and the
- *    full word is tried again, so "feat" stays only if "feature" still clips;
- * 3. the type is hidden if even "feat" still clips.
- * The id, priority and robot never shrink. The fit re-runs when the card
- * resizes or the state that changes the row's content changes.
+ *    full word is tried again, so "feat" stays only if "feature" still clips.
+ * The type always stays on the top line: any other type keeps its own text,
+ * truncated only as a last resort. The id, priority and robot never shrink.
+ * The fit re-runs when the card resizes or the state that changes the row's
+ * content changes.
  */
 const topLineEl = ref<HTMLElement | null>(null);
 const typeChipEl = ref<HTMLElement | null>(null);
 const typeCompact = ref(false);
-const typeHidden = ref(false);
 const badgesBelow = ref(false);
 const typeLabel = computed(() =>
   typeCompact.value && props.task.type === "feature" ? "feat" : props.task.type,
@@ -488,7 +488,6 @@ function badgeClipped(): boolean {
 
 function fitTopLine(): void {
   typeCompact.value = false;
-  typeHidden.value = false;
   badgesBelow.value = false;
   const steps: Array<() => void> = [
     () => {
@@ -503,9 +502,6 @@ function fitTopLine(): void {
     },
     () => {
       if (clipped(typeChipEl.value)) typeCompact.value = true;
-    },
-    () => {
-      if (clipped(typeChipEl.value)) typeHidden.value = true;
     },
   ];
   // Each step runs after the previous one has rendered, so it measures the
@@ -1742,7 +1738,6 @@ async function openDebuggerFromError(): Promise<void> {
           >#{{ task.id }}</span
         >
         <span
-          v-if="!typeHidden"
           ref="typeChipEl"
           class="min-w-0 max-w-full truncate rounded-md border border-border bg-[var(--chip-bg)] px-2 py-[2px] font-mono text-[9.5px] text-[var(--txt-dim)]"
           :data-tip="task.type"
