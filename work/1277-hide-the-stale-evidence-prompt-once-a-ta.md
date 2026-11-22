@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-22T13:48:48Z"
-review_passes: 3
 id: "1277"
 title: Hide the stale-evidence prompt once a task is queued or moving to done
 type: feature
@@ -13,6 +11,8 @@ branch: feat/hide-the-stale-evidence-prompt-once-a-ta
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T08:26:19Z"
+updated_at: "2026-11-22T13:48:50Z"
+review_passes: 3
 review_rounds: 1
 last_check_failure: "repoos check at 2026-11-22T12:15:49.397Z: repoos check failed: ui verification failed: runner result omitted the UI verification record: ui verification: capture of /work failed — screenshot: Timeout 4993.291999999994ms exceeded."
 ---
@@ -96,4 +96,4 @@ Also (Nick): on the card and drawer, show only the Refresh evidence button; do n
 - 2026-11-22T13:48:47Z · note: shots: failed — browser capture cancelled
 - 2026-11-22T13:48:47Z · message_queued at 2026-11-22T13:48:47.196Z
 - 2026-11-22T13:48:48Z · note: review pass 3: needs some work
-
+- 2026-11-22T13:48:50Z · message_delivered: 1 message(s)
