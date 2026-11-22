@@ -458,3 +458,4 @@ Read docs/close-out-pipeline.md and docs/remote-validation.md first. Never touch
 - 2026-11-22T06:07:47Z · message_delivered: 1 message(s)
 - 2026-11-22T06:10:16Z · CTO nudge: held — handoff gate is running
 - 2026-11-22T06:30:52Z · note: ui verification failed: ui verification failed (1 issue(s)): [missing-target] Pipeline shows a job validating alongside the active close-out (Also running) (target "default"): highlight .ips-parallel matched nothing on /work (http://127.0.0.1:41431/work?shotState=integration%3AparallelValidations)
+- 2026-11-22T06:30:52Z · message_queued at 2026-11-22T06:30:52.348Z
