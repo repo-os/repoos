@@ -9,11 +9,14 @@ private struct FakeFileSystem: LocalRepoOSFileSystem {
     var symlinks: [String: String] = [:]
     /// Directory path → names of its entries, for version-manager install trees.
     var listings: [String: [String]] = [:]
+    /// Node path → what `node --version` prints. Unlisted Node binaries report v22.0.0.
+    var nodeVersions: [String: String] = [:]
 
     func isExecutable(atPath path: String) -> Bool { executables.contains(path) }
     func firstLine(atPath path: String) -> String? { shebangs[path] }
     func resolvedPath(_ path: String) -> String { symlinks[path] ?? path }
     func entryNames(atPath path: String) -> [String] { listings[path] ?? [] }
+    func nodeVersion(atPath path: String) -> String? { nodeVersions[path] ?? "v22.0.0" }
 }
 
 final class LocalRepoOSLaunchPlannerTests: XCTestCase {
@@ -282,6 +285,145 @@ final class LocalRepoOSLaunchPlannerTests: XCTestCase {
         ) { error in
             XCTAssertEqual(error as? LocalRepoOSLaunchError, .runtimeMissing)
         }
+    }
+
+    // MARK: REPOOS_BUN_PATH is authoritative
+
+    func testUnusableExplicitBunPathFallsBackToNodeNotOtherBun() throws {
+        let fs = FakeFileSystem(
+            executables: [homebrewRepoos, bun, homebrewNode],
+            shebangs: [homebrewRepoos: "#!/usr/bin/env node"]
+        )
+
+        let plan = try LocalRepoOSLaunchPlanner.plan(
+            arguments: ["service", "start"],
+            environment: environment(extra: ["REPOOS_BUN_PATH": "/missing/bun"]),
+            fileSystem: fs
+        )
+
+        XCTAssertEqual(plan.executable, homebrewNode, "a bad REPOOS_BUN_PATH must not pick up ~/.bun/bin/bun")
+        XCTAssertEqual(plan.arguments, ["--no-warnings", homebrewRepoos, "service", "start"])
+    }
+
+    func testUnusableExplicitBunPathWithNoNodeReportsRuntimeMissing() throws {
+        let fs = FakeFileSystem(
+            executables: [homebrewRepoos, bun],
+            shebangs: [homebrewRepoos: "#!/usr/bin/env node"]
+        )
+
+        XCTAssertThrowsError(
+            try LocalRepoOSLaunchPlanner.plan(
+                arguments: ["service", "start"],
+                environment: environment(extra: ["REPOOS_BUN_PATH": "/missing/bun"]),
+                fileSystem: fs
+            )
+        ) { error in
+            XCTAssertEqual(error as? LocalRepoOSLaunchError, .runtimeMissing)
+        }
+    }
+
+    // MARK: Node minimum version
+
+    func testNodeBelowMinimumIsRejectedWithSupportedRuntimeMessage() throws {
+        let fs = FakeFileSystem(
+            executables: [homebrewRepoos, homebrewNode],
+            shebangs: [homebrewRepoos: "#!/usr/bin/env node"],
+            nodeVersions: [homebrewNode: "v20.5.1"]
+        )
+
+        XCTAssertThrowsError(
+            try LocalRepoOSLaunchPlanner.plan(arguments: ["service", "start"], environment: environment(), fileSystem: fs)
+        ) { error in
+            XCTAssertEqual(error as? LocalRepoOSLaunchError, .nodeTooOld(version: "v20.5.1"))
+            let message = (error as? LocalizedError)?.errorDescription ?? ""
+            XCTAssertTrue(message.contains("v20.5.1"))
+            XCTAssertTrue(message.contains("Bun or Node.js 20.6 or newer"))
+        }
+    }
+
+    func testNodeAtExactMinimumIsAccepted() throws {
+        let fs = FakeFileSystem(
+            executables: [homebrewRepoos, homebrewNode],
+            shebangs: [homebrewRepoos: "#!/usr/bin/env node"],
+            nodeVersions: [homebrewNode: "v20.6.0"]
+        )
+
+        let plan = try LocalRepoOSLaunchPlanner.plan(
+            arguments: ["service", "start"],
+            environment: environment(),
+            fileSystem: fs
+        )
+
+        XCTAssertEqual(plan.executable, homebrewNode)
+    }
+
+    func testOldNodeIsSkippedForASupportedOneFurtherDown() throws {
+        let nvmBin = "/Users/tester/.nvm/versions/node/v22.1.0/bin"
+        let fs = FakeFileSystem(
+            executables: [homebrewRepoos, homebrewNode, nvmBin + "/node"],
+            shebangs: [homebrewRepoos: "#!/usr/bin/env node"],
+            listings: ["/Users/tester/.nvm/versions/node": ["v22.1.0"]],
+            nodeVersions: [homebrewNode: "v18.19.0"]
+        )
+
+        let plan = try LocalRepoOSLaunchPlanner.plan(
+            arguments: ["service", "start"],
+            environment: environment(),
+            fileSystem: fs
+        )
+
+        XCTAssertEqual(plan.executable, nvmBin + "/node")
+    }
+
+    func testNodeWhoseVersionCannotBeReadIsNotUsable() throws {
+        let fs = FakeFileSystem(
+            executables: [homebrewRepoos, homebrewNode],
+            shebangs: [homebrewRepoos: "#!/usr/bin/env node"],
+            nodeVersions: [homebrewNode: "not-a-version"]
+        )
+
+        XCTAssertThrowsError(
+            try LocalRepoOSLaunchPlanner.plan(arguments: ["service", "start"], environment: environment(), fileSystem: fs)
+        ) { error in
+            XCTAssertEqual(error as? LocalRepoOSLaunchError, .runtimeMissing)
+        }
+    }
+
+    func testPinnedNodeIsAlsoHeldToTheMinimum() throws {
+        let fs = FakeFileSystem(
+            executables: [homebrewRepoos, homebrewNode],
+            shebangs: [homebrewRepoos: "#!/usr/bin/env node"],
+            nodeVersions: [homebrewNode: "v16.20.0"]
+        )
+
+        XCTAssertThrowsError(
+            try LocalRepoOSLaunchPlanner.plan(
+                arguments: ["service", "start"],
+                environment: environment(extra: ["REPOOS_RUNTIME": "node"]),
+                fileSystem: fs
+            )
+        ) { error in
+            XCTAssertEqual(error as? LocalRepoOSLaunchError, .nodeTooOld(version: "v16.20.0"))
+        }
+    }
+
+    func testVersionParserTable() {
+        let cases: [(String, (Int, Int)?)] = [
+            ("v20.6.0", (20, 6)),
+            ("v20.5.9", (20, 5)),
+            ("v22.12.0", (22, 12)),
+            ("20.6.0", (20, 6)),
+            ("v20", nil),
+            ("", nil),
+            ("vX.Y.Z", nil),
+        ]
+        for (text, expected) in cases {
+            let parsed = LocalRepoOSLaunchPlanner.nodeMajorMinor(text)
+            XCTAssertEqual(parsed?.0, expected?.0, text)
+            XCTAssertEqual(parsed?.1, expected?.1, text)
+        }
+        XCTAssertTrue(LocalRepoOSLaunchPlanner.nodeMajorMinor("v20.6.0")! >= LocalRepoOSLaunchPlanner.minimumNodeVersion)
+        XCTAssertFalse(LocalRepoOSLaunchPlanner.nodeMajorMinor("v20.5.9")! >= LocalRepoOSLaunchPlanner.minimumNodeVersion)
     }
 
     func testShellLauncherRunsDirectlyBecauseItFindsItsOwnRuntime() throws {

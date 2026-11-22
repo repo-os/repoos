@@ -82,6 +82,8 @@ protocol LocalRepoOSFileSystem {
     func resolvedPath(_ path: String) -> String
     /// Names of the entries in a directory, or empty when it is missing or unreadable.
     func entryNames(atPath path: String) -> [String]
+    /// The output of `node --version` (for example `v20.6.0`), or nil when it cannot run.
+    func nodeVersion(atPath path: String) -> String?
 }
 
 struct LiveLocalRepoOSFileSystem: LocalRepoOSFileSystem {
@@ -104,6 +106,24 @@ struct LiveLocalRepoOSFileSystem: LocalRepoOSFileSystem {
     func entryNames(atPath path: String) -> [String] {
         (try? FileManager.default.contentsOfDirectory(atPath: path)) ?? []
     }
+
+    func nodeVersion(atPath path: String) -> String? {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: path)
+        process.arguments = ["--version"]
+        let output = Pipe()
+        process.standardOutput = output
+        process.standardError = FileHandle.nullDevice
+        do {
+            try process.run()
+        } catch {
+            return nil
+        }
+        let data = output.fileHandleForReading.readDataToEndOfFile()
+        process.waitUntilExit()
+        guard process.terminationStatus == 0 else { return nil }
+        return String(data: data, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
 }
 
 /// A fully resolved process launch for one `repoos` command.
@@ -118,9 +138,14 @@ struct LocalRepoOSLaunchPlan: Equatable {
 enum LocalRepoOSLaunchError: LocalizedError, Equatable {
     case repoosNotInstalled
     case runtimeMissing
+    /// Node was found, but it is older than the 20.6 minimum the install hints document.
+    case nodeTooOld(version: String)
 
     var errorDescription: String? {
         switch self {
+        case .nodeTooOld(let version):
+            return "The Hub found Node.js \(version), but the repoos command needs Bun or Node.js 20.6 or newer. "
+                + "Install Bun (https://bun.sh), or a newer Node.js, then try again."
         case .repoosNotInstalled:
             return "RepoOS isn't installed, so the Hub can't start a local server. "
                 + "Install RepoOS, then try again. The Hub looks for the repoos command in "
@@ -215,21 +240,45 @@ enum LocalRepoOSLaunchPlanner {
     ) throws -> Runtime {
         let pinnedNode = environment["REPOOS_RUNTIME"]?.lowercased() == "node"
         if !pinnedNode {
-            var bunCandidates: [String] = []
             if let explicit = environment["REPOOS_BUN_PATH"], !explicit.isEmpty {
-                bunCandidates.append(explicit)
-            }
-            bunCandidates += [siblingDirectory + "/bun"] + searchDirectories.map { $0 + "/bun" }
-            if let bun = bunCandidates.first(where: fileSystem.isExecutable(atPath:)) {
+                // An explicit path is authoritative. If it is unusable, do not go looking
+                // for Bun elsewhere; fall back to Node, as the install hint documents.
+                if fileSystem.isExecutable(atPath: explicit) {
+                    return Runtime(path: explicit, isNode: false)
+                }
+            } else if let bun = ([siblingDirectory + "/bun"] + searchDirectories.map { $0 + "/bun" })
+                .first(where: fileSystem.isExecutable(atPath:))
+            {
                 return Runtime(path: bun, isNode: false)
             }
         }
         let nodeCandidates = [siblingDirectory + "/node", home + "/.local/share/mise/shims/node", "/opt/homebrew/bin/node", "/usr/local/bin/node", "/usr/bin/node"]
             + searchDirectories.map { $0 + "/node" }
-        guard let node = nodeCandidates.first(where: fileSystem.isExecutable(atPath:)) else {
-            throw LocalRepoOSLaunchError.runtimeMissing
+        // The first Node at or above the minimum wins. A Node that is too old or whose
+        // version cannot be read is skipped, so a newer one further down still counts.
+        var oldestRejected: String?
+        for node in nodeCandidates where fileSystem.isExecutable(atPath: node) {
+            guard let reported = fileSystem.nodeVersion(atPath: node),
+                  let version = nodeMajorMinor(reported)
+            else { continue }
+            if version >= minimumNodeVersion { return Runtime(path: node, isNode: true) }
+            oldestRejected = oldestRejected ?? reported
         }
-        return Runtime(path: node, isNode: true)
+        if let oldestRejected {
+            throw LocalRepoOSLaunchError.nodeTooOld(version: oldestRejected)
+        }
+        throw LocalRepoOSLaunchError.runtimeMissing
+    }
+
+    /// Node.js 20.6 is the documented minimum (see the launcher's install hint).
+    static let minimumNodeVersion = (20, 6)
+
+    /// `v20.6.0` → `(20, 6)`. Nil when the text is not a `vMAJOR.MINOR…` version.
+    static func nodeMajorMinor(_ reported: String) -> (Int, Int)? {
+        let trimmed = reported.hasPrefix("v") ? String(reported.dropFirst()) : reported
+        let numbers = trimmed.split(separator: ".", omittingEmptySubsequences: false).prefix(2).compactMap { Int($0) }
+        guard numbers.count == 2 else { return nil }
+        return (numbers[0], numbers[1])
     }
 
     /// Directories where the curl, Homebrew and Bun installers put `repoos` and the runtimes.

@@ -211,8 +211,9 @@ the server's context menu gains **Start local server**, **Stop local server**,
 and **Restart local server** entries. These run the `repoos service` command
 for that project. The Hub finds `repoos` in `/opt/homebrew/bin`, `~/.bun/bin`,
 `/usr/local/bin`, and `~/.local/bin`, then the Node and Bun installs of nvm, mise,
-and asdf, then your PATH, and runs it with Bun
-(or Node.js 20.6 or newer when Bun isn't installed). It does not depend on your
+and asdf, then your PATH. It runs `repoos` with Bun, or with Node.js 20.6 or newer
+when Bun isn't installed. If `REPOOS_BUN_PATH` is set but not usable, the Hub uses
+Node instead of looking for another Bun. It does not depend on your
 shell's PATH, so a Hub opened from Finder or the Dock works the same as one
 launched from a terminal.
 

@@ -176,9 +176,14 @@ JavaScript entry through its shebang:
   Symlinks are resolved to the real entry.
 - A shell launcher (the curl-installed `~/.local/bin/repoos`) runs directly; it probes
   its own runtimes.
-- Otherwise it runs `<runtime> <entry>` with an explicit runtime: `REPOOS_BUN_PATH`,
-  then Bun (Bun is the default), then Node. A runtime in the same directory as the
-  chosen `repoos` comes first, so an npm-installed `repoos` runs under its own Node. `REPOOS_RUNTIME=node`
+- Otherwise it runs `<runtime> <entry>` with an explicit runtime. A `REPOOS_BUN_PATH`
+  that is set is authoritative: if it is not executable, the planner does not search for
+  Bun elsewhere and falls back to Node. Without it, Bun (the default) is searched, then
+  Node. A runtime in the same directory as the chosen `repoos` comes first, so an
+  npm-installed `repoos` runs under its own Node.
+- Node must be **20.6 or newer**, the minimum the install hints document. An older Node
+  is rejected with a message that says Bun or Node.js 20.6+ is needed; the search goes on
+  to a newer Node further down the list. A Node whose version cannot be read is skipped. `REPOOS_RUNTIME=node`
   pins Node.
 - The child's PATH gets the runtime's directory and the standard bin directories, so
   the CLI's own subprocesses resolve `node` and `bun`.
