@@ -177,10 +177,13 @@ and drag rows to reorder within a section.
 
 ### Remove a server
 
-Right-click → **Remove server**. This deletes the server from the registry
-**and** its isolated website data (sign-in, cookies) and any stored Hub
-capability. Removing is irreversible, but you can re-add the same address any
-time — it starts with a fresh sign-in.
+Right-click → **Remove server**. This deletes the server from the registry, its
+pins, and any stored Hub capability. Removing is irreversible, but you can
+re-add the same address any time — it starts with a fresh sign-in.
+
+The server's isolated website data (sign-in, cookies) is **not** deleted by this
+version: the Hub stops using it, and it stays on disk until a later release cleans
+it up.
 
 ### Health and offline states
 
@@ -206,9 +209,16 @@ server shows a native error state instead of pretending there's a session.
 For a **loopback** server whose health response includes its repository root,
 the server's context menu gains **Start local server**, **Stop local server**,
 and **Restart local server** entries. These run the `repoos service` command
-for that project (using a `repoos` on your PATH or at the standard Homebrew/Bun
-install locations). The entry appears once the Hub has seen the server online
-at least once, so it knows where the project lives.
+for that project. The Hub finds `repoos` in `/opt/homebrew/bin`, `~/.bun/bin`,
+`/usr/local/bin`, and `~/.local/bin`, then in your PATH, and runs it with Bun
+(or Node.js 20.6 or newer when Bun isn't installed). It does not depend on your
+shell's PATH, so a Hub opened from Finder or the Dock works the same as one
+launched from a terminal.
+
+If the Hub can't find `repoos` or a JavaScript runtime, the dialog names what is
+missing and how to install it. It won't show a raw `env: node: No such file or
+directory` message. The entry appears once the Hub has seen the server online at
+least once, so it knows where the project lives.
 
 ## Window layout
 
@@ -534,7 +544,8 @@ app relaunch depends on your macOS version:
 
 - **Clear sign-in** (on the failure overlay) wipes **only that server's**
   sign-in data — other servers stay signed in.
-- **Remove server** deletes that server's store entirely.
+- **Remove server** forgets that server; its old website data is left on disk (see
+  [Remove a server](#remove-a-server)).
 
 ### HTTPS expectations
 

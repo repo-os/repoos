@@ -36,6 +36,24 @@ final class ServerRegistryStore: @unchecked Sendable {
         return document
     }
 
+    /// Moves an unreadable registry aside so the next save cannot overwrite it.
+    /// Returns the new file name, or nil when there was nothing to move.
+    @discardableResult
+    func setAsideUnreadableRegistry(now: Date = Date()) -> String? {
+        lock.lock()
+        defer { lock.unlock() }
+        guard FileManager.default.fileExists(atPath: fileURL.path) else { return nil }
+        let stamp = ISO8601DateFormatter().string(from: now).replacingOccurrences(of: ":", with: "-")
+        let target = fileURL.deletingPathExtension()
+            .appendingPathExtension("unreadable-\(stamp).json")
+        do {
+            try FileManager.default.moveItem(at: fileURL, to: target)
+            return target.lastPathComponent
+        } catch {
+            return nil
+        }
+    }
+
     func save(_ document: ServerRegistryDocument) throws {
         lock.lock()
         defer { lock.unlock() }

@@ -162,6 +162,50 @@ path (see signing tasks #0577–#0580).
 scan behaviour with fakes. An optional live test (`testLiveDiscoveryFindsLocalRepoOSWhenServingOn7559`)
 skips unless `GET http://localhost:7559/api/health` reports `ok: true`.
 
+## Starting a local server (`repoos service`)
+
+`LocalRepoOSServiceController` runs `repoos service start|stop|restart`. A Finder or
+Dock launch inherits only `/usr/bin:/bin:/usr/sbin:/sbin`, so the CLI's
+`#!/usr/bin/env node` shebang could not find Node (`env: node: No such file or
+directory`). `LocalRepoOSLaunchPlanner` (task #1284) therefore never executes a
+JavaScript entry through its shebang:
+
+- It finds `repoos` in `/opt/homebrew/bin`, `~/.bun/bin`, `/usr/local/bin`,
+  `~/.local/bin`, then the inherited PATH. Symlinks are resolved to the real entry.
+- A shell launcher (the curl-installed `~/.local/bin/repoos`) runs directly; it probes
+  its own runtimes.
+- Otherwise it runs `<runtime> <entry>` with an explicit runtime: `REPOOS_BUN_PATH`,
+  then Bun in the known locations (Bun is the default), then Node. `REPOOS_RUNTIME=node`
+  pins Node.
+- The child's PATH gets the runtime's directory and the standard bin directories, so
+  the CLI's own subprocesses resolve `node` and `bun`.
+- A missing `repoos` or runtime throws `LocalRepoOSLaunchError`, whose text is plain
+  English and says how to install the missing piece.
+
+`LocalRepoOSLaunchPlannerTests` drive the planner with a fake file system and a stripped
+PATH. Nothing in the test runs `repoos`.
+
+### Registry and removal hardening (#1284)
+
+- `servers.json` that cannot be read is moved aside as `servers.unreadable-<time>.json`
+  before the Hub starts with an empty list. Before, the next save overwrote it.
+- Removing a server saves the registry first and only then drops its in-memory web data
+  store, so a failed save keeps the server's sign-in. Deleting also resyncs the attention
+  and cross-server search state, which previously kept the removed entry.
+- Removal does **not** call `WKWebsiteDataStore.remove(forIdentifier:)`. In an isolated
+  XCTest host that call crashed WebKit's `WebsiteDataStoreIO` thread (EXC_BAD_ACCESS) even
+  for a store that was never created, and remove-then-re-add is the reported crash.
+  Removed servers' website data stays on disk until a verified cleanup exists.
+- Entry lookups use `indexedByID()` instead of `Dictionary(uniqueKeysWithValues:)`, which
+  aborts on a duplicate id.
+
+### Verification status
+
+Covered by unit tests: the planner's runtime and PATH resolution, the set-aside of an
+unreadable registry, duplicate-id indexing, and remove-then-re-add through `HubAppState`.
+Not verified here: a signed build, a real Finder launch, and a crash log from a machine
+that reproduced the crash. Those are a separate human-verify task.
+
 ## Project boundary
 
 `macos/RepoOSHub.xcodeproj` is the native build entry point. Root commands such

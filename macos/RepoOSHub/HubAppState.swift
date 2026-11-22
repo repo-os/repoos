@@ -150,10 +150,16 @@ final class HubAppState: ObservableObject {
             syncAttentionCoordinator()
             crossServerTaskSearch.configure(entries: entries)
         } catch {
+            // Keep the unreadable file on disk. Otherwise the empty document below
+            // would be saved over it on the next change.
+            let setAside = store.setAsideUnreadableRegistry()
             document = ServerRegistryDocument()
             volatileHealthByServerID.removeAll()
             entries = []
             selectedServerID = nil
+            lastConnectionMessage = setAside.map {
+                "Your saved server list couldn't be read, so it was moved to \($0). Add your servers again."
+            } ?? "Your saved server list couldn't be read. Add your servers again."
         }
     }
 
@@ -253,7 +259,7 @@ final class HubAppState: ObservableObject {
             preferredOrder: hubGlobalPreferences.serverTabOrder,
             hiddenIDs: hubGlobalPreferences.hiddenServerTabIDs
         )
-        let byID = Dictionary(uniqueKeysWithValues: entries.map { ($0.id, $0) })
+        let byID = entries.indexedByID()
         return ids.compactMap { byID[$0] }
     }
 
@@ -577,22 +583,29 @@ final class HubAppState: ObservableObject {
     }
 
     func deleteServer(_ entry: ServerEntry) {
-        ServerWebsiteDataStorePool.shared.removeStore(for: entry.id)
+        // Registry first: if the save fails the server still exists, so its cookies
+        // and web storage must survive too. Only then drop the per-server state.
+        do {
+            try store.removeEntry(id: entry.id, document: &document)
+            pruneOrphanNavigationMetadata()
+            try store.save(document)
+        } catch {
+            lastConnectionMessage = "Could not remove the server from the local registry."
+            return
+        }
+        ServerWebsiteDataStorePool.shared.releaseCachedStore(for: entry.id)
         retainedWorkspaceServerIDs.remove(entry.id)
         workspaceResidencyLRU.removeAll { $0 == entry.id }
         attentionCoordinator.deleteCapabilityToken(serverID: entry.id, origin: entry.originString)
-        do {
-            try store.removeEntry(id: entry.id, document: &document)
-            publishEntries()
-            if selectedServerID == entry.id {
-                selectedServerID = document.lastSelectedServerID
-            }
-            pruneOrphanNavigationMetadata()
-            try store.save(document)
-            lastConnectionMessage = nil
-        } catch {
-            lastConnectionMessage = "Could not remove the server from the local registry."
+        publishEntries()
+        if selectedServerID == entry.id {
+            selectedServerID = document.lastSelectedServerID ?? entries.first?.id
         }
+        // Attention and cross-server search hold their own copy of the entries;
+        // without this they keep a removed server until the next unrelated change.
+        syncAttentionCoordinator()
+        crossServerTaskSearch.configure(entries: entries)
+        lastConnectionMessage = nil
     }
 
     func movePinned(from source: IndexSet, to destination: Int) {

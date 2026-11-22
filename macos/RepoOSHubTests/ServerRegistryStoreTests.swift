@@ -88,6 +88,65 @@ final class ServerRegistryStoreTests: XCTestCase {
         XCTAssertEqual(fileManager.removalAttempts, 1)
     }
 
+    func testUnreadableRegistryIsSetAsideNotOverwritten() throws {
+        let store = ServerRegistryStore(directoryURL: directoryURL)
+        let fileURL = directoryURL.appendingPathComponent("servers.json")
+        try Data("{ not json".utf8).write(to: fileURL)
+
+        XCTAssertThrowsError(try store.load())
+        let moved = store.setAsideUnreadableRegistry(now: Date(timeIntervalSince1970: 0))
+
+        XCTAssertNotNil(moved)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: fileURL.path))
+        let preserved = try Data(contentsOf: directoryURL.appendingPathComponent(moved ?? ""))
+        XCTAssertEqual(String(data: preserved, encoding: .utf8), "{ not json")
+        XCTAssertNil(store.setAsideUnreadableRegistry(), "nothing left to move")
+    }
+
+    @MainActor
+    func testRemoveThenAddSameServerAgainKeepsRegistryUsable() async throws {
+        let state = HubAppState(
+            store: ServerRegistryStore(directoryURL: directoryURL),
+            healthChecker: RemoveReAddHealthChecker(projectName: "divot repoos"),
+            attentionCoordinator: HubAttentionCoordinator(notificationCenter: RemoveReAddNotificationCenter())
+        )
+        let draft = ServerEditorDraft(
+            mode: .add,
+            name: "",
+            originText: "localhost:7171",
+            groupName: "",
+            accentColorHex: "",
+            iconSymbolName: "",
+            isPinned: false
+        )
+        let firstSave = await state.saveFromEditor(draft)
+        XCTAssertNil(firstSave)
+        let original = try XCTUnwrap(state.entries.first)
+
+        state.deleteServer(original)
+        XCTAssertTrue(state.entries.isEmpty)
+        XCTAssertNil(state.lastConnectionMessage)
+
+        let secondSave = await state.saveFromEditor(draft)
+        XCTAssertNil(secondSave)
+        XCTAssertEqual(state.entries.count, 1)
+        XCTAssertEqual(state.entries.first?.name, "divot repoos")
+        XCTAssertNotEqual(state.entries.first?.id, original.id)
+    }
+
+    func testIndexedByIDKeepsFirstEntryForDuplicateIDs() {
+        let id = UUID()
+        var first = ServerEntry(name: "First", origin: URL(string: "http://localhost:7171")!, sortOrder: 0)
+        first.id = id
+        var second = ServerEntry(name: "Second", origin: URL(string: "http://localhost:7172")!, sortOrder: 1)
+        second.id = id
+
+        let indexed = [first, second].indexedByID()
+
+        XCTAssertEqual(indexed.count, 1)
+        XCTAssertEqual(indexed[id]?.name, "First")
+    }
+
     func testDuplicateOriginRejected() throws {
         let store = ServerRegistryStore(directoryURL: directoryURL)
         var document = ServerRegistryDocument()
@@ -122,4 +181,16 @@ private final class FailingRemovalFileManager: FileManager {
         removalAttempts += 1
         throw CocoaError(.fileWriteNoPermission)
     }
+}
+
+private struct RemoveReAddHealthChecker: HealthChecking {
+    var projectName: String?
+
+    func checkHealth(origin: URL) async -> HealthCheckOutcome {
+        .success(projectName: projectName)
+    }
+}
+
+private struct RemoveReAddNotificationCenter: HubUserNotificationCentering {
+    func post(event: HubAttentionNotificationEvent) {}
 }

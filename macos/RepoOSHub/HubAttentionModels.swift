@@ -95,7 +95,7 @@ enum HubServerTabOrder {
         hiddenIDs: [UUID]
     ) -> [UUID] {
         let hidden = Set(hiddenIDs)
-        let byID = Dictionary(uniqueKeysWithValues: entries.map { ($0.id, $0) })
+        let byID = entries.indexedByID()
         var seen = Set<UUID>()
         var result: [UUID] = []
         for id in preferredOrder {
