@@ -76,3 +76,4 @@ Copy change only. Never touch repoos.toml. Headless Playwright only.
 - 2026-11-22T11:55:16Z · body
 - 2026-11-22T11:56:56Z · CTO nudge: held — handoff gate is running
 - 2026-11-22T12:01:04Z · note: ui verification failed: ui verification failed (1 issue(s)): [missing-target] Review pass history: last column now reads Issues (target "default"): highlight .review-history-table matched nothing on /work?task=9999&tab=review (http://127.0.0.1:41827/work?task=9999&tab=review&shotState=drawer%3AreviewPasses)
+- 2026-11-22T12:01:04Z · message_queued at 2026-11-22T12:01:04.779Z
