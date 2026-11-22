@@ -66,3 +66,4 @@ Also (Nick): on the card and drawer, show only the Refresh evidence button; do n
 - 2026-11-22T12:15:49Z · message_delivered: 1 message(s)
 - 2026-11-22T12:16:15Z · body
 - 2026-11-22T12:21:56Z · message_queued at 2026-11-22T12:21:56.470Z
+- 2026-11-22T12:21:56Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
