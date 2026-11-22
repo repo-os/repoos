@@ -253,3 +253,4 @@ Related: #1272 (timer should count from validation start). Never touch repoos.to
 - 2026-11-22T07:27:47Z · note: review pass 11: needs some work
 - 2026-11-22T07:27:47Z · needs_input
 - 2026-11-22T07:28:01Z · orphaned run process stopped · pid 54793 · ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new -o ConnectTimeout=15 -o ServerAliveInterval · cpu 0s · age 13m
+- 2026-11-22T07:30:46Z · note: handoff requested (cli)
