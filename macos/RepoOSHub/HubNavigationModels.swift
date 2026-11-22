@@ -202,7 +202,7 @@ enum CommandPaletteMatcher {
             }
         }
 
-        let entryByID = Dictionary(uniqueKeysWithValues: entries.map { ($0.id, $0) })
+        let entryByID = entries.indexedByID()
         for meta in recents {
             guard let entry = entryByID[meta.serverID] else { continue }
             for route in meta.recentRoutes.sorted(by: { $0.lastVisitedAt > $1.lastVisitedAt }) {
