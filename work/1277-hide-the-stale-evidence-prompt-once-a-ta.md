@@ -94,3 +94,4 @@ Also (Nick): on the card and drawer, show only the Refresh evidence button; do n
 - 2026-11-22T13:44:56Z · body
 - 2026-11-22T13:45:46Z · status active→review
 - 2026-11-22T13:48:47Z · note: shots: failed — browser capture cancelled
+- 2026-11-22T13:48:47Z · message_queued at 2026-11-22T13:48:47.196Z
