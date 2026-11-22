@@ -2,16 +2,16 @@
 id: "1282"
 title: "Task drawer: collapse the Depends on, type, priority, area and story block into a one or two line summary that opens a modal"
 type: feature
-status: ready
+status: active
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
-branch: ""
+branch: feat/task-drawer-collapse-the-depends-on-type
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-22T03:22:33Z"
-updated_at: "2026-11-22T15:07:01Z"
+updated_at: "2026-11-22T15:07:03Z"
 ---
 ## Problem
 The metadata block at the top of the task drawer (Depends on picker with a long task list, Type, Priority, Area, Story) takes a large amount of vertical space above the spec. A human rarely edits these, so most of the time it just pushes the content down.
@@ -41,3 +41,4 @@ Start from TaskDrawer.vue and TaskDependencyPicker.vue. This is a requested rede
 - 2026-11-22T03:22:34Z · screenshots
 - 2026-11-22T03:22:43Z · status inbox→ready
 - 2026-11-22T15:07:01Z · cli_override, model_override
+- 2026-11-22T15:07:03Z · status ready→active, branch
