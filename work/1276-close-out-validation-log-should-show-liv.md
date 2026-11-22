@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-22T09:46:48Z"
-review_passes: 8
 id: "1276"
 title: Close-out validation log should show live progress
 type: feature
@@ -13,6 +11,8 @@ branch: feat/close-out-validation-log-should-show-liv
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T07:42:21Z"
+updated_at: "2026-11-22T09:46:49Z"
+review_passes: 8
 last_check_failure: "repoos check at 2026-11-22T07:13:31.180Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 review_failed_report_retries: 0
 review_rounds: 2
