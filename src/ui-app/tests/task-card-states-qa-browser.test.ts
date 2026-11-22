@@ -141,6 +141,18 @@ const FIXTURES: Record<string, { over: Partial<Task>; paused?: boolean }> = {
       hotfixTarget: "main",
     },
   },
+  "review-hotfix-merge": {
+    over: {
+      id: "123456789",
+      title: "Review hotfix that also needs a merge",
+      status: "review",
+      needsMerge: true,
+      type: "feature",
+      priority: "p1",
+      hotfix: true,
+      hotfixTarget: "main",
+    },
+  },
   "missing-fields": {
     over: {
       id: "1419",
@@ -363,13 +375,40 @@ describe("Task card top line (jsdom, measured fit)", () => {
   it.each([
     ["feature-long-id", "feature", true, "feat"],
     ["feature-long-id", "feature", false, "feature"],
-    ["baseline", "bug", true, "bug"],
-  ])(
-    "%s type %s (clipped: %s) shows %s; only feature ever shortens (#1279)",
-    async (name, type, clipped, shown) => {
-      expect(await typeChipText(name, type, clipped)).toBe(shown);
-    },
-  );
+    // Only feature shortens; any other type that still clips is hidden.
+    ["baseline", "bug", true, undefined],
+  ])("%s type %s (clipped: %s) shows %s (#1279)", async (name, type, clipped, shown) => {
+    expect(await typeChipText(name, type, clipped)).toBe(shown);
+  });
+
+  it("hides the type when even feat is clipped; the id keeps its text (#1279)", async () => {
+    // Every type chip (full word or feat) reports clipping, so the type gives way.
+    vi.spyOn(Element.prototype, "scrollWidth", "get").mockImplementation(function (this: Element) {
+      return this.getAttribute("data-tip") === "feature" ? 120 : 40;
+    });
+    vi.spyOn(Element.prototype, "clientWidth", "get").mockReturnValue(60);
+    const dom = document.createElement("div");
+    dom.innerHTML = await cardMarkup("feature-long-id");
+    expect(dom.querySelector('.tc-top-line [data-tip="feature"]')).toBeNull();
+    expect(dom.querySelector(".tc-top-line")?.textContent).toContain("#123456789");
+  });
+
+  it("moves clipped hotfix and merge badges to the chip row; the type stays (#1279)", async () => {
+    // Only the badges report clipping, so the type is left alone.
+    vi.spyOn(Element.prototype, "scrollWidth", "get").mockImplementation(function (this: Element) {
+      return this.classList.contains("hotfix-badge") || this.classList.contains("tc-merge")
+        ? 120
+        : 40;
+    });
+    vi.spyOn(Element.prototype, "clientWidth", "get").mockReturnValue(60);
+    const dom = document.createElement("div");
+    dom.innerHTML = await cardMarkup("review-hotfix-merge");
+    const topLine = dom.querySelector(".tc-top-line");
+    expect(topLine?.querySelector(".tc-merge, .hotfix-badge")).toBeNull();
+    expect(dom.querySelector(".tc-merge")).not.toBeNull();
+    expect(dom.querySelector(".hotfix-badge")).not.toBeNull();
+    expect(topLine?.querySelector('[data-tip="feature"]')?.textContent?.trim()).toBe("feature");
+  });
 
   it("re-fits the type label when the hotfix target changes (#1279)", async () => {
     let clipped = false;

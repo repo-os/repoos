@@ -456,24 +456,60 @@ const dragging = ref(false);
 const rootEl = ref<HTMLElement | null>(null);
 
 /**
- * The top line (number, type, tags, priority, robot) stays on one row (#1279).
- * "feature" shortens to "feat" only while the full word would be clipped, so
- * the fit is measured after each render and re-checked when the card resizes.
+ * The top line (id, type, hotfix and merge badges, priority, robot) stays on
+ * one row (#1279), and nothing on it is cut short. When the row cannot hold
+ * everything, it gives way in this order, each step measured after render:
+ * 1. "feature" becomes "feat";
+ * 2. the hotfix and merge badges move to the chip row under the title;
+ * 3. the type is hidden if it still clips.
+ * The id, priority and robot never shrink. The fit re-runs when the card
+ * resizes or the state that changes the row's content changes.
  */
 const topLineEl = ref<HTMLElement | null>(null);
 const typeChipEl = ref<HTMLElement | null>(null);
 const typeCompact = ref(false);
+const typeHidden = ref(false);
+const badgesBelow = ref(false);
 const typeLabel = computed(() =>
   typeCompact.value && props.task.type === "feature" ? "feat" : props.task.type,
 );
 let topLineObserver: ResizeObserver | null = null;
 
+/** Whether an element's text is currently cut short. */
+function clipped(el: Element | null): boolean {
+  return !!el && el.scrollWidth > el.clientWidth + 1;
+}
+
+/** Whether a badge on the top line (hotfix or merge) is cut short. */
+function badgeClipped(): boolean {
+  return [...(topLineEl.value?.querySelectorAll(".hotfix-badge, .tc-merge") ?? [])].some(clipped);
+}
+
 function fitTopLine(): void {
   typeCompact.value = false;
-  void nextTick(() => {
-    const chip = typeChipEl.value;
-    if (chip && chip.scrollWidth > chip.clientWidth + 1) typeCompact.value = true;
-  });
+  typeHidden.value = false;
+  badgesBelow.value = false;
+  const steps: Array<() => void> = [
+    () => {
+      if (clipped(typeChipEl.value)) typeCompact.value = true;
+    },
+    () => {
+      if (badgeClipped()) badgesBelow.value = true;
+    },
+    () => {
+      if (clipped(typeChipEl.value)) typeHidden.value = true;
+    },
+  ];
+  // Each step runs after the previous one has rendered, so it measures the
+  // row as it now is.
+  const run = (i: number): void => {
+    if (i >= steps.length) return;
+    void nextTick(() => {
+      steps[i]!();
+      run(i + 1);
+    });
+  };
+  run(0);
 }
 
 watch(
@@ -1694,23 +1730,24 @@ async function openDebuggerFromError(): Promise<void> {
     <div class="flex min-w-0 flex-1 flex-col p-[13px]">
       <div ref="topLineEl" class="tc-top-line flex min-w-0 flex-nowrap items-center gap-x-[7px]">
         <span
-          class="min-w-0 truncate font-mono text-[11px] font-bold tracking-[0.04em] text-[var(--txt-dim)]"
+          class="shrink-0 whitespace-nowrap font-mono text-[11px] font-bold tracking-[0.04em] text-[var(--txt-dim)]"
           >#{{ task.id }}</span
         >
         <span
+          v-if="!typeHidden"
           ref="typeChipEl"
           class="min-w-0 max-w-full truncate rounded-md border border-border bg-[var(--chip-bg)] px-2 py-[2px] font-mono text-[9.5px] text-[var(--txt-dim)]"
           :data-tip="task.type"
           >{{ typeLabel }}</span
         >
         <span
-          v-if="task.status === 'review' && task.needsMerge"
+          v-if="!badgesBelow && task.status === 'review' && task.needsMerge"
           class="tc-merge min-w-0 truncate"
           title="branch drifted from main — move to done to sync and merge"
           >needs merge</span
         >
         <HotfixBadge
-          v-if="task.hotfix"
+          v-if="!badgesBelow && task.hotfix"
           class="min-w-0 max-w-full truncate"
           :target="task.hotfixTarget"
           :branch="task.branch"
@@ -1769,6 +1806,17 @@ async function openDebuggerFromError(): Promise<void> {
       </h3>
 
       <div class="mt-[11px] flex flex-wrap items-center gap-[6px]">
+        <span
+          v-if="badgesBelow && task.status === 'review' && task.needsMerge"
+          class="tc-merge"
+          title="branch drifted from main — move to done to sync and merge"
+          >needs merge</span
+        >
+        <HotfixBadge
+          v-if="badgesBelow && task.hotfix"
+          :target="task.hotfixTarget"
+          :branch="task.branch"
+        />
         <span
           v-if="taskAreaChips.length || task.area"
           class="tc-area-chip rounded-md border border-border bg-[var(--chip-bg)] px-2 py-[2px] font-mono text-[9.5px] text-[var(--txt-dim)]"
