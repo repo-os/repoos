@@ -11,7 +11,7 @@ branch: feat/mac-hub-local-server-will-not-start-env-
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-22T03:29:23Z"
-updated_at: "2026-11-22T12:56:46Z"
+updated_at: "2026-11-22T12:58:52Z"
 review_rounds: 2
 review_passes: 2
 ---
@@ -61,3 +61,4 @@ Look in the macos Hub app sources and the local-server launcher. Never touch rep
 - 2026-11-22T12:56:46Z · status active→review
 - 2026-11-22T12:56:46Z · message_queued at 2026-11-22T12:56:46.422Z
 - 2026-11-22T12:56:46Z · note: shots: skipped — Docs site skipped: no docs shot declared
+- 2026-11-22T12:58:52Z · note: review pass 3: needs some work
