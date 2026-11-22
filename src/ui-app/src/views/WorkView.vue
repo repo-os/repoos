@@ -921,9 +921,14 @@ function openHeld(task: Task): void {
   margin-bottom: 20px;
 }
 .work-header-copy {
-  flex: 0 1 132px;
+  /* Keep the title at its natural width (#1278 review): a fixed 132px column made
+     "Work Queue" wrap even on a wide screen. The description may wrap instead. */
+  flex: 0 1 auto;
   min-width: 0;
   overflow-wrap: anywhere;
+}
+.work-header-copy .page-title {
+  white-space: nowrap;
 }
 .work-header-actions {
   display: flex;
@@ -936,9 +941,12 @@ function openHeld(task: Task): void {
 }
 .work-header-search-controls {
   display: flex;
-  flex: 0 1 auto;
+  /* Take the spare room in the actions row so the search can grow to its
+     intended 210px where space permits (#1278 review). */
+  flex: 1 1 auto;
   min-width: 0;
   align-items: center;
+  justify-content: flex-end;
   gap: 10px;
 }
 /* Pipeline | Board switch — same styled toggle as the Inputs page List | Board. */
