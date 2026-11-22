@@ -11,7 +11,7 @@ branch: feat/task-drawer-collapse-the-depends-on-type
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-22T03:22:33Z"
-updated_at: "2026-11-22T15:07:03Z"
+updated_at: "2026-11-22T15:18:17Z"
 ---
 ## Problem
 The metadata block at the top of the task drawer (Depends on picker with a long task list, Type, Priority, Area, Story) takes a large amount of vertical space above the spec. A human rarely edits these, so most of the time it just pushes the content down.
@@ -31,6 +31,32 @@ The metadata block at the top of the task drawer (Depends on picker with a long 
 ## Notes for AI
 Start from TaskDrawer.vue and TaskDependencyPicker.vue. This is a requested redesign, so no extra new UI beyond what is described. Never touch repoos.toml. Headless Playwright only.
 
+## Shots
+```json
+[
+{
+  "label": "Task drawer Details tab with the collapsed metadata summary",
+  "target": "default",
+  "route": "/work?task=1282",
+  "highlight": "[data-test-id=\"task-meta-summary\"]"
+},
+{
+  "label": "Task details modal opened from the summary, with Depends on chips, Type, Priority, Area and Story",
+  "target": "default",
+  "route": "/work?task=1282",
+  "highlight": "[data-test-id=\"task-meta-modal\"]",
+  "steps": [
+    {
+      "click": "[data-test-id=\"task-meta-summary\"]"
+    },
+    {
+      "waitMs": 300
+    }
+  ]
+}
+]
+```
+
 ## Screenshots
 
 ![Task drawer metadata block (Depends on picker, Type, Priority, Area, Story) takes a large share of the drawer above the spec](/api/tasks/1282/attachments/att_46554cb3-68a8-462c-b896-acbc321292c0.png)
@@ -42,3 +68,4 @@ Start from TaskDrawer.vue and TaskDependencyPicker.vue. This is a requested rede
 - 2026-11-22T03:22:43Z · status inbox→ready
 - 2026-11-22T15:07:01Z · cli_override, model_override
 - 2026-11-22T15:07:03Z · status ready→active, branch
+- 2026-11-22T15:18:17Z · body
