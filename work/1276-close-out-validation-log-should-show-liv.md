@@ -11,7 +11,7 @@ branch: feat/close-out-validation-log-should-show-liv
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T07:42:21Z"
-updated_at: "2026-11-21T20:31:54Z"
+updated_at: "2026-11-22T00:06:00Z"
 last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (appeared: src/server/close-out-progress.ts, src/server/remote-validation.ts) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 last_handoff_failure_sha: 186ed2e4093e9e4c85434660b275d6c18b482f03
 review_passes: 4
@@ -169,3 +169,5 @@ Related: #1272 (timer should count from validation start). Never touch repoos.to
 - 2026-11-21T19:44:16Z · agent exited with an error (claude) · the agent process exited with an error — open the task to see the full output
 - 2026-11-21T19:59:48Z · watchdog: restarting engineer because a queued message waited 203m with no live process
 - 2026-11-21T20:31:54Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — task-file handoff failed at review · Engineering report draft is missing: .repoos/engineering-report-drafts/1276.md · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-11-21T20:31:54Z · watchdog: check wait escalated · waiting: system load is high (4.0× per CPU, limit 3×) — waiting for headroom before starting more work; wait exceeds the handoff deadline for 32m · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-11-22T00:06:00Z · needs_input
