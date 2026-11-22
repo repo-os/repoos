@@ -138,3 +138,4 @@ Copy change only. Never touch repoos.toml. Headless Playwright only.
 - 2026-11-22T14:05:10Z · note: shots: failed — browser capture cancelled
 - 2026-11-22T14:08:53Z · status review→active
 - 2026-11-22T14:08:55Z · engineer stopped by request
+- 2026-11-22T14:09:01Z · note: handoff requested (cli)
