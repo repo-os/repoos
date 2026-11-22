@@ -11,7 +11,7 @@ branch: feat/hide-the-stale-evidence-prompt-once-a-ta
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T08:26:19Z"
-updated_at: "2026-11-22T18:26:07Z"
+updated_at: "2026-11-22T18:26:22Z"
 review_passes: 5
 review_failed_report_retries: 0
 last_check_failure: "repoos check at 2026-11-22T15:57:20.978Z: repoos check failed: reused check inputs changed during handoff — run the check again"
@@ -160,3 +160,4 @@ Also (Nick): on the card and drawer, show only the Refresh evidence button; do n
 - 2026-11-22T18:19:51Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-22T18:21:26Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-22T18:26:07Z · queued message undelivered for 6m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-22T18:26:22Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code unknown) · last assistant: The UI smoke step is re-running alone to see whether the WebKit crash reproduces. I'll read the result when it lands. · stderr: (empty)
