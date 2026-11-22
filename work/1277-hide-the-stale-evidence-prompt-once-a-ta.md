@@ -14,7 +14,6 @@ created_at: "2026-11-20T08:26:19Z"
 updated_at: "2026-11-22T17:27:00Z"
 review_passes: 5
 review_failed_report_retries: 0
-check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-22T15:57:20.978Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 1
 ---
@@ -143,3 +142,4 @@ Also (Nick): on the card and drawer, show only the Refresh evidence button; do n
 - 2026-11-22T17:19:41Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-22T17:26:55Z · status review→active
 - 2026-11-22T17:27:00Z · note: handoff requested (cli)
+
