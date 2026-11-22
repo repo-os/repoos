@@ -2,7 +2,7 @@
 id: "1278"
 title: "Work board: move search into the header row, half width, drop the search chip"
 type: feature
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -353,3 +353,4 @@ Start from src/ui-app/src/components/BoardQueueSearch.vue and the Work view head
 - 2026-11-22T08:20:36Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: **Blocked:** the latest handoff failed on remote WebKit tests. The task’s worktree copy still says `review`, so I can’t edit it until RepoOS returns the task to `active`. · stderr: (empty)
 - 2026-11-22T08:25:19Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-22T08:25:39Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: **Blocked:** the latest scoped check failed on remote WebKit overflow. The task’s live status is unclear, and the worktree copy says `review`; it must be confirmed active before further edits. · stderr: (empty)
+- 2026-11-22T08:25:39Z · status active→review
