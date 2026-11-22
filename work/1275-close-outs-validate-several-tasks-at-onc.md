@@ -11,7 +11,7 @@ branch: feat/close-outs-validate-several-tasks-at-onc
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T07:42:13Z"
-updated_at: "2026-11-22T08:28:21Z"
+updated_at: "2026-11-22T08:28:51Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-22T07:43:02.260Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Pipeline shows a job validating alongside the active close-out (Also running) (target \"default\"): state \"integration:parallelValidations\" did not render on target \"default\" — /checks?tab=now shows no task card (http://127.0.0.1:35993/checks?tab=now&shotState=integration%3AparallelValidations)"
 review_rounds: 1
@@ -494,3 +494,4 @@ Read docs/close-out-pipeline.md and docs/remote-validation.md first. Never touch
 - 2026-11-22T08:28:19Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-22T08:28:20Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: The local scoped check is running in the background, and the monitor will report the exit line and any failing tests. I'm not requesting handoff until I know what the thinkpad gate hit. · stderr: (empty)
 - 2026-11-22T08:28:21Z · message_delivered: 1 message(s)
+- 2026-11-22T08:28:51Z · orphaned run process stopped · pid 70927 · /opt/homebrew/bin/bun /Users/nick/.bun/bin/repoos check · cpu 5s · age 7m
