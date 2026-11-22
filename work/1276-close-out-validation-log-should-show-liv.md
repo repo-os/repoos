@@ -3,9 +3,6 @@ id: "1276"
 title: Close-out validation log should show live progress
 type: feature
 status: active
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: `needs some work` — remote installation is reported as running tests; see Bugs.
 priority: p1
 area: [server, core]
 assigned_to: ai
@@ -14,7 +11,7 @@ branch: feat/close-out-validation-log-should-show-liv
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T07:42:21Z"
-updated_at: "2026-11-22T08:47:10Z"
+updated_at: "2026-11-22T08:47:11Z"
 review_passes: 7
 last_check_failure: "repoos check at 2026-11-22T07:13:31.180Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 review_failed_report_retries: 0
@@ -268,3 +265,4 @@ Related: #1272 (timer should count from validation start). Never touch repoos.to
 - 2026-11-22T08:34:39Z · needs_input
 - 2026-11-22T08:47:08Z · status review→active
 - 2026-11-22T08:47:10Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-22T08:47:11Z · needs_input
