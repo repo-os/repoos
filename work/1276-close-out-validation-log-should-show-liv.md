@@ -11,7 +11,7 @@ branch: feat/close-out-validation-log-should-show-liv
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T07:42:21Z"
-updated_at: "2026-11-22T09:27:45Z"
+updated_at: "2026-11-22T09:27:50Z"
 review_passes: 7
 last_check_failure: "repoos check at 2026-11-22T07:13:31.180Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 review_failed_report_retries: 0
@@ -275,3 +275,4 @@ Related: #1272 (timer should count from validation start). Never touch repoos.to
 - 2026-11-22T09:27:21Z · note: handoff requested (cli)
 - 2026-11-22T09:27:21Z · status active→review
 - 2026-11-22T09:27:45Z · handoff failed · task-file handoff failed at commit · could not unstage generated artifacts: fatal: Unable to create '/Users/nick/code/nick/repoos/.git/worktrees/close-out-validation-log-should-show-liv/index.lock': File exists. · Another git process seems to be running in this repository, or the lock file may be stale
+- 2026-11-22T09:27:50Z · note: shots: failed — browser capture cancelled
