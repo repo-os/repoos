@@ -11,7 +11,7 @@ branch: feat/hide-the-stale-evidence-prompt-once-a-ta
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-20T08:26:19Z"
-updated_at: "2026-11-22T16:16:49Z"
+updated_at: "2026-11-22T16:17:35Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-22T15:57:20.978Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_failed_report_retries: 1
@@ -130,3 +130,4 @@ Also (Nick): on the card and drawer, show only the Refresh evidence button; do n
 - 2026-11-22T15:57:17Z · note: shots: failed — browser capture cancelled
 - 2026-11-22T15:57:20Z · message_delivered: 1 message(s)
 - 2026-11-22T16:16:49Z · body
+- 2026-11-22T16:17:35Z · note: review pass 6: failed — no usable report
