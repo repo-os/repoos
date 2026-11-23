@@ -11,7 +11,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/human-task-check-decision-model-plus-bet
 created_at: "2026-11-20T02:34:13Z"
-updated_at: "2026-11-23T08:34:48Z"
+updated_at: "2026-11-23T08:35:47Z"
 ---
 ## Problem
 When a task starts, RepoOS scans the acceptance criteria for keywords such as "device", "physical", "credentials", "accounts" and "third-party registration". On a match it refuses the start with `needs_input_reason: needs-human-step` and asks for a split. The match is purely lexical, so it gives false positives and agents end up rewording criteria to dodge it, which defeats its purpose.
@@ -39,6 +39,18 @@ Example hit on the Tiao board (task #0175, Passports page, 2026-11-20): the crit
 Find the check by searching for `needs-human-step` and the "mention a real device, physical hardware, accounts, credentials" message. Make the model a configurable agent role chosen from the budget allowlist: a cheap model (Haiku or a cheap opencode model), never Sonnet, no hard-coded provider. Follow AGENTS.md: Settings control for every user-facing setting, usage recording for every LLM call, docs updated.
 
 Sample phrases that must still be caught: "verify on a real handset", "needs a sign-up at a third party", "the user pastes their secret key".
+
+## Shots
+```json
+[
+{
+  "label": "Human-task check mode and phrase settings",
+  "target": "default",
+  "route": "/agents?tab=model-routing",
+  "highlight": "[data-testid=\"human-task-check-mode\"]"
+}
+]
+```
 
 ## Activity
 
@@ -68,3 +80,4 @@ Sample phrases that must still be caught: "verify on a real handset", "needs a s
 - 2026-11-23T08:29:48Z · message_queued at 2026-11-23T08:29:48.518Z
 - 2026-11-23T08:29:48Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-23T08:34:48Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-23T08:35:47Z · body
