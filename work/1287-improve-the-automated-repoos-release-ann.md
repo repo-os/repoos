@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-23T09:37:30Z"
-review_passes: 1
 id: "1287"
 title: Polish automated release announcement emails
 type: feature
@@ -11,6 +9,8 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/polish-automated-release-announcement-em
 created_at: "2026-11-23T07:50:59Z"
+updated_at: "2026-11-23T09:37:30Z"
+review_passes: 1
 ---
 ## Problem
 
@@ -156,4 +156,4 @@ One additional suggestion: since RepoOS releases appear to be frequent, I'd keep
 - 2026-11-23T09:36:26Z · message_queued at 2026-11-23T09:36:26.310Z
 - 2026-11-23T09:36:26Z · note: shots: skipped — the diff (6 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-23T09:37:30Z · note: review pass 1: needs some work
-
+- 2026-11-23T09:37:30Z · message_delivered: 1 message(s)
