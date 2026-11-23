@@ -153,3 +153,4 @@ One additional suggestion: since RepoOS releases appear to be frequent, I'd keep
 - 2026-11-23T09:32:19Z · body
 - 2026-11-23T09:36:25Z · status active→review
 - 2026-11-23T09:36:26Z · message_queued at 2026-11-23T09:36:26.310Z
+- 2026-11-23T09:36:26Z · note: shots: skipped — the diff (6 changed paths) touches no capture target's globs — no UI change to capture
