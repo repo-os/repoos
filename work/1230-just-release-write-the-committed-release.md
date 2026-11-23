@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-23T12:41:15Z"
-review_passes: 1
 id: "1230"
 title: "Easter eggs bundle: just release writes the release record"
 type: bug
@@ -11,6 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/easter-eggs-bundle-just-release-writes-t
 created_at: "2026-11-19T13:45:13Z"
+updated_at: "2026-11-23T12:40:46Z"
 ---
 ## Items
 
@@ -42,19 +41,4 @@ Start from the `release` recipe in justfile, shared/release.ts (CURRENT_RELEASE,
 - 2026-11-23T10:18:49Z · status ready→inbox
 - 2026-11-23T10:18:56Z · status inbox→ready
 - 2026-11-23T11:53:18Z · status ready→active, branch
-- 2026-11-23T12:03:39Z · message_queued at 2026-11-23T12:03:39.045Z
-- 2026-11-23T12:03:39Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-23T12:04:05Z · body
-- 2026-11-23T12:06:49Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
-- 2026-11-23T12:06:49Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code unknown) · last assistant: The full changed-path test suite and remote build passed, including the added release-history test. The local guard found only a formatter issue in the new script, so I’m running the prescribed formatter and then I’ll rerun the requested c… · stderr: Reading additional input from stdin...
-- 2026-11-23T12:06:50Z · message_delivered: 1 message(s)
-- 2026-11-23T12:08:38Z · message_queued at 2026-11-23T12:08:38.889Z
-- 2026-11-23T12:08:39Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-23T12:13:38Z · CTO nudge: held — an undelivered message is already queued
-- 2026-11-23T12:16:21Z · body
-- 2026-11-23T12:38:34Z · body
 - 2026-11-23T12:40:46Z · status active→review
-- 2026-11-23T12:40:46Z · message_queued at 2026-11-23T12:40:46.723Z
-- 2026-11-23T12:40:46Z · note: shots: skipped — the diff (7 changed paths) touches no capture target's globs — no UI change to capture
-- 2026-11-23T12:41:14Z · note: review pass 1: good to go
-

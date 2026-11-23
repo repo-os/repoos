@@ -783,6 +783,15 @@ current-version:
 release version:
     #!/usr/bin/env bash
     set -euo pipefail
+    bump_started=0
+    cleanup() {
+        status=$?
+        if [ "$status" -ne 0 ] && [ "$bump_started" -eq 1 ]; then
+            git checkout HEAD -- package.json release-history.json CHANGELOG.md 2>/dev/null || true
+        fi
+        exit "$status"
+    }
+    trap cleanup EXIT
 
     if [ -n "$(git status --porcelain)" ]; then
         echo "error: working tree is dirty — commit or stash first" >&2
@@ -804,14 +813,18 @@ release version:
     fi
 
     echo "==> bumping package.json to $version"
+    bump_started=1
     bun -e "const fs=require('fs'); const p=JSON.parse(fs.readFileSync('package.json')); p.version='$version'; fs.writeFileSync('package.json', JSON.stringify(p, null, 2) + '\n');"
+
+    echo "==> writing committed release record"
+    bun scripts/write-release-record.ts "$version"
 
     echo "==> running checks"
     bun run build
     repoos check
 
     echo "==> committing"
-    git add package.json
+    git add package.json release-history.json CHANGELOG.md
     git commit -m "chore: release $tag"
 
     echo "==> tagging"
