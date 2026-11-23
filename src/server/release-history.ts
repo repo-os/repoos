@@ -45,6 +45,20 @@ export function releaseDate(now: Date = new Date()): string {
   return now.toISOString().slice(0, 10);
 }
 
+/** Build the standard entry used by both the Releases page and `just release`. */
+export function createReleaseHistoryEntry(
+  version: string,
+  commits: readonly string[],
+  now: Date = new Date(),
+): ReleaseHistoryEntry {
+  return {
+    version,
+    tag: `v${version}`,
+    date: releaseDate(now),
+    notes: renderDefaultReleaseNotes(commits),
+  };
+}
+
 export function emptyReleaseHistory(): ReleaseHistory {
   return { releases: [] };
 }

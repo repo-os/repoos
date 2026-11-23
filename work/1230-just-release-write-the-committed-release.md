@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 948461
-last_close_out_gate_at: "2026-11-23T13:02:38.134Z"
 id: "1230"
 title: "Easter eggs bundle: just release writes the release record"
 type: bug
-status: review
+status: done
 priority: p2
 area: release
+merged_commit: 92958c5868f1b6033a5dca2d7f7746753ea7f23e
 assigned_to: ai
 created_by: t@t
 branch: feat/easter-eggs-bundle-just-release-writes-t
 created_at: "2026-11-19T13:45:13Z"
 updated_at: "2026-11-23T13:02:38Z"
+last_close_out_gate_ms: 948461
+last_close_out_gate_at: "2026-11-23T13:02:38.134Z"
 review_passes: 1
 ---
 ## Items

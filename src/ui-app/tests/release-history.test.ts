@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import {
   CHANGELOG_FILE,
   RELEASE_HISTORY_FILE,
+  createReleaseHistoryEntry,
   readReleaseHistory,
   releaseDate,
   renderChangelog,
@@ -38,6 +39,26 @@ function entry(patch: Partial<ReleaseHistoryEntry> = {}): ReleaseHistoryEntry {
 }
 
 describe("release history surfaces", () => {
+  it("builds the record entry used by the release recipe", () => {
+    const root = scratch();
+    const recipe = readFileSync(join(repoRoot, "justfile"), "utf8");
+    expect(recipe).toContain('bun scripts/write-release-record.ts "$version"');
+    expect(recipe).toContain("git add package.json release-history.json CHANGELOG.md");
+    const release = createReleaseHistoryEntry(
+      "0.5.94",
+      ["abc1234 Add the release record", "def5678 Fix release rollback"],
+      new Date("2026-11-23T23:59:59Z"),
+    );
+    expect(release).toEqual({
+      version: "0.5.94",
+      tag: "v0.5.94",
+      date: "2026-11-23",
+      notes: "Changes in this release:\n\n- Add the release record\n- Fix release rollback",
+    });
+    expect(writeReleaseSurfaces(root, release).changed).toBe(true);
+    expect(readReleaseHistory(root).releases[0]).toEqual(release);
+  });
+
   it("writes the structured history and its markdown rendering", () => {
     const root = scratch();
     const written = writeReleaseSurfaces(root, entry());
