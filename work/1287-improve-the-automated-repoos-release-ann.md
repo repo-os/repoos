@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-23T12:50:02Z"
+review_passes: 4
 id: "1287"
 title: Polish automated release announcement emails
 type: feature
@@ -11,9 +13,7 @@ branch: feat/polish-automated-release-announcement-em
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-23T07:50:59Z"
-updated_at: "2026-11-23T12:50:01Z"
 last_check_failure: "repoos check at 2026-11-23T11:34:20.904Z: repoos check failed: reused check inputs changed during handoff — run the check again"
-review_passes: 3
 review_rounds: 2
 routing_switches: 1
 routing_escalations: 1
@@ -210,3 +210,4 @@ One additional suggestion: since RepoOS releases appear to be frequent, I'd keep
 - 2026-11-23T12:49:55Z · message_queued at 2026-11-23T12:49:55.020Z
 - 2026-11-23T12:50:01Z · note: review pass 4: good to go
 - 2026-11-23T12:50:01Z · needs_input
+
