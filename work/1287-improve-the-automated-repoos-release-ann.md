@@ -14,7 +14,7 @@ branch: feat/polish-automated-release-announcement-em
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-23T07:50:59Z"
-updated_at: "2026-11-23T12:26:59Z"
+updated_at: "2026-11-23T12:27:02Z"
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-11-23T11:34:20.904Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_passes: 3
