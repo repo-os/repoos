@@ -12,7 +12,7 @@ branch: feat/hub-server-list-pull-down-to-refresh
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-23T07:50:31Z"
-updated_at: "2026-11-23T08:47:24Z"
+updated_at: "2026-11-23T08:48:25Z"
 last_close_out_gate_ms: 1181220
 last_close_out_gate_at: "2026-11-23T08:46:32.124Z"
 review_passes: 1
@@ -67,3 +67,4 @@ See attached: all servers show Unreachable with no way to refresh.
 - 2026-11-23T08:19:32Z · note: review pass 1: good to go
 - 2026-11-23T08:46:32Z · close-out gate completed in 1181s
 - 2026-11-23T08:47:24Z · status done→done, release:success
+- 2026-11-23T08:48:25Z · message_dropped: 1 queued message(s) discarded — task is done
