@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 1140446
-last_close_out_gate_at: "2026-11-23T17:39:12.753Z"
 id: "1229"
 title: Reconcile the repoos --help banner with per-command usage strings
 type: chore
-status: review
+status: done
 priority: p3
 area: web
+merged_commit: 5540f7f4665afcfd0237d442ff5705ea7c64e6a4
 assigned_to: ai
 created_by: t@t
 branch: feat/reconcile-the-repoos-help-banner-with-pe
@@ -14,6 +13,8 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-19T11:50:05Z"
 updated_at: "2026-11-23T17:39:12Z"
+last_close_out_gate_ms: 1140446
+last_close_out_gate_at: "2026-11-23T17:39:12.753Z"
 review_passes: 1
 ---
 ## Problem
