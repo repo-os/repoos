@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/easter-eggs-bundle-just-release-writes-t
 created_at: "2026-11-19T13:45:13Z"
-updated_at: "2026-11-23T13:03:00Z"
+updated_at: "2026-11-23T16:19:10Z"
 last_close_out_gate_ms: 948461
 last_close_out_gate_at: "2026-11-23T13:02:38.134Z"
 review_passes: 1
@@ -62,3 +62,4 @@ Start from the `release` recipe in justfile, shared/release.ts (CURRENT_RELEASE,
 - 2026-11-23T12:41:14Z · note: review pass 1: good to go
 - 2026-11-23T13:02:38Z · close-out gate completed in 948s
 - 2026-11-23T13:03:00Z · status done→done, release:success
+- 2026-11-23T16:19:10Z · message_dropped: 1 queued message(s) discarded — task is done
