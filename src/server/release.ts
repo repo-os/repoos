@@ -21,7 +21,7 @@ import {
 import {
   RELEASE_HISTORY_FILE,
   CHANGELOG_FILE,
-  releaseDate,
+  createReleaseHistoryEntry,
   renderDefaultReleaseNotes,
   writeReleaseSurfaces,
   type ReleaseHistoryEntry,
@@ -710,15 +710,16 @@ export async function cutNewRelease(
   // supplies none, fall back to the release-relevant commit subjects — the
   // old behaviour left v0.5.73–75 releases with an empty body.
   let releaseNotes = notes?.trim() ?? "";
+  let releaseCommits: string[] = [];
   if (!releaseNotes) {
     const commits = await collectReleaseCommits(config, exec);
-    releaseNotes = renderDefaultReleaseNotes(commits.commits);
+    releaseCommits = commits.commits;
+    releaseNotes = renderDefaultReleaseNotes(releaseCommits);
   }
   const trimmedKnownIssues = knownIssues?.trim() ?? "";
   const releaseEntry: ReleaseHistoryEntry = {
-    version,
+    ...createReleaseHistoryEntry(version, releaseCommits),
     tag,
-    date: releaseDate(),
     notes: releaseNotes,
     ...(trimmedKnownIssues ? { knownIssues: trimmedKnownIssues } : {}),
   };
