@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/worktree-cleanup-decide-and-build-the-sa
 created_at: "2026-11-15T00:41:58Z"
-updated_at: "2026-11-23T09:38:04Z"
+updated_at: "2026-11-23T09:38:34Z"
 last_close_out_gate_ms: 354149
 last_close_out_gate_at: "2026-11-23T09:38:04.640Z"
 review_passes: 1
@@ -79,4 +79,4 @@ Read #1055 and src for `repoos gc` first. Do not widen what gc auto-removes. Des
 - 2026-11-23T09:19:14Z · message_queued at 2026-11-23T09:19:14.209Z
 - 2026-11-23T09:20:39Z · note: review pass 1: good to go
 - 2026-11-23T09:38:04Z · close-out gate completed in 354s
-
+- 2026-11-23T09:38:34Z · status done→done, release:success
