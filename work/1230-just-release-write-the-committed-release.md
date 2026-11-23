@@ -42,3 +42,4 @@ Start from the `release` recipe in justfile, shared/release.ts (CURRENT_RELEASE,
 - 2026-11-23T10:18:56Z · status inbox→ready
 - 2026-11-23T11:53:18Z · status ready→active, branch
 - 2026-11-23T12:03:39Z · message_queued at 2026-11-23T12:03:39.045Z
+- 2026-11-23T12:03:39Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
