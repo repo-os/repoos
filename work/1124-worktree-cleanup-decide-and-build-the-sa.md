@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/worktree-cleanup-decide-and-build-the-sa
 created_at: "2026-11-15T00:41:58Z"
-updated_at: "2026-11-23T07:34:51Z"
+updated_at: "2026-11-23T07:55:58Z"
 ---
 ## Problem
 
@@ -29,8 +29,28 @@ We have not decided how to handle these. This task is to decide that, then build
 
 Read #1055 and src for `repoos gc` first. Do not widen what gc auto-removes. Design the classes from the real dry-run output, not guesses. Keep zero runtime dependencies. If a class is better solved by fixing why the worktree was left behind (for example a close-out that fails to clean up), file that as its own task instead of working around it here.
 
+## Shots
+```json
+[
+{
+  "label": "Protected worktree triage preview",
+  "target": "default",
+  "route": "/control?shotState=system:worktreeGc",
+  "highlight": ".gc-preview",
+  "steps": [
+    {
+      "click": ".gc-tooltip-trigger button.gc-action"
+    }
+  ]
+}
+]
+```
+
 ## Activity
 
 - 2026-11-15T00:41:58Z · created · t@t
 - 2026-11-23T07:34:49Z · status inbox→ready
 - 2026-11-23T07:34:51Z · status ready→active, branch
+- 2026-11-23T07:41:33Z · watchdog: check wait escalated · waiting: waiting for serialized local fallback (1 ahead, position 2); slot holder 9249 is dead for 14s · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-11-23T07:47:04Z · watchdog: check wait ended or recovered — cleared needs_input
+- 2026-11-23T07:55:58Z · body
