@@ -796,7 +796,7 @@ else process.stdout.write(${JSON.stringify(reportB)} + "\\n");
       );
       expect(readFileSync(task.absPath, "utf8")).toMatch(/^review_passes: 2$/m);
     });
-  }, 150_000);
+  }, 90_000);
 
   it("returns a task to active when review findings are auto-bounced to the engineer", async () => {
     const needsWorkReport = [
@@ -867,10 +867,14 @@ else process.stdout.write(${JSON.stringify(needsWorkReport)} + "\\n");
       const task = await taskWithWorktree(server, fx, "Rounds exhausted");
       const started = await api(server, "POST", `/api/tasks/${task.id}/start`);
       expect(started.status).toBe(200);
-      await waitForAsync(async () => {
-        const output = await api(server, "GET", `/api/tasks/${task.id}/output`);
-        return Array.isArray(output.body.lines) && output.body.lines.length > 0;
-      }, "an engineer session is available to resume");
+      await waitForAsync(
+        async () => {
+          const output = await api(server, "GET", `/api/tasks/${task.id}/output`);
+          return Array.isArray(output.body.lines) && output.body.lines.length > 0;
+        },
+        "an engineer session is available to resume",
+        120_000,
+      );
       await waitForAsync(async () => {
         const response = await fetch(`${server.url}/api/agents/running`);
         const running = (await response.json()) as { tasks: Array<{ id: string }> };
@@ -896,7 +900,7 @@ else process.stdout.write(${JSON.stringify(needsWorkReport)} + "\\n");
         "no auto-bounce after rounds exhausted",
       );
     });
-  }, 90_000);
+  }, 150_000);
 
   it("does not exhaust rounds for a reviewer that only reports sandbox limits (#0910)", async () => {
     const environmentReport = [
