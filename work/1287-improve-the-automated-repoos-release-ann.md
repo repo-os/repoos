@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/polish-automated-release-announcement-em
 created_at: "2026-11-23T07:50:59Z"
-updated_at: "2026-11-23T11:33:21Z"
+updated_at: "2026-11-23T11:33:27Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-23T10:06:49.976Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 2
@@ -192,3 +192,4 @@ One additional suggestion: since RepoOS releases appear to be frequent, I'd keep
 - 2026-11-23T10:53:35Z · watchdog: check wait escalated · waiting: waiting for serialized local fallback (1 ahead, position 2); slot holder 47821 is dead for 8m · next step: investigate the abnormal wait; the flag clears when the check starts
 - 2026-11-23T11:19:25Z · watchdog: check wait ended or recovered — cleared needs_input
 - 2026-11-23T11:33:21Z · status active→review
+- 2026-11-23T11:33:27Z · note: shots: skipped — the diff (8 changed paths) touches no capture target's globs — no UI change to capture
