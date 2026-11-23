@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-23T08:19:33Z"
-review_passes: 1
 id: "1286"
 title: "Hub server list: pull down to refresh"
 type: feature
@@ -13,6 +11,7 @@ branch: feat/hub-server-list-pull-down-to-refresh
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-23T07:50:31Z"
+updated_at: "2026-11-23T08:18:51Z"
 ---
 ## Goal
 On the mobile Hub app's server list (mobile/src/components/ServerListView.vue), support pull-down-to-refresh so the user can re-check every server's reachability without killing and reopening the app.
@@ -56,10 +55,4 @@ See attached: all servers show Unreachable with no way to refresh.
 - 2026-11-23T07:59:22Z · cli_override, model_override
 - 2026-11-23T07:59:31Z · status inbox→ready
 - 2026-11-23T07:59:37Z · status ready→active, branch
-- 2026-11-23T08:10:09Z · watchdog: check wait escalated · waiting: waiting for serialized local fallback (1 ahead, position 2); slot holder 68774 is dead for 1s · next step: investigate the abnormal wait; the flag clears when the check starts
-- 2026-11-23T08:16:39Z · watchdog: check wait ended or recovered — cleared needs_input
-- 2026-11-23T08:18:52Z · status active→review
-- 2026-11-23T08:18:52Z · message_queued at 2026-11-23T08:18:52.171Z
-- 2026-11-23T08:18:52Z · note: shots: skipped — the diff (6 changed paths) touches no capture target's globs — no UI change to capture
-- 2026-11-23T08:19:32Z · note: review pass 1: good to go
-
+- 2026-11-23T08:18:51Z · status active→review

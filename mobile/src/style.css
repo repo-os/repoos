@@ -225,6 +225,34 @@ select {
   gap: 10px;
   overflow-y: auto;
   flex: 1;
+  overscroll-behavior-y: contain;
+  touch-action: pan-y;
+}
+
+.pull-refresh-indicator {
+  align-self: center;
+  height: 28px;
+  margin: -2px 0 -6px;
+  color: var(--txt-dim);
+  font-size: 20px;
+  line-height: 28px;
+}
+
+.pull-refresh-indicator .spinning {
+  display: inline-block;
+  animation: hub-refresh-spin 800ms linear infinite;
+}
+
+@keyframes hub-refresh-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pull-refresh-indicator .spinning {
+    animation: none;
+  }
 }
 
 .server-list.is-dragging {
