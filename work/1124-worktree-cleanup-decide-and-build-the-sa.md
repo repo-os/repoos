@@ -11,7 +11,6 @@ branch: feat/worktree-cleanup-decide-and-build-the-sa
 created_at: "2026-11-15T00:41:58Z"
 updated_at: "2026-11-23T08:57:28Z"
 handoff_signal_retry_count: 2
-check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-23T08:04:26.772Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Protected worktree triage preview (target \"default\"): loading state detected: loading text \"Loading…\" on /control?shotState=system:worktreeGc (http://127.0.0.1:55926/control?shotState=system:worktreeGc)"
 ---
 ## Problem
@@ -71,3 +70,4 @@ Read #1055 and src for `repoos gc` first. Do not widen what gc auto-removes. Des
 - 2026-11-23T08:47:29Z · note: adopted orphaned engineer pid 70173
 - 2026-11-23T08:52:48Z · body
 - 2026-11-23T08:57:28Z · CTO nudge: held — handoff gate is running
+
