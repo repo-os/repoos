@@ -361,10 +361,10 @@ export const GROUPS: readonly CommandGroup[] = [
       {
         name: "check",
         usage:
-          "check [--profile|-p <name>] [--changed <ref>] [--print-plan] [--fix] [--step|--steps <name>] [--local-tests]",
+          "check [--profile <name>|-p <name>] [--changed <ref>] [--print-plan] [--fix] [--step <name>] [--steps <name>] [--local-tests]",
         desc: "Definition-of-done gate: runs the plan declared in repoos.toml",
         flags:
-          "--profile|-p <name> · --changed <ref> · --print-plan · --fix · --step|--steps <name> · --local-tests",
+          "--profile <name> · -p <name> · --changed <ref> · --print-plan · --fix · --step <name> · --steps <name> · --local-tests",
       },
       {
         name: "checks timings",
