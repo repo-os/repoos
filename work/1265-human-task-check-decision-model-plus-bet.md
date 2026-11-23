@@ -11,7 +11,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/human-task-check-decision-model-plus-bet
 created_at: "2026-11-20T02:34:13Z"
-updated_at: "2026-11-23T08:57:28Z"
+updated_at: "2026-11-23T09:00:29Z"
 ---
 ## Problem
 When a task starts, RepoOS scans the acceptance criteria for keywords such as "device", "physical", "credentials", "accounts" and "third-party registration". On a match it refuses the start with `needs_input_reason: needs-human-step` and asks for a split. The match is purely lexical, so it gives false positives and agents end up rewording criteria to dodge it, which defeats its purpose.
@@ -98,3 +98,4 @@ Sample phrases that must still be caught: "verify on a real handset", "needs a s
 - 2026-11-23T08:52:35Z · message_delivered: 1 message(s)
 - 2026-11-23T08:57:28Z · message_queued at 2026-11-23T08:57:28.257Z
 - 2026-11-23T08:57:28Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-23T09:00:29Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
