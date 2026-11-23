@@ -2,14 +2,14 @@
 id: "1287"
 title: Polish automated release announcement emails
 type: feature
-status: ready
+status: active
 priority: p2
 area: [server, web]
 assigned_to: ai
 created_by: hello@repoos.org
-branch: ""
+branch: feat/polish-automated-release-announcement-em
 created_at: "2026-11-23T07:50:59Z"
-updated_at: "2026-11-23T07:52:07Z"
+updated_at: "2026-11-23T08:48:20Z"
 ---
 ## Problem
 
@@ -147,3 +147,4 @@ One additional suggestion: since RepoOS releases appear to be frequent, I'd keep
 - 2026-11-23T07:50:59Z · created · hello@repoos.org
 - 2026-11-23T07:51:19Z · status draft→inbox, title, area, body: Problem (added); Desired UX (added); Acceptance criteria (added); Notes for AI (added); Scope (added); Related (added)
 - 2026-11-23T07:52:07Z · status inbox→ready
+- 2026-11-23T08:48:20Z · status ready→active, branch
