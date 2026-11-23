@@ -380,10 +380,19 @@ export function assessTaskNeedsHumanStep(
   const cleanForHumanStepMatch = (line: string) =>
     line
       .replace(/`[^`]*`|\b[A-Za-z]+Prompt\b|\b\w*(?:Id|ID)\b/g, " ")
-      .replace(/\b(?:no|not|without|never)\b[^.;\n]{0,100}/gi, " ");
+      .replace(
+        /\bno\s+(?:real\s+)?[^.;\n]{0,80}\b(?:step|verification|access|registration)\s+(?:(?:is|are)\s+)?(?:required|needed|necessary)\b/gi,
+        " ",
+      )
+      .replace(
+        /\bwithout\s+(?:a\s+)?(?:real\s+)?(?:device|account|credentials?|secrets?|api\s+keys?)\b/gi,
+        " ",
+      )
+      .replace(/\bnot\s+(?:on\s+)?(?:a\s+)?real\s+(?:device|account|handset)\b/gi, " ");
   const signals: string[] = [];
   let sentence: string | undefined;
-  const configuredPhrases = opts?.humanStepKeywords ?? [];
+  const configuredPhrases =
+    opts?.humanStepKeywords ?? DEFAULT_HUMAN_STEP_KEYWORDS.map(({ phrase }) => phrase);
   for (const phrase of configuredPhrases) {
     const normalized = phrase.trim();
     if (!normalized) continue;
@@ -391,10 +400,7 @@ export function assessTaskNeedsHumanStep(
     for (const line of scanLines) {
       const safeLine = cleanForHumanStepMatch(line);
       if (!re.test(safeLine)) continue;
-      // Exclude a phrase when it appears only inside a negated clause.
       const hit = sentenceAroundMatch(safeLine, re);
-      const before = hit ? safeLine.slice(0, safeLine.indexOf(hit)) : "";
-      if (/\b(?:no|not|without|never)\b[^.;\n]*$/i.test(before)) continue;
       signals.push(normalized);
       sentence ??= hit ?? line;
       break;

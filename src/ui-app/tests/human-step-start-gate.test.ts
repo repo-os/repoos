@@ -91,6 +91,7 @@ ${KEYS_BODY}`,
     defaultAssignee: "unassigned",
     cacheDir: ".repoos",
     agents: [ENGINEER_AGENT],
+    humanTaskCheck: { mode: "both", keywords: ["api keys"] },
     modelRouting: { mode: "automatic", provider: "jev", humanStepCheck: true },
   };
   const read = () =>
@@ -196,7 +197,7 @@ describe("decision-model start gate (#0804)", () => {
     });
     const fx = makeFixture();
     try {
-      const { res } = makeRes();
+      const { res, fake } = makeRes();
       await taskAction(fx.ctx, makeReq(), res, { param1: "0804", param2: "start" });
       const onDisk = fx.read();
       expect(onDisk.status).toBe("active");
@@ -221,7 +222,7 @@ describe("decision-model start gate (#0804)", () => {
     });
     const fx = makeFixture();
     try {
-      const { res } = makeRes();
+      const { res, fake } = makeRes();
       await taskAction(fx.ctx, makeReq(), res, { param1: "0804", param2: "start" });
       const onDisk = fx.read();
       expect(onDisk.status).toBe("active");
@@ -239,12 +240,16 @@ describe("decision-model start gate (#0804)", () => {
     });
     const fx = makeFixture();
     try {
-      const { res } = makeRes();
+      const { res, fake } = makeRes();
       await taskAction(fx.ctx, makeReq(), res, { param1: "0804", param2: "start" });
       const onDisk = fx.read();
-      expect(onDisk.status).toBe("active");
-      // The 'keys' word matches the keyword heuristic, so the flag is raised.
+      expect(onDisk.status).toBe("ready");
+      expect(fake.status).toBe(409);
+      // The configured phrase matches, so a model outage falls back to the
+      // keyword verdict and explains that fallback before starting.
       expect(onDisk.needsInputReason).toBe("needs-human-step");
+      expect(onDisk.needsInputDetail).toContain("Decision model failed (timeout)");
+      expect(fake.payload.detail).toContain("Decision model failed (timeout)");
     } finally {
       fx.clean();
     }
