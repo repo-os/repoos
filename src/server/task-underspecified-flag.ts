@@ -90,7 +90,7 @@ async function resolveKeywordTripwire(
   if (check.outcome === "unavailable" || check.outcome === "failed") {
     const fallback =
       check.outcome === "failed"
-        ? `Decision model unavailable (${check.error ?? "request failed"}); keyword result used. `
+        ? `Decision model failed (${check.error ?? "request failed"}); keyword result used. `
         : "Decision model unavailable; keyword result used. ";
     return { action: "keyword-fallback", detail: `${fallback}${assessment.detail}` };
   }
