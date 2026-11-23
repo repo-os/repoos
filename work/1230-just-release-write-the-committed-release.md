@@ -2,14 +2,14 @@
 id: "1230"
 title: "Easter eggs bundle: just release writes the release record"
 type: bug
-status: active
+status: review
 priority: p2
 area: release
 assigned_to: ai
 created_by: t@t
 branch: feat/easter-eggs-bundle-just-release-writes-t
 created_at: "2026-11-19T13:45:13Z"
-updated_at: "2026-11-23T12:38:34Z"
+updated_at: "2026-11-23T12:40:46Z"
 ---
 ## Items
 
@@ -52,3 +52,4 @@ Start from the `release` recipe in justfile, shared/release.ts (CURRENT_RELEASE,
 - 2026-11-23T12:13:38Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-23T12:16:21Z · body
 - 2026-11-23T12:38:34Z · body
+- 2026-11-23T12:40:46Z · status active→review
