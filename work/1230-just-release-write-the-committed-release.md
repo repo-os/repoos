@@ -53,3 +53,4 @@ Start from the `release` recipe in justfile, shared/release.ts (CURRENT_RELEASE,
 - 2026-11-23T12:16:21Z · body
 - 2026-11-23T12:38:34Z · body
 - 2026-11-23T12:40:46Z · status active→review
+- 2026-11-23T12:40:46Z · message_queued at 2026-11-23T12:40:46.723Z
