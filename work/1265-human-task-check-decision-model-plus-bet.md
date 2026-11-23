@@ -11,7 +11,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/human-task-check-decision-model-plus-bet
 created_at: "2026-11-20T02:34:13Z"
-updated_at: "2026-11-23T08:35:47Z"
+updated_at: "2026-11-23T08:41:10Z"
 ---
 ## Problem
 When a task starts, RepoOS scans the acceptance criteria for keywords such as "device", "physical", "credentials", "accounts" and "third-party registration". On a match it refuses the start with `needs_input_reason: needs-human-step` and asks for a split. The match is purely lexical, so it gives false positives and agents end up rewording criteria to dodge it, which defeats its purpose.
@@ -44,10 +44,10 @@ Sample phrases that must still be caught: "verify on a real handset", "needs a s
 ```json
 [
 {
-  "label": "Human-task check mode and phrase settings",
-  "target": "default",
-  "route": "/agents?tab=model-routing",
-  "highlight": "[data-testid=\"human-task-check-mode\"]"
+"label": "Human-task check mode and phrase settings",
+"target": "default",
+"route": "/agents?tab=model-routing",
+"highlight": "[data-testid=\"human-task-check-mode\"]"
 }
 ]
 ```
@@ -81,3 +81,4 @@ Sample phrases that must still be caught: "verify on a real handset", "needs a s
 - 2026-11-23T08:29:48Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-23T08:34:48Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-23T08:35:47Z · body
+- 2026-11-23T08:41:10Z · queued message undelivered for 11m and the engineer produced no output — ending the turn so it is delivered
