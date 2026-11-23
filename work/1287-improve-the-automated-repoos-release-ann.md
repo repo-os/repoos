@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-23T10:06:49.976Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 id: "1287"
 title: Polish automated release announcement emails
 type: feature
@@ -170,3 +172,4 @@ One additional suggestion: since RepoOS releases appear to be frequent, I'd keep
 - 2026-11-23T10:06:48Z · message_delivered: 1 message(s)
 - 2026-11-23T10:06:49Z · status review→active
 - 2026-11-23T10:06:49Z · message_queued at 2026-11-23T10:06:49.632Z
+
