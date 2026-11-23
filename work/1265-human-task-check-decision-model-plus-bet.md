@@ -2,7 +2,7 @@
 id: "1265"
 title: "Human-task check: decision model plus better keyword rules"
 type: feature
-status: review
+status: active
 human_step_override: Cleared needs-human-step flag (sticky until acceptance criteria change)
 human_step_override_key: 5384b92b
 priority: p2
@@ -12,6 +12,8 @@ created_by: t@t
 branch: feat/human-task-check-decision-model-plus-bet
 created_at: "2026-11-20T02:34:13Z"
 updated_at: "2026-11-23T11:01:26Z"
+review_rounds: 1
+routing_switches: 1
 review_passes: 1
 ---
 ## Problem
@@ -117,3 +119,4 @@ Sample phrases that must still be caught: "verify on a real handset", "needs a s
 - 2026-11-23T11:00:33Z · message_queued at 2026-11-23T11:00:33.929Z
 - 2026-11-23T11:01:25Z · note: review pass 1: needs some work
 - 2026-11-23T11:01:26Z · message_delivered: 1 message(s)
+- 2026-11-23T11:01:26Z · status review→active
