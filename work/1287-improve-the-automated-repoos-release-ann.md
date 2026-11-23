@@ -182,3 +182,4 @@ One additional suggestion: since RepoOS releases appear to be frequent, I'd keep
 - 2026-11-23T10:17:58Z · watchdog: check wait ended or recovered — cleared needs_input
 - 2026-11-23T10:27:13Z · watchdog: check wait escalated · waiting: waiting for serialized local fallback (1 ahead, position 2); slot holder 34136 is dead for 0s · next step: investigate the abnormal wait; the flag clears when the check starts
 - 2026-11-23T10:38:38Z · message_queued at 2026-11-23T10:38:38.697Z
+- 2026-11-23T10:38:38Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
