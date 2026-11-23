@@ -2,14 +2,14 @@
 id: "1230"
 title: "Easter eggs bundle: just release writes the release record"
 type: bug
-status: inbox
+status: ready
 priority: p2
 area: release
 assigned_to: ai
 created_by: t@t
 branch: ""
 created_at: "2026-11-19T13:45:13Z"
-updated_at: "2026-11-23T10:18:49Z"
+updated_at: "2026-11-23T10:18:56Z"
 ---
 ## Items
 
@@ -39,3 +39,4 @@ Start from the `release` recipe in justfile, shared/release.ts (CURRENT_RELEASE,
 - 2026-11-19T13:49:22Z · title, body: Items (added); E1 · just release writes the release record (added); Problem (removed); Desired outcome (removed); Acceptance criteria (removed); Notes for AI (removed)
 - 2026-11-23T07:34:23Z · status inbox→ready
 - 2026-11-23T10:18:49Z · status ready→inbox
+- 2026-11-23T10:18:56Z · status inbox→ready
