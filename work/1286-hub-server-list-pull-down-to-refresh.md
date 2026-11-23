@@ -3,13 +3,16 @@ id: "1286"
 title: "Hub server list: pull down to refresh"
 type: feature
 status: inbox
+needs_input: true
+needs_input_reason: underspecified
+needs_input_detail: "missing sections: Problem, Desired UX, Acceptance criteria, Notes for AI"
 priority: p2
 area: web
 assigned_to: ai
 created_by: t@t
 branch: ""
 created_at: "2026-11-23T07:50:31Z"
-updated_at: "2026-11-23T07:50:32Z"
+updated_at: "2026-11-23T07:50:33Z"
 ---
 ## Goal
 On the mobile Hub app's server list (mobile/src/components/ServerListView.vue), support pull-down-to-refresh so the user can re-check every server's reachability without killing and reopening the app.
@@ -29,3 +32,4 @@ See attached: all servers show Unreachable with no way to refresh.
 
 - 2026-11-23T07:50:31Z · created · t@t
 - 2026-11-23T07:50:32Z · screenshots
+- 2026-11-23T07:50:33Z · needs_input
