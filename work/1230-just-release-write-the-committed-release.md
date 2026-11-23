@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/easter-eggs-bundle-just-release-writes-t
 created_at: "2026-11-19T13:45:13Z"
-updated_at: "2026-11-23T12:40:46Z"
+updated_at: "2026-11-23T12:41:14Z"
 ---
 ## Items
 
@@ -55,3 +55,4 @@ Start from the `release` recipe in justfile, shared/release.ts (CURRENT_RELEASE,
 - 2026-11-23T12:40:46Z · status active→review
 - 2026-11-23T12:40:46Z · message_queued at 2026-11-23T12:40:46.723Z
 - 2026-11-23T12:40:46Z · note: shots: skipped — the diff (7 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-11-23T12:41:14Z · note: review pass 1: good to go
