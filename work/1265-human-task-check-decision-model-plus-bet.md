@@ -11,7 +11,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/human-task-check-decision-model-plus-bet
 created_at: "2026-11-20T02:34:13Z"
-updated_at: "2026-11-23T11:18:29Z"
+updated_at: "2026-11-23T11:28:38Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -127,3 +127,4 @@ Sample phrases that must still be caught: "verify on a real handset", "needs a s
 - 2026-11-23T11:02:37Z · engineer crash recovery: resuming codex + gpt-6-luna (1/3 crashes in 30m) · The selected model is not available for this account. Choose another model on the Agents page. (CLI: ? `Decision model unavailable (${check.error ?? "request failed"}); keyword result used. `)
 - 2026-11-23T11:02:42Z · needs_input
 - 2026-11-23T11:18:29Z · body
+- 2026-11-23T11:28:38Z · message_queued at 2026-11-23T11:28:38.851Z
