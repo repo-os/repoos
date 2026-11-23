@@ -44,6 +44,22 @@ function toggle(id: string): void {
 <template>
   <div class="task-dependency-picker">
     <label :for="id">{{ label }}</label>
+    <!-- #1282: what is set reads first, as chips; the candidate list below is the only long part. -->
+    <ul v-if="selectedTasks.length" class="dependency-selected" aria-label="Selected prerequisites">
+      <li v-for="task in selectedTasks" :key="task.id" class="dependency-chip">
+        <span class="dependency-chip-id">#{{ task.id }}</span>
+        <span class="dependency-chip-title">{{ task.title }}</span>
+        <button
+          type="button"
+          class="dependency-chip-remove"
+          :aria-label="`Remove dependency ${task.id}`"
+          @click="toggle(task.id)"
+        >
+          <span aria-hidden="true">×</span>
+        </button>
+      </li>
+    </ul>
+    <p v-else class="dependency-none">None</p>
     <Input :id="id" v-model="query" type="search" placeholder="Find a task by title or ID" />
     <ul v-if="candidates.length" class="dependency-options" :aria-label="`${label} options`">
       <li v-for="task in candidates" :key="task.id">
@@ -64,14 +80,6 @@ function toggle(id: string): void {
       </li>
     </ul>
     <p v-else class="dependency-empty">No matching tasks.</p>
-    <ul v-if="selectedTasks.length" class="dependency-selected" aria-label="Selected prerequisites">
-      <li v-for="task in selectedTasks" :key="task.id">
-        <span>#{{ task.id }} · {{ task.title }}</span>
-        <button type="button" :aria-label="`Remove dependency ${task.id}`" @click="toggle(task.id)">
-          Remove
-        </button>
-      </li>
-    </ul>
   </div>
 </template>
 
@@ -171,28 +179,73 @@ function toggle(id: string): void {
   font-size: 12px;
 }
 
-.dependency-selected li {
+.dependency-selected {
+  flex-wrap: wrap;
   display: flex;
+  gap: 6px;
+}
+
+.dependency-chip {
+  display: inline-flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
+  gap: 6px;
+  max-width: 100%;
   min-width: 0;
+  padding: 3px 4px 3px 8px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--chip-bg);
   color: var(--foreground);
   font-size: 11px;
 }
 
-.dependency-selected li span {
+.dependency-chip-id {
+  flex: 0 0 auto;
+  font-family: var(--mono, ui-monospace, monospace);
+  color: var(--txt-dim);
+}
+
+.dependency-chip-title {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.dependency-selected button {
+.dependency-chip-remove {
+  display: grid;
   flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+  place-items: center;
   border: 0;
+  border-radius: 999px;
   background: transparent;
   color: var(--foreground);
-  text-decoration: underline;
+  font-size: 13px;
+  line-height: 1;
   cursor: pointer;
+}
+
+.dependency-chip-remove:hover {
+  background: var(--muted);
+}
+
+.dependency-chip-remove:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 1px;
+}
+
+.dependency-none {
+  margin: 0;
+  color: var(--txt-dim);
+  font-size: 12px;
+}
+
+@media (pointer: coarse) {
+  .dependency-chip-remove {
+    width: 44px;
+    height: 44px;
+  }
 }
 </style>

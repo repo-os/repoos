@@ -3,7 +3,11 @@ import { mkdirSync, rmSync, writeFileSync, readFileSync, utimesSync } from "node
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { execSync } from "node:child_process";
-import { createJobCoordinator, pendingCloseOutJobs } from "../integration-job.js";
+import {
+  createJobCoordinator,
+  pendingCloseOutJobs,
+  taskCloseOutPending,
+} from "../integration-job.js";
 import { createRepositoryLock } from "../repo-lock.js";
 
 describe("integration jobs (0118)", () => {
@@ -182,5 +186,38 @@ describe("integration jobs (0118)", () => {
     expect(recovered?.baseMainSha).toBe("main-sha-abc");
     expect(recovered?.branchSha).toBe("branch-sha-def");
     expect(recovered?.candidateSha).toBe("candidate-sha-ghi");
+  });
+});
+
+describe("taskCloseOutPending (#1277)", () => {
+  let repo: string;
+
+  beforeEach(() => {
+    repo = join(tmpdir(), `repoos-task-pending-${Date.now()}-${Math.random()}`);
+    mkdirSync(repo, { recursive: true });
+    execSync(`git -C ${repo} init`, { stdio: "ignore" });
+    execSync(`git -C ${repo} config user.email "test@example.com"`, { stdio: "ignore" });
+    execSync(`git -C ${repo} config user.name "Test User"`, { stdio: "ignore" });
+    writeFileSync(join(repo, "README.md"), "# Test Repo\n");
+    execSync(`git -C ${repo} add README.md`, { stdio: "ignore" });
+    execSync(`git -C ${repo} commit -m "Initial commit"`, { stdio: "ignore" });
+  });
+
+  afterEach(() => {
+    rmSync(repo, { recursive: true, force: true });
+  });
+
+  it("is true only for the task whose own close-out job is queued", () => {
+    const coordinator = createJobCoordinator(repo);
+    coordinator.enqueue({ id: "task1", branch: "feat/task1" } as any);
+    expect(taskCloseOutPending(coordinator, "task1")).toBe(true);
+    expect(taskCloseOutPending(coordinator, "task2")).toBe(false);
+  });
+
+  it("is false once the task's job is removed", () => {
+    const coordinator = createJobCoordinator(repo);
+    coordinator.enqueue({ id: "task1", branch: "feat/task1" } as any);
+    coordinator.removeJob("task1");
+    expect(taskCloseOutPending(coordinator, "task1")).toBe(false);
   });
 });

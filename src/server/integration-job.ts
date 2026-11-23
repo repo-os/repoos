@@ -663,6 +663,20 @@ export function createJobCoordinator(root: string): JobCoordinator {
  * A disk read that fails is treated as "no pending job": that restores the
  * lock-only behaviour rather than parking every build on a filesystem hiccup.
  */
+/**
+ * True while THIS task's close-out job is queued or running (#1277). The global
+ * lock check above is a repo-wide answer: a queued job for another task must
+ * not block this one, but a queued job for this task must, because a fresh
+ * review or capture started now would race its merge.
+ */
+export function taskCloseOutPending(
+  coordinator: Pick<JobCoordinator, "getJob">,
+  taskId: string,
+): boolean {
+  const job = coordinator.getJob(taskId);
+  return job !== null && job.phase !== "done" && job.phase !== "failed";
+}
+
 export function closeOutPending(
   lock: { closingOut: () => boolean },
   coordinator: Pick<JobCoordinator, "peekNext">,

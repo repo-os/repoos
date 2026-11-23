@@ -1,0 +1,70 @@
+---
+id: "1286"
+title: "Hub server list: pull down to refresh"
+type: feature
+status: done
+priority: p2
+area: web
+merged_commit: dd0e14211bd3bdc85fe77160ff84d24b5abe8e46
+assigned_to: ai
+created_by: t@t
+branch: feat/hub-server-list-pull-down-to-refresh
+cli_override: codex
+model_override: gpt-6-luna
+created_at: "2026-11-23T07:50:31Z"
+updated_at: "2026-11-23T08:48:25Z"
+last_close_out_gate_ms: 1181220
+last_close_out_gate_at: "2026-11-23T08:46:32.124Z"
+review_passes: 1
+---
+## Goal
+On the mobile Hub app's server list (mobile/src/components/ServerListView.vue), support pull-down-to-refresh so the user can re-check every server's reachability without killing and reopening the app.
+
+## Requirements
+- Pulling down at the top of the server list triggers the same status refresh the list does on open.
+- A subtle, native-feeling refresh indicator shows while refreshing; it ends when all servers have reported (or timed out).
+- Works on Android and iOS (Capacitor webviews); must not conflict with normal list scrolling or the row menus.
+- No other new UI beyond the pull indicator.
+- Add a test and update user-docs/android-hub.md if it lists refresh behaviour.
+
+## Problem
+The Hub server list shows stale 'Unreachable' states and can only be refreshed by killing and reopening the app.
+
+## Desired UX
+Pull down at the top of the list in mobile/src/components/ServerListView.vue to re-check all servers, with a native-feeling indicator until every server has reported or timed out. No other new UI.
+
+## Acceptance criteria
+- Pull-down triggers the same status refresh as on open
+- Indicator shows and then clears
+- Works on Android and iOS, no conflict with scrolling or row menus
+- Test added; user-docs/android-hub.md updated if it covers refresh
+
+## Notes for AI
+Prefer a small touch handler over a new dependency (zero-runtime-dependency rule). Hub is under mobile/.
+
+## Screenshots
+See attached: all servers show Unreachable with no way to refresh.
+![Hub server list; no way to refresh without killing the app](/api/tasks/1286/attachments/att_9f072a6c-b94d-4e4b-a821-aaa4a39b5c35.png)
+
+## Activity
+
+- 2026-11-23T07:50:31Z · created · t@t
+- 2026-11-23T07:50:32Z · screenshots
+- 2026-11-23T07:50:33Z · needs_input
+- 2026-11-23T07:50:38Z · body: Problem (added)
+- 2026-11-23T07:50:39Z · body: Desired UX (added)
+- 2026-11-23T07:50:41Z · body: Acceptance criteria (added)
+- 2026-11-23T07:50:42Z · body: Notes for AI (added)
+- 2026-11-23T07:50:42Z · needs_input
+- 2026-11-23T07:59:22Z · cli_override, model_override
+- 2026-11-23T07:59:31Z · status inbox→ready
+- 2026-11-23T07:59:37Z · status ready→active, branch
+- 2026-11-23T08:10:09Z · watchdog: check wait escalated · waiting: waiting for serialized local fallback (1 ahead, position 2); slot holder 68774 is dead for 1s · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-11-23T08:16:39Z · watchdog: check wait ended or recovered — cleared needs_input
+- 2026-11-23T08:18:52Z · status active→review
+- 2026-11-23T08:18:52Z · message_queued at 2026-11-23T08:18:52.171Z
+- 2026-11-23T08:18:52Z · note: shots: skipped — the diff (6 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-11-23T08:19:32Z · note: review pass 1: good to go
+- 2026-11-23T08:46:32Z · close-out gate completed in 1181s
+- 2026-11-23T08:47:24Z · status done→done, release:success
+- 2026-11-23T08:48:25Z · message_dropped: 1 queued message(s) discarded — task is done

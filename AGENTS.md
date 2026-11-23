@@ -225,6 +225,7 @@ test suite, a headless WebKit UI smoke test and a rendered contrast audit
 
 - **Never** move task files between folders; status lives in frontmatter.
 - Human-assigned task bodies need `## Step-by-step guide`; see `docs/agent-workflow-rules.md`.
+- **No unrequested UI.** Don't build new user-visible UI the task body doesn't name; flag needs-input with a proposal instead. QA passes fix defects and file new-UI ideas as proposals. See [unrequested UI](docs/agent-workflow-rules.md#unrequested-ui-needs-human-confirmation-1283).
 - **Never write directly to `work/*.md`.** Use `repoos` commands or the HTTP API
   (`POST /api/tasks`, `PATCH /api/tasks/:id`). If the server is unreachable, stop
   and report — don't hand-write task files. The Product Manager agent may create

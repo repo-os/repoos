@@ -2,16 +2,27 @@
 id: "1279"
 title: "Easter eggs bundle: rename review history column to Issues"
 type: feature
-status: ready
+status: done
 human_step_override: Cleared needs-human-step flag (sticky until acceptance criteria change)
 human_step_override_key: 8dbfd6ac
 priority: p3
 area: web
+merged_commit: 6484ad7238459d7da0b28d3f16cb736d6c9840c8
 assigned_to: ai
 created_by: t@t
-branch: ""
+branch: feat/easter-eggs-bundle-rename-review-history
+cli_override: claude code
+model_override: haiku
 created_at: "2026-11-20T10:35:33Z"
-updated_at: "2026-11-20T10:46:25Z"
+updated_at: "2026-11-22T17:38:01Z"
+last_close_out_gate_ms: 1103638
+last_close_out_gate_at: "2026-11-22T17:25:18.389Z"
+review_passes: 7
+review_failed_report_retries: 0
+check_retry_count: 2
+last_check_failure: "repoos check at 2026-11-22T15:39:50.253Z: repoos check failed: reused check inputs changed during handoff — run the check again"
+handoff_signal_retry_count: 1
+review_rounds: 2
 ---
 ## Problem
 The review pass history table in the task drawer has a column headed 'finding classes', which means little to a reader. It is useful as a quick view of what is wrong when a pass is not good to go.
@@ -28,6 +39,26 @@ The review pass history table in the task drawer has a column headed 'finding cl
 
 ## Notes for AI
 Copy change only. Never touch repoos.toml. Headless Playwright only.
+
+## Shots
+```json
+[
+{
+"label": "Review pass history: last column now reads Issues",
+"target": "default",
+"route": "/work?task=9999&tab=review",
+"highlight": ".review-history-table",
+"state": "drawer:reviewPasses"
+},
+{
+"label": "Board cards: task number is plain text on a one-line top row",
+"target": "default",
+"route": "/work",
+"highlight": ".task-card .tc-top-line",
+"state": "board:cardChips"
+}
+]
+```
 
 ## Screenshots
 
@@ -48,3 +79,112 @@ Copy change only. Never touch repoos.toml. Headless Playwright only.
 - 2026-11-20T10:46:10Z · screenshots
 - 2026-11-20T10:46:24Z · body: Acceptance criteria (added 1, removed 1)
 - 2026-11-20T10:46:25Z · needs_input
+- 2026-11-22T11:37:13Z · cli_override, model_override
+- 2026-11-22T11:37:14Z · status ready→active, branch
+- 2026-11-22T11:54:19Z · body
+- 2026-11-22T11:55:16Z · body
+- 2026-11-22T11:56:56Z · CTO nudge: held — handoff gate is running
+- 2026-11-22T12:01:04Z · note: ui verification failed: ui verification failed (1 issue(s)): [missing-target] Review pass history: last column now reads Issues (target "default"): highlight .review-history-table matched nothing on /work?task=9999&tab=review (http://127.0.0.1:41827/work?task=9999&tab=review&shotState=drawer%3AreviewPasses)
+- 2026-11-22T12:01:04Z · message_queued at 2026-11-22T12:01:04.779Z
+- 2026-11-22T12:01:07Z · message_delivered: 1 message(s)
+- 2026-11-22T12:01:50Z · body
+- 2026-11-22T12:09:59Z · body
+- 2026-11-22T12:11:56Z · CTO nudge: held — handoff gate is running
+- 2026-11-22T12:14:40Z · note: ui verification passed: 2 of 2 shots captured with clean console (1 shot warning)
+- 2026-11-22T12:14:41Z · status active→review
+- 2026-11-22T12:14:41Z · message_queued at 2026-11-22T12:14:41.303Z
+- 2026-11-22T12:15:37Z · note: review pass 1: needs some work
+- 2026-11-22T12:15:38Z · message_delivered: 1 message(s)
+- 2026-11-22T12:15:38Z · status review→active
+- 2026-11-22T12:15:40Z · CTO nudge: held — remote validation is running
+- 2026-11-22T12:25:10Z · body
+- 2026-11-22T12:26:56Z · CTO nudge: held — handoff gate is running
+- 2026-11-22T12:29:18Z · note: ui verification passed: 2 of 2 shots captured with clean console (1 shot warning)
+- 2026-11-22T12:29:19Z · status active→review
+- 2026-11-22T12:29:19Z · message_queued at 2026-11-22T12:29:19.926Z
+- 2026-11-22T12:30:35Z · note: review pass 2: needs some work
+- 2026-11-22T12:30:36Z · status review→active
+- 2026-11-22T12:30:38Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-22T12:35:53Z · message_queued at 2026-11-22T12:35:53.562Z
+- 2026-11-22T12:40:38Z · message_delivered: 1 message(s)
+- 2026-11-22T12:53:22Z · body
+- 2026-11-22T12:54:34Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-22T12:54:34Z · message_queued at 2026-11-22T12:54:34.770Z
+- 2026-11-22T12:54:34Z · ↻ resuming engineer to read queued message
+- 2026-11-22T12:54:35Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The check passes locally and on the remote run. The draft directory is empty, so I'll write this round's report draft. · stderr: (empty)
+- 2026-11-22T12:54:35Z · message_delivered: 2 message(s)
+- 2026-11-22T12:56:48Z · CTO nudge: held — handoff gate is running
+- 2026-11-22T13:00:07Z · note: ui verification passed: 2 of 2 shots captured with clean console (1 shot warning)
+- 2026-11-22T13:00:08Z · status active→review
+- 2026-11-22T13:00:09Z · message_queued at 2026-11-22T13:00:09.030Z
+- 2026-11-22T13:01:44Z · note: review pass 3: needs some work
+- 2026-11-22T13:01:44Z · needs_input
+- 2026-11-22T13:07:30Z · status review→active
+- 2026-11-22T13:07:32Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-22T13:07:32Z · needs_input
+- 2026-11-22T13:07:33Z · message_delivered: 1 message(s)
+- 2026-11-22T13:08:10Z · body
+- 2026-11-22T13:20:05Z · body
+- 2026-11-22T13:21:19Z · status active→review
+- 2026-11-22T13:30:02Z · note: ui verification passed: 2 of 2 shots captured with clean console (1 shot warning)
+- 2026-11-22T13:30:04Z · note: review pass 4: needs some work
+- 2026-11-22T13:30:04Z · needs_input
+- 2026-11-22T13:30:05Z · message_queued at 2026-11-22T13:30:05.873Z
+- 2026-11-22T13:47:09Z · status review→active
+- 2026-11-22T13:47:11Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-22T13:47:12Z · needs_input
+- 2026-11-22T13:47:13Z · message_delivered: 1 message(s)
+- 2026-11-22T14:01:37Z · body
+- 2026-11-22T14:02:53Z · status active→review
+- 2026-11-22T14:03:56Z · note: review pass 5: needs some work
+- 2026-11-22T14:03:57Z · message_queued at 2026-11-22T14:03:57.944Z
+- 2026-11-22T14:04:00Z · message_delivered: 1 message(s)
+- 2026-11-22T14:05:10Z · note: shots: failed — browser capture cancelled
+- 2026-11-22T14:08:53Z · status review→active
+- 2026-11-22T14:08:55Z · engineer stopped by request
+- 2026-11-22T14:09:01Z · note: handoff requested (cli)
+- 2026-11-22T14:31:01Z · note: ui verification passed: 2 of 2 shots captured with clean console (1 shot warning)
+- 2026-11-22T14:31:03Z · status active→review
+- 2026-11-22T14:31:03Z · message_queued at 2026-11-22T14:31:03.663Z
+- 2026-11-22T14:32:15Z · note: review pass 6: needs some work
+- 2026-11-22T14:32:16Z · needs_input
+- 2026-11-22T15:06:55Z · status review→active
+- 2026-11-22T15:06:57Z · needs_input
+- 2026-11-22T15:06:57Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-22T15:06:57Z · message_delivered: 1 message(s)
+- 2026-11-22T15:15:41Z · body
+- 2026-11-22T15:16:52Z · status active→review
+- 2026-11-22T15:18:04Z · note: review pass 7: failed — no usable report
+- 2026-11-22T15:18:05Z · message_queued at 2026-11-22T15:18:05.323Z
+- 2026-11-22T15:18:08Z · message_delivered: 1 message(s)
+- 2026-11-22T15:18:17Z · note: review pass 8: failed — no usable report
+- 2026-11-22T15:18:32Z · note: review pass 9: failed — no usable report
+- 2026-11-22T15:18:32Z · needs_input
+- 2026-11-22T15:18:46Z · note: shots: failed — browser capture cancelled
+- 2026-11-22T15:27:06Z · status review→active
+- 2026-11-22T15:27:09Z · engineer stopped by request
+- 2026-11-22T15:27:10Z · needs_input
+- 2026-11-22T15:37:44Z · body
+- 2026-11-22T15:38:45Z · status active→review
+- 2026-11-22T15:39:45Z · note: review pass 10: failed — no usable report
+- 2026-11-22T15:39:45Z · needs_input
+- 2026-11-22T15:39:47Z · message_queued at 2026-11-22T15:39:47.105Z
+- 2026-11-22T15:39:47Z · note: shots: failed — browser capture cancelled
+- 2026-11-22T15:39:50Z · message_delivered: 1 message(s)
+- 2026-11-22T15:54:39Z · body
+- 2026-11-22T15:56:06Z · message_queued at 2026-11-22T15:56:06.507Z
+- 2026-11-22T16:06:52Z · needs_input (review-failed) cleared for review again by hello@repoos.org
+- 2026-11-22T16:07:01Z · note: review pass 11: failed — no usable report
+- 2026-11-22T16:07:02Z · needs_input
+- 2026-11-22T16:26:52Z · needs_input (review-failed) cleared for review again by hello@repoos.org
+- 2026-11-22T16:27:03Z · note: review pass 12: failed — no usable report
+- 2026-11-22T16:27:03Z · needs_input
+- 2026-11-22T16:46:59Z · needs_input (review-failed) cleared for review again by hello@repoos.org
+- 2026-11-22T16:47:10Z · note: review pass 13: failed — no usable report
+- 2026-11-22T16:47:10Z · needs_input
+- 2026-11-22T16:47:15Z · needs_input (review-failed) cleared for review again by hello@repoos.org
+- 2026-11-22T16:47:57Z · note: review pass 14: good to go
+- 2026-11-22T17:16:32Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-22T17:25:18Z · close-out gate completed in 1104s
+- 2026-11-22T17:25:48Z · status done→done, release:success
+- 2026-11-22T17:38:01Z · message_dropped: 1 queued message(s) discarded — task is done

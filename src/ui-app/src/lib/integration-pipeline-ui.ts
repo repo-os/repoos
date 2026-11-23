@@ -148,6 +148,20 @@ export function integrationRunningEntry(
   return parallel ?? null;
 }
 
+/**
+ * True while the task has a close-out queued or running, so a review card or
+ * drawer hides its stale-evidence prompt and Refresh evidence button (#1277).
+ * Every non-terminal job phase (queued, syncing, validating, publishing,
+ * cleanup) counts. A failed job drops out of the role, so the prompt returns
+ * once the task is back in review.
+ */
+export function integrationEvidencePromptHidden(
+  snap: IntegrationPipelineSnapshot | null | undefined,
+  taskId: string,
+): boolean {
+  return integrationPipelineRole(snap, taskId) !== null;
+}
+
 export function integrationQueuePosition(
   snap: IntegrationPipelineSnapshot,
   taskId: string,

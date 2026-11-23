@@ -2,18 +2,16 @@
 id: "1275"
 title: "Close-outs: validate several tasks at once on different runner machines"
 type: feature
-status: review
+status: active
 priority: p1
 area: [server, core]
 assigned_to: ai
 created_by: t@t
 branch: feat/close-outs-validate-several-tasks-at-onc
-cli_override: claude code
-model_override: haiku
 created_at: "2026-11-20T07:42:13Z"
-updated_at: "2026-11-23T08:20:00Z"
+updated_at: "2026-11-23T09:34:12Z"
+review_passes: 5
 review_rounds: 2
-review_passes: 2
 last_check_failure: "repoos check at 2026-11-22T08:35:01.967Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Pipeline shows a job validating alongside the active close-out (Also running) (target \"default\"): state \"integration:parallelValidations\" did not render on target \"default\" — /checks?tab=now shows no task card (http://127.0.0.1:45407/checks?tab=now&shotState=integration%3AparallelValidations)"
 handoff_signal_retry_count: 2
 dev_error_count: 8
@@ -528,6 +526,40 @@ Read docs/close-out-pipeline.md and docs/remote-validation.md first. Never touch
 - 2026-11-22T10:07:27Z · status active→review
 - 2026-11-22T10:11:57Z · status review→active
 - 2026-11-22T10:12:00Z · CTO nudge: held — handoff gate is running
+- 2026-11-22T10:28:26Z · status active→review
+- 2026-11-22T10:30:12Z · note: review pass 4: needs some work
+- 2026-11-22T10:30:12Z · needs_input
+- 2026-11-22T11:08:25Z · status review→active
+- 2026-11-22T11:08:27Z · needs_input
+- 2026-11-22T11:11:26Z · note: handoff requested (cli)
+- 2026-11-22T11:28:33Z · message_queued at 2026-11-22T11:28:33.863Z
+- 2026-11-22T11:28:33Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: tests/decimal-number-fields.test.ts > numeric enum select fields (#1161) > accepts number and string forms for maxParallelValidations, tests/done-guard-orchestrator.test.ts > publish-time dirty-main guard (#0211) > refuses publication while a hotfix owns the main checkout, tests/raw-config-route.test.ts > config raw routes (#0375) > writes valid TOML and reloads config + index on thinkpad — fix it in the feature branch and re-run the gate
+- 2026-11-22T11:28:34Z · message_delivered: 1 message(s)
+- 2026-11-22T11:41:56Z · CTO nudge: held — handoff gate is running
+- 2026-11-22T12:01:49Z · note: ui verification passed: 2 of 2 shots captured with clean console (1 shot warning)
 - 2026-11-22T12:01:50Z · status active→review
+- 2026-11-22T12:01:51Z · message_queued at 2026-11-22T12:01:51.201Z
+- 2026-11-22T12:03:20Z · note: review pass 5: needs some work
+- 2026-11-22T12:03:20Z · needs_input
+- 2026-11-22T13:07:33Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-22T14:53:03Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-22T18:19:51Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-22T18:32:15Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-22T19:46:43Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-23T07:32:46Z · cli_override, model_override
+- 2026-11-23T07:32:48Z · model_override
 - 2026-11-23T07:32:51Z · status review→active
+- 2026-11-23T07:32:55Z · message_delivered: 1 message(s)
+- 2026-11-23T07:59:33Z · message_queued at 2026-11-23T07:59:33.831Z
+- 2026-11-23T07:59:34Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-23T07:59:43Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-23T08:18:54Z · CTO nudge: held — handoff gate is running
+- 2026-11-23T08:19:59Z · note: ui verification passed: 2 of 2 shots captured with clean console (1 shot warning)
 - 2026-11-23T08:20:00Z · status active→review
+- 2026-11-23T08:20:00Z · message_queued at 2026-11-23T08:20:00.418Z
+- 2026-11-23T08:20:52Z · note: review pass 6: needs some work
+- 2026-11-23T08:20:52Z · needs_input
+- 2026-11-23T08:20:52Z · needs_input
+- 2026-11-23T09:34:03Z · status review→active
+- 2026-11-23T09:34:06Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-23T09:34:12Z · needs_input

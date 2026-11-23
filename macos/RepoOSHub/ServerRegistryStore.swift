@@ -4,6 +4,8 @@ enum ServerRegistryStoreError: Error, Equatable {
     case duplicateOrigin
     case entryNotFound
     case invalidDocument
+    /// The on-disk registry could not be read or moved aside, so writing could destroy it.
+    case unreadableRegistry
 }
 
 final class ServerRegistryStore: @unchecked Sendable {
@@ -12,6 +14,8 @@ final class ServerRegistryStore: @unchecked Sendable {
     private let encoder: JSONEncoder
     private let decoder: JSONDecoder
     private let lock = NSLock()
+    /// Set when an unreadable registry could not be set aside. Guarded by `lock`.
+    private var writesBlocked = false
 
     init(directoryURL: URL, fileName: String = "servers.json") {
         self.fileURL = directoryURL.appendingPathComponent(fileName, isDirectory: false)
@@ -36,9 +40,31 @@ final class ServerRegistryStore: @unchecked Sendable {
         return document
     }
 
+    /// Moves an unreadable registry aside so the next save cannot overwrite it.
+    /// Returns the new file name, or nil when there was nothing to move. If the move
+    /// fails, the error is thrown and saves stay blocked for this store, so the
+    /// unreadable file is never replaced by an empty registry.
+    @discardableResult
+    func setAsideUnreadableRegistry(now: Date = Date()) throws -> String? {
+        lock.lock()
+        defer { lock.unlock() }
+        guard FileManager.default.fileExists(atPath: fileURL.path) else { return nil }
+        let stamp = ISO8601DateFormatter().string(from: now).replacingOccurrences(of: ":", with: "-")
+        let target = fileURL.deletingPathExtension()
+            .appendingPathExtension("unreadable-\(stamp).json")
+        do {
+            try FileManager.default.moveItem(at: fileURL, to: target)
+            return target.lastPathComponent
+        } catch {
+            writesBlocked = true
+            throw error
+        }
+    }
+
     func save(_ document: ServerRegistryDocument) throws {
         lock.lock()
         defer { lock.unlock() }
+        guard !writesBlocked else { throw ServerRegistryStoreError.unreadableRegistry }
         try FileManager.default.createDirectory(
             at: fileURL.deletingLastPathComponent(),
             withIntermediateDirectories: true

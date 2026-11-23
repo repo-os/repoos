@@ -2,14 +2,21 @@
 id: "1284"
 title: "Mac Hub: Local server will not start (env: node: No such file or directory) and removing then re-adding it crashes the app"
 type: bug
-status: ready
+status: done
 priority: p1
 area: macos
+merged_commit: 5d1c9d7b46d1efb5d2bb821eb50dae9cfdb09eec
 assigned_to: ai
 created_by: t@t
-branch: ""
+branch: feat/mac-hub-local-server-will-not-start-env-
+cli_override: claude code
+model_override: haiku
 created_at: "2026-11-22T03:29:23Z"
-updated_at: "2026-11-22T03:29:29Z"
+updated_at: "2026-11-22T14:33:55Z"
+last_close_out_gate_ms: 2724187
+last_close_out_gate_at: "2026-11-22T14:32:23.400Z"
+review_passes: 5
+review_rounds: 2
 ---
 ## Problem
 In the native RepoOS Hub Mac app, starting the local server for the repo called divot repoos fails with the dialog 'Local server: env: node: No such file or directory'. Removing that server and adding it again makes the app crash. The user could not start the server or recover from inside the app.
@@ -36,3 +43,48 @@ Look in the macos Hub app sources and the local-server launcher. Never touch rep
 - 2026-11-22T03:29:23Z · created · t@t
 - 2026-11-22T03:29:24Z · screenshots
 - 2026-11-22T03:29:29Z · status inbox→ready
+- 2026-11-22T12:27:08Z · cli_override, model_override
+- 2026-11-22T12:27:08Z · status ready→active, branch
+- 2026-11-22T12:39:16Z · body
+- 2026-11-22T12:41:09Z · status active→review
+- 2026-11-22T12:41:09Z · message_queued at 2026-11-22T12:41:09.888Z
+- 2026-11-22T12:41:10Z · note: shots: skipped — Docs site skipped: no docs shot declared
+- 2026-11-22T12:42:41Z · note: review pass 1: needs some work
+- 2026-11-22T12:42:42Z · status review→active
+- 2026-11-22T12:42:44Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-22T12:43:34Z · message_delivered: 1 message(s)
+- 2026-11-22T12:48:37Z · body
+- 2026-11-22T12:50:06Z · status active→review
+- 2026-11-22T12:50:06Z · message_queued at 2026-11-22T12:50:06.797Z
+- 2026-11-22T12:50:07Z · note: shots: skipped — Docs site skipped: no docs shot declared
+- 2026-11-22T12:51:28Z · note: review pass 2: needs some work
+- 2026-11-22T12:51:29Z · message_delivered: 1 message(s)
+- 2026-11-22T12:51:29Z · status review→active
+- 2026-11-22T12:55:28Z · body
+- 2026-11-22T12:56:46Z · status active→review
+- 2026-11-22T12:56:46Z · message_queued at 2026-11-22T12:56:46.422Z
+- 2026-11-22T12:56:46Z · note: shots: skipped — Docs site skipped: no docs shot declared
+- 2026-11-22T12:58:52Z · note: review pass 3: needs some work
+- 2026-11-22T12:58:52Z · needs_input
+- 2026-11-22T13:07:40Z · status review→active
+- 2026-11-22T13:07:42Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-22T13:07:43Z · needs_input
+- 2026-11-22T13:07:43Z · message_delivered: 1 message(s)
+- 2026-11-22T13:13:53Z · body
+- 2026-11-22T13:14:32Z · status active→review
+- 2026-11-22T13:14:35Z · note: shots: skipped — Docs site skipped: no docs shot declared
+- 2026-11-22T13:15:09Z · message_queued at 2026-11-22T13:15:09.484Z
+- 2026-11-22T13:17:10Z · note: review pass 4: needs some work
+- 2026-11-22T13:17:10Z · needs_input
+- 2026-11-22T13:27:10Z · status review→active
+- 2026-11-22T13:27:12Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-22T13:27:13Z · needs_input
+- 2026-11-22T13:27:13Z · message_delivered: 1 message(s)
+- 2026-11-22T13:33:21Z · body
+- 2026-11-22T13:34:02Z · status active→review
+- 2026-11-22T13:34:03Z · note: shots: skipped — Docs site skipped: no docs shot declared
+- 2026-11-22T13:34:40Z · message_queued at 2026-11-22T13:34:40.557Z
+- 2026-11-22T13:36:44Z · note: review pass 5: good to go
+- 2026-11-22T14:32:23Z · close-out gate completed in 2724s
+- 2026-11-22T14:32:29Z · status done→done, release:success
+- 2026-11-22T14:33:55Z · message_dropped: 1 queued message(s) discarded — task is done

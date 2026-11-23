@@ -3,6 +3,7 @@ import {
   DEFAULT_INTEGRATION_STALL_MS,
   integrationActiveCopy,
   integrationCountdownLabel,
+  integrationEvidencePromptHidden,
   integrationMedianChip,
   integrationMedianDuration,
   integrationMedianTip,
@@ -49,6 +50,24 @@ function snap(
     active,
   };
 }
+
+describe("integrationEvidencePromptHidden (#1277)", () => {
+  it("hides the stale-evidence prompt while queued or in any running phase", () => {
+    expect(integrationEvidencePromptHidden(snap({ queue: ["0731"] }), "0731")).toBe(true);
+    for (const phase of ["queued", "syncing", "validating", "publishing", "cleanup"]) {
+      expect(integrationEvidencePromptHidden(snap({}, { phase }), "0730")).toBe(true);
+    }
+  });
+
+  it("shows the prompt again once the job has failed, and for tasks not in the pipeline", () => {
+    expect(
+      integrationEvidencePromptHidden(snap({}, { phase: "validating", failed: true }), "0730"),
+    ).toBe(false);
+    expect(integrationEvidencePromptHidden(snap({}, { phase: "validating" }), "0999")).toBe(false);
+    expect(integrationEvidencePromptHidden(null, "0730")).toBe(false);
+    expect(integrationEvidencePromptHidden(snap({ empty: true }), "0730")).toBe(false);
+  });
+});
 
 describe("integration-pipeline-ui (#0740)", () => {
   it("renders integrating · starting… when the active job has no stage yet", () => {

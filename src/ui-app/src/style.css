@@ -17241,53 +17241,114 @@
   flex: none;
 }
 
-/* "Depends on" list at the top of the drawer's Task tab */
-.dep-list {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.dep-item {
+/* Collapsed Task details summary at the top of the drawer's Task tab (#1282).
+   Two lines at most; the Edit action is the real button's visible label. */
+.task-meta-summary {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   width: 100%;
-  padding: 5px 8px;
+  min-height: 40px;
+  padding: 7px 10px;
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--chip-bg);
-  color: var(--txt);
+  color: var(--txt-dim);
+  font: inherit;
   font-size: 12px;
+  line-height: 1.45;
   text-align: left;
   cursor: pointer;
 }
-.dep-item:hover {
-  border-color: var(--amber-border-tint);
+.task-meta-summary:hover {
+  border-color: var(--border-bright);
 }
-.dep-item-id {
-  display: inline-flex;
-  flex: none;
-  align-items: center;
-  gap: 3px;
-  font-family: var(--mono, ui-monospace, monospace);
-  font-size: 9.5px;
-  color: var(--txt-dim);
+.task-meta-summary:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 1px;
 }
-.dep-item-title {
-  flex: 1;
+.task-meta-summary-text {
+  flex: 1 1 auto;
   min-width: 0;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
-.dep-item-state {
+.task-meta-summary-action {
   flex: none;
-  font-size: 10px;
+  color: var(--txt);
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+/* Task details edit modal (#1282): centred like sm-modal, scrolls inside on short screens. */
+.task-meta-modal.drawer-wrap.drawer {
+  top: 50%;
+  left: 50%;
+  right: auto;
+  bottom: auto;
+  width: min(560px, 94vw);
+  height: auto;
+  max-height: 88vh;
+  transform: translate(-50%, -50%);
+  border-radius: 16px;
+  border: 1px solid var(--border-bright);
+  background: var(--panel-gradient);
+  box-shadow:
+    0 24px 80px rgba(0, 0, 0, 0.45),
+    0 0 0 1px var(--border);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  animation: cc-modal-in 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.task-meta-modal-head {
+  padding: 20px 24px 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.task-meta-modal-head-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.task-meta-modal-head .close-x {
+  margin-left: auto;
+  flex-shrink: 0;
+}
+.task-meta-modal-desc {
+  font-size: 12.5px;
+  line-height: 1.5;
   color: var(--txt-dim);
 }
-.dep-item-blocking .dep-item-state {
-  color: var(--amber);
+.task-meta-modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-height: 0;
+  padding: 18px 24px 0;
+  overflow-y: auto;
 }
+.task-meta-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 18px 24px 22px;
+}
+@media (max-width: 480px) {
+  .task-meta-modal-body .field-row {
+    grid-template-columns: 1fr;
+  }
+  .task-meta-modal-actions button {
+    min-height: 44px;
+  }
+}
+
 /* Secrets inventory (#0929): quiet source ledger, with values only in deliberate password fields. */
 .secrets-page {
   color: var(--txt);

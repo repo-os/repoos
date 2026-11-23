@@ -622,6 +622,18 @@ describe("shot preview board fixtures (#0743)", () => {
     expect(repo.reviews["0832"]?.report?.markdown).toContain("contrast audit");
   });
 
+  it("seeds a stale-only review queued behind another close-out (#1277)", () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const repo = useRepoStore();
+    applyShotPreviewFixture(repo, "card:staleEvidenceQueued");
+    expect(repo.reviews[SHOT_PREVIEW_FIXTURE_TASK_ID]?.report?.markdown).toContain(
+      "STALE-EVIDENCE-ONLY",
+    );
+    expect(repo.integration?.queue).toEqual([SHOT_PREVIEW_FIXTURE_TASK_ID]);
+    expect(repo.integration?.active?.taskId).not.toBe(SHOT_PREVIEW_FIXTURE_TASK_ID);
+  });
+
   it("seeds check-wait escalation detail for clamp shots (#1034)", () => {
     const pinia = createPinia();
     setActivePinia(pinia);
@@ -990,6 +1002,17 @@ describe("shot preview board fixtures (#0743)", () => {
     expect(task!.branch).toBe("");
   });
 
+  it("drawer:taskDetailsSummary seeds the fixture task and opens its Details tab (#1282)", () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const repo = useRepoStore();
+    window.history.replaceState({}, "", "/work?task=9999&shotState=drawer%3AtaskDetailsSummary");
+    applyShotPreviewFixture(repo, "drawer:taskDetailsSummary");
+    const task = repo.tasks.find((t) => t.id === SHOT_PREVIEW_FIXTURE_TASK_ID);
+    expect(task!.status).toBe("active");
+    expect(useUiStore().activeTab).toBe("details");
+  });
+
   it("drawer:activeRequirements seeds #9999 when ?task=9999 is not on the board (#0817)", () => {
     const pinia = createPinia();
     setActivePinia(pinia);
@@ -1085,6 +1108,34 @@ describe("shot preview board fixtures (#0743)", () => {
     vi.unstubAllGlobals();
   });
 
+  it("keeps the seeded review history when loadReview runs during a capture (#1279)", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const repo = useRepoStore();
+    window.history.replaceState(
+      {},
+      "",
+      "/work?task=9999&tab=review&shotState=drawer%3AreviewPasses",
+    );
+    applyShotPreviewFixture(repo, "drawer:reviewPasses");
+    // The drawer loads the review on open; the synthetic id has no server record,
+    // so the response is empty and must not replace the seeded passes.
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({
+        ok: true,
+        status: 200,
+        json: async () => ({ ok: true, running: false, enabled: true, review: null, history: [] }),
+      })),
+    );
+
+    await repo.loadReview(SHOT_PREVIEW_FIXTURE_TASK_ID);
+
+    expect(repo.reviewFor(SHOT_PREVIEW_FIXTURE_TASK_ID)?.history?.length).toBe(2);
+    vi.unstubAllGlobals();
+    window.history.replaceState({}, "", "/");
+  });
+
   it("keeps fixture-seeded running cards when fetchRunning runs during a capture (#1058)", async () => {
     const pinia = createPinia();
     setActivePinia(pinia);
@@ -1175,6 +1226,8 @@ describe("shot preview board fixtures (#0743)", () => {
 
   it("recognizes client-seeded pipeline fixture task ids", () => {
     expect(isShotPreviewSeededTaskId("9999")).toBe(true);
+    // The close-out blocker queued ahead of the #1277 card has no server record.
+    expect(isShotPreviewSeededTaskId("9998")).toBe(true);
     expect(isShotPreviewSeededTaskId("pipe-review")).toBe(true);
     expect(isShotPreviewSeededTaskId("0980-3")).toBe(true);
     expect(isShotPreviewSeededTaskId("1062")).toBe(false);

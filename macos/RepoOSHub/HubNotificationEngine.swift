@@ -114,7 +114,7 @@ enum HubNotificationEngine {
         guard global.dockBadgeEnabled else {
             return previousTotal == 0 ? .unchanged : .clear
         }
-        let entryMap = Dictionary(uniqueKeysWithValues: entries.map { ($0.id, $0) })
+        let entryMap = entries.indexedByID()
         let total = snapshots.reduce(0) { partial, snapshot in
             guard let entry = entryMap[snapshot.serverID],
                   entry.attentionAggregationEnabled,

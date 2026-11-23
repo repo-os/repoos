@@ -18,6 +18,7 @@ import {
   designTheme,
   appearanceMode,
   reachability,
+  refreshReachability,
   setDesignTheme,
   setAppearanceMode,
   discovery,
@@ -53,6 +54,7 @@ import {
 
 type Route = HubRoute;
 const route = ref<Route>("picker");
+const refreshingReachability = ref(false);
 const sheetServer = ref<ServerEntry | null>(null);
 const sheetName = ref("");
 const sheetError = ref("");
@@ -66,6 +68,16 @@ const formValidating = ref(false);
 const lockOpen = ref(false);
 const lockContext = ref<LockContext | null>(null);
 const platform = ref(resolveShellPlatform());
+
+async function refreshServerList() {
+  if (refreshingReachability.value) return;
+  refreshingReachability.value = true;
+  try {
+    await refreshReachability();
+  } finally {
+    refreshingReachability.value = false;
+  }
+}
 const appVersion = "0.1.0";
 const installedCommit = ref("unknown");
 const devUpdate = ref<DevUpdateManifest | null>(null);
@@ -301,11 +313,13 @@ async function onLockScope(scope: "reopen" | "server") {
         :reachability="reachability"
         :loaded="loaded"
         :platform="platform"
+        :refreshing="refreshingReachability"
         @select="onSelect"
         @add="startAdd"
         @edit="openSheet"
         @reorder="onReorder"
         @discover="startDiscovery"
+        @refresh="refreshServerList"
       />
 
       <TailnetDiscoveryView

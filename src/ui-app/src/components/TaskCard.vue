@@ -21,7 +21,6 @@ import {
 import RestartTaskDialog from "./RestartTaskDialog.vue";
 import ActivityIndicator from "./ActivityIndicator.vue";
 import DoneErrorCard from "./DoneErrorCard.vue";
-import CopyableNumber from "./CopyableNumber.vue";
 import AgentModelModal from "./AgentModelModal.vue";
 import HotfixBadge from "./HotfixBadge.vue";
 import { confirmDependencyOverride } from "../lib/task-dependencies";
@@ -30,6 +29,7 @@ import { resolveEffectiveAgent } from "../lib/effective-agent";
 import { closeOutFailureCutoff, isStaleDoneError } from "../lib/closeOutAttempt";
 import {
   integrationActiveCopy,
+  integrationEvidencePromptHidden,
   integrationProgressCardLabel,
   integrationPipelineRole,
   integrationPipelineStalled,
@@ -456,6 +456,81 @@ const dragging = ref(false);
 /** Root card element — needed to read/seed FLIP rects for the glide (#0292). */
 const rootEl = ref<HTMLElement | null>(null);
 
+/**
+ * The top line (id, type, hotfix and merge badges, priority, robot) stays on
+ * one row (#1279), and nothing on it is cut short. When the row cannot hold
+ * everything, it gives way in this order, each step measured after render:
+ * 1. "feature" becomes "feat";
+ * 2. the hotfix and merge badges move to the chip row under the title, and the
+ *    full word is tried again, so "feat" stays only if "feature" still clips.
+ * The type always stays on the top line: any other type keeps its own text,
+ * truncated only as a last resort. The id, priority and robot never shrink.
+ * The fit re-runs when the card resizes or the state that changes the row's
+ * content changes.
+ */
+const topLineEl = ref<HTMLElement | null>(null);
+const typeChipEl = ref<HTMLElement | null>(null);
+const typeCompact = ref(false);
+const badgesBelow = ref(false);
+const typeLabel = computed(() =>
+  typeCompact.value && props.task.type === "feature" ? "feat" : props.task.type,
+);
+let topLineObserver: ResizeObserver | null = null;
+
+/** Whether an element's text is currently cut short. */
+function clipped(el: Element | null): boolean {
+  return !!el && el.scrollWidth > el.clientWidth + 1;
+}
+
+/** Whether a badge on the top line (hotfix or merge) is cut short. */
+function badgeClipped(): boolean {
+  return [...(topLineEl.value?.querySelectorAll(".hotfix-badge, .tc-merge") ?? [])].some(clipped);
+}
+
+function fitTopLine(): void {
+  typeCompact.value = false;
+  badgesBelow.value = false;
+  const steps: Array<() => void> = [
+    () => {
+      if (clipped(typeChipEl.value)) typeCompact.value = true;
+    },
+    () => {
+      // Moving the badges frees the row, so the full word is tried again.
+      if (badgeClipped()) {
+        badgesBelow.value = true;
+        typeCompact.value = false;
+      }
+    },
+    () => {
+      if (clipped(typeChipEl.value)) typeCompact.value = true;
+    },
+  ];
+  // Each step runs after the previous one has rendered, so it measures the
+  // row as it now is.
+  const run = (i: number): void => {
+    if (i >= steps.length) return;
+    void nextTick(() => {
+      steps[i]!();
+      run(i + 1);
+    });
+  };
+  run(0);
+}
+
+watch(
+  () => [
+    props.task.id,
+    props.task.type,
+    props.task.priority,
+    props.task.status,
+    props.task.hotfix,
+    props.task.hotfixTarget,
+    props.task.needsMerge,
+  ],
+  fitTopLine,
+  { flush: "post" },
+);
+
 /** Resolve the "reduce motion" system preference; true means animations off. */
 function prefersReducedMotion(): boolean {
   return (
@@ -516,6 +591,15 @@ onMounted(() => {
   }
   syncCardRemotePoll(id, props.task.status, repo.isRunning(id));
 });
+
+onMounted(() => {
+  fitTopLine();
+  if ("ResizeObserver" in window && topLineEl.value) {
+    topLineObserver = new ResizeObserver(() => fitTopLine());
+    topLineObserver.observe(topLineEl.value);
+  }
+});
+onBeforeUnmount(() => topLineObserver?.disconnect());
 
 let handoffStatusPoll: number | undefined;
 watch(
@@ -1054,10 +1138,12 @@ function cardHintUsesLineClamp(h: CardHint): boolean {
 const reviewVerdict = computed(() =>
   parseReviewVerdict(repo.reviewFor(props.task.id)?.report?.markdown),
 );
+/** Hidden while a close-out is queued or running (#1277): a refresh would start a review mid-close-out. */
 const staleEvidenceOnly = computed(() => {
   const report = repo.reviewFor(props.task.id)?.report;
   return (
     props.task.status === "review" &&
+    !integrationEvidencePromptHidden(repo.integration, props.task.id) &&
     report?.state === "ok" &&
     report.markdown.includes("STALE-EVIDENCE-ONLY")
   );
@@ -1652,30 +1738,35 @@ async function openDebuggerFromError(): Promise<void> {
     @dragstart="onDragStart"
     @dragend="onDragEnd"
   >
-    <div class="flex flex-1 flex-col p-[13px]">
-      <div class="flex flex-wrap items-center gap-x-[7px] gap-y-[6px]">
-        <CopyableNumber
-          :label="`#${task.id}`"
-          :path="`/work?task=${encodeURIComponent(task.id)}`"
-          :aria-label="`Copy link to task ${task.id}`"
-        />
+    <div class="flex min-w-0 flex-1 flex-col p-[13px]">
+      <div ref="topLineEl" class="tc-top-line flex min-w-0 flex-nowrap items-center gap-x-[7px]">
         <span
-          class="min-w-0 max-w-full truncate rounded-md border border-border bg-[var(--chip-bg)] px-2 py-[2px] font-mono text-[9.5px] text-[var(--txt-dim)]"
-          :data-tip="task.type"
-          >{{ task.type }}</span
+          class="shrink-0 whitespace-nowrap font-mono text-[11px] font-bold tracking-[0.04em] text-[var(--txt-dim)]"
+          >#{{ task.id }}</span
         >
         <span
-          v-if="task.status === 'review' && task.needsMerge"
-          class="tc-merge"
+          ref="typeChipEl"
+          class="min-w-0 max-w-full truncate rounded-md border border-border bg-[var(--chip-bg)] px-2 py-[2px] font-mono text-[9.5px] text-[var(--txt-dim)]"
+          :data-tip="task.type"
+          >{{ typeLabel }}</span
+        >
+        <span
+          v-if="!badgesBelow && task.status === 'review' && task.needsMerge"
+          class="tc-merge min-w-0 truncate"
           title="branch drifted from main — move to done to sync and merge"
           >needs merge</span
         >
-        <HotfixBadge v-if="task.hotfix" :target="task.hotfixTarget" :branch="task.branch" />
-        <span class="ml-auto flex items-center gap-[6px]">
+        <HotfixBadge
+          v-if="!badgesBelow && task.hotfix"
+          class="min-w-0 max-w-full truncate"
+          :target="task.hotfixTarget"
+          :branch="task.branch"
+        />
+        <span class="ml-auto flex shrink-0 items-center gap-[6px]">
           <button
             ref="agentTrigger"
             type="button"
-            class="tc-agent-btn"
+            class="tc-agent-btn shrink-0"
             :class="{ open: agentPanelOpen }"
             :aria-expanded="agentPanelOpen"
             :aria-controls="agentTriggerControls"
@@ -1713,18 +1804,29 @@ async function openDebuggerFromError(): Promise<void> {
             </svg>
           </button>
           <span
-            class="rounded-[5px] px-[6px] py-[2px] font-mono text-[9px] font-bold"
+            class="shrink-0 whitespace-nowrap rounded-[5px] px-[6px] py-[2px] font-mono text-[9px] font-bold"
             :class="task.priority"
             >{{ task.priority }}</span
           >
         </span>
       </div>
 
-      <h3 class="mt-[11px] line-clamp-2 text-[13px] font-semibold leading-[1.4]">
+      <h3 class="mt-[11px] line-clamp-2 break-words text-[13px] font-semibold leading-[1.4]">
         {{ task.title }}
       </h3>
 
       <div class="mt-[11px] flex flex-wrap items-center gap-[6px]">
+        <span
+          v-if="badgesBelow && task.status === 'review' && task.needsMerge"
+          class="tc-merge"
+          title="branch drifted from main — move to done to sync and merge"
+          >needs merge</span
+        >
+        <HotfixBadge
+          v-if="badgesBelow && task.hotfix"
+          :target="task.hotfixTarget"
+          :branch="task.branch"
+        />
         <span
           v-if="taskAreaChips.length || task.area"
           class="tc-area-chip rounded-md border border-border bg-[var(--chip-bg)] px-2 py-[2px] font-mono text-[9.5px] text-[var(--txt-dim)]"
@@ -2050,7 +2152,7 @@ async function openDebuggerFromError(): Promise<void> {
       </button>
       <div v-if="staleEvidenceOnly" class="w-full border-t border-[var(--border)] p-2">
         <p class="px-2 pb-2 text-center font-mono text-[10px] text-[var(--txt-dim)]">
-          Stale evidence is the only finding · <code>repoos verify {{ task.id }}</code>
+          Stale evidence
         </p>
         <button
           type="button"

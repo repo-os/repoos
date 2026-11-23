@@ -3,6 +3,7 @@ id: "1055"
 title: Review and safely clean task worktrees
 type: chore
 status: ready
+is_archived: true
 hold: true
 hold_reason: "Rework as a server-side scheduled gc report; no agent/worktree needed (Nick, 2026-11-08). To be deleted."
 hold_at: "2026-11-08T02:58:11.434Z"
@@ -12,7 +13,7 @@ assigned_to: ai
 created_by: schedule
 branch: feat/review-and-safely-clean-task-worktrees
 created_at: "2026-11-07T22:37:10Z"
-updated_at: "2026-11-22T04:12:19Z"
+updated_at: "2026-11-23T08:48:24Z"
 review_rounds: 1
 routing_switches: 1
 routing_escalations: 1
@@ -270,3 +271,10 @@ Context: `repoos gc` is the only sanctioned way to remove worktrees and branches
 - 2026-11-20T14:56:14Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-20T21:16:02Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-22T04:12:19Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-22T11:28:33Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-22T14:53:03Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-22T18:19:51Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-22T18:32:15Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-22T19:46:43Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-23T07:33:34Z · archived
+- 2026-11-23T08:48:24Z · message_overdue: still queued after 60m without being delivered

@@ -115,6 +115,9 @@ export const SHOT_PREVIEW_FIXTURE_IDS = [
   // #0817 — active task with requirement sections so the drawer shows Update
   // requirements on the spec header (the action is active-only).
   "drawer:activeRequirements",
+  // #1282 — the Details tab with the collapsed Task details summary. Seeds the
+  // drawer's task when it is off the preview board, so ?task= never 404s.
+  "drawer:taskDetailsSummary",
   // #0943 — native preview controls in building, running and failed states.
   "drawer:nativePreviewBuilding",
   "drawer:nativePreviewRunning",
@@ -138,6 +141,8 @@ export const SHOT_PREVIEW_FIXTURE_IDS = [
   "drawer:humanGuideWarning",
   // #0832 — review task with review-rounds-exhausted and a long verdict summary.
   "card:reviewRoundsExhausted",
+  // #1277 — review card whose close-out is validating: no stale-evidence notice or Refresh evidence.
+  "card:staleEvidenceQueued",
   // #1034 — check-wait escalation with a long queue diagnostic on card and drawer.
   "card:checkWaitDetail",
   "drawer:checkWaitDetail",
@@ -276,6 +281,8 @@ export const SHOT_PREVIEW_FIXTURE_QUERY = "shotState";
 
 /** Task id used by card/board fixtures so selectors can target one stable card. */
 export const SHOT_PREVIEW_FIXTURE_TASK_ID = "9999";
+/** The other task whose close-out runs ahead of the fixture card (#1277). */
+export const SHOT_PREVIEW_BLOCKER_TASK_ID = "9998";
 
 export function isShotPreviewFixtureId(value: string): value is ShotPreviewFixtureId {
   return (SHOT_PREVIEW_FIXTURE_IDS as readonly string[]).includes(value);

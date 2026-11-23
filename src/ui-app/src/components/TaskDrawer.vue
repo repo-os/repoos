@@ -66,6 +66,7 @@ import { extractReviewReportSections } from "../../../core/review-report-section
 import { PRIORITIES, TASK_TYPES } from "../../../core/types.js";
 import {
   integrationActiveCopy,
+  integrationEvidencePromptHidden,
   integrationQueuedCopy,
   integrationPipelineRole,
   integrationProgressCardLabel,
@@ -115,7 +116,6 @@ import { useCopyChatMessage } from "../composables/useCopyChatMessage";
 import { useQueuedSend } from "../composables/useQueuedSend";
 import { bubbleRole, toDisplayRows, type DisplayRow } from "../lib/chat-rows";
 import { confirmDependencyOverride } from "../lib/task-dependencies";
-import DependencyChip from "./DependencyChip.vue";
 import RestartTaskDialog from "./RestartTaskDialog.vue";
 import ConfirmDialog from "./ConfirmDialog.vue";
 import HotfixConfirmDialog from "./HotfixConfirmDialog.vue";
@@ -216,34 +216,16 @@ function displayTaskFilename(path: string): string {
   return path.replace(/^work\//, "");
 }
 
-/** Every prerequisite, blocking ones flagged, each resolvable to a title. */
-const dependencyRows = computed(() => {
-  const t = ui.active;
-  if (!t) return [];
-  const blockers = new Map((t.blockedBy ?? []).map((b) => [b.id, b]));
-  return (t.dependsOn ?? []).map((id) => {
-    const blocker = blockers.get(id) ?? null;
-    const known = repo.tasks.find((x) => x.id === id);
-    const stateLabel = blocker
-      ? blocker.state === "cancelled"
-        ? "cancelled"
-        : blocker.state === "archived"
-          ? "archived"
-          : "not merged"
-      : "done";
-    return { id, blocker, title: known?.title ?? "", stateLabel };
-  });
-});
-
-async function openDependency(id: string): Promise<void> {
-  const known = repo.tasks.find((x) => x.id === id);
-  if (known) return void ui.openTask(known);
-  try {
-    void ui.openTask(await api<Task>(`/api/tasks/${id}`));
-  } catch {
-    /* archived or missing: nothing to open */
-  }
-}
+/** Whether the collapsed Task details block's edit modal is open (#1282). */
+const metaModalOpen = ref(false);
+// Closing or switching the drawer's task also closes the modal, so it never
+// stays up over a different task's draft.
+watch(
+  () => ui.active?.id,
+  () => {
+    metaModalOpen.value = false;
+  },
+);
 const config = useConfigStore();
 const auth = useAuthStore();
 const route = useRoute();
@@ -2405,6 +2387,11 @@ const inPipeline = computed(() => {
   );
 });
 
+/** Hides Refresh evidence while a close-out is queued or running (#1277). Unlike `inPipeline`, a failed job does not count, so the button returns. */
+const evidencePromptHidden = computed(
+  () => !!ui.active && integrationEvidencePromptHidden(repo.integration, ui.active.id),
+);
+
 /** Last successful merge-gate duration on this task (#0679), for close-out tuning. */
 const lastCloseOutGateLabel = computed(() => {
   const ms = ui.active?.extra?.last_close_out_gate_ms;
@@ -2621,6 +2608,26 @@ function onStorySelectUpdate(v: string | null): void {
 }
 
 const assignedStoryName = computed(() => draft.story.replace(/\s+/g, " ").trim());
+
+/**
+ * One-line summary of the Task details block while it is collapsed (#1282),
+ * e.g. "feature · p3 · docs · no story · no dependencies". It reads the draft,
+ * so it tracks what the modal is editing, not only what is saved.
+ */
+const metaSummary = computed(() =>
+  [
+    draft.type,
+    draft.priority,
+    draft.area || "no area",
+    // The modal edits Story when stories are on and Assigned to when they are off.
+    ...(storiesEnabled.value
+      ? [assignedStoryName.value || "no story"]
+      : [draft.assignedTo || "unassigned"]),
+    draft.dependsOn.length
+      ? `depends on ${draft.dependsOn.map((id) => `#${id}`).join(", ")}`
+      : "no dependencies",
+  ].join(" · "),
+);
 
 /**
  * The New task panel's own story control (#0555): same options, same "none"
@@ -2992,6 +2999,52 @@ async function saveDraft(): Promise<void> {
   } finally {
     ui.saving = false;
   }
+}
+
+/** The fields the Task details modal edits (#1282); title and body are not among them. */
+const META_FIELDS = ["type", "priority", "area", "story", "assignedTo", "dependsOn"] as const;
+
+/** Revert the modal's fields to the saved values; unsaved title/body edits stay. */
+function revertMetaDraft(): void {
+  for (const k of META_FIELDS) {
+    if (k === "dependsOn") draft.dependsOn = [...original.dependsOn];
+    else draft[k] = original[k];
+  }
+}
+
+/**
+ * Save only what the Task details modal edits, then close it. The drawer's own
+ * Save bar still owns the title and body, so those edits are left unsaved.
+ */
+async function saveMetaModal(): Promise<void> {
+  if (!ui.active) return;
+  const changed = changedFields().filter((k) => (META_FIELDS as readonly string[]).includes(k));
+  if (changed.length === 0) {
+    metaModalOpen.value = false;
+    return;
+  }
+  const patch: Record<string, string | string[]> = {};
+  for (const k of changed) patch[k] = draft[k];
+  ui.saving = true;
+  try {
+    await repo.patchTask(ui.active.id, patch);
+    for (const k of changed) {
+      if (k === "dependsOn") original.dependsOn = [...draft.dependsOn];
+      else original[k] = draft[k];
+    }
+    metaModalOpen.value = false;
+  } catch (err) {
+    // Keep the modal open with the edits so nothing the user typed is lost.
+    repo.onError(err);
+  } finally {
+    ui.saving = false;
+  }
+}
+
+/** Closing the modal any way but Save (Cancel, X, Escape, click outside) discards its edits. */
+function onMetaModalOpen(open: boolean): void {
+  if (!open && metaModalOpen.value) revertMetaDraft();
+  metaModalOpen.value = open;
 }
 
 function cancelDraft(): void {
@@ -6438,121 +6491,19 @@ watch(
           class="drawer-body"
           :class="{ 'transition-success': transitioned }"
         >
-          <div v-if="dependencyRows.length" class="field dep-row">
-            <label>Depends on</label>
-            <div class="dep-list">
-              <button
-                v-for="dep in dependencyRows"
-                :key="dep.id"
-                type="button"
-                class="dep-item"
-                :class="{ 'dep-item-blocking': dep.blocker }"
-                @click="openDependency(dep.id)"
-              >
-                <DependencyChip v-if="dep.blocker" :blocker="dep.blocker" />
-                <span v-else class="dep-item-id"
-                  ><CheckCheck class="dep-chip-icon" />#{{ dep.id }}</span
-                >
-                <span class="dep-item-title">{{ dep.title }}</span>
-                <span class="dep-item-state">{{ dep.stateLabel }}</span>
-              </button>
-            </div>
-          </div>
-          <TaskDependencyPicker
-            id="et-dependencies"
-            v-model="draft.dependsOn"
-            :tasks="repo.tasks"
-            :exclude-id="ui.active.id"
-          />
-          <div class="field-row">
-            <div class="field">
-              <label>Type</label>
-              <Select v-model="draft.type">
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent position="popper">
-                  <SelectViewport
-                    class="h-[var(--radix-select-trigger-height)] w-full min-w-[var(--radix-select-trigger-width)]"
-                  >
-                    <SelectItem v-for="t in taskTypes" :key="t" :value="t">{{ t }}</SelectItem>
-                  </SelectViewport>
-                </SelectContent>
-              </Select>
-            </div>
-            <div class="field">
-              <label>Priority</label>
-              <Select v-model="draft.priority">
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent position="popper">
-                  <SelectViewport
-                    class="h-[var(--radix-select-trigger-height)] w-full min-w-[var(--radix-select-trigger-width)]"
-                  >
-                    <SelectItem v-for="p in priorities" :key="p" :value="p">{{ p }}</SelectItem>
-                  </SelectViewport>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <div class="field-row">
-            <div class="field">
-              <label for="et-area">Area</label>
-              <AreaPicker
-                id="et-area"
-                v-model="draftAreaList"
-                :options="areaOptions"
-                placeholder="area"
-                @add-to-vocabulary="addAreaToVocabulary"
-              />
-            </div>
-            <div v-if="storiesEnabled" class="field">
-              <div class="field-header">
-                <label for="et-story">Story</label>
-                <button
-                  v-if="showStoryOpenLink"
-                  type="button"
-                  class="page-help-link"
-                  :title="storyOpenAccessibleLabel"
-                  :aria-label="storyOpenAccessibleLabel"
-                  @click="openAssignedStory"
-                >
-                  go to story ↗
-                </button>
-              </div>
-              <Select :model-value="storySelectValue" @update:model-value="onStorySelectUpdate">
-                <SelectTrigger id="et-story">
-                  <SelectValue placeholder="No story">
-                    {{ storySelectLabel }}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent position="popper">
-                  <SelectViewport
-                    class="h-[var(--radix-select-trigger-height)] w-full min-w-[var(--radix-select-trigger-width)]"
-                  >
-                    <SelectItem :value="STORY_NONE_SELECT">No story</SelectItem>
-                    <SelectItem v-for="name in storyOptions" :key="name" :value="name">
-                      {{ name }}
-                    </SelectItem>
-                  </SelectViewport>
-                </SelectContent>
-              </Select>
-            </div>
-            <div v-else class="field">
-              <label for="et-assignee">Assigned to</label>
-              <Input
-                id="et-assignee"
-                v-model="draft.assignedTo"
-                list="assignee-options"
-                placeholder="unassigned"
-              />
-              <datalist id="assignee-options">
-                <option value="ai"></option>
-                <option value="human"></option>
-              </datalist>
-            </div>
-          </div>
+          <!-- #1282: the metadata block collapses to a one-button summary; the
+               edit controls live in the modal below and save with its own Save button. -->
+          <button
+            type="button"
+            class="task-meta-summary"
+            data-test-id="task-meta-summary"
+            aria-haspopup="dialog"
+            :aria-expanded="metaModalOpen"
+            @click="metaModalOpen = true"
+          >
+            <span class="task-meta-summary-text">{{ metaSummary }}</span>
+            <span class="task-meta-summary-action">Edit</span>
+          </button>
           <div class="md-h spec-head" style="margin-top: 18px">
             <button
               type="button"
@@ -7082,7 +7033,7 @@ watch(
                     <th class="ta-left">agent</th>
                     <th class="ta-left">model</th>
                     <th class="ta-left">verdict</th>
-                    <th class="ta-left">finding classes</th>
+                    <th class="ta-left">Issues</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -7430,7 +7381,7 @@ watch(
                    gitignored attachments tree. -->
               <div class="changes-summary-actions">
                 <Button
-                  v-if="ui.active?.status === 'review'"
+                  v-if="ui.active?.status === 'review' && !evidencePromptHidden"
                   variant="outline"
                   size="sm"
                   data-test-id="refresh-evidence"
@@ -8044,6 +7995,136 @@ watch(
           </div>
         </div>
       </template>
+    </DialogContent>
+  </Dialog>
+
+  <!-- #1282: the collapsed details block's edit controls. Save patches only
+       these fields; Cancel, X and Escape revert them. -->
+  <Dialog :open="metaModalOpen" @update:open="onMetaModalOpen">
+    <DialogOverlay />
+    <DialogContent class="task-meta-modal" data-test-id="task-meta-modal">
+      <div class="task-meta-modal-head">
+        <div class="task-meta-modal-head-text">
+          <DialogTitle>Task details</DialogTitle>
+          <DialogDescription class="task-meta-modal-desc">
+            Save applies your changes to the task.
+          </DialogDescription>
+        </div>
+        <DialogClose class="close-x" aria-label="Close">
+          <span aria-hidden="true">×</span>
+        </DialogClose>
+      </div>
+      <div class="task-meta-modal-body">
+        <TaskDependencyPicker
+          id="et-dependencies"
+          v-model="draft.dependsOn"
+          :tasks="repo.tasks"
+          :exclude-id="ui.active?.id ?? ''"
+        />
+        <div class="field-row">
+          <div class="field">
+            <label>Type</label>
+            <Select v-model="draft.type">
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent position="popper">
+                <SelectViewport
+                  class="h-[var(--radix-select-trigger-height)] w-full min-w-[var(--radix-select-trigger-width)]"
+                >
+                  <SelectItem v-for="t in taskTypes" :key="t" :value="t">{{ t }}</SelectItem>
+                </SelectViewport>
+              </SelectContent>
+            </Select>
+          </div>
+          <div class="field">
+            <label>Priority</label>
+            <Select v-model="draft.priority">
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent position="popper">
+                <SelectViewport
+                  class="h-[var(--radix-select-trigger-height)] w-full min-w-[var(--radix-select-trigger-width)]"
+                >
+                  <SelectItem v-for="p in priorities" :key="p" :value="p">{{ p }}</SelectItem>
+                </SelectViewport>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="et-area">Area</label>
+            <AreaPicker
+              id="et-area"
+              v-model="draftAreaList"
+              :options="areaOptions"
+              placeholder="area"
+              @add-to-vocabulary="addAreaToVocabulary"
+            />
+          </div>
+          <div v-if="storiesEnabled" class="field">
+            <div class="field-header">
+              <label for="et-story">Story</label>
+              <button
+                v-if="showStoryOpenLink"
+                type="button"
+                class="page-help-link"
+                :title="storyOpenAccessibleLabel"
+                :aria-label="storyOpenAccessibleLabel"
+                @click="openAssignedStory"
+              >
+                go to story ↗
+              </button>
+            </div>
+            <Select :model-value="storySelectValue" @update:model-value="onStorySelectUpdate">
+              <SelectTrigger id="et-story">
+                <SelectValue placeholder="No story">
+                  {{ storySelectLabel }}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent position="popper">
+                <SelectViewport
+                  class="h-[var(--radix-select-trigger-height)] w-full min-w-[var(--radix-select-trigger-width)]"
+                >
+                  <SelectItem :value="STORY_NONE_SELECT">No story</SelectItem>
+                  <SelectItem v-for="name in storyOptions" :key="name" :value="name">
+                    {{ name }}
+                  </SelectItem>
+                </SelectViewport>
+              </SelectContent>
+            </Select>
+          </div>
+          <div v-else class="field">
+            <label for="et-assignee">Assigned to</label>
+            <Input
+              id="et-assignee"
+              v-model="draft.assignedTo"
+              list="assignee-options"
+              placeholder="unassigned"
+            />
+            <datalist id="assignee-options">
+              <option value="ai"></option>
+              <option value="human"></option>
+            </datalist>
+          </div>
+        </div>
+      </div>
+      <div class="task-meta-modal-actions">
+        <Button variant="outline" size="sm" :disabled="ui.saving" @click="onMetaModalOpen(false)">
+          Cancel
+        </Button>
+        <Button
+          variant="default"
+          size="sm"
+          :disabled="ui.saving"
+          data-test-id="task-meta-save"
+          @click="saveMetaModal"
+        >
+          Save
+        </Button>
+      </div>
     </DialogContent>
   </Dialog>
 

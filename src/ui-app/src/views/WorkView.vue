@@ -302,7 +302,7 @@ const hiddenTaskIds = computed<ReadonlySet<string>>(() => {
 // ── #1257 Queue search and quick filters on the board ─────────────────
 // The phone queue writes search and quick filters to the URL (#1138). A
 // phone-width session or a shared link can carry them to a wider screen, so the
-// board applies the same filters and shows them in a chip bar with a clear
+// board applies the same filters and shows quick-filter chips with a clear
 // control. At 720px and up the board also has a search box (#1259) that writes
 // `q` to the same URL key, so a search set on a wide screen survives a reload.
 const queueFilters = computed(() => readWorkQueueFilters(route.query));
@@ -311,10 +311,15 @@ const ignoredQueueFilters = computed(() => ignoredWorkQueueFilterChips(route.que
 /** The queue's sort (`sort=newest|oldest`), applied to every column. Absent, the
  *  board keeps its own Sort control. */
 const boardQueueSort = computed(() => readWorkQueueSort(route.query));
-/** The bar shows for an applied filter or sort, or a URL value that was not applied. */
+/**
+ * The bar shows for an applied quick filter or sort, or a URL value that was not
+ * applied. A search alone never shows it: the search box has its own
+ * clear (x) button, and a bar that appeared with only "Clear filters" took a full
+ * row and shifted the columns down.
+ */
 const queueBarVisible = computed(
   () =>
-    queueFiltersActive.value ||
+    hasActiveWorkQueueFilters({ ...queueFilters.value, query: "" }) ||
     boardQueueSort.value !== null ||
     ignoredQueueFilters.value.length > 0,
 );
@@ -333,7 +338,6 @@ function setBoardSortOrder(order: SortOrder): void {
 function setQueueSearch(text: string): void {
   void router.replace({ query: withWorkQueueSearch(route.query, text) });
 }
-
 /** The board's per-status task list with the queue filters, the URL sort and the
  *  hidden categories applied. */
 function visibleByStatus(status: string): Task[] {
@@ -587,39 +591,45 @@ function openHeld(task: Task): void {
         </div>
       </div>
       <div class="work-header-actions">
-        <RouterLink to="/client-board" class="client-board-link">Client board</RouterLink>
-        <div
-          v-if="effectiveView === 'board'"
-          class="view-toggle queue-visibility"
-          role="group"
-          aria-label="Show or hide human and held tasks"
-        >
-          <button
-            type="button"
-            class="queue-visibility-btn"
-            :class="{ active: humanVisible }"
-            :aria-pressed="humanVisible"
-            :aria-label="humanVisible ? 'Hide human-assigned tasks' : 'Show human-assigned tasks'"
-            data-testid="toggle-human-visibility"
-            @click="toggleHumanVisible"
+        <div class="work-header-search-controls">
+          <BoardQueueSearch
+            v-if="effectiveView === 'board'"
+            :model-value="queueFilters.query"
+            @update:model-value="setQueueSearch"
+          />
+          <div
+            v-if="effectiveView === 'board'"
+            class="view-toggle queue-visibility"
+            role="group"
+            aria-label="Show or hide human and held tasks"
           >
-            <EyeOff v-if="!humanVisible" class="size-3.5" aria-hidden="true" />
-            <Eye v-else class="size-3.5" aria-hidden="true" />
-            <span>Human</span>
-          </button>
-          <button
-            type="button"
-            class="queue-visibility-btn"
-            :class="{ active: heldVisible }"
-            :aria-pressed="heldVisible"
-            :aria-label="heldVisible ? 'Hide held tasks' : 'Show held tasks'"
-            data-testid="toggle-held-visibility"
-            @click="toggleHeldVisible"
-          >
-            <EyeOff v-if="!heldVisible" class="size-3.5" aria-hidden="true" />
-            <Eye v-else class="size-3.5" aria-hidden="true" />
-            <span>Held</span>
-          </button>
+            <button
+              type="button"
+              class="queue-visibility-btn"
+              :class="{ active: humanVisible }"
+              :aria-pressed="humanVisible"
+              :aria-label="humanVisible ? 'Hide human-assigned tasks' : 'Show human-assigned tasks'"
+              data-testid="toggle-human-visibility"
+              @click="toggleHumanVisible"
+            >
+              <EyeOff v-if="!humanVisible" class="size-3.5" aria-hidden="true" />
+              <Eye v-else class="size-3.5" aria-hidden="true" />
+              <span>Human</span>
+            </button>
+            <button
+              type="button"
+              class="queue-visibility-btn"
+              :class="{ active: heldVisible }"
+              :aria-pressed="heldVisible"
+              :aria-label="heldVisible ? 'Hide held tasks' : 'Show held tasks'"
+              data-testid="toggle-held-visibility"
+              @click="toggleHeldVisible"
+            >
+              <EyeOff v-if="!heldVisible" class="size-3.5" aria-hidden="true" />
+              <Eye v-else class="size-3.5" aria-hidden="true" />
+              <span>Held</span>
+            </button>
+          </div>
         </div>
         <Button
           v-if="!statusFilter && effectiveView === 'board'"
@@ -713,14 +723,10 @@ function openHeld(task: Task): void {
       <router-link to="/work" class="filter-clear">Show all statuses</router-link>
     </div>
 
-    <BoardQueueSearch
-      v-if="effectiveView === 'board'"
-      :model-value="queueFilters.query"
-      @update:model-value="setQueueSearch"
-    />
-
+    <!-- The pipeline neither filters nor searches, so it shows neither the search
+         box nor this bar; the URL values are kept for when the user returns to Board. -->
     <BoardQueueFilters
-      v-if="queueBarVisible"
+      v-if="queueBarVisible && effectiveView === 'board'"
       :filters="queueFilters"
       :sort="boardQueueSort"
       :ignored="ignoredQueueFilters"
@@ -915,33 +921,49 @@ function openHeld(task: Task): void {
 </template>
 
 <style scoped>
-/* #1139: the header row must wrap instead of clipping its toolbar on
-   landscape phones and 768px tablets. The actions drop to a second line while
-   the title keeps its full width (one line at these sizes). */
 .work-header {
   display: flex;
-  align-items: flex-end;
+  align-items: flex-start;
   justify-content: space-between;
+  /* Wrap the actions under the title when the row is too narrow, instead of
+     overflowing: runner browsers render wider fonts than a Mac (#1278). */
+  flex-wrap: wrap;
   gap: 16px;
   margin-bottom: 20px;
-  flex-wrap: wrap;
 }
 .work-header-copy {
+  /* Keep the title at its natural width (#1278 review): a fixed 132px column made
+     "Work Queue" wrap even on a wide screen. The description may wrap instead. */
+  flex: 0 1 auto;
   min-width: 0;
+  overflow-wrap: anywhere;
+}
+.work-header-copy .page-title {
+  white-space: nowrap;
 }
 .work-header-actions {
   display: flex;
+  flex: 1 1 320px;
+  min-width: 0;
   align-items: center;
+  /* Not flex-end (#1278): Radix renders a hidden native <select> for the sort
+     control, and with flex-end its static position sits past the right edge, which
+     widened the whole document by its own width on the runners' browsers. The
+     search controls below take the spare room, so the actions still read as
+     right-aligned. */
+  justify-content: flex-start;
   gap: 10px;
   flex-wrap: wrap;
 }
-@media (max-width: 900px) {
-  .work-header {
-    align-items: flex-start;
-  }
-  .work-header-actions {
-    width: 100%;
-  }
+.work-header-search-controls {
+  display: flex;
+  /* Take the spare room in the actions row so the search can grow to its
+     intended 210px where space permits (#1278 review). */
+  flex: 1 1 auto;
+  min-width: 0;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
 }
 /* Pipeline | Board switch — same styled toggle as the Inputs page List | Board. */
 .view-toggle {
@@ -988,18 +1010,6 @@ function openHeld(task: Task): void {
    integration status bar never covers the last board rows. */
 .ibar-spacer {
   height: 150px;
-}
-</style>
-
-<style scoped>
-.client-board-link {
-  color: var(--cyan);
-  font-size: 13px;
-  white-space: nowrap;
-}
-.client-board-link:focus-visible {
-  outline: 2px solid var(--cyan);
-  outline-offset: 3px;
 }
 </style>
 

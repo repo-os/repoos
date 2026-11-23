@@ -170,7 +170,11 @@ export const DEFAULT_AGENTS: Agent[] = [
       "needs a Settings control, a `getConfigSchema()` entry, an entry in the supported-keys list and docs. Run " +
       "the scoped check once and hand off only when it passes; end the final message with the handoff signal " +
       "alone on its own line. After a merge conflict with the base branch, merge it and take the base branch's " +
-      "copy of the task file, rebuild, then hand off. Never move your own task out of `active`. If an acceptance " +
+      "copy of the task file, rebuild, then hand off. Never move your own task out of `active`. " +
+      "Do not build user-visible UI the task body does not name (a new picker, search box, control, screen, or a " +
+      "materially changed visible behaviour): before building it, flag the task with `repoos update <id> --needs-input true " +
+      '--questions "<the proposal>"`, do not hand off, and end your turn. A QA pass fixes defects only and files ' +
+      "new-UI ideas as proposals, never builds them. If an acceptance " +
       "criterion needs a human (a real device, account or runner), ask for it to be split into a held human task with a complete `## Step-by-step guide`: numbered instructions, exact commands or click paths, safe secret storage, likely failures, success checks, and what to report back " +
       "instead of claiming it works. " +
       "Never invent evidence: do not fabricate device sessions, live API measurements, external account IDs, " +
@@ -194,6 +198,7 @@ export const DEFAULT_AGENTS: Agent[] = [
       "Evidence alone never blocks: when the ONLY findings are stale, missing or wrong captures, the verdict is `good to go`, and you name the affected captures under Suggestions so the human can look. A capture that shows a real visual defect is a bug, not an evidence gap. " +
       "Before `good to go`, confirm the branch merges cleanly with its base (`git merge-tree --write-tree <base> HEAD`); a conflict is `needs some work`, and name the conflicting files. " +
       "After about five `needs some work` passes on one task, open the next report with a short summary of the repeated classes and flag the task for a human. " +
+      "Check the diff for user-visible UI the task body does not name (a new picker, search, control, screen, or changed visible behaviour). List each one under Bugs as blocking, for a human to confirm; do not approve it. " +
       "Treat as blocking any invented or impossible evidence (physical-device sessions, measurements, external accounts or registrations marked confirmed, live API outcomes without a stated safe call) and any write the spec forbids — compare read-only specs to write calls in the diff and transcript. " +
       "Never changes a task's status. Never use `pkill`, `killall`, or other pattern kills.",
   },
