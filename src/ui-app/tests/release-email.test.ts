@@ -24,6 +24,7 @@ import {
   previewReleaseEmail,
   readReleaseEmailLog,
   renderReleaseEmail,
+  summarizeReleaseNotes,
   resendReleaseEmail,
   startCutReleaseEmail,
   waitForPublishedRelease,
@@ -220,7 +221,15 @@ describe("renderReleaseEmail", () => {
       }),
     );
     expect(out.subject).toBe("RepoOS v0.6.0 released — Task drawer: compact metadata");
-    expect(out.html).toContain("The drawer starts with a compact summary.");
+    const highlights = out.html.match(/<h2[^>]*>Highlights<\/h2><ul>(.*?)<\/ul>/s)?.[1] ?? "";
+    expect(highlights).toContain(
+      "<strong>Task drawer: compact metadata</strong> — The drawer starts with a compact summary.",
+    );
+    expect(highlights).not.toContain("Click to open full controls");
+    expect(highlights).not.toContain("Dependency chips");
+    expect(
+      summarizeReleaseNotes("### Task drawer\n\nFirst sentence. Second sentence."),
+    ).toMatchObject({ highlights: [{ name: "Task drawer", detail: "First sentence." }] });
     expect(out.html).toContain('<h3 style="margin:20px 0 8px;font-size:16px">Other</h3>');
     const loneOther = renderReleaseEmail(
       makeConfig(),

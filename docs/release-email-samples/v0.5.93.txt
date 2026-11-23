@@ -2,12 +2,12 @@ RepoOS v0.5.93 released — Task drawer: compact metadata
 Released 2026-11-22
 
 TL;DR
-Task drawer: compact metadata: Depends on, type, priority, area, and story no longer dominate the top of the task drawer. Task details modal: Save and Cancel: Save writes the metadata fields and closes the modal; Cancel, the close control, and Escape discard changes in the modal only.
+Task drawer: compact metadata: Depends on, type, priority, area, and story no longer dominate the top of the task drawer. Task details modal: Save and Cancel: Edits you make in that modal now persist when you close it.
 HIGHLIGHTS
-- Task drawer: compact metadata: Depends on, type, priority, area, and story no longer dominate the top of the task drawer. You get a one- or two-line summary by default; click it to open a modal with the full controls. Dependency chips at the top of the picker make what’s selected obvious, and the long candidate list stays in the modal so the spec stays in view.
-- Task details modal: Save and Cancel: Save writes the metadata fields and closes the modal; Cancel, the close control, and Escape discard changes in the modal only. You no longer need the drawer’s Save bar (behind the modal) to keep a type, priority, area, story, or dependency change.
+- Task drawer: compact metadata: Depends on, type, priority, area, and story no longer dominate the top of the task drawer.
+- Task details modal: Save and Cancel: Edits you make in that modal now persist when you close it.
 - Work board and review history: On the Work board, task numbers match the Pipeline style—plain text instead of a chip—so the top line (number, type, priority, robot icon) stays on one line; long labels shorten (for example “feature” → “feat”) when space is tight.
-- Mac Hub: Starting a local server from the Hub no longer fails with a cryptic `env: node: No such file or directory` when the app was launched from Finder or the Dock with a minimal PATH. You get a clear message about what’s missing and how to fix it. Removing a server and adding it again no longer crashes the app.
+- Mac Hub: Starting a local server from the Hub no longer fails with a cryptic `env: node: No such file or directory` when the app was launched from Finder or the Dock with a minimal PATH.
 - Agent workflow (operators): Tasks that would add user-visible UI nobody asked for must get human confirmation first; reviewers treat that as a blocking finding, and QA passes are directed to propose new UI in follow-up tasks instead of shipping it silently.
 FULL RELEASE NOTES
 TASK DRAWER: COMPACT METADATA

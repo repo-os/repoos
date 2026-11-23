@@ -180,15 +180,23 @@ function noteItems(markdown: string): { name: string; detail: string }[] {
   const items: { name: string; detail: string }[] = [];
   let heading = "";
   let paragraph: string[] = [];
+  const splitSentence = (text: string): { first: string; rest: string } => {
+    const boundary = text.search(/[.!?](?=\s+[A-Z0-9“"'`([{])/);
+    if (boundary < 0) return { first: text.trim(), rest: "" };
+    return {
+      first: text.slice(0, boundary + 1).trim(),
+      rest: text.slice(boundary + 1).trim(),
+    };
+  };
   const add = (raw: string, isBullet = false): void => {
     const content = raw.replace(/\*\*/g, "").trim();
     if (!content || /^changes in this release:?$/i.test(content)) return;
-    const parts = content.match(/^(.{1,70}?)[.!?](?:\s+|$)(.*)$/);
+    const { first, rest } = splitSentence(content);
+    const hasContentHeading =
+      heading && !/^(highlights?|features?|fixes?|improvements?|other)$/i.test(heading);
     const name =
-      !isBullet && heading && !/^highlights?$/i.test(heading)
-        ? heading
-        : parts?.[1]?.trim() || content.split(/[.:;]/, 1)[0]!.slice(0, 64).trim();
-    const detail = parts ? parts[2]?.trim() || parts[1]!.trim() : content;
+      !isBullet && hasContentHeading ? heading : first.split(/[.!?]/, 1)[0]!.slice(0, 64).trim();
+    const detail = !isBullet && hasContentHeading ? first : rest || first;
     if (name && detail && !items.some((item) => item.name.toLowerCase() === name.toLowerCase()))
       items.push({ name, detail });
   };
