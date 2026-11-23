@@ -3,13 +3,16 @@ id: "1287"
 title: Polish automated release announcement emails
 type: feature
 status: active
+needs_input: true
+needs_input_reason: check-wait
+needs_input_detail: "waiting: waiting for serialized local fallback (1 ahead, position 2); slot holder 34136 is dead for 0s"
 priority: p2
 area: [server, web]
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/polish-automated-release-announcement-em
 created_at: "2026-11-23T07:50:59Z"
-updated_at: "2026-11-23T10:10:44Z"
+updated_at: "2026-11-23T10:38:38Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-23T10:06:49.976Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 2
@@ -175,3 +178,7 @@ One additional suggestion: since RepoOS releases appear to be frequent, I'd keep
 - 2026-11-23T10:06:52Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-23T10:10:43Z · queued message undelivered for 4m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-23T10:10:44Z · message_delivered: 1 message(s)
+- 2026-11-23T10:17:43Z · watchdog: check wait escalated · waiting: waiting for serialized local fallback (1 ahead, position 2); slot holder 7959 is dead for 14s · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-11-23T10:17:58Z · watchdog: check wait ended or recovered — cleared needs_input
+- 2026-11-23T10:27:13Z · watchdog: check wait escalated · waiting: waiting for serialized local fallback (1 ahead, position 2); slot holder 34136 is dead for 0s · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-11-23T10:38:38Z · message_queued at 2026-11-23T10:38:38.697Z
