@@ -3,9 +3,6 @@ id: "1286"
 title: "Hub server list: pull down to refresh"
 type: feature
 status: inbox
-needs_input: true
-needs_input_reason: underspecified
-needs_input_detail: "missing sections: Notes for AI"
 priority: p2
 area: web
 assigned_to: ai
@@ -52,3 +49,4 @@ See attached: all servers show Unreachable with no way to refresh.
 - 2026-11-23T07:50:39Z · body: Desired UX (added)
 - 2026-11-23T07:50:41Z · body: Acceptance criteria (added)
 - 2026-11-23T07:50:42Z · body: Notes for AI (added)
+- 2026-11-23T07:50:42Z · needs_input
