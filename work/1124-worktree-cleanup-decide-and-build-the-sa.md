@@ -39,7 +39,7 @@ Read #1055 and src for `repoos gc` first. Do not widen what gc auto-removes. Des
 "highlight": ".gc-preview",
 "steps": [
 {
-  "click": ".gc-tooltip-trigger button.gc-action"
+"click": ".gc-tooltip-trigger button.gc-action"
 }
 ]
 }
@@ -56,3 +56,4 @@ Read #1055 and src for `repoos gc` first. Do not widen what gc auto-removes. Des
 - 2026-11-23T07:55:58Z · body
 - 2026-11-23T07:59:34Z · CTO nudge: held — handoff gate is running
 - 2026-11-23T08:04:23Z · note: ui verification failed (1 issue(s)): [missing-target] Protected worktree triage preview (target "default"): loading state detected: loading text "Loading…" on /control?shotState=system:worktreeGc (http://127.0.0.1:55926/control?shotState=system:worktreeGc)
+- 2026-11-23T08:04:23Z · message_queued at 2026-11-23T08:04:23.761Z
