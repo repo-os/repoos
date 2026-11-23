@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 847887
-last_close_out_gate_at: "2026-11-23T15:42:06.137Z"
 id: "1287"
 title: Polish automated release announcement emails
 type: feature
-status: review
+status: done
 priority: p2
 area: [server, web]
+merged_commit: 28e6eb97d288d2085f8ed25b08da37438b4c981f
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/polish-automated-release-announcement-em
@@ -14,6 +13,8 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-23T07:50:59Z"
 updated_at: "2026-11-23T15:42:06Z"
+last_close_out_gate_ms: 847887
+last_close_out_gate_at: "2026-11-23T15:42:06.137Z"
 review_passes: 4
 last_check_failure: "repoos check at 2026-11-23T11:34:20.904Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 2
