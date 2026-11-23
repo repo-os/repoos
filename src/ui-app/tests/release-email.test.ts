@@ -180,7 +180,7 @@ describe("deliverCutReleaseEmail Resend wiring", () => {
         RECIPIENTS.map((to) => ({
           from: `RepoOS <${FAKE_FROM}>`,
           to: [to],
-          subject: "RepoOS v0.6.0 is out",
+          subject: "RepoOS v0.6.0 released — Faster boot",
           html: expect.any(String),
           text: expect.any(String),
         })),
@@ -215,7 +215,9 @@ describe("renderReleaseEmail", () => {
     const out = renderReleaseEmail(makeConfig(), entry({ notes: "### Task drawer: compact metadata\n\nThe drawer starts with a compact summary. Click to open full controls.\n\n### Other\n\nUpdated small labels." }));
     expect(out.subject).toBe("RepoOS v0.6.0 released — Task drawer: compact metadata");
     expect(out.html).toContain("The drawer starts with a compact summary.");
-    expect(out.html).not.toContain("<h3 style=\"margin:20px 0 8px;font-size:16px\">Other</h3>");
+    expect(out.html).toContain("<h3 style=\"margin:20px 0 8px;font-size:16px\">Other</h3>");
+    const loneOther = renderReleaseEmail(makeConfig(), entry({ notes: "### Other\n\n- Updated small labels." }));
+    expect(loneOther.html).not.toContain(">Other</h3>");
   });
 
   it("omits the headline when notes cannot produce one", () => {
@@ -1077,7 +1079,7 @@ describe("release email routes", () => {
       {},
     );
     expect(out.status).toBe(200);
-    expect((out.body as { subject: string }).subject).toMatch(/v0\.6\.0 is out/);
+    expect((out.body as { subject: string }).subject).toMatch(/v0\.6\.0 released/);
   });
 
   it("answers 404 to a preview for a version with no release notes", async () => {

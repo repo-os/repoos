@@ -180,11 +180,11 @@ function noteItems(markdown: string): { name: string; detail: string }[] {
   const items: { name: string; detail: string }[] = [];
   let heading = "";
   let paragraph: string[] = [];
-  const add = (raw: string): void => {
+  const add = (raw: string, isBullet = false): void => {
     const content = raw.replace(/\*\*/g, "").trim();
     if (!content || /^changes in this release:?$/i.test(content)) return;
     const parts = content.match(/^(.{1,70}?)[.!?](?:\s+|$)(.*)$/);
-    const name = heading && !/^highlights?$/i.test(heading)
+    const name = !isBullet && heading && !/^highlights?$/i.test(heading)
       ? heading
       : parts?.[1]?.trim() || content.split(/[.:;]/, 1)[0]!.slice(0, 64).trim();
     const detail = parts ? (parts[2]?.trim() || parts[1]!.trim()) : content;
@@ -197,7 +197,7 @@ function noteItems(markdown: string): { name: string; detail: string }[] {
     const match = line.match(/^#{1,6}\s+(.+)$/);
     if (match) { flush(); heading = match[1]!.trim(); continue; }
     const bullet = line.match(/^[-*]\s+(.+)$/);
-    if (bullet) { flush(); add(bullet[1]!); }
+    if (bullet) { flush(); add(bullet[1]!, true); }
     else if (line) paragraph.push(line);
     else flush();
   }
