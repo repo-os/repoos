@@ -55,6 +55,23 @@ describe("selectCloseOutStarts (#1275)", () => {
     expect(picks).toEqual(["02"]);
   });
 
+  it("does not count a running publisher against validation capacity", () => {
+    const jobs = [
+      job("01", "publishing"),
+      job("02", "validating"),
+      job("03", "queued"),
+      job("04", "queued"),
+    ];
+    expect(
+      selectCloseOutStarts({
+        jobs,
+        running: new Set(["01", "02"]),
+        limit: 2,
+        holdExtra: false,
+      }),
+    ).toEqual(["03"]);
+  });
+
   it("does not spend a validation slot on the publish head", () => {
     const jobs = [job("01", "publishing"), job("02", "queued"), job("03", "queued")];
     expect(selectCloseOutStarts({ jobs, running: new Set(), limit: 2, holdExtra: false })).toEqual([
@@ -454,7 +471,8 @@ describe("stale base at publish (#1275)", () => {
     // Validated against a base that is not main any more: publish must refuse it.
     repoCoordinator.updateJob("0002", {
       phase: "publishing",
-      startedAt: "2026-11-20T00:00:06Z",
+      startedAt: new Date().toISOString(),
+      budgetMonotonicStartNs: process.hrtime.bigint().toString(),
       baseMainSha: "1111111111111111111111111111111111111111",
       candidateSha: "cafe",
     });

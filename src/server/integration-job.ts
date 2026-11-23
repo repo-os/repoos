@@ -186,7 +186,8 @@ export function hasPublishTurn(jobs: IntegrationJob[], taskId: string): boolean 
  * and the tests share one definition of the rules:
  *
  * - Jobs start in queue order, so the head is never starved by later jobs.
- * - At most `limit` runs are in flight. A task already in `running` keeps its slot.
+ * - At most `limit` validations are in flight. A running publish owns the
+ *   serial publish turn, but does not consume a validation slot.
  * - A `publishing` job starts only when it holds the publish turn. Anything
  *   behind the head that has finished validating parks until its turn comes and
  *   is picked up again when the head's run ends.
@@ -206,7 +207,14 @@ export function selectCloseOutStarts(input: {
   const picks: string[] = [];
   const turn = publishTurnTaskId(input.jobs);
   const max = Math.max(1, input.limit);
-  let inFlight = input.running.size;
+  const jobsById = new Map(input.jobs.map((job) => [job.taskId, job]));
+  // A publish can overlap validation on another task. Count only active
+  // validation work (plus unknown running ids conservatively); a running
+  // publisher must not reduce the validation capacity (#1275).
+  let inFlight = [...input.running].filter((taskId) => {
+    const job = jobsById.get(taskId);
+    return !job || job.phase === "queued" || job.phase === "syncing" || job.phase === "validating";
+  }).length;
   for (const job of pendingCloseOutJobs(input.jobs)) {
     if (input.running.has(job.taskId)) continue;
     if (job.cancelled) {
