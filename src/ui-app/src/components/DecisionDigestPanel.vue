@@ -77,12 +77,12 @@ function kindLabel(kind: string): string {
 }
 
 onMounted(() => {
-  // The restart-notice capture is about the global release dialog. Avoid a
-  // transient dashboard spinner competing with that fixture (and triggering
-  // the screenshot loading-state guard) while the decisions request is in
-  // flight.
+  // Dashboard shots should not depend on this unrelated live decisions
+  // request settling. Avoid a transient spinner competing with the fixture
+  // (and triggering the screenshot loading-state guard) while it is in flight.
   const shotFixture = readShotPreviewFixtureFromLocation(window.location);
   if (
+    shotFixture === "system:worktreeGc" ||
     shotFixture === "release:restartPendingLight" ||
     shotFixture === "release:restartPendingDark" ||
     shotFixture === "release:restartProgress" ||
