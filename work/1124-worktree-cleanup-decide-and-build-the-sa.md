@@ -2,14 +2,14 @@
 id: "1124"
 title: "Worktree cleanup: decide and build the safe handling for 'unsafe' (protected) task worktrees"
 type: feature
-status: active
+status: review
 priority: p3
 area: [core, server]
 assigned_to: ai
 created_by: t@t
 branch: feat/worktree-cleanup-decide-and-build-the-sa
 created_at: "2026-11-15T00:41:58Z"
-updated_at: "2026-11-23T09:19:03Z"
+updated_at: "2026-11-23T09:19:12Z"
 handoff_signal_retry_count: 2
 last_check_failure: "repoos check at 2026-11-23T08:04:26.772Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Protected worktree triage preview (target \"default\"): loading state detected: loading text \"Loading…\" on /control?shotState=system:worktreeGc (http://127.0.0.1:55926/control?shotState=system:worktreeGc)"
 ---
@@ -71,3 +71,4 @@ Read #1055 and src for `repoos gc` first. Do not widen what gc auto-removes. Des
 - 2026-11-23T08:52:48Z · body
 - 2026-11-23T08:57:28Z · CTO nudge: held — handoff gate is running
 - 2026-11-23T09:19:03Z · note: ui verification passed: 1 of 1 shot captured with clean console
+- 2026-11-23T09:19:12Z · status active→review
