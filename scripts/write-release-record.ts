@@ -22,7 +22,7 @@ if (log.exitCode !== 0) {
   process.exit(log.exitCode || 1);
 }
 
-const commits = log.stdout.toString().trim().split("\n").filter(Boolean).reverse();
+const commits = log.stdout.toString().trim().split("\n").filter(Boolean);
 const entry = createReleaseHistoryEntry(version, commits);
 const result = writeReleaseSurfaces(process.cwd(), entry);
 console.log(
