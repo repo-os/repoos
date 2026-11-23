@@ -91,6 +91,7 @@ export interface ReleaseEmailRecord {
   sentTo: string[];
   /** Human-readable detail for pending, failed and skipped states. */
   reason?: string;
+  summary?: ReleaseEmailSummary;
   /** ISO time the record last changed. */
   at: string;
 }
@@ -101,6 +102,14 @@ export interface ReleaseEmailContext {
   upgradeCommand?: string;
   unsubscribeUrl?: string;
   publicOrigin?: string;
+  /** A version-stable summary loaded from the per-release email record. */
+  summary?: ReleaseEmailSummary;
+}
+
+export interface ReleaseEmailSummary {
+  headline?: string;
+  tldr?: string;
+  highlights: { name: string; detail: string }[];
 }
 
 /** Injected seams so tests never touch the network or the clock. */
@@ -167,24 +176,96 @@ function repositoryLinks(config: RepoOSConfig, tag: string): { label: string; hr
   ];
 }
 
-function groupedNotes(markdown: string): { features: string[]; fixes: string[]; other: string[] } {
-  const groups = { features: [] as string[], fixes: [] as string[], other: [] as string[] };
-  let section: keyof typeof groups = "other";
-  for (const line of markdown.split(/\r?\n/)) {
-    const heading = line.match(/^#{1,6}\s+(.+)$/)?.[1]?.toLowerCase() ?? "";
-    if (heading)
-      section = /feature|added|new/.test(heading)
-        ? "features"
-        : /fix|bug|repair/.test(heading)
-          ? "fixes"
-          : "other";
-    else if (/^\s*[-*]\s+/.test(line) || line.trim()) groups[section].push(line);
+function noteItems(markdown: string): { name: string; detail: string }[] {
+  const items: { name: string; detail: string }[] = [];
+  let heading = "";
+  let paragraph: string[] = [];
+  const splitSentence = (text: string): { first: string; rest: string } => {
+    const boundary = text.search(/[.!?](?=\s+[A-Z0-9“"'`([{])/);
+    if (boundary < 0) return { first: text.trim(), rest: "" };
+    return {
+      first: text.slice(0, boundary + 1).trim(),
+      rest: text.slice(boundary + 1).trim(),
+    };
+  };
+  const add = (raw: string, isBullet = false): void => {
+    const content = raw.replace(/\*\*/g, "").trim();
+    if (!content || /^changes in this release:?$/i.test(content)) return;
+    const { first, rest } = splitSentence(content);
+    const hasContentHeading =
+      heading && !/^(highlights?|features?|fixes?|improvements?|other)$/i.test(heading);
+    const name =
+      !isBullet && hasContentHeading ? heading : first.split(/[.!?]/, 1)[0]!.slice(0, 64).trim();
+    const detail = isBullet || hasContentHeading ? first : rest ? splitSentence(rest).first : first;
+    if (name && detail && !items.some((item) => item.name.toLowerCase() === name.toLowerCase()))
+      items.push({ name, detail });
+  };
+  const flush = (): void => {
+    if (paragraph.length) add(paragraph.join(" "));
+    paragraph = [];
+  };
+  for (const raw of markdown.split(/\r?\n/)) {
+    const line = raw.trim();
+    const match = line.match(/^#{1,6}\s+(.+)$/);
+    if (match) {
+      flush();
+      heading = match[1]!.trim();
+      continue;
+    }
+    const bullet = line.match(/^[-*]\s+(.+)$/);
+    if (bullet) {
+      flush();
+      add(bullet[1]!, true);
+    } else if (line) paragraph.push(line);
+    else flush();
   }
-  return groups;
+  flush();
+  return items.slice(0, 5);
+}
+
+/** Summary copy is derived only from stored notes; no model call or invented claims. */
+export function summarizeReleaseNotes(markdown: string): ReleaseEmailSummary {
+  const items = noteItems(markdown);
+  const headline = items[0]?.name.replace(/[.!?]+$/, "").trim();
+  const highlights = items.map(({ name, detail }) => ({
+    name,
+    detail: detail.replace(/[.!?]+$/, "."),
+  }));
+  const summarySentences = highlights.map(({ name, detail }) => {
+    const firstSentence = detail.match(/^.*?[.!?](?=\s|$)/)?.[0] ?? detail;
+    return name + ": " + firstSentence;
+  });
+  const tldrParts: string[] = [];
+  for (const sentence of summarySentences) {
+    const currentWordCount = tldrParts.join(" ").split(/\s+/).filter(Boolean).length;
+    if (currentWordCount + sentence.split(/\s+/).length > 50) break;
+    tldrParts.push(sentence);
+    if (tldrParts.length === 2) break;
+  }
+  const tldr = tldrParts.length ? tldrParts.join(" ") : undefined;
+  return { ...(headline ? { headline } : {}), ...(tldr ? { tldr } : {}), highlights };
+}
+
+function noteSections(markdown: string): { title: string; body: string }[] {
+  const sections: { title: string; lines: string[] }[] = [];
+  let current = { title: "", lines: [] as string[] };
+  for (const line of markdown.replace(/\r\n/g, "\n").split("\n")) {
+    const heading = line.match(/^#{1,6}\s+(.+)$/);
+    if (heading) {
+      if (current.lines.some((part) => part.trim()))
+        sections.push({ title: current.title, lines: current.lines });
+      current = { title: heading[1]!.trim(), lines: [] };
+    } else current.lines.push(line);
+  }
+  if (current.lines.some((part) => part.trim()))
+    sections.push({ title: current.title, lines: current.lines });
+  if (sections.length === 1 && /^other$/i.test(sections[0]!.title)) sections[0]!.title = "";
+  return sections.map(({ title, lines }) => ({ title, body: lines.join("\n").trim() }));
 }
 
 function releaseName(config: RepoOSConfig): string {
-  return config.release?.name?.trim() || projectDisplayName(config.root);
+  const configured = config.release?.name?.trim() || projectDisplayName(config.root);
+  return configured.replace(/^publish\s+/i, "").trim() || projectDisplayName(config.root);
 }
 
 // ---------------------------------------------------------------------------
@@ -281,11 +362,12 @@ export function renderReleaseEmail(
   context: ReleaseEmailContext = {},
 ): RenderedReleaseEmail {
   const project = releaseName(config);
-  const subject = `${project} v${entry.version} is out`;
+  const summary = context.summary ?? summarizeReleaseNotes(entry.notes);
+  const subject = `${project} v${entry.version} released${summary.headline ? ` — ${summary.headline}` : ""}`;
   const notes = entry.notes.trim();
   const knownIssues = entry.knownIssues?.trim() ?? "";
   const links = repositoryLinks(config, entry.tag);
-  const groups = groupedNotes(notes);
+  const sections = noteSections(notes);
   const prerelease = isPrereleaseVersion(entry.version);
 
   const linkHtml = links
@@ -298,22 +380,22 @@ export function renderReleaseEmail(
     ? `<p style="margin: 20px 0 0;">To upgrade: <code>${escapeHtml(context.upgradeCommand)}</code></p>`
     : "";
   const html = [
-    `<div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 32px; color: #222;">`,
-    `<h1 style="margin: 0 0 8px; font-size: 24px;">${escapeHtml(subject)}</h1>`,
+    `<style>@media(prefers-color-scheme:dark){.release-email{background:#151a22!important;color:#e7edf5!important}.release-email a{color:#8ab4f8!important}}@media(max-width:600px){.release-email{padding:20px 16px!important}}</style>`,
+    `<div class="release-email" style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:640px;margin:0 auto;padding:28px 24px;color:#202938;background:#fff;line-height:1.55">`,
+    `<p style="margin:0 0 4px;color:#64748b;font-size:13px;font-weight:600">${escapeHtml(project)} release</p>`,
+    `<h1 style="margin:0 0 4px;font-size:28px;line-height:1.2">${escapeHtml(project)} v${escapeHtml(entry.version)} is here</h1>`,
     `<p style="margin: 0 0 24px; color: #666; font-size: 14px;">Released ${escapeHtml(entry.date)}${prerelease ? " · prerelease" : ""}</p>`,
-    `<h2 style="margin: 0 0 8px; font-size: 18px;">Release notes</h2>`,
-    ...(
-      [
-        ["Features", groups.features],
-        ["Fixes", groups.fixes],
-        ["Other", groups.other],
-      ] as const
-    )
-      .filter(([, lines]) => lines.length)
-      .map(
-        ([title, lines]) =>
-          `<h3 style="margin: 16px 0 6px; font-size: 16px;">${title}</h3>${markdownToHtml(lines.join("\n"))}`,
-      ),
+    summary.tldr
+      ? `<h2 style="margin:24px 0 8px;font-size:18px">TL;DR</h2><p>${escapeHtml(summary.tldr)}</p>`
+      : "",
+    summary.highlights.length
+      ? `<h2 style="margin:24px 0 8px;font-size:18px">Highlights</h2><ul>${summary.highlights.map(({ name, detail }) => `<li style="margin:8px 0"><strong>${escapeHtml(name)}</strong> — ${escapeHtml(detail)}</li>`).join("")}</ul>`
+      : "",
+    `<h2 style="margin:24px 0 8px;font-size:18px">Full release notes</h2>`,
+    ...sections.map(
+      ({ title, body }) =>
+        `${title ? `<h3 style="margin:20px 0 8px;font-size:16px">${escapeHtml(title)}</h3>` : ""}${markdownToHtml(body)}`,
+    ),
     notes ? "" : `<p>No release notes were written for this release.</p>`,
     `<h2 style="margin: 24px 0 8px; font-size: 18px;">Known issues</h2>`,
     knownIssues ? markdownToHtml(knownIssues) : `<p>None recorded.</p>`,
@@ -332,16 +414,17 @@ export function renderReleaseEmail(
     subject,
     `Released ${entry.date}${prerelease ? " (prerelease)" : ""}`,
     "",
-    "RELEASE NOTES",
-    ...(
-      [
-        ["FEATURES", groups.features],
-        ["FIXES", groups.fixes],
-        ["OTHER", groups.other],
-      ] as const
-    )
-      .filter(([, lines]) => lines.length)
-      .flatMap(([title, lines]) => [title, markdownToText(lines.join("\n")), ""]),
+    summary.tldr ? "TL;DR\n" + summary.tldr : "",
+    summary.highlights.length
+      ? "HIGHLIGHTS\n" +
+        summary.highlights.map(({ name, detail }) => `- ${name}: ${detail}`).join("\n")
+      : "",
+    "FULL RELEASE NOTES",
+    ...sections.flatMap(({ title, body }) => [
+      ...(title ? [title.toUpperCase()] : []),
+      markdownToText(body),
+      "",
+    ]),
     notes ? "" : "No release notes were written for this release.",
     "",
     "KNOWN ISSUES",
@@ -537,11 +620,13 @@ function recordFor(
   patch: Pick<ReleaseEmailRecord, "status" | "sentTo" | "reason">,
 ): ReleaseEmailRecord {
   const when = config.release?.email?.when ?? "published";
+  const prior = readReleaseEmailLog(config)[entry.version];
   const record = writeRecord(config, {
     version: entry.version,
     tag: entry.tag,
     when,
     at: new Date().toISOString(),
+    summary: prior?.summary ?? summarizeReleaseNotes(entry.notes),
     ...patch,
   });
   surfaceRecord(config, record);
@@ -598,6 +683,8 @@ async function sendAndRecord(
   note?: string,
 ): Promise<ReleaseEmailRecord> {
   const email = config.release?.email ?? {};
+  const priorSummary = getReleaseEmailRecord(config, entry.version)?.summary;
+  const stableContext = { ...context, summary: priorSummary ?? summarizeReleaseNotes(entry.notes) };
   const targets = pendingRecipients(config, email, accepted);
   if (targets.length === 0) {
     return recordFor(config, entry, {
@@ -611,8 +698,8 @@ async function sendAndRecord(
   for (const to of targets) {
     const origin = webOrigin(config, context.publicOrigin);
     const recipientContext = origin
-      ? { ...context, unsubscribeUrl: createReleaseUnsubscribeUrl(config, to, origin) }
-      : context;
+      ? { ...stableContext, unsubscribeUrl: createReleaseUnsubscribeUrl(config, to, origin) }
+      : stableContext;
     const message = renderReleaseEmail(config, entry, recipientContext);
     const result = await sendEmail(
       config,
@@ -842,7 +929,11 @@ export function previewReleaseEmail(
   const entry = findHistoryEntry(config, version);
   if (!entry) throw new Error(`No release notes are recorded for version ${version}.`);
   return {
-    ...renderReleaseEmail(config, entry, context),
+    ...renderReleaseEmail(config, entry, {
+      ...context,
+      summary:
+        getReleaseEmailRecord(config, version)?.summary ?? summarizeReleaseNotes(entry.notes),
+    }),
     recipients: config.release?.email?.to ?? [],
   };
 }

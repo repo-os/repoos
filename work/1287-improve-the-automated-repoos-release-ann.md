@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-23T12:50:02Z"
-review_passes: 4
 id: "1287"
 title: Polish automated release announcement emails
 type: feature
@@ -10,13 +8,8 @@ area: [server, web]
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/polish-automated-release-announcement-em
-cli_override: codex
-model_override: gpt-6-luna
 created_at: "2026-11-23T07:50:59Z"
-last_check_failure: "repoos check at 2026-11-23T11:34:20.904Z: repoos check failed: reused check inputs changed during handoff — run the check again"
-review_rounds: 2
-routing_switches: 1
-routing_escalations: 1
+updated_at: "2026-11-23T09:36:25Z"
 ---
 ## Problem
 
@@ -155,59 +148,4 @@ One additional suggestion: since RepoOS releases appear to be frequent, I'd keep
 - 2026-11-23T07:51:19Z · status draft→inbox, title, area, body: Problem (added); Desired UX (added); Acceptance criteria (added); Notes for AI (added); Scope (added); Related (added)
 - 2026-11-23T07:52:07Z · status inbox→ready
 - 2026-11-23T08:48:20Z · status ready→active, branch
-- 2026-11-23T09:06:37Z · body
-- 2026-11-23T09:17:31Z · body
-- 2026-11-23T09:32:19Z · body
 - 2026-11-23T09:36:25Z · status active→review
-- 2026-11-23T09:36:26Z · message_queued at 2026-11-23T09:36:26.310Z
-- 2026-11-23T09:36:26Z · note: shots: skipped — the diff (6 changed paths) touches no capture target's globs — no UI change to capture
-- 2026-11-23T09:37:30Z · note: review pass 1: needs some work
-- 2026-11-23T09:37:30Z · message_delivered: 1 message(s)
-- 2026-11-23T09:37:30Z · status review→active
-- 2026-11-23T09:38:40Z · note: adopted orphaned engineer pid 29050
-- 2026-11-23T09:48:51Z · body
-- 2026-11-23T09:51:54Z · status active→review
-- 2026-11-23T09:52:02Z · note: shots: skipped — the diff (7 changed paths) touches no capture target's globs — no UI change to capture
-- 2026-11-23T10:06:46Z · message_queued at 2026-11-23T10:06:46.726Z
-- 2026-11-23T10:06:47Z · note: review pass 2: needs some work
-- 2026-11-23T10:06:48Z · message_delivered: 1 message(s)
-- 2026-11-23T10:06:49Z · status review→active
-- 2026-11-23T10:06:49Z · message_queued at 2026-11-23T10:06:49.632Z
-- 2026-11-23T10:06:52Z · CTO nudge: held — an undelivered message is already queued
-- 2026-11-23T10:10:43Z · queued message undelivered for 4m and the engineer produced no output — ending the turn so it is delivered
-- 2026-11-23T10:10:44Z · message_delivered: 1 message(s)
-- 2026-11-23T10:17:43Z · watchdog: check wait escalated · waiting: waiting for serialized local fallback (1 ahead, position 2); slot holder 7959 is dead for 14s · next step: investigate the abnormal wait; the flag clears when the check starts
-- 2026-11-23T10:17:58Z · watchdog: check wait ended or recovered — cleared needs_input
-- 2026-11-23T10:27:13Z · watchdog: check wait escalated · waiting: waiting for serialized local fallback (1 ahead, position 2); slot holder 34136 is dead for 0s · next step: investigate the abnormal wait; the flag clears when the check starts
-- 2026-11-23T10:38:38Z · message_queued at 2026-11-23T10:38:38.697Z
-- 2026-11-23T10:38:38Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-23T10:40:28Z · watchdog: check wait ended or recovered — cleared needs_input
-- 2026-11-23T10:41:50Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
-- 2026-11-23T10:41:51Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code unknown) · last assistant: The remote runners are unavailable because their link probes are below the required throughput, and the local fallback is queued behind another check. RepoOS labels this as a normal wait, so I’m keeping the check running until it reaches a… · stderr: 2026-11-23T10:10:52.138489Z ERROR codex_core::tools::router: error=write_stdin failed: Unknown process id 16451 2026-11-23T10:23:09.473879Z ERROR codex_core::tools::router: error=write_stdin failed: Unknown process id 45446
-- 2026-11-23T10:41:53Z · message_delivered: 1 message(s)
-- 2026-11-23T10:43:39Z · message_queued at 2026-11-23T10:43:39.042Z
-- 2026-11-23T10:43:39Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-23T10:45:20Z · watchdog: check wait escalated · waiting: waiting for serialized local fallback (1 ahead, position 2); slot holder 5315 is dead for 11s · next step: investigate the abnormal wait; the flag clears when the check starts
-- 2026-11-23T10:48:39Z · CTO nudge: held — an undelivered message is already queued
-- 2026-11-23T10:53:20Z · watchdog: check wait ended or recovered — cleared needs_input
-- 2026-11-23T10:53:35Z · watchdog: check wait escalated · waiting: waiting for serialized local fallback (1 ahead, position 2); slot holder 47821 is dead for 8m · next step: investigate the abnormal wait; the flag clears when the check starts
-- 2026-11-23T11:19:25Z · watchdog: check wait ended or recovered — cleared needs_input
-- 2026-11-23T11:33:21Z · status active→review
-- 2026-11-23T11:33:27Z · note: shots: skipped — the diff (8 changed paths) touches no capture target's globs — no UI change to capture
-- 2026-11-23T11:34:17Z · message_queued at 2026-11-23T11:34:17.714Z
-- 2026-11-23T11:34:18Z · note: review pass 3: needs some work
-- 2026-11-23T11:34:18Z · needs_input
-- 2026-11-23T11:34:20Z · message_delivered: 1 message(s)
-- 2026-11-23T11:43:35Z · body
-- 2026-11-23T11:44:33Z · message_queued at 2026-11-23T11:44:33.624Z
-- 2026-11-23T12:26:56Z · status review→active
-- 2026-11-23T12:26:58Z · CTO nudge: held — an undelivered message is already queued
-- 2026-11-23T12:26:59Z · cli_override, model_override
-- 2026-11-23T12:27:05Z · message_delivered: 1 message(s)
-- 2026-11-23T12:47:47Z · body
-- 2026-11-23T12:49:09Z · status active→review
-- 2026-11-23T12:49:10Z · note: shots: skipped — the diff (9 changed paths) touches no capture target's globs — no UI change to capture
-- 2026-11-23T12:49:55Z · message_queued at 2026-11-23T12:49:55.020Z
-- 2026-11-23T12:50:01Z · note: review pass 4: good to go
-- 2026-11-23T12:50:01Z · needs_input
-
