@@ -205,7 +205,22 @@ describe("isPrereleaseVersion", () => {
 describe("renderReleaseEmail", () => {
   it("uses the project and version in the subject", () => {
     const out = renderReleaseEmail(makeConfig(), entry());
-    expect(out.subject).toBe("RepoOS v0.6.0 is out");
+    expect(out.subject).toBe("RepoOS v0.6.0 released — Faster boot");
+    expect(out.html).toContain("RepoOS v0.6.0 is here");
+    expect(out.html.indexOf("TL;DR")).toBeLessThan(out.html.indexOf("Highlights"));
+    expect(out.text).toContain("FULL RELEASE NOTES");
+  });
+
+  it("uses headings and actual notes to make a short release summary", () => {
+    const out = renderReleaseEmail(makeConfig(), entry({ notes: "### Task drawer: compact metadata\n\nThe drawer starts with a compact summary. Click to open full controls.\n\n### Other\n\nUpdated small labels." }));
+    expect(out.subject).toBe("RepoOS v0.6.0 released — Task drawer: compact metadata");
+    expect(out.html).toContain("The drawer starts with a compact summary.");
+    expect(out.html).not.toContain("<h3 style=\"margin:20px 0 8px;font-size:16px\">Other</h3>");
+  });
+
+  it("omits the headline when notes cannot produce one", () => {
+    const out = renderReleaseEmail(makeConfig(), entry({ notes: "" }));
+    expect(out.subject).toBe("RepoOS v0.6.0 released");
   });
 
   it("escapes release notes and known issues so they cannot inject markup", () => {
