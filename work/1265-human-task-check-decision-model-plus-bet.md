@@ -11,7 +11,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/human-task-check-decision-model-plus-bet
 created_at: "2026-11-20T02:34:13Z"
-updated_at: "2026-11-23T08:49:28Z"
+updated_at: "2026-11-23T08:52:28Z"
 ---
 ## Problem
 When a task starts, RepoOS scans the acceptance criteria for keywords such as "device", "physical", "credentials", "accounts" and "third-party registration". On a match it refuses the start with `needs_input_reason: needs-human-step` and asks for a split. The match is purely lexical, so it gives false positives and agents end up rewording criteria to dodge it, which defeats its purpose.
@@ -92,3 +92,4 @@ Sample phrases that must still be caught: "verify on a real handset", "needs a s
 - 2026-11-23T08:49:13Z · queued message undelivered for 4m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-23T08:49:28Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code unknown) · last assistant: Two remote runners were skipped because their network probes fell below RepoOS’s throughput floor. The check is moving through its retry path; I’m continuing to wait for a pass or a definitive failure. · stderr: 2026-11-23T08:41:12.742568Z ERROR codex_core::util: Custom tool call output is missing for call id: call_82dc13779db54460804dacf158925dc5 2026-11-23T08:41:20.006203Z ERROR codex_core::util: Custom tool call output is missing for call id: call_82dc13779db54460804dacf158925dc5
 - 2026-11-23T08:49:28Z · message_delivered: 1 message(s)
+- 2026-11-23T08:52:28Z · message_queued at 2026-11-23T08:52:28.385Z
