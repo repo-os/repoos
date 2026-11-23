@@ -39,6 +39,11 @@ function printReport(report: GcReport, title: string): void {
     );
     const detail = formatGcEntryDetails(k);
     if (detail) console.log(c.dim(`            ${detail}`));
+    console.log(
+      c.dim(
+        `            class: ${k.protectedClass} · age: ${k.ageDays === undefined ? "unknown" : `${k.ageDays}d`} · last commit: ${k.lastCommitDate ?? "unknown"} · merged: ${k.branchMerged ? "yes" : "no"} · action: ${k.recommendedAction}`,
+      ),
+    );
   }
   for (const e of report.external) {
     console.log(`    ${c.dim("external")} ${e.branch || c.dim("(detached)")} ${c.dim(e.path)}`);
@@ -51,14 +56,19 @@ function printReport(report: GcReport, title: string): void {
 
 export function cmdGc(argv: string[]): void {
   const dryRun = argv.includes("--dry-run") || argv.includes("-n");
+  const json = argv.includes("--json");
   // `--yes` is accepted as a no-op compatibility alias: the default sweep is
   // already the same safe policy, with the same fail-closed guards.
   const { root } = boardRoot();
   const { config } = createRepoOS(root);
 
   if (dryRun) {
-    printReport(sweepStaleWorktrees(config, { mode: "full", dryRun: true }), "gc — dry run");
+    const report = sweepStaleWorktrees(config, { mode: "full", dryRun: true });
+    if (json) console.log(JSON.stringify(report, null, 2));
+    else printReport(report, "gc — dry run");
     return;
   }
-  printReport(sweepStaleWorktrees(config, { mode: "full" }), "gc");
+  const report = sweepStaleWorktrees(config, { mode: "full" });
+  if (json) console.log(JSON.stringify(report, null, 2));
+  else printReport(report, "gc");
 }

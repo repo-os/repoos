@@ -1,7 +1,9 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { flushPromises, mount } from "@vue/test-utils";
 import { createPinia, setActivePinia } from "pinia";
+import { createMemoryHistory, createRouter } from "vue-router";
 import SystemResourcePanel from "../src/components/SystemResourcePanel.vue";
+import DecisionDigestPanel from "../src/components/DecisionDigestPanel.vue";
 import {
   applyShotPreviewFixture,
   shotFixturePinnedSystemStats,
@@ -42,6 +44,16 @@ describe("worktree GC Control dashboard shot fixture (#0923)", () => {
     await flushPromises();
     expect(wrapper.get(".gc-preview").text()).toContain("repoos/integrate/0042");
     expect(wrapper.get(".gc-preview").text()).toContain("close-out job still active");
+  });
+
+  it("settles the unrelated decision digest for the dashboard shot", async () => {
+    window.history.replaceState({}, "", "/control?shotState=system%3AworktreeGc");
+    const router = createRouter({ history: createMemoryHistory(), routes: [] });
+    wrapper = mount(DecisionDigestPanel, { global: { plugins: [router] } });
+    await flushPromises();
+
+    expect(wrapper.text()).not.toContain("Loading…");
+    expect(wrapper.text()).toContain("Nothing needs your decision");
   });
 });
 
