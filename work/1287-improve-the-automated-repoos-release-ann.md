@@ -3,9 +3,6 @@ id: "1287"
 title: Polish automated release announcement emails
 type: feature
 status: review
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: "`needs some work` — Bullet highlights still use the second sentence as `detail`, so multi-sentence list items break the one-sentence bar (p…"
 priority: p2
 area: [server, web]
 assigned_to: ai
@@ -212,3 +209,4 @@ One additional suggestion: since RepoOS releases appear to be frequent, I'd keep
 - 2026-11-23T12:49:10Z · note: shots: skipped — the diff (9 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-23T12:49:55Z · message_queued at 2026-11-23T12:49:55.020Z
 - 2026-11-23T12:50:01Z · note: review pass 4: good to go
+- 2026-11-23T12:50:01Z · needs_input
