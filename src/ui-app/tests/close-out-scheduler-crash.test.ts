@@ -6,10 +6,43 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CloseOutScheduler, MAX_RUN_CRASHES } from "../../server/close-out-scheduler.js";
 import { shiftBudgetAnchorPastWait } from "../../server/integration-orchestrator.js";
-import { isParkedPublisher, type IntegrationJob } from "../../server/integration-job.js";
+import {
+  isParkedPublisher,
+  selectCloseOutStarts,
+  type IntegrationJob,
+} from "../../server/integration-job.js";
 
 const job = (taskId: string, phase: IntegrationJob["phase"] = "queued"): IntegrationJob =>
-  ({ taskId, phase, attempt: 1 }) as IntegrationJob;
+  ({
+    taskId,
+    phase,
+    attempt: 1,
+    startedAt: phase === "queued" ? null : "2026-01-01",
+  }) as IntegrationJob;
+
+describe("parallel close-out scheduler capacity (#1275)", () => {
+  it("does not count the serialized publisher against validation capacity", () => {
+    const jobs = [job("0001", "publishing"), job("0002"), job("0003")];
+    expect(selectCloseOutStarts({ jobs, running: new Set(), limit: 2, holdExtra: false })).toEqual([
+      "0001",
+      "0002",
+      "0003",
+    ]);
+  });
+
+  it("scans past a cooling head but still selects cancelled teardown", () => {
+    const jobs = [job("0001"), job("0002"), { ...job("0003"), cancelled: true }];
+    expect(
+      selectCloseOutStarts({
+        jobs,
+        running: new Set(),
+        limit: 2,
+        holdExtra: false,
+        unavailable: new Set(["0001"]),
+      }),
+    ).toEqual(["0002", "0003"]);
+  });
+});
 
 describe("CloseOutScheduler crash handling (#1275 review)", () => {
   beforeEach(() => vi.useFakeTimers());

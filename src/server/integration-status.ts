@@ -277,7 +277,14 @@ export function buildIntegrationSnapshot(
   };
 
   if (!inFlight) {
-    return { empty: queue.length === 0, active: null, ...queueFields, checkPlan, at };
+    return {
+      empty: queue.length === 0 && parallel.length === 0,
+      active: null,
+      parallel: parallel.length ? parallel : undefined,
+      ...queueFields,
+      checkPlan,
+      at,
+    };
   }
 
   const failed = inFlight.phase === "failed";
