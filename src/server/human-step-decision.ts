@@ -68,7 +68,7 @@ function recordDecisionUsage(
       config.root,
       decisionAccountingAgent(config.modelRouting?.provider ?? null, model),
       result,
-      { sessionType: "routing", taskId },
+      { sessionType: "human-check", taskId },
     );
   } catch {
     // Accounting must never break a start.

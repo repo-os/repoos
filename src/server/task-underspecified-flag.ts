@@ -83,7 +83,10 @@ async function resolveKeywordTripwire(
     matchedSentence: assessment.sentence,
   });
   if (check.outcome === "unavailable" || check.outcome === "failed") {
-    return { action: "keyword-fallback", detail: assessment.detail };
+    const fallback = check.outcome === "failed"
+      ? `Decision model unavailable (${check.error ?? "request failed"}); keyword result used. `
+      : "Decision model unavailable; keyword result used. ";
+    return { action: "keyword-fallback", detail: `${fallback}${assessment.detail}` };
   }
   if (check.outcome === "shadow") {
     return {

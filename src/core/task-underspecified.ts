@@ -128,6 +128,8 @@ export interface TaskSpecCheckOptions {
    * Callers pass `task.assignee`.
    */
   assignee?: string | null;
+  /** Optional configured phrase list; defaults to the built-in human-step phrases. */
+  humanStepKeywords?: string[];
 }
 
 /** True when the resolved assignee is the literal `human` assignee. */
@@ -257,26 +259,34 @@ export interface NeedsHumanStepAssessment {
   taggedHuman?: boolean;
 }
 
+export const DEFAULT_HUMAN_STEP_KEYWORDS: { phrase: string; label: string }[] = [
+  { phrase: "real device", label: "real device" },
+  { phrase: "physical device", label: "physical hardware" },
+  { phrase: "physical hardware", label: "physical hardware" },
+  { phrase: "real handset", label: "named mobile hardware" },
+  { phrase: "iphone", label: "named mobile hardware" },
+  { phrase: "android device", label: "named mobile hardware" },
+  { phrase: "google pixel", label: "named mobile hardware" },
+  { phrase: "production credentials", label: "environment credentials" },
+  { phrase: "staging credentials", label: "environment credentials" },
+  { phrase: "sign up at a third party", label: "third-party registration" },
+  { phrase: "third-party registration", label: "third-party registration" },
+  { phrase: "firebase project", label: "Firebase project" },
+  { phrase: "app store", label: "store or portal setup" },
+  { phrase: "play console", label: "store or portal setup" },
+  { phrase: "developer portal", label: "store or portal setup" },
+];
+
 const HUMAN_STEP_ACCEPTANCE_PATTERNS: { re: RegExp; label: string }[] = [
-  { re: /\breal\s+device/i, label: "real device" },
+  { re: /\bverify\s+on\s+a\s+real\s+(device|handset)\b/i, label: "real device verification" },
+  { re: /\breal\s+device\b/i, label: "real device" },
   { re: /\bphysical\s+(device|hardware)\b/i, label: "physical hardware" },
   { re: /\bon\s+(a|the)\s+(real\s+)?device\b/i, label: "on-device verification" },
-  {
-    re: /\b(iphone|android\s+device|google\s+pixel|handset|tablet|wearable)\b/i,
-    label: "named mobile hardware",
-  },
-  {
-    re: /\b(test|verify|confirm|prove).{0,80}\b(device|hardware)\b/i,
-    label: "device verification",
-  },
+  { re: /\b(iphone|android\s+device|google\s+pixel|handset|tablet|wearable)\b/i, label: "named mobile hardware" },
   { re: /\b(production|staging)\s+(account|credentials?)\b/i, label: "environment credentials" },
-  { re: /\b(credentials?|api\s+keys?|service\s+account)\b/i, label: "credentials or keys" },
-  {
-    re: /\b(register|sign[- ]?up|enroll|create).{0,50}\b(apple|google|firebase|third[- ]?party|external)\b/i,
-    label: "third-party registration",
-  },
-  { re: /\bfirebase\s+project\b/i, label: "Firebase project" },
-  { re: /\b(app\s+store|play\s+console|developer\s+portal)\b/i, label: "store or portal setup" },
+  { re: /\b(user|human|customer)\s+(pastes?|provides?|enters?)\s+(their\s+)?(secret|api\s+key|credential)/i, label: "human-provided secret" },
+  { re: /\b(register|sign[- ]?up|enroll|create).{0,50}\b(apple|google|firebase|third[- ]?party|external)\b/i, label: "third-party registration" },
+  { re: /\b(firebase\s+project|app\s+store|play\s+console|developer\s+portal)\b/i, label: "external service setup" },
 ];
 
 /**
@@ -343,14 +353,20 @@ export function assessTaskNeedsHumanStep(
         .map((c) => criterionText(c.raw))
     : stripTemplatePlaceholderLines(bodyForLengthCheck(trimmed)).split("\n");
   const scanText = scanLines.join("\n");
+  const cleanForHumanStepMatch = (line: string) =>
+    line
+      .replace(/`[^`]*`|\b[A-Za-z]+Prompt\b|\b\w*(?:Id|ID)\b/g, " ")
+      .replace(/\b(?:no|not|without|never)\b[^.;\n]{0,100}/gi, " ");
   const signals: string[] = [];
   let sentence: string | undefined;
   for (const { re, label } of HUMAN_STEP_ACCEPTANCE_PATTERNS) {
-    if (!re.test(scanText)) continue;
+    if (!re.test(scanLines.map(cleanForHumanStepMatch).join("\n"))) continue;
     signals.push(label);
     if (!sentence) {
       for (const line of scanLines) {
-        const hit = sentenceAroundMatch(line, re);
+        // Mask code spans/API identifiers and clear negations before matching.
+        const safeLine = cleanForHumanStepMatch(line);
+        const hit = sentenceAroundMatch(safeLine, re);
         if (hit) {
           sentence = hit;
           break;

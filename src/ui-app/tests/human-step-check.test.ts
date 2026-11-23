@@ -209,11 +209,11 @@ ${body}`,
     };
   }
 
-  it("flags the keyword match when there is no model verdict", () => {
+  it("does not flag agent-doable key handling when there is no model verdict", () => {
     const fx = fixture("", KEYS_BODY);
     try {
       const flagged = flagNeedsHumanStepIfNeeded(fx.config, fx.task);
-      expect(flagged?.needsInputReason).toBe("needs-human-step");
+      expect(flagged).toBeNull();
     } finally {
       fx.clean();
     }
