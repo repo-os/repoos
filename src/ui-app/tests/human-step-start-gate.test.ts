@@ -167,17 +167,23 @@ function makeRes(): { res: any; fake: { status: number; payload: any } } {
 describe("decision-model start gate (#0804)", () => {
   it.each([
     { outcome: "failed" as const, error: "timeout", expected: "Decision model failed (timeout)" },
-    { outcome: "unavailable" as const, expected: "Decision model unavailable; keyword result used." },
-  ])("uses accurate fallback wording for $outcome model results", async ({ outcome, error, expected }) => {
-    vi.mocked(runHumanStepDecisionCheck).mockResolvedValue({ outcome, error } as any);
-    const fx = makeFixture();
-    try {
-      const updated = await flagNeedsHumanStepIfNeededAsync(fx.ctx.config, fx.read());
-      expect(updated?.needsInputDetail).toContain(expected);
-    } finally {
-      fx.clean();
-    }
-  });
+    {
+      outcome: "unavailable" as const,
+      expected: "Decision model unavailable; keyword result used.",
+    },
+  ])(
+    "uses accurate fallback wording for $outcome model results",
+    async ({ outcome, error, expected }) => {
+      vi.mocked(runHumanStepDecisionCheck).mockResolvedValue({ outcome, error } as any);
+      const fx = makeFixture();
+      try {
+        const updated = await flagNeedsHumanStepIfNeededAsync(fx.ctx.config, fx.read());
+        expect(updated?.needsInputDetail).toContain(expected);
+      } finally {
+        fx.clean();
+      }
+    },
+  );
 
   it("refuses the start and flags the task with the explanation when the model says human", async () => {
     vi.mocked(runHumanStepDecisionCheck).mockResolvedValue({
