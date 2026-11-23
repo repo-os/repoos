@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: t@t
 branch: ""
 created_at: "2026-11-23T07:50:31Z"
-updated_at: "2026-11-23T07:50:41Z"
+updated_at: "2026-11-23T07:50:42Z"
 ---
 ## Goal
 On the mobile Hub app's server list (mobile/src/components/ServerListView.vue), support pull-down-to-refresh so the user can re-check every server's reachability without killing and reopening the app.
@@ -36,6 +36,9 @@ Pull down at the top of the list in mobile/src/components/ServerListView.vue to 
 - Works on Android and iOS, no conflict with scrolling or row menus
 - Test added; user-docs/android-hub.md updated if it covers refresh
 
+## Notes for AI
+Prefer a small touch handler over a new dependency (zero-runtime-dependency rule). Hub is under mobile/.
+
 ## Screenshots
 See attached: all servers show Unreachable with no way to refresh.
 ![Hub server list; no way to refresh without killing the app](/api/tasks/1286/attachments/att_9f072a6c-b94d-4e4b-a821-aaa4a39b5c35.png)
@@ -48,3 +51,4 @@ See attached: all servers show Unreachable with no way to refresh.
 - 2026-11-23T07:50:38Z · body: Problem (added)
 - 2026-11-23T07:50:39Z · body: Desired UX (added)
 - 2026-11-23T07:50:41Z · body: Acceptance criteria (added)
+- 2026-11-23T07:50:42Z · body: Notes for AI (added)
