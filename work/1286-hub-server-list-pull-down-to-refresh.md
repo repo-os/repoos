@@ -8,8 +8,10 @@ area: web
 assigned_to: ai
 created_by: t@t
 branch: ""
+cli_override: codex
+model_override: gpt-6-luna
 created_at: "2026-11-23T07:50:31Z"
-updated_at: "2026-11-23T07:50:42Z"
+updated_at: "2026-11-23T07:59:22Z"
 ---
 ## Goal
 On the mobile Hub app's server list (mobile/src/components/ServerListView.vue), support pull-down-to-refresh so the user can re-check every server's reachability without killing and reopening the app.
@@ -50,3 +52,4 @@ See attached: all servers show Unreachable with no way to refresh.
 - 2026-11-23T07:50:41Z · body: Acceptance criteria (added)
 - 2026-11-23T07:50:42Z · body: Notes for AI (added)
 - 2026-11-23T07:50:42Z · needs_input
+- 2026-11-23T07:59:22Z · cli_override, model_override
