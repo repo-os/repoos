@@ -236,7 +236,6 @@ describe("assessTaskUnderspecified", () => {
     // The same stub still flags for an AI task.
     expect(assessTaskUnderspecified(stub, { assignee: "ai" }).underspecified).toBe(true);
   });
-
 });
 
 describe("assessTaskNeedsHumanStep (#0698)", () => {
@@ -292,7 +291,11 @@ describe("assessTaskNeedsHumanStep (#0698)", () => {
   ])("uses context around human-step terms: %s", (criterion) => {
     const body = wellFormed.replace("- [ ] Unit tests pass", `- [ ] ${criterion}`);
     const result = assessTaskNeedsHumanStep(body);
-    if (criterion.startsWith("Verify on") || criterion.startsWith("Needs") || criterion.startsWith("The user")) {
+    if (
+      criterion.startsWith("Verify on") ||
+      criterion.startsWith("Needs") ||
+      criterion.startsWith("The user")
+    ) {
       expect(result.needsHumanStep).toBe(true);
       expect(result.sentence).toContain(criterion);
     } else {
@@ -302,9 +305,16 @@ describe("assessTaskNeedsHumanStep (#0698)", () => {
 
   it("matches configured phrases and honors negation", () => {
     const body = wellFormed.replace("- [ ] Unit tests pass", "- [ ] Verify with a lab handset");
-    expect(assessTaskNeedsHumanStep(body, { humanStepKeywords: ["lab handset"] }).needsHumanStep).toBe(true);
-    const negated = wellFormed.replace("- [ ] Unit tests pass", "- [ ] No lab handset verification is required");
-    expect(assessTaskNeedsHumanStep(negated, { humanStepKeywords: ["lab handset"] }).needsHumanStep).toBe(false);
+    expect(
+      assessTaskNeedsHumanStep(body, { humanStepKeywords: ["lab handset"] }).needsHumanStep,
+    ).toBe(true);
+    const negated = wellFormed.replace(
+      "- [ ] Unit tests pass",
+      "- [ ] No lab handset verification is required",
+    );
+    expect(
+      assessTaskNeedsHumanStep(negated, { humanStepKeywords: ["lab handset"] }).needsHumanStep,
+    ).toBe(false);
   });
 });
 

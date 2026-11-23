@@ -2589,8 +2589,13 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
     const humanTaskKeywords = parsed["humanTaskCheck.keywords"];
     if (humanTaskMode !== undefined || humanTaskKeywords !== undefined) {
       cfg.humanTaskCheck = {
-        mode: humanTaskMode === "keywords" || humanTaskMode === "model" || humanTaskMode === "both" ? humanTaskMode : "both",
-        ...(Array.isArray(humanTaskKeywords) ? { keywords: humanTaskKeywords.filter((v): v is string => typeof v === "string") } : {}),
+        mode:
+          humanTaskMode === "keywords" || humanTaskMode === "model" || humanTaskMode === "both"
+            ? humanTaskMode
+            : "both",
+        ...(Array.isArray(humanTaskKeywords)
+          ? { keywords: humanTaskKeywords.filter((v): v is string => typeof v === "string") }
+          : {}),
       };
     }
     const closeOutInstallCommand = parsed["closeOut.installCommand"];
@@ -4733,7 +4738,8 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         { value: "model", label: "Decision model" },
         { value: "both", label: "Keywords, then model" },
       ],
-      description: "Use phrase rules, the configured decision model, or consult the model only after a phrase match. Model errors fall back to phrase rules.",
+      description:
+        "Use phrase rules, the configured decision model, or consult the model only after a phrase match. Model errors fall back to phrase rules.",
     },
     {
       key: "humanTaskCheck.keywords",
@@ -4742,7 +4748,8 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       tier: "live",
       restartRequired: false,
       default: [],
-      description: "Additional phrases that signal a real human-only step. Negated mentions and code identifiers are ignored.",
+      description:
+        "Additional phrases that signal a real human-only step. Negated mentions and code identifiers are ignored.",
     },
     {
       key: "model_routing.humanStepCheck",

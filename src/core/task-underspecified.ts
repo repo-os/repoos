@@ -283,11 +283,23 @@ const HUMAN_STEP_ACCEPTANCE_PATTERNS: { re: RegExp; label: string }[] = [
   { re: /\bphysical\s+(device|hardware)\b/i, label: "physical hardware" },
   { re: /\bphysical[- ]device\b/i, label: "physical hardware" },
   { re: /\bon\s+(a|the)\s+(real\s+)?device\b/i, label: "on-device verification" },
-  { re: /\b(iphone|android\s+device|google\s+pixel|handset|tablet|wearable)\b/i, label: "named mobile hardware" },
+  {
+    re: /\b(iphone|android\s+device|google\s+pixel|handset|tablet|wearable)\b/i,
+    label: "named mobile hardware",
+  },
   { re: /\b(production|staging)\s+(account|credentials?)\b/i, label: "environment credentials" },
-  { re: /\b(user|human|customer)\s+(pastes?|provides?|enters?)\s+(their\s+)?(secret|api\s+key|credential)/i, label: "human-provided secret" },
-  { re: /\b(register|sign[- ]?up|enroll|create).{0,50}\b(apple|google|firebase|third[- ]?party|external)\b/i, label: "third-party registration" },
-  { re: /\b(firebase\s+project|app\s+store|play\s+console|developer\s+portal)\b/i, label: "external service setup" },
+  {
+    re: /\b(user|human|customer)\s+(pastes?|provides?|enters?)\s+(their\s+)?(secret|api\s+key|credential)/i,
+    label: "human-provided secret",
+  },
+  {
+    re: /\b(register|sign[- ]?up|enroll|create).{0,50}\b(apple|google|firebase|third[- ]?party|external)\b/i,
+    label: "third-party registration",
+  },
+  {
+    re: /\b(firebase\s+project|app\s+store|play\s+console|developer\s+portal)\b/i,
+    label: "external service setup",
+  },
 ];
 
 /**
