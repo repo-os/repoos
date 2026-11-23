@@ -559,3 +559,4 @@ Read docs/close-out-pipeline.md and docs/remote-validation.md first. Never touch
 - 2026-11-23T08:18:54Z · CTO nudge: held — handoff gate is running
 - 2026-11-23T08:19:59Z · note: ui verification passed: 2 of 2 shots captured with clean console (1 shot warning)
 - 2026-11-23T08:20:00Z · status active→review
+- 2026-11-23T08:20:00Z · message_queued at 2026-11-23T08:20:00.418Z
