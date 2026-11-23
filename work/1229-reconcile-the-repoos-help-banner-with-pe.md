@@ -35,3 +35,4 @@ Sweep the whole `src/commands/` directory, not just the two known instances. Doc
 - 2026-11-23T16:35:44Z · body
 - 2026-11-23T16:41:44Z · body
 - 2026-11-23T16:43:52Z · status active→review
+- 2026-11-23T16:43:52Z · message_queued at 2026-11-23T16:43:52.463Z
