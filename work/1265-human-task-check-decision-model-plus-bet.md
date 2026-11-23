@@ -11,7 +11,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/human-task-check-decision-model-plus-bet
 created_at: "2026-11-20T02:34:13Z"
-updated_at: "2026-11-23T11:31:44Z"
+updated_at: "2026-11-23T11:31:45Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -130,3 +130,4 @@ Sample phrases that must still be caught: "verify on a real handset", "needs a s
 - 2026-11-23T11:28:38Z · message_queued at 2026-11-23T11:28:38.851Z
 - 2026-11-23T11:28:39Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-23T11:31:44Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-23T11:31:45Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code unknown) · last assistant: The retry acquired a runner slot and the formatted tree has built successfully. The changed-path tests are running again now; they passed on the previous run before the local formatter failure, and this second run is validating the formatt… · stderr: Reading additional input from stdin...
