@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/easter-eggs-bundle-just-release-writes-t
 created_at: "2026-11-19T13:45:13Z"
-updated_at: "2026-11-23T11:53:18Z"
+updated_at: "2026-11-23T12:03:39Z"
 ---
 ## Items
 
@@ -41,3 +41,4 @@ Start from the `release` recipe in justfile, shared/release.ts (CURRENT_RELEASE,
 - 2026-11-23T10:18:49Z · status ready→inbox
 - 2026-11-23T10:18:56Z · status inbox→ready
 - 2026-11-23T11:53:18Z · status ready→active, branch
+- 2026-11-23T12:03:39Z · message_queued at 2026-11-23T12:03:39.045Z
