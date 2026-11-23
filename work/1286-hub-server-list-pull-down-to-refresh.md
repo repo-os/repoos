@@ -58,3 +58,4 @@ See attached: all servers show Unreachable with no way to refresh.
 - 2026-11-23T08:10:09Z · watchdog: check wait escalated · waiting: waiting for serialized local fallback (1 ahead, position 2); slot holder 68774 is dead for 1s · next step: investigate the abnormal wait; the flag clears when the check starts
 - 2026-11-23T08:16:39Z · watchdog: check wait ended or recovered — cleared needs_input
 - 2026-11-23T08:18:52Z · status active→review
+- 2026-11-23T08:18:52Z · message_queued at 2026-11-23T08:18:52.171Z
