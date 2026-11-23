@@ -2,14 +2,14 @@
 id: "1124"
 title: "Worktree cleanup: decide and build the safe handling for 'unsafe' (protected) task worktrees"
 type: feature
-status: active
+status: review
 priority: p3
 area: [core, server]
 assigned_to: ai
 created_by: t@t
 branch: feat/worktree-cleanup-decide-and-build-the-sa
 created_at: "2026-11-15T00:41:58Z"
-updated_at: "2026-11-23T07:34:51Z"
+updated_at: "2026-11-23T09:19:11Z"
 ---
 ## Problem
 
@@ -34,3 +34,4 @@ Read #1055 and src for `repoos gc` first. Do not widen what gc auto-removes. Des
 - 2026-11-15T00:41:58Z · created · t@t
 - 2026-11-23T07:34:49Z · status inbox→ready
 - 2026-11-23T07:34:51Z · status ready→active, branch
+- 2026-11-23T09:19:11Z · status active→review
