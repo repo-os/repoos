@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
+last_handoff_failure_sha: b4cbc7510a79b9dd9a713d0e31f0145408df89b3
 id: "1275"
 title: "Close-outs: validate several tasks at once on different runner machines"
 type: feature
@@ -578,3 +580,4 @@ Read docs/close-out-pipeline.md and docs/remote-validation.md first. Never touch
 - 2026-11-23T10:18:38Z · CTO nudge: held — handoff gate is running
 - 2026-11-23T10:41:31Z · message_queued at 2026-11-23T10:41:31.219Z
 - 2026-11-23T10:41:32Z · handoff failed · task-file handoff failed at check · repoos check failed: ◆ Check plan
+
