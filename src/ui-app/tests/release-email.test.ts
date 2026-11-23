@@ -230,9 +230,19 @@ describe("renderReleaseEmail", () => {
     expect(
       summarizeReleaseNotes("### Task drawer\n\nFirst sentence. Second sentence."),
     ).toMatchObject({ highlights: [{ name: "Task drawer", detail: "First sentence." }] });
-    expect(
-      summarizeReleaseNotes("## Fixes\n- Fix boot. Also improves recovery. Keeps logs readable."),
-    ).toMatchObject({ highlights: [{ name: "Fix boot", detail: "Also improves recovery." }] });
+    for (const [notes, name, detail] of [
+      ["## Fixes\n- Fix boot. Also improves recovery.", "Fix boot", "Fix boot."],
+      [
+        "## Improvements\n- Improve telemetry. Adds traces. Keeps metrics.",
+        "Improve telemetry",
+        "Improve telemetry.",
+      ],
+      ["## Features\n- New release page", "New release page", "New release page."],
+    ]) {
+      expect(summarizeReleaseNotes(notes!)).toMatchObject({
+        highlights: [{ name, detail }],
+      });
+    }
     expect(out.html).toContain('<h3 style="margin:20px 0 8px;font-size:16px">Other</h3>');
     const loneOther = renderReleaseEmail(
       makeConfig(),
