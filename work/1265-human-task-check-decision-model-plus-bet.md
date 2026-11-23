@@ -141,3 +141,4 @@ Sample phrases that must still be caught: "verify on a real handset", "needs a s
 - 2026-11-23T11:31:56Z · status active→review
 - 2026-11-23T11:55:30Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
 - 2026-11-23T11:55:31Z · message_queued at 2026-11-23T11:55:31.173Z
+- 2026-11-23T11:55:31Z · handoff failed · task-file handoff failed at review · Engineering report draft is missing: .repoos/engineering-report-drafts/1265.md
