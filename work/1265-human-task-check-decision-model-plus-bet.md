@@ -11,7 +11,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/human-task-check-decision-model-plus-bet
 created_at: "2026-11-20T02:34:13Z"
-updated_at: "2026-11-23T08:41:11Z"
+updated_at: "2026-11-23T08:44:48Z"
 ---
 ## Problem
 When a task starts, RepoOS scans the acceptance criteria for keywords such as "device", "physical", "credentials", "accounts" and "third-party registration". On a match it refuses the start with `needs_input_reason: needs-human-step` and asks for a split. The match is purely lexical, so it gives false positives and agents end up rewording criteria to dodge it, which defeats its purpose.
@@ -84,3 +84,4 @@ Sample phrases that must still be caught: "verify on a real handset", "needs a s
 - 2026-11-23T08:41:10Z · queued message undelivered for 11m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-23T08:41:11Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code unknown) · last assistant: The scoped check committed a WIP checkpoint and is now in remote validation again. The first host failed its throughput probe, so RepoOS is retrying another host. The format, UI build, and focused tests have already passed locally. · stderr: 2026-11-23T08:32:06.160129Z ERROR codex_core::tools::router: error=write_stdin failed: Unknown process id 35154 2026-11-23T08:34:09.939879Z ERROR codex_core::tools::router: error=apply_patch verification failed: Failed to find expected lines in /Users/nick/code/nick/repoos-worktrees/feat/human-task-check-decision-mode…
 - 2026-11-23T08:41:11Z · message_delivered: 1 message(s)
+- 2026-11-23T08:44:48Z · message_queued at 2026-11-23T08:44:48.509Z
