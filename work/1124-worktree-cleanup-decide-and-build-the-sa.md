@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 2
 id: "1124"
 title: "Worktree cleanup: decide and build the safe handling for 'unsafe' (protected) task worktrees"
 type: feature
@@ -10,7 +11,6 @@ created_by: t@t
 branch: feat/worktree-cleanup-decide-and-build-the-sa
 created_at: "2026-11-15T00:41:58Z"
 updated_at: "2026-11-23T08:15:12Z"
-handoff_signal_retry_count: 1
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-23T08:04:26.772Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Protected worktree triage preview (target \"default\"): loading state detected: loading text \"Loading…\" on /control?shotState=system:worktreeGc (http://127.0.0.1:55926/control?shotState=system:worktreeGc)"
 ---
@@ -64,3 +64,4 @@ Read #1055 and src for `repoos gc` first. Do not widen what gc auto-removes. Des
 - 2026-11-23T08:04:48Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-23T08:09:57Z · message_queued at 2026-11-23T08:09:57.307Z
 - 2026-11-23T08:15:12Z · message_queued at 2026-11-23T08:15:12.809Z
+
