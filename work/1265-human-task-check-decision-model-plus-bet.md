@@ -2,7 +2,10 @@
 id: "1265"
 title: "Human-task check: decision model plus better keyword rules"
 type: feature
-status: active
+status: review
+needs_input: true
+needs_input_reason: provider-failure
+needs_input_detail: "The selected model is not available for this account. Choose another model on the Agents page. (CLI: ? `Decision model unavailable (${check.error ?? \"request failed\"}); keyword result used. `)"
 human_step_override: Cleared needs-human-step flag (sticky until acceptance criteria change)
 human_step_override_key: 5384b92b
 priority: p2
@@ -11,11 +14,11 @@ assigned_to: ai
 created_by: t@t
 branch: feat/human-task-check-decision-model-plus-bet
 created_at: "2026-11-20T02:34:13Z"
-updated_at: "2026-11-23T11:31:47Z"
+updated_at: "2026-11-23T11:31:56Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
-dev_error_count: 1
+dev_error_count: 2
 engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-23T11:02:37.668Z\",\"kind\":\"provider-failure\"}]"
 ---
 ## Problem
@@ -134,3 +137,5 @@ Sample phrases that must still be caught: "verify on a real handset", "needs a s
 - 2026-11-23T11:31:45Z · status active→review
 - 2026-11-23T11:31:45Z · message_delivered: 1 message(s)
 - 2026-11-23T11:31:47Z · note: handoff requested (cli)
+- 2026-11-23T11:31:56Z · agent exited with an error (codex) · The selected model is not available for this account. Choose another model on the Agents page. (CLI: ? `Decision model unavailable (${check.error ?? "request failed"}); keyword result used. `)
+- 2026-11-23T11:31:56Z · status active→review
