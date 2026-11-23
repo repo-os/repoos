@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/polish-automated-release-announcement-em
 created_at: "2026-11-23T07:50:59Z"
-updated_at: "2026-11-23T09:37:48Z"
+updated_at: "2026-11-23T09:38:40Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -160,3 +160,4 @@ One additional suggestion: since RepoOS releases appear to be frequent, I'd keep
 - 2026-11-23T09:37:30Z · note: review pass 1: needs some work
 - 2026-11-23T09:37:30Z · message_delivered: 1 message(s)
 - 2026-11-23T09:37:30Z · status review→active
+- 2026-11-23T09:38:40Z · note: adopted orphaned engineer pid 29050
