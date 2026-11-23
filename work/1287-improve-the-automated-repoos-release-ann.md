@@ -2,17 +2,18 @@
 id: "1287"
 title: Polish automated release announcement emails
 type: feature
-status: review
+status: active
 priority: p2
 area: [server, web]
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/polish-automated-release-announcement-em
 created_at: "2026-11-23T07:50:59Z"
-updated_at: "2026-11-23T10:06:48Z"
-review_passes: 2
-review_rounds: 1
+updated_at: "2026-11-23T10:06:49Z"
+review_rounds: 2
 routing_switches: 1
+routing_escalations: 1
+review_passes: 2
 ---
 ## Problem
 
@@ -167,3 +168,4 @@ One additional suggestion: since RepoOS releases appear to be frequent, I'd keep
 - 2026-11-23T10:06:46Z · message_queued at 2026-11-23T10:06:46.726Z
 - 2026-11-23T10:06:47Z · note: review pass 2: needs some work
 - 2026-11-23T10:06:48Z · message_delivered: 1 message(s)
+- 2026-11-23T10:06:49Z · status review→active
