@@ -2770,6 +2770,7 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
       const tripwire = assessTaskNeedsHumanStep(existing.body, {
         area: existing.area,
         assignee: existing.assignee,
+        humanStepKeywords: config.humanTaskCheck?.keywords,
       });
       if (tripwire.needsHumanStep) {
         if (tripwire.taggedHuman) {
@@ -2805,9 +2806,23 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
           } else if (check.decision) {
             humanStepOverride = "agent";
           }
-        } else if (check.outcome === "failed") {
+        } else if (check.outcome === "failed" || check.outcome === "unavailable") {
+          const fallbackDetail = `${check.outcome === "failed" ? `Decision model failed (${check.error ?? "request failed"})` : "Decision model unavailable"}; keyword result used. ${tripwire.detail}`;
           logger.task(id, "warn", "Human-step decision check failed — using the keyword check", {
             error: check.error,
+          });
+          const flagged = patchTaskFile(config, existing.absPath, {
+            needsInput: true,
+            needsInputReason: NEEDS_HUMAN_STEP_NEEDS_INPUT_REASON,
+            needsInputDetail: fallbackDetail,
+          });
+          index.applyFileChange(flagged.absPath, { guarded: true });
+          return json(res, 409, {
+            ok: false,
+            error: fallbackDetail,
+            reason: NEEDS_HUMAN_STEP_NEEDS_INPUT_REASON,
+            needsInput: true,
+            detail: fallbackDetail,
           });
         } else if (check.outcome === "human") {
           const detail = humanStepFlagDetail(

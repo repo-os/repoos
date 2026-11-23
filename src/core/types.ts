@@ -503,6 +503,8 @@ export interface UpdatesConfig {
 
 /** Resolved configuration (after defaults + repoos.toml merge). */
 export interface RepoOSConfig {
+  /** Human-only acceptance-criteria check. */
+  humanTaskCheck?: { mode?: "keywords" | "model" | "both"; keywords?: string[] };
   /** Git status performance tuning; enabled by default. */
   git?: GitConfig;
   /** Passive release availability checks (#1072). */

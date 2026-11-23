@@ -299,6 +299,13 @@ describe("assessTaskNeedsHumanStep (#0698)", () => {
       expect(result.needsHumanStep).toBe(false);
     }
   });
+
+  it("matches configured phrases and honors negation", () => {
+    const body = wellFormed.replace("- [ ] Unit tests pass", "- [ ] Verify with a lab handset");
+    expect(assessTaskNeedsHumanStep(body, { humanStepKeywords: ["lab handset"] }).needsHumanStep).toBe(true);
+    const negated = wellFormed.replace("- [ ] Unit tests pass", "- [ ] No lab handset verification is required");
+    expect(assessTaskNeedsHumanStep(negated, { humanStepKeywords: ["lab handset"] }).needsHumanStep).toBe(false);
+  });
 });
 
 describe("underspecified needs_input review clear rules", () => {

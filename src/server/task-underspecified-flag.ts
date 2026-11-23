@@ -144,6 +144,7 @@ export async function flagNeedsHumanStepIfNeededAsync(
   const assessment = assessTaskNeedsHumanStep(task.body, {
     area: task.area,
     assignee: task.assignee,
+    humanStepKeywords: config.humanTaskCheck?.keywords,
   });
   if (!assessment.needsHumanStep) {
     return clearHumanStepFlag(config, task);

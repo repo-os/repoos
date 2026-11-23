@@ -281,6 +281,7 @@ const HUMAN_STEP_ACCEPTANCE_PATTERNS: { re: RegExp; label: string }[] = [
   { re: /\bverify\s+on\s+a\s+real\s+(device|handset)\b/i, label: "real device verification" },
   { re: /\breal\s+device\b/i, label: "real device" },
   { re: /\bphysical\s+(device|hardware)\b/i, label: "physical hardware" },
+  { re: /\bphysical[- ]device\b/i, label: "physical hardware" },
   { re: /\bon\s+(a|the)\s+(real\s+)?device\b/i, label: "on-device verification" },
   { re: /\b(iphone|android\s+device|google\s+pixel|handset|tablet|wearable)\b/i, label: "named mobile hardware" },
   { re: /\b(production|staging)\s+(account|credentials?)\b/i, label: "environment credentials" },
@@ -359,6 +360,23 @@ export function assessTaskNeedsHumanStep(
       .replace(/\b(?:no|not|without|never)\b[^.;\n]{0,100}/gi, " ");
   const signals: string[] = [];
   let sentence: string | undefined;
+  const configuredPhrases = opts?.humanStepKeywords ?? [];
+  for (const phrase of configuredPhrases) {
+    const normalized = phrase.trim();
+    if (!normalized) continue;
+    const re = new RegExp(normalized.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
+    for (const line of scanLines) {
+      const safeLine = cleanForHumanStepMatch(line);
+      if (!re.test(safeLine)) continue;
+      // Exclude a phrase when it appears only inside a negated clause.
+      const hit = sentenceAroundMatch(safeLine, re);
+      const before = hit ? safeLine.slice(0, safeLine.indexOf(hit)) : "";
+      if (/\b(?:no|not|without|never)\b[^.;\n]*$/i.test(before)) continue;
+      signals.push(normalized);
+      sentence ??= hit ?? line;
+      break;
+    }
+  }
   for (const { re, label } of HUMAN_STEP_ACCEPTANCE_PATTERNS) {
     if (!re.test(scanLines.map(cleanForHumanStepMatch).join("\n"))) continue;
     signals.push(label);

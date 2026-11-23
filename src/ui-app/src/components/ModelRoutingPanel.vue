@@ -168,6 +168,8 @@ async function toggleRole(role: string, enabled: boolean): Promise<void> {
 
 const humanStepCheck = computed(() => config.data?.["model_routing.humanStepCheck"] === true);
 const humanStepSticky = computed(() => config.data?.["model_routing.humanStepSticky"] !== false);
+const humanTaskMode = computed(() => String(config.data?.["humanTaskCheck.mode"] ?? "both"));
+const humanTaskKeywords = computed(() => (config.data?.["humanTaskCheck.keywords"] as string[] | undefined) ?? []);
 
 async function setHumanStepCheck(enabled: boolean): Promise<void> {
   await patch({ "model_routing.humanStepCheck": enabled });
@@ -175,6 +177,14 @@ async function setHumanStepCheck(enabled: boolean): Promise<void> {
 
 async function setHumanStepSticky(enabled: boolean): Promise<void> {
   await patch({ "model_routing.humanStepSticky": enabled });
+}
+
+async function setHumanTaskMode(mode: string): Promise<void> {
+  await patch({ "humanTaskCheck.mode": mode });
+}
+
+async function setHumanTaskKeywords(value: string): Promise<void> {
+  await patch({ "humanTaskCheck.keywords": value.split("\n").map((v) => v.trim()).filter(Boolean) });
 }
 
 async function runProbe(live: boolean): Promise<void> {
@@ -527,6 +537,20 @@ onMounted(() => {
       </div>
     </div>
 
+    <div class="mr-roles">
+      <span class="field-label">Human-step check</span>
+      <div class="mr-role-chips" role="group" aria-label="Human-step check mode">
+        <button v-for="mode in ['keywords', 'model', 'both']" :key="mode" class="mr-role-chip" type="button"
+          :aria-pressed="humanTaskMode === mode" @click="void setHumanTaskMode(mode)">
+          {{ mode === 'both' ? 'Keywords, then model' : mode === 'model' ? 'Decision model' : 'Keywords' }}
+        </button>
+      </div>
+      <label class="field" style="margin-top: 8px">
+        <span class="field-label">Additional keyword phrases (one per line)</span>
+        <textarea :value="humanTaskKeywords.join('\n')" rows="3" @change="(e) => void setHumanTaskKeywords((e.target as HTMLTextAreaElement).value)" />
+      </label>
+      <p class="agent-desc">The default checks phrases first and asks the configured decision model only after a match. Model failures fall back to phrases.</p>
+    </div>
     <div class="mr-roles">
       <span class="field-label">Before a task starts</span>
       <label class="mr-role-chip" style="margin-top: 6px" data-test-id="routing-human-step-row">

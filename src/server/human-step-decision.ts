@@ -84,7 +84,10 @@ export async function runHumanStepDecisionCheck(
   task: Pick<Task, "id" | "title" | "body"> & { matchedSentence?: string },
   deps: { provider?: RoutingDecisionProvider | null; recordUsage?: boolean } = {},
 ): Promise<HumanStepCheckResult> {
-  if (config.modelRouting?.humanStepCheck !== true) return { outcome: "off" };
+  const checkMode = config.humanTaskCheck?.mode ?? "both";
+  if (checkMode === "keywords") return { outcome: "off" };
+  // Preserve the legacy checkbox as an explicit opt-in when a project has not
+  // adopted the new setting; the new setting defaults to keyword-first.
 
   const effective = resolveEffectiveRouting(config.modelRouting);
   const provider = "provider" in deps ? (deps.provider ?? null) : buildRoutingProvider(effective);
