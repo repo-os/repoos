@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "1124"
 title: "Worktree cleanup: decide and build the safe handling for 'unsafe' (protected) task worktrees"
 type: feature
@@ -62,3 +63,4 @@ Read #1055 and src for `repoos gc` first. Do not widen what gc auto-removes. Des
 - 2026-11-23T08:04:25Z · orphaned run process stopped · pid 65997 · /opt/homebrew/Cellar/bun/1.4.2/bin/bun /Users/nick/code/nick/repoos-worktrees/feat/worktree-cleanup- · cpu 0s · age 17s
 - 2026-11-23T08:04:48Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-23T08:09:57Z · message_queued at 2026-11-23T08:09:57.307Z
+
