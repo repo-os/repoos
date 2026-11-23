@@ -16,8 +16,14 @@ type GcPreview = {
   report: {
     removedWorktrees: Array<{ branch: string; path: string }>;
     keptDirty: Array<{
-      branch: string; path: string; reason: string; protectedClass?: string; recommendedAction?: string;
-      ageDays?: number; lastCommitDate?: string | null; branchMerged?: boolean;
+      branch: string;
+      path: string;
+      reason: string;
+      protectedClass?: string;
+      recommendedAction?: string;
+      ageDays?: number;
+      lastCommitDate?: string | null;
+      branchMerged?: boolean;
     }>;
   };
   activeCloseOutTaskIds: string[];
@@ -43,7 +49,18 @@ function worktreeGcFixturePreview(): GcPreview {
       removedWorktrees: [
         { branch: "repoos/integrate/0042", path: "../repoos-worktrees/integrate-0042" },
       ],
-      keptDirty: [{ branch: "repoos/integrate/0043", path: "../repoos-worktrees/integrate-0043", reason: "close-out job still active", protectedClass: "live-task", recommendedAction: "keep", ageDays: 2, lastCommitDate: "2026-11-20", branchMerged: false }],
+      keptDirty: [
+        {
+          branch: "repoos/integrate/0043",
+          path: "../repoos-worktrees/integrate-0043",
+          reason: "close-out job still active",
+          protectedClass: "live-task",
+          recommendedAction: "keep",
+          ageDays: 2,
+          lastCommitDate: "2026-11-20",
+          branchMerged: false,
+        },
+      ],
     },
     activeCloseOutTaskIds: [],
     blocked: false,
@@ -458,9 +475,11 @@ const serveMessage = computed(() => {
             >
             <span v-for="item in gcPreview.report.keptDirty" :key="item.path"
               >Keep {{ item.branch || item.path }} — {{ item.reason }}<br />
-              Class: {{ item.protectedClass ?? "unknown" }} · Action: {{ item.recommendedAction ?? "ask-human" }} ·
-              Age: {{ item.ageDays === undefined ? "unknown" : `${item.ageDays}d` }} ·
-              Last commit: {{ item.lastCommitDate ?? "unknown" }} · Merged: {{ item.branchMerged ? "yes" : "no" }}</span
+              Class: {{ item.protectedClass ?? "unknown" }} · Action:
+              {{ item.recommendedAction ?? "ask-human" }} · Age:
+              {{ item.ageDays === undefined ? "unknown" : `${item.ageDays}d` }} · Last commit:
+              {{ item.lastCommitDate ?? "unknown" }} · Merged:
+              {{ item.branchMerged ? "yes" : "no" }}</span
             >
             <span v-if="gcPreview.blocked" class="gc-blocked"
               >Disabled while close-out{{

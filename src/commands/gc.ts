@@ -39,7 +39,11 @@ function printReport(report: GcReport, title: string): void {
     );
     const detail = formatGcEntryDetails(k);
     if (detail) console.log(c.dim(`            ${detail}`));
-    console.log(c.dim(`            class: ${k.protectedClass} · age: ${k.ageDays === undefined ? "unknown" : `${k.ageDays}d`} · last commit: ${k.lastCommitDate ?? "unknown"} · merged: ${k.branchMerged ? "yes" : "no"} · action: ${k.recommendedAction}`));
+    console.log(
+      c.dim(
+        `            class: ${k.protectedClass} · age: ${k.ageDays === undefined ? "unknown" : `${k.ageDays}d`} · last commit: ${k.lastCommitDate ?? "unknown"} · merged: ${k.branchMerged ? "yes" : "no"} · action: ${k.recommendedAction}`,
+      ),
+    );
   }
   for (const e of report.external) {
     console.log(`    ${c.dim("external")} ${e.branch || c.dim("(detached)")} ${c.dim(e.path)}`);

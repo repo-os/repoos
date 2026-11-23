@@ -76,7 +76,13 @@ export interface GcEntry {
    */
   changedSourcePaths?: string[];
   /** Triage metadata for retained worktrees. */
-  protectedClass?: "live-task" | "human-owned" | "local-data" | "unmerged-work" | "unknown-lifecycle" | "external";
+  protectedClass?:
+    | "live-task"
+    | "human-owned"
+    | "local-data"
+    | "unmerged-work"
+    | "unknown-lifecycle"
+    | "external";
   recommendedAction?: "keep" | "ask-human" | "archive-then-remove" | "fix-underlying-bug";
   ageDays?: number;
   lastCommitDate?: string | null;
@@ -747,22 +753,30 @@ export function sweepStaleWorktrees(config: RepoOSConfig, opts: SweepOptions): G
 
   const retain = (entry: GcEntry): void => {
     const reason = entry.reason;
-    const protectedClass: NonNullable<GcEntry["protectedClass"]> =
-      reason.includes("no task record") ? "unknown-lifecycle"
-        : reason.includes("human-assigned") ? "human-owned"
-          : reason.includes("active") ? "live-task"
-            : reason.includes("uncommitted") || reason.includes("ignored files") ? "local-data"
-              : "unmerged-work";
+    const protectedClass: NonNullable<GcEntry["protectedClass"]> = reason.includes("no task record")
+      ? "unknown-lifecycle"
+      : reason.includes("human-assigned")
+        ? "human-owned"
+        : reason.includes("active")
+          ? "live-task"
+          : reason.includes("uncommitted") || reason.includes("ignored files")
+            ? "local-data"
+            : "unmerged-work";
     const recommendedAction: NonNullable<GcEntry["recommendedAction"]> =
-      protectedClass === "live-task" ? "keep"
-        : protectedClass === "unmerged-work" ? "ask-human"
-          : protectedClass === "unknown-lifecycle" ? "fix-underlying-bug"
+      protectedClass === "live-task"
+        ? "keep"
+        : protectedClass === "unmerged-work"
+          ? "ask-human"
+          : protectedClass === "unknown-lifecycle"
+            ? "fix-underlying-bug"
             : "ask-human";
     let ageDays: number | undefined;
     try {
       const created = statSync(entry.path).birthtimeMs;
       if (created > 0) ageDays = Math.max(0, Math.floor((Date.now() - created) / 86_400_000));
-    } catch { /* vanished/unreadable worktrees have no measurable age */ }
+    } catch {
+      /* vanished/unreadable worktrees have no measurable age */
+    }
     const date = entry.branch
       ? gitRun(root, ["log", "-1", "--format=%cI", entry.branch]).stdout.trim()
       : "";
