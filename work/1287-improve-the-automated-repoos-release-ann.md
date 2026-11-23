@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/polish-automated-release-announcement-em
 created_at: "2026-11-23T07:50:59Z"
-updated_at: "2026-11-23T10:41:50Z"
+updated_at: "2026-11-23T10:41:51Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-23T10:06:49.976Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 2
@@ -182,3 +182,4 @@ One additional suggestion: since RepoOS releases appear to be frequent, I'd keep
 - 2026-11-23T10:38:38Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-23T10:40:28Z · watchdog: check wait ended or recovered — cleared needs_input
 - 2026-11-23T10:41:50Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-23T10:41:51Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code unknown) · last assistant: The remote runners are unavailable because their link probes are below the required throughput, and the local fallback is queued behind another check. RepoOS labels this as a normal wait, so I’m keeping the check running until it reaches a… · stderr: 2026-11-23T10:10:52.138489Z ERROR codex_core::tools::router: error=write_stdin failed: Unknown process id 16451 2026-11-23T10:23:09.473879Z ERROR codex_core::tools::router: error=write_stdin failed: Unknown process id 45446
