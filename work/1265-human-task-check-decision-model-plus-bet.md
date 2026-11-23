@@ -3,9 +3,6 @@ id: "1265"
 title: "Human-task check: decision model plus better keyword rules"
 type: feature
 status: active
-needs_input: true
-needs_input_reason: check-wait
-needs_input_detail: "waiting: waiting for serialized local fallback (1 ahead, position 2); slot holder 9249 is dead for 0s"
 human_step_override: Cleared needs-human-step flag (sticky until acceptance criteria change)
 human_step_override_key: 5384b92b
 priority: p2
@@ -14,7 +11,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/human-task-check-decision-model-plus-bet
 created_at: "2026-11-20T02:34:13Z"
-updated_at: "2026-11-23T07:44:50Z"
+updated_at: "2026-11-23T08:00:52Z"
 ---
 ## Problem
 When a task starts, RepoOS scans the acceptance criteria for keywords such as "device", "physical", "credentials", "accounts" and "third-party registration". On a match it refuses the start with `needs_input_reason: needs-human-step` and asks for a split. The match is purely lexical, so it gives false positives and agents end up rewording criteria to dodge it, which defeats its purpose.
@@ -56,3 +53,6 @@ Sample phrases that must still be caught: "verify on a real handset", "needs a s
 - 2026-11-23T07:33:11Z · status ready→active, branch
 - 2026-11-23T07:41:18Z · watchdog: check wait escalated · waiting: waiting for serialized local fallback (1 ahead, position 2); slot holder 9249 is dead for 0s · next step: investigate the abnormal wait; the flag clears when the check starts
 - 2026-11-23T07:44:50Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: I did **not complete task #1265** and did not request handoff. The core keyword matcher now avoids the two Tiao false positives, catches the three human-gated examples, and adds a visible note when the model check fails. The focused tests … · stderr: Reading additional input from stdin... 2026-11-23T07:44:50.280922Z ERROR codex_core::session: failed to record rollout items: thread 01a20752-f66e-7811-ae37-9b7752bba68f not found 2026-11-23T07:44:50.281087Z ERROR codex_core::session: failed to record rollout items: thread 01a20752-f66e-7811-ae37-9b7752bba68f not found
+- 2026-11-23T07:47:04Z · watchdog: check wait ended or recovered — cleared needs_input
+- 2026-11-23T07:50:49Z · watchdog: check wait escalated · waiting: waiting for serialized local fallback (1 ahead, position 2); slot holder 35030 is dead for 9m · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-11-23T08:00:52Z · watchdog: restarting engineer after 10m with no live process
