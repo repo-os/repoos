@@ -3,13 +3,16 @@ id: "1287"
 title: Polish automated release announcement emails
 type: feature
 status: active
+needs_input: true
+needs_input_reason: check-wait
+needs_input_detail: "waiting: waiting for serialized local fallback (1 ahead, position 2); slot holder 5315 is dead for 11s"
 priority: p2
 area: [server, web]
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/polish-automated-release-announcement-em
 created_at: "2026-11-23T07:50:59Z"
-updated_at: "2026-11-23T10:43:39Z"
+updated_at: "2026-11-23T10:48:39Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-23T10:06:49.976Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 2
@@ -186,3 +189,5 @@ One additional suggestion: since RepoOS releases appear to be frequent, I'd keep
 - 2026-11-23T10:41:53Z · message_delivered: 1 message(s)
 - 2026-11-23T10:43:39Z · message_queued at 2026-11-23T10:43:39.042Z
 - 2026-11-23T10:43:39Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-23T10:45:20Z · watchdog: check wait escalated · waiting: waiting for serialized local fallback (1 ahead, position 2); slot holder 5315 is dead for 11s · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-11-23T10:48:39Z · CTO nudge: held — an undelivered message is already queued
