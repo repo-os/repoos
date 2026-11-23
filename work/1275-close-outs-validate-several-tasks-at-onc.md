@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/close-outs-validate-several-tasks-at-onc
 created_at: "2026-11-20T07:42:13Z"
-updated_at: "2026-11-23T11:56:12Z"
+updated_at: "2026-11-23T11:57:08Z"
 last_close_out_gate_ms: 560554
 last_close_out_gate_at: "2026-11-23T11:56:12.305Z"
 review_passes: 6
@@ -599,4 +599,4 @@ Read docs/close-out-pipeline.md and docs/remote-validation.md first. Never touch
 - 2026-11-23T11:37:52Z · note: review pass 7: good to go
 - 2026-11-23T11:44:33Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-23T11:56:12Z · close-out gate completed in 561s
-
+- 2026-11-23T11:57:08Z · status done→done, release:success
