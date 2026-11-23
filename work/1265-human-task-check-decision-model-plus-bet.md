@@ -2,7 +2,7 @@
 id: "1265"
 title: "Human-task check: decision model plus better keyword rules"
 type: feature
-status: review
+status: active
 human_step_override: Cleared needs-human-step flag (sticky until acceptance criteria change)
 human_step_override_key: 5384b92b
 priority: p2
@@ -11,7 +11,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/human-task-check-decision-model-plus-bet
 created_at: "2026-11-20T02:34:13Z"
-updated_at: "2026-11-23T11:31:45Z"
+updated_at: "2026-11-23T11:31:46Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
