@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/close-outs-validate-several-tasks-at-onc
 created_at: "2026-11-20T07:42:13Z"
-updated_at: "2026-11-23T07:59:33Z"
+updated_at: "2026-11-23T07:59:34Z"
 review_passes: 4
 review_rounds: 2
 last_check_failure: "repoos check at 2026-11-22T08:35:01.967Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Pipeline shows a job validating alongside the active close-out (Also running) (target \"default\"): state \"integration:parallelValidations\" did not render on target \"default\" — /checks?tab=now shows no task card (http://127.0.0.1:45407/checks?tab=now&shotState=integration%3AparallelValidations)"
@@ -554,3 +554,4 @@ Read docs/close-out-pipeline.md and docs/remote-validation.md first. Never touch
 - 2026-11-23T07:32:51Z · status review→active
 - 2026-11-23T07:32:55Z · message_delivered: 1 message(s)
 - 2026-11-23T07:59:33Z · message_queued at 2026-11-23T07:59:33.831Z
+- 2026-11-23T07:59:34Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
