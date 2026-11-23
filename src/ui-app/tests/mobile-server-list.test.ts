@@ -168,6 +168,49 @@ describe("mobile hub server list", () => {
     expect(wrapper.emitted("select")).toBeUndefined();
     expect(wrapper.emitted("reorder")).toBeUndefined();
   });
+
+  it("refreshes from a downward pull at the top and shows the active indicator", async () => {
+    const wrapper = mountList();
+    const list = wrapper.find(".server-list").element;
+    list.dispatchEvent(
+      new TouchEvent("touchstart", {
+        bubbles: true,
+        touches: [{ clientY: 20 } as Touch],
+      }),
+    );
+    const move = new TouchEvent("touchmove", {
+      bubbles: true,
+      cancelable: true,
+      touches: [{ clientY: 100 } as Touch],
+    });
+    list.dispatchEvent(move);
+
+    expect(move.defaultPrevented).toBe(true);
+    expect(wrapper.emitted("refresh")).toHaveLength(1);
+    const refreshing = mountList({ refreshing: true });
+    expect(refreshing.find(".pull-refresh-indicator .spinning").exists()).toBe(true);
+    expect(wrapper.find(".pull-refresh-indicator").exists()).toBe(false);
+  });
+
+  it("does not refresh from a row menu gesture", () => {
+    const wrapper = mountList();
+    const list = wrapper.find(".server-list").element;
+    const menu = wrapper.find('[data-testid="hub-server-more"]').element;
+    menu.dispatchEvent(
+      new TouchEvent("touchstart", {
+        bubbles: true,
+        touches: [{ clientY: 20 } as Touch],
+      }),
+    );
+    list.dispatchEvent(
+      new TouchEvent("touchmove", {
+        bubbles: true,
+        cancelable: true,
+        touches: [{ clientY: 110 } as Touch],
+      }),
+    );
+    expect(wrapper.emitted("refresh")).toBeUndefined();
+  });
 });
 
 describe("mobile tailnet discovery message", () => {

@@ -11,6 +11,7 @@ const props = defineProps<{
   reachability: Record<string, ReachabilityState>;
   loaded: boolean;
   platform: "ios" | "android" | "web";
+  refreshing?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -19,6 +20,7 @@ const emit = defineEmits<{
   edit: [server: ServerEntry];
   reorder: [id: string, toIndex: number];
   discover: [];
+  refresh: [];
 }>();
 
 /** How long a row must be held before it lifts and starts following the finger. */
@@ -27,12 +29,17 @@ const HOLD_MS = 350;
 const MOVE_SLOP_PX = 10;
 /** How close to the list edge the finger must be before the list auto-scrolls. */
 const EDGE_SCROLL_PX = 56;
+const PULL_REFRESH_PX = 64;
 
 const listEl = ref<HTMLUListElement | null>(null);
 /** The row currently lifted under the finger, if any. */
 const draggingId = ref<string | null>(null);
 /** Display order while dragging; null means "use the saved order". */
 const dragOrder = ref<string[] | null>(null);
+const pullDistance = ref(0);
+let pullStartY: number | null = null;
+let pullTracking = false;
+let pullTriggered = false;
 
 const isEmpty = computed(() => props.loaded && props.servers.length === 0);
 
@@ -240,6 +247,45 @@ function onRowClick(server: ServerEntry) {
   emit("select", server);
 }
 
+function onTouchStart(ev: TouchEvent) {
+  const list = listEl.value;
+  const target = ev.target;
+  if (
+    !list ||
+    props.refreshing ||
+    draggingId.value ||
+    ev.touches.length !== 1 ||
+    list.scrollTop > 0 ||
+    !(target instanceof Element) ||
+    target.closest(".more-btn")
+  )
+    return;
+  pullStartY = ev.touches[0].clientY;
+  pullTracking = true;
+  pullTriggered = false;
+}
+
+function onTouchMove(ev: TouchEvent) {
+  if (!pullTracking || pullStartY === null || ev.touches.length !== 1) return;
+  const distance = ev.touches[0].clientY - pullStartY;
+  if (distance <= 0) {
+    pullDistance.value = 0;
+    return;
+  }
+  if (ev.cancelable) ev.preventDefault();
+  pullDistance.value = Math.min(64, distance * 0.45);
+  if (distance >= PULL_REFRESH_PX && !pullTriggered) {
+    pullTriggered = true;
+    emit("refresh");
+  }
+}
+
+function onTouchEnd() {
+  pullTracking = false;
+  pullStartY = null;
+  if (!props.refreshing) pullDistance.value = 0;
+}
+
 onBeforeUnmount(() => {
   cancelPending();
   stopAutoScroll();
@@ -270,8 +316,15 @@ onBeforeUnmount(() => {
           'is-dragging': draggingId !== null,
         }"
         @scroll.passive="onListScroll"
+        @touchstart.passive="onTouchStart"
+        @touchmove="onTouchMove"
+        @touchend="onTouchEnd"
+        @touchcancel="onTouchEnd"
         @contextmenu.prevent
       >
+        <li v-if="refreshing || pullDistance > 0" class="pull-refresh-indicator" aria-live="polite">
+          <span :class="{ spinning: refreshing }" aria-hidden="true">↻</span>
+        </li>
         <li
           v-for="server in displayed"
           :key="server.id"

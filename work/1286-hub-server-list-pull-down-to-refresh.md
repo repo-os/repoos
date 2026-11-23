@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 1181220
-last_close_out_gate_at: "2026-11-23T08:46:32.124Z"
 id: "1286"
 title: "Hub server list: pull down to refresh"
 type: feature
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: dd0e14211bd3bdc85fe77160ff84d24b5abe8e46
 assigned_to: ai
 created_by: t@t
 branch: feat/hub-server-list-pull-down-to-refresh
@@ -14,6 +13,8 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-23T07:50:31Z"
 updated_at: "2026-11-23T08:46:32Z"
+last_close_out_gate_ms: 1181220
+last_close_out_gate_at: "2026-11-23T08:46:32.124Z"
 review_passes: 1
 ---
 ## Goal
