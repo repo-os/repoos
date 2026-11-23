@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/polish-automated-release-announcement-em
 created_at: "2026-11-23T07:50:59Z"
-updated_at: "2026-11-23T09:37:30Z"
+updated_at: "2026-11-23T09:37:48Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
