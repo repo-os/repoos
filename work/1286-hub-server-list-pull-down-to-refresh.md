@@ -5,7 +5,7 @@ type: feature
 status: inbox
 needs_input: true
 needs_input_reason: underspecified
-needs_input_detail: "missing sections: Acceptance criteria, Notes for AI"
+needs_input_detail: "missing sections: Notes for AI"
 priority: p2
 area: web
 assigned_to: ai
