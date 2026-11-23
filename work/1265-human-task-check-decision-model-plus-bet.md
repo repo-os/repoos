@@ -11,7 +11,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/human-task-check-decision-model-plus-bet
 created_at: "2026-11-20T02:34:13Z"
-updated_at: "2026-11-23T08:52:28Z"
+updated_at: "2026-11-23T08:52:35Z"
 ---
 ## Problem
 When a task starts, RepoOS scans the acceptance criteria for keywords such as "device", "physical", "credentials", "accounts" and "third-party registration". On a match it refuses the start with `needs_input_reason: needs-human-step` and asks for a split. The match is purely lexical, so it gives false positives and agents end up rewording criteria to dodge it, which defeats its purpose.
@@ -94,3 +94,4 @@ Sample phrases that must still be caught: "verify on a real handset", "needs a s
 - 2026-11-23T08:49:28Z · message_delivered: 1 message(s)
 - 2026-11-23T08:52:28Z · message_queued at 2026-11-23T08:52:28.385Z
 - 2026-11-23T08:52:28Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-23T08:52:35Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: I can’t hand this off yet: the previous check failed its format gate, so I formatted the affected files and started the required scoped check again. Its remote test run is still active, but the terminal handle was lost and no final result … · stderr: 2026-11-23T08:49:33.978541Z ERROR codex_core::tools::router: error=write_stdin failed: Unknown process id 42100
