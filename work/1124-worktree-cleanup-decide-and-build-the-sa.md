@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/worktree-cleanup-decide-and-build-the-sa
 created_at: "2026-11-15T00:41:58Z"
-updated_at: "2026-11-23T07:55:58Z"
+updated_at: "2026-11-23T07:59:34Z"
 ---
 ## Problem
 
@@ -33,15 +33,15 @@ Read #1055 and src for `repoos gc` first. Do not widen what gc auto-removes. Des
 ```json
 [
 {
-  "label": "Protected worktree triage preview",
-  "target": "default",
-  "route": "/control?shotState=system:worktreeGc",
-  "highlight": ".gc-preview",
-  "steps": [
-    {
-      "click": ".gc-tooltip-trigger button.gc-action"
-    }
-  ]
+"label": "Protected worktree triage preview",
+"target": "default",
+"route": "/control?shotState=system:worktreeGc",
+"highlight": ".gc-preview",
+"steps": [
+  {
+    "click": ".gc-tooltip-trigger button.gc-action"
+  }
+]
 }
 ]
 ```
@@ -54,3 +54,4 @@ Read #1055 and src for `repoos gc` first. Do not widen what gc auto-removes. Des
 - 2026-11-23T07:41:33Z · watchdog: check wait escalated · waiting: waiting for serialized local fallback (1 ahead, position 2); slot holder 9249 is dead for 14s · next step: investigate the abnormal wait; the flag clears when the check starts
 - 2026-11-23T07:47:04Z · watchdog: check wait ended or recovered — cleared needs_input
 - 2026-11-23T07:55:58Z · body
+- 2026-11-23T07:59:34Z · CTO nudge: held — handoff gate is running
