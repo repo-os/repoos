@@ -16,7 +16,7 @@ branch: feat/task-details-modal-edits-must-save-when-
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-22T18:21:14Z"
-updated_at: "2026-11-22T19:46:43Z"
+updated_at: "2026-11-23T07:32:54Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -113,3 +113,4 @@ Modal and draft code is in src/ui-app/src/components/TaskDrawer.vue (metaModalOp
 - 2026-11-22T19:46:43Z · message_queued at 2026-11-22T19:46:43.465Z
 - 2026-11-22T19:46:43Z · handoff failed · handoff recovery attempted · finalization failed
 - 2026-11-22T19:46:43Z · archived
+- 2026-11-23T07:32:54Z · message_overdue: still queued after 60m without being delivered
