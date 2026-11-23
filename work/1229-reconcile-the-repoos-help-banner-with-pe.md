@@ -2,7 +2,7 @@
 id: "1229"
 title: Reconcile the repoos --help banner with per-command usage strings
 type: chore
-status: active
+status: review
 priority: p3
 area: web
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/reconcile-the-repoos-help-banner-with-pe
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-19T11:50:05Z"
-updated_at: "2026-11-23T16:19:06Z"
+updated_at: "2026-11-23T16:43:52Z"
 ---
 ## Problem
 Several real flags and subcommands are missing from generated or printed usage text: `repoos check --fix/--step` and `repoos doctor --yes` exist in code but the banner omits them; the same class hit `repoos secrets bindings` (fixed in #1227). A user or agent trusting `--help` alone misses real capabilities.
@@ -32,3 +32,4 @@ Sweep the whole `src/commands/` directory, not just the two known instances. Doc
 - 2026-11-23T11:53:45Z · status inbox→ready
 - 2026-11-23T16:19:06Z · cli_override, model_override
 - 2026-11-23T16:19:06Z · status ready→active, branch
+- 2026-11-23T16:43:52Z · status active→review
