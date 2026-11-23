@@ -361,10 +361,10 @@ export const GROUPS: readonly CommandGroup[] = [
       {
         name: "check",
         usage:
-          "check [--profile <name>] [--changed <ref>] [--print-plan] [--fix] [--step <name>] [--local-tests]",
+          "check [--profile <name>|-p <name>] [--changed <ref>] [--print-plan] [--fix] [--step <name>] [--steps <name>] [--local-tests]",
         desc: "Definition-of-done gate: runs the plan declared in repoos.toml",
         flags:
-          "--profile <name> · --changed <ref> · --print-plan · --fix · --step <name> · --local-tests",
+          "--profile <name> · -p <name> · --changed <ref> · --print-plan · --fix · --step <name> · --steps <name> · --local-tests",
       },
       {
         name: "checks timings",
@@ -381,9 +381,10 @@ export const GROUPS: readonly CommandGroup[] = [
       },
       {
         name: "doctor",
-        usage: "doctor [--json] [--verbose] [--probe <cli> [--model <id>]] [--binary <path>]",
+        usage:
+          "doctor [--json] [--verbose] [--probe <cli> [--model <id>]] [--yes] [--binary <path>]",
         desc: "Readiness preflight: config, layout, tools, server and secrets",
-        flags: "--json · --verbose · --probe <cli> · --model <id> · --binary <path>",
+        flags: "--json · --verbose · --probe <cli> · --model <id> · --yes · --binary <path>",
       },
       {
         name: "secrets",
@@ -410,7 +411,8 @@ export const GROUPS: readonly CommandGroup[] = [
     commands: [
       {
         name: "serve",
-        usage: "serve [--port N] [--host <h>] [--no-tailscale-https] [--quiet]",
+        usage:
+          "serve [--port N] [--host <h>] [--no-tailscale-https] [--preview-overrides|--no-preview-overrides] [--quiet]",
         desc: "Start the local server (live API + SSE stream)",
         flags:
           "--port N · --host <h> · --no-tailscale-https · --preview-overrides · --no-preview-overrides · --quiet",
@@ -448,9 +450,11 @@ export const GROUPS: readonly CommandGroup[] = [
       },
       {
         name: "shot",
-        usage: "shot [<route|url>] [--target <t>] [--selector <css>] [--task <id>]",
+        usage:
+          "shot [<route|url>] [--target <t>] [--selector <css>] [--env KEY=VALUE] [--glob <glob>] [--task <id>] [--base <ref>] [--wait <ms>] [--viewport WxH] [--full-page]",
         desc: "Capture preview screenshots into the task's shots folder",
-        flags: "--target --selector --task --base --wait --viewport --full-page",
+        flags:
+          "--target · --selector · --env · --glob · --task · --base · --wait · --viewport · --full-page",
       },
     ],
   },
