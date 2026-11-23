@@ -11,7 +11,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/human-task-check-decision-model-plus-bet
 created_at: "2026-11-20T02:34:13Z"
-updated_at: "2026-11-23T11:01:26Z"
+updated_at: "2026-11-23T11:01:29Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -120,3 +120,4 @@ Sample phrases that must still be caught: "verify on a real handset", "needs a s
 - 2026-11-23T11:01:25Z · note: review pass 1: needs some work
 - 2026-11-23T11:01:26Z · message_delivered: 1 message(s)
 - 2026-11-23T11:01:26Z · status review→active
+- 2026-11-23T11:01:29Z · CTO nudge: held — remote validation is running
