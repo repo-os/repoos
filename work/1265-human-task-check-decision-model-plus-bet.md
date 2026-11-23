@@ -14,7 +14,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/human-task-check-decision-model-plus-bet
 created_at: "2026-11-20T02:34:13Z"
-updated_at: "2026-11-23T11:31:56Z"
+updated_at: "2026-11-23T11:55:30Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -139,3 +139,4 @@ Sample phrases that must still be caught: "verify on a real handset", "needs a s
 - 2026-11-23T11:31:47Z · note: handoff requested (cli)
 - 2026-11-23T11:31:56Z · agent exited with an error (codex) · The selected model is not available for this account. Choose another model on the Agents page. (CLI: ? `Decision model unavailable (${check.error ?? "request failed"}); keyword result used. `)
 - 2026-11-23T11:31:56Z · status active→review
+- 2026-11-23T11:55:30Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
