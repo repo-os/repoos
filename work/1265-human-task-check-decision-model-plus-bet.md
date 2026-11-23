@@ -2,7 +2,7 @@
 id: "1265"
 title: "Human-task check: decision model plus better keyword rules"
 type: feature
-status: active
+status: review
 human_step_override: Cleared needs-human-step flag (sticky until acceptance criteria change)
 human_step_override_key: 5384b92b
 priority: p2
@@ -11,7 +11,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/human-task-check-decision-model-plus-bet
 created_at: "2026-11-20T02:34:13Z"
-updated_at: "2026-11-23T11:00:31Z"
+updated_at: "2026-11-23T11:00:33Z"
 ---
 ## Problem
 When a task starts, RepoOS scans the acceptance criteria for keywords such as "device", "physical", "credentials", "accounts" and "third-party registration". On a match it refuses the start with `needs_input_reason: needs-human-step` and asks for a split. The match is purely lexical, so it gives false positives and agents end up rewording criteria to dodge it, which defeats its purpose.
@@ -112,3 +112,4 @@ Sample phrases that must still be caught: "verify on a real handset", "needs a s
 - 2026-11-23T10:07:28Z · watchdog: check wait ended or recovered — cleared needs_input
 - 2026-11-23T10:58:38Z · CTO nudge: held — handoff gate is running
 - 2026-11-23T11:00:31Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
+- 2026-11-23T11:00:33Z · status active→review
