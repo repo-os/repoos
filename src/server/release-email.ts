@@ -196,7 +196,8 @@ function noteItems(markdown: string): { name: string; detail: string }[] {
       heading && !/^(highlights?|features?|fixes?|improvements?|other)$/i.test(heading);
     const name =
       !isBullet && hasContentHeading ? heading : first.split(/[.!?]/, 1)[0]!.slice(0, 64).trim();
-    const detail = !isBullet && hasContentHeading ? first : rest || first;
+    const detail =
+      !isBullet && hasContentHeading ? first : rest ? splitSentence(rest).first : first;
     if (name && detail && !items.some((item) => item.name.toLowerCase() === name.toLowerCase()))
       items.push({ name, detail });
   };
