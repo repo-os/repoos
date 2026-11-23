@@ -93,7 +93,7 @@ describe("task drawer Held reason (#0960)", () => {
     expect(panel.text()).toContain("Held — automation won't start this task");
     expect(panel.text()).toContain("waiting on design sign-off");
     expect(panel.text()).toContain("njachowski@gmail.com");
-    expect(panel.text()).toContain("2030");
+    expect(panel.text()).toContain(new Date(task.holdUntil!).toLocaleString());
     expect(
       panel.element.compareDocumentPosition(wrapper.find(".drawer-tabs").element) &
         Node.DOCUMENT_POSITION_FOLLOWING,
