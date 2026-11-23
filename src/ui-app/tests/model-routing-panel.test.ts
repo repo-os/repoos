@@ -126,6 +126,7 @@ describe("safeConfigForBrowser model_routing flattening", () => {
         humanStepCheck: true,
         humanStepSticky: false,
       },
+      humanTaskCheck: { mode: "both", keywords: ["lab handset"] },
     } as Record<string, unknown>);
     expect(flat["model_routing.mode"]).toBe("shadow");
     expect(flat["model_routing.provider"]).toBe("openrouter");
@@ -135,6 +136,8 @@ describe("safeConfigForBrowser model_routing flattening", () => {
     expect(flat["model_routing.timeoutMs"]).toBe(4000);
     expect(flat["model_routing.humanStepCheck"]).toBe(true);
     expect(flat["model_routing.humanStepSticky"]).toBe(false);
+    expect(flat["humanTaskCheck.mode"]).toBe("both");
+    expect(flat["humanTaskCheck.keywords"]).toEqual(["lab handset"]);
     expect(flat.modelRouting).toBeUndefined();
   });
 });
@@ -215,9 +218,7 @@ describe("ModelRoutingPanel", () => {
     wrapper.unmount();
   });
 
-  // #0819 item 5 — the checkbox names mixed AI/human steps and the split, and
-  // the help says a yes means a split with the keyword check as the fallback.
-  it("labels the human-step check as mixed AI and human steps that should be split", async () => {
+  it("shows the three-way check mode and labels the old toggle as compatibility", async () => {
     seedConfig({ "model_routing.mode": "shadow" });
     vi.stubGlobal(
       "fetch",
@@ -229,12 +230,11 @@ describe("ModelRoutingPanel", () => {
     );
     const wrapper = await mountPanel();
     await flushPromises();
+    expect(wrapper.find("[data-testid='human-task-check-mode']").exists()).toBe(true);
+    expect(wrapper.text()).toContain("Additional keyword phrases (one per line)");
     const label = wrapper.find("[data-testid='routing-human-step-check']").element.closest("label");
-    expect(label?.textContent).toContain(
-      "Check for mixed AI and human steps, and suggest splitting the task",
-    );
-    expect(wrapper.text()).toContain("whether verification truly needs a human");
-    expect(wrapper.text()).toContain("keyword check runs instead");
+    expect(label?.textContent).toContain("Legacy human-step model check");
+    expect(wrapper.text()).toContain("takes precedence when set");
     wrapper.unmount();
   });
 

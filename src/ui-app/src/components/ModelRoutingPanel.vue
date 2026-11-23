@@ -546,7 +546,12 @@ onMounted(() => {
 
     <div class="mr-roles">
       <span class="field-label">Human-step check</span>
-      <div class="mr-role-chips" role="group" aria-label="Human-step check mode">
+      <div
+        class="mr-role-chips"
+        role="group"
+        aria-label="Human-step check mode"
+        data-testid="human-task-check-mode"
+      >
         <button
           v-for="mode in ['keywords', 'model', 'both']"
           :key="mode"
@@ -569,6 +574,7 @@ onMounted(() => {
         <textarea
           :value="humanTaskKeywords.join('\n')"
           rows="3"
+          data-testid="human-task-keywords"
           @change="(e) => void setHumanTaskKeywords((e.target as HTMLTextAreaElement).value)"
         />
       </label>
@@ -586,13 +592,11 @@ onMounted(() => {
           data-testid="routing-human-step-check"
           @change="(e) => void setHumanStepCheck((e.target as HTMLInputElement).checked)"
         />
-        Check for mixed AI and human steps, and suggest splitting the task
+        Legacy human-step model check
       </label>
       <p class="agent-desc" style="margin: 6px 0 0">
-        Off by default. When the keyword scan matches, the model decides whether verification truly
-        needs a human — the keyword alone never sets the flag. It only blocks a start when Mode is
-        Automatic; in Shadow it records the verdict without blocking, and if the provider is
-        unavailable or fails, the keyword check runs instead.
+        Compatibility switch for projects that have not selected
+        <code>humanTaskCheck.mode</code>. The Human-step check mode above takes precedence when set.
       </p>
       <label
         class="mr-role-chip"

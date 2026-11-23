@@ -20,6 +20,33 @@ const environmentDoc = readFileSync(join(repoRoot, "user-docs/environment-and-se
  * through the real `loadConfig`; and `.env.example` has to stay placeholders.
  */
 describe("repoos.toml and environment docs", () => {
+  it("exposes the human-task mode and phrase list in Settings and TOML", () => {
+    const mode = getConfigSchema().find((field) => field.key === "humanTaskCheck.mode");
+    expect(mode).toMatchObject({ type: "select", default: "both", tier: "live" });
+    expect(mode?.options?.map((option) => option.value)).toEqual(["keywords", "model", "both"]);
+    expect(SUPPORTED_TOML_KEYS).toContain("humanTaskCheck.mode");
+
+    const keywords = getConfigSchema().find((field) => field.key === "humanTaskCheck.keywords");
+    expect(keywords).toMatchObject({ type: "array", default: [], tier: "live" });
+    expect(SUPPORTED_TOML_KEYS).toContain("humanTaskCheck.keywords");
+  });
+
+  it("loads human-task mode and editable keyword phrases", () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-human-task-config-"));
+    try {
+      writeFileSync(
+        join(root, "repoos.toml"),
+        'humanTaskCheck.mode = "model"\nhumanTaskCheck.keywords = ["lab handset", "external sign-up"]\n',
+      );
+      expect(loadConfig(root).humanTaskCheck).toEqual({
+        mode: "model",
+        keywords: ["lab handset", "external sign-up"],
+      });
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("documents every field in the config schema", () => {
     const missing = getConfigSchema()
       .map((field) => field.key)

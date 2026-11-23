@@ -316,6 +316,16 @@ describe("assessTaskNeedsHumanStep (#0698)", () => {
       assessTaskNeedsHumanStep(negated, { humanStepKeywords: ["lab handset"] }).needsHumanStep,
     ).toBe(false);
   });
+
+  it("retains a criterion quote for model-only decisions", () => {
+    const body = wellFormed.replace(
+      "- [ ] Unit tests pass",
+      "- [ ] An ambiguous requirement is evaluated by the decision model",
+    );
+    const result = assessTaskNeedsHumanStep(body, { modelOnlyHumanStepCheck: true });
+    expect(result.needsHumanStep).toBe(false);
+    expect(result.sentence).toContain("An ambiguous requirement");
+  });
 });
 
 describe("underspecified needs_input review clear rules", () => {

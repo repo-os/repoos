@@ -4729,7 +4729,7 @@ export function getConfigSchema(): ConfigFieldMeta[] {
     {
       key: "humanTaskCheck.mode",
       label: "Human-step check mode",
-      type: "string",
+      type: "select",
       tier: "live",
       restartRequired: false,
       default: "both",

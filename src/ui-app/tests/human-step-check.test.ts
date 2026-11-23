@@ -77,11 +77,26 @@ describe("runHumanStepDecisionCheck outcome mapping (#0804)", () => {
 
   it("is off when the setting is unset (default)", async () => {
     const config = baseConfig("/tmp/repoos-nope", { mode: "automatic", provider: "jev" });
+    config.humanTaskCheck = { mode: "keywords" };
     const result = await runHumanStepDecisionCheck(config, TASK, {
       provider: fakeProvider(answers(0.9, "account")),
       recordUsage: false,
     });
     expect(result.outcome).toBe("off");
+  });
+
+  it("uses the configured model in model mode even without a keyword hit", async () => {
+    const config = baseConfig("/tmp/repoos-nope", { mode: "automatic", provider: "jev" });
+    config.humanTaskCheck = { mode: "model" };
+    const result = await runHumanStepDecisionCheck(
+      config,
+      {
+        ...TASK,
+        body: "## Acceptance criteria\n\n- [ ] A criterion with no configured trigger phrase\n",
+      },
+      { provider: fakeProvider(answers(0.9, "external")), recordUsage: false },
+    );
+    expect(result.outcome).toBe("human");
   });
 
   it("blocks and explains when the model says a human step is needed", async () => {

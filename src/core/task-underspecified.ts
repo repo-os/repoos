@@ -130,6 +130,17 @@ export interface TaskSpecCheckOptions {
   assignee?: string | null;
   /** Optional configured phrase list; defaults to the built-in human-step phrases. */
   humanStepKeywords?: string[];
+  /** Let model-only mode retain a criterion quote even when no phrase matched. */
+  modelOnlyHumanStepCheck?: boolean;
+}
+
+/** Resolve the new three-way setting while preserving an explicit legacy off. */
+export function resolveHumanTaskCheckMode(
+  mode: "keywords" | "model" | "both" | undefined,
+  legacyModelCheck: boolean | undefined,
+): "keywords" | "model" | "both" {
+  if (mode) return mode;
+  return legacyModelCheck === false ? "keywords" : "both";
 }
 
 /** True when the resolved assignee is the literal `human` assignee. */
@@ -406,7 +417,13 @@ export function assessTaskNeedsHumanStep(
   }
   const uniqueSignals = [...new Set(signals)];
   if (uniqueSignals.length === 0) {
-    return { needsHumanStep: false, detail: "", signals: [] };
+    const firstCriterion = opts?.modelOnlyHumanStepCheck ? scanLines[0] : undefined;
+    return {
+      needsHumanStep: false,
+      detail: "",
+      signals: [],
+      ...(firstCriterion ? { sentence: firstCriterion } : {}),
+    };
   }
   const detail = `${NEEDS_HUMAN_STEP_HINT} (matched: ${uniqueSignals.join(", ")}${
     sentence ? ` — "${sentence}"` : ""

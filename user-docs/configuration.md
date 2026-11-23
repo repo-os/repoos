@@ -439,10 +439,13 @@ need a real device, account, or third-party sign-up. Set `humanTaskCheck.mode`
 to `keywords`, `model`, or `both` in Settings; the default `both` runs the
 phrase scan first and asks the configured decision model only after a match.
 Add project-specific phrases with `humanTaskCheck.keywords` (one phrase per
-line in Settings). Negated mentions and code identifiers do not count. A
-keyword scan is only a tripwire: when **Model routing → Check for mixed AI and human steps** is on,
-the decision model must agree before the flag is set, and `needs_input_detail`
-quotes the matched criterion plus the model's bounded reason. Clearing the flag
+line in Settings). Negated mentions and code identifiers do not count. In
+`model` mode, the model checks every task; in `both` mode it is called only
+after a phrase match. The model uses the configured provider and timeout above;
+Automatic routing lets its verdict block a start, Shadow records without
+blocking, and an unavailable or failed model falls back to the phrase result.
+The refusal detail quotes the matched criterion and the model's bounded reason.
+Clearing the flag
 (or `repoos update --human-step-override "<reason>"`) is **sticky** by default
 (**Remember cleared needs-human-step flags**): RepoOS stores a fingerprint of
 the acceptance criteria so later edits do not re-flag until the criteria
@@ -666,7 +669,7 @@ humanStepSticky = true       # remember cleared flags (default on)
 | `model_routing.timeoutMs` | `8000` | One decision call's ceiling. A timeout falls back; it never blocks the run. |
 | `humanTaskCheck.mode` | `both` | Choose keyword phrases, the decision model, or keyword-first model checking for human-only acceptance criteria. Model failures fall back to keyword results. |
 | `humanTaskCheck.keywords` | `[]` | Additional human-step phrases, editable in Settings. Negated clauses and code identifiers are ignored. |
-| `model_routing.humanStepCheck` | `false` | Legacy compatibility setting for the earlier human-step model check. New projects should use `humanTaskCheck.mode`. |
+| `model_routing.humanStepCheck` | `false` | Legacy compatibility switch. When no `humanTaskCheck.mode` is set, `false` selects keyword-only mode; new projects should use `humanTaskCheck.mode`. |
 | `model_routing.humanStepSticky` | `true` | When a human clears a `needs-human-step` flag, record a fingerprint of the acceptance criteria so later rescans skip the flag until the criteria materially change. |
 
 ### Choosing a provider
