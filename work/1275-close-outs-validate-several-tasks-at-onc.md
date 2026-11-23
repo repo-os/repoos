@@ -589,3 +589,4 @@ Read docs/close-out-pipeline.md and docs/remote-validation.md first. Never touch
 - 2026-11-23T10:53:20Z · watchdog: check wait ended or recovered — cleared needs_input
 - 2026-11-23T10:53:35Z · watchdog: check wait escalated · waiting: waiting for serialized local fallback (1 ahead, position 2); slot holder 47821 is dead for 7m · next step: investigate the abnormal wait; the flag clears when the check starts
 - 2026-11-23T11:10:09Z · watchdog: check wait ended or recovered — cleared needs_input
+- 2026-11-23T11:10:13Z · note: handoff requested (cli)
