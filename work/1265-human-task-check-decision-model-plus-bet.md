@@ -95,3 +95,4 @@ Sample phrases that must still be caught: "verify on a real handset", "needs a s
 - 2026-11-23T08:52:28Z · message_queued at 2026-11-23T08:52:28.385Z
 - 2026-11-23T08:52:28Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-23T08:52:35Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: I can’t hand this off yet: the previous check failed its format gate, so I formatted the affected files and started the required scoped check again. Its remote test run is still active, but the terminal handle was lost and no final result … · stderr: 2026-11-23T08:49:33.978541Z ERROR codex_core::tools::router: error=write_stdin failed: Unknown process id 42100
+- 2026-11-23T08:52:35Z · message_delivered: 1 message(s)
