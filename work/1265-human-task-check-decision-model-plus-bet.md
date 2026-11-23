@@ -11,7 +11,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/human-task-check-decision-model-plus-bet
 created_at: "2026-11-20T02:34:13Z"
-updated_at: "2026-11-23T08:00:52Z"
+updated_at: "2026-11-23T08:24:48Z"
 ---
 ## Problem
 When a task starts, RepoOS scans the acceptance criteria for keywords such as "device", "physical", "credentials", "accounts" and "third-party registration". On a match it refuses the start with `needs_input_reason: needs-human-step` and asks for a split. The match is purely lexical, so it gives false positives and agents end up rewording criteria to dodge it, which defeats its purpose.
@@ -56,3 +56,8 @@ Sample phrases that must still be caught: "verify on a real handset", "needs a s
 - 2026-11-23T07:47:04Z · watchdog: check wait ended or recovered — cleared needs_input
 - 2026-11-23T07:50:49Z · watchdog: check wait escalated · waiting: waiting for serialized local fallback (1 ahead, position 2); slot holder 35030 is dead for 9m · next step: investigate the abnormal wait; the flag clears when the check starts
 - 2026-11-23T08:00:52Z · watchdog: restarting engineer after 10m with no live process
+- 2026-11-23T08:00:58Z · watchdog: check wait escalated · waiting: waiting for serialized local fallback (1 ahead, position 2); slot holder 35988 is dead for 19m · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-11-23T08:03:08Z · watchdog: check wait ended or recovered — cleared needs_input
+- 2026-11-23T08:10:09Z · watchdog: check wait escalated · waiting: waiting for serialized local fallback (1 ahead, position 2); slot holder 68774 is dead for 28m · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-11-23T08:18:09Z · watchdog: check wait ended or recovered — cleared needs_input
+- 2026-11-23T08:24:48Z · message_queued at 2026-11-23T08:24:48.646Z
