@@ -11,7 +11,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/human-task-check-decision-model-plus-bet
 created_at: "2026-11-20T02:34:13Z"
-updated_at: "2026-11-23T08:27:54Z"
+updated_at: "2026-11-23T08:29:48Z"
 ---
 ## Problem
 When a task starts, RepoOS scans the acceptance criteria for keywords such as "device", "physical", "credentials", "accounts" and "third-party registration". On a match it refuses the start with `needs_input_reason: needs-human-step` and asks for a split. The match is purely lexical, so it gives false positives and agents end up rewording criteria to dodge it, which defeats its purpose.
@@ -65,3 +65,4 @@ Sample phrases that must still be caught: "verify on a real handset", "needs a s
 - 2026-11-23T08:27:54Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-23T08:27:54Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code unknown) · last assistant: The local fallback completed and found formatting issues in five edited files; lint and the documentation build passed, while build and tests were skipped because formatting failed. I’ll run the repository formatter, then rerun the require… · stderr: Reading additional input from stdin... 2026-11-23T08:05:47.731692Z ERROR codex_core::tools::router: error=apply_patch verification failed: Failed to find expected lines in /Users/nick/code/nick/repoos-worktrees/feat/human-task-check-decision-model-plus-bet/src/core/config.ts: export const SUPPORTED_TOML_KEYS = [
 - 2026-11-23T08:27:54Z · message_delivered: 1 message(s)
+- 2026-11-23T08:29:48Z · message_queued at 2026-11-23T08:29:48.518Z
