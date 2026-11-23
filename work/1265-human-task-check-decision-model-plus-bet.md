@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/human-task-check-decision-model-plus-bet
 created_at: "2026-11-20T02:34:13Z"
-updated_at: "2026-11-23T12:29:09Z"
+updated_at: "2026-11-23T12:40:46Z"
 last_close_out_gate_ms: 1138529
 last_close_out_gate_at: "2026-11-23T12:28:15.427Z"
 review_passes: 2
@@ -145,3 +145,4 @@ Sample phrases that must still be caught: "verify on a real handset", "needs a s
 - 2026-11-23T11:55:33Z · note: review pass 2: good to go
 - 2026-11-23T12:28:15Z · close-out gate completed in 1139s
 - 2026-11-23T12:29:09Z · status done→done, release:success
+- 2026-11-23T12:40:46Z · message_dropped: 1 queued message(s) discarded — task is done
