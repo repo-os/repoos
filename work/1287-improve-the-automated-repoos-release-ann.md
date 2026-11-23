@@ -2,7 +2,7 @@
 id: "1287"
 title: Polish automated release announcement emails
 type: feature
-status: review
+status: active
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 needs_input_detail: "`needs some work` — Bullet highlights still use the second sentence as `detail`, so multi-sentence list items break the one-sentence bar (p…"
@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/polish-automated-release-announcement-em
 created_at: "2026-11-23T07:50:59Z"
-updated_at: "2026-11-23T11:44:33Z"
+updated_at: "2026-11-23T12:26:56Z"
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-11-23T11:34:20.904Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_passes: 3
@@ -202,3 +202,4 @@ One additional suggestion: since RepoOS releases appear to be frequent, I'd keep
 - 2026-11-23T11:34:20Z · message_delivered: 1 message(s)
 - 2026-11-23T11:43:35Z · body
 - 2026-11-23T11:44:33Z · message_queued at 2026-11-23T11:44:33.624Z
+- 2026-11-23T12:26:56Z · status review→active
