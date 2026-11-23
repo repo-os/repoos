@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/worktree-cleanup-decide-and-build-the-sa
 created_at: "2026-11-15T00:41:58Z"
-updated_at: "2026-11-23T08:21:54Z"
+updated_at: "2026-11-23T08:47:29Z"
 handoff_signal_retry_count: 2
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-23T08:04:26.772Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Protected worktree triage preview (target \"default\"): loading state detected: loading text \"Loading…\" on /control?shotState=system:worktreeGc (http://127.0.0.1:55926/control?shotState=system:worktreeGc)"
@@ -68,3 +68,4 @@ Read #1055 and src for `repoos gc` first. Do not widen what gc auto-removes. Des
 - 2026-11-23T08:21:54Z · queued message undelivered for 12m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-23T08:21:54Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code unknown) · last assistant: The target was valid, but the dashboard also mounts `DecisionDigestPanel`, which showed `Loading…` while its live API request was pending. I found an existing pattern that suppresses that transient spinner for other dashboard shots. I’ll e… · stderr: (empty)
 - 2026-11-23T08:21:54Z · message_delivered: 2 message(s)
+- 2026-11-23T08:47:29Z · note: adopted orphaned engineer pid 70173
