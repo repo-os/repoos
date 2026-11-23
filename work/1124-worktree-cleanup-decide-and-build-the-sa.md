@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-23T08:04:26.772Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Protected worktree triage preview (target \"default\"): loading state detected: loading text \"Loading…\" on /control?shotState=system:worktreeGc (http://127.0.0.1:55926/control?shotState=system:worktreeGc)"
 id: "1124"
 title: "Worktree cleanup: decide and build the safe handling for 'unsafe' (protected) task worktrees"
 type: feature
@@ -58,3 +60,4 @@ Read #1055 and src for `repoos gc` first. Do not widen what gc auto-removes. Des
 - 2026-11-23T08:04:23Z · note: ui verification failed (1 issue(s)): [missing-target] Protected worktree triage preview (target "default"): loading state detected: loading text "Loading…" on /control?shotState=system:worktreeGc (http://127.0.0.1:55926/control?shotState=system:worktreeGc)
 - 2026-11-23T08:04:23Z · message_queued at 2026-11-23T08:04:23.761Z
 - 2026-11-23T08:04:25Z · orphaned run process stopped · pid 65997 · /opt/homebrew/Cellar/bun/1.4.2/bin/bun /Users/nick/code/nick/repoos-worktrees/feat/worktree-cleanup- · cpu 0s · age 17s
+
