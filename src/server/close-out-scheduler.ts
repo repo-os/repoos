@@ -83,9 +83,10 @@ export class CloseOutScheduler {
       running: this.inFlight,
       limit,
       holdExtra,
+      unavailable: new Set(
+        [...this.coolingUntil].filter(([, until]) => until > now).map(([taskId]) => taskId),
+      ),
     })) {
-      // A run that just crashed waits out its backoff instead of restarting at once.
-      if ((this.coolingUntil.get(taskId) ?? 0) > now) continue;
       // A job given up on is never restarted while it still sits in the queue, so
       // a failed hand-off to `onGiveUp` cannot become an endless crash loop.
       if (this.abandoned.has(taskId)) continue;

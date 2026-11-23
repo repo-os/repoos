@@ -44,10 +44,11 @@ so 11 queued tasks took about 4 hours and one slow job blocked all of them.
   it can publish. The cap on consecutive drift resyncs (`MAX_PUBLISH_DRIFT_RETRIES`,
   5) still applies. A cheaper re-merge that skips the gate was not proven safe, so
   it is not used (fail closed).
-- **Budget.** Time spent parked for the publish turn is not charged to
-  `closeOut.timeoutMs`. The clock restarts when the turn is granted, and the
-  publish step gets its own budget. Validation was already budget-checked before
-  promotion.
+- **Budget.** Time spent parked for the publish turn is excluded from
+  `closeOut.timeoutMs`, but the validation time already spent remains charged.
+  When the turn is granted, the budget anchor moves forward by the parked
+  duration; it does not reset. Publishing continues against that same attempt
+  budget.
 - **Host choice and pressure.** Remote runs still go through the existing host
   lease: fewest active runs, `remoteValidation.maxConcurrent` per host, and the
   pressure guard (#0901). Local gates are bounded by the local check slots

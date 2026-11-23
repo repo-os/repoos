@@ -207,9 +207,11 @@ export function buildIntegrationSnapshot(
   // its validation starts (queued → syncing in the orchestrator). A job still
   // waiting has no start, so it is listed in the queue with its position and
   // never shown as active with a clock running from its enqueue time (#1272).
+  const publishHead = live[0];
   const inFlight =
-    live.find((job): job is IntegrationJob & { startedAt: string } => attemptIsExecuting(job)) ??
-    null;
+    publishHead && attemptIsExecuting(publishHead)
+      ? (publishHead as IntegrationJob & { startedAt: string })
+      : null;
   const queue: string[] = [];
   const queueEnqueuedAt: Record<string, string> = {};
   const queuedJobs: IntegrationJob[] = [];

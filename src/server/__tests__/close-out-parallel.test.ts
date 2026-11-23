@@ -55,6 +55,32 @@ describe("selectCloseOutStarts (#1275)", () => {
     expect(picks).toEqual(["02"]);
   });
 
+  it("does not spend a validation slot on the publish head", () => {
+    const jobs = [job("01", "publishing"), job("02", "queued"), job("03", "queued")];
+    expect(selectCloseOutStarts({ jobs, running: new Set(), limit: 2, holdExtra: false })).toEqual([
+      "01",
+      "02",
+      "03",
+    ]);
+  });
+
+  it("skips a cooling head while allowing later validations and cancelled teardown", () => {
+    const jobs = [
+      job("01", "queued"),
+      job("02", "queued"),
+      job("03", "queued", { cancelled: true }),
+    ];
+    expect(
+      selectCloseOutStarts({
+        jobs,
+        running: new Set(),
+        limit: 2,
+        holdExtra: false,
+        unavailable: new Set(["01"]),
+      }),
+    ).toEqual(["02", "03"]);
+  });
+
   it("never starts a job that is already running", () => {
     const jobs = [job("01", "validating"), job("02", "queued")];
     const picks = selectCloseOutStarts({
@@ -268,6 +294,24 @@ describe("parallel validation coordination (#1275)", () => {
     // publish order (0001 head = 0), not first among the unstarted jobs.
     expect(snap.queueDetail?.map((q) => q.position)).toEqual([2]);
     expect(snap.queueDetail?.[0].blockerTaskId).toBe("0001");
+  });
+
+  it("does not name a later runner as active when the queue head is crash-cooling", () => {
+    coordinator.enqueue(task("0001"));
+    coordinator.enqueue(task("0002"));
+    coordinator.updateJob("0002", { phase: "validating", startedAt: "2026-11-20T00:00:06Z" });
+    const snap = buildIntegrationSnapshot(
+      coordinator,
+      {},
+      undefined,
+      {},
+      {},
+      "2026-11-20T00:10:00Z",
+    );
+    expect(snap.active).toBeNull();
+    expect(snap.parallel?.map((p) => p.taskId)).toEqual(["0002"]);
+    expect(snap.queue).toEqual(["0001"]);
+    expect(snap.queueDetail?.[0].blockerTaskId).toBeNull();
   });
 
   it("a validated job parked for its turn is labelled waiting, not publishing", () => {

@@ -201,6 +201,7 @@ export function selectCloseOutStarts(input: {
   running: ReadonlySet<string>;
   limit: number;
   holdExtra: boolean;
+  unavailable?: ReadonlySet<string>;
 }): string[] {
   const picks: string[] = [];
   const turn = publishTurnTaskId(input.jobs);
@@ -212,13 +213,13 @@ export function selectCloseOutStarts(input: {
       picks.push(job.taskId);
       continue;
     }
+    if (input.unavailable?.has(job.taskId)) continue;
     if (job.phase === "publishing" && job.taskId !== turn) continue;
     // The head that is ready to publish validates nothing, so it takes no
     // validation slot and the pressure guard does not hold it. Otherwise a slow
     // validation could block the publish behind it (#1275).
     if (job.phase === "publishing") {
       picks.push(job.taskId);
-      inFlight++;
       continue;
     }
     // Scan rather than break: the limit and hold are the same for every job
