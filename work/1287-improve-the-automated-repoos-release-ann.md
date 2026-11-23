@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/polish-automated-release-announcement-em
 created_at: "2026-11-23T07:50:59Z"
-updated_at: "2026-11-23T09:06:37Z"
+updated_at: "2026-11-23T09:17:31Z"
 ---
 ## Problem
 
@@ -149,3 +149,4 @@ One additional suggestion: since RepoOS releases appear to be frequent, I'd keep
 - 2026-11-23T07:52:07Z · status inbox→ready
 - 2026-11-23T08:48:20Z · status ready→active, branch
 - 2026-11-23T09:06:37Z · body
+- 2026-11-23T09:17:31Z · body
