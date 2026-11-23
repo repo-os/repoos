@@ -12,7 +12,7 @@ branch: feat/polish-automated-release-announcement-em
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-23T07:50:59Z"
-updated_at: "2026-11-23T15:42:22Z"
+updated_at: "2026-11-23T16:19:10Z"
 last_close_out_gate_ms: 847887
 last_close_out_gate_at: "2026-11-23T15:42:06.137Z"
 review_passes: 4
@@ -215,3 +215,4 @@ One additional suggestion: since RepoOS releases appear to be frequent, I'd keep
 - 2026-11-23T12:50:01Z · needs_input
 - 2026-11-23T15:42:06Z · close-out gate completed in 848s
 - 2026-11-23T15:42:22Z · status done→done, release:success
+- 2026-11-23T16:19:10Z · message_dropped: 1 queued message(s) discarded — task is done
