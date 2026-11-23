@@ -3,16 +3,13 @@ id: "1275"
 title: "Close-outs: validate several tasks at once on different runner machines"
 type: feature
 status: active
-needs_input: true
-needs_input_reason: check-wait
-needs_input_detail: "waiting: waiting for serialized local fallback (1 ahead, position 2); slot holder 5315 is dead for 9s"
 priority: p1
 area: [server, core]
 assigned_to: ai
 created_by: t@t
 branch: feat/close-outs-validate-several-tasks-at-onc
 created_at: "2026-11-20T07:42:13Z"
-updated_at: "2026-11-23T10:48:38Z"
+updated_at: "2026-11-23T11:10:13Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: b4cbc7510a79b9dd9a713d0e31f0145408df89b3
 review_passes: 5
@@ -589,3 +586,6 @@ Read docs/close-out-pipeline.md and docs/remote-validation.md first. Never touch
 - 2026-11-23T10:43:38Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-23T10:46:35Z · watchdog: check wait escalated · waiting: waiting for serialized local fallback (1 ahead, position 2); slot holder 5315 is dead for 9s · next step: investigate the abnormal wait; the flag clears when the check starts
 - 2026-11-23T10:48:38Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-23T10:53:20Z · watchdog: check wait ended or recovered — cleared needs_input
+- 2026-11-23T10:53:35Z · watchdog: check wait escalated · waiting: waiting for serialized local fallback (1 ahead, position 2); slot holder 47821 is dead for 7m · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-11-23T11:10:09Z · watchdog: check wait ended or recovered — cleared needs_input
