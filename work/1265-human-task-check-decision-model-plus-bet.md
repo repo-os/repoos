@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-11-23T11:55:33Z"
-review_passes: 2
+last_close_out_gate_ms: 1138529
+last_close_out_gate_at: "2026-11-23T12:28:15.427Z"
 id: "1265"
 title: "Human-task check: decision model plus better keyword rules"
 type: feature
@@ -16,6 +16,8 @@ assigned_to: ai
 created_by: t@t
 branch: feat/human-task-check-decision-model-plus-bet
 created_at: "2026-11-20T02:34:13Z"
+updated_at: "2026-11-23T12:28:15Z"
+review_passes: 2
 review_rounds: 1
 routing_switches: 1
 dev_error_count: 2
@@ -143,4 +145,5 @@ Sample phrases that must still be caught: "verify on a real handset", "needs a s
 - 2026-11-23T11:55:31Z · message_queued at 2026-11-23T11:55:31.173Z
 - 2026-11-23T11:55:31Z · handoff failed · task-file handoff failed at review · Engineering report draft is missing: .repoos/engineering-report-drafts/1265.md
 - 2026-11-23T11:55:33Z · note: review pass 2: good to go
+- 2026-11-23T12:28:15Z · close-out gate completed in 1139s
 
