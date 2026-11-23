@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-23T11:34:18Z"
+review_passes: 3
 id: "1287"
 title: Polish automated release announcement emails
 type: feature
@@ -12,13 +14,11 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/polish-automated-release-announcement-em
 created_at: "2026-11-23T07:50:59Z"
-updated_at: "2026-11-23T11:34:18Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-23T10:06:49.976Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 2
 routing_switches: 1
 routing_escalations: 1
-review_passes: 2
 ---
 ## Problem
 
@@ -199,3 +199,4 @@ One additional suggestion: since RepoOS releases appear to be frequent, I'd keep
 - 2026-11-23T11:34:17Z · message_queued at 2026-11-23T11:34:17.714Z
 - 2026-11-23T11:34:18Z · note: review pass 3: needs some work
 - 2026-11-23T11:34:18Z · needs_input
+
