@@ -66,3 +66,4 @@ Read #1055 and src for `repoos gc` first. Do not widen what gc auto-removes. Des
 - 2026-11-23T08:15:12Z · message_queued at 2026-11-23T08:15:12.809Z
 - 2026-11-23T08:19:03Z · message_delivered: 1 message(s)
 - 2026-11-23T08:21:54Z · queued message undelivered for 12m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-23T08:21:54Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code unknown) · last assistant: The target was valid, but the dashboard also mounts `DecisionDigestPanel`, which showed `Loading…` while its live API request was pending. I found an existing pattern that suppresses that transient spinner for other dashboard shots. I’ll e… · stderr: (empty)
