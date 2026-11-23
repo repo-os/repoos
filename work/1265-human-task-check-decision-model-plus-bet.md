@@ -113,3 +113,4 @@ Sample phrases that must still be caught: "verify on a real handset", "needs a s
 - 2026-11-23T10:58:38Z · CTO nudge: held — handoff gate is running
 - 2026-11-23T11:00:31Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
 - 2026-11-23T11:00:33Z · status active→review
+- 2026-11-23T11:00:33Z · message_queued at 2026-11-23T11:00:33.929Z
