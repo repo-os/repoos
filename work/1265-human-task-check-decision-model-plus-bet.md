@@ -3,6 +3,9 @@ id: "1265"
 title: "Human-task check: decision model plus better keyword rules"
 type: feature
 status: active
+needs_input: true
+needs_input_reason: provider-failure
+needs_input_detail: "The selected model is not available for this account. Choose another model on the Agents page. (CLI: ? `Decision model unavailable (${check.error ?? \"request failed\"}); keyword result used. `)"
 human_step_override: Cleared needs-human-step flag (sticky until acceptance criteria change)
 human_step_override_key: 5384b92b
 priority: p2
@@ -11,10 +14,12 @@ assigned_to: ai
 created_by: t@t
 branch: feat/human-task-check-decision-model-plus-bet
 created_at: "2026-11-20T02:34:13Z"
-updated_at: "2026-11-23T11:01:29Z"
+updated_at: "2026-11-23T11:02:37Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
+dev_error_count: 1
+engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-23T11:02:37.668Z\",\"kind\":\"provider-failure\"}]"
 ---
 ## Problem
 When a task starts, RepoOS scans the acceptance criteria for keywords such as "device", "physical", "credentials", "accounts" and "third-party registration". On a match it refuses the start with `needs_input_reason: needs-human-step` and asks for a split. The match is purely lexical, so it gives false positives and agents end up rewording criteria to dodge it, which defeats its purpose.
@@ -121,3 +126,5 @@ Sample phrases that must still be caught: "verify on a real handset", "needs a s
 - 2026-11-23T11:01:26Z · message_delivered: 1 message(s)
 - 2026-11-23T11:01:26Z · status review→active
 - 2026-11-23T11:01:29Z · CTO nudge: held — remote validation is running
+- 2026-11-23T11:02:37Z · agent exited with an error (codex) · The selected model is not available for this account. Choose another model on the Agents page. (CLI: ? `Decision model unavailable (${check.error ?? "request failed"}); keyword result used. `)
+- 2026-11-23T11:02:37Z · engineer crash recovery: resuming codex + gpt-6-luna (1/3 crashes in 30m) · The selected model is not available for this account. Choose another model on the Agents page. (CLI: ? `Decision model unavailable (${check.error ?? "request failed"}); keyword result used. `)
