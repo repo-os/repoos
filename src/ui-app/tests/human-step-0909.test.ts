@@ -171,6 +171,7 @@ describe("model check before keyword (#0909)", () => {
       provider: "jev",
       humanStepCheck: true,
     });
+    config.humanTaskCheck = { mode: "model" };
     try {
       const task = parseTask({
         content: readFileSync(path, "utf8"),
@@ -212,6 +213,7 @@ describe("model check before keyword (#0909)", () => {
       provider: "jev",
       humanStepCheck: true,
     });
+    config.humanTaskCheck = { mode: "model" };
     try {
       const task = parseTask({
         content: readFileSync(path, "utf8"),
@@ -258,6 +260,7 @@ describe("shadow mode sweep (#0909)", () => {
       provider: "jev",
       humanStepCheck: true,
     });
+    config.humanTaskCheck = { mode: "model" };
     try {
       const task = parseTask({
         content: readFileSync(path, "utf8"),
@@ -308,6 +311,7 @@ describe("dismissed human verdict (#0909)", () => {
       humanStepCheck: false,
       humanStepSticky: false,
     });
+    config.humanTaskCheck = { mode: "keywords", keywords: ["api keys"] };
     try {
       const task = parseTask({
         content: readFileSync(path, "utf8"),
@@ -342,9 +346,19 @@ describe("split human-step tasks (#0909)", () => {
     execFileSync("git", ["config", "user.email", "t@t.com"], { cwd: root });
     execFileSync("git", ["config", "user.name", "T"], { cwd: root });
     const path = join(work, "0909e.md");
+    const completeMixedBody = mixedBody.replace(
+      "Standard.",
+      "Standard. The automated task covers repository changes, deterministic tests, and local verification. " +
+        "Keep its scope limited to implementation and repeatable checks that do not depend on a person or external account. " +
+        "The separate human task owns the real device and production credential verification described above.",
+    );
     writeFileSync(
       path,
-      taskFile("0909e", "needs_input: true\nneeds_input_reason: needs-human-step\n", mixedBody),
+      taskFile(
+        "0909e",
+        "needs_input: true\nneeds_input_reason: needs-human-step\n",
+        completeMixedBody,
+      ),
     );
     const config = baseConfig(root);
     try {

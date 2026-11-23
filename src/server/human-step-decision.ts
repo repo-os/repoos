@@ -20,6 +20,7 @@ import { resolveEffectiveRouting } from "../core/model-routing/config.js";
 import { buildRoutingProvider } from "../core/model-routing/runtime.js";
 import type { RoutingDecisionProvider } from "../core/model-routing/types.js";
 import { decideHumanStep, type HumanStepDecision } from "../core/human-step-decision.js";
+import { resolveHumanTaskCheckMode } from "../core/task-underspecified.js";
 import { recordOneShotSession, type PromptResult } from "./agents.js";
 
 export type HumanStepCheckOutcome = "off" | "unavailable" | "failed" | "shadow" | "agent" | "human";
@@ -68,7 +69,7 @@ function recordDecisionUsage(
       config.root,
       decisionAccountingAgent(config.modelRouting?.provider ?? null, model),
       result,
-      { sessionType: "routing", taskId },
+      { sessionType: "human-check", taskId },
     );
   } catch {
     // Accounting must never break a start.
@@ -84,7 +85,13 @@ export async function runHumanStepDecisionCheck(
   task: Pick<Task, "id" | "title" | "body"> & { matchedSentence?: string },
   deps: { provider?: RoutingDecisionProvider | null; recordUsage?: boolean } = {},
 ): Promise<HumanStepCheckResult> {
-  if (config.modelRouting?.humanStepCheck !== true) return { outcome: "off" };
+  const checkMode = resolveHumanTaskCheckMode(
+    config.humanTaskCheck?.mode,
+    config.modelRouting?.humanStepCheck,
+  );
+  if (checkMode === "keywords") return { outcome: "off" };
+  // Preserve the legacy checkbox as an explicit opt-in when a project has not
+  // adopted the new setting; the new setting defaults to keyword-first.
 
   const effective = resolveEffectiveRouting(config.modelRouting);
   const provider = "provider" in deps ? (deps.provider ?? null) : buildRoutingProvider(effective);

@@ -2596,6 +2596,19 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
       for (const warning of routing.warnings) console.warn(`[repoos] ${warning}`);
       if (Object.keys(routing.config).length) cfg.modelRouting = routing.config;
     }
+    const humanTaskMode = parsed["humanTaskCheck.mode"];
+    const humanTaskKeywords = parsed["humanTaskCheck.keywords"];
+    if (humanTaskMode !== undefined || humanTaskKeywords !== undefined) {
+      cfg.humanTaskCheck = {
+        mode:
+          humanTaskMode === "keywords" || humanTaskMode === "model" || humanTaskMode === "both"
+            ? humanTaskMode
+            : "both",
+        ...(Array.isArray(humanTaskKeywords)
+          ? { keywords: humanTaskKeywords.filter((v): v is string => typeof v === "string") }
+          : {}),
+      };
+    }
     const closeOutInstallCommand = parsed["closeOut.installCommand"];
     if (typeof closeOutInstallCommand === "string" && closeOutInstallCommand.trim()) {
       cfg.closeOut = {
@@ -4740,6 +4753,31 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         "How long one routing decision may take before the configured fallback is used. Between 0.5 and 60 seconds.",
     },
     {
+      key: "humanTaskCheck.mode",
+      label: "Human-step check mode",
+      type: "select",
+      tier: "live",
+      restartRequired: false,
+      default: "both",
+      options: [
+        { value: "keywords", label: "Keywords" },
+        { value: "model", label: "Decision model" },
+        { value: "both", label: "Keywords, then model" },
+      ],
+      description:
+        "Use phrase rules, the configured decision model, or consult the model only after a phrase match. Model errors fall back to phrase rules.",
+    },
+    {
+      key: "humanTaskCheck.keywords",
+      label: "Human-step keyword phrases",
+      type: "array",
+      tier: "live",
+      restartRequired: false,
+      default: [],
+      description:
+        "Additional phrases that signal a real human-only step. Negated mentions and code identifiers are ignored.",
+    },
+    {
       key: "model_routing.humanStepCheck",
       label: "Check for mixed AI and human steps, and suggest splitting the task",
       type: "boolean",
@@ -4789,6 +4827,8 @@ export function getConfigSchema(): ConfigFieldMeta[] {
  * it here and document it** — otherwise the docs-drift test cannot see it.
  */
 export const SUPPORTED_TOML_KEYS: readonly string[] = [
+  "humanTaskCheck.mode",
+  "humanTaskCheck.keywords",
   // Layout and repository paths
   "workDir",
   "docsDir",

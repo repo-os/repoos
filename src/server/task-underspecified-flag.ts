@@ -7,6 +7,7 @@ import {
   assessTaskNeedsHumanStep,
   assessTaskUnderspecified,
   needsHumanStepFingerprint,
+  resolveHumanTaskCheckMode,
 } from "../core/task-underspecified.js";
 export { NEEDS_HUMAN_STEP_NEEDS_INPUT_REASON, UNDERSPECIFIED_NEEDS_INPUT_REASON };
 import { patchTaskFile } from "./write.js";
@@ -73,7 +74,11 @@ async function resolveKeywordTripwire(
   if (assessment.taggedHuman) {
     return { action: "flag", detail: assessment.detail };
   }
-  if (config.modelRouting?.humanStepCheck !== true) {
+  const mode = resolveHumanTaskCheckMode(
+    config.humanTaskCheck?.mode,
+    config.modelRouting?.humanStepCheck,
+  );
+  if (mode === "keywords" || (!assessment.needsHumanStep && mode !== "model")) {
     return { action: "keyword-fallback", detail: assessment.detail };
   }
   const check = await runHumanStepDecisionCheck(config, {
@@ -83,7 +88,11 @@ async function resolveKeywordTripwire(
     matchedSentence: assessment.sentence,
   });
   if (check.outcome === "unavailable" || check.outcome === "failed") {
-    return { action: "keyword-fallback", detail: assessment.detail };
+    const fallback =
+      check.outcome === "failed"
+        ? `Decision model failed (${check.error ?? "request failed"}); keyword result used. `
+        : "Decision model unavailable; keyword result used. ";
+    return { action: "keyword-fallback", detail: `${fallback}${assessment.detail}` };
   }
   if (check.outcome === "shadow") {
     return {
@@ -141,8 +150,17 @@ export async function flagNeedsHumanStepIfNeededAsync(
   const assessment = assessTaskNeedsHumanStep(task.body, {
     area: task.area,
     assignee: task.assignee,
+    humanStepKeywords: config.humanTaskCheck?.keywords,
+    modelOnlyHumanStepCheck:
+      resolveHumanTaskCheckMode(
+        config.humanTaskCheck?.mode,
+        config.modelRouting?.humanStepCheck,
+      ) === "model",
   });
-  if (!assessment.needsHumanStep) {
+  const modelOnly =
+    resolveHumanTaskCheckMode(config.humanTaskCheck?.mode, config.modelRouting?.humanStepCheck) ===
+    "model";
+  if (!assessment.needsHumanStep && !modelOnly) {
     return clearHumanStepFlag(config, task);
   }
 
@@ -151,7 +169,11 @@ export async function flagNeedsHumanStepIfNeededAsync(
       ? { action: "flag" as const, detail: opts.humanStepDetail, persistDecision: "human" as const }
       : opts?.humanStepDecision === "agent"
         ? { action: "clear" as const, persistDecision: "agent" as const }
-        : await resolveKeywordTripwire(config, task, assessment);
+        : await resolveKeywordTripwire(
+            config,
+            task,
+            modelOnly ? { ...assessment, needsHumanStep: true } : assessment,
+          );
 
   if (resolved.action === "shadow") {
     const cleared = clearHumanStepFlag(config, task);
@@ -181,6 +203,12 @@ export async function flagNeedsHumanStepIfNeededAsync(
       });
     }
     return cleared;
+  }
+
+  // A failed model call falls back to the deterministic phrase result. In
+  // model-only mode that result can be negative, so it must not become a flag.
+  if (resolved.action === "keyword-fallback" && !assessment.needsHumanStep) {
+    return clearHumanStepFlag(config, task);
   }
 
   const detail = resolved.detail;

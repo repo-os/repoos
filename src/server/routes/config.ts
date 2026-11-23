@@ -78,6 +78,7 @@ export function safeConfigForBrowser(config: Record<string, unknown>): Record<st
     areas: _rawAreas,
     budget: _rawBudget,
     modelRouting: _rawModelRouting,
+    humanTaskCheck: _rawHumanTaskCheck,
     ...rest
   } = config;
   // The declared area vocabulary (#0583) is exposed to the browser as plain
@@ -140,6 +141,13 @@ export function safeConfigForBrowser(config: Record<string, unknown>): Record<st
       ?.humanStepCheck,
     "model_routing.humanStepSticky": (_rawModelRouting as { humanStepSticky?: boolean } | undefined)
       ?.humanStepSticky,
+    "humanTaskCheck.mode":
+      (_rawHumanTaskCheck as { mode?: string } | undefined)?.mode ??
+      ((_rawModelRouting as { humanStepCheck?: boolean } | undefined)?.humanStepCheck === false
+        ? "keywords"
+        : "both"),
+    "humanTaskCheck.keywords":
+      (_rawHumanTaskCheck as { keywords?: string[] } | undefined)?.keywords ?? [],
     "uiVerification.enabled": safeUiVerification.enabled,
     "uiVerification.autoRefreshStaleOnce": safeUiVerification.autoRefreshStaleOnce,
     "uiVerification.viewportWidths": safeUiVerification.viewportWidths,
@@ -900,6 +908,15 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
           return json(res, 400, { error: "Select at least one role for the router." });
         }
         patch[field.key] = normalized;
+        continue;
+      }
+      if (field.key === "humanTaskCheck.keywords") {
+        if (!Array.isArray(val) || val.some((item) => typeof item !== "string")) {
+          return json(res, 400, { error: `${field.label} must be an array of phrases` });
+        }
+        patch[field.key] = [
+          ...new Set((val as string[]).map((item) => item.trim()).filter(Boolean)),
+        ];
         continue;
       }
       if (field.key === "uiVerification.viewportWidths") {

@@ -21,6 +21,7 @@ vi.mock("../../server/human-step-decision.js", () => ({
 }));
 
 import { runHumanStepDecisionCheck } from "../../server/human-step-decision.js";
+import { flagNeedsHumanStepIfNeededAsync } from "../../server/task-underspecified-flag.js";
 import { taskAction } from "../../server/routes/tasks.js";
 
 vi.mock("../../core/bootstrap.js", () => ({
@@ -91,6 +92,7 @@ ${KEYS_BODY}`,
     defaultAssignee: "unassigned",
     cacheDir: ".repoos",
     agents: [ENGINEER_AGENT],
+    humanTaskCheck: { mode: "both", keywords: ["api keys"] },
     modelRouting: { mode: "automatic", provider: "jev", humanStepCheck: true },
   };
   const read = () =>
@@ -163,6 +165,26 @@ function makeRes(): { res: any; fake: { status: number; payload: any } } {
 }
 
 describe("decision-model start gate (#0804)", () => {
+  it.each([
+    { outcome: "failed" as const, error: "timeout", expected: "Decision model failed (timeout)" },
+    {
+      outcome: "unavailable" as const,
+      expected: "Decision model unavailable; keyword result used.",
+    },
+  ])(
+    "uses accurate fallback wording for $outcome model results",
+    async ({ outcome, error, expected }) => {
+      vi.mocked(runHumanStepDecisionCheck).mockResolvedValue({ outcome, error } as any);
+      const fx = makeFixture();
+      try {
+        const updated = await flagNeedsHumanStepIfNeededAsync(fx.ctx.config, fx.read());
+        expect(updated?.needsInputDetail).toContain(expected);
+      } finally {
+        fx.clean();
+      }
+    },
+  );
+
   it("refuses the start and flags the task with the explanation when the model says human", async () => {
     vi.mocked(runHumanStepDecisionCheck).mockResolvedValue({
       outcome: "human",
@@ -196,7 +218,7 @@ describe("decision-model start gate (#0804)", () => {
     });
     const fx = makeFixture();
     try {
-      const { res } = makeRes();
+      const { res, fake } = makeRes();
       await taskAction(fx.ctx, makeReq(), res, { param1: "0804", param2: "start" });
       const onDisk = fx.read();
       expect(onDisk.status).toBe("active");
@@ -221,7 +243,7 @@ describe("decision-model start gate (#0804)", () => {
     });
     const fx = makeFixture();
     try {
-      const { res } = makeRes();
+      const { res, fake } = makeRes();
       await taskAction(fx.ctx, makeReq(), res, { param1: "0804", param2: "start" });
       const onDisk = fx.read();
       expect(onDisk.status).toBe("active");
@@ -239,12 +261,16 @@ describe("decision-model start gate (#0804)", () => {
     });
     const fx = makeFixture();
     try {
-      const { res } = makeRes();
+      const { res, fake } = makeRes();
       await taskAction(fx.ctx, makeReq(), res, { param1: "0804", param2: "start" });
       const onDisk = fx.read();
-      expect(onDisk.status).toBe("active");
-      // The 'keys' word matches the keyword heuristic, so the flag is raised.
+      expect(onDisk.status).toBe("ready");
+      expect(fake.status).toBe(409);
+      // The configured phrase matches, so a model outage falls back to the
+      // keyword verdict and explains that fallback before starting.
       expect(onDisk.needsInputReason).toBe("needs-human-step");
+      expect(onDisk.needsInputDetail).toContain("Decision model failed (timeout)");
+      expect(fake.payload.detail).toContain("Decision model failed (timeout)");
     } finally {
       fx.clean();
     }

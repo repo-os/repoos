@@ -1,22 +1,20 @@
 ---
-last_close_out_gate_ms: 1138529
-last_close_out_gate_at: "2026-11-23T12:28:15.427Z"
 id: "1265"
 title: "Human-task check: decision model plus better keyword rules"
 type: feature
-status: review
-needs_input: true
-needs_input_reason: provider-failure
-needs_input_detail: "The selected model is not available for this account. Choose another model on the Agents page. (CLI: ? `Decision model unavailable (${check.error ?? \"request failed\"}); keyword result used. `)"
+status: done
 human_step_override: Cleared needs-human-step flag (sticky until acceptance criteria change)
 human_step_override_key: 5384b92b
 priority: p2
 area: core
+merged_commit: d27bb715ddb3f5b26a80f66d5957ce54e5669fd8
 assigned_to: ai
 created_by: t@t
 branch: feat/human-task-check-decision-model-plus-bet
 created_at: "2026-11-20T02:34:13Z"
 updated_at: "2026-11-23T12:28:15Z"
+last_close_out_gate_ms: 1138529
+last_close_out_gate_at: "2026-11-23T12:28:15.427Z"
 review_passes: 2
 review_rounds: 1
 routing_switches: 1

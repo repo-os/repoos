@@ -281,6 +281,51 @@ describe("assessTaskNeedsHumanStep (#0698)", () => {
     expect(assessTaskNeedsHumanStep(body, { assignee: "human" }).needsHumanStep).toBe(false);
     expect(assessTaskNeedsHumanStep(body, { assignee: "ai" }).needsHumanStep).toBe(true);
   });
+
+  it.each([
+    "The lock gate (BiometricPrompt with screen-lock fallback) and FLAG_SECURE are covered by unit tests and a note; no physical-device step is required.",
+    "Biometric or device credential gate and FLAG_SECURE verified (test or scene plus note)",
+    "Verify on a real handset",
+    "Needs a sign-up at a third party",
+    "The user pastes their secret key",
+  ])("uses context around human-step terms: %s", (criterion) => {
+    const body = wellFormed.replace("- [ ] Unit tests pass", `- [ ] ${criterion}`);
+    const result = assessTaskNeedsHumanStep(body);
+    if (
+      criterion.startsWith("Verify on") ||
+      criterion.startsWith("Needs") ||
+      criterion.startsWith("The user")
+    ) {
+      expect(result.needsHumanStep).toBe(true);
+      expect(result.sentence).toContain(criterion);
+    } else {
+      expect(result.needsHumanStep).toBe(false);
+    }
+  });
+
+  it("matches configured phrases and honors negation", () => {
+    const body = wellFormed.replace("- [ ] Unit tests pass", "- [ ] Verify with a lab handset");
+    expect(
+      assessTaskNeedsHumanStep(body, { humanStepKeywords: ["lab handset"] }).needsHumanStep,
+    ).toBe(true);
+    const negated = wellFormed.replace(
+      "- [ ] Unit tests pass",
+      "- [ ] No lab handset verification is required",
+    );
+    expect(
+      assessTaskNeedsHumanStep(negated, { humanStepKeywords: ["lab handset"] }).needsHumanStep,
+    ).toBe(false);
+  });
+
+  it("retains a criterion quote for model-only decisions", () => {
+    const body = wellFormed.replace(
+      "- [ ] Unit tests pass",
+      "- [ ] An ambiguous requirement is evaluated by the decision model",
+    );
+    const result = assessTaskNeedsHumanStep(body, { modelOnlyHumanStepCheck: true });
+    expect(result.needsHumanStep).toBe(false);
+    expect(result.sentence).toContain("An ambiguous requirement");
+  });
 });
 
 describe("underspecified needs_input review clear rules", () => {
