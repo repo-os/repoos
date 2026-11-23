@@ -581,3 +581,4 @@ Read docs/close-out-pipeline.md and docs/remote-validation.md first. Never touch
 - 2026-11-23T10:41:31Z · message_queued at 2026-11-23T10:41:31.219Z
 - 2026-11-23T10:41:32Z · handoff failed · task-file handoff failed at check · repoos check failed: ◆ Check plan
 - 2026-11-23T10:42:32Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The worktree is clean, but the handoff did not pass: RepoOS reports `handoff: failed` at the check step with `repoos check failed: ◆ Check plan` (10:41 UTC). The latest saved check record is from an earlier run, so it doesn’t identify the … · stderr: (empty)
+- 2026-11-23T10:42:32Z · message_delivered: 1 message(s)
