@@ -59,3 +59,4 @@ See attached: all servers show Unreachable with no way to refresh.
 - 2026-11-23T08:16:39Z · watchdog: check wait ended or recovered — cleared needs_input
 - 2026-11-23T08:18:52Z · status active→review
 - 2026-11-23T08:18:52Z · message_queued at 2026-11-23T08:18:52.171Z
+- 2026-11-23T08:18:52Z · note: shots: skipped — the diff (6 changed paths) touches no capture target's globs — no UI change to capture
