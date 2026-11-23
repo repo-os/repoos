@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/easter-eggs-bundle-just-release-writes-t
 created_at: "2026-11-19T13:45:13Z"
-updated_at: "2026-11-23T12:13:38Z"
+updated_at: "2026-11-23T12:16:21Z"
 ---
 ## Items
 
@@ -50,3 +50,4 @@ Start from the `release` recipe in justfile, shared/release.ts (CURRENT_RELEASE,
 - 2026-11-23T12:08:38Z · message_queued at 2026-11-23T12:08:38.889Z
 - 2026-11-23T12:08:39Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-23T12:13:38Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-23T12:16:21Z · body
