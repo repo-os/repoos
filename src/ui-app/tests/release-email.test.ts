@@ -212,11 +212,20 @@ describe("renderReleaseEmail", () => {
   });
 
   it("uses headings and actual notes to make a short release summary", () => {
-    const out = renderReleaseEmail(makeConfig(), entry({ notes: "### Task drawer: compact metadata\n\nThe drawer starts with a compact summary. Click to open full controls.\n\n### Other\n\nUpdated small labels." }));
+    const out = renderReleaseEmail(
+      makeConfig(),
+      entry({
+        notes:
+          "### Task drawer: compact metadata\n\nThe drawer starts with a compact summary. Click to open full controls.\n\n### Other\n\nUpdated small labels.",
+      }),
+    );
     expect(out.subject).toBe("RepoOS v0.6.0 released — Task drawer: compact metadata");
     expect(out.html).toContain("The drawer starts with a compact summary.");
-    expect(out.html).toContain("<h3 style=\"margin:20px 0 8px;font-size:16px\">Other</h3>");
-    const loneOther = renderReleaseEmail(makeConfig(), entry({ notes: "### Other\n\n- Updated small labels." }));
+    expect(out.html).toContain('<h3 style="margin:20px 0 8px;font-size:16px">Other</h3>');
+    const loneOther = renderReleaseEmail(
+      makeConfig(),
+      entry({ notes: "### Other\n\n- Updated small labels." }),
+    );
     expect(loneOther.html).not.toContain(">Other</h3>");
   });
 

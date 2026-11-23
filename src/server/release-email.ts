@@ -184,21 +184,31 @@ function noteItems(markdown: string): { name: string; detail: string }[] {
     const content = raw.replace(/\*\*/g, "").trim();
     if (!content || /^changes in this release:?$/i.test(content)) return;
     const parts = content.match(/^(.{1,70}?)[.!?](?:\s+|$)(.*)$/);
-    const name = !isBullet && heading && !/^highlights?$/i.test(heading)
-      ? heading
-      : parts?.[1]?.trim() || content.split(/[.:;]/, 1)[0]!.slice(0, 64).trim();
-    const detail = parts ? (parts[2]?.trim() || parts[1]!.trim()) : content;
+    const name =
+      !isBullet && heading && !/^highlights?$/i.test(heading)
+        ? heading
+        : parts?.[1]?.trim() || content.split(/[.:;]/, 1)[0]!.slice(0, 64).trim();
+    const detail = parts ? parts[2]?.trim() || parts[1]!.trim() : content;
     if (name && detail && !items.some((item) => item.name.toLowerCase() === name.toLowerCase()))
       items.push({ name, detail });
   };
-  const flush = (): void => { if (paragraph.length) add(paragraph.join(" ")); paragraph = []; };
+  const flush = (): void => {
+    if (paragraph.length) add(paragraph.join(" "));
+    paragraph = [];
+  };
   for (const raw of markdown.split(/\r?\n/)) {
     const line = raw.trim();
     const match = line.match(/^#{1,6}\s+(.+)$/);
-    if (match) { flush(); heading = match[1]!.trim(); continue; }
+    if (match) {
+      flush();
+      heading = match[1]!.trim();
+      continue;
+    }
     const bullet = line.match(/^[-*]\s+(.+)$/);
-    if (bullet) { flush(); add(bullet[1]!, true); }
-    else if (line) paragraph.push(line);
+    if (bullet) {
+      flush();
+      add(bullet[1]!, true);
+    } else if (line) paragraph.push(line);
     else flush();
   }
   flush();
@@ -209,9 +219,18 @@ function noteItems(markdown: string): { name: string; detail: string }[] {
 export function summarizeReleaseNotes(markdown: string): ReleaseEmailSummary {
   const items = noteItems(markdown);
   const headline = items[0]?.name.replace(/[.!?]+$/, "").trim();
-  const highlights = items.map(({ name, detail }) => ({ name, detail: detail.replace(/[.!?]+$/, ".") }));
+  const highlights = items.map(({ name, detail }) => ({
+    name,
+    detail: detail.replace(/[.!?]+$/, "."),
+  }));
   const tldr = highlights.length
-    ? highlights.slice(0, 2).map(({ name, detail }) => `${name}: ${detail}`).join(" ").split(/\s+/).slice(0, 50).join(" ")
+    ? highlights
+        .slice(0, 2)
+        .map(({ name, detail }) => `${name}: ${detail}`)
+        .join(" ")
+        .split(/\s+/)
+        .slice(0, 50)
+        .join(" ")
     : undefined;
   return { ...(headline ? { headline } : {}), ...(tldr ? { tldr } : {}), highlights };
 }
@@ -222,11 +241,13 @@ function noteSections(markdown: string): { title: string; body: string }[] {
   for (const line of markdown.replace(/\r\n/g, "\n").split("\n")) {
     const heading = line.match(/^#{1,6}\s+(.+)$/);
     if (heading) {
-      if (current.lines.some((part) => part.trim())) sections.push({ title: current.title, lines: current.lines });
+      if (current.lines.some((part) => part.trim()))
+        sections.push({ title: current.title, lines: current.lines });
       current = { title: heading[1]!.trim(), lines: [] };
     } else current.lines.push(line);
   }
-  if (current.lines.some((part) => part.trim())) sections.push({ title: current.title, lines: current.lines });
+  if (current.lines.some((part) => part.trim()))
+    sections.push({ title: current.title, lines: current.lines });
   if (sections.length === 1 && /^other$/i.test(sections[0]!.title)) sections[0]!.title = "";
   return sections.map(({ title, lines }) => ({ title, body: lines.join("\n").trim() }));
 }
@@ -354,10 +375,17 @@ export function renderReleaseEmail(
     `<p style="margin:0 0 4px;color:#64748b;font-size:13px;font-weight:600">${escapeHtml(project)} release</p>`,
     `<h1 style="margin:0 0 4px;font-size:28px;line-height:1.2">${escapeHtml(project)} v${escapeHtml(entry.version)} is here</h1>`,
     `<p style="margin: 0 0 24px; color: #666; font-size: 14px;">Released ${escapeHtml(entry.date)}${prerelease ? " · prerelease" : ""}</p>`,
-    summary.tldr ? `<h2 style="margin:24px 0 8px;font-size:18px">TL;DR</h2><p>${escapeHtml(summary.tldr)}</p>` : "",
-    summary.highlights.length ? `<h2 style="margin:24px 0 8px;font-size:18px">Highlights</h2><ul>${summary.highlights.map(({name,detail})=>`<li style="margin:8px 0"><strong>${escapeHtml(name)}</strong> — ${escapeHtml(detail)}</li>`).join("")}</ul>` : "",
+    summary.tldr
+      ? `<h2 style="margin:24px 0 8px;font-size:18px">TL;DR</h2><p>${escapeHtml(summary.tldr)}</p>`
+      : "",
+    summary.highlights.length
+      ? `<h2 style="margin:24px 0 8px;font-size:18px">Highlights</h2><ul>${summary.highlights.map(({ name, detail }) => `<li style="margin:8px 0"><strong>${escapeHtml(name)}</strong> — ${escapeHtml(detail)}</li>`).join("")}</ul>`
+      : "",
     `<h2 style="margin:24px 0 8px;font-size:18px">Full release notes</h2>`,
-    ...sections.map(({title,body}) => `${title ? `<h3 style="margin:20px 0 8px;font-size:16px">${escapeHtml(title)}</h3>` : ""}${markdownToHtml(body)}`),
+    ...sections.map(
+      ({ title, body }) =>
+        `${title ? `<h3 style="margin:20px 0 8px;font-size:16px">${escapeHtml(title)}</h3>` : ""}${markdownToHtml(body)}`,
+    ),
     notes ? "" : `<p>No release notes were written for this release.</p>`,
     `<h2 style="margin: 24px 0 8px; font-size: 18px;">Known issues</h2>`,
     knownIssues ? markdownToHtml(knownIssues) : `<p>None recorded.</p>`,
@@ -377,9 +405,16 @@ export function renderReleaseEmail(
     `Released ${entry.date}${prerelease ? " (prerelease)" : ""}`,
     "",
     summary.tldr ? "TL;DR\n" + summary.tldr : "",
-    summary.highlights.length ? "HIGHLIGHTS\n" + summary.highlights.map(({name,detail})=>`- ${name}: ${detail}`).join("\n") : "",
+    summary.highlights.length
+      ? "HIGHLIGHTS\n" +
+        summary.highlights.map(({ name, detail }) => `- ${name}: ${detail}`).join("\n")
+      : "",
     "FULL RELEASE NOTES",
-    ...sections.flatMap(({title,body}) => [ ...(title ? [title.toUpperCase()] : []), markdownToText(body), ""]),
+    ...sections.flatMap(({ title, body }) => [
+      ...(title ? [title.toUpperCase()] : []),
+      markdownToText(body),
+      "",
+    ]),
     notes ? "" : "No release notes were written for this release.",
     "",
     "KNOWN ISSUES",
@@ -886,7 +921,8 @@ export function previewReleaseEmail(
   return {
     ...renderReleaseEmail(config, entry, {
       ...context,
-      summary: getReleaseEmailRecord(config, version)?.summary ?? summarizeReleaseNotes(entry.notes),
+      summary:
+        getReleaseEmailRecord(config, version)?.summary ?? summarizeReleaseNotes(entry.notes),
     }),
     recipients: config.release?.email?.to ?? [],
   };
