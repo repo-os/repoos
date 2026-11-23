@@ -237,7 +237,7 @@ describe("renderReleaseEmail", () => {
         "Improve telemetry",
         "Improve telemetry.",
       ],
-      ["## Features\n- New release page", "New release page", "New release page."],
+      ["## Features\n- New release page", "New release page", "New release page"],
     ]) {
       expect(summarizeReleaseNotes(notes!)).toMatchObject({
         highlights: [{ name, detail }],
