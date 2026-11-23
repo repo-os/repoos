@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-11-23T12:41:15Z"
-review_passes: 1
+last_close_out_gate_ms: 948461
+last_close_out_gate_at: "2026-11-23T13:02:38.134Z"
 id: "1230"
 title: "Easter eggs bundle: just release writes the release record"
 type: bug
@@ -11,6 +11,8 @@ assigned_to: ai
 created_by: t@t
 branch: feat/easter-eggs-bundle-just-release-writes-t
 created_at: "2026-11-19T13:45:13Z"
+updated_at: "2026-11-23T13:02:38Z"
+review_passes: 1
 ---
 ## Items
 
@@ -57,4 +59,5 @@ Start from the `release` recipe in justfile, shared/release.ts (CURRENT_RELEASE,
 - 2026-11-23T12:40:46Z · message_queued at 2026-11-23T12:40:46.723Z
 - 2026-11-23T12:40:46Z · note: shots: skipped — the diff (7 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-23T12:41:14Z · note: review pass 1: good to go
+- 2026-11-23T13:02:38Z · close-out gate completed in 948s
 
