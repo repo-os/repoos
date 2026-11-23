@@ -2,14 +2,14 @@
 id: "1287"
 title: Polish automated release announcement emails
 type: feature
-status: active
+status: review
 priority: p2
 area: [server, web]
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/polish-automated-release-announcement-em
 created_at: "2026-11-23T07:50:59Z"
-updated_at: "2026-11-23T09:32:19Z"
+updated_at: "2026-11-23T09:36:25Z"
 ---
 ## Problem
 
@@ -151,3 +151,4 @@ One additional suggestion: since RepoOS releases appear to be frequent, I'd keep
 - 2026-11-23T09:06:37Z · body
 - 2026-11-23T09:17:31Z · body
 - 2026-11-23T09:32:19Z · body
+- 2026-11-23T09:36:25Z · status active→review
