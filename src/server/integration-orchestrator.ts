@@ -1564,23 +1564,23 @@ export class CloseOutOrchestrator {
     fn: () => void | Promise<void>,
     waitMs = 90_000,
   ): Promise<boolean> {
-    const warnAt = Date.now() + waitMs;
+    const deadline = Date.now() + waitMs;
     let haveRepo = !this.repoLock;
     let haveRoot = !this.rootLock;
-    let warned = false;
-    while (!(haveRepo && haveRoot)) {
+    while (Date.now() < deadline) {
       if (!haveRepo && this.repoLock?.acquire(taskId)) haveRepo = true;
       if (haveRepo && !haveRoot && this.rootLock?.acquire(taskId, "close-out")) haveRoot = true;
       if (haveRepo && haveRoot) break;
-      if (!warned && Date.now() >= warnAt) {
-        warned = true;
-        this.logger?.integration(
-          taskId,
-          "warn",
-          "main checkout busy — waiting to restore close-out state",
-        );
-      }
       await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+    if (!(haveRepo && haveRoot)) {
+      if (haveRepo) this.repoLock?.release(taskId);
+      this.logger?.integration(
+        taskId,
+        "warn",
+        "main checkout busy — bookkeeping write will be retried",
+      );
+      return false;
     }
     try {
       await fn();
@@ -1638,14 +1638,25 @@ export class CloseOutOrchestrator {
       this.ownedAttempt,
     );
     if (!recorded) return { ok: false, reason };
-    await this.withMainCheckout(job.taskId, async () => {
-      restoreWorktreeReviewLockAfterFailedCloseOut(
-        this.config.root,
-        this.config.cacheDir ?? ".repoos",
+    const restoreReviewState = async (): Promise<void> => {
+      const restored = await this.withMainCheckout(
         job.taskId,
+        async () => {
+          restoreWorktreeReviewLockAfterFailedCloseOut(
+            this.config.root,
+            this.config.cacheDir ?? ".repoos",
+            job.taskId,
+          );
+          await preserveClosingTaskReviewStatusOnMain(this.config, job.taskId, this.getTask);
+        },
+        1_000,
       );
-      await preserveClosingTaskReviewStatusOnMain(this.config, job.taskId, this.getTask);
-    });
+      if (!restored) {
+        const timer = setTimeout(() => void restoreReviewState(), 5_000);
+        timer.unref?.();
+      }
+    };
+    await restoreReviewState();
     // A budget-exhausted close-out is recorded as a `failed` job (so it stays
     // retryable) but reported as a distinct `timedOut` outcome (#0640): the
     // bell's advice differs from a real gate failure.
@@ -4700,30 +4711,43 @@ export class CloseOutOrchestrator {
         this.getTask?.(job.taskId)?.absPath ??
         findTaskFileById(root, this.config.workDir, job.taskId);
       if (absPath) {
-        await this.withMainCheckout(job.taskId, async () => {
-          await markTaskReleased(this.config, absPath, mergedCommit);
-          // A worktree kept above holds uncommitted work the merge did NOT carry
-          // (#0512). The close-out itself succeeded, so this is not a failure to
-          // retry — it is a decision for a human, and the flag is how the board
-          // surfaces it. Written after `markTaskReleased` so the status write
-          // cannot clear it. Best-effort: do not fail the release marking if
-          // patchTaskFile throws.
-          if (keptDirtyFiles.length > 0) {
-            try {
-              const shown = keptDirtyFiles.slice(0, 8);
-              patchTaskFile(this.config, absPath, {
-                needsInput: true,
-                needsInputReason: "closeout-worktree-dirty",
-                needsInputDetail:
-                  `the worktree for ${featureBranch} was kept because it had uncommitted changes the ` +
-                  `merge did not carry: ${shown.join(", ")}${keptDirtyFiles.length > shown.length ? ", …" : ""}`,
-                note: "close-out kept a worktree with uncommitted changes",
-              });
-            } catch (err) {
-              console.error(`Could not patch task ${job.taskId} with dirty-worktree flag:`, err);
-            }
+        let stamped = false;
+        while (!stamped) {
+          stamped = await this.withMainCheckout(
+            job.taskId,
+            async () => {
+              await markTaskReleased(this.config, absPath, mergedCommit);
+              // A worktree kept above holds uncommitted work the merge did NOT carry
+              // (#0512). The close-out itself succeeded, so this is not a failure to
+              // retry — it is a decision for a human, and the flag is how the board
+              // surfaces it. Written after `markTaskReleased` so the status write
+              // cannot clear it. Best-effort: do not fail the release marking if
+              // patchTaskFile throws.
+              if (keptDirtyFiles.length > 0) {
+                try {
+                  const shown = keptDirtyFiles.slice(0, 8);
+                  patchTaskFile(this.config, absPath, {
+                    needsInput: true,
+                    needsInputReason: "closeout-worktree-dirty",
+                    needsInputDetail:
+                      `the worktree for ${featureBranch} was kept because it had uncommitted changes the ` +
+                      `merge did not carry: ${shown.join(", ")}${keptDirtyFiles.length > shown.length ? ", …" : ""}`,
+                    note: "close-out kept a worktree with uncommitted changes",
+                  });
+                } catch (err) {
+                  console.error(
+                    `Could not patch task ${job.taskId} with dirty-worktree flag:`,
+                    err,
+                  );
+                }
+              }
+            },
+            15_000,
+          );
+          if (!stamped) {
+            await new Promise((resolve) => setTimeout(resolve, 5_000));
           }
-        });
+        }
         releasedOk = true;
       } else {
         console.error(
