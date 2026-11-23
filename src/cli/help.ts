@@ -381,7 +381,8 @@ export const GROUPS: readonly CommandGroup[] = [
       },
       {
         name: "doctor",
-        usage: "doctor [--json] [--verbose] [--probe <cli> [--model <id>]] [--yes] [--binary <path>]",
+        usage:
+          "doctor [--json] [--verbose] [--probe <cli> [--model <id>]] [--yes] [--binary <path>]",
         desc: "Readiness preflight: config, layout, tools, server and secrets",
         flags: "--json · --verbose · --probe <cli> · --model <id> · --yes · --binary <path>",
       },
@@ -452,7 +453,8 @@ export const GROUPS: readonly CommandGroup[] = [
         usage:
           "shot [<route|url>] [--target <t>] [--selector <css>] [--env KEY=VALUE] [--glob <glob>] [--task <id>] [--base <ref>] [--wait <ms>] [--viewport WxH] [--full-page]",
         desc: "Capture preview screenshots into the task's shots folder",
-        flags: "--target · --selector · --env · --glob · --task · --base · --wait · --viewport · --full-page",
+        flags:
+          "--target · --selector · --env · --glob · --task · --base · --wait · --viewport · --full-page",
       },
     ],
   },
