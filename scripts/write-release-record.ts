@@ -25,4 +25,8 @@ if (log.exitCode !== 0) {
 const commits = log.stdout.toString().trim().split("\n").filter(Boolean).reverse();
 const entry = createReleaseHistoryEntry(version, commits);
 const result = writeReleaseSurfaces(process.cwd(), entry);
-console.log(result.changed ? `Wrote ${entry.tag} to release history and changelog.` : `${entry.tag} record already up to date.`);
+console.log(
+  result.changed
+    ? `Wrote ${entry.tag} to release history and changelog.`
+    : `${entry.tag} record already up to date.`,
+);
