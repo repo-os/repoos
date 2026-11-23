@@ -1450,7 +1450,21 @@ export interface IntegrationPipelineSnapshot {
     /** Why the attempt this one replaced failed (#1276). */
     previousFailure?: { attempt: number; reason?: string; failedAt?: string } | null;
   } | null;
-  /** Task ids queued behind the active job, in FIFO order. */
+  /** Other close-outs validating alongside the active one (#1275). */
+  parallel?: {
+    taskId: string;
+    phase: string;
+    stage: string | null;
+    startedAt: string | null;
+    lastProgressAt?: string | null;
+    detail: string | null;
+    attempt?: number;
+    step?: string | null;
+    host?: string | null;
+    progressStale?: boolean;
+    previousFailure?: { attempt: number; reason?: string; failedAt?: string } | null;
+  }[];
+  /** Task ids queued behind the active job, in FIFO order (not yet started). */
   queue: string[];
   /** Enqueue time (ISO) for each id in `queue`, for stale close-out UI (#0741). */
   queueEnqueuedAt?: Record<string, string>;

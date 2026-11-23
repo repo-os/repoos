@@ -230,6 +230,7 @@ import {
 } from "./attention-notify.js";
 import { setProcessGroupSignalFailureHandler } from "../core/process-group.js";
 import { CloseOutOrchestrator } from "./integration-orchestrator.js";
+import { CloseOutScheduler } from "./close-out-scheduler.js";
 import { createRemoteValidator, type RemoteValidator } from "./remote-validation.js";
 import { hostLockJobsForTask, taskRemoteActivityForCard } from "./active-task-card.js";
 import { computeSlowRunFlags } from "./attention-feed.js";
@@ -324,7 +325,7 @@ import {
   type SystemStats,
 } from "./system.js";
 import { RunProcessReaper, describeRunDuration } from "./run-process-reaper.js";
-import { setOrphanedRunProcessProvider } from "../core/pressure-guard.js";
+import { pressureReason, setOrphanedRunProcessProvider } from "../core/pressure-guard.js";
 import { readTunnelConfig, writeTunnelConfig } from "../core/tunnel.js";
 import { readRegistry, unionApps } from "../core/tunnel-registry.js";
 import { portListening } from "../core/net-probe.js";
@@ -1440,15 +1441,17 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // defers every auto-reload and parks the new build for the user instead —
   // the close-out pipeline builds/checks dist itself and would be killed by a
   // mid-flight reload. The lock is server-owned: the UI never touches it.
-  let closeOutInProgress = false;
+  // A counter, not a flag: close-outs validate in parallel (#1275), and the
+  // reload manager may only proceed once every in-flight run has finished.
+  let closeOutRuns = 0;
   const closeOutLock: CloseOutLock = {
-    closingOut: () => closeOutInProgress,
+    closingOut: () => closeOutRuns > 0,
     acquire: () => {
-      closeOutInProgress = true;
+      closeOutRuns++;
     },
     release: () => {
-      closeOutInProgress = false;
-      reload?.releaseCloseOut();
+      closeOutRuns = Math.max(0, closeOutRuns - 1);
+      if (closeOutRuns === 0) reload?.releaseCloseOut();
     },
   };
 
@@ -1545,7 +1548,6 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   const autoEngineering = new AutoEngineeringOrchestrator(
     join(config.root, config.cacheDir ?? ".repoos"),
   );
-  let processingJob = false;
   let triggerJobProcessing: () => void = () => {}; // Initialized below
 
   const watcher = new WorkWatcher(config, index);
@@ -1776,204 +1778,240 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     });
   };
 
+  // Close-out scheduler (#1275). Up to `maxParallelValidations` queued jobs
+  // validate at once; each run gets its own orchestrator, because per-run state
+  // lives on the instance. Publishing is gated to the head of the queue inside
+  // the orchestrator, so merges stay serial in queue order and a job whose base
+  // moved is re-validated before it can publish.
+  // The scheduler decides which queued jobs run and when (#1275); each run is
+  // `runCloseOut`, and the scheduler pumps again whenever a run ends.
+  const closeOutScheduler = new CloseOutScheduler({
+    jobs: () => jobCoordinator.allJobs(),
+    limit: () => config.maxParallelValidations ?? 2,
+    // The pressure guard holds only extra concurrency, and only while work waits.
+    pressureHeld: () => pressureReason(config) !== null,
+    run: (taskId) => runCloseOut(taskId),
+    onGiveUp: (taskId, error) => failCrashedCloseOut(taskId, error),
+    onChange: () => emitIntegration(),
+  });
+
+  const newCloseOutOrchestrator = (runTaskId: string): CloseOutOrchestrator =>
+    new CloseOutOrchestrator(
+      config,
+      jobCoordinator,
+      repoLock,
+      rootLock,
+      (taskId) => index.getTask(taskId),
+      (step) => {
+        // Stages are attributed to the task this run owns (#1275). With several
+        // jobs in flight, the queue head is not necessarily the one reporting.
+        const at = new Date().toISOString();
+        reportedStages[runTaskId] = step;
+        reportedStageAt[runTaskId] = at;
+        // A new stage supersedes any in-stage upload detail (#0782).
+        delete reportedDetail[runTaskId];
+        emitEvent({
+          type: "task.progress",
+          id: runTaskId,
+          step,
+          at,
+        });
+        emitIntegration();
+      },
+      logger,
+      (taskId, reason) => {
+        const task = index.getTask(taskId);
+        if (!task) return;
+        scheduleMergeConflictRetry(config, task, reason, runner, (absPath) =>
+          index.applyFileChange(absPath, { guarded: true }),
+        );
+      },
+      (taskId, reason) => {
+        const task = index.getTask(taskId);
+        if (!task) return;
+        scheduleCloseOutRepairHandback(config, task, "gate-failure", reason, runner, (absPath) =>
+          index.applyFileChange(absPath, { guarded: true }),
+        );
+      },
+      remoteValidator,
+      taskChecks,
+      onTaskCheckEvent,
+      (outcome) => {
+        closeOutOutcomes.record(outcome);
+        emitEvent({ type: "close-out.outcome", outcome, at: outcome.finishedAt });
+        bumpAttention();
+      },
+      recordRemoteFallbackAttention,
+      (taskId, reason, verdict) => {
+        // #0692: the close-out resolved an integration conflict in the
+        // candidate instead of restarting engineering/review. Surface it on
+        // the task's progress stream with the distinct reason so the UI can
+        // show "Resolving integration conflict" rather than "failed".
+        logger.task(taskId, "info", "resolving integration conflict in candidate", {
+          reason,
+          classes: verdict.eligible ? verdict.classes : [],
+        });
+        emitEvent({
+          type: "task.progress",
+          id: taskId,
+          step: "resolve-conflict",
+          detail: reason,
+          at: new Date().toISOString(),
+        });
+      },
+      (taskId, detail) => {
+        // #0782: the bundle upload is still moving — record the detail so
+        // the card shows it and refresh the stall timer from the same
+        // heartbeat (one SSE emission, no stage churn). A `null` detail
+        // fires when the transfer lands and clears the line, so
+        // "uploading…" never lingers into the remote test run.
+        applyPipelineDetail(reportedDetail, reportedStageAt, taskId, detail);
+        emitIntegration();
+      },
+      (taskId, detail) => {
+        // #0799: a steady heartbeat from a long non-upload stage — the
+        // remote test run or a local gate step. Same write as the upload
+        // detail: it refreshes the stall timer and shows the current step,
+        // so a healthy-but-quiet stage is never labelled "stalled".
+        applyPipelineDetail(reportedDetail, reportedStageAt, taskId, detail);
+        emitIntegration();
+      },
+      // #1276: a step or host change is pushed at once, so a driver sees
+      // "queued for host slot" or the runner host without waiting for a stage.
+      () => emitIntegration(),
+    );
+
+  /** Start every close-out the scheduler allows; called whenever a job changes. */
+  const pumpCloseOutJobs = (): void => {
+    if (isPreviewChild) return;
+    closeOutScheduler.pump();
+  };
+
+  /** Run one job's validate/publish pass, then let the scheduler pick the next. */
+  const runCloseOut = async (taskId: string): Promise<void> => {
+    const jobBefore = jobCoordinator.getJob(taskId);
+    let result: Awaited<ReturnType<CloseOutOrchestrator["processTask"]>> | undefined;
+    // Defer auto-reload for the duration of this run: a close-out runs its own
+    // `bun run build`, and an auto-reload handover landing mid-flight would tear
+    // down the very server orchestrating it (see CloseOutLock above
+    // `completeTask`). With parallel runs the lock is held while any run is live.
+    closeOutLock.acquire();
+    let crash: { error: unknown } | null = null;
+    try {
+      result = await newCloseOutOrchestrator(taskId).processTask(taskId);
+    } catch (err) {
+      console.error("Job processor error:", err);
+      // Remembered and rethrown below, so the scheduler sees the crash, backs
+      // off and eventually gives up instead of a silent success (#1275 review).
+      crash = { error: err };
+    } finally {
+      closeOutLock.release();
+    }
+    try {
+      // Surface close-out failures (0199): the /done action returns as soon
+      // as the job is enqueued, so the UI never learns of a background
+      // failure. Only emit for a terminal `failed` phase — "main advanced,
+      // revalidating" is a retry, not a failure.
+      if (
+        jobBefore &&
+        result &&
+        result.ok === false &&
+        result.reason &&
+        jobCoordinator.getJob(jobBefore.taskId)?.phase === "failed"
+      ) {
+        const failedJob = jobCoordinator.getJob(jobBefore.taskId);
+        emitEvent({
+          type: "task.progress",
+          id: jobBefore.taskId,
+          step: "failed",
+          detail: result.reason,
+          phase: failedJob?.failedPhase,
+          logPath: failedJob?.logPath,
+          tldr: failedJob?.debugTldr,
+          at: new Date().toISOString(),
+        });
+        debugTldr?.onCloseOutFailed(jobBefore.taskId);
+      }
+      // Keep the live index in sync: the orchestrator writes the task file
+      // (markTaskReleased) and merges the branch directly, bypassing the
+      // done-action's usual index.applyFileChange/refreshBranches. Must use
+      // jobBefore (captured pre-processing), not another peekNext() call —
+      // peekNext() filters out done/failed jobs by design, so it can never
+      // return the job that was just completed.
+      if (jobBefore && jobCoordinator.getJob(jobBefore.taskId)?.phase === "done") {
+        const doneTask = index.getTask(jobBefore.taskId);
+        if (doneTask) index.applyFileChange(doneTask.absPath);
+      }
+      await index.refreshBranchesAsync();
+      if (
+        jobBefore &&
+        jobCoordinator.getJob(jobBefore.taskId)?.phase === "done" &&
+        index.getTasks().some((task) => task.dependsOn?.includes(jobBefore.taskId))
+      ) {
+        const result = await autoEngineering.reconcile(
+          config,
+          index.getTasks(),
+          "dependency-merged",
+          {
+            isRunning: (id) => runner.isRunning(id),
+            isQueued: (id) => runner.isQueued(id),
+            isHandoffInFlight: (id) => runner.isHandoffInFlight(id),
+          },
+        );
+        if (result.triggered) {
+          const activeCount = countEngineerCapUsage(index.getTasks(), {
+            isRunning: (id) => runner.isRunning(id),
+            isQueued: (id) => runner.isQueued(id),
+            isHandoffInFlight: (id) => runner.isHandoffInFlight(id),
+          });
+          const maxActiveTasks = config.maxActiveTasks ?? 3;
+          emitEvent({
+            type: "auto-engineering.state",
+            state: {
+              enabled: config.autoEngineeringMode ?? false,
+              maxActiveTasks,
+              activeCount,
+              availableSlots: Math.max(0, maxActiveTasks - activeCount),
+              reconciling: false,
+              decision: autoEngineering.getLastDecision(),
+            },
+            at: new Date().toISOString(),
+          });
+        }
+      }
+    } catch (err) {
+      console.error("Job processor error:", err);
+    }
+    if (crash) throw crash.error;
+  };
+
+  // A job whose run keeps crashing is failed so it leaves the queue (#1275).
+  const failCrashedCloseOut = async (taskId: string, error: unknown): Promise<void> => {
+    const job = jobCoordinator.getJob(taskId);
+    if (!job || job.phase === "done" || job.phase === "failed") return;
+    const message = error instanceof Error ? error.message : String(error);
+    const reason = `close-out run crashed repeatedly: ${message}`;
+    // The normal failure path: candidate teardown, review-lock restore, board
+    // status preserved. A throw here is surfaced so the scheduler retries.
+    await newCloseOutOrchestrator(taskId).failCrashed(taskId, reason);
+    emitEvent({
+      type: "task.progress",
+      id: taskId,
+      step: "failed",
+      detail: reason,
+      phase: job.phase,
+      at: new Date().toISOString(),
+    });
+    emitIntegration();
+  };
+
   // Initialize job processing (runs after emitEvent is available) (0118)
   triggerJobProcessing = () => {
     if (isPreviewChild) return;
-    if (processingJob) return;
-    processingJob = true;
-    setImmediate(async () => {
-      try {
-        // A fresh enqueue (or recovered job) can now be seen by the status bar.
-        emitIntegration();
-        const orchestrator = new CloseOutOrchestrator(
-          config,
-          jobCoordinator,
-          repoLock,
-          rootLock,
-          (taskId) => index.getTask(taskId),
-          (step) => {
-            const job = jobCoordinator.peekNext();
-            if (job) {
-              const at = new Date().toISOString();
-              reportedStages[job.taskId] = step;
-              reportedStageAt[job.taskId] = at;
-              // A new stage supersedes any in-stage upload detail (#0782).
-              delete reportedDetail[job.taskId];
-              emitEvent({
-                type: "task.progress",
-                id: job.taskId,
-                step,
-                at,
-              });
-              emitIntegration();
-            }
-          },
-          logger,
-          (taskId, reason) => {
-            const task = index.getTask(taskId);
-            if (!task) return;
-            scheduleMergeConflictRetry(config, task, reason, runner, (absPath) =>
-              index.applyFileChange(absPath, { guarded: true }),
-            );
-          },
-          (taskId, reason) => {
-            const task = index.getTask(taskId);
-            if (!task) return;
-            scheduleCloseOutRepairHandback(
-              config,
-              task,
-              "gate-failure",
-              reason,
-              runner,
-              (absPath) => index.applyFileChange(absPath, { guarded: true }),
-            );
-          },
-          remoteValidator,
-          taskChecks,
-          onTaskCheckEvent,
-          (outcome) => {
-            closeOutOutcomes.record(outcome);
-            emitEvent({ type: "close-out.outcome", outcome, at: outcome.finishedAt });
-            bumpAttention();
-          },
-          recordRemoteFallbackAttention,
-          (taskId, reason, verdict) => {
-            // #0692: the close-out resolved an integration conflict in the
-            // candidate instead of restarting engineering/review. Surface it on
-            // the task's progress stream with the distinct reason so the UI can
-            // show "Resolving integration conflict" rather than "failed".
-            logger.task(taskId, "info", "resolving integration conflict in candidate", {
-              reason,
-              classes: verdict.eligible ? verdict.classes : [],
-            });
-            emitEvent({
-              type: "task.progress",
-              id: taskId,
-              step: "resolve-conflict",
-              detail: reason,
-              at: new Date().toISOString(),
-            });
-          },
-          (taskId, detail) => {
-            // #0782: the bundle upload is still moving — record the detail so
-            // the card shows it and refresh the stall timer from the same
-            // heartbeat (one SSE emission, no stage churn). A `null` detail
-            // fires when the transfer lands and clears the line, so
-            // "uploading…" never lingers into the remote test run.
-            applyPipelineDetail(reportedDetail, reportedStageAt, taskId, detail);
-            emitIntegration();
-          },
-          (taskId, detail) => {
-            // #0799: a steady heartbeat from a long non-upload stage — the
-            // remote test run or a local gate step. Same write as the upload
-            // detail: it refreshes the stall timer and shows the current step,
-            // so a healthy-but-quiet stage is never labelled "stalled".
-            applyPipelineDetail(reportedDetail, reportedStageAt, taskId, detail);
-            emitIntegration();
-          },
-          // #1276: a step or host change is pushed at once, so a driver sees
-          // "queued for host slot" or the runner host without waiting for a stage.
-          () => emitIntegration(),
-        );
-        const jobBefore = jobCoordinator.peekNext();
-        // Defer auto-reload for the duration of this job's processing: a
-        // close-out runs its own `bun run build`, and an auto-reload handover
-        // landing mid-flight would tear down the very server orchestrating it
-        // (see CloseOutLock above `completeTask` — this is the live path,
-        // `completeTask` itself is dead code and never acquires this lock).
-        closeOutLock.acquire();
-        let result: Awaited<ReturnType<typeof orchestrator.processNext>>;
-        try {
-          result = await orchestrator.processNext();
-        } finally {
-          closeOutLock.release();
-        }
-        // Surface close-out failures (0199): the /done action returns as soon
-        // as the job is enqueued, so the UI never learns of a background
-        // failure. Only emit for a terminal `failed` phase — "main advanced,
-        // revalidating" is a retry, not a failure.
-        if (
-          jobBefore &&
-          result &&
-          result.ok === false &&
-          result.reason &&
-          jobCoordinator.getJob(jobBefore.taskId)?.phase === "failed"
-        ) {
-          const failedJob = jobCoordinator.getJob(jobBefore.taskId);
-          emitEvent({
-            type: "task.progress",
-            id: jobBefore.taskId,
-            step: "failed",
-            detail: result.reason,
-            phase: failedJob?.failedPhase,
-            logPath: failedJob?.logPath,
-            tldr: failedJob?.debugTldr,
-            at: new Date().toISOString(),
-          });
-          debugTldr?.onCloseOutFailed(jobBefore.taskId);
-        }
-        // Keep the live index in sync: the orchestrator writes the task file
-        // (markTaskReleased) and merges the branch directly, bypassing the
-        // done-action's usual index.applyFileChange/refreshBranches. Must use
-        // jobBefore (captured pre-processing), not another peekNext() call —
-        // peekNext() filters out done/failed jobs by design, so it can never
-        // return the job that was just completed.
-        if (jobBefore && jobCoordinator.getJob(jobBefore.taskId)?.phase === "done") {
-          const doneTask = index.getTask(jobBefore.taskId);
-          if (doneTask) index.applyFileChange(doneTask.absPath);
-        }
-        await index.refreshBranchesAsync();
-        if (
-          jobBefore &&
-          jobCoordinator.getJob(jobBefore.taskId)?.phase === "done" &&
-          index.getTasks().some((task) => task.dependsOn?.includes(jobBefore.taskId))
-        ) {
-          const result = await autoEngineering.reconcile(
-            config,
-            index.getTasks(),
-            "dependency-merged",
-            {
-              isRunning: (id) => runner.isRunning(id),
-              isQueued: (id) => runner.isQueued(id),
-              isHandoffInFlight: (id) => runner.isHandoffInFlight(id),
-            },
-          );
-          if (result.triggered) {
-            const activeCount = countEngineerCapUsage(index.getTasks(), {
-              isRunning: (id) => runner.isRunning(id),
-              isQueued: (id) => runner.isQueued(id),
-              isHandoffInFlight: (id) => runner.isHandoffInFlight(id),
-            });
-            const maxActiveTasks = config.maxActiveTasks ?? 3;
-            emitEvent({
-              type: "auto-engineering.state",
-              state: {
-                enabled: config.autoEngineeringMode ?? false,
-                maxActiveTasks,
-                activeCount,
-                availableSlots: Math.max(0, maxActiveTasks - activeCount),
-                reconciling: false,
-                decision: autoEngineering.getLastDecision(),
-              },
-              at: new Date().toISOString(),
-            });
-          }
-        }
-        // Reflect the post-job pipeline state (job now done/failed, or the next
-        // queued job becoming active) in the pinned status bar (0207).
-        emitIntegration();
-        // Continue processing if there are more jobs or recovered jobs
-        const next = jobCoordinator.peekNext();
-        if (next && next.phase !== "done" && next.phase !== "failed") {
-          processingJob = false;
-          triggerJobProcessing();
-        } else {
-          processingJob = false;
-        }
-      } catch (err) {
-        console.error("Job processor error:", err);
-        processingJob = false;
-      }
+    setImmediate(() => {
+      // A fresh enqueue (or recovered job) can now be seen by the status bar.
+      emitIntegration();
+      pumpCloseOutJobs();
     });
   };
 

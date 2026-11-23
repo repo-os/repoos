@@ -48,9 +48,12 @@ const snapshot = computed<IntegrationPipelineSnapshot | null>(() => integration.
 const idle = computed(() => snapshot.value === null || snapshot.value.empty);
 const active = computed(() => snapshot.value?.active ?? null);
 const queue = computed(() => snapshot.value?.queue ?? []);
+/** Jobs validating alongside the head (#1275): running, so listed apart from the queue. */
+const parallel = computed(() => snapshot.value?.parallel ?? []);
 
 /** Queue row/segment — hidden on failure (idle/failed copy unchanged per spec). */
 const showQueue = computed(() => queue.value.length > 0 && !active.value?.failed);
+const showParallel = computed(() => parallel.value.length > 0 && !active.value?.failed);
 
 // ── Stage hover pane (#0460) ───────────────────────────────────────────────
 // The bar's stage explanations used to be native `title` tooltips, which are
@@ -418,9 +421,12 @@ async function onStageClick(stage: string): Promise<void> {
 const stripTooltip = computed(() => {
   let t = "Integration pipeline — ";
   if (idle.value) return t + "idle";
-  const queueSuffix = showQueue.value
-    ? " · Queue: " + queue.value.map((id) => "#" + id).join(" ")
+  const parallelSuffix = showParallel.value
+    ? " · Also running: " + parallel.value.map((p) => "#" + p.taskId).join(" ")
     : "";
+  const queueSuffix =
+    (showQueue.value ? " · Queue: " + queue.value.map((id) => "#" + id).join(" ") : "") +
+    parallelSuffix;
   if (active.value) {
     return t + "#" + active.value.taskId + " " + (active.value.stage ?? "…") + queueSuffix;
   }
@@ -662,6 +668,20 @@ async function fileSetupTask(): Promise<void> {
         >
           <ChevronDown class="bar-chev" aria-hidden="true" />
         </button>
+      </div>
+
+      <div v-if="showParallel" class="ibar-queue ibar-parallel">
+        <span class="queue-label">Also running:</span>
+        <span
+          v-for="p in parallel"
+          :key="p.taskId"
+          class="ibar-chip mono"
+          :aria-label="'#' + p.taskId + ' ' + p.phase"
+          >#{{ p.taskId }} ·
+          {{
+            p.phase === "publishing" ? "waiting for publish turn" : integrationStageLabel(p.stage)
+          }}</span
+        >
       </div>
 
       <div v-if="showQueue" class="ibar-queue">

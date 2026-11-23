@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 560554
-last_close_out_gate_at: "2026-11-23T11:56:12.305Z"
 id: "1275"
 title: "Close-outs: validate several tasks at once on different runner machines"
 type: feature
-status: review
+status: done
 priority: p1
 area: [server, core]
+merged_commit: 02fa481c1b0016447fb3ef811fc4cf8fb7d55ef8
 assigned_to: ai
 created_by: t@t
 branch: feat/close-outs-validate-several-tasks-at-onc
 created_at: "2026-11-20T07:42:13Z"
 updated_at: "2026-11-23T11:56:12Z"
+last_close_out_gate_ms: 560554
+last_close_out_gate_at: "2026-11-23T11:56:12.305Z"
 review_passes: 6
 review_rounds: 2
 last_check_failure: "repoos check at 2026-11-22T08:35:01.967Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Pipeline shows a job validating alongside the active close-out (Also running) (target \"default\"): state \"integration:parallelValidations\" did not render on target \"default\" — /checks?tab=now shows no task card (http://127.0.0.1:45407/checks?tab=now&shotState=integration%3AparallelValidations)"

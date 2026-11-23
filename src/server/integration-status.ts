@@ -9,6 +9,7 @@
  */
 import {
   attemptIsExecuting,
+  isParkedPublisher,
   jobAttempt,
   type IntegrationJob,
   type IntegrationPhaseTiming,
@@ -82,7 +83,27 @@ export interface IntegrationSnapshot {
     /** Why the attempt this one replaced failed, for a retry (#1276). */
     previousFailure?: { attempt: number; reason?: string; failedAt?: string } | null;
   } | null;
-  /** Task ids queued behind the active job, in FIFO order. */
+  /**
+   * Other close-outs already validating alongside the active one (#1275). They
+   * hold a validation slot but are not the publish head, so they are not in
+   * `queue`. Empty when only one job is running.
+   */
+  parallel?: {
+    taskId: string;
+    phase: string;
+    stage: string | null;
+    startedAt: string | null;
+    /** When this job last reported progress (ISO), for its own stall timer. */
+    lastProgressAt: string | null;
+    detail: string | null;
+    /** Attempt, host, step and retry reason, as for the active job (#1276). */
+    attempt?: number;
+    step?: string | null;
+    host?: string | null;
+    progressStale?: boolean;
+    previousFailure?: IntegrationJob["previousFailure"] | null;
+  }[];
+  /** Task ids queued behind the active job, in FIFO order (not yet started). */
   queue: string[];
   /** Enqueue time (ISO) for each id in `queue`, for stale close-out UI. */
   queueEnqueuedAt?: Record<string, string>;
@@ -186,15 +207,40 @@ export function buildIntegrationSnapshot(
   // its validation starts (queued → syncing in the orchestrator). A job still
   // waiting has no start, so it is listed in the queue with its position and
   // never shown as active with a clock running from its enqueue time (#1272).
+  const publishHead = live[0];
   const inFlight =
-    live.find((job): job is IntegrationJob & { startedAt: string } => attemptIsExecuting(job)) ??
-    null;
+    publishHead && attemptIsExecuting(publishHead)
+      ? (publishHead as IntegrationJob & { startedAt: string })
+      : null;
   const queue: string[] = [];
   const queueEnqueuedAt: Record<string, string> = {};
   const queuedJobs: IntegrationJob[] = [];
+  const parallel: NonNullable<IntegrationSnapshot["parallel"]> = [];
 
   for (const job of live) {
     if (inFlight && job.taskId === inFlight.taskId) continue;
+    // A started job is validating alongside the active one (#1275), not waiting.
+    if (attemptIsExecuting(job)) {
+      parallel.push({
+        taskId: job.taskId,
+        phase: job.phase,
+        stage: stageForJob(job, reported[job.taskId]),
+        startedAt: job.startedAt,
+        lastProgressAt: latestIso(reportedAt[job.taskId], job.lastProgressAt) ?? job.startedAt,
+        detail: reportedDetail[job.taskId] ?? null,
+        attempt: jobAttempt(job),
+        step: job.step ?? null,
+        host: job.host ?? null,
+        progressStale:
+          !isParkedPublisher(live, job) &&
+          progressIsStale(
+            job.lastProgressAt ?? (job.progressLogPath ? job.startedAt : null),
+            Date.parse(at),
+          ),
+        previousFailure: job.previousFailure ?? null,
+      });
+      continue;
+    }
     queue.push(job.taskId);
     queueEnqueuedAt[job.taskId] = job.enqueuedAt;
     queuedJobs.push(job);
@@ -203,11 +249,17 @@ export function buildIntegrationSnapshot(
   const nowMs = Date.parse(at);
   const blockerElapsedMs =
     inFlight && Number.isFinite(nowMs) ? Math.max(0, nowMs - Date.parse(inFlight.startedAt)) : null;
+  // Position is the 1-based line rank over every live job (#1275): a job that is
+  // validating alongside the active one still occupies its place, so a queued job
+  // behind it counts that job. A validating active job holds slot 0 when present,
+  // so with none running the first queued job is still #1 (#1272).
+  const publishOrder = new Map(live.map((job, index) => [job.taskId, index]));
+  const slotOffset = inFlight ? 0 : 1;
   const queueDetail = queuedJobs.map((job, i) => {
     const enqueuedMs = Date.parse(job.enqueuedAt);
     return {
       taskId: job.taskId,
-      position: i + 1,
+      position: (publishOrder.get(job.taskId) ?? i) + slotOffset,
       enqueuedAt: job.enqueuedAt,
       waitedMs: Number.isFinite(nowMs) && Number.isFinite(enqueuedMs) ? nowMs - enqueuedMs : 0,
       // The active job holds the single close-out pipeline slot; every queued
@@ -225,7 +277,14 @@ export function buildIntegrationSnapshot(
   };
 
   if (!inFlight) {
-    return { empty: queue.length === 0, active: null, ...queueFields, checkPlan, at };
+    return {
+      empty: queue.length === 0 && parallel.length === 0,
+      active: null,
+      parallel: parallel.length ? parallel : undefined,
+      ...queueFields,
+      checkPlan,
+      at,
+    };
   }
 
   const failed = inFlight.phase === "failed";
@@ -241,10 +300,12 @@ export function buildIntegrationSnapshot(
   // timestamp means its first write failed: judge it from the attempt start so
   // the card cannot look healthy forever (#1276). A legacy record without a
   // progress log is still not flagged.
-  const progressStale = progressIsStale(
-    inFlight.lastProgressAt ?? (inFlight.progressLogPath ? startedAt : null),
-    nowMs,
-  );
+  const progressStale =
+    !isParkedPublisher(live, inFlight) &&
+    progressIsStale(
+      inFlight.lastProgressAt ?? (inFlight.progressLogPath ? startedAt : null),
+      nowMs,
+    );
   const activePhaseStartedAt = inFlight.phaseStartedAt ?? startedAt;
   const activeElapsed = Number.isFinite(nowMs) ? nowMs - Date.parse(activePhaseStartedAt) : null;
   return {
@@ -267,6 +328,7 @@ export function buildIntegrationSnapshot(
       progressStale,
       previousFailure: inFlight.previousFailure ?? null,
     },
+    parallel: parallel.length ? parallel : undefined,
     ...queueFields,
     checkPlan,
     at,

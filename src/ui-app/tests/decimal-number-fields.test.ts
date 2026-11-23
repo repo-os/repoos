@@ -125,6 +125,7 @@ describe("PATCH with decimal fields (#0797)", () => {
 describe("numeric enum select fields (#1161)", () => {
   const numericEnums = [
     ["maxActiveTasks", 5],
+    ["maxParallelValidations", 3],
     ["maxConcurrentAgents", 4],
     ["remoteValidation.maxConcurrent", 3],
     ["worktreeWarnThreshold", 25],

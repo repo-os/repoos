@@ -1038,8 +1038,13 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
   // prompt, which is where that decision belongs.
 
   const vocabularyBefore = effectiveAreaNames(repoos.config);
+  const parallelBefore = repoos.config.maxParallelValidations;
   applyLoadedConfig(repoos, loadConfigAfterServerWrite(config.root, config.cacheDir));
   ctx.remoteValidator?.applyConfig?.();
+  // A raised maxParallelValidations (#1275) must start queued work now, not on
+  // the next unrelated close-out event. Only a changed limit wakes the pump, so
+  // unrelated saves stay quiet.
+  if (repoos.config.maxParallelValidations !== parallelBefore) ctx.triggerJobProcessing?.();
 
   // Advisory drift warning (#0583/#0587): any config write that changes the
   // effective area vocabulary is surfaced here. Comparing before/after makes
@@ -1187,8 +1192,10 @@ export const writeRawConfig: RouteHandler = async (ctx, req, res) => {
   // in-memory config and reconcile the index (the raw file can change
   // workDir/cacheDir/taskExtensions, which a curated save would also refresh).
   const vocabularyBefore = effectiveAreaNames(repoos.config);
+  const parallelBefore = repoos.config.maxParallelValidations;
   applyLoadedConfig(repoos, loadConfigAfterServerWrite(config.root, config.cacheDir));
   ctx.remoteValidator?.applyConfig?.();
+  if (repoos.config.maxParallelValidations !== parallelBefore) ctx.triggerJobProcessing?.();
   await index.refreshAllAsync();
 
   // A raw edit is a direct repoos.toml edit, so it is exactly where an area

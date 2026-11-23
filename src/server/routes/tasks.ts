@@ -193,7 +193,12 @@ import {
   conflictResolutionSnapshot,
   createResolutionProvenanceStore,
 } from "../conflict-resolution.js";
-import { jobAttempt, pendingCloseOutJobs, taskCloseOutPending } from "../integration-job.js";
+import {
+  isParkedPublisher,
+  jobAttempt,
+  pendingCloseOutJobs,
+  taskCloseOutPending,
+} from "../integration-job.js";
 import { progressIsStale } from "../close-out-progress.js";
 import { createCloseOutOutcomeStore } from "../close-out-outcome.js";
 import { resolvePipelineCheckPlan } from "../check-plan-info.js";
@@ -4796,6 +4801,7 @@ export const getIntegrationJob: RouteHandler = (ctx, _req, res, params) => {
       progressStale:
         job.phase !== "done" &&
         job.phase !== "failed" &&
+        !isParkedPublisher(jobCoordinator.allJobs(), job) &&
         progressIsStale(
           job.lastProgressAt ?? (job.progressLogPath ? job.startedAt : null),
           Date.now(),
@@ -5007,6 +5013,10 @@ export const cancelDone: RouteHandler = async (ctx, _req, res, params) => {
   if (!alreadyCancelled && job.phase === "queued") {
     jobCoordinator.removeJob(id);
   }
+  // A job parked for its publish turn (#1275) has no live run, so nothing else
+  // would tear it down until the head finishes. Wake the scheduler now: a
+  // cancelled parked job starts and cleans up without waiting on the head.
+  ctx.triggerJobProcessing();
 
   // Keep the close-out fence in place until the orchestrator has observed the
   // cancellation, reaped its process group, removed the candidate, and dropped

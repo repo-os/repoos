@@ -12,6 +12,7 @@ import type { AgentRunner } from "./agents.js";
 import { resolveAgentForTask } from "./agents.js";
 import { patchTaskFile } from "./write.js";
 import { clearWorktreeHandoffProtection } from "./worktree-handoff-guard.js";
+import { createRepositoryLock, createRootLock } from "./repo-lock.js";
 
 const REPAIR_DELAY_MS = 3_000;
 
@@ -55,18 +56,33 @@ export function scheduleCloseOutRepairHandback(
 
   setTimeout(() => {
     try {
-      const updated = patchTaskFile(
-        config,
-        task.absPath,
-        {
-          status: "active",
-          needsInput: false,
-          note: `close-out repair: ${kind}`,
-        },
-        {},
-      );
-      clearWorktreeHandoffProtection(config.root, config.cacheDir ?? ".repoos", task.id);
-      onFileChange?.(updated.absPath);
+      const repoLock = createRepositoryLock(config.root);
+      const rootLock = createRootLock(config.root);
+      while (!repoLock.acquire(task.id)) {
+        // Repair may run after the close-out returned; wait for any publisher
+        // before changing task files in the shared main checkout.
+        Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 100);
+      }
+      while (!rootLock.acquire(task.id, "close-out")) {
+        Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 100);
+      }
+      try {
+        const updated = patchTaskFile(
+          config,
+          task.absPath,
+          {
+            status: "active",
+            needsInput: false,
+            note: `close-out repair: ${kind}`,
+          },
+          {},
+        );
+        clearWorktreeHandoffProtection(config.root, config.cacheDir ?? ".repoos", task.id);
+        onFileChange?.(updated.absPath);
+      } finally {
+        rootLock.release(task.id);
+        repoLock.release(task.id);
+      }
     } catch (err) {
       runner.system(
         task.id,
@@ -96,18 +112,29 @@ export function scheduleCloseOutRepairHandback(
     }
 
     try {
-      const raw = readFileSync(task.absPath, "utf8");
-      const doc = parseDocument(raw);
-      const count =
-        (typeof doc.data.close_out_repair_count === "number"
-          ? doc.data.close_out_repair_count
-          : 0) + 1;
-      doc.data.close_out_repair_count = count;
-      const keys = Object.keys(doc.data).filter((k) => k !== "close_out_repair_count");
-      keys.unshift("close_out_repair_count");
-      writeFileSync(task.absPath, serializeDocument(doc.data, `\n${doc.body}\n`, keys));
-      commitTaskFile(config.root, task.absPath, `docs(${task.id}): record close-out repair`);
-      onFileChange?.(task.absPath);
+      const repoLock = createRepositoryLock(config.root);
+      const rootLock = createRootLock(config.root);
+      while (!repoLock.acquire(task.id))
+        Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 100);
+      while (!rootLock.acquire(task.id, "close-out"))
+        Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 100);
+      try {
+        const raw = readFileSync(task.absPath, "utf8");
+        const doc = parseDocument(raw);
+        const count =
+          (typeof doc.data.close_out_repair_count === "number"
+            ? doc.data.close_out_repair_count
+            : 0) + 1;
+        doc.data.close_out_repair_count = count;
+        const keys = Object.keys(doc.data).filter((k) => k !== "close_out_repair_count");
+        keys.unshift("close_out_repair_count");
+        writeFileSync(task.absPath, serializeDocument(doc.data, `\n${doc.body}\n`, keys));
+        commitTaskFile(config.root, task.absPath, `docs(${task.id}): record close-out repair`);
+        onFileChange?.(task.absPath);
+      } finally {
+        rootLock.release(task.id);
+        repoLock.release(task.id);
+      }
     } catch {
       /* bookkeeping is best-effort */
     }

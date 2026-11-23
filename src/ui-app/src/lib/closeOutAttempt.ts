@@ -10,8 +10,10 @@ export function closeOutAttemptStartedAt(
   taskId: string,
   pipeline: IntegrationPipelineSnapshot | null,
 ): string | null {
-  if (pipeline?.active?.taskId !== taskId) return null;
-  return pipeline.active.startedAt ?? null;
+  if (pipeline?.active?.taskId === taskId) return pipeline.active.startedAt ?? null;
+  // Validating alongside the active close-out (#1275): its own start counts.
+  const running = pipeline?.parallel?.find((p) => p.taskId === taskId);
+  return running?.startedAt ?? null;
 }
 
 /**
@@ -28,7 +30,8 @@ export function closeOutFailureCutoff(
   const started = closeOutAttemptStartedAt(taskId, pipeline);
   if (started) return started;
   if (!pipeline) return null;
-  if (pipeline.active?.taskId === taskId || pipeline.queue.includes(taskId)) {
+  const running = pipeline.parallel?.some((p) => p.taskId === taskId) ?? false;
+  if (pipeline.active?.taskId === taskId || running || pipeline.queue.includes(taskId)) {
     // Older snapshots may omit `queueEnqueuedAt`.
     return pipeline.queueEnqueuedAt?.[taskId] ?? pipeline.at ?? null;
   }

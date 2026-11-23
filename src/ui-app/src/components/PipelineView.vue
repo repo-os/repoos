@@ -92,7 +92,8 @@ function laneFor(task: Task, nowMs: number): Lane | null {
   const role = integrationPipelineRole(repo.integration, task.id);
   const closeoutActive = role === "active";
   const closeoutQueued = role === "queued";
-  const closeoutStalled = closeoutActive && integrationPipelineStalled(repo.integration, nowMs);
+  const closeoutStalled =
+    closeoutActive && integrationPipelineStalled(repo.integration, nowMs, undefined, task.id);
   // Same evidence the board card reads (#1000): a heartbeat stamped between
   // ticks must not read as "future" relative to this 30s tick.
   const engineerHint = activeEngineerCardHint({

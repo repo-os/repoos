@@ -67,6 +67,13 @@ export interface IntegrationJob {
    * budget uses monotonic elapsed time so system sleep does not consume it.
    */
   budgetMonotonicStartNs?: string | null;
+  /**
+   * `process.hrtime.bigint()` when the job finished validating and entered
+   * `publishing` (#1275). The wait for the publish turn is measured from it on
+   * the same monotonic clock as the budget, and it is cleared once used so a
+   * restart can never shift the budget anchor twice.
+   */
+  parkedAtNs?: string | null;
   /** Main checkout SHA at validation start (null if not yet validated) */
   baseMainSha: string | null;
   /** Feature branch SHA being merged */
@@ -147,6 +154,91 @@ export interface IntegrationJob {
 /** Close-out jobs that still occupy the FIFO queue (excludes terminal done/failed). */
 export function pendingCloseOutJobs(jobs: IntegrationJob[]): IntegrationJob[] {
   return jobs.filter((j) => j.phase !== "done" && j.phase !== "failed");
+}
+
+/**
+ * The task id that holds the publish turn (#1275): the head of the pending
+ * queue. Publishing to main is strictly serial in queue order, so only this job
+ * may merge; jobs behind it validate in parallel but park until they reach the
+ * head. A failed or done job leaves the queue, so a failure never blocks the
+ * jobs behind it.
+ */
+export function publishTurnTaskId(jobs: IntegrationJob[]): string | null {
+  const pending = pendingCloseOutJobs(jobs);
+  return pending.length > 0 ? pending[0].taskId : null;
+}
+
+/** Whether `taskId` may publish now (see {@link publishTurnTaskId}). */
+/**
+ * A job that finished validating and waits for its publish turn writes no
+ * progress on purpose, so it must never be judged stalled (#1275 review).
+ */
+export function isParkedPublisher(jobs: IntegrationJob[], job: IntegrationJob): boolean {
+  return job.phase === "publishing" && !hasPublishTurn(jobs, job.taskId);
+}
+
+export function hasPublishTurn(jobs: IntegrationJob[], taskId: string): boolean {
+  return publishTurnTaskId(jobs) === taskId;
+}
+
+/**
+ * Which queued close-outs to start now (#1275). Pure, so the server's scheduler
+ * and the tests share one definition of the rules:
+ *
+ * - Jobs start in queue order, so the head is never starved by later jobs.
+ * - At most `limit` validations are in flight. A running publish owns the
+ *   serial publish turn, but does not consume a validation slot.
+ * - A `publishing` job starts only when it holds the publish turn. Anything
+ *   behind the head that has finished validating parks until its turn comes and
+ *   is picked up again when the head's run ends.
+ * - `holdExtra` (the memory pressure guard is holding new work) stops any start
+ *   beyond the first concurrent run. The first run is never held, as before.
+ * - A cancelled job is only torn down (its candidate and record), never
+ *   validated. It starts whatever the limit or hold says, so a stop request
+ *   never waits behind a stalled head or a pressure hold, and it takes no slot.
+ */
+export function selectCloseOutStarts(input: {
+  jobs: IntegrationJob[];
+  running: ReadonlySet<string>;
+  limit: number;
+  holdExtra: boolean;
+  unavailable?: ReadonlySet<string>;
+}): string[] {
+  const picks: string[] = [];
+  const turn = publishTurnTaskId(input.jobs);
+  const max = Math.max(1, input.limit);
+  const jobsById = new Map(input.jobs.map((job) => [job.taskId, job]));
+  // A publish can overlap validation on another task. Count only active
+  // validation work (plus unknown running ids conservatively); a running
+  // publisher must not reduce the validation capacity (#1275).
+  let inFlight = [...input.running].filter((taskId) => {
+    const job = jobsById.get(taskId);
+    return !job || job.phase === "queued" || job.phase === "syncing" || job.phase === "validating";
+  }).length;
+  for (const job of pendingCloseOutJobs(input.jobs)) {
+    if (input.running.has(job.taskId)) continue;
+    if (job.cancelled) {
+      picks.push(job.taskId);
+      continue;
+    }
+    if (input.unavailable?.has(job.taskId)) continue;
+    if (job.phase === "publishing" && job.taskId !== turn) continue;
+    // The head that is ready to publish validates nothing, so it takes no
+    // validation slot and the pressure guard does not hold it. Otherwise a slow
+    // validation could block the publish behind it (#1275).
+    if (job.phase === "publishing") {
+      picks.push(job.taskId);
+      continue;
+    }
+    // Scan rather than break: the limit and hold are the same for every job
+    // here, so this picks the same jobs, but a cancelled job later in the queue
+    // still gets its teardown.
+    if (inFlight >= max) continue;
+    if (inFlight >= 1 && input.holdExtra) continue;
+    picks.push(job.taskId);
+    inFlight++;
+  }
+  return picks;
 }
 
 /** The attempt generation of a job, defaulting legacy records to the first attempt. */
@@ -243,6 +335,20 @@ interface StoredJob extends IntegrationJob {
   version: number;
 }
 
+/** Every job record on disk, unsorted. */
+function readAllJobs(root: string): IntegrationJob[] {
+  ensureJobsDir(root);
+  const dir = join(root, JOBS_DIR);
+  if (!existsSync(dir)) return [];
+  const jobs: IntegrationJob[] = [];
+  for (const file of readdirSync(dir)) {
+    if (!file.endsWith(".json")) continue;
+    const job = readJob(root, file.slice(0, -5));
+    if (job) jobs.push(job);
+  }
+  return jobs;
+}
+
 function jobPath(root: string, taskId: string): string {
   return join(root, JOBS_DIR, `${taskId}.json`);
 }
@@ -300,6 +406,7 @@ function readJob(root: string, taskId: string): IntegrationJob | null {
       // The monotonic budget anchor must survive every read-modify-write, or a
       // retry (advanceAttempt, resync) would restart the close-out deadline (#0573, #1276).
       budgetMonotonicStartNs: stored.budgetMonotonicStartNs,
+      parkedAtNs: stored.parkedAtNs,
       baseMainSha: stored.baseMainSha,
       branchSha: stored.branchSha,
       handoffSha: stored.handoffSha ?? null,
@@ -377,7 +484,15 @@ export function createJobCoordinator(root: string): JobCoordinator {
         return existing;
       }
 
-      const enqueuedAt = new Date().toISOString();
+      // Strictly after the newest queued job, so two requests in the same
+      // millisecond keep their order instead of tying on the timestamp (#1275).
+      const newest = Math.max(
+        0,
+        ...readAllJobs(root)
+          .map((j) => Date.parse(j.enqueuedAt))
+          .filter(Number.isFinite),
+      );
+      const enqueuedAt = new Date(Math.max(Date.now(), newest + 1)).toISOString();
       const job: IntegrationJob = {
         taskId: task.id,
         // A fresh attempt gets a new, MONOTONIC generation so a late callback
@@ -452,18 +567,12 @@ export function createJobCoordinator(root: string): JobCoordinator {
     },
 
     allJobs(): IntegrationJob[] {
-      ensureJobsDir(root);
-      const dir = join(root, JOBS_DIR);
-      if (!existsSync(dir)) return [];
-
-      const jobs: IntegrationJob[] = [];
-      for (const file of readdirSync(dir)) {
-        if (!file.endsWith(".json")) continue;
-        const taskId = file.slice(0, -5);
-        const job = readJob(root, taskId);
-        if (job) jobs.push(job);
-      }
-      return jobs.sort((a, b) => a.enqueuedAt.localeCompare(b.enqueuedAt));
+      const jobs = readAllJobs(root);
+      // Publish order is enqueue order. Stamps are strictly increasing (see
+      // `enqueue`), so the id is only a deterministic tie-break (#1275).
+      return jobs.sort(
+        (a, b) => a.enqueuedAt.localeCompare(b.enqueuedAt) || a.taskId.localeCompare(b.taskId),
+      );
     },
 
     peekNext(): IntegrationJob | null {

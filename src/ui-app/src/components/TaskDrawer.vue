@@ -864,7 +864,8 @@ const integrationCardLabel = computed(() => {
   if (!task || !snap) return null;
   const role = integrationPipelineRole(snap, task.id);
   if (role === "active") {
-    const copy = integrationActiveCopy(snap, checkNow.value);
+    // This task's own run, which may be validating alongside the head (#1275).
+    const copy = integrationActiveCopy(snap, checkNow.value, undefined, task.id);
     const slow = !!notices.slowRunByTask[task.id];
     const label = slow && !copy.stalled ? `${copy.label} · slow` : copy.label;
     return integrationProgressCardLabel(label);
@@ -1290,6 +1291,17 @@ const drawerStatusDetails = computed(() => {
         title: "Close-out progress",
         timestamp: snap.active.startedAt,
         detail: copy.label,
+      });
+    } else if (snap.parallel?.some((p) => p.taskId === task.id)) {
+      // Validating alongside the active close-out (#1275): its own start and
+      // stage, since the snapshot's `active` is a different job.
+      const running = snap.parallel.find((p) => p.taskId === task.id)!;
+      rows.push({
+        title: "Close-out progress",
+        timestamp: running.startedAt ?? undefined,
+        detail: running.detail
+          ? `${running.stage ?? "…"} · ${running.phase} · ${running.detail}`
+          : `${running.stage ?? "…"} · ${running.phase}`,
       });
     } else if (snap.queue.includes(task.id)) {
       const queued = integrationQueuedCopy(snap, task.id);
@@ -2368,7 +2380,11 @@ async function startHotfix(target: "branch" | "main"): Promise<void> {
 const inPipeline = computed(() => {
   const snap = repo.integration;
   if (!ui.active || !snap) return false;
-  return snap.active?.taskId === ui.active.id || snap.queue.includes(ui.active.id);
+  return (
+    snap.active?.taskId === ui.active.id ||
+    (snap.parallel?.some((p) => p.taskId === ui.active.id) ?? false) ||
+    snap.queue.includes(ui.active.id)
+  );
 });
 
 /** Hides Refresh evidence while a close-out is queued or running (#1277). Unlike `inPipeline`, a failed job does not count, so the button returns. */

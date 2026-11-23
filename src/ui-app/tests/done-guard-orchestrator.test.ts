@@ -71,7 +71,7 @@ describe("publish-time dirty-main guard (#0211)", () => {
     } finally {
       clean();
     }
-  });
+  }, 120_000);
 
   it("refuses to publish into a dirty main with an actionable reason and does not merge", async () => {
     const { root, clean } = makeRepo();

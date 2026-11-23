@@ -104,6 +104,7 @@ export function generalSectionForKey(key: string): string {
     return "activity-animation";
   }
   if (key === "tunnelEnabled") return "publishing";
+  if (key === "maxParallelValidations") return "close-out";
   if (key === "tailnetDiscovery") return "remote-validation";
   if (key === "remoteValidation.enabled") return "remote-validation";
   if (key === "remoteValidation.browserCaptureMode") return "performance";

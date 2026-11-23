@@ -120,6 +120,39 @@ describe("applyPipelineDetail (#0782 review)", () => {
 });
 
 describe("integration snapshot phase + queue detail (#0897)", () => {
+  it("keeps a crash-cooling queue head queued while later runners remain parallel", () => {
+    const { root, coordinator } = makeCoordinator();
+    try {
+      coordinator.enqueue({ id: "0001", branch: "feat/head" } as never);
+      coordinator.enqueue({ id: "0002", branch: "feat/runner" } as never);
+      coordinator.updateJob("0002", {
+        phase: "validating",
+        startedAt: "2026-10-21T12:00:00.000Z",
+      });
+      expect(
+        coordinator.allJobs().map((entry) => [entry.taskId, entry.phase, entry.startedAt]),
+      ).toEqual([
+        ["0001", "queued", null],
+        ["0002", "validating", "2026-10-21T12:00:00.000Z"],
+      ]);
+
+      const snap = buildIntegrationSnapshot(
+        coordinator,
+        {},
+        undefined,
+        {},
+        {},
+        "2026-10-21T12:01:00.000Z",
+      );
+      expect(snap.active).toBeNull();
+      expect(snap.parallel?.map((entry) => entry.taskId)).toEqual(["0002"]);
+      expect(snap.queue).toEqual(["0001"]);
+      expect(snap.queueDetail?.[0].blockerTaskId).toBeNull();
+    } finally {
+      rmFixture(root);
+    }
+  });
+
   it("shows the active phase's elapsed time and why each queued job waits", () => {
     const { root, coordinator } = makeCoordinator();
     try {
