@@ -11,7 +11,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/human-task-check-decision-model-plus-bet
 created_at: "2026-11-20T02:34:13Z"
-updated_at: "2026-11-23T11:31:46Z"
+updated_at: "2026-11-23T11:31:47Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -133,3 +133,4 @@ Sample phrases that must still be caught: "verify on a real handset", "needs a s
 - 2026-11-23T11:31:45Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code unknown) · last assistant: The retry acquired a runner slot and the formatted tree has built successfully. The changed-path tests are running again now; they passed on the previous run before the local formatter failure, and this second run is validating the formatt… · stderr: Reading additional input from stdin...
 - 2026-11-23T11:31:45Z · status active→review
 - 2026-11-23T11:31:45Z · message_delivered: 1 message(s)
+- 2026-11-23T11:31:47Z · note: handoff requested (cli)
