@@ -168,6 +168,10 @@ async function toggleRole(role: string, enabled: boolean): Promise<void> {
 
 const humanStepCheck = computed(() => config.data?.["model_routing.humanStepCheck"] === true);
 const humanStepSticky = computed(() => config.data?.["model_routing.humanStepSticky"] !== false);
+const humanTaskMode = computed(() => String(config.data?.["humanTaskCheck.mode"] ?? "both"));
+const humanTaskKeywords = computed(
+  () => (config.data?.["humanTaskCheck.keywords"] as string[] | undefined) ?? [],
+);
 
 async function setHumanStepCheck(enabled: boolean): Promise<void> {
   await patch({ "model_routing.humanStepCheck": enabled });
@@ -175,6 +179,19 @@ async function setHumanStepCheck(enabled: boolean): Promise<void> {
 
 async function setHumanStepSticky(enabled: boolean): Promise<void> {
   await patch({ "model_routing.humanStepSticky": enabled });
+}
+
+async function setHumanTaskMode(mode: string): Promise<void> {
+  await patch({ "humanTaskCheck.mode": mode });
+}
+
+async function setHumanTaskKeywords(value: string): Promise<void> {
+  await patch({
+    "humanTaskCheck.keywords": value
+      .split("\n")
+      .map((v) => v.trim())
+      .filter(Boolean),
+  });
 }
 
 async function runProbe(live: boolean): Promise<void> {
@@ -528,6 +545,45 @@ onMounted(() => {
     </div>
 
     <div class="mr-roles">
+      <span class="field-label">Human-step check</span>
+      <div
+        class="mr-role-chips"
+        role="group"
+        aria-label="Human-step check mode"
+        data-testid="human-task-check-mode"
+      >
+        <button
+          v-for="mode in ['keywords', 'model', 'both']"
+          :key="mode"
+          class="mr-role-chip"
+          type="button"
+          :aria-pressed="humanTaskMode === mode"
+          @click="void setHumanTaskMode(mode)"
+        >
+          {{
+            mode === "both"
+              ? "Keywords, then model"
+              : mode === "model"
+                ? "Decision model"
+                : "Keywords"
+          }}
+        </button>
+      </div>
+      <label class="field" style="margin-top: 8px">
+        <span class="field-label">Additional keyword phrases (one per line)</span>
+        <textarea
+          :value="humanTaskKeywords.join('\n')"
+          rows="3"
+          data-testid="human-task-keywords"
+          @change="(e) => void setHumanTaskKeywords((e.target as HTMLTextAreaElement).value)"
+        />
+      </label>
+      <p class="agent-desc">
+        The default checks phrases first and asks the configured decision model only after a match.
+        Model failures fall back to phrases.
+      </p>
+    </div>
+    <div class="mr-roles">
       <span class="field-label">Before a task starts</span>
       <label class="mr-role-chip" style="margin-top: 6px" data-test-id="routing-human-step-row">
         <input
@@ -536,13 +592,11 @@ onMounted(() => {
           data-testid="routing-human-step-check"
           @change="(e) => void setHumanStepCheck((e.target as HTMLInputElement).checked)"
         />
-        Check for mixed AI and human steps, and suggest splitting the task
+        Legacy human-step model check
       </label>
       <p class="agent-desc" style="margin: 6px 0 0">
-        Off by default. When the keyword scan matches, the model decides whether verification truly
-        needs a human — the keyword alone never sets the flag. It only blocks a start when Mode is
-        Automatic; in Shadow it records the verdict without blocking, and if the provider is
-        unavailable or fails, the keyword check runs instead.
+        Compatibility switch for projects that have not selected
+        <code>humanTaskCheck.mode</code>. The Human-step check mode above takes precedence when set.
       </p>
       <label
         class="mr-role-chip"

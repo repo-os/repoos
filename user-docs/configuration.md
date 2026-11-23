@@ -436,10 +436,17 @@ The body outside `## Original prompt` should be at least ~400 characters. The PM
 "flesh this out" flow and `repoos new` / task PATCH paths run the same check.
 
 RepoOS also flags `needs_input` / `needs-human-step` when acceptance criteria
-need a real device, account, or third-party sign-up. A keyword scan is only a
-tripwire: when **Model routing → Check for mixed AI and human steps** is on,
-the decision model must agree before the flag is set, and `needs_input_detail`
-quotes the matched criterion plus the model's bounded reason. Clearing the flag
+need a real device, account, or third-party sign-up. Set `humanTaskCheck.mode`
+to `keywords`, `model`, or `both` in Settings; the default `both` runs the
+phrase scan first and asks the configured decision model only after a match.
+Add project-specific phrases with `humanTaskCheck.keywords` (one phrase per
+line in Settings). Negated mentions and code identifiers do not count. In
+`model` mode, the model checks every task; in `both` mode it is called only
+after a phrase match. The model uses the configured provider and timeout above;
+Automatic routing lets its verdict block a start, Shadow records without
+blocking, and an unavailable or failed model falls back to the phrase result.
+The refusal detail quotes the matched criterion and the model's bounded reason.
+Clearing the flag
 (or `repoos update --human-step-override "<reason>"`) is **sticky** by default
 (**Remember cleared needs-human-step flags**): RepoOS stores a fingerprint of
 the acceptance criteria so later edits do not re-flag until the criteria
@@ -661,7 +668,9 @@ humanStepSticky = true       # remember cleared flags (default on)
 | `model_routing.baseUrl` | — | Retained so an existing `[model_routing]` table with the self-hosted adapter still parses. It has no UI and is not a selectable provider. |
 | `model_routing.roles` | all three | Which runs consult the router. A role left out keeps its configured agent. |
 | `model_routing.timeoutMs` | `8000` | One decision call's ceiling. A timeout falls back; it never blocks the run. |
-| `model_routing.humanStepCheck` | `false` | When acceptance criteria trip the keyword scan, ask the decision model whether verification truly requires a human — the keyword alone never sets the flag. Uses the same provider as routing. It only blocks a start when `mode = "automatic"`; in `shadow` it records the verdict without blocking, and when the provider is off, unavailable, or fails, the keyword check runs instead. |
+| `humanTaskCheck.mode` | `both` | Choose keyword phrases, the decision model, or keyword-first model checking for human-only acceptance criteria. Model failures fall back to keyword results. |
+| `humanTaskCheck.keywords` | `[]` | Additional human-step phrases, editable in Settings. Negated clauses and code identifiers are ignored. |
+| `model_routing.humanStepCheck` | `false` | Legacy compatibility switch. When no `humanTaskCheck.mode` is set, `false` selects keyword-only mode; new projects should use `humanTaskCheck.mode`. |
 | `model_routing.humanStepSticky` | `true` | When a human clears a `needs-human-step` flag, record a fingerprint of the acceptance criteria so later rescans skip the flag until the criteria materially change. |
 
 ### Choosing a provider

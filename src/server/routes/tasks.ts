@@ -72,6 +72,7 @@ import {
 } from "../task-underspecified-flag.js";
 import {
   assessTaskNeedsHumanStep,
+  resolveHumanTaskCheckMode,
   needsHumanStepFingerprint,
 } from "../../core/task-underspecified.js";
 import { humanStepOverrideSuppresses } from "../../core/human-step-override.js";
@@ -2775,8 +2776,19 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
       const tripwire = assessTaskNeedsHumanStep(existing.body, {
         area: existing.area,
         assignee: existing.assignee,
+        humanStepKeywords: config.humanTaskCheck?.keywords,
+        modelOnlyHumanStepCheck:
+          resolveHumanTaskCheckMode(
+            config.humanTaskCheck?.mode,
+            config.modelRouting?.humanStepCheck,
+          ) === "model",
       });
-      if (tripwire.needsHumanStep) {
+      const modelOnlyHumanCheck =
+        resolveHumanTaskCheckMode(
+          config.humanTaskCheck?.mode,
+          config.modelRouting?.humanStepCheck,
+        ) === "model";
+      if (tripwire.needsHumanStep || modelOnlyHumanCheck) {
         if (tripwire.taggedHuman) {
           const detail = tripwire.detail;
           const flagged = patchTaskFile(config, existing.absPath, {
@@ -2810,10 +2822,26 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
           } else if (check.decision) {
             humanStepOverride = "agent";
           }
-        } else if (check.outcome === "failed") {
+        } else if (check.outcome === "failed" || check.outcome === "unavailable") {
+          const fallbackDetail = `${check.outcome === "failed" ? `Decision model failed (${check.error ?? "request failed"})` : "Decision model unavailable"}; keyword result used. ${tripwire.detail}`;
           logger.task(id, "warn", "Human-step decision check failed — using the keyword check", {
             error: check.error,
           });
+          if (tripwire.needsHumanStep) {
+            const flagged = patchTaskFile(config, existing.absPath, {
+              needsInput: true,
+              needsInputReason: NEEDS_HUMAN_STEP_NEEDS_INPUT_REASON,
+              needsInputDetail: fallbackDetail,
+            });
+            index.applyFileChange(flagged.absPath, { guarded: true });
+            return json(res, 409, {
+              ok: false,
+              error: fallbackDetail,
+              reason: NEEDS_HUMAN_STEP_NEEDS_INPUT_REASON,
+              needsInput: true,
+              detail: fallbackDetail,
+            });
+          }
         } else if (check.outcome === "human") {
           const detail = humanStepFlagDetail(
             tripwire.sentence,
@@ -2837,7 +2865,7 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
           });
         } else if (check.outcome === "agent") {
           humanStepOverride = "agent";
-        } else if (config.modelRouting?.humanStepCheck !== true) {
+        } else if (tripwire.needsHumanStep) {
           const flagged = patchTaskFile(config, existing.absPath, {
             needsInput: true,
             needsInputReason: NEEDS_HUMAN_STEP_NEEDS_INPUT_REASON,
