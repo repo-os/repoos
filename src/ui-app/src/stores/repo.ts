@@ -2341,11 +2341,15 @@ export const useRepoStore = defineStore("repo", () => {
     if (snap) {
       const wasActive = snap.active?.taskId === taskId;
       const queue = snap.queue.filter((q) => q !== taskId);
+      // A job cancelled while validating alongside the active one (#1275) leaves
+      // the running list too, or the pipeline keeps showing it as running.
+      const parallel = snap.parallel?.filter((p) => p.taskId !== taskId);
       integration.value = {
         ...snap,
         active: wasActive ? null : snap.active,
         queue,
-        empty: wasActive ? queue.length === 0 : snap.empty,
+        parallel: parallel?.length ? parallel : undefined,
+        empty: wasActive ? queue.length === 0 && !parallel?.length : snap.empty,
       };
     }
     setDoneError(taskId, null);

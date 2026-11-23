@@ -23,7 +23,7 @@ import { notifyGitMutation } from "../core/git-activity.js";
 import { resolveDefaultBranch } from "../core/repo-log.js";
 import type { RepoOSConfig, Task } from "../core/types.js";
 import type { IntegrationJob, JobCoordinator, JobPhase } from "./integration-job.js";
-import { jobAttempt } from "./integration-job.js";
+import { hasPublishTurn, jobAttempt, publishTurnTaskId } from "./integration-job.js";
 import {
   CLOSE_OUT_STEP,
   CloseOutProgressRecorder,
@@ -813,6 +813,34 @@ export function parseCheckTestProgress(text: string): { done: number; total: num
   return null;
 }
 
+/**
+ * Move a close-out's monotonic budget anchor forward by the time the job spent
+ * parked waiting for its publish turn, so only the wait is excluded from the
+ * budget and the time already spent validating still counts (#1275 review). The
+ * anchor never moves past `nowNs`. Returns null when there is nothing to shift
+ * (no anchor, or no usable parked-since time). Exported for tests.
+ */
+export function shiftBudgetAnchorPastWait(
+  anchorNs: string | null | undefined,
+  parkedAtNs: string | null | undefined,
+  nowNs: bigint,
+): string | null {
+  if (!anchorNs || !parkedAtNs) return null;
+  let parkedAt: bigint;
+  let anchor: bigint;
+  try {
+    parkedAt = BigInt(parkedAtNs);
+    anchor = BigInt(anchorNs);
+  } catch {
+    return null;
+  }
+  // A mark from a previous boot (clock went backwards) is unusable.
+  if (parkedAt > nowNs) return null;
+  let shifted = anchor + (nowNs - parkedAt);
+  if (shifted > nowNs) shifted = nowNs;
+  return shifted.toString();
+}
+
 export interface ProcessRunResult {
   status: number | null;
   stdout: string;
@@ -1508,6 +1536,61 @@ export class CloseOutOrchestrator {
     return { ok: false, reason: CANCEL_REASON };
   }
 
+  /**
+   * Fail a job whose run kept crashing, through the normal failure path so the
+   * candidate is torn down, the review lock restored and the task's review
+   * status preserved (#1275 review). Throws when there is nothing to fail.
+   */
+  async failCrashed(taskId: string, reason: string): Promise<void> {
+    const job = this.coordinator.getJob(taskId);
+    if (!job || job.phase === "done" || job.phase === PHASE_FAILED) return;
+    this.ownedAttempt = job.attempt ?? jobAttempt(job);
+    await this.failOrReconcile(job, job.phase, reason);
+    const after = this.coordinator.getJob(taskId);
+    if (after && after.phase !== PHASE_FAILED && after.phase !== "done") {
+      throw new Error("crashed close-out could not be failed");
+    }
+  }
+
+  /**
+   * Run `fn` while holding the publish locks that own the live main checkout
+   * (#1275 review). With several close-outs in flight, any write to main outside
+   * a lock can collide with another job's publish. Returns false (and runs
+   * nothing) when the locks cannot be taken in time. Reentrancy-safe: it is only
+   * called when this task does not already hold them.
+   */
+  private async withMainCheckout(
+    taskId: string,
+    fn: () => void | Promise<void>,
+    waitMs = 90_000,
+  ): Promise<boolean> {
+    const deadline = Date.now() + waitMs;
+    let haveRepo = !this.repoLock;
+    let haveRoot = !this.rootLock;
+    while (Date.now() < deadline) {
+      if (!haveRepo && this.repoLock?.acquire(taskId)) haveRepo = true;
+      if (haveRepo && !haveRoot && this.rootLock?.acquire(taskId, "close-out")) haveRoot = true;
+      if (haveRepo && haveRoot) break;
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+    if (!(haveRepo && haveRoot)) {
+      if (haveRepo) this.repoLock?.release(taskId);
+      this.logger?.integration(
+        taskId,
+        "warn",
+        "main checkout busy — bookkeeping write will be retried",
+      );
+      return false;
+    }
+    try {
+      await fn();
+      return true;
+    } finally {
+      if (this.rootLock) this.rootLock.release(taskId);
+      if (this.repoLock) this.repoLock.release(taskId);
+    }
+  }
+
   private async failOrReconcile(
     job: IntegrationJob,
     failedPhase: JobPhase,
@@ -1555,12 +1638,25 @@ export class CloseOutOrchestrator {
       this.ownedAttempt,
     );
     if (!recorded) return { ok: false, reason };
-    restoreWorktreeReviewLockAfterFailedCloseOut(
-      this.config.root,
-      this.config.cacheDir ?? ".repoos",
-      job.taskId,
-    );
-    await preserveClosingTaskReviewStatusOnMain(this.config, job.taskId, this.getTask);
+    const restoreReviewState = async (): Promise<void> => {
+      const restored = await this.withMainCheckout(
+        job.taskId,
+        async () => {
+          restoreWorktreeReviewLockAfterFailedCloseOut(
+            this.config.root,
+            this.config.cacheDir ?? ".repoos",
+            job.taskId,
+          );
+          await preserveClosingTaskReviewStatusOnMain(this.config, job.taskId, this.getTask);
+        },
+        1_000,
+      );
+      if (!restored) {
+        const timer = setTimeout(() => void restoreReviewState(), 5_000);
+        timer.unref?.();
+      }
+    };
+    await restoreReviewState();
     // A budget-exhausted close-out is recorded as a `failed` job (so it stays
     // retryable) but reported as a distinct `timedOut` outcome (#0640): the
     // bell's advice differs from a real gate failure.
@@ -1587,6 +1683,21 @@ export class CloseOutOrchestrator {
     const job = this.coordinator.peekNext();
     if (!job) return { ok: true, reason: "queue empty" };
 
+    return this.processJob(job);
+  }
+
+  /**
+   * Run one specific job (#1275). The server runs several jobs at once, each
+   * with its own orchestrator instance, because per-run state (the owned
+   * attempt, the done-stamped tasks) lives on the instance. Publishing is still
+   * ordered: a job that is not at the head of the queue parks in `publishing`
+   * until its turn (see processJob).
+   */
+  async processTask(taskId: string): Promise<{ ok: boolean; reason?: string }> {
+    const job = this.coordinator.getJob(taskId);
+    if (!job || job.phase === "done" || job.phase === "failed") {
+      return { ok: true, reason: "job not pending" };
+    }
     return this.processJob(job);
   }
 
@@ -1668,6 +1779,11 @@ export class CloseOutOrchestrator {
     // write below is scoped to it, so a late callback from a superseded
     // attempt is refused instead of mutating the task's newer job.
     this.ownedAttempt = job.attempt ?? jobAttempt(this.coordinator.getJob(job.taskId));
+    // Whether this run resumes a job parked for its publish turn (#1275). Only
+    // that wait is excluded from the budget; a publish reached in the same run
+    // as its validation keeps the attempt's budget, so drift resyncs cannot
+    // keep resetting it.
+    const resumedFromTurnWait = job.phase === "publishing";
 
     this.logger?.integration(job.taskId, "info", `Processing job phase: ${job.phase}`, {
       taskId: job.taskId,
@@ -1697,8 +1813,10 @@ export class CloseOutOrchestrator {
       // budget fails here — before any further work — with a retryable
       // `failed` job. `cleanup` is deliberately excluded: by then the publish
       // merge has landed, so the job must finish as `done`, never be failed
-      // out from under a completed merge.
-      if (job.phase !== "cleanup" && this.pipelineTimedOut(job)) {
+      // out from under a completed merge. `publishing` is excluded too: a job
+      // parked for its publish turn (#1275) spent its wait in the queue, not
+      // on work, and its budget restarts when the turn is granted below.
+      if (job.phase !== "cleanup" && job.phase !== "publishing" && this.pipelineTimedOut(job)) {
         return this.timeoutJob(job);
       }
 
@@ -1863,16 +1981,20 @@ export class CloseOutOrchestrator {
         // fail here while main is still untouched.
         if (this.pipelineTimedOut(job)) return this.timeoutJob(job);
         if (validateRes.gateDurationMs && validateRes.gateDurationMs > 0) {
-          recordCloseOutGateTimingStats(
-            this.config.root,
-            this.config.cacheDir,
-            validateRes.gateDurationMs,
-          );
+          const gateMs = validateRes.gateDurationMs;
+          recordCloseOutGateTimingStats(this.config.root, this.config.cacheDir, gateMs);
           const absPath =
             this.getTask?.(job.taskId)?.absPath ??
             findTaskFileById(root, this.config.workDir, job.taskId);
           if (absPath) {
-            recordTaskCloseOutGateDuration(this.config, absPath, validateRes.gateDurationMs);
+            // The bookkeeping commit writes to main: take the publish locks so it
+            // cannot collide with another job's publish (#1275 review). Visibility
+            // only, so a short wait is enough.
+            await this.withMainCheckout(
+              job.taskId,
+              () => recordTaskCloseOutGateDuration(this.config, absPath, gateMs),
+              15_000,
+            );
           }
         }
         const promoted = this.coordinator.updateJob(
@@ -1880,6 +2002,7 @@ export class CloseOutOrchestrator {
           {
             phase: "publishing",
             candidateSha: validateRes.candidateSha,
+            parkedAtNs: process.hrtime.bigint().toString(),
           },
           this.ownedAttempt,
         );
@@ -1891,6 +2014,47 @@ export class CloseOutOrchestrator {
 
       // Publishing phase: merge candidate to live main, holding the repo lock.
       if (job.phase === "publishing") {
+        // Publish order (#1275): only the head of the queue merges. A job that
+        // finished validating ahead of an earlier one stays parked here, with
+        // its candidate intact, and the server re-runs it when the head's run
+        // ends. Nothing is written, so the job's phase and attempt are unchanged.
+        // A parked job the user stopped tears down now, not when the head ends:
+        // its candidate is throwaway and nothing has merged (#1275 review).
+        if (job.cancelled || this.isCancelled(job.taskId)) {
+          return this.cancelJob(job);
+        }
+        if (!hasPublishTurn(this.coordinator.allJobs(), job.taskId)) {
+          this.logger?.integration(job.taskId, "info", "validated — waiting for publish turn", {
+            headTaskId: publishTurnTaskId(this.coordinator.allJobs()),
+          });
+          return { ok: true, reason: "awaiting publish turn" };
+        }
+        // Queue wait never counts against the close-out budget (#1275). Only the
+        // wait is excluded: the budget anchor moves forward by the time spent
+        // parked, so the time already spent validating still counts and a job
+        // cannot exceed the configured ceiling by parking (#1275 review).
+        if (resumedFromTurnWait) {
+          const anchorNs =
+            this.coordinator.getJob(job.taskId)?.budgetMonotonicStartNs ??
+            job.budgetMonotonicStartNs;
+          const shifted = shiftBudgetAnchorPastWait(
+            anchorNs,
+            this.coordinator.getJob(job.taskId)?.parkedAtNs ?? job.parkedAtNs,
+            process.hrtime.bigint(),
+          );
+          // Clear the mark whether or not it shifted, so it is used once.
+          {
+            const turn = this.coordinator.updateJob(
+              job.taskId,
+              shifted
+                ? { budgetMonotonicStartNs: shifted, parkedAtNs: null }
+                : { parkedAtNs: null },
+              this.ownedAttempt,
+            );
+            if (!turn) return { ok: false, reason: "close-out attempt superseded before publish" };
+            job = turn;
+          }
+        }
         this.reportStep(CLOSE_OUT_STEP.publishing);
         const pubRes = await this.publishCandidate(job);
         if (pubRes.cancelled) return this.cancelJob(job);
@@ -4547,26 +4711,41 @@ export class CloseOutOrchestrator {
         this.getTask?.(job.taskId)?.absPath ??
         findTaskFileById(root, this.config.workDir, job.taskId);
       if (absPath) {
-        await markTaskReleased(this.config, absPath, mergedCommit);
-        // A worktree kept above holds uncommitted work the merge did NOT carry
-        // (#0512). The close-out itself succeeded, so this is not a failure to
-        // retry — it is a decision for a human, and the flag is how the board
-        // surfaces it. Written after `markTaskReleased` so the status write
-        // cannot clear it. Best-effort: do not fail the release marking if
-        // patchTaskFile throws.
-        if (keptDirtyFiles.length > 0) {
-          try {
-            const shown = keptDirtyFiles.slice(0, 8);
-            patchTaskFile(this.config, absPath, {
-              needsInput: true,
-              needsInputReason: "closeout-worktree-dirty",
-              needsInputDetail:
-                `the worktree for ${featureBranch} was kept because it had uncommitted changes the ` +
-                `merge did not carry: ${shown.join(", ")}${keptDirtyFiles.length > shown.length ? ", …" : ""}`,
-              note: "close-out kept a worktree with uncommitted changes",
-            });
-          } catch (err) {
-            console.error(`Could not patch task ${job.taskId} with dirty-worktree flag:`, err);
+        let stamped = false;
+        while (!stamped) {
+          stamped = await this.withMainCheckout(
+            job.taskId,
+            async () => {
+              await markTaskReleased(this.config, absPath, mergedCommit);
+              // A worktree kept above holds uncommitted work the merge did NOT carry
+              // (#0512). The close-out itself succeeded, so this is not a failure to
+              // retry — it is a decision for a human, and the flag is how the board
+              // surfaces it. Written after `markTaskReleased` so the status write
+              // cannot clear it. Best-effort: do not fail the release marking if
+              // patchTaskFile throws.
+              if (keptDirtyFiles.length > 0) {
+                try {
+                  const shown = keptDirtyFiles.slice(0, 8);
+                  patchTaskFile(this.config, absPath, {
+                    needsInput: true,
+                    needsInputReason: "closeout-worktree-dirty",
+                    needsInputDetail:
+                      `the worktree for ${featureBranch} was kept because it had uncommitted changes the ` +
+                      `merge did not carry: ${shown.join(", ")}${keptDirtyFiles.length > shown.length ? ", …" : ""}`,
+                    note: "close-out kept a worktree with uncommitted changes",
+                  });
+                } catch (err) {
+                  console.error(
+                    `Could not patch task ${job.taskId} with dirty-worktree flag:`,
+                    err,
+                  );
+                }
+              }
+            },
+            15_000,
+          );
+          if (!stamped) {
+            await new Promise((resolve) => setTimeout(resolve, 5_000));
           }
         }
         releasedOk = true;

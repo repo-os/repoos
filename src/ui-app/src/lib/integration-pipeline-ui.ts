@@ -112,8 +112,40 @@ export function integrationPipelineRole(
 ): IntegrationPipelineRole {
   if (!snap || snap.empty) return null;
   if (snap.active?.taskId === taskId && !snap.active.failed) return "active";
+  // A job validating alongside the active one is running, not waiting (#1275).
+  if (snap.parallel?.some((p) => p.taskId === taskId)) return "active";
   if (snap.queue.includes(taskId)) return "queued";
   return null;
+}
+
+/**
+ * A job that has started: the active head or one validating alongside it
+ * (#1275). Both show a clock, a stage and a stall timer, so the card, drawer
+ * and pipeline read the same fields whichever slot the job is in.
+ */
+export interface IntegrationRunningEntry {
+  taskId: string;
+  stage: string | null;
+  detail?: string | null;
+  startedAt: string | null;
+  lastProgressAt?: string | null;
+  failed?: boolean;
+  attempt?: number;
+  step?: string | null;
+  host?: string | null;
+  progressStale?: boolean;
+  previousFailure?: { attempt: number; reason?: string; failedAt?: string } | null;
+}
+
+/** The running entry for `taskId`, or null when that job has not started. */
+export function integrationRunningEntry(
+  snap: IntegrationPipelineSnapshot | null | undefined,
+  taskId: string,
+): IntegrationRunningEntry | null {
+  if (!snap) return null;
+  if (snap.active?.taskId === taskId) return snap.active;
+  const parallel = snap.parallel?.find((p) => p.taskId === taskId);
+  return parallel ?? null;
 }
 
 /**
@@ -134,10 +166,18 @@ export function integrationQueuePosition(
   snap: IntegrationPipelineSnapshot,
   taskId: string,
 ): { position: number; behindTaskId: string | null } | null {
+  // Publish order over every live job (#1275): a job validating alongside the
+  // active one still occupies its place in line, so count from queueDetail
+  // rather than the unstarted `queue` alone.
+  const detail = snap.queueDetail?.find((q) => q.taskId === taskId);
+  if (detail) return { position: detail.position, behindTaskId: snap.active?.taskId ?? null };
   const idx = snap.queue.indexOf(taskId);
   if (idx < 0) return null;
+  // Fallback for snapshots without queueDetail: count the started jobs ahead
+  // (the active head and any parallel validations), as the server does.
+  const started = snap.active ? 1 + (snap.parallel?.length ?? 0) : 0;
   return {
-    position: idx + 1,
+    position: started + idx + (snap.active ? 0 : 1),
     behindTaskId: snap.active?.taskId ?? null,
   };
 }
@@ -158,7 +198,7 @@ export function integrationElapsedMs(
 
 /** Ms since the active job last reported pipeline progress, or null when not applicable. */
 export function integrationIdleMs(
-  active: IntegrationPipelineSnapshot["active"],
+  active: IntegrationRunningEntry | null | undefined,
   nowMs: number,
 ): number | null {
   if (!active || active.failed) return null;
@@ -168,12 +208,23 @@ export function integrationIdleMs(
   return Number.isFinite(ms) && ms >= 0 ? ms : null;
 }
 
+/**
+ * Whether a started close-out has gone quiet. Without `taskId` this checks the
+ * active head (the status bar's job); with it, that job's own progress, so a
+ * parallel validation is judged by its own stall timer (#1275).
+ */
 export function integrationPipelineStalled(
   snap: IntegrationPipelineSnapshot | null | undefined,
   nowMs: number,
   stallMs = DEFAULT_INTEGRATION_STALL_MS,
+  taskId?: string,
 ): boolean {
-  const active = snap?.active;
+  // A publisher parked for its turn (#1275) is waiting on the head, not stalled:
+  // it has nothing running to be idle, so it gets no recovery prompt.
+  if (taskId && snap?.parallel?.some((p) => p.taskId === taskId && p.phase === "publishing")) {
+    return false;
+  }
+  const active = taskId ? integrationRunningEntry(snap, taskId) : snap?.active;
   if (!active || active.failed) return false;
   if (active.progressStale === true) return true;
   const idle = integrationIdleMs(active, nowMs);
@@ -218,9 +269,7 @@ export function integrationProgressCardLabel(label: string): string {
  * "on <host> · attempt N" for the active attempt (#1276). Host is named when it
  * is a remote runner; every attempt is identified, including attempt one.
  */
-export function integrationAttemptContext(
-  active: NonNullable<IntegrationPipelineSnapshot["active"]>,
-): string {
+export function integrationAttemptContext(active: IntegrationRunningEntry): string {
   const parts: string[] = [];
   if (active.host) parts.push(active.host === "local" ? "local" : `on ${active.host}`);
   if (active.attempt) parts.push(`attempt ${active.attempt}`);
@@ -231,32 +280,45 @@ export function integrationAttemptContext(
  * Why this attempt is running again (#1276): the reason the attempt it replaced
  * failed. Null for a first attempt or when no reason was recorded.
  */
-export function integrationRetryNote(
-  active: NonNullable<IntegrationPipelineSnapshot["active"]>,
-): string | null {
+export function integrationRetryNote(active: IntegrationRunningEntry): string | null {
   const prev = active.previousFailure;
   if (!active.attempt || active.attempt <= 1 || !prev) return null;
   const reason = prev.reason?.split("\n")[0]?.trim();
   return `Attempt ${active.attempt} — attempt ${prev.attempt} failed${reason ? `: ${reason}` : "."}`;
 }
 
-/** Active-job copy for the board card, pipeline bar and drawer (#0740, #1276). */
+/**
+ * Active-job copy for the board card, pipeline bar and drawer (#0740, #1276). With
+ * `taskId`, the copy describes that job's own run, so a card for a job validating in
+ * parallel shows its stage and clock, not the head's (#1275).
+ */
 export function integrationActiveCopy(
   snap: IntegrationPipelineSnapshot,
   nowMs: number,
   stallMs = DEFAULT_INTEGRATION_STALL_MS,
+  taskId?: string,
 ): IntegrationActiveCopy {
-  const copy = integrationActiveCopyBase(snap, nowMs, stallMs);
-  const note = integrationRetryNote(snap.active!);
+  const active = (taskId ? integrationRunningEntry(snap, taskId) : null) ?? snap.active!;
+  // A publisher parked for its turn (#1275) is waiting on the head, not stalled:
+  // it has nothing running to be idle, so it never reads as stalled.
+  if (taskId && snap.parallel?.some((p) => p.taskId === taskId && p.phase === "publishing")) {
+    return {
+      label: "validated · waiting for its publish turn",
+      title:
+        "This close-out passed validation and is waiting for the task ahead of it to publish first. Nothing is stuck; it publishes as soon as it is next.",
+      stalled: false,
+    };
+  }
+  const copy = integrationActiveCopyBase(active, nowMs, stallMs);
+  const note = integrationRetryNote(active);
   return note ? { ...copy, title: `${copy.title}\n${note}` } : copy;
 }
 
 function integrationActiveCopyBase(
-  snap: IntegrationPipelineSnapshot,
+  active: IntegrationRunningEntry,
   nowMs: number,
   stallMs: number,
 ): IntegrationActiveCopy {
-  const active = snap.active!;
   const idle = integrationIdleMs(active, nowMs);
   // The server flags an attempt whose progress writer stopped (#1276); the
   // idle timer still catches a job that reports nothing for a long time.
@@ -308,10 +370,7 @@ function integrationActiveCopyBase(
   };
 }
 
-function integrationCloseOutElapsedTip(
-  active: NonNullable<IntegrationPipelineSnapshot["active"]>,
-  elapsedMs: number,
-): string {
+function integrationCloseOutElapsedTip(active: IntegrationRunningEntry, elapsedMs: number): string {
   const dur = formatDuration(elapsedMs);
   const headline = dur === "0s" ? "Close-out running just now" : `Close-out running ${dur}`;
   const stamp = fmtFullDateTime(active.lastProgressAt ?? active.startedAt);

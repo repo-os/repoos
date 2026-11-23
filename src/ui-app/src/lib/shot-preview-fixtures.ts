@@ -553,6 +553,7 @@ const TASK_CHECK_PROGRESS_FIXTURES: ReadonlySet<ShotPreviewFixtureId> = new Set(
   "card:handoffStaleActive",
   "drawer:checksProgress",
   "pipeline:checksProgress",
+  "pipeline:parallelValidations",
 ]);
 
 /** Preview fixtures that pin a live `taskChecks` row on #9999 (#1054 pipeline shot). */
@@ -1775,6 +1776,93 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
           attempt: 1,
         },
       ];
+      break;
+    }
+    case "pipeline:parallelValidations": {
+      // A running task card, so the Checks "now" tab has a card to show (#1275).
+      ensureFixtureTask(repo, "active", {
+        title: "Close-out validating alongside the active one",
+        priority: "p2",
+        branch: "feat/shot-fixture",
+      });
+      if (!repo.runningIds.includes(SHOT_PREVIEW_FIXTURE_TASK_ID)) {
+        repo.runningIds = [...repo.runningIds, SHOT_PREVIEW_FIXTURE_TASK_ID];
+      }
+      // The Checks "now" tab lists running checks as cards, so the fixture task
+      // needs a live check row for the pipeline's "Also running" strip to share
+      // the screen with a card (the same seeding `checks:progress` uses).
+      repo.taskChecks[SHOT_PREVIEW_FIXTURE_TASK_ID] = [
+        {
+          id: "shot-check-parallel-validations",
+          taskId: SHOT_PREVIEW_FIXTURE_TASK_ID,
+          kind: "handoff-finalize",
+          startedAt: new Date(Date.now() - 4 * 60_000).toISOString(),
+          finishedAt: null,
+          durationMs: null,
+          running: true,
+          passed: null,
+          code: null,
+          output: "",
+          scope: "changed:main",
+          machine: "air",
+          stepsDone: 3,
+          stepsTotal: 12,
+          currentStep: 4,
+          stepName: "build",
+          lastProgressAt: new Date(Date.now() - 15_000).toISOString(),
+          attempt: 1,
+        },
+      ];
+      const startedAt = new Date(Date.now() - 4 * 60 * 1000).toISOString();
+      const at = nowIso();
+      repo.integration = {
+        ...activePipeline(SHOT_PREVIEW_FIXTURE_TASK_ID, null, startedAt, at),
+        parallel: [
+          { taskId: "0002", phase: "validating", stage: "check", startedAt, detail: null },
+        ],
+        queue: ["0003"],
+        queueDetail: [
+          {
+            taskId: "0003",
+            position: 2,
+            enqueuedAt: startedAt,
+            waitedMs: 0,
+            blockerTaskId: SHOT_PREVIEW_FIXTURE_TASK_ID,
+            blockerPhase: "validating",
+            blockerElapsedMs: 0,
+          },
+        ],
+      };
+      pinnedIntegration = repo.integration;
+      // Expanded, so the pipeline summary (with "Also running") is on screen.
+      useUiStore().setIntegrationBarCollapsed(false);
+      // A running merge-gate check on the fixture card, so the Checks "now" tab
+      // lists it and the card renders (same shape as pipeline:checksProgress).
+      repo.taskChecks[SHOT_PREVIEW_FIXTURE_TASK_ID] = [
+        {
+          id: "shot-parallel-validations-1275",
+          taskId: SHOT_PREVIEW_FIXTURE_TASK_ID,
+          kind: "merge-gate",
+          startedAt: new Date(Date.now() - 133_000).toISOString(),
+          finishedAt: null,
+          durationMs: null,
+          running: true,
+          passed: null,
+          code: null,
+          output: "",
+          scope: "changed:main",
+          machine: "remote host",
+          stepsDone: 3,
+          stepsTotal: 9,
+          currentStep: 4,
+          stepName: "tests",
+          testsDone: 3,
+          testsTotal: 680,
+          testsPass: 1,
+          lastProgressAt: new Date().toISOString(),
+        },
+      ];
+      setShotPreviewAppliedAttr(fixture);
       break;
     }
     case "integration:median15": {

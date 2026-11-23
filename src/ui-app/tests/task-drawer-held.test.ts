@@ -23,7 +23,8 @@ const heldTask = (over: Partial<Task> = {}): Task =>
     isHeld: true,
     holdReason: "waiting on design sign-off",
     holdBy: "njachowski@gmail.com",
-    holdUntil: "2030-01-01T00:00:00Z",
+    // Mid-year at noon UTC so the local-time render keeps the year in any TZ.
+    holdUntil: "2030-06-15T12:00:00Z",
     ...over,
   });
 
@@ -181,7 +182,7 @@ describe("task drawer Held reason (#0960)", () => {
     const copy = held!.find(".debug-status-text").text();
     expect(copy).toContain("waiting on design sign-off");
     expect(copy).toContain("njachowski@gmail.com");
-    expect(copy).toContain("2030-01-01T00:00:00Z");
+    expect(copy).toContain("2030-06-15T12:00:00Z");
     expect(held!.find(".debug-status-time").attributes("datetime")).toBe(holdAt);
   });
 

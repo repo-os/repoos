@@ -340,6 +340,7 @@ export const DEFAULT_CONFIG: Omit<RepoOSConfig, "root"> = {
   },
   skillSuggestions: false,
   maxActiveTasks: 3,
+  maxParallelValidations: 2,
   worktreeWarnThreshold: 20,
   board: {
     agentPopoverCloseSeconds: 15,
@@ -1751,6 +1752,14 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
     const maxActiveTasks = get("maxActiveTasks");
     if (typeof maxActiveTasks === "number" && maxActiveTasks >= 1 && maxActiveTasks <= 20)
       cfg.maxActiveTasks = maxActiveTasks as number;
+    const maxParallelValidations = get("maxParallelValidations");
+    if (
+      typeof maxParallelValidations === "number" &&
+      Number.isInteger(maxParallelValidations) &&
+      maxParallelValidations >= 1 &&
+      maxParallelValidations <= 8
+    )
+      cfg.maxParallelValidations = maxParallelValidations;
     const worktreeWarnThreshold = get("worktreeWarnThreshold");
     if (typeof worktreeWarnThreshold === "number" && worktreeWarnThreshold >= 0)
       cfg.worktreeWarnThreshold = Math.floor(worktreeWarnThreshold);
@@ -1809,6 +1818,8 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
     // recover, while the API now writes new values as numbers.
     if (typeof maxActiveTasks === "string" && /^(?:[1-9]|1\d|20)$/.test(maxActiveTasks))
       cfg.maxActiveTasks = Number(maxActiveTasks);
+    if (typeof maxParallelValidations === "string" && /^[1-8]$/.test(maxParallelValidations))
+      cfg.maxParallelValidations = Number(maxParallelValidations);
     const maxConcurrentAgents = get("maxConcurrentAgents");
     if (
       typeof maxConcurrentAgents === "number" &&
@@ -2810,6 +2821,7 @@ export interface ConfigFieldMeta {
 /** Select fields whose dropdown/API representations persist as numeric config values. */
 export const NUMERIC_SELECT_CONFIG_KEYS = [
   "maxActiveTasks",
+  "maxParallelValidations",
   "maxConcurrentAgents",
   "remoteValidation.maxConcurrent",
   "worktreeWarnThreshold",
@@ -3381,6 +3393,20 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       }),
       description:
         "Maximum number of simultaneously active tasks when auto-engineering mode is enabled (1-20)",
+    },
+    {
+      key: "maxParallelValidations",
+      label: "Parallel close-out validations",
+      type: "select",
+      tier: "live",
+      restartRequired: false,
+      default: String(DEFAULT_CONFIG.maxParallelValidations),
+      options: Array.from({ length: 8 }, (_, i) => ({
+        value: String(i + 1),
+        label: String(i + 1),
+      })),
+      description:
+        "How many queued close-outs may validate (build and check) at once, across runner hosts. Publishing to main stays serial in queue order, and a job whose base moved is re-validated before it publishes. Default 2; 1 restores one-at-a-time close-outs. Extra runs wait while the memory pressure guard is holding new work.",
     },
     {
       key: "worktreeWarnThreshold",
@@ -4784,6 +4810,7 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "activityAnimationSize",
   "activityAnimationConcurrency",
   "maxActiveTasks",
+  "maxParallelValidations",
   "autoEngineeringMode",
   "autoEngineering.pmVeto",
   "ctoSkipHealthy",
@@ -5042,6 +5069,8 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "closeOut.candidate",
   "closeOut.installCommand",
   "closeOut.postPublishCommand",
+  // How many close-outs validate at once; publishing stays serial (#1275)
+  "maxParallelValidations",
   "worktrees.candidate",
   "worktrees.installCommand",
   "attention.spendAlertUsd",

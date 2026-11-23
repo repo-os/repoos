@@ -25,6 +25,8 @@ export function integrationPipelineLive(
 ): boolean {
   if (!snap) return false;
   if (snap.active) return true;
+  // A job validating alongside the active one is live too (#1275).
+  if (snap.parallel?.length) return true;
   if (snap.queue.length > 0) return true;
   return !snap.empty;
 }

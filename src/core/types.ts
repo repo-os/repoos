@@ -602,6 +602,12 @@ export interface RepoOSConfig {
   /** Maximum number of simultaneously active tasks when auto-engineering mode is enabled. */
   maxActiveTasks?: number;
   /**
+   * How many close-out jobs may validate (sync → gate) at once (#1275). Publishing
+   * to main stays serial in queue order whatever this is; 1 restores the
+   * original one-job-at-a-time pipeline.
+   */
+  maxParallelValidations?: number;
+  /**
    * Maximum number of agent CLI processes (each with its own build/test
    * footprint) the runner will spawn at once, across all tasks and chats.
    * Extra `start`/`send` calls queue and spawn as running agents finish.

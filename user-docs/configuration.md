@@ -361,6 +361,7 @@ worktreeWarnThreshold = 20
 | `defaultAssignee` | select | `ai` | yes | Default assignee for new tasks: `unassigned`, `ai`, or `human`. Defaults to `ai`, so new tasks are picked up by an agent; existing tasks keep their own assignee. |
 | `defaultTaskMode` | select | `freeform` | yes | New-task flow: `freeform` (the AI writes the task) or `manual` (a form). Any other value falls back to `freeform`. |
 | `maxActiveTasks` | number | `3` | yes | Cap on simultaneously active tasks when `autoEngineeringMode` is on. Must be 1–20. |
+| `maxParallelValidations` | number | `2` | yes | How many queued close-outs may validate (sync and gate) at once. Publishing to `main` stays serial in queue order, and a job whose base moved is re-validated before it publishes. Must be 1–8; `1` restores one-at-a-time close-outs. |
 | `autoEngineeringMode` | boolean | `false` | yes | When true, RepoOS **event-driven** dispatch starts ready tasks automatically, up to `maxActiveTasks` (see below). |
 | `autoEngineering.pmVeto` | boolean | `false` | yes | Off by default: selection is fully deterministic (priority, then critical-path weight, then creation order). When on, a PM pass runs only when there are more eligible ready tasks than open slots **and** two candidates would collide (same area or a declared shared path); it may reorder or defer, never invent work. |
 | `skillSuggestions` | boolean | `false` | yes | When true, a finished task may generate a high-bar, evidence-gated skill suggestion task. Off by default; a single session never creates one. |

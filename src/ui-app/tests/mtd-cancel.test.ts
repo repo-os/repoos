@@ -212,6 +212,9 @@ describe("Stop MTD cancellation (#0459)", () => {
         jobCoordinator: coordinator,
         index: { getTask: (id: string) => (id === "0020" ? (task as never) : null) },
         config: { workDir: "work", docsDir: "docs" } as RepoOSConfig,
+        reportedStages: {},
+        // The cancel route wakes the scheduler so a parked job tears down (#1275).
+        triggerJobProcessing: () => {},
         emitEvent: (e: unknown) => events.push(e),
       } as never;
     }
