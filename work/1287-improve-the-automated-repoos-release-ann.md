@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/polish-automated-release-announcement-em
 created_at: "2026-11-23T07:50:59Z"
-updated_at: "2026-11-23T09:51:54Z"
+updated_at: "2026-11-23T09:52:02Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -163,3 +163,4 @@ One additional suggestion: since RepoOS releases appear to be frequent, I'd keep
 - 2026-11-23T09:38:40Z · note: adopted orphaned engineer pid 29050
 - 2026-11-23T09:48:51Z · body
 - 2026-11-23T09:51:54Z · status active→review
+- 2026-11-23T09:52:02Z · note: shots: skipped — the diff (7 changed paths) touches no capture target's globs — no UI change to capture
