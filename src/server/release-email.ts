@@ -223,15 +223,18 @@ export function summarizeReleaseNotes(markdown: string): ReleaseEmailSummary {
     name,
     detail: detail.replace(/[.!?]+$/, "."),
   }));
-  const tldr = highlights.length
-    ? highlights
-        .slice(0, 2)
-        .map(({ name, detail }) => `${name}: ${detail}`)
-        .join(" ")
-        .split(/\s+/)
-        .slice(0, 50)
-        .join(" ")
-    : undefined;
+  const summarySentences = highlights.map(({ name, detail }) => {
+    const firstSentence = detail.match(/^.*?[.!?](?=\s|$)/)?.[0] ?? detail;
+    return name + ": " + firstSentence;
+  });
+  const tldrParts: string[] = [];
+  for (const sentence of summarySentences) {
+    const currentWordCount = tldrParts.join(" ").split(/\s+/).filter(Boolean).length;
+    if (currentWordCount + sentence.split(/\s+/).length > 50) break;
+    tldrParts.push(sentence);
+    if (tldrParts.length === 2) break;
+  }
+  const tldr = tldrParts.length ? tldrParts.join(" ") : undefined;
   return { ...(headline ? { headline } : {}), ...(tldr ? { tldr } : {}), highlights };
 }
 
@@ -369,7 +372,6 @@ export function renderReleaseEmail(
     ? `<p style="margin: 20px 0 0;">To upgrade: <code>${escapeHtml(context.upgradeCommand)}</code></p>`
     : "";
   const html = [
-    `<div style="font-family: -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; max-width: 640px; margin: 0 auto; padding: 28px 24px; color: #202938; background:#fff; line-height:1.55;">`,
     `<style>@media(prefers-color-scheme:dark){.release-email{background:#151a22!important;color:#e7edf5!important}.release-email a{color:#8ab4f8!important}}@media(max-width:600px){.release-email{padding:20px 16px!important}}</style>`,
     `<div class="release-email" style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:640px;margin:0 auto;padding:28px 24px;color:#202938;background:#fff;line-height:1.55">`,
     `<p style="margin:0 0 4px;color:#64748b;font-size:13px;font-weight:600">${escapeHtml(project)} release</p>`,
@@ -397,7 +399,7 @@ export function renderReleaseEmail(
       ? `<p style="margin-top: 24px; font-size: 12px;"><a href="${escapeHtml(context.unsubscribeUrl)}">Unsubscribe from release emails</a></p>`
       : "",
     `<p style="margin-top: 32px; color: #999; font-size: 12px;">You are receiving this because you are on the ${escapeHtml(project)} release list.</p>`,
-    `</div></div>`,
+    `</div>`,
   ].join("\n");
 
   const textParts = [

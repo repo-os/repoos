@@ -2,7 +2,7 @@ RepoOS v0.5.93 released — Task drawer: compact metadata
 Released 2026-11-22
 
 TL;DR
-Task drawer: compact metadata: Depends on, type, priority, area, and story no longer dominate the top of the task drawer. You get a one- or two-line summary by default; click it to open a modal with the full controls. Dependency chips at the top of the picker make what’s selected
+Task drawer: compact metadata: Depends on, type, priority, area, and story no longer dominate the top of the task drawer. Task details modal: Save and Cancel: Save writes the metadata fields and closes the modal; Cancel, the close control, and Escape discard changes in the modal only.
 HIGHLIGHTS
 - Task drawer: compact metadata: Depends on, type, priority, area, and story no longer dominate the top of the task drawer. You get a one- or two-line summary by default; click it to open a modal with the full controls. Dependency chips at the top of the picker make what’s selected obvious, and the long candidate list stays in the modal so the spec stays in view.
 - Task details modal: Save and Cancel: Save writes the metadata fields and closes the modal; Cancel, the close control, and Escape discard changes in the modal only. You no longer need the drawer’s Save bar (behind the modal) to keep a type, priority, area, story, or dependency change.
