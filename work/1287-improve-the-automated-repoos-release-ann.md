@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/polish-automated-release-announcement-em
 created_at: "2026-11-23T07:50:59Z"
-updated_at: "2026-11-23T10:06:52Z"
+updated_at: "2026-11-23T10:10:43Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-23T10:06:49.976Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 2
@@ -173,3 +173,4 @@ One additional suggestion: since RepoOS releases appear to be frequent, I'd keep
 - 2026-11-23T10:06:49Z · status review→active
 - 2026-11-23T10:06:49Z · message_queued at 2026-11-23T10:06:49.632Z
 - 2026-11-23T10:06:52Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-23T10:10:43Z · queued message undelivered for 4m and the engineer produced no output — ending the turn so it is delivered
