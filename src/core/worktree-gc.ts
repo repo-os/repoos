@@ -29,7 +29,7 @@
  * live outside that directory; they are reported as `external` and never even
  * inspected (no `git status`), let alone removed.
  */
-import { lstatSync, realpathSync, readdirSync, readFileSync } from "node:fs";
+import { lstatSync, realpathSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative, isAbsolute } from "node:path";
 import { spawnSync } from "node:child_process";
 import type { RepoOSConfig, Task } from "./types.js";
@@ -75,6 +75,12 @@ export interface GcEntry {
    * not depend on a five-path reason string.
    */
   changedSourcePaths?: string[];
+  /** Triage metadata for retained worktrees. */
+  protectedClass?: "live-task" | "human-owned" | "local-data" | "unmerged-work" | "unknown-lifecycle" | "external";
+  recommendedAction?: "keep" | "ask-human" | "archive-then-remove" | "fix-underlying-bug";
+  ageDays?: number;
+  lastCommitDate?: string | null;
+  branchMerged?: boolean;
 }
 
 /** Registered worktrees outside RepoOS's managed directory. Never inspected. */
@@ -740,7 +746,34 @@ export function sweepStaleWorktrees(config: RepoOSConfig, opts: SweepOptions): G
     opts.mode === "full" ? mergedBranches(root, mainBranch) : new Set<string>();
 
   const retain = (entry: GcEntry): void => {
-    report.retained.push(entry);
+    const reason = entry.reason;
+    const protectedClass: NonNullable<GcEntry["protectedClass"]> =
+      reason.includes("no task record") ? "unknown-lifecycle"
+        : reason.includes("human-assigned") ? "human-owned"
+          : reason.includes("active") ? "live-task"
+            : reason.includes("uncommitted") || reason.includes("ignored files") ? "local-data"
+              : "unmerged-work";
+    const recommendedAction: NonNullable<GcEntry["recommendedAction"]> =
+      protectedClass === "live-task" ? "keep"
+        : protectedClass === "unmerged-work" ? "ask-human"
+          : protectedClass === "unknown-lifecycle" ? "fix-underlying-bug"
+            : "ask-human";
+    let ageDays: number | undefined;
+    try {
+      const created = statSync(entry.path).birthtimeMs;
+      if (created > 0) ageDays = Math.max(0, Math.floor((Date.now() - created) / 86_400_000));
+    } catch { /* vanished/unreadable worktrees have no measurable age */ }
+    const date = entry.branch
+      ? gitRun(root, ["log", "-1", "--format=%cI", entry.branch]).stdout.trim()
+      : "";
+    report.retained.push({
+      ...entry,
+      protectedClass,
+      recommendedAction,
+      ...(ageDays !== undefined ? { ageDays } : {}),
+      lastCommitDate: date || null,
+      branchMerged: entry.branch ? mergedIntoMain.has(entry.branch) : false,
+    });
   };
   const candidate = (entry: GcEntry): void => {
     report.removedWorktrees.push(entry);
