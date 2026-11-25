@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-stale-needs-input-fla
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-25T08:29:47Z"
-updated_at: "2026-11-25T09:17:07Z"
+updated_at: "2026-11-25T09:17:10Z"
 ---
 ## Problem
 Three small defects seen while driving the board (2026-11-22/23).
@@ -36,3 +36,4 @@ See docs/easter-eggs-bundles.md. Do not change repoos.toml.
 - 2026-11-25T08:29:57Z · status ready→active, branch
 - 2026-11-25T08:50:37Z · CTO nudge: held — handoff gate is running
 - 2026-11-25T09:17:07Z · message_queued at 2026-11-25T09:17:07.563Z
+- 2026-11-25T09:17:10Z · message_delivered: 1 message(s)
