@@ -1,0 +1,31 @@
+---
+id: "1288"
+title: "Easter eggs bundle: stale needs-input flag, hand-off failure reason, attention noise"
+type: chore
+status: inbox
+priority: p3
+area: [core, server]
+assigned_to: ""
+created_by: t@t
+branch: ""
+created_at: "2026-11-25T08:29:47Z"
+updated_at: "2026-11-25T08:29:47Z"
+---
+## Problem
+Three small defects seen while driving the board (2026-11-22/23).
+
+## Desired UX
+1. A task whose later review passes no longer keeps a stale needs_input flag with reason provider-failure (seen on #1265).
+2. repoos handoff-status shows the actual failing step output for a failed check, not just the heading 'repoos check failed: ◆ Check plan'.
+3. repoos attention is not flooded by dozens of 'Could not signal process group' entries (collapse or drop harmless ones).
+No new UI.
+
+## Acceptance criteria
+- Each item is reproduced first, fixed, and covered by a test. If an item no longer reproduces, say so in the report and skip it.
+
+## Notes for AI
+See docs/easter-eggs-bundles.md. Do not change repoos.toml.
+
+## Activity
+
+- 2026-11-25T08:29:47Z · created · t@t
