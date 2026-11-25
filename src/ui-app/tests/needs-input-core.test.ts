@@ -46,6 +46,15 @@ describe("needs-input core helpers", () => {
     expect(needsInputClearsOnNewEngineerRun(undefined)).toBe(true);
   });
 
+  it("clears a stale provider-failure once a later review run passes (#1288)", () => {
+    expect(
+      needsInputClearsOnSuccessfulReview({
+        status: "review",
+        needsInputReason: "provider-failure",
+      }),
+    ).toBe(true);
+  });
+
   it("clears review-rounds-exhausted when a fresh review run completes", () => {
     expect(
       needsInputClearsOnSuccessfulReview({

@@ -55,6 +55,33 @@ describe("buildLastCheckFailureSummary (#0700)", () => {
     expect(pickErrorLineFromStepOutput("    at foo\n    at bar")).toBeNull();
   });
 
+  it("never names the step heading as the failure when no Results block printed", () => {
+    // A plan-stage failure exits before the Results block, so the only failure
+    // marker is the `✗` line under the `◆ Check plan` heading (#1288).
+    const planFailure = [
+      "",
+      "  ◆ Check plan",
+      '  · 3 step(s) · profile "default"',
+      "      build: bun run build",
+      '  ✗ repoos.toml [[check.steps]] names unknown tool "tsgo"',
+    ].join("\n");
+    expect(buildLastCheckFailureSummary(planFailure)).toBe(
+      'repoos.toml [[check.steps]] names unknown tool "tsgo"',
+    );
+  });
+
+  it("does not fall back to the step heading when the run was killed mid-step", () => {
+    const killed = [
+      "",
+      "  ◆ Check plan",
+      "      build: bun run build",
+      "",
+      "  ◆ Build",
+      "  Compiling",
+    ].join("\n");
+    expect(buildLastCheckFailureSummary(killed)).not.toMatch(/◆/);
+  });
+
   it("surfaces a TypeScript error from the build step", () => {
     const output = [
       "  ── Results ──",
