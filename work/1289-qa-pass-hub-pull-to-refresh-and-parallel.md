@@ -1,14 +1,13 @@
 ---
-last_close_out_gate_ms: 1506790
-last_close_out_gate_at: "2026-11-25T11:21:25.113Z"
 id: "1289"
 title: "QA pass: Hub pull-to-refresh and parallel close-outs"
 type: chore
-status: review
+status: done
 human_step_override: Cleared needs-human-step flag (sticky until acceptance criteria change)
 human_step_override_key: 6ef3a4ce
 priority: p2
 area: [core, server, web]
+merged_commit: 93afc1e68d70ab239ac4cdd49d3849c1e13b21f0
 assigned_to: ai
 created_by: t@t
 branch: feat/qa-pass-hub-pull-to-refresh-and-parallel
@@ -16,6 +15,8 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-25T08:29:48Z"
 updated_at: "2026-11-25T11:21:25Z"
+last_close_out_gate_ms: 1506790
+last_close_out_gate_at: "2026-11-25T11:21:25.113Z"
 review_passes: 1
 ---
 ## Problem
