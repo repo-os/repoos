@@ -12,7 +12,7 @@ branch: feat/easter-eggs-bundle-stale-needs-input-fla
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-25T08:29:47Z"
-updated_at: "2026-11-25T09:56:36Z"
+updated_at: "2026-11-25T23:55:32Z"
 last_close_out_gate_ms: 101244
 last_close_out_gate_at: "2026-11-25T09:56:21.693Z"
 review_passes: 1
@@ -52,3 +52,4 @@ See docs/easter-eggs-bundles.md. Do not change repoos.toml.
 - 2026-11-25T09:45:36Z · note: review pass 1: good to go
 - 2026-11-25T09:56:21Z · close-out gate completed in 101s
 - 2026-11-25T09:56:36Z · status done→done, release:success
+- 2026-11-25T23:55:32Z · message_dropped: 1 queued message(s) discarded — task is done
