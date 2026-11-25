@@ -12,7 +12,7 @@ branch: feat/reconcile-the-repoos-help-banner-with-pe
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-19T11:50:05Z"
-updated_at: "2026-11-23T17:39:28Z"
+updated_at: "2026-11-25T08:30:00Z"
 last_close_out_gate_ms: 1140446
 last_close_out_gate_at: "2026-11-23T17:39:12.753Z"
 review_passes: 1
@@ -44,3 +44,4 @@ Sweep the whole `src/commands/` directory, not just the two known instances. Doc
 - 2026-11-23T16:44:29Z · note: review pass 1: good to go
 - 2026-11-23T17:39:12Z · close-out gate completed in 1140s
 - 2026-11-23T17:39:28Z · status done→done, release:success
+- 2026-11-25T08:30:00Z · message_dropped: 1 queued message(s) discarded — task is done
