@@ -14,7 +14,7 @@ branch: feat/qa-pass-hub-pull-to-refresh-and-parallel
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-25T08:29:48Z"
-updated_at: "2026-11-25T11:21:25Z"
+updated_at: "2026-11-25T11:21:41Z"
 last_close_out_gate_ms: 1506790
 last_close_out_gate_at: "2026-11-25T11:21:25.113Z"
 review_passes: 1
@@ -51,4 +51,4 @@ Never run repoos serve or touch real runner hosts. Do not change repoos.toml. Fi
 - 2026-11-25T09:45:14Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-25T10:56:14Z · close-out gate completed in 3189s
 - 2026-11-25T11:21:25Z · close-out gate completed in 1507s
-
+- 2026-11-25T11:21:41Z · status done→done, release:success
