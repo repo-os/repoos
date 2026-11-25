@@ -234,4 +234,40 @@ describe("CloseOutScheduler (#1275)", () => {
     expect(runs.published).toEqual(["0001"]);
     expect([...sched.running]).toContain("0002");
   });
+
+  it("reports pump status and keeps a slot occupied while a run waits on its lock", async () => {
+    coordinator.enqueue(task("0001"));
+    coordinator.enqueue(task("0002"));
+    const locked = gate();
+    const started: string[] = [];
+    let changes = 0;
+    const sched = new CloseOutScheduler({
+      jobs: () => coordinator.allJobs(),
+      limit: () => 2,
+      pressureHeld: () => false,
+      run: async (taskId) => {
+        started.push(taskId);
+        if (taskId === "0001") {
+          await locked.promise;
+          coordinator.updateJob(taskId, { phase: "failed", reason: "lock wait timed out" });
+        } else coordinator.updateJob(taskId, { phase: "failed", reason: "validation failed" });
+      },
+      onChange: () => changes++,
+    });
+
+    sched.pump();
+    await settle();
+    expect(started).toEqual(["0001", "0002"]);
+    expect(sched.running).toEqual(new Set(["0001"]));
+    expect(changes).toBeGreaterThan(0);
+
+    // The second run has failed, but the first still owns its lock-wait slot.
+    // A pump must not start the same queued publisher twice.
+    sched.pump();
+    await settle();
+    expect(started).toEqual(["0001", "0002"]);
+    locked.resolve();
+    await settle();
+    expect(sched.running.size).toBe(0);
+  });
 });

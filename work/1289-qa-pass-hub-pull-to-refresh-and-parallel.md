@@ -1,6 +1,4 @@
 ---
-last_close_out_gate_ms: 3189208
-last_close_out_gate_at: "2026-11-25T10:56:14.688Z"
 id: "1289"
 title: "QA pass: Hub pull-to-refresh and parallel close-outs"
 type: chore
@@ -15,8 +13,7 @@ branch: feat/qa-pass-hub-pull-to-refresh-and-parallel
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-25T08:29:48Z"
-updated_at: "2026-11-25T10:56:14Z"
-review_passes: 1
+updated_at: "2026-11-25T08:44:00Z"
 ---
 ## Problem
 Two features just landed and have had little real-world testing: Hub server list pull-down-to-refresh (#1286) and parallel close-out validation (#1275). #1275 also went through many review rounds.
@@ -41,12 +38,4 @@ Never run repoos serve or touch real runner hosts. Do not change repoos.toml. Fi
 - 2026-11-25T08:29:54Z · cli_override, model_override
 - 2026-11-25T08:30:03Z · status inbox→ready
 - 2026-11-25T08:30:04Z · status ready→active, branch
-- 2026-11-25T08:37:57Z · body
-- 2026-11-25T08:42:21Z · body
 - 2026-11-25T08:44:00Z · status active→review
-- 2026-11-25T08:44:00Z · message_queued at 2026-11-25T08:44:00.297Z
-- 2026-11-25T08:44:00Z · note: shots: skipped — the diff (5 changed paths) touches no capture target's globs — no UI change to capture
-- 2026-11-25T08:44:53Z · note: review pass 1: good to go
-- 2026-11-25T09:45:14Z · message_overdue: still queued after 60m without being delivered
-- 2026-11-25T10:56:14Z · close-out gate completed in 3189s
-
