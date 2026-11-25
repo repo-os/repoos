@@ -44,3 +44,4 @@ See docs/easter-eggs-bundles.md. Do not change repoos.toml.
 - 2026-11-25T09:30:38Z · CTO nudge: held — handoff gate is running
 - 2026-11-25T09:45:14Z · status active→review
 - 2026-11-25T09:45:14Z · message_queued at 2026-11-25T09:45:14.414Z
+- 2026-11-25T09:45:14Z · note: shots: skipped — the diff (8 changed paths) touches no capture target's globs — no UI change to capture
