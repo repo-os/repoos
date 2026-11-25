@@ -8,8 +8,10 @@ area: [core, server]
 assigned_to: ai
 created_by: t@t
 branch: ""
+cli_override: codex
+model_override: gpt-6-luna
 created_at: "2026-11-25T23:55:22Z"
-updated_at: "2026-11-25T23:55:27Z"
+updated_at: "2026-11-25T23:55:28Z"
 ---
 ## Problem
 
@@ -43,3 +45,4 @@ Hand-off commits with a path list (`git commit -m <msg> -- <paths>`: `commitStag
 
 - 2026-11-25T23:55:22Z · created · t@t
 - 2026-11-25T23:55:27Z · status inbox→ready
+- 2026-11-25T23:55:28Z · cli_override, model_override
