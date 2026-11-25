@@ -2,7 +2,7 @@
 id: "1288"
 title: "Easter eggs bundle: stale needs-input flag, hand-off failure reason, attention noise"
 type: chore
-status: active
+status: review
 priority: p3
 area: [core, server]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-stale-needs-input-fla
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-25T08:29:47Z"
-updated_at: "2026-11-25T09:30:38Z"
+updated_at: "2026-11-25T09:45:14Z"
 last_check_failure: "repoos check at 2026-11-25T09:17:10.744Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 ---
 ## Problem
@@ -42,3 +42,4 @@ See docs/easter-eggs-bundles.md. Do not change repoos.toml.
 - 2026-11-25T09:28:56Z · body
 - 2026-11-25T09:28:56Z · body
 - 2026-11-25T09:30:38Z · CTO nudge: held — handoff gate is running
+- 2026-11-25T09:45:14Z · status active→review
