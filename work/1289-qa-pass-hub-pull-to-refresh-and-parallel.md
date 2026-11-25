@@ -3,9 +3,8 @@ id: "1289"
 title: "QA pass: Hub pull-to-refresh and parallel close-outs"
 type: chore
 status: inbox
-needs_input: true
-needs_input_reason: needs-human-step
-needs_input_detail: "Decision model unavailable; keyword result used. Acceptance criteria mention a real device, physical hardware, accounts, credentials, or third-party registration — split that verification into a separate human-only task. (matched: real device — \"Report lists what was tested, what was fixed and what was not verified (no real devices).\")"
+human_step_override: Cleared needs-human-step flag (sticky until acceptance criteria change)
+human_step_override_key: 6ef3a4ce
 priority: p2
 area: [core, server, web]
 assigned_to: ai
@@ -33,3 +32,4 @@ Never run repoos serve or touch real runner hosts. Do not change repoos.toml. Fi
 - 2026-11-25T08:29:48Z · created · t@t
 - 2026-11-25T08:29:49Z · needs_input
 - 2026-11-25T08:29:53Z · body: Acceptance criteria (added 2, removed 2)
+- 2026-11-25T08:29:53Z · needs_input
