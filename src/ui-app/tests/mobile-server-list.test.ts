@@ -215,58 +215,74 @@ describe("mobile hub server list", () => {
   it("does not confuse an upward or scrolled-list gesture with pull-to-refresh", () => {
     const wrapper = mountList();
     const list = wrapper.find(".server-list").element;
-    list.dispatchEvent(new TouchEvent("touchstart", {
-      bubbles: true,
-      touches: [{ clientY: 100 } as Touch],
-    }));
-    list.dispatchEvent(new TouchEvent("touchmove", {
-      bubbles: true,
-      cancelable: true,
-      touches: [{ clientY: 20 } as Touch],
-    }));
+    list.dispatchEvent(
+      new TouchEvent("touchstart", {
+        bubbles: true,
+        touches: [{ clientY: 100 } as Touch],
+      }),
+    );
+    list.dispatchEvent(
+      new TouchEvent("touchmove", {
+        bubbles: true,
+        cancelable: true,
+        touches: [{ clientY: 20 } as Touch],
+      }),
+    );
     list.dispatchEvent(new TouchEvent("touchend", { bubbles: true }));
     expect(wrapper.emitted("refresh")).toBeUndefined();
 
     Object.defineProperty(list, "scrollTop", { configurable: true, value: 12 });
-    list.dispatchEvent(new TouchEvent("touchstart", {
-      bubbles: true,
-      touches: [{ clientY: 20 } as Touch],
-    }));
-    list.dispatchEvent(new TouchEvent("touchmove", {
-      bubbles: true,
-      cancelable: true,
-      touches: [{ clientY: 120 } as Touch],
-    }));
+    list.dispatchEvent(
+      new TouchEvent("touchstart", {
+        bubbles: true,
+        touches: [{ clientY: 20 } as Touch],
+      }),
+    );
+    list.dispatchEvent(
+      new TouchEvent("touchmove", {
+        bubbles: true,
+        cancelable: true,
+        touches: [{ clientY: 120 } as Touch],
+      }),
+    );
     expect(wrapper.emitted("refresh")).toBeUndefined();
   });
 
   it("fires once after the pull threshold and ignores gestures while refreshing", () => {
     const wrapper = mountList();
     const list = wrapper.find(".server-list").element;
-    list.dispatchEvent(new TouchEvent("touchstart", {
-      bubbles: true,
-      touches: [{ clientY: 10 } as Touch],
-    }));
-    for (const clientY of [50, 74, 130]) {
-      list.dispatchEvent(new TouchEvent("touchmove", {
+    list.dispatchEvent(
+      new TouchEvent("touchstart", {
         bubbles: true,
-        cancelable: true,
-        touches: [{ clientY } as Touch],
-      }));
+        touches: [{ clientY: 10 } as Touch],
+      }),
+    );
+    for (const clientY of [50, 74, 130]) {
+      list.dispatchEvent(
+        new TouchEvent("touchmove", {
+          bubbles: true,
+          cancelable: true,
+          touches: [{ clientY } as Touch],
+        }),
+      );
     }
     expect(wrapper.emitted("refresh")).toHaveLength(1);
 
     const refreshing = mountList({ refreshing: true });
     const busyList = refreshing.find(".server-list").element;
-    busyList.dispatchEvent(new TouchEvent("touchstart", {
-      bubbles: true,
-      touches: [{ clientY: 10 } as Touch],
-    }));
-    busyList.dispatchEvent(new TouchEvent("touchmove", {
-      bubbles: true,
-      cancelable: true,
-      touches: [{ clientY: 110 } as Touch],
-    }));
+    busyList.dispatchEvent(
+      new TouchEvent("touchstart", {
+        bubbles: true,
+        touches: [{ clientY: 10 } as Touch],
+      }),
+    );
+    busyList.dispatchEvent(
+      new TouchEvent("touchmove", {
+        bubbles: true,
+        cancelable: true,
+        touches: [{ clientY: 110 } as Touch],
+      }),
+    );
     expect(refreshing.emitted("refresh")).toBeUndefined();
   });
 });
