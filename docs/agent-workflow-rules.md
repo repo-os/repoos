@@ -301,7 +301,13 @@ cannot tell from the code alone:
     `git add -A` sweep in the worktree (`review-guard.ts`) can do the same; and a
     merge of main into the branch can carry a sibling's newer copy. It then
     compounds: the WIP loop re-commits it every check.
-  - **The guardrails.** The WIP checkpoint commits only the paths it intended
+  - **The guardrails.** A handoff that finds a resolved, uncommitted merge
+    checks for unmerged index entries and conflict markers before resetting or
+    staging anything; unresolved paths are named and the merge is left intact.
+    A resolved merge is completed with an ordinary two-parent merge commit,
+    then the existing main-copy bookkeeping heal runs before review lock. The
+    WIP checkpoint helper refuses to stage or commit while any Git operation is
+    in progress. Outside a merge, the WIP checkpoint commits only the paths it intended
     (`git commit -- <paths>`) and resets any foreign bookkeeping first.
     `guardReviewTransition` unstages foreign `work/` files and then commits with
     a pathspec of exactly what the index holds (`commitStagedOnly`) for both the
