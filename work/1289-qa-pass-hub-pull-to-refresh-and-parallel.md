@@ -13,7 +13,7 @@ branch: feat/qa-pass-hub-pull-to-refresh-and-parallel
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-25T08:29:48Z"
-updated_at: "2026-11-25T08:37:57Z"
+updated_at: "2026-11-25T08:42:21Z"
 ---
 ## Problem
 Two features just landed and have had little real-world testing: Hub server list pull-down-to-refresh (#1286) and parallel close-out validation (#1275). #1275 also went through many review rounds.
@@ -39,3 +39,4 @@ Never run repoos serve or touch real runner hosts. Do not change repoos.toml. Fi
 - 2026-11-25T08:30:03Z · status inbox→ready
 - 2026-11-25T08:30:04Z · status ready→active, branch
 - 2026-11-25T08:37:57Z · body
+- 2026-11-25T08:42:21Z · body
