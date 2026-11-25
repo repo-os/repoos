@@ -48,5 +48,8 @@ export function needsInputClearsOnSuccessfulReview(
   if (task.needsInputReason === "review-rounds-exhausted") return true;
   if (task.needsInputReason === "review-human-attention") return true;
   if (task.needsInputReason === "evidence-gap-exhausted") return true;
+  // A review run that completes proves the provider is reachable again, so a
+  // provider error raised earlier on this task is stale (#1288).
+  if (task.needsInputReason === "provider-failure") return true;
   return task.needsInputReason === "watchdog-stuck" && task.status === "review";
 }
