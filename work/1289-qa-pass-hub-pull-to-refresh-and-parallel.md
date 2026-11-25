@@ -10,8 +10,10 @@ area: [core, server, web]
 assigned_to: ai
 created_by: t@t
 branch: ""
+cli_override: codex
+model_override: gpt-6-luna
 created_at: "2026-11-25T08:29:48Z"
-updated_at: "2026-11-25T08:29:53Z"
+updated_at: "2026-11-25T08:29:54Z"
 ---
 ## Problem
 Two features just landed and have had little real-world testing: Hub server list pull-down-to-refresh (#1286) and parallel close-out validation (#1275). #1275 also went through many review rounds.
@@ -33,3 +35,4 @@ Never run repoos serve or touch real runner hosts. Do not change repoos.toml. Fi
 - 2026-11-25T08:29:49Z · needs_input
 - 2026-11-25T08:29:53Z · body: Acceptance criteria (added 2, removed 2)
 - 2026-11-25T08:29:53Z · needs_input
+- 2026-11-25T08:29:54Z · cli_override, model_override
