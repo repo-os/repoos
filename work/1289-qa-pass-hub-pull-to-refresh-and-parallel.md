@@ -2,18 +2,18 @@
 id: "1289"
 title: "QA pass: Hub pull-to-refresh and parallel close-outs"
 type: chore
-status: ready
+status: active
 human_step_override: Cleared needs-human-step flag (sticky until acceptance criteria change)
 human_step_override_key: 6ef3a4ce
 priority: p2
 area: [core, server, web]
 assigned_to: ai
 created_by: t@t
-branch: ""
+branch: feat/qa-pass-hub-pull-to-refresh-and-parallel
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-25T08:29:48Z"
-updated_at: "2026-11-25T08:30:03Z"
+updated_at: "2026-11-25T08:30:04Z"
 ---
 ## Problem
 Two features just landed and have had little real-world testing: Hub server list pull-down-to-refresh (#1286) and parallel close-out validation (#1275). #1275 also went through many review rounds.
@@ -37,3 +37,4 @@ Never run repoos serve or touch real runner hosts. Do not change repoos.toml. Fi
 - 2026-11-25T08:29:53Z · needs_input
 - 2026-11-25T08:29:54Z · cli_override, model_override
 - 2026-11-25T08:30:03Z · status inbox→ready
+- 2026-11-25T08:30:04Z · status ready→active, branch
