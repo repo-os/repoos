@@ -1,0 +1,44 @@
+---
+id: "1290"
+title: "Hand-off: finish or clearly report an uncommitted merge"
+type: bug
+status: inbox
+priority: p2
+area: [core, server]
+assigned_to: ai
+created_by: t@t
+branch: ""
+created_at: "2026-11-25T23:55:22Z"
+updated_at: "2026-11-25T23:55:22Z"
+---
+## Problem
+
+When main moves, a reviewed task can conflict and go back to its engineer, who merges main into the task branch. If the engineer resolves the files but never commits the merge, the worktree stays mid-merge and hand-off cannot succeed.
+
+Hand-off commits with a path list (`git commit -m <msg> -- <paths>`: `commitStagedOnly` in `src/server/review-guard.ts`, `commitDirtyFiles` in `src/core/git.ts`). Git refuses that during a merge with `fatal: cannot do a partial commit during a merge.` (reproduced in a throwaway repo). The jainotes project (task 0013) hit this: repeated failed hand-offs, a check run that still reported a `<<<<<<< HEAD` marker, and a manual `git merge --quit` to get unstuck.
+
+## Desired UX
+
+- Merge in progress and everything resolved: hand-off completes it as a real two-parent merge commit and carries on. No human or engineer action needed.
+- Unresolved conflicts or leftover conflict markers: hand-off fails with a plain message naming the files and saying to resolve them and commit the merge. Nothing is committed or discarded.
+
+## Acceptance criteria
+
+- A regression test reproduces the failure: a task worktree with a resolved but uncommitted merge of main hands off successfully, and the resulting commit has both parents.
+- A test with unmerged paths and one with leftover conflict markers (including after `git add`) each fail with the file names, leaving the worktree and `MERGE_HEAD` intact.
+- Unmerged paths are detected before anything resets the index. The guard currently starts with `git reset HEAD -- .`, which would hide them.
+- The completed merge commit does not revert main's changes to other tasks' `work/` files or reports: main's copy wins, as in the existing foreign-bookkeeping rule (#1076). The task's own task file follows the documented main's-copy rule. A test covers this.
+- `repoos.toml` and generated `dist/` stay protected as today.
+- The WIP checkpoint path (`commitDirtyFiles`) does not silently do nothing or damage merge state while a merge is in progress.
+- RepoOS never uses or recommends `git merge --quit` to get past this.
+- Docs that describe the hand-off commit step are updated.
+
+## Notes for AI
+
+- `hasInProgressGitOperation` in `src/core/git.ts` already detects `MERGE_HEAD`. For rebase or cherry-pick in progress, a clear failure message is enough.
+- The cause of the leftover marker seen by the jainotes check was not traced; investigate whether the staged or working copy could differ.
+- #1288 also touches hand-off failure reporting; keep this change focused.
+
+## Activity
+
+- 2026-11-25T23:55:22Z · created · t@t
