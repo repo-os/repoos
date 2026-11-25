@@ -2,16 +2,16 @@
 id: "1288"
 title: "Easter eggs bundle: stale needs-input flag, hand-off failure reason, attention noise"
 type: chore
-status: ready
+status: active
 priority: p3
 area: [core, server]
 assigned_to: ai
 created_by: t@t
-branch: ""
+branch: feat/easter-eggs-bundle-stale-needs-input-fla
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-25T08:29:47Z"
-updated_at: "2026-11-25T08:29:56Z"
+updated_at: "2026-11-25T08:29:57Z"
 ---
 ## Problem
 Three small defects seen while driving the board (2026-11-22/23).
@@ -33,3 +33,4 @@ See docs/easter-eggs-bundles.md. Do not change repoos.toml.
 - 2026-11-25T08:29:47Z · created · t@t
 - 2026-11-25T08:29:53Z · cli_override, model_override
 - 2026-11-25T08:29:56Z · status inbox→ready
+- 2026-11-25T08:29:57Z · status ready→active, branch
