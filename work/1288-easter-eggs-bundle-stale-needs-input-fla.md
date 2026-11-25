@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 101244
-last_close_out_gate_at: "2026-11-25T09:56:21.693Z"
 id: "1288"
 title: "Easter eggs bundle: stale needs-input flag, hand-off failure reason, attention noise"
 type: chore
-status: review
+status: done
 priority: p3
 area: [core, server]
+merged_commit: 09b00415c6e6c6a50459d2beb807838494f9c72a
 assigned_to: ai
 created_by: t@t
 branch: feat/easter-eggs-bundle-stale-needs-input-fla
@@ -14,6 +13,8 @@ cli_override: claude code
 model_override: haiku
 created_at: "2026-11-25T08:29:47Z"
 updated_at: "2026-11-25T09:56:21Z"
+last_close_out_gate_ms: 101244
+last_close_out_gate_at: "2026-11-25T09:56:21.693Z"
 review_passes: 1
 last_check_failure: "repoos check at 2026-11-25T09:17:10.744Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 ---

@@ -158,6 +158,40 @@ describe("notifyAttentionProcessSignalFailure", () => {
     });
     expect(bumps).toBe(1);
   });
+
+  it("drops ESRCH, because the group already exited and nothing needs attention (#1288)", () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-esrch-attention-"));
+    const store = createAttentionEventStore(root);
+    let bumps = 0;
+    wireAttentionNotifications(store, () => {
+      bumps += 1;
+    });
+
+    for (const leaderPid of [101, 102, 103]) {
+      notifyAttentionProcessSignalFailure({
+        leaderPid,
+        code: "ESRCH",
+        signal: "SIGTERM",
+        taskId: "1079",
+      });
+    }
+
+    expect(store.list()).toHaveLength(0);
+    expect(bumps).toBe(0);
+  });
+
+  it("collapses repeated EPERM failures for one process group into a single item (#1288)", () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-eperm-attention-"));
+    const store = createAttentionEventStore(root);
+    wireAttentionNotifications(store, () => {});
+
+    for (const signal of ["SIGTERM", "SIGKILL", "SIGTERM"] as const) {
+      notifyAttentionProcessSignalFailure({ leaderPid: 43210, code: "EPERM", signal });
+    }
+
+    expect(store.list()).toHaveLength(1);
+    expect(store.list()[0]).toMatchObject({ id: "processSignalFailure:43210" });
+  });
 });
 
 describe("release failure attention round-trip (#1126)", () => {

@@ -14,6 +14,12 @@ export function isStackFrameLine(line: string): boolean {
 /** Result-block detail lines that carry no diagnosis on their own. */
 const TRIVIAL_STEP_DETAIL = /^(?:exited \d+|tsc failed|command failed(?:\s+with exit \d+)?[.:]?)$/i;
 
+/** The `◆ <label>` heading `repoos check` prints before each section (#1288). */
+const SECTION_HEADING = /^◆\s/;
+
+/** The `✗` marker on a failed check or plan line, printed without a `Results` block. */
+const FAILURE_MARKER = /^✗\s*/;
+
 function outputBeforeResultsBlock(output: string): string {
   const lines = stripAnsi(output).split("\n");
   const idx = lines.findIndex((line) => /──\s*Results\s*──/.test(line));
@@ -34,7 +40,10 @@ export function pickErrorLineFromStepOutput(output: string): string | null {
   if (lines.length === 0) return null;
 
   const nonStack = lines.filter((line) => !isStackFrameLine(line));
-  const significant = nonStack.filter((line) => !TRIVIAL_STEP_DETAIL.test(line));
+  // `◆ Section` headings name the step; they are never the diagnosis (#1288).
+  const significant = nonStack.filter(
+    (line) => !TRIVIAL_STEP_DETAIL.test(line) && !SECTION_HEADING.test(line),
+  );
 
   const errorish = significant.find(
     (line) =>
@@ -43,6 +52,8 @@ export function pickErrorLineFromStepOutput(output: string): string | null {
       /^Error \[[A-Z0-9_]+\]:/.test(line),
   );
   if (errorish) return errorish;
+  const marked = significant.find((line) => FAILURE_MARKER.test(line));
+  if (marked) return marked.replace(FAILURE_MARKER, "");
   if (significant.length > 0) return significant[0];
   if (nonStack.length > 0 && lines.some(isStackFrameLine)) return null;
   if (nonStack.length > 0) return nonStack[0];

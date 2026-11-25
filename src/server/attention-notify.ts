@@ -56,10 +56,14 @@ export function notifyAttentionProcessSignalFailure(failure: {
   signal: string;
   taskId?: string;
 }): void {
-  if (!attentionEvents) return;
+  // ESRCH means the group exited before the signal landed, which is the state
+  // a teardown wants. It is logged, never surfaced on the bell (#1288).
+  if (!attentionEvents || failure.code === "ESRCH") return;
   const at = new Date().toISOString();
   attentionEvents.record({
-    id: `processSignalFailure:${failure.leaderPid}:${at}`,
+    // One item per group: repeated EPERM signals for the same group replace
+    // each other instead of stacking (#1288).
+    id: `processSignalFailure:${failure.leaderPid}`,
     kind: "processSignalFailure",
     taskId: failure.taskId ?? null,
     message: `Could not signal process group ${failure.leaderPid}${failure.taskId ? ` for #${failure.taskId}` : ""}`,
