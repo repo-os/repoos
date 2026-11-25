@@ -2,14 +2,14 @@
 id: "1290"
 title: "Hand-off: finish or clearly report an uncommitted merge"
 type: bug
-status: inbox
+status: ready
 priority: p2
 area: [core, server]
 assigned_to: ai
 created_by: t@t
 branch: ""
 created_at: "2026-11-25T23:55:22Z"
-updated_at: "2026-11-25T23:55:22Z"
+updated_at: "2026-11-25T23:55:27Z"
 ---
 ## Problem
 
@@ -42,3 +42,4 @@ Hand-off commits with a path list (`git commit -m <msg> -- <paths>`: `commitStag
 ## Activity
 
 - 2026-11-25T23:55:22Z · created · t@t
+- 2026-11-25T23:55:27Z · status inbox→ready
