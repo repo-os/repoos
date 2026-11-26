@@ -14,7 +14,7 @@ branch: feat/hand-off-finish-or-clearly-report-an-unc
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-25T23:55:22Z"
-updated_at: "2026-11-26T01:05:31Z"
+updated_at: "2026-11-26T01:34:48Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-26T01:05:31.008Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 ---
