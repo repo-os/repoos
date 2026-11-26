@@ -2,14 +2,14 @@
 id: "1291"
 title: Fix the failing Android Hub and macOS Hub GitHub workflows
 type: bug
-status: inbox
+status: ready
 priority: p2
 area: [macos, mobile]
 assigned_to: ai
 created_by: t@t
 branch: ""
 created_at: "2026-11-26T03:56:34Z"
-updated_at: "2026-11-26T03:56:34Z"
+updated_at: "2026-11-26T03:56:39Z"
 ---
 ## Problem
 
@@ -39,3 +39,4 @@ All three workflows get past setup and build on GitHub, with the same release ou
 ## Activity
 
 - 2026-11-26T03:56:34Z · created · t@t
+- 2026-11-26T03:56:39Z · status inbox→ready
