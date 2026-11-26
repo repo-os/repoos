@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 160912
-last_close_out_gate_at: "2026-11-26T02:12:34.062Z"
 id: "1290"
 title: "Hand-off: finish or clearly report an uncommitted merge"
 type: bug
-status: review
+status: done
 priority: p2
 area: [core, server]
+merged_commit: edea2a3a5b6b271070508decf5262e9d99227933
 assigned_to: ai
 created_by: t@t
 branch: feat/hand-off-finish-or-clearly-report-an-unc
@@ -14,6 +13,8 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-25T23:55:22Z"
 updated_at: "2026-11-26T02:12:34Z"
+last_close_out_gate_ms: 160912
+last_close_out_gate_at: "2026-11-26T02:12:34.062Z"
 review_passes: 1
 last_check_failure: "repoos check at 2026-11-26T01:05:31.008Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 ---
