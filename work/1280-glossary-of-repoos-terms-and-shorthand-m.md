@@ -42,3 +42,4 @@ Collect terms from AGENTS.md, docs/, user-docs/, the CLI help and the UI strings
 - 2026-11-26T01:34:55Z · needs_input
 - 2026-11-26T01:34:55Z · message_delivered: 1 message(s)
 - 2026-11-26T01:36:28Z · message_queued at 2026-11-26T01:36:28.785Z
+- 2026-11-26T01:36:28Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
