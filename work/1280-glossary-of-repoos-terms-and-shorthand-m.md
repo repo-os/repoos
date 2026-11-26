@@ -40,3 +40,4 @@ Collect terms from AGENTS.md, docs/, user-docs/, the CLI help and the UI strings
 - 2026-11-26T01:05:30Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-26T01:21:21Z · watchdog: check wait escalated · waiting: CPU idle is 2% (below 5%) — holding new work until the machine has idle CPU; wait exceeds the handoff deadline for 33m · next step: investigate the abnormal wait; the flag clears when the check starts
 - 2026-11-26T01:34:55Z · needs_input
+- 2026-11-26T01:34:55Z · message_delivered: 1 message(s)
