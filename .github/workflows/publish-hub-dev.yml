@@ -26,6 +26,8 @@ jobs:
           distribution: temurin
           java-version: "21"
       - uses: android-actions/setup-android@v3
+        with:
+          packages: ""
       - name: Install Android build tools
         run: sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0"
       - name: Verify release web bundle has no dev channel endpoint

@@ -42,6 +42,11 @@ jobs:
           java-version: "21"
 
       - uses: android-actions/setup-android@v3
+        with:
+          packages: ""
+
+      - name: Install Android build tools
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
 
       - name: Build web assets and sync Capacitor
         working-directory: mobile
@@ -80,6 +85,11 @@ jobs:
           java-version: "21"
 
       - uses: android-actions/setup-android@v3
+        with:
+          packages: ""
+
+      - name: Install Android build tools
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
 
       # Creating the keystore and adding these secrets is a human step (see
       # mobile/README.md). Without them the release still succeeds; it simply
@@ -173,8 +183,10 @@ jobs:
 
       - name: Determine channel
         id: meta
+        env:
+          RELEASE_TAG: ${{ inputs.release_tag || github.ref_name }}
         run: |
-          if [[ "${{ inputs.release_tag || github.ref_name }}" == *-* ]]; then
+          if [[ "$RELEASE_TAG" == *-* ]]; then
             echo "prerelease=true" >> "$GITHUB_OUTPUT"
           else
             echo "prerelease=false" >> "$GITHUB_OUTPUT"

@@ -31,11 +31,13 @@ jobs:
   build-and-test:
     name: Build and test native Hub
     runs-on: macos-latest
-    env:
-      REPOOS_MACOS_DERIVED_DATA: ${{ runner.temp }}/repoos-macos-derived-data
-      REPOOS_MACOS_XCRESULT_DIR: ${{ runner.temp }}/repoos-xcresults
     steps:
       - uses: actions/checkout@v4
+
+      - name: Set temporary build directories
+        run: |
+          echo "REPOOS_MACOS_DERIVED_DATA=$RUNNER_TEMP/repoos-macos-derived-data" >> "$GITHUB_ENV"
+          echo "REPOOS_MACOS_XCRESULT_DIR=$RUNNER_TEMP/repoos-xcresults" >> "$GITHUB_ENV"
 
       - name: Build without signing
         run: >-
@@ -61,12 +63,13 @@ jobs:
       startsWith(github.ref, 'refs/tags/v') ||
       (github.event_name == 'workflow_dispatch' && inputs.release_tag != '')
     runs-on: macos-latest
-    env:
-      REPOOS_MACOS_DERIVED_DATA: ${{ runner.temp }}/repoos-macos-derived-data
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ inputs.release_tag || github.ref }}
+
+      - name: Set temporary build directory
+        run: echo "REPOOS_MACOS_DERIVED_DATA=$RUNNER_TEMP/repoos-macos-derived-data" >> "$GITHUB_ENV"
 
       - name: Build release app (ad-hoc signed)
         run: |
@@ -238,8 +241,10 @@ jobs:
 
       - name: Determine channel
         id: meta
+        env:
+          RELEASE_TAG: ${{ inputs.release_tag || github.ref_name }}
         run: |
-          if [[ "${{ inputs.release_tag || github.ref_name }}" == *-* ]]; then
+          if [[ "$RELEASE_TAG" == *-* ]]; then
             echo "prerelease=true" >> "$GITHUB_OUTPUT"
           else
             echo "prerelease=false" >> "$GITHUB_OUTPUT"
