@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/glossary-of-repoos-terms-and-shorthand-m
 created_at: "2026-11-20T11:24:11Z"
-updated_at: "2026-11-26T00:48:19Z"
+updated_at: "2026-11-26T01:05:30Z"
 ---
 ## Problem
 RepoOS is full of shorthand that only people who built it know. Nick used "MTD" for the Move To Done button on a task that has a green review, and "g2g" for a "good to go" review verdict. New users and agents have no place to look these terms up, so conversations drift into guessing.
@@ -37,3 +37,4 @@ Collect terms from AGENTS.md, docs/, user-docs/, the CLI help and the UI strings
 - 2026-11-26T00:31:39Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-26T00:48:18Z · queued message undelivered for 17m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-26T00:48:19Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code unknown) · last assistant: The next check caught a TypeScript portability issue in the new test: this project’s NodeNext types don’t include Bun’s `import.meta.dir`. The docs build passed, but the production build stopped there; I’ll switch the test to resolve its p… · stderr: Reading additional input from stdin...
+- 2026-11-26T01:05:30Z · CTO nudge: held — an undelivered message is already queued
