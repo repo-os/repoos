@@ -21,14 +21,15 @@
  * (legacy) still use a whole-document scan so older stored reports keep working.
  */
 
-export type ReviewVerdict = "good to go" | "needs some work" | "back to the drawing board";
-export type ReviewRelevance = "still relevant" | "no longer needed" | "needs rescoping";
-
-const VERDICT_ORDER: ReviewVerdict[] = [
+export const REVIEW_VERDICTS = [
   "back to the drawing board",
   "needs some work",
   "good to go",
-];
+] as const;
+export type ReviewVerdict = (typeof REVIEW_VERDICTS)[number];
+export type ReviewRelevance = "still relevant" | "no longer needed" | "needs rescoping";
+
+const VERDICT_ORDER: ReviewVerdict[] = [...REVIEW_VERDICTS];
 
 const RELEVANCE_ORDER: ReviewRelevance[] = [
   "no longer needed",

@@ -82,3 +82,6 @@ no agent required. Runs on Bun or Node.js 20.6.0+. No account, no telemetry.
 
 Next: the full [Getting started](/getting-started) walkthrough, or jump
 straight to the [CLI reference](/cli).
+
+New to RepoOS vocabulary? See the [glossary](/glossary) for task statuses,
+review verdicts and common shorthand.

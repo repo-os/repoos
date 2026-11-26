@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-26T02:32:51Z"
-review_passes: 1
 id: "1280"
 title: "Glossary of RepoOS terms and shorthand (MTD, g2g, ...)"
 type: feature
@@ -11,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/glossary-of-repoos-terms-and-shorthand-m
 created_at: "2026-11-20T11:24:11Z"
-last_check_failure: "repoos check at 2026-11-26T02:05:36.937Z: repoos check failed: ui verification failed (2 issue(s)): [route] auto: matched src/ui-app/** · phone 390x844: declared route / but the browser landed on /work (login or redirect?) (captured http://127.0.0.1:43183/work) (http://127.0.0.1:43183/work); [route] auto: matched src/ui-app/** · desktop 1280x800: declared route / but the browser landed on /work (login or redirect?) (captured http://127.0.0.1:43183/work) (http://127.0.0.1:43183/work)"
+updated_at: "2026-11-26T02:32:06Z"
 ---
 ## Problem
 RepoOS is full of shorthand that only people who built it know. Nick used "MTD" for the Move To Done button on a task that has a green review, and "g2g" for a "good to go" review verdict. New users and agents have no place to look these terms up, so conversations drift into guessing.
@@ -30,58 +28,9 @@ RepoOS is full of shorthand that only people who built it know. Nick used "MTD" 
 ## Notes for AI
 Collect terms from AGENTS.md, docs/, user-docs/, the CLI help and the UI strings, and ask the human about any term whose meaning is unclear rather than inventing a definition. Nick's own shorthand (MTD, g2g) came from chat, so keep it exactly as written.
 
-## Shots
-```json
-[
-{
-"label": "Settings glossary help link",
-"target": "default",
-"route": "/settings",
-"highlight": "a.page-help-link[href*=glossary]"
-},
-{
-"label": "RepoOS glossary page",
-"target": "Docs site",
-"route": "/glossary",
-"highlight": ".vp-doc h1"
-}
-]
-```
-
 ## Activity
 
 - 2026-11-20T11:24:11Z · created · t@t
 - 2026-11-26T00:09:13Z · status inbox→ready
 - 2026-11-26T00:09:15Z · status ready→active, branch
-- 2026-11-26T00:31:39Z · message_queued at 2026-11-26T00:31:39.048Z
-- 2026-11-26T00:31:39Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-26T00:48:18Z · queued message undelivered for 17m and the engineer produced no output — ending the turn so it is delivered
-- 2026-11-26T00:48:19Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code unknown) · last assistant: The next check caught a TypeScript portability issue in the new test: this project’s NodeNext types don’t include Bun’s `import.meta.dir`. The docs build passed, but the production build stopped there; I’ll switch the test to resolve its p… · stderr: Reading additional input from stdin...
-- 2026-11-26T01:05:30Z · CTO nudge: held — an undelivered message is already queued
-- 2026-11-26T01:21:21Z · watchdog: check wait escalated · waiting: CPU idle is 2% (below 5%) — holding new work until the machine has idle CPU; wait exceeds the handoff deadline for 33m · next step: investigate the abnormal wait; the flag clears when the check starts
-- 2026-11-26T01:34:55Z · needs_input
-- 2026-11-26T01:34:55Z · message_delivered: 1 message(s)
-- 2026-11-26T01:36:28Z · message_queued at 2026-11-26T01:36:28.785Z
-- 2026-11-26T01:36:28Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-26T01:39:46Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
-- 2026-11-26T01:39:46Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code unknown) · last assistant: Remote validation is still uploading after a transport retry. The upload has reached about 31%; RepoOS is handling retries, and I’m waiting for either validation or its fallback result. · stderr: 2026-11-26T01:35:00.628250Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out 2026-11-26T01:35:00.680508Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out 2026-11-26T01:35:09.140622Z ERROR codex_core::tools::router: error=write_stdin fa…
-- 2026-11-26T01:39:47Z · message_delivered: 1 message(s)
-- 2026-11-26T01:41:28Z · message_queued at 2026-11-26T01:41:28.576Z
-- 2026-11-26T01:41:28Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-26T01:46:28Z · CTO nudge: held — handoff gate is running
-- 2026-11-26T02:05:33Z · note: ui verification failed: ui verification failed (2 issue(s)): [route] auto: matched src/ui-app/** · phone 390x844: declared route / but the browser landed on /work (login or redirect?) (captured http://127.0.0.1:43183/work) (http://127.0.0.1:43183/work); [route] auto: matched src/ui-app/** · desktop 1280x800: declared route / but the browser landed on /work (login or redirect?) (captured http://127.0.0.1:43183/work) (http://127.0.0.1:43183/work)
-- 2026-11-26T02:05:33Z · message_queued at 2026-11-26T02:05:33.788Z
-- 2026-11-26T02:05:36Z · message_delivered: 1 message(s)
-- 2026-11-26T02:06:33Z · body
-- 2026-11-26T02:11:28Z · CTO nudge: held — handoff gate is running
-- 2026-11-26T02:12:56Z · message_queued at 2026-11-26T02:12:56.809Z
-- 2026-11-26T02:12:56Z · handoff failed · handoff recovery attempted · finalization failed
-- 2026-11-26T02:16:09Z · watchdog: restarting engineer because a queued message waited 3m with no live process
-- 2026-11-26T02:16:10Z · message_delivered: 1 message(s)
-- 2026-11-26T02:17:04Z · body
-- 2026-11-26T02:28:15Z · body
-- 2026-11-26T02:32:05Z · note: ui verification passed: 2 of 2 shots captured with clean console
 - 2026-11-26T02:32:06Z · status active→review
-- 2026-11-26T02:32:06Z · message_queued at 2026-11-26T02:32:06.850Z
-- 2026-11-26T02:32:51Z · note: review pass 1: good to go
-
