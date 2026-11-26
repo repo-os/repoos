@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/glossary-of-repoos-terms-and-shorthand-m
 created_at: "2026-11-20T11:24:11Z"
-updated_at: "2026-11-26T02:12:56Z"
+updated_at: "2026-11-26T02:16:09Z"
 last_check_failure: "repoos check at 2026-11-26T02:05:36.937Z: repoos check failed: ui verification failed (2 issue(s)): [route] auto: matched src/ui-app/** · phone 390x844: declared route / but the browser landed on /work (login or redirect?) (captured http://127.0.0.1:43183/work) (http://127.0.0.1:43183/work); [route] auto: matched src/ui-app/** · desktop 1280x800: declared route / but the browser landed on /work (login or redirect?) (captured http://127.0.0.1:43183/work) (http://127.0.0.1:43183/work)"
 ---
 ## Problem
@@ -75,3 +75,4 @@ Collect terms from AGENTS.md, docs/, user-docs/, the CLI help and the UI strings
 - 2026-11-26T02:11:28Z · CTO nudge: held — handoff gate is running
 - 2026-11-26T02:12:56Z · message_queued at 2026-11-26T02:12:56.809Z
 - 2026-11-26T02:12:56Z · handoff failed · handoff recovery attempted · finalization failed
+- 2026-11-26T02:16:09Z · watchdog: restarting engineer because a queued message waited 3m with no live process
