@@ -2,7 +2,7 @@
 id: "1290"
 title: "Hand-off: finish or clearly report an uncommitted merge"
 type: bug
-status: active
+status: review
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -61,4 +61,4 @@ Hand-off commits with a path list (`git commit -m <msg> -- <paths>`: `commitStag
 - 2026-11-26T01:36:28Z · CTO nudge: held — handoff gate is running
 - 2026-11-26T01:52:02Z · body
 - 2026-11-26T01:52:16Z · watchdog: check wait ended or recovered — cleared needs_input
-- 2026-11-26T01:52:58Z · engineer stopped by request
+- 2026-11-26T01:52:58Z · status active→review
