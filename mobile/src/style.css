@@ -239,7 +239,9 @@ select {
   margin: -2px 0 -6px;
   opacity: 0;
   transform: translateY(-5px) scale(0.88);
-  transition: opacity 160ms ease, transform 160ms ease;
+  transition:
+    opacity 160ms ease,
+    transform 160ms ease;
   pointer-events: none;
 }
 
