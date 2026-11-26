@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-26T01:53:42Z"
-review_passes: 1
 id: "1290"
 title: "Hand-off: finish or clearly report an uncommitted merge"
 type: bug
@@ -13,7 +11,7 @@ branch: feat/hand-off-finish-or-clearly-report-an-unc
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-25T23:55:22Z"
-last_check_failure: "repoos check at 2026-11-26T01:05:31.008Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
+updated_at: "2026-11-26T01:52:57Z"
 ---
 ## Problem
 
@@ -49,21 +47,4 @@ Hand-off commits with a path list (`git commit -m <msg> -- <paths>`: `commitStag
 - 2026-11-25T23:55:27Z · status inbox→ready
 - 2026-11-25T23:55:28Z · cli_override, model_override
 - 2026-11-25T23:55:29Z · status ready→active, branch
-- 2026-11-26T00:13:32Z · message_queued at 2026-11-26T00:13:32.053Z
-- 2026-11-26T00:13:32Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-26T00:18:32Z · CTO nudge: held — handoff gate is running
-- 2026-11-26T00:48:19Z · message_queued at 2026-11-26T00:48:19.313Z
-- 2026-11-26T01:05:31Z · watchdog: check wait escalated · waiting: waiting for serialized local fallback (1 ahead, position 2); slot holder 45123 is dead for 46m · next step: investigate the abnormal wait; the flag clears when the check starts
-- 2026-11-26T01:05:31Z · CTO nudge: held — an undelivered message is already queued
-- 2026-11-26T01:34:48Z · note: handoff requested (cli)
-- 2026-11-26T01:34:55Z · needs_input
-- 2026-11-26T01:34:55Z · message_delivered: 1 message(s)
-- 2026-11-26T01:35:01Z · watchdog: check wait escalated · waiting: waiting for serialized local fallback (1 ahead, position 2); slot holder 45123 is dead for 1h 16m · next step: investigate the abnormal wait; the flag clears when the check starts
-- 2026-11-26T01:36:28Z · CTO nudge: held — handoff gate is running
-- 2026-11-26T01:52:02Z · body
-- 2026-11-26T01:52:16Z · watchdog: check wait ended or recovered — cleared needs_input
-- 2026-11-26T01:52:58Z · status active→review
-- 2026-11-26T01:52:58Z · message_queued at 2026-11-26T01:52:58.453Z
-- 2026-11-26T01:52:58Z · note: shots: skipped — the diff (8 changed paths) touches no capture target's globs — no UI change to capture
-- 2026-11-26T01:53:42Z · note: review pass 1: good to go
-
+- 2026-11-26T01:52:57Z · status active→review

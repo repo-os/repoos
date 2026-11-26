@@ -207,6 +207,86 @@ function makeCtx(
 }
 
 describe("guardReviewTransition (0210)", () => {
+  it("finishes a resolved uncommitted merge as a two-parent commit", async () => {
+    const fx = makeFixture();
+    try {
+      uncommittedChange(fx);
+      git(fx.worktree, ["add", "source.txt"]);
+      git(fx.worktree, ["commit", "-qm", "task implementation"]);
+      writeFileSync(join(fx.root, "main.txt"), "main change\n");
+      git(fx.root, ["add", "main.txt"]);
+      git(fx.root, ["commit", "-qm", "main change"]);
+      git(fx.worktree, ["merge", "--no-commit", "main"]);
+
+      const result = await guardReviewTransition(fx.config, fx.task);
+
+      expect(result.ok).toBe(true);
+      expect(
+        git(fx.worktree, ["rev-list", "--parents", "-n", "1", "HEAD"]).split(" "),
+      ).toHaveLength(3);
+      expect(git(fx.worktree, ["show", "HEAD:main.txt"])).toBe("main change");
+    } finally {
+      fx.clean();
+    }
+  });
+
+  it("leaves unresolved merge conflicts intact and names their paths", async () => {
+    const fx = makeFixture();
+    try {
+      writeFileSync(join(fx.worktree, "source.txt"), "task side\n");
+      git(fx.worktree, ["add", "source.txt"]);
+      git(fx.worktree, ["commit", "-qm", "task change"]);
+      writeFileSync(join(fx.root, "source.txt"), "main side\n");
+      git(fx.root, ["add", "source.txt"]);
+      git(fx.root, ["commit", "-qm", "main change"]);
+      try {
+        git(fx.worktree, ["merge", "main"]);
+      } catch {
+        /* expected conflict */
+      }
+
+      const result = await guardReviewTransition(fx.config, fx.task);
+
+      expect(result.ok).toBe(false);
+      expect(result.detail).toContain("source.txt");
+      expect(git(fx.worktree, ["rev-parse", "--verify", "MERGE_HEAD"])).toBeTruthy();
+      expect(git(fx.worktree, ["ls-files", "-u"])).toContain("source.txt");
+    } finally {
+      fx.clean();
+    }
+  });
+
+  it("rejects conflict markers even when the marker copy is staged", async () => {
+    const fx = makeFixture();
+    try {
+      writeFileSync(join(fx.worktree, "source.txt"), "task side\n");
+      git(fx.worktree, ["add", "source.txt"]);
+      git(fx.worktree, ["commit", "-qm", "task change"]);
+      writeFileSync(join(fx.root, "source.txt"), "main side\n");
+      git(fx.root, ["add", "source.txt"]);
+      git(fx.root, ["commit", "-qm", "main change"]);
+      try {
+        git(fx.worktree, ["merge", "main"]);
+      } catch {
+        /* expected conflict */
+      }
+      writeFileSync(
+        join(fx.worktree, "source.txt"),
+        "<<<<<<< HEAD\nleft\n=======\nright\n>>>>>>> main\n",
+      );
+      git(fx.worktree, ["add", "source.txt"]);
+
+      const result = await guardReviewTransition(fx.config, fx.task);
+
+      expect(result.ok).toBe(false);
+      expect(result.detail).toContain("source.txt");
+      expect(result.detail).toContain("leftover conflict markers");
+      expect(git(fx.worktree, ["rev-parse", "--verify", "MERGE_HEAD"])).toBeTruthy();
+    } finally {
+      fx.clean();
+    }
+  });
+
   it("commits uncommitted implementation and returns ok", async () => {
     const fx = makeFixture();
     try {

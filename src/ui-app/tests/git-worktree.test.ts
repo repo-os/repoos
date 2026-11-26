@@ -1106,6 +1106,27 @@ describe("dirtyFiles / commitDirtyFiles (0204)", () => {
       clean();
     }
   });
+
+  it("refuses to checkpoint while a merge is in progress", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      git(root, ["branch", "other"]);
+      writeFileSync(join(root, "ours.txt"), "ours\n");
+      git(root, ["add", "ours.txt"]);
+      git(root, ["commit", "-qm", "ours"]);
+      git(root, ["checkout", "-q", "other"]);
+      writeFileSync(join(root, "theirs.txt"), "theirs\n");
+      git(root, ["add", "theirs.txt"]);
+      git(root, ["commit", "-qm", "theirs"]);
+      git(root, ["checkout", "-q", "-"]);
+      git(root, ["merge", "--no-commit", "other"]);
+
+      await expect(commitDirtyFiles(root, "checkpoint")).rejects.toThrow(/in progress/);
+      expect(git(root, ["rev-parse", "--verify", "MERGE_HEAD"])).toBeTruthy();
+    } finally {
+      clean();
+    }
+  });
 });
 
 describe("commitTaskFile commits only the task file (#0353)", () => {
