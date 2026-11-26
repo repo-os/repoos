@@ -58,3 +58,4 @@ Hand-off commits with a path list (`git commit -m <msg> -- <paths>`: `commitStag
 - 2026-11-26T00:48:19Z · message_queued at 2026-11-26T00:48:19.313Z
 - 2026-11-26T01:05:31Z · watchdog: check wait escalated · waiting: waiting for serialized local fallback (1 ahead, position 2); slot holder 45123 is dead for 46m · next step: investigate the abnormal wait; the flag clears when the check starts
 - 2026-11-26T01:05:31Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-26T01:34:48Z · note: handoff requested (cli)
