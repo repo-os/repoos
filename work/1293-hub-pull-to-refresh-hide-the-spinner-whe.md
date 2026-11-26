@@ -9,8 +9,10 @@ story: RepoOS Hub for Mobile
 assigned_to: ai
 created_by: t@t
 branch: ""
+cli_override: codex
+model_override: gpt-6-luna
 created_at: "2026-11-26T17:20:25Z"
-updated_at: "2026-11-26T17:20:26Z"
+updated_at: "2026-11-26T17:20:31Z"
 ---
 ## Problem
 
@@ -45,3 +47,4 @@ Files: `mobile/src/components/ServerListView.vue`, `mobile/src/style.css`, `mobi
 
 - 2026-11-26T17:20:25Z · created · t@t
 - 2026-11-26T17:20:26Z · screenshots
+- 2026-11-26T17:20:31Z · cli_override, model_override
