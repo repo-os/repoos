@@ -221,7 +221,9 @@ describe("guardReviewTransition (0210)", () => {
       const result = await guardReviewTransition(fx.config, fx.task);
 
       expect(result.ok).toBe(true);
-      expect(git(fx.worktree, ["rev-list", "--parents", "-n", "1", "HEAD"]).split(" ")).toHaveLength(3);
+      expect(
+        git(fx.worktree, ["rev-list", "--parents", "-n", "1", "HEAD"]).split(" "),
+      ).toHaveLength(3);
       expect(git(fx.worktree, ["show", "HEAD:main.txt"])).toBe("main change");
     } finally {
       fx.clean();
@@ -237,7 +239,11 @@ describe("guardReviewTransition (0210)", () => {
       writeFileSync(join(fx.root, "source.txt"), "main side\n");
       git(fx.root, ["add", "source.txt"]);
       git(fx.root, ["commit", "-qm", "main change"]);
-      try { git(fx.worktree, ["merge", "main"]); } catch { /* expected conflict */ }
+      try {
+        git(fx.worktree, ["merge", "main"]);
+      } catch {
+        /* expected conflict */
+      }
 
       const result = await guardReviewTransition(fx.config, fx.task);
 
@@ -259,8 +265,15 @@ describe("guardReviewTransition (0210)", () => {
       writeFileSync(join(fx.root, "source.txt"), "main side\n");
       git(fx.root, ["add", "source.txt"]);
       git(fx.root, ["commit", "-qm", "main change"]);
-      try { git(fx.worktree, ["merge", "main"]); } catch { /* expected conflict */ }
-      writeFileSync(join(fx.worktree, "source.txt"), "<<<<<<< HEAD\nleft\n=======\nright\n>>>>>>> main\n");
+      try {
+        git(fx.worktree, ["merge", "main"]);
+      } catch {
+        /* expected conflict */
+      }
+      writeFileSync(
+        join(fx.worktree, "source.txt"),
+        "<<<<<<< HEAD\nleft\n=======\nright\n>>>>>>> main\n",
+      );
       git(fx.worktree, ["add", "source.txt"]);
 
       const result = await guardReviewTransition(fx.config, fx.task);

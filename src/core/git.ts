@@ -2590,7 +2590,10 @@ export async function commitDirtyFiles(root: string, message: string): Promise<s
   // conflict state. Refuse explicitly so callers cannot mistake this for a
   // successful clean checkpoint.
   if (hasInProgressGitOperation(root)) {
-    throw new GitDirtyCheckError("git-error", "a merge, rebase, cherry-pick, or revert is in progress; resolve and commit it before checkpointing");
+    throw new GitDirtyCheckError(
+      "git-error",
+      "a merge, rebase, cherry-pick, or revert is in progress; resolve and commit it before checkpointing",
+    );
   }
   const files = await dirtyFiles(root);
   if (files.length === 0) return [];

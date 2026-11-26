@@ -118,23 +118,49 @@ async function guardReviewTransitionOnce(
   const mergeHead = await runGit(registered, ["rev-parse", "--verify", "-q", "MERGE_HEAD"], 5_000);
   if (mergeHead.status === 0) {
     const unmerged = await runGit(registered, ["diff", "--name-only", "--diff-filter=U"], 5_000);
-    if (unmerged.status !== 0) return { ok: false, detail: `could not inspect merge conflicts: ${concise(unmerged)}` };
-    const unmergedPaths = unmerged.stdout.split("\n").map((p) => p.trim()).filter(Boolean);
-    if (unmergedPaths.length > 0) return { ok: false, detail: `merge has unresolved files: ${unmergedPaths.join(", ")}. Resolve them and commit the merge` };
+    if (unmerged.status !== 0)
+      return { ok: false, detail: `could not inspect merge conflicts: ${concise(unmerged)}` };
+    const unmergedPaths = unmerged.stdout
+      .split("\n")
+      .map((p) => p.trim())
+      .filter(Boolean);
+    if (unmergedPaths.length > 0)
+      return {
+        ok: false,
+        detail: `merge has unresolved files: ${unmergedPaths.join(", ")}. Resolve them and commit the merge`,
+      };
     const changed = await runGit(registered, ["diff", "HEAD", "--name-only"], 10_000);
-    if (changed.status !== 0) return { ok: false, detail: `could not inspect merge changes: ${concise(changed)}` };
+    if (changed.status !== 0)
+      return { ok: false, detail: `could not inspect merge changes: ${concise(changed)}` };
     const markerFiles: string[] = [];
-    for (const path of changed.stdout.split("\n").map((p) => p.trim()).filter(Boolean)) {
+    for (const path of changed.stdout
+      .split("\n")
+      .map((p) => p.trim())
+      .filter(Boolean)) {
       let content = "";
-      try { content = readFileSync(resolve(registered, path), "utf8"); } catch { /* deleted path */ }
+      try {
+        content = readFileSync(resolve(registered, path), "utf8");
+      } catch {
+        /* deleted path */
+      }
       const staged = await runGit(registered, ["show", `:${path}`], 5_000);
-      if (/^(<<<<<<< |=======|>>>>>>> )/m.test(content) || (staged.status === 0 && /^(<<<<<<< |=======|>>>>>>> )/m.test(staged.stdout))) markerFiles.push(path);
+      if (
+        /^(<<<<<<< |=======|>>>>>>> )/m.test(content) ||
+        (staged.status === 0 && /^(<<<<<<< |=======|>>>>>>> )/m.test(staged.stdout))
+      )
+        markerFiles.push(path);
     }
-    if (markerFiles.length > 0) return { ok: false, detail: `merge has leftover conflict markers in: ${markerFiles.join(", ")}. Resolve them and commit the merge` };
+    if (markerFiles.length > 0)
+      return {
+        ok: false,
+        detail: `merge has leftover conflict markers in: ${markerFiles.join(", ")}. Resolve them and commit the merge`,
+      };
     const add = await runGit(registered, ["add", "-A", "--", "."], 30_000);
-    if (add.status !== 0) return { ok: false, detail: `could not stage resolved merge: ${concise(add)}` };
+    if (add.status !== 0)
+      return { ok: false, detail: `could not stage resolved merge: ${concise(add)}` };
     const commit = await runGit(registered, ["commit", "--no-edit"], 30_000);
-    if (commit.status !== 0) return { ok: false, detail: `could not complete resolved merge: ${concise(commit)}` };
+    if (commit.status !== 0)
+      return { ok: false, detail: `could not complete resolved merge: ${concise(commit)}` };
   }
 
   const clearIndex = await runGit(
