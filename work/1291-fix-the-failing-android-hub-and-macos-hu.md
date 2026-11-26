@@ -8,8 +8,10 @@ area: [macos, mobile]
 assigned_to: ai
 created_by: t@t
 branch: ""
+cli_override: codex
+model_override: gpt-6-luna
 created_at: "2026-11-26T03:56:34Z"
-updated_at: "2026-11-26T03:56:39Z"
+updated_at: "2026-11-26T03:56:40Z"
 ---
 ## Problem
 
@@ -40,3 +42,4 @@ All three workflows get past setup and build on GitHub, with the same release ou
 
 - 2026-11-26T03:56:34Z · created · t@t
 - 2026-11-26T03:56:39Z · status inbox→ready
+- 2026-11-26T03:56:40Z · cli_override, model_override
