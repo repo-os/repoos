@@ -232,14 +232,49 @@ select {
 .pull-refresh-indicator {
   align-self: center;
   height: 28px;
+  flex: 0 0 28px;
+  width: 100%;
+  display: grid;
+  place-items: center;
   margin: -2px 0 -6px;
-  color: var(--txt-dim);
-  font-size: 20px;
-  line-height: 28px;
+  opacity: 0;
+  transform: translateY(-5px) scale(0.88);
+  transition:
+    opacity 160ms ease,
+    transform 160ms ease;
+  pointer-events: none;
 }
 
-.pull-refresh-indicator .spinning {
-  display: inline-block;
+.pull-refresh-indicator.is-visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.pull-refresh-spinner {
+  width: 22px;
+  height: 22px;
+  overflow: visible;
+  fill: none;
+  stroke: url(#hub-refresh-gradient);
+  stroke-width: 2.6;
+  stroke-linecap: round;
+}
+
+.pull-refresh-spinner .spinner-track {
+  stroke: color-mix(in srgb, var(--txt-dim) 22%, transparent);
+}
+
+.pull-refresh-spinner .spinner-progress {
+  stroke: var(--accent, #d946ef);
+  stroke-dasharray: 56.55;
+  stroke-dashoffset: calc(56.55 * (1 - var(--pull-progress, 0.7)));
+  transform: rotate(-90deg);
+  transform-origin: center;
+}
+
+.pull-refresh-spinner.spinning .spinner-progress {
+  stroke: url(#hub-refresh-gradient);
+  stroke-dasharray: 43 14;
   animation: hub-refresh-spin 800ms linear infinite;
 }
 
@@ -250,6 +285,11 @@ select {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .pull-refresh-indicator,
+  .pull-refresh-indicator.is-visible {
+    transition: none;
+  }
+
   .pull-refresh-indicator .spinning {
     animation: none;
   }

@@ -1,13 +1,12 @@
 ---
-last_close_out_gate_ms: 109536
-last_close_out_gate_at: "2026-11-26T19:17:34.093Z"
 id: "1293"
 title: "Hub pull-to-refresh: hide the spinner when done and make it a symmetrical, prettier loader"
 type: bug
-status: review
+status: done
 priority: p2
 area: mobile
 story: RepoOS Hub for Mobile
+merged_commit: 086c4d72f398e1fd9a94c7f15a6fa8e726866b80
 assigned_to: ai
 created_by: t@t
 branch: feat/hub-pull-to-refresh-hide-the-spinner-whe
@@ -15,6 +14,8 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-26T17:20:25Z"
 updated_at: "2026-11-26T19:17:34Z"
+last_close_out_gate_ms: 109536
+last_close_out_gate_at: "2026-11-26T19:17:34.093Z"
 review_passes: 1
 last_check_failure: "repoos check at 2026-11-26T17:48:23.770Z: repoos check failed: ui verification failed (2 issue(s)): [missing-target] Hub server list refresh indicator (target \"default\"): highlight .server-list matched nothing on / (http://127.0.0.1:46709/work); [route] Hub server list refresh indicator: declared route / but the browser landed on /work (login or redirect?) (captured http://127.0.0.1:46709/work) (http://127.0.0.1:46709/work)"
 ---
