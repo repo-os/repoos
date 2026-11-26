@@ -2,7 +2,7 @@
 id: "1293"
 title: "Hub pull-to-refresh: hide the spinner when done and make it a symmetrical, prettier loader"
 type: bug
-status: active
+status: review
 priority: p2
 area: mobile
 story: RepoOS Hub for Mobile
@@ -12,7 +12,7 @@ branch: feat/hub-pull-to-refresh-hide-the-spinner-whe
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-26T17:20:25Z"
-updated_at: "2026-11-26T17:20:34Z"
+updated_at: "2026-11-26T17:53:41Z"
 ---
 ## Problem
 
@@ -50,3 +50,4 @@ Files: `mobile/src/components/ServerListView.vue`, `mobile/src/style.css`, `mobi
 - 2026-11-26T17:20:31Z · cli_override, model_override
 - 2026-11-26T17:20:33Z · status inbox→ready
 - 2026-11-26T17:20:34Z · status ready→active, branch
+- 2026-11-26T17:53:41Z · status active→review
