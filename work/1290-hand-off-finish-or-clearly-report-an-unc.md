@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-26T01:05:31.008Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 id: "1290"
 title: "Hand-off: finish or clearly report an uncommitted merge"
 type: bug
@@ -51,3 +53,4 @@ Hand-off commits with a path list (`git commit -m <msg> -- <paths>`: `commitStag
 - 2026-11-26T00:13:32Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-26T00:18:32Z · CTO nudge: held — handoff gate is running
 - 2026-11-26T00:48:19Z · message_queued at 2026-11-26T00:48:19.313Z
+
