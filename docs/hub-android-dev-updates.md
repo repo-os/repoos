@@ -42,8 +42,10 @@ task or chat, and clear the clipboard afterward. The local channel file is
 ignored by Git. Never commit or paste secret values into chat.
 
 The workflow `.github/workflows/publish-hub-dev.yml` deploys the Worker and
-publishes a dev APK after each main push. Run `just publish-dev` on demand after
-local setup. Rotation requires updating the Worker secret, local secret file,
+publishes a dev APK after each main push. Its Android SDK setup explicitly skips
+additional packages during action setup, then installs platform 36 and build
+tools 36.0.0 with `sdkmanager`. Run `just publish-dev` on demand after local
+setup. Rotation requires updating the Worker secret, local secret file,
 and GitHub Actions secret, publishing a build containing the new path, and
 installing it before retiring the old path. The debug APK contains its channel
 URL in BuildConfig; the release variant is checked for an empty URL and the

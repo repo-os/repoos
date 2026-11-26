@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-26T04:05:31Z"
-review_passes: 1
 id: "1291"
 title: Fix the failing Android Hub and macOS Hub GitHub workflows
 type: bug
@@ -13,6 +11,7 @@ branch: feat/fix-the-failing-android-hub-and-macos-hu
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-26T03:56:34Z"
+updated_at: "2026-11-26T04:04:57Z"
 ---
 ## Problem
 
@@ -45,10 +44,4 @@ All three workflows get past setup and build on GitHub, with the same release ou
 - 2026-11-26T03:56:39Z · status inbox→ready
 - 2026-11-26T03:56:40Z · cli_override, model_override
 - 2026-11-26T03:56:41Z · status ready→active, branch
-- 2026-11-26T04:00:26Z · body
-- 2026-11-26T04:02:38Z · body
 - 2026-11-26T04:04:57Z · status active→review
-- 2026-11-26T04:04:58Z · message_queued at 2026-11-26T04:04:58.176Z
-- 2026-11-26T04:04:58Z · note: shots: skipped — the diff (8 changed paths) touches no capture target's globs — no UI change to capture
-- 2026-11-26T04:05:30Z · note: review pass 1: good to go
-

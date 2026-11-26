@@ -20,6 +20,10 @@ installation copy.
 - `.github/workflows/macos-hub.yml` builds/tests on Mac changes and uploads the
   DMG on version tags. It must compile `AppIcon.icns` into the release bundle
   and inject the tag version into the app bundle; both are release checks.
+- The workflow initializes `REPOOS_MACOS_DERIVED_DATA` (and the test result
+  directory) from `$RUNNER_TEMP` in each job through `$GITHUB_ENV`. Keep these
+  paths in steps rather than job-level `env`, where GitHub Actions does not
+  allow the `runner` context.
 - A release is not publishable until the signed DMG has been accepted by
   Apple's notary service, Apple's ticket is stapled to `RepoOSHub.dmg`, and the
   stapled DMG passes `xcrun stapler validate` and Gatekeeper's `spctl` open
