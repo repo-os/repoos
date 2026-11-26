@@ -81,3 +81,4 @@ Collect terms from AGENTS.md, docs/, user-docs/, the CLI help and the UI strings
 - 2026-11-26T02:28:15Z · body
 - 2026-11-26T02:32:05Z · note: ui verification passed: 2 of 2 shots captured with clean console
 - 2026-11-26T02:32:06Z · status active→review
+- 2026-11-26T02:32:06Z · message_queued at 2026-11-26T02:32:06.850Z
