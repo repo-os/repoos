@@ -11,7 +11,7 @@ branch: feat/hand-off-finish-or-clearly-report-an-unc
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-25T23:55:22Z"
-updated_at: "2026-11-26T00:18:32Z"
+updated_at: "2026-11-26T00:48:19Z"
 ---
 ## Problem
 
@@ -50,3 +50,4 @@ Hand-off commits with a path list (`git commit -m <msg> -- <paths>`: `commitStag
 - 2026-11-26T00:13:32Z · message_queued at 2026-11-26T00:13:32.053Z
 - 2026-11-26T00:13:32Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-26T00:18:32Z · CTO nudge: held — handoff gate is running
+- 2026-11-26T00:48:19Z · message_queued at 2026-11-26T00:48:19.313Z
