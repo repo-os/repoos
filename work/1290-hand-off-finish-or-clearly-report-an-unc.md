@@ -12,7 +12,7 @@ branch: feat/hand-off-finish-or-clearly-report-an-unc
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-25T23:55:22Z"
-updated_at: "2026-11-26T02:12:51Z"
+updated_at: "2026-11-26T02:12:56Z"
 last_close_out_gate_ms: 160912
 last_close_out_gate_at: "2026-11-26T02:12:34.062Z"
 review_passes: 1
@@ -71,3 +71,4 @@ Hand-off commits with a path list (`git commit -m <msg> -- <paths>`: `commitStag
 - 2026-11-26T01:53:42Z · note: review pass 1: good to go
 - 2026-11-26T02:12:34Z · close-out gate completed in 161s
 - 2026-11-26T02:12:51Z · status done→done, release:success
+- 2026-11-26T02:12:56Z · message_dropped: 1 queued message(s) discarded — task is done
