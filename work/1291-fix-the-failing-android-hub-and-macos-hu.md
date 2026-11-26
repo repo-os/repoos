@@ -2,7 +2,7 @@
 id: "1291"
 title: Fix the failing Android Hub and macOS Hub GitHub workflows
 type: bug
-status: active
+status: review
 priority: p2
 area: [macos, mobile]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/fix-the-failing-android-hub-and-macos-hu
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-26T03:56:34Z"
-updated_at: "2026-11-26T03:56:41Z"
+updated_at: "2026-11-26T04:04:57Z"
 ---
 ## Problem
 
@@ -44,3 +44,4 @@ All three workflows get past setup and build on GitHub, with the same release ou
 - 2026-11-26T03:56:39Z · status inbox→ready
 - 2026-11-26T03:56:40Z · cli_override, model_override
 - 2026-11-26T03:56:41Z · status ready→active, branch
+- 2026-11-26T04:04:57Z · status active→review
