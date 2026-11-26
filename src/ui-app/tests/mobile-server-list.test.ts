@@ -189,13 +189,12 @@ describe("mobile hub server list", () => {
     expect(wrapper.emitted("refresh")).toHaveLength(1);
     const refreshing = mountList({ refreshing: true });
     expect(refreshing.find(".pull-refresh-indicator .spinning").exists()).toBe(true);
-    expect(wrapper.find(".pull-refresh-indicator").exists()).toBe(false);
+    expect(wrapper.find(".pull-refresh-indicator").classes()).not.toContain("is-visible");
   });
 
   it("clears pull progress on release while refresh is still running", async () => {
     const wrapper = mountList();
     const list = wrapper.find(".server-list").element;
-    const setProps = wrapper.setProps as (props: Record<string, unknown>) => Promise<void>;
     list.dispatchEvent(
       new TouchEvent("touchstart", {
         bubbles: true,
@@ -210,14 +209,14 @@ describe("mobile hub server list", () => {
       }),
     );
     // The parent reflects the emitted refresh asynchronously, before release.
-    await setProps({ refreshing: true });
+    await wrapper.setProps({ refreshing: true } as never);
     list.dispatchEvent(new TouchEvent("touchend", { bubbles: true }));
     await nextTick();
 
     expect(wrapper.find(".pull-refresh-indicator").exists()).toBe(true);
     expect(wrapper.find(".pull-refresh-indicator").classes()).toContain("is-visible");
     expect(wrapper.find(".pull-refresh-spinner.spinning").exists()).toBe(true);
-    await setProps({ refreshing: false });
+    await wrapper.setProps({ refreshing: false } as never);
     await nextTick();
     expect(wrapper.find(".pull-refresh-indicator").classes()).not.toContain("is-visible");
   });
