@@ -55,3 +55,6 @@ inputs/.attachments/
 
 # Local env overrides
 .env*.local
+
+# Codex chat attachments saved into the checkout
+.codex-attachments/

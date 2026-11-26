@@ -45,13 +45,13 @@ describe("release history surfaces", () => {
     expect(recipe).toContain('bun scripts/write-release-record.ts "$version"');
     expect(recipe).toContain("git add package.json release-history.json CHANGELOG.md");
     const release = createReleaseHistoryEntry(
-      "0.5.94",
+      "999.0.1",
       ["abc1234 Add the release record", "def5678 Fix release rollback"],
       new Date("2026-11-23T23:59:59Z"),
     );
     expect(release).toEqual({
-      version: "0.5.94",
-      tag: "v0.5.94",
+      version: "999.0.1",
+      tag: "v999.0.1",
       date: "2026-11-23",
       notes: "Changes in this release:\n\n- Add the release record\n- Fix release rollback",
     });
