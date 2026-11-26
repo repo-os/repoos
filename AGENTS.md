@@ -17,6 +17,7 @@ Long-form versions of the rules below, with incident history:
 [`docs/agent-workflow-rules.md`](docs/agent-workflow-rules.md),
 [`docs/agent-ui-and-preview-conventions.md`](docs/agent-ui-and-preview-conventions.md),
 [`docs/agent-debugging-and-incidents.md`](docs/agent-debugging-and-incidents.md).
+For RepoOS terminology and shorthand, see [`user-docs/glossary.md`](user-docs/glossary.md).
 
 ## Who this file is for
 

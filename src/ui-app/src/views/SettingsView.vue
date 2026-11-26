@@ -1320,6 +1320,13 @@ onUnmounted(() => {
           rel="noreferrer"
           >Configuration reference ↗</a
         >
+        <a
+          class="page-help-link"
+          href="https://docs.repoos.org/glossary"
+          target="_blank"
+          rel="noreferrer"
+          >RepoOS glossary ↗</a
+        >
       </div>
     </header>
 
