@@ -1,6 +1,12 @@
 {
   "releases": [
     {
+      "version": "0.5.94",
+      "tag": "v0.5.94",
+      "date": "2026-11-26",
+      "notes": "### Faster close-outs on several machines\n\nQueued tasks can now be validated at the same time on different runner machines, so one slow task no longer holds up the whole queue. Publishing to main still happens one task at a time, in queue order, and a new setting limits how many validations run in parallel.\n\n### Fewer stuck tasks\n\nHand-off now finishes a merge that was resolved but never committed. If conflicts or conflict markers remain, it stops and names the files. A task whose later review passes no longer stays flagged for an old provider failure, failed hand-offs show the real check error, and the attention list is less noisy.\n\nThe check for steps that need a human can now use a small decision model alongside better keyword rules, so tasks that merely mention devices or credentials are less likely to be refused. You can choose the mode in Settings.\n\n### Hub app\n\nPull down on the server list to refresh it.\n\n### Easier to understand and operate\n\n- A new glossary explains RepoOS terms and shorthand, linked from the docs and Settings.\n- Protected worktrees are now listed with the reason they are kept and a recommended action.\n- The \"stale evidence\" prompt is hidden once a task is queued for or moving to done.\n- Release announcement emails are shorter and easier to skim.\n- `--help` now lists flags and subcommands that were missing, and `just release` writes the release record."
+    },
+    {
       "version": "0.5.93",
       "tag": "v0.5.93",
       "date": "2026-11-22",

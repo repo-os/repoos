@@ -5,6 +5,32 @@ pipeline from `release-history.json`; the newest entry is also the GitHub
 release body. The full discussion of each change lives in the release notes
 and on GitHub.
 
+## [v0.5.94] - 2026-11-26
+
+### Faster close-outs on several machines
+
+Queued tasks can now be validated at the same time on different runner machines, so one slow task no longer holds up the whole queue. Publishing to main still happens one task at a time, in queue order, and a new setting limits how many validations run in parallel.
+
+### Fewer stuck tasks
+
+Hand-off now finishes a merge that was resolved but never committed. If conflicts or conflict markers remain, it stops and names the files. A task whose later review passes no longer stays flagged for an old provider failure, failed hand-offs show the real check error, and the attention list is less noisy.
+
+The check for steps that need a human can now use a small decision model alongside better keyword rules, so tasks that merely mention devices or credentials are less likely to be refused. You can choose the mode in Settings.
+
+### Hub app
+
+Pull down on the server list to refresh it.
+
+### Easier to understand and operate
+
+- A new glossary explains RepoOS terms and shorthand, linked from the docs and Settings.
+- Protected worktrees are now listed with the reason they are kept and a recommended action.
+- The "stale evidence" prompt is hidden once a task is queued for or moving to done.
+- Release announcement emails are shorter and easier to skim.
+- `--help` now lists flags and subcommands that were missing, and `just release` writes the release record.
+
+[Release on GitHub](https://github.com/repo-os/repoos/releases/tag/v0.5.94)
+
 ## [v0.5.93] - 2026-11-22
 
 ### Task drawer: compact metadata
