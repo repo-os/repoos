@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-11-26T02:32:51Z"
-review_passes: 1
+last_close_out_gate_ms: 684331
+last_close_out_gate_at: "2026-11-26T02:45:26.425Z"
 id: "1280"
 title: "Glossary of RepoOS terms and shorthand (MTD, g2g, ...)"
 type: feature
@@ -11,6 +11,8 @@ assigned_to: ai
 created_by: t@t
 branch: feat/glossary-of-repoos-terms-and-shorthand-m
 created_at: "2026-11-20T11:24:11Z"
+updated_at: "2026-11-26T02:45:26Z"
+review_passes: 1
 last_check_failure: "repoos check at 2026-11-26T02:05:36.937Z: repoos check failed: ui verification failed (2 issue(s)): [route] auto: matched src/ui-app/** · phone 390x844: declared route / but the browser landed on /work (login or redirect?) (captured http://127.0.0.1:43183/work) (http://127.0.0.1:43183/work); [route] auto: matched src/ui-app/** · desktop 1280x800: declared route / but the browser landed on /work (login or redirect?) (captured http://127.0.0.1:43183/work) (http://127.0.0.1:43183/work)"
 ---
 ## Problem
@@ -84,4 +86,5 @@ Collect terms from AGENTS.md, docs/, user-docs/, the CLI help and the UI strings
 - 2026-11-26T02:32:06Z · status active→review
 - 2026-11-26T02:32:06Z · message_queued at 2026-11-26T02:32:06.850Z
 - 2026-11-26T02:32:51Z · note: review pass 1: good to go
+- 2026-11-26T02:45:26Z · close-out gate completed in 684s
 
