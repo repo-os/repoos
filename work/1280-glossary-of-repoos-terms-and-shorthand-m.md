@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/glossary-of-repoos-terms-and-shorthand-m
 created_at: "2026-11-20T11:24:11Z"
-updated_at: "2026-11-26T01:39:47Z"
+updated_at: "2026-11-26T01:41:28Z"
 ---
 ## Problem
 RepoOS is full of shorthand that only people who built it know. Nick used "MTD" for the Move To Done button on a task that has a green review, and "g2g" for a "good to go" review verdict. New users and agents have no place to look these terms up, so conversations drift into guessing.
@@ -46,3 +46,4 @@ Collect terms from AGENTS.md, docs/, user-docs/, the CLI help and the UI strings
 - 2026-11-26T01:39:46Z · queued message undelivered for 3m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-26T01:39:46Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code unknown) · last assistant: Remote validation is still uploading after a transport retry. The upload has reached about 31%; RepoOS is handling retries, and I’m waiting for either validation or its fallback result. · stderr: 2026-11-26T01:35:00.628250Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out 2026-11-26T01:35:00.680508Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out 2026-11-26T01:35:09.140622Z ERROR codex_core::tools::router: error=write_stdin fa…
 - 2026-11-26T01:39:47Z · message_delivered: 1 message(s)
+- 2026-11-26T01:41:28Z · message_queued at 2026-11-26T01:41:28.576Z
