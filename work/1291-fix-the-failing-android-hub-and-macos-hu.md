@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 968178
-last_close_out_gate_at: "2026-11-26T04:33:59.565Z"
 id: "1291"
 title: Fix the failing Android Hub and macOS Hub GitHub workflows
 type: bug
-status: review
+status: done
 priority: p2
 area: [macos, mobile]
+merged_commit: 6b31b18c65ca8c7eebefbd5c4a125f2ae209343e
 assigned_to: ai
 created_by: t@t
 branch: feat/fix-the-failing-android-hub-and-macos-hu
@@ -14,6 +13,8 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-26T03:56:34Z"
 updated_at: "2026-11-26T04:33:59Z"
+last_close_out_gate_ms: 968178
+last_close_out_gate_at: "2026-11-26T04:33:59.565Z"
 review_passes: 1
 ---
 ## Problem
