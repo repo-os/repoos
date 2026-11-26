@@ -283,7 +283,9 @@ function onTouchMove(ev: TouchEvent) {
 function onTouchEnd() {
   pullTracking = false;
   pullStartY = null;
-  if (!props.refreshing) pullDistance.value = 0;
+  // Once released, the refresh prop owns the indicator lifecycle. In
+  // particular, never leave pull progress behind while an async refresh runs.
+  pullDistance.value = 0;
 }
 
 onBeforeUnmount(() => {
@@ -322,8 +324,28 @@ onBeforeUnmount(() => {
         @touchcancel="onTouchEnd"
         @contextmenu.prevent
       >
-        <li v-if="refreshing || pullDistance > 0" class="pull-refresh-indicator" aria-live="polite">
-          <span :class="{ spinning: refreshing }" aria-hidden="true">↻</span>
+        <li
+          class="pull-refresh-indicator"
+          :class="{ 'is-visible': refreshing || pullDistance > 0 }"
+          :style="{ '--pull-progress': `${Math.min(1, pullDistance / 28)}` }"
+          aria-live="polite"
+          :aria-busy="refreshing ? 'true' : 'false'"
+        >
+          <svg
+            class="pull-refresh-spinner"
+            :class="{ spinning: refreshing }"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+            <defs>
+              <linearGradient id="hub-refresh-gradient" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#f472b6" />
+                <stop offset="100%" stop-color="#8b5cf6" />
+              </linearGradient>
+            </defs>
+            <circle class="spinner-track" cx="12" cy="12" r="9" />
+            <circle class="spinner-progress" cx="12" cy="12" r="9" />
+          </svg>
         </li>
         <li
           v-for="server in displayed"
