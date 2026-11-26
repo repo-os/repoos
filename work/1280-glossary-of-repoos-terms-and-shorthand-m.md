@@ -1,6 +1,4 @@
 ---
-check_retry_count: 1
-last_check_failure: "repoos check at 2026-11-26T02:05:36.937Z: repoos check failed: ui verification failed (2 issue(s)): [route] auto: matched src/ui-app/** · phone 390x844: declared route / but the browser landed on /work (login or redirect?) (captured http://127.0.0.1:43183/work) (http://127.0.0.1:43183/work); [route] auto: matched src/ui-app/** · desktop 1280x800: declared route / but the browser landed on /work (login or redirect?) (captured http://127.0.0.1:43183/work) (http://127.0.0.1:43183/work)"
 id: "1280"
 title: "Glossary of RepoOS terms and shorthand (MTD, g2g, ...)"
 type: feature
@@ -11,7 +9,9 @@ assigned_to: ai
 created_by: t@t
 branch: feat/glossary-of-repoos-terms-and-shorthand-m
 created_at: "2026-11-20T11:24:11Z"
-updated_at: "2026-11-26T02:05:36Z"
+updated_at: "2026-11-26T02:06:33Z"
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-26T02:05:36.937Z: repoos check failed: ui verification failed (2 issue(s)): [route] auto: matched src/ui-app/** · phone 390x844: declared route / but the browser landed on /work (login or redirect?) (captured http://127.0.0.1:43183/work) (http://127.0.0.1:43183/work); [route] auto: matched src/ui-app/** · desktop 1280x800: declared route / but the browser landed on /work (login or redirect?) (captured http://127.0.0.1:43183/work) (http://127.0.0.1:43183/work)"
 ---
 ## Problem
 RepoOS is full of shorthand that only people who built it know. Nick used "MTD" for the Move To Done button on a task that has a green review, and "g2g" for a "good to go" review verdict. New users and agents have no place to look these terms up, so conversations drift into guessing.
@@ -29,6 +29,24 @@ RepoOS is full of shorthand that only people who built it know. Nick used "MTD" 
 
 ## Notes for AI
 Collect terms from AGENTS.md, docs/, user-docs/, the CLI help and the UI strings, and ask the human about any term whose meaning is unclear rather than inventing a definition. Nick's own shorthand (MTD, g2g) came from chat, so keep it exactly as written.
+
+## Shots
+```json
+[
+{
+  "label": "Settings glossary help link",
+  "target": "default",
+  "route": "/settings",
+  "highlight": "a.page-help-link[href*=glossary]"
+},
+{
+  "label": "RepoOS glossary page",
+  "target": "Docs site",
+  "route": "/glossary",
+  "highlight": ".vp-doc h1"
+}
+]
+```
 
 ## Activity
 
@@ -54,4 +72,4 @@ Collect terms from AGENTS.md, docs/, user-docs/, the CLI help and the UI strings
 - 2026-11-26T02:05:33Z · note: ui verification failed: ui verification failed (2 issue(s)): [route] auto: matched src/ui-app/** · phone 390x844: declared route / but the browser landed on /work (login or redirect?) (captured http://127.0.0.1:43183/work) (http://127.0.0.1:43183/work); [route] auto: matched src/ui-app/** · desktop 1280x800: declared route / but the browser landed on /work (login or redirect?) (captured http://127.0.0.1:43183/work) (http://127.0.0.1:43183/work)
 - 2026-11-26T02:05:33Z · message_queued at 2026-11-26T02:05:33.788Z
 - 2026-11-26T02:05:36Z · message_delivered: 1 message(s)
-
+- 2026-11-26T02:06:33Z · body
