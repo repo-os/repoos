@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/glossary-of-repoos-terms-and-shorthand-m
 created_at: "2026-11-20T11:24:11Z"
-updated_at: "2026-11-26T01:41:28Z"
+updated_at: "2026-11-26T01:46:28Z"
 ---
 ## Problem
 RepoOS is full of shorthand that only people who built it know. Nick used "MTD" for the Move To Done button on a task that has a green review, and "g2g" for a "good to go" review verdict. New users and agents have no place to look these terms up, so conversations drift into guessing.
@@ -48,3 +48,4 @@ Collect terms from AGENTS.md, docs/, user-docs/, the CLI help and the UI strings
 - 2026-11-26T01:39:47Z · message_delivered: 1 message(s)
 - 2026-11-26T01:41:28Z · message_queued at 2026-11-26T01:41:28.576Z
 - 2026-11-26T01:41:28Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-26T01:46:28Z · CTO nudge: held — handoff gate is running
