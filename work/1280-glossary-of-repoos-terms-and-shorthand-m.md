@@ -34,3 +34,4 @@ Collect terms from AGENTS.md, docs/, user-docs/, the CLI help and the UI strings
 - 2026-11-26T00:09:13Z · status inbox→ready
 - 2026-11-26T00:09:15Z · status ready→active, branch
 - 2026-11-26T00:31:39Z · message_queued at 2026-11-26T00:31:39.048Z
+- 2026-11-26T00:31:39Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
