@@ -11,7 +11,7 @@ branch: feat/hand-off-finish-or-clearly-report-an-unc
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-25T23:55:22Z"
-updated_at: "2026-11-25T23:55:29Z"
+updated_at: "2026-11-26T00:13:32Z"
 ---
 ## Problem
 
@@ -47,3 +47,4 @@ Hand-off commits with a path list (`git commit -m <msg> -- <paths>`: `commitStag
 - 2026-11-25T23:55:27Z · status inbox→ready
 - 2026-11-25T23:55:28Z · cli_override, model_override
 - 2026-11-25T23:55:29Z · status ready→active, branch
+- 2026-11-26T00:13:32Z · message_queued at 2026-11-26T00:13:32.053Z
