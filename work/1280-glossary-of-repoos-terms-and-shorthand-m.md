@@ -74,3 +74,4 @@ Collect terms from AGENTS.md, docs/, user-docs/, the CLI help and the UI strings
 - 2026-11-26T02:06:33Z · body
 - 2026-11-26T02:11:28Z · CTO nudge: held — handoff gate is running
 - 2026-11-26T02:12:56Z · message_queued at 2026-11-26T02:12:56.809Z
+- 2026-11-26T02:12:56Z · handoff failed · handoff recovery attempted · finalization failed
