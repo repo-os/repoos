@@ -3,6 +3,9 @@ id: "1290"
 title: "Hand-off: finish or clearly report an uncommitted merge"
 type: bug
 status: active
+needs_input: true
+needs_input_reason: check-wait
+needs_input_detail: "waiting: waiting for serialized local fallback (1 ahead, position 2); slot holder 45123 is dead for 1h 16m"
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -11,7 +14,7 @@ branch: feat/hand-off-finish-or-clearly-report-an-unc
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-25T23:55:22Z"
-updated_at: "2026-11-26T01:34:55Z"
+updated_at: "2026-11-26T01:36:28Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-26T01:05:31.008Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 ---
@@ -58,3 +61,5 @@ Hand-off commits with a path list (`git commit -m <msg> -- <paths>`: `commitStag
 - 2026-11-26T01:34:48Z · note: handoff requested (cli)
 - 2026-11-26T01:34:55Z · needs_input
 - 2026-11-26T01:34:55Z · message_delivered: 1 message(s)
+- 2026-11-26T01:35:01Z · watchdog: check wait escalated · waiting: waiting for serialized local fallback (1 ahead, position 2); slot holder 45123 is dead for 1h 16m · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-11-26T01:36:28Z · CTO nudge: held — handoff gate is running
