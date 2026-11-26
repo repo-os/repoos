@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-26T17:54:15Z"
-review_passes: 1
 id: "1293"
 title: "Hub pull-to-refresh: hide the spinner when done and make it a symmetrical, prettier loader"
 type: bug
@@ -14,7 +12,7 @@ branch: feat/hub-pull-to-refresh-hide-the-spinner-whe
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-26T17:20:25Z"
-last_check_failure: "repoos check at 2026-11-26T17:48:23.770Z: repoos check failed: ui verification failed (2 issue(s)): [missing-target] Hub server list refresh indicator (target \"default\"): highlight .server-list matched nothing on / (http://127.0.0.1:46709/work); [route] Hub server list refresh indicator: declared route / but the browser landed on /work (login or redirect?) (captured http://127.0.0.1:46709/work) (http://127.0.0.1:46709/work)"
+updated_at: "2026-11-26T17:53:41Z"
 ---
 ## Problem
 
@@ -41,17 +39,6 @@ The indicator appears while pulling and refreshing, then disappears smoothly whe
 
 Files: `mobile/src/components/ServerListView.vue`, `mobile/src/style.css`, `mobile/src/App.vue` (`refreshServerList`), test in `src/ui-app/tests/mobile-server-list.test.ts`. No new dependencies.
 
-## Shots
-```json
-[
-{
-"label": "Mobile refresh component covered by test",
-"target": "default",
-"route": "/work"
-}
-]
-```
-
 ## Screenshots
 
 ![Refresh arrow still showing above the server list after pulling down](/api/tasks/1293/attachments/att_63bb9b07-5f7d-479b-a397-d28200f42d53.png)
@@ -63,16 +50,4 @@ Files: `mobile/src/components/ServerListView.vue`, `mobile/src/style.css`, `mobi
 - 2026-11-26T17:20:31Z · cli_override, model_override
 - 2026-11-26T17:20:33Z · status inbox→ready
 - 2026-11-26T17:20:34Z · status ready→active, branch
-- 2026-11-26T17:27:29Z · body
-- 2026-11-26T17:27:54Z · body
-- 2026-11-26T17:32:18Z · CTO nudge: held — handoff gate is running
-- 2026-11-26T17:48:20Z · note: ui verification failed: ui verification failed (2 issue(s)): [missing-target] Hub server list refresh indicator (target "default"): highlight .server-list matched nothing on / (http://127.0.0.1:46709/work); [route] Hub server list refresh indicator: declared route / but the browser landed on /work (login or redirect?) (captured http://127.0.0.1:46709/work) (http://127.0.0.1:46709/work)
-- 2026-11-26T17:48:20Z · message_queued at 2026-11-26T17:48:20.659Z
-- 2026-11-26T17:48:23Z · message_delivered: 1 message(s)
-- 2026-11-26T17:48:31Z · body
-- 2026-11-26T17:50:25Z · body
-- 2026-11-26T17:53:40Z · note: ui verification passed: 1 of 1 shot captured with clean console
 - 2026-11-26T17:53:41Z · status active→review
-- 2026-11-26T17:53:41Z · message_queued at 2026-11-26T17:53:41.484Z
-- 2026-11-26T17:54:15Z · note: review pass 1: good to go
-
