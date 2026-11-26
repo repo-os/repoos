@@ -12,7 +12,7 @@ branch: feat/hub-pull-to-refresh-hide-the-spinner-whe
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-26T17:20:25Z"
-updated_at: "2026-11-26T17:27:54Z"
+updated_at: "2026-11-26T17:32:18Z"
 ---
 ## Problem
 
@@ -43,10 +43,10 @@ Files: `mobile/src/components/ServerListView.vue`, `mobile/src/style.css`, `mobi
 ```json
 [
 {
-  "label": "Hub server list refresh indicator",
-  "target": "default",
-  "route": "/",
-  "highlight": ".server-list"
+"label": "Hub server list refresh indicator",
+"target": "default",
+"route": "/",
+"highlight": ".server-list"
 }
 ]
 ```
@@ -64,3 +64,4 @@ Files: `mobile/src/components/ServerListView.vue`, `mobile/src/style.css`, `mobi
 - 2026-11-26T17:20:34Z · status ready→active, branch
 - 2026-11-26T17:27:29Z · body
 - 2026-11-26T17:27:54Z · body
+- 2026-11-26T17:32:18Z · CTO nudge: held — handoff gate is running
