@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/glossary-of-repoos-terms-and-shorthand-m
 created_at: "2026-11-20T11:24:11Z"
-updated_at: "2026-11-26T02:45:26Z"
+updated_at: "2026-11-26T02:45:43Z"
 last_close_out_gate_ms: 684331
 last_close_out_gate_at: "2026-11-26T02:45:26.425Z"
 review_passes: 1
@@ -88,4 +88,4 @@ Collect terms from AGENTS.md, docs/, user-docs/, the CLI help and the UI strings
 - 2026-11-26T02:32:06Z · message_queued at 2026-11-26T02:32:06.850Z
 - 2026-11-26T02:32:51Z · note: review pass 1: good to go
 - 2026-11-26T02:45:26Z · close-out gate completed in 684s
-
+- 2026-11-26T02:45:43Z · status done→done, release:success
