@@ -2,11 +2,11 @@ import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { REVIEW_VERDICTS } from "./review-verdict.js";
-import { STATUSES } from "./types.js";
+import { REVIEW_VERDICTS } from "../../core/review-verdict.js";
+import { STATUSES } from "../../core/types.js";
 
 const glossary = readFileSync(
-  resolve(dirname(fileURLToPath(import.meta.url)), "../../user-docs/glossary.md"),
+  resolve(dirname(fileURLToPath(import.meta.url)), "../../../user-docs/glossary.md"),
   "utf8",
 );
 
