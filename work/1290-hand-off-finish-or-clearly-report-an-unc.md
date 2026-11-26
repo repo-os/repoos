@@ -48,3 +48,4 @@ Hand-off commits with a path list (`git commit -m <msg> -- <paths>`: `commitStag
 - 2026-11-25T23:55:28Z · cli_override, model_override
 - 2026-11-25T23:55:29Z · status ready→active, branch
 - 2026-11-26T00:13:32Z · message_queued at 2026-11-26T00:13:32.053Z
+- 2026-11-26T00:13:32Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
