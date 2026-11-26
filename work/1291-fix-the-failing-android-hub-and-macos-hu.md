@@ -12,7 +12,7 @@ branch: feat/fix-the-failing-android-hub-and-macos-hu
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-26T03:56:34Z"
-updated_at: "2026-11-26T04:34:16Z"
+updated_at: "2026-11-26T17:20:37Z"
 last_close_out_gate_ms: 968178
 last_close_out_gate_at: "2026-11-26T04:33:59.565Z"
 review_passes: 1
@@ -56,3 +56,4 @@ All three workflows get past setup and build on GitHub, with the same release ou
 - 2026-11-26T04:05:30Z · note: review pass 1: good to go
 - 2026-11-26T04:33:59Z · close-out gate completed in 968s
 - 2026-11-26T04:34:16Z · status done→done, release:success
+- 2026-11-26T17:20:37Z · message_dropped: 1 queued message(s) discarded — task is done
