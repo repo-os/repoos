@@ -50,3 +50,4 @@ Collect terms from AGENTS.md, docs/, user-docs/, the CLI help and the UI strings
 - 2026-11-26T01:41:28Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-26T01:46:28Z · CTO nudge: held — handoff gate is running
 - 2026-11-26T02:05:33Z · note: ui verification failed: ui verification failed (2 issue(s)): [route] auto: matched src/ui-app/** · phone 390x844: declared route / but the browser landed on /work (login or redirect?) (captured http://127.0.0.1:43183/work) (http://127.0.0.1:43183/work); [route] auto: matched src/ui-app/** · desktop 1280x800: declared route / but the browser landed on /work (login or redirect?) (captured http://127.0.0.1:43183/work) (http://127.0.0.1:43183/work)
+- 2026-11-26T02:05:33Z · message_queued at 2026-11-26T02:05:33.788Z
