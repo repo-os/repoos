@@ -63,3 +63,4 @@ Hand-off commits with a path list (`git commit -m <msg> -- <paths>`: `commitStag
 - 2026-11-26T01:52:16Z · watchdog: check wait ended or recovered — cleared needs_input
 - 2026-11-26T01:52:58Z · status active→review
 - 2026-11-26T01:52:58Z · message_queued at 2026-11-26T01:52:58.453Z
+- 2026-11-26T01:52:58Z · note: shots: skipped — the diff (8 changed paths) touches no capture target's globs — no UI change to capture
