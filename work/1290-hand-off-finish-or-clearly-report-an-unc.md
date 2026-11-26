@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-11-26T01:53:42Z"
-review_passes: 1
+last_close_out_gate_ms: 160912
+last_close_out_gate_at: "2026-11-26T02:12:34.062Z"
 id: "1290"
 title: "Hand-off: finish or clearly report an uncommitted merge"
 type: bug
@@ -13,6 +13,8 @@ branch: feat/hand-off-finish-or-clearly-report-an-unc
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-25T23:55:22Z"
+updated_at: "2026-11-26T02:12:34Z"
+review_passes: 1
 last_check_failure: "repoos check at 2026-11-26T01:05:31.008Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 ---
 ## Problem
@@ -66,4 +68,5 @@ Hand-off commits with a path list (`git commit -m <msg> -- <paths>`: `commitStag
 - 2026-11-26T01:52:58Z · message_queued at 2026-11-26T01:52:58.453Z
 - 2026-11-26T01:52:58Z · note: shots: skipped — the diff (8 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-26T01:53:42Z · note: review pass 1: good to go
+- 2026-11-26T02:12:34Z · close-out gate completed in 161s
 
