@@ -66,3 +66,4 @@ Files: `mobile/src/components/ServerListView.vue`, `mobile/src/style.css`, `mobi
 - 2026-11-26T17:27:54Z · body
 - 2026-11-26T17:32:18Z · CTO nudge: held — handoff gate is running
 - 2026-11-26T17:48:20Z · note: ui verification failed: ui verification failed (2 issue(s)): [missing-target] Hub server list refresh indicator (target "default"): highlight .server-list matched nothing on / (http://127.0.0.1:46709/work); [route] Hub server list refresh indicator: declared route / but the browser landed on /work (login or redirect?) (captured http://127.0.0.1:46709/work) (http://127.0.0.1:46709/work)
+- 2026-11-26T17:48:20Z · message_queued at 2026-11-26T17:48:20.659Z
