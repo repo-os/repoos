@@ -793,6 +793,9 @@ const boardColumnFields = computed(() => {
     .slice()
     .sort((a, b) => (order.get(a.key) ?? 99) - (order.get(b.key) ?? 99));
 });
+const emptyColumnTextField = computed(() =>
+  config.schema.find((f) => f.key === "board.emptyColumnText"),
+);
 
 function effectiveBoardColumnLabel(status: (typeof BOARD_COLUMN_STATUSES)[number]): string {
   const key = `board.columns.${status}`;
@@ -2599,6 +2602,29 @@ onUnmounted(() => {
               <div class="setting-desc" style="padding: 4px 0 12px">
                 Rename the six Work board columns in the UI and CLI. Status IDs, transitions, and
                 task frontmatter are unchanged — these are display labels only.
+              </div>
+              <div
+                v-if="emptyColumnTextField"
+                id="setting-board.emptyColumnText"
+                class="setting-row"
+              >
+                <div class="setting-info">
+                  <div class="setting-label">{{ emptyColumnTextField.label }}</div>
+                  <div class="setting-desc">
+                    Use this text in every empty Work Queue column. Leave blank for each column's
+                    default.
+                  </div>
+                </div>
+                <div class="setting-input">
+                  <Input
+                    :aria-label="emptyColumnTextField.label"
+                    :model-value="String(form['board.emptyColumnText'] ?? '')"
+                    type="text"
+                    placeholder="No drafts yet"
+                    :disabled="config.saving"
+                    @update:model-value="(v) => (form['board.emptyColumnText'] = v)"
+                  />
+                </div>
               </div>
               <div
                 v-for="f in boardColumnFields"

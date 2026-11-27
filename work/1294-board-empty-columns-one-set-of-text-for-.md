@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 105156
-last_close_out_gate_at: "2026-11-27T23:33:50.474Z"
 id: "1294"
 title: "Board empty columns: one set of text for all themes, plus a setting to override it"
 type: feature
-status: review
+status: done
 priority: p2
 area: [web, core]
+merged_commit: 99140124bd3a2e3d502159483fb0fa38620a3d05
 assigned_to: ai
 created_by: t@t
 branch: feat/board-empty-columns-one-set-of-text-for-
@@ -14,6 +13,8 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-27T22:00:43Z"
 updated_at: "2026-11-27T23:33:50Z"
+last_close_out_gate_ms: 105156
+last_close_out_gate_at: "2026-11-27T23:33:50.474Z"
 review_passes: 1
 ---
 ## Problem
