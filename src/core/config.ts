@@ -1770,8 +1770,7 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
     if (typeof doneCollapsedByDefault === "boolean")
       cfg.board = { ...cfg.board, doneCollapsedByDefault };
     const emptyColumnText = get("board.emptyColumnText");
-    if (typeof emptyColumnText === "string")
-      cfg.board = { ...cfg.board, emptyColumnText };
+    if (typeof emptyColumnText === "string") cfg.board = { ...cfg.board, emptyColumnText };
     const popoverClose = get("board.agentPopoverCloseSeconds");
     const popoverCloseNum =
       typeof popoverClose === "number"
@@ -3465,7 +3464,8 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       tier: "live",
       restartRequired: false,
       default: "",
-      description: "Use this text for every empty Work Queue column. Leave blank to use each column's default.",
+      description:
+        "Use this text for every empty Work Queue column. Leave blank to use each column's default.",
     },
     {
       key: "attention.spendAlertUsd",

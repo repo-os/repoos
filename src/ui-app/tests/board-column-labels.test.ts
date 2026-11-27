@@ -375,9 +375,7 @@ describe("SettingsView board column labels (#0499)", () => {
     const config = useConfigStore();
     const saveSpy = vi.spyOn(config, "save").mockResolvedValue(undefined);
     const wrapper = await mountSettings("advanced");
-    const row = wrapper.find(
-      '#settings-panel-advanced [id="setting-board.emptyColumnText"]',
-    );
+    const row = wrapper.find('#settings-panel-advanced [id="setting-board.emptyColumnText"]');
     expect(row).not.toBeNull();
     const input = row.element.querySelector("input")!;
     expect(input.getAttribute("aria-label")).toBe("Empty column text");

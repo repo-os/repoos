@@ -42,14 +42,11 @@ describe("Work Queue empty column text", () => {
     }
   });
 
-  it.each(["-", "Shared empty message"]) (
-    "applies %j to every empty column",
-    (override) => {
-      const wrapper = mountEmptyColumn("draft", "gen z", override);
-      expect(wrapper.get(".col-empty").text()).toBe(override);
-      wrapper.unmount();
-    },
-  );
+  it.each(["-", "Shared empty message"])("applies %j to every empty column", (override) => {
+    const wrapper = mountEmptyColumn("draft", "gen z", override);
+    expect(wrapper.get(".col-empty").text()).toBe(override);
+    wrapper.unmount();
+  });
 
   it("treats a whitespace-only setting as unset", () => {
     const wrapper = mountEmptyColumn("draft", "gen z", "   ");

@@ -55,8 +55,11 @@ const collapsed = computed(() => !props.forceExpand && isColumnCollapsed(props.c
 const displayEmpty = computed(() => {
   const board = config.data?.board as { emptyColumnText?: string } | undefined;
   const override = board?.emptyColumnText;
-  return (typeof override === "string" && override.trim() ? override : "") ||
-    DEFAULT_EMPTY[props.col.id] || "";
+  return (
+    (typeof override === "string" && override.trim() ? override : "") ||
+    DEFAULT_EMPTY[props.col.id] ||
+    ""
+  );
 });
 
 watch(
