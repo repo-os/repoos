@@ -74,3 +74,4 @@ Start at `src/ui-app/src/components/BoardColumn.vue` (`GENZ_EMPTY`, `PLAIN_EMPTY
 - 2026-11-27T22:00:50Z · status ready→active, branch
 - 2026-11-27T22:04:03Z · body
 - 2026-11-27T22:11:48Z · message_queued at 2026-11-27T22:11:48.156Z
+- 2026-11-27T22:11:48Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
