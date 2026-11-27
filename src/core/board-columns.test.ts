@@ -7,6 +7,9 @@ import {
   resolveColumnLabels,
   patchTomlConfig,
   DEFAULT_COLUMN_LABELS,
+  getConfigSchema,
+  loadConfig,
+  SUPPORTED_TOML_KEYS,
 } from "./config.js";
 
 describe("parseBoardColumns", () => {
@@ -202,6 +205,45 @@ describe("patchTomlConfig with board.columns", () => {
       .split("\n")
       .filter((l) => l.trim().startsWith("board.columns.draft"));
     expect(rootScoped).toHaveLength(0);
+  });
+});
+
+describe("board.emptyColumnText config", () => {
+  const roots: string[] = [];
+  afterEach(() => {
+    for (const root of roots) rmSync(root, { recursive: true, force: true });
+    roots.length = 0;
+  });
+
+  function configFromToml(value?: string) {
+    const root = mkdtempSync(join(tmpdir(), "repoos-empty-column-text-"));
+    roots.push(root);
+    writeFileSync(
+      join(root, "repoos.toml"),
+      value === undefined ? "" : `[board]\nemptyColumnText = ${JSON.stringify(value)}\n`,
+      "utf8",
+    );
+    return loadConfig(root);
+  }
+
+  it.each([
+    [undefined, ""],
+    ["-", "-"],
+    ["   ", "   "],
+  ])("loads %j from [board] as %j", (value, expected) => {
+    expect(configFromToml(value as string | undefined).board?.emptyColumnText).toBe(expected);
+  });
+
+  it("registers the live setting and supported TOML key", () => {
+    const field = getConfigSchema().find((item) => item.key === "board.emptyColumnText");
+    expect(field).toMatchObject({
+      label: "Empty column text",
+      type: "string",
+      tier: "live",
+      restartRequired: false,
+      default: "",
+    });
+    expect(SUPPORTED_TOML_KEYS).toContain("board.emptyColumnText");
   });
 });
 

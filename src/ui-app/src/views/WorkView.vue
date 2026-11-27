@@ -775,7 +775,6 @@ function openHeld(task: Task): void {
           :col="filterCol!"
           :bar-color="filterCol!.id === 'draft' ? DRAFT_BAR : ''"
           :tasks="visibleByStatus(filterCol!.id)"
-          :empty-text="filterCol!.id === 'draft' ? '—' : undefined"
           force-expand
           :drag-enabled="false"
           :highlight-id="boardKey.highlightId.value"
@@ -786,7 +785,6 @@ function openHeld(task: Task): void {
           :col="DRAFT_COL"
           :bar-color="DRAFT_BAR"
           :tasks="visibleByStatus(DRAFT_COL.id)"
-          empty-text="—"
           :highlight-id="boardKey.highlightId.value"
         />
         <BoardColumn

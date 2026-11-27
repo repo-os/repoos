@@ -217,7 +217,7 @@ describe("WorkView board column labels", () => {
     wrapper.unmount();
   });
 
-  it("uses the same dash for an empty Draft column in board and filtered views", async () => {
+  it("uses the same default empty text for Draft in board and filtered views", async () => {
     await loadConfig();
     const repo = useRepoStore();
     repo.tasks = [];
@@ -227,14 +227,13 @@ describe("WorkView board column labels", () => {
 
     let draftColumn = wrapper.findAllComponents({ name: "BoardColumn" })[0]!;
     expect(draftColumn.props("col").id).toBe("draft");
-    expect(draftColumn.props("emptyText")).toBe("—");
+    expect(draftColumn.props("emptyText")).toBeUndefined();
 
     routeState.query = { status: "draft" };
     await flushPromises();
     draftColumn = wrapper.findComponent({ name: "BoardColumn" });
     expect(draftColumn.props("col").id).toBe("draft");
-    expect(draftColumn.props("emptyText")).toBe("—");
-    expect(wrapper.text()).not.toContain("No drafts yet");
+    expect(draftColumn.props("emptyText")).toBeUndefined();
     routeState.query = {};
     await flushPromises();
     wrapper.unmount();
@@ -321,9 +320,13 @@ function settingsConfigResponse(boardOverrides?: Record<string, string>) {
   return {
     config: {
       maxActiveTasks: 3,
-      board: { columns },
+      board: { columns, emptyColumnText: boardOverrides?.emptyColumnText ?? "" },
     },
-    schema: [schemaField("maxActiveTasks"), ...boardColumnSchema()],
+    schema: [
+      schemaField("maxActiveTasks"),
+      { ...schemaField("board.emptyColumnText"), label: "Empty column text" },
+      ...boardColumnSchema(),
+    ],
   };
 }
 
@@ -365,6 +368,24 @@ describe("SettingsView board column labels (#0499)", () => {
     expect(boardColumnDraftInput()).not.toBeNull();
     expect(document.getElementById("setting-board.columns.done")).not.toBeNull();
     advanced.unmount();
+  });
+
+  it("shows the Empty column text control on Advanced and saves the override", async () => {
+    await loadSettingsConfig();
+    const config = useConfigStore();
+    const saveSpy = vi.spyOn(config, "save").mockResolvedValue(undefined);
+    const wrapper = await mountSettings("advanced");
+    const row = document.getElementById("setting-board.emptyColumnText");
+    expect(row).not.toBeNull();
+    expect(document.getElementById("settings-panel-advanced")?.contains(row!)).toBe(true);
+    const input = row!.querySelector("input")!;
+    expect(input.getAttribute("aria-label")).toBe("Empty column text");
+    await new DOMWrapper(input).setValue("-");
+    await flushPromises();
+    await vi.waitFor(() => expect(saveSpy).toHaveBeenCalled(), { timeout: 3000 });
+    expect(saveSpy.mock.calls.at(-1)?.[0]).toMatchObject({ "board.emptyColumnText": "-" });
+    saveSpy.mockRestore();
+    wrapper.unmount();
   });
 
   it("auto-save PATCH includes a new column label", async () => {
