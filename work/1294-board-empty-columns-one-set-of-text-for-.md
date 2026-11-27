@@ -11,7 +11,7 @@ branch: feat/board-empty-columns-one-set-of-text-for-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-27T22:00:43Z"
-updated_at: "2026-11-27T23:16:49Z"
+updated_at: "2026-11-27T23:20:33Z"
 ---
 ## Problem
 
@@ -90,3 +90,4 @@ Start at `src/ui-app/src/components/BoardColumn.vue` (`GENZ_EMPTY`, `PLAIN_EMPTY
 - 2026-11-27T22:53:20Z · body
 - 2026-11-27T23:14:24Z · body
 - 2026-11-27T23:16:49Z · CTO nudge: held — handoff gate is running
+- 2026-11-27T23:20:33Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
