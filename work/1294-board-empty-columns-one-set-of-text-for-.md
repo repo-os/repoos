@@ -92,3 +92,4 @@ Start at `src/ui-app/src/components/BoardColumn.vue` (`GENZ_EMPTY`, `PLAIN_EMPTY
 - 2026-11-27T23:16:49Z · CTO nudge: held — handoff gate is running
 - 2026-11-27T23:20:33Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
 - 2026-11-27T23:20:34Z · status active→review
+- 2026-11-27T23:20:34Z · message_queued at 2026-11-27T23:20:34.982Z
