@@ -11,7 +11,7 @@ branch: feat/board-empty-columns-one-set-of-text-for-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-27T22:00:43Z"
-updated_at: "2026-11-27T22:00:50Z"
+updated_at: "2026-11-27T22:04:03Z"
 ---
 ## Problem
 
@@ -48,6 +48,19 @@ Settings gains one text field, "Empty column text". When filled (for example `-`
 
 Start at `src/ui-app/src/components/BoardColumn.vue` (`GENZ_EMPTY`, `PLAIN_EMPTY`) and `src/ui-app/src/views/WorkView.vue` (the two `empty-text` dash props). Follow how `board.doneCollapsedByDefault` is wired through `src/core/config.ts` and `src/core/types.ts`. No new dependencies and no other new UI.
 
+## Shots
+```json
+[
+{
+  "label": "Work Queue empty column copy",
+  "target": "default",
+  "route": "/work",
+  "highlight": ".board",
+  "state": "work:empty"
+}
+]
+```
+
 ## Screenshots
 
 ![Work Queue empty columns](/api/tasks/1294/attachments/att_9fa54638-2b31-42d1-9d6d-1a0715b1271f.webp)
@@ -59,3 +72,4 @@ Start at `src/ui-app/src/components/BoardColumn.vue` (`GENZ_EMPTY`, `PLAIN_EMPTY
 - 2026-11-27T22:00:47Z · cli_override, model_override
 - 2026-11-27T22:00:49Z · status inbox→ready
 - 2026-11-27T22:00:50Z · status ready→active, branch
+- 2026-11-27T22:04:03Z · body
