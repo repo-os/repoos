@@ -13,7 +13,7 @@ branch: feat/hub-pull-to-refresh-hide-the-spinner-whe
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-26T17:20:25Z"
-updated_at: "2026-11-26T19:17:56Z"
+updated_at: "2026-11-27T22:00:53Z"
 last_close_out_gate_ms: 109536
 last_close_out_gate_at: "2026-11-26T19:17:34.093Z"
 review_passes: 1
@@ -80,3 +80,4 @@ Files: `mobile/src/components/ServerListView.vue`, `mobile/src/style.css`, `mobi
 - 2026-11-26T17:54:15Z · note: review pass 1: good to go
 - 2026-11-26T19:17:34Z · close-out gate completed in 110s
 - 2026-11-26T19:17:56Z · status done→done, release:success
+- 2026-11-27T22:00:53Z · message_dropped: 1 queued message(s) discarded — task is done
