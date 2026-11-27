@@ -11,7 +11,7 @@ branch: feat/board-empty-columns-one-set-of-text-for-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-27T22:00:43Z"
-updated_at: "2026-11-27T22:04:03Z"
+updated_at: "2026-11-27T22:11:48Z"
 ---
 ## Problem
 
@@ -52,11 +52,11 @@ Start at `src/ui-app/src/components/BoardColumn.vue` (`GENZ_EMPTY`, `PLAIN_EMPTY
 ```json
 [
 {
-  "label": "Work Queue empty column copy",
-  "target": "default",
-  "route": "/work",
-  "highlight": ".board",
-  "state": "work:empty"
+"label": "Work Queue empty column copy",
+"target": "default",
+"route": "/work",
+"highlight": ".board",
+"state": "work:empty"
 }
 ]
 ```
@@ -73,3 +73,4 @@ Start at `src/ui-app/src/components/BoardColumn.vue` (`GENZ_EMPTY`, `PLAIN_EMPTY
 - 2026-11-27T22:00:49Z · status inbox→ready
 - 2026-11-27T22:00:50Z · status ready→active, branch
 - 2026-11-27T22:04:03Z · body
+- 2026-11-27T22:11:48Z · message_queued at 2026-11-27T22:11:48.156Z
