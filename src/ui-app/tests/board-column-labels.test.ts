@@ -375,10 +375,11 @@ describe("SettingsView board column labels (#0499)", () => {
     const config = useConfigStore();
     const saveSpy = vi.spyOn(config, "save").mockResolvedValue(undefined);
     const wrapper = await mountSettings("advanced");
-    const row = document.getElementById("setting-board.emptyColumnText");
+    const row = wrapper.find(
+      '#settings-panel-advanced [id="setting-board.emptyColumnText"]',
+    );
     expect(row).not.toBeNull();
-    expect(document.getElementById("settings-panel-advanced")?.contains(row!)).toBe(true);
-    const input = row!.querySelector("input")!;
+    const input = row.element.querySelector("input")!;
     expect(input.getAttribute("aria-label")).toBe("Empty column text");
     await new DOMWrapper(input).setValue("-");
     await flushPromises();
