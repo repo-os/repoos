@@ -2,7 +2,7 @@
 id: "1294"
 title: "Board empty columns: one set of text for all themes, plus a setting to override it"
 type: feature
-status: active
+status: review
 priority: p2
 area: [web, core]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/board-empty-columns-one-set-of-text-for-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-27T22:00:43Z"
-updated_at: "2026-11-27T22:00:50Z"
+updated_at: "2026-11-27T23:20:34Z"
 ---
 ## Problem
 
@@ -59,3 +59,4 @@ Start at `src/ui-app/src/components/BoardColumn.vue` (`GENZ_EMPTY`, `PLAIN_EMPTY
 - 2026-11-27T22:00:47Z · cli_override, model_override
 - 2026-11-27T22:00:49Z · status inbox→ready
 - 2026-11-27T22:00:50Z · status ready→active, branch
+- 2026-11-27T23:20:34Z · status active→review
