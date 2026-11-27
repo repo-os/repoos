@@ -11,7 +11,7 @@ branch: feat/board-empty-columns-one-set-of-text-for-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-27T22:00:43Z"
-updated_at: "2026-11-27T22:16:48Z"
+updated_at: "2026-11-27T22:21:48Z"
 ---
 ## Problem
 
@@ -80,3 +80,4 @@ Start at `src/ui-app/src/components/BoardColumn.vue` (`GENZ_EMPTY`, `PLAIN_EMPTY
 - 2026-11-27T22:15:48Z · message_delivered: 1 message(s)
 - 2026-11-27T22:16:48Z · message_queued at 2026-11-27T22:16:48.421Z
 - 2026-11-27T22:16:48Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-27T22:21:48Z · CTO nudge: held — an undelivered message is already queued
