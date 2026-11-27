@@ -19,17 +19,8 @@ import {
   boardMoveRejectionReason,
 } from "../lib/taskTransitions";
 
-const GENZ_EMPTY: Record<string, string> = {
-  draft: "no drafts yet — agent ideas land here",
-  inbox: "all caught up, nothing waiting",
-  active: "nobody's working — go first?",
-  review: "no reviews pending, nice",
-  done: "nothing shipped yet — send it",
-};
-
-// Plain-theme empty copy for the status columns. Draft keeps its explicit dash
-// (WorkView passes it), so only columns without an entry fall back to "—".
-const PLAIN_EMPTY: Record<string, string> = {
+const DEFAULT_EMPTY: Record<string, string> = {
+  draft: "No drafts yet",
   ready: "Nothing ready to start",
   inbox: "Nothing waiting in the inbox",
   active: "Nothing in progress",
@@ -40,7 +31,6 @@ const PLAIN_EMPTY: Record<string, string> = {
 const props = withDefaults(
   defineProps<{
     col: Column;
-    emptyText?: string;
     barColor?: string;
     forceExpand?: boolean;
     dragEnabled?: boolean;
@@ -50,7 +40,6 @@ const props = withDefaults(
     tasks?: Task[] | null;
   }>(),
   {
-    emptyText: "",
     barColor: "",
     forceExpand: false,
     dragEnabled: true,
@@ -63,11 +52,15 @@ const repo = useRepoStore();
 const config = useConfigStore();
 const collapsed = computed(() => !props.forceExpand && isColumnCollapsed(props.col.id));
 
-const displayEmpty = computed(() =>
-  config.uiTheme === "gen z"
-    ? (GENZ_EMPTY[props.col.id] ?? "nothing here yet — add something")
-    : props.emptyText || PLAIN_EMPTY[props.col.id] || "—",
-);
+const displayEmpty = computed(() => {
+  const board = config.data?.board as { emptyColumnText?: string } | undefined;
+  const override = board?.emptyColumnText;
+  return (
+    (typeof override === "string" && override.trim() ? override : "") ||
+    DEFAULT_EMPTY[props.col.id] ||
+    ""
+  );
+});
 
 watch(
   () => repo.loading,

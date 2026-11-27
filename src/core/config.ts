@@ -345,6 +345,7 @@ export const DEFAULT_CONFIG: Omit<RepoOSConfig, "root"> = {
   board: {
     agentPopoverCloseSeconds: 15,
     doneCollapsedByDefault: true,
+    emptyColumnText: "",
   },
   whisper: {
     provider: "none",
@@ -1768,6 +1769,8 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
     const doneCollapsedByDefault = get("board.doneCollapsedByDefault");
     if (typeof doneCollapsedByDefault === "boolean")
       cfg.board = { ...cfg.board, doneCollapsedByDefault };
+    const emptyColumnText = get("board.emptyColumnText");
+    if (typeof emptyColumnText === "string") cfg.board = { ...cfg.board, emptyColumnText };
     const popoverClose = get("board.agentPopoverCloseSeconds");
     const popoverCloseNum =
       typeof popoverClose === "number"
@@ -3455,6 +3458,16 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         "Seconds before the task-card agent popover fades closed. Any hover, focus, or click inside starts the timer again. Set 0 to leave it open until you click away.",
     },
     {
+      key: "board.emptyColumnText",
+      label: "Empty column text",
+      type: "string",
+      tier: "live",
+      restartRequired: false,
+      default: "",
+      description:
+        "Use this text for every empty Work Queue column. Leave blank to use each column's default.",
+    },
+    {
       key: "attention.spendAlertUsd",
       label: "Spend alert threshold (USD)",
       type: "number",
@@ -4861,6 +4874,7 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "worktreeWarnThreshold",
   "board.doneCollapsedByDefault",
   "board.agentPopoverCloseSeconds",
+  "board.emptyColumnText",
   "dev.inspector.enabled",
   "dev.inspector.editorCommand",
   "editor.command",

@@ -368,6 +368,11 @@ worktreeWarnThreshold = 20
 | `worktreeWarnThreshold` | number | `20` | yes | Advisory ceiling on registered git worktrees. Above it the Control page's Codebase card turns amber and the server logs a warning with safe-candidate / retained / external counts. Cleanup itself runs automatically; the warning never blocks a task. Set `0` to disable. |
 | `board.doneCollapsedByDefault` | boolean | `true` | yes | Collapse Done for browsers without a saved board preference. |
 | `board.agentPopoverCloseSeconds` | number | `15` | yes | Seconds before the task-card agent popover fades closed. Hover, focus, or a click inside restarts the timer. `0` leaves the popover open until it is dismissed. |
+| `board.emptyColumnText` | string | `""` | yes | Text used by every empty Work Queue column. Blank or whitespace uses the column-specific default. |
+
+Set `board.emptyColumnText` in `[board]`, or edit **Settings → Advanced → Empty
+column text**. The setting applies immediately; clearing it restores the default
+copy for each column.
 
 ### Board column labels
 
