@@ -1,13 +1,12 @@
 ---
-last_close_out_gate_ms: 1084630
-last_close_out_gate_at: "2026-11-28T00:35:21.200Z"
 id: "1295"
 title: Attach the Mac Hub DMG to releases without Apple notarization until credentials exist
 type: bug
-status: review
+status: done
 priority: p1
 area: macos
 story: MacOS Native App
+merged_commit: 890a3c3c6e177bc485d205eb88776b09fe739ec3
 assigned_to: ai
 created_by: t@t
 branch: feat/attach-the-mac-hub-dmg-to-releases-witho
@@ -15,6 +14,8 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-28T00:00:35Z"
 updated_at: "2026-11-28T00:35:21Z"
+last_close_out_gate_ms: 1084630
+last_close_out_gate_at: "2026-11-28T00:35:21.200Z"
 review_passes: 1
 ---
 ## Problem
