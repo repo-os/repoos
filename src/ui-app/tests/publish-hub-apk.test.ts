@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import { afterEach, describe, expect, it } from "vitest";
+import { publishHubApkPaths } from "../../../mobile/scripts/publish-hub-apk-paths.js";
 
 const script = resolve(process.cwd(), "mobile/scripts/publish-hub-apk.ts");
 const tempDirs: string[] = [];
@@ -25,6 +26,12 @@ function invoke(env: NodeJS.ProcessEnv) {
 }
 
 describe("publish-hub-apk credential refusals", () => {
+  it("resolves the APK and verifier to the paths produced by the release recipe", () => {
+    const paths = publishHubApkPaths(process.cwd());
+    expect(paths.apk).toBe(join(process.cwd(), "mobile/app-release.apk"));
+    expect(paths.verifier).toBe(join(process.cwd(), "mobile/scripts/verify-release-apk.ts"));
+  });
+
   it("fails before building when release signing values are missing", () => {
     const home = tempDir();
     const result = invoke({

@@ -4,9 +4,10 @@ import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
+import { publishHubApkPaths } from "./publish-hub-apk-paths.js";
 
 const root = resolve(import.meta.dir, "../..");
-const apk = join(root, "app-release.apk");
+const { apk, verifier } = publishHubApkPaths(root);
 const signingNames = [
   "REPOOS_ANDROID_KEYSTORE_PATH",
   "REPOOS_ANDROID_KEYSTORE_PASSWORD",
@@ -100,7 +101,7 @@ const versionCode = Number(/\bversionCode='(\d+)'/.exec(badging)?.[1]);
 if (!versionName || !Number.isSafeInteger(versionCode))
   fail("Could not read APK version metadata.");
 if (/application-debuggable/.test(badging)) fail("Refusing to publish a debuggable APK.");
-const certificateSha256 = run("bun", [join(root, "scripts/verify-release-apk.ts"), apk]).trim();
+const certificateSha256 = run("bun", [verifier, apk]).trim();
 const stat = run(
   "stat",
   process.platform === "darwin" ? ["-f", "%z", apk] : ["-c", "%s", apk],
