@@ -98,17 +98,16 @@ describe("For Clients landing page", () => {
     expect(wrapper.get("h1").text()).toContain("operating system");
     expect(wrapper.find('.nav-link[href*="/for-clients"]').exists()).toBe(true);
   });
-  it("offers both public Hub downloads with the Android sideload note", () => {
+  it("offers the Mac download and keeps Android unavailable until an APK is published", async () => {
     wrapper = mount(LandingApp);
+    await flushPromises();
     const hrefs = wrapper.findAll("a").map((link) => link.attributes("href"));
     expect(hrefs).toContain(
       "https://github.com/repo-os/repoos/releases/latest/download/RepoOSHub.dmg",
     );
-    expect(hrefs).toContain(
-      "https://github.com/repo-os/repoos/releases/latest/download/RepoOSHub.apk",
-    );
+    expect(hrefs).not.toContain("https://repoos.org/downloads/repoos-hub.apk");
     expect(wrapper.text()).toContain("Download for Mac");
-    expect(wrapper.text()).toContain("Download for Android");
+    expect(wrapper.text()).toContain("Coming soon");
     expect(wrapper.text()).toContain("Not on the Play Store yet");
     expect(wrapper.text()).toMatch(/Android 8\.0\s+\(API 26\) or newer/);
   });

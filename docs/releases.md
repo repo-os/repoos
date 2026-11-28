@@ -601,22 +601,15 @@ publishes.
 
 ### Native Hub app assets
 
-Two separate workflows attach native app artifacts to the same GitHub Release:
-
-- `.github/workflows/macos-hub.yml` builds `RepoOSHub.dmg`.
-- `.github/workflows/android-hub.yml` builds a release-signed `RepoOSHub.apk`.
-
-Both run on `v*.*.*` tags (plus `workflow_dispatch` with an existing tag), flag
-prereleases from the `-` in the tag exactly like `release.yml`, and use
-`make_latest: false` so the main release keeps the "Latest" badge. They upload
-with `softprops/action-gh-release@v2`; the release itself may be created by
-whichever workflow finishes first. The APK's `versionName` is the tag without
-the leading `v`, and its `versionCode` is
-`major * 10000 + minor * 100 + patch`, so each release installs over the
-previous one. Signing secrets are repository secrets; while they are not
-configured, the Android workflow skips the APK and explains why in the job
-summary instead of failing the release. Setup and local signing:
-[`mobile/README.md`](../mobile/README.md#release-signing).
+`.github/workflows/macos-hub.yml` attaches `RepoOSHub.dmg` to GitHub Releases.
+The Android workflow only builds and tests the debug variant; an Android APK is
+published separately from the maintainer's Mac with `just publish-hub-apk`.
+That command signs with the local `REPOOS_ANDROID_*` values, verifies the
+release certificate, and uploads `RepoOSHub.apk` plus version metadata to the
+private `repoos-hub-downloads` bucket. The public download is served from
+`https://repoos.org/downloads/repoos-hub.apk`; ordinary site deployments do not
+change the bucket contents. See [the Android Hub guide](../user-docs/android-hub.md)
+for setup, dry-run, and update instructions.
 
 ## Notes / gotchas
 

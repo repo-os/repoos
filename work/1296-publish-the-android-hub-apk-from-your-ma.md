@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-28T01:23:40Z"
-review_passes: 2
 id: "1296"
 title: "Publish the Android Hub APK from your Mac to repoos.org, Tiao style"
 type: feature
@@ -14,7 +12,7 @@ branch: feat/publish-the-android-hub-apk-from-your-ma
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-28T00:38:18Z"
-review_rounds: 1
+updated_at: "2026-11-28T01:14:34Z"
 ---
 ## Problem
 
@@ -38,18 +36,6 @@ The "Download for Android" links on repoos.org and in the docs return 404. They 
 ## Notes for AI
 The private R2 bucket `repoos-hub-downloads` exists (created 2026-11-28) in the RepoOS Cloudflare account. Do not create keys, buckets or secrets, do not deploy, and do not publish a real APK. Reference implementation: Tiao's `scripts/build-release.sh` and `scripts/publish-site.sh`. Do not change the Mac download.
 
-## Shots
-```json
-[
-{
-"label": "Android Hub download availability",
-"target": "Landing page",
-"route": "/",
-"highlight": "#android-hub"
-}
-]
-```
-
 ## Activity
 
 - 2026-11-28T00:38:18Z · created · t@t
@@ -57,19 +43,4 @@ The private R2 bucket `repoos-hub-downloads` exists (created 2026-11-28) in the 
 - 2026-11-28T01:00:03Z · cli_override, model_override
 - 2026-11-28T01:00:05Z · status inbox→ready
 - 2026-11-28T01:00:06Z · status ready→active, branch
-- 2026-11-28T01:09:14Z · body
-- 2026-11-28T01:10:52Z · body
-- 2026-11-28T01:14:06Z · CTO nudge: held — handoff gate is running
-- 2026-11-28T01:14:33Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
 - 2026-11-28T01:14:34Z · status active→review
-- 2026-11-28T01:14:34Z · message_queued at 2026-11-28T01:14:34.383Z
-- 2026-11-28T01:15:27Z · note: review pass 1: needs some work
-- 2026-11-28T01:15:27Z · message_delivered: 1 message(s)
-- 2026-11-28T01:15:28Z · status review→active
-- 2026-11-28T01:15:30Z · CTO nudge: held — remote validation is running
-- 2026-11-28T01:18:49Z · body
-- 2026-11-28T01:23:02Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
-- 2026-11-28T01:23:03Z · status active→review
-- 2026-11-28T01:23:03Z · message_queued at 2026-11-28T01:23:03.273Z
-- 2026-11-28T01:23:40Z · note: review pass 2: good to go
-

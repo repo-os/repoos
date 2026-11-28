@@ -17,9 +17,16 @@
       "/llms-full.txt",
       "/AGENTS.md",
       "/.well-known/llms.txt",
-      "/docs"
+      "/docs",
+      "/downloads/*"
     ]
   },
+  "r2_buckets": [
+    {
+      "binding": "HUB_DOWNLOADS",
+      "bucket_name": "repoos-hub-downloads"
+    }
+  ],
   // Both limiters are required. Missing bindings fail closed without sending mail.
   // Namespace IDs are account-wide; reserve these for landing enquiries.
   "ratelimits": [

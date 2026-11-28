@@ -4,10 +4,45 @@ interface RateLimiter {
 }
 export interface LandingEnv {
   ASSETS: { fetch(request: Request): Promise<Response> };
+  HUB_DOWNLOADS?: {
+    get(key: string): Promise<{
+      body: ReadableStream | null;
+      httpMetadata?: { contentType?: string };
+      size?: number;
+    } | null>;
+  };
   REPOOS_RESEND_API_KEY?: string;
   ENQUIRY_FROM?: string;
   ENQUIRY_RATE_LIMITER?: RateLimiter;
   ENQUIRY_GLOBAL_LIMITER?: RateLimiter;
+}
+
+const HUB_APK_KEY = "repoos-hub.apk";
+const HUB_VERSION_KEY = "version.json";
+
+export async function serveHubDownload(
+  request: Request,
+  env: LandingEnv,
+  pathname: string,
+): Promise<Response> {
+  if (request.method !== "GET" && request.method !== "HEAD") {
+    return new Response("Method not allowed", { status: 405, headers: { Allow: "GET, HEAD" } });
+  }
+  const bucket = env.HUB_DOWNLOADS;
+  if (!bucket) return new Response("Not found", { status: 404 });
+  const isVersion = pathname === "/downloads/version.json";
+  const object = await bucket.get(isVersion ? HUB_VERSION_KEY : HUB_APK_KEY);
+  if (!object) return new Response("Not found", { status: 404 });
+  const headers = new Headers({
+    "Cache-Control": isVersion ? "public, max-age=60" : "public, max-age=300",
+    "X-Content-Type-Options": "nosniff",
+    "Content-Type": isVersion
+      ? "application/json; charset=utf-8"
+      : "application/vnd.android.package-archive",
+  });
+  if (!isVersion) headers.set("Content-Disposition", 'attachment; filename="RepoOSHub.apk"');
+  if (object.size !== undefined) headers.set("Content-Length", String(object.size));
+  return new Response(request.method === "HEAD" ? null : object.body, { status: 200, headers });
 }
 
 const MAX_BYTES = 24_000;
@@ -231,6 +266,13 @@ export async function serveAgentText(request: Request, env: LandingEnv): Promise
 export default {
   async fetch(request: Request, env: LandingEnv): Promise<Response> {
     const url = new URL(request.url);
+    if (
+      url.pathname === "/downloads/repoos-hub.apk" ||
+      url.pathname === "/downloads/version.json"
+    ) {
+      return serveHubDownload(request, env, url.pathname);
+    }
+    if (url.pathname.startsWith("/downloads/")) return new Response("Not found", { status: 404 });
     if (
       url.pathname === "/" &&
       (request.method === "GET" || request.method === "HEAD") &&
