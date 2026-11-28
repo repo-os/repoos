@@ -24,22 +24,30 @@ installation copy.
   directory) from `$RUNNER_TEMP` in each job through `$GITHUB_ENV`. Keep these
   paths in steps rather than job-level `env`, where GitHub Actions does not
   allow the `runner` context.
-- A release is not publishable until the signed DMG has been accepted by
-  Apple's notary service, Apple's ticket is stapled to `RepoOSHub.dmg`, and the
-  stapled DMG passes `xcrun stapler validate` and Gatekeeper's `spctl` open
-  assessment. The workflow enforces that order and uploads only the stapled
-  file. Developer ID signing itself is owned by #0578; this runbook covers the
-  notarization and stapling gates that follow it. Until that signing is present
-  and valid the notarization submission fails and nothing is uploaded.
+- With no Apple notarization secrets configured, a stable `v*` tag still builds,
+  checks, and uploads `RepoOSHub.dmg` without notarization. The job emits a
+  warning and a job-summary line that says the artifact is not notarized. The
+  first launch then requires the user to choose **Open Anyway** in macOS Privacy
+  & Security; see the [Mac installation guide](../user-docs/macos-hub.md).
+- If any notarization secret is configured, the workflow requires one complete
+  credential set and fails closed for partial credentials or any submission,
+  timeout, stapling, or verification failure. It uploads only after Apple's
+  acceptance and successful ticket validation and Gatekeeper assessment. Adding
+  complete credentials later enables these gates automatically. Developer ID
+  signing itself remains a separate task (#0578).
+- Tag pushes are not subject to a path filter: changes to the workflow can
+  trigger on `main` by path, while every pushed `v*.*.*` tag starts release.
 
 ## Signing and notarization credentials
 
 This section is the secret contract for the Developer ID signing and
 notarization work in #0577–#0579. It defines credential names, formats, and
 maintainer procedures only. **It does not mean the repository secrets exist**:
-provisioning is a human-only operation. The release workflow fails before upload
-when the credential set is missing or incomplete; a missing secret is never
-treated as permission to publish an unnotarized DMG.
+provisioning is a human-only operation. With no notarization secret configured,
+a real release is deliberately published without notarization and clearly
+labelled that way. Once any secret is configured, an incomplete credential set
+fails before upload; partial configuration is never treated as permission to
+skip notarization.
 
 All values are **repository Actions secrets** (Settings → Secrets and variables
 → Actions → New repository secret), never repository variables or committed
@@ -248,9 +256,10 @@ submission, stapling, and verification without creating or modifying a GitHub
 Release. No tag is created and the upload step is skipped; the logs state that
 the run is a dry run.
 
-A dry run still requires the complete signing and notarization secret set. It is
-a gate test, not an override: missing or incomplete credentials fail the job
-before any upload, exactly as on a real release.
+A dry run still requires a complete notarization credential set. Missing
+credentials fail the job with an explicit summary that notarization was not
+exercised; incomplete credentials and any notarization/stapling/verification
+failure also fail before upload. The upload step is skipped for every dry run.
 
 ### Rotate the Developer ID certificate
 
@@ -346,10 +355,13 @@ were already synced to cloud storage.
 1. Build the Mac Release configuration and verify `RepoOS Hub.app` exists.
 2. Merge to `main`, then cut a new patch tag; do not rewrite a failed release
    tag to repair a DMG upload.
-3. Confirm the workflow's notarization step reported an `Accepted` submission
-   and that `xcrun stapler validate` plus `spctl --assess` passed on the stapled
-   DMG. Do not publish a DMG whose job skipped or failed those gates; use the
-   `dry_run` dispatch first when validating a credential or signing change.
+3. Read the job summary. If no notarization credentials are configured, confirm
+   it plainly says **Not notarized**; this is an allowed release and the user
+   must follow the first-launch **Open Anyway** steps in the Mac guide. If any
+   credentials are configured, confirm notarization was `Accepted`, stapling
+   and both verification checks passed. A credentialed release that skipped or
+   failed those gates must not upload. Use `dry_run` to validate credentials;
+   without them, dry run fails and says notarization was not exercised.
 4. Confirm the macOS Hub workflow attached `RepoOSHub.dmg`, then inspect it for
    `RepoOS Hub.app`, its branded Finder icon, Applications alias, background,
    and saved app → Applications layout.
@@ -401,7 +413,9 @@ were already synced to cloud storage.
   means the local file is not the one Apple accepted (for example it was rebuilt
   or re-signed after submission). Re-run the release job instead of uploading
   the earlier copy.
-- A missing or partial notarization secret set fails the job before upload with
-  a message naming the required variables. Complete the set from
-  [Provision notarization credentials](#provision-notarization-credentials);
-  never disable or skip the gate.
+- With no notarization secrets configured, a real tag release may upload the
+  checked DMG without notarization and must show the warning and summary entry.
+  A `dry_run` with no credentials fails and states that notarization was not
+  exercised. If any notarization secret is present, a partial set fails before
+  upload with a message naming the required variables; complete the set from
+  [Provision notarization credentials](#provision-notarization-credentials).
