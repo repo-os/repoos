@@ -5,6 +5,26 @@ pipeline from `release-history.json`; the newest entry is also the GitHub
 release body. The full discussion of each change lives in the release notes
 and on GitHub.
 
+## [v0.5.95] - 2026-11-28
+
+### Hub apps
+
+The Mac Hub disk image is attached to releases again. It is not yet notarized by Apple, so macOS asks you to approve it the first time you open it.
+
+repoos.org is ready to host the Android Hub app. Its download link appears once the first build is published.
+
+Pull-to-refresh in the Hub app now hides its loader when loading finishes, and the loader is smoother and symmetrical.
+
+### Work board
+
+Empty columns now show the same short text in every theme, and a new setting lets you replace it with your own.
+
+### Fixes
+
+The Android and Mac Hub build workflows run again.
+
+[Release on GitHub](https://github.com/repo-os/repoos/releases/tag/v0.5.95)
+
 ## [v0.5.94] - 2026-11-26
 
 ### Faster close-outs on several machines

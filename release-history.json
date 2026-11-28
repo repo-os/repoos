@@ -1,6 +1,12 @@
 {
   "releases": [
     {
+      "version": "0.5.95",
+      "tag": "v0.5.95",
+      "date": "2026-11-28",
+      "notes": "### Hub apps\n\nThe Mac Hub disk image is attached to releases again. It is not yet notarized by Apple, so macOS asks you to approve it the first time you open it.\n\nrepoos.org is ready to host the Android Hub app. Its download link appears once the first build is published.\n\nPull-to-refresh in the Hub app now hides its loader when loading finishes, and the loader is smoother and symmetrical.\n\n### Work board\n\nEmpty columns now show the same short text in every theme, and a new setting lets you replace it with your own.\n\n### Fixes\n\nThe Android and Mac Hub build workflows run again."
+    },
+    {
       "version": "0.5.94",
       "tag": "v0.5.94",
       "date": "2026-11-26",
