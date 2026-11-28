@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: t@t
 branch: ""
 created_at: "2026-11-28T00:38:18Z"
-updated_at: "2026-11-28T00:38:18Z"
+updated_at: "2026-11-28T01:00:02Z"
 ---
 ## Problem
 
@@ -32,9 +32,9 @@ The "Download for Android" links on repoos.org and in the docs return 404. They 
 - Tests cover the Worker routes, the "Coming soon" and available states, and the publish script's refusals. No new runtime dependencies.
 
 ## Notes for AI
-
-The R2 bucket must exist before this reaches a deployed branch, or the Cloudflare deploy of the landing page fails. Nick creates it in #1129. Do not create keys, buckets or secrets, and do not publish a real APK. Reference implementation: Tiao's `scripts/build-release.sh` and `scripts/publish-site.sh`. Do not change the Mac download.
+The private R2 bucket `repoos-hub-downloads` exists (created 2026-11-28) in the RepoOS Cloudflare account. Do not create keys, buckets or secrets, do not deploy, and do not publish a real APK. Reference implementation: Tiao's `scripts/build-release.sh` and `scripts/publish-site.sh`. Do not change the Mac download.
 
 ## Activity
 
 - 2026-11-28T00:38:18Z · created · t@t
+- 2026-11-28T01:00:02Z · body: Notes for AI (added 1, removed 1)
