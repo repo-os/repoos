@@ -51,7 +51,7 @@ describe("Hub GitHub Actions workflows", () => {
       "spctl --assess --type open --context context:primary-signature RepoOSHub.dmg",
     );
     expect(workflow).toContain("uses: softprops/action-gh-release@v2");
-    expect(workflow).toContain("if: ${{ inputs.dry_run != 'true' }}");
+    expect(workflow).toContain("if: ${{ inputs.dry_run != true }}");
     expect(workflow.indexOf("Notarize, staple and verify DMG")).toBeLessThan(
       workflow.indexOf("Upload DMG to GitHub Release"),
     );

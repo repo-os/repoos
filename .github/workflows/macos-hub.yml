@@ -265,7 +265,7 @@ jobs:
           fi
 
       - name: Upload DMG to GitHub Release
-        if: ${{ inputs.dry_run != 'true' }}
+        if: ${{ inputs.dry_run != true }}
         uses: softprops/action-gh-release@v2
         with:
           files: RepoOSHub.dmg
