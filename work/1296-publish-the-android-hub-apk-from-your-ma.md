@@ -12,7 +12,7 @@ branch: feat/publish-the-android-hub-apk-from-your-ma
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-28T00:38:18Z"
-updated_at: "2026-11-28T01:10:52Z"
+updated_at: "2026-11-28T01:14:06Z"
 ---
 ## Problem
 
@@ -40,10 +40,10 @@ The private R2 bucket `repoos-hub-downloads` exists (created 2026-11-28) in the 
 ```json
 [
 {
-  "label": "Android Hub download availability",
-  "target": "Landing page",
-  "route": "/",
-  "highlight": "#android-hub"
+"label": "Android Hub download availability",
+"target": "Landing page",
+"route": "/",
+"highlight": "#android-hub"
 }
 ]
 ```
@@ -57,3 +57,4 @@ The private R2 bucket `repoos-hub-downloads` exists (created 2026-11-28) in the 
 - 2026-11-28T01:00:06Z · status ready→active, branch
 - 2026-11-28T01:09:14Z · body
 - 2026-11-28T01:10:52Z · body
+- 2026-11-28T01:14:06Z · CTO nudge: held — handoff gate is running
