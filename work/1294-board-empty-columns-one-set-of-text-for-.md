@@ -12,7 +12,7 @@ branch: feat/board-empty-columns-one-set-of-text-for-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-27T22:00:43Z"
-updated_at: "2026-11-27T23:34:05Z"
+updated_at: "2026-11-28T00:00:45Z"
 last_close_out_gate_ms: 105156
 last_close_out_gate_at: "2026-11-27T23:33:50.474Z"
 review_passes: 1
@@ -100,3 +100,4 @@ Start at `src/ui-app/src/components/BoardColumn.vue` (`GENZ_EMPTY`, `PLAIN_EMPTY
 - 2026-11-27T23:21:19Z · note: review pass 1: good to go
 - 2026-11-27T23:33:50Z · close-out gate completed in 105s
 - 2026-11-27T23:34:05Z · status done→done, release:success
+- 2026-11-28T00:00:45Z · message_dropped: 1 queued message(s) discarded — task is done
