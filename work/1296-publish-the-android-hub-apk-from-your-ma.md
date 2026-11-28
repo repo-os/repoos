@@ -12,7 +12,7 @@ branch: feat/publish-the-android-hub-apk-from-your-ma
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-28T00:38:18Z"
-updated_at: "2026-11-28T01:15:28Z"
+updated_at: "2026-11-28T01:15:30Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -66,3 +66,4 @@ The private R2 bucket `repoos-hub-downloads` exists (created 2026-11-28) in the 
 - 2026-11-28T01:15:27Z · note: review pass 1: needs some work
 - 2026-11-28T01:15:27Z · message_delivered: 1 message(s)
 - 2026-11-28T01:15:28Z · status review→active
+- 2026-11-28T01:15:30Z · CTO nudge: held — remote validation is running
