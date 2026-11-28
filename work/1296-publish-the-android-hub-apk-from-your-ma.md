@@ -12,7 +12,7 @@ branch: feat/publish-the-android-hub-apk-from-your-ma
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-28T00:38:18Z"
-updated_at: "2026-11-28T01:09:14Z"
+updated_at: "2026-11-28T01:10:52Z"
 ---
 ## Problem
 
@@ -36,6 +36,18 @@ The "Download for Android" links on repoos.org and in the docs return 404. They 
 ## Notes for AI
 The private R2 bucket `repoos-hub-downloads` exists (created 2026-11-28) in the RepoOS Cloudflare account. Do not create keys, buckets or secrets, do not deploy, and do not publish a real APK. Reference implementation: Tiao's `scripts/build-release.sh` and `scripts/publish-site.sh`. Do not change the Mac download.
 
+## Shots
+```json
+[
+{
+  "label": "Android Hub download availability",
+  "target": "Landing page",
+  "route": "/",
+  "highlight": "#android-hub"
+}
+]
+```
+
 ## Activity
 
 - 2026-11-28T00:38:18Z · created · t@t
@@ -44,3 +56,4 @@ The private R2 bucket `repoos-hub-downloads` exists (created 2026-11-28) in the 
 - 2026-11-28T01:00:05Z · status inbox→ready
 - 2026-11-28T01:00:06Z · status ready→active, branch
 - 2026-11-28T01:09:14Z · body
+- 2026-11-28T01:10:52Z · body
