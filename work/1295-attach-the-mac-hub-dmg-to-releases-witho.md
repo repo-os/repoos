@@ -2,7 +2,7 @@
 id: "1295"
 title: Attach the Mac Hub DMG to releases without Apple notarization until credentials exist
 type: bug
-status: inbox
+status: ready
 priority: p1
 area: macos
 story: MacOS Native App
@@ -12,7 +12,7 @@ branch: ""
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-28T00:00:35Z"
-updated_at: "2026-11-28T00:00:38Z"
+updated_at: "2026-11-28T00:00:40Z"
 ---
 ## Problem
 
@@ -41,3 +41,4 @@ Do not implement Developer ID signing (#0577, #0578). Do not change the Android 
 
 - 2026-11-28T00:00:35Z · created · t@t
 - 2026-11-28T00:00:38Z · cli_override, model_override
+- 2026-11-28T00:00:40Z · status inbox→ready
