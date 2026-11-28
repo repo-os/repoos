@@ -9,8 +9,10 @@ story: MacOS Native App
 assigned_to: ai
 created_by: t@t
 branch: ""
+cli_override: codex
+model_override: gpt-6-luna
 created_at: "2026-11-28T00:00:35Z"
-updated_at: "2026-11-28T00:00:35Z"
+updated_at: "2026-11-28T00:00:38Z"
 ---
 ## Problem
 
@@ -38,3 +40,4 @@ Do not implement Developer ID signing (#0577, #0578). Do not change the Android 
 ## Activity
 
 - 2026-11-28T00:00:35Z · created · t@t
+- 2026-11-28T00:00:38Z · cli_override, model_override
