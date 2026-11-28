@@ -4,6 +4,7 @@ import AgentPromptCta from "./components/AgentPromptCta.vue";
 import ForClients from "./components/ForClients.vue";
 import InstallBox from "./components/InstallBox.vue";
 import ProjectUpdatesSignup from "./components/ProjectUpdatesSignup.vue";
+import HubDownloadLink from "./components/HubDownloadLink.vue";
 import SiteLogo from "./components/SiteLogo.vue";
 import { CURRENT_RELEASE, formatReleaseDate } from "../../shared/release";
 import {
@@ -597,11 +598,7 @@ const year = new Date().getFullYear();
               stay separate per server, and the server remains the source of truth for your board.
             </p>
             <p class="mt-5 flex flex-wrap gap-x-6 gap-y-2 text-[14px]">
-              <a
-                href="https://github.com/repo-os/repoos/releases/latest/download/RepoOSHub.apk"
-                class="text-[var(--cyan)] hover:underline"
-                >Download for Android &rarr;</a
-              >
+              <HubDownloadLink />
               <a :href="docsLink('/android-hub')" class="text-[var(--cyan)] hover:underline"
                 >Read the guide &rarr;</a
               >

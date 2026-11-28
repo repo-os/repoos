@@ -326,11 +326,10 @@ The same Hub for your phone, requiring **Android 8.0 (API 26) or newer**. It
 keeps the server list on the device and opens each server in an isolated
 WebView, so accounts and cookies never cross between servers.
 
-Download the latest [RepoOS Hub APK](https://github.com/repo-os/repoos/releases/latest/download/RepoOSHub.apk),
-or browse [GitHub Releases](https://github.com/repo-os/repoos/releases). It is
-not on the Play Store yet, so you sideload the APK; each stable tag ships a
-release-signed `RepoOSHub.apk` next to the DMG. Install, update, and certificate
-verification steps are in the [Android Hub guide](https://docs.repoos.org/android-hub).
+Download the latest [RepoOS Hub APK](https://repoos.org/downloads/repoos-hub.apk)
+when one is published. It is not on the Play Store yet, so you sideload the
+APK. Install, update, and certificate verification steps are in the
+[Android Hub guide](https://docs.repoos.org/android-hub).
 
 ## Roadmap
 
