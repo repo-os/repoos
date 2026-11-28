@@ -33,15 +33,23 @@ describe("Hub GitHub Actions workflows", () => {
     expect(pushTrigger).toContain("tags:");
     expect(pushTrigger).toContain('"v*.*.*"');
     expect(pushTrigger).not.toContain("paths:");
-    expect(workflow).toContain('if [[ -z "${APPLE_TEAM_ID:-}${APPLE_ID:-}${APPLE_APP_SPECIFIC_PASSWORD:-}${APPLE_API_KEY:-}${APPLE_API_KEY_ID:-}${APPLE_API_ISSUER_ID:-}" ]]');
+    expect(workflow).toContain(
+      'if [[ -z "${APPLE_TEAM_ID:-}${APPLE_ID:-}${APPLE_APP_SPECIFIC_PASSWORD:-}${APPLE_API_KEY:-}${APPLE_API_KEY_ID:-}${APPLE_API_ISSUER_ID:-}" ]]',
+    );
     expect(workflow).toContain("RepoOSHub.dmg will be uploaded without notarization.");
-    expect(workflow).toContain("**Not notarized:** no Apple notarization credentials are configured.");
-    expect(workflow).toContain("Dry run did not exercise notarization because no Apple notarization credentials are configured.");
+    expect(workflow).toContain(
+      "**Not notarized:** no Apple notarization credentials are configured.",
+    );
+    expect(workflow).toContain(
+      "Dry run did not exercise notarization because no Apple notarization credentials are configured.",
+    );
     expect(workflow).toContain("Incomplete App Store Connect API key notarization credentials.");
     expect(workflow).toContain("No complete notarization credential set is configured.");
     expect(workflow).toContain("xcrun stapler staple RepoOSHub.dmg");
     expect(workflow).toContain("xcrun stapler validate RepoOSHub.dmg");
-    expect(workflow).toContain("spctl --assess --type open --context context:primary-signature RepoOSHub.dmg");
+    expect(workflow).toContain(
+      "spctl --assess --type open --context context:primary-signature RepoOSHub.dmg",
+    );
     expect(workflow).toContain("uses: softprops/action-gh-release@v2");
     expect(workflow).toContain("if: ${{ inputs.dry_run != 'true' }}");
     expect(workflow.indexOf("Notarize, staple and verify DMG")).toBeLessThan(
