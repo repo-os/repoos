@@ -9,8 +9,10 @@ story: RepoOS Hub for Mobile
 assigned_to: ai
 created_by: t@t
 branch: ""
+cli_override: codex
+model_override: gpt-6-luna
 created_at: "2026-11-28T00:38:18Z"
-updated_at: "2026-11-28T01:00:02Z"
+updated_at: "2026-11-28T01:00:03Z"
 ---
 ## Problem
 
@@ -38,3 +40,4 @@ The private R2 bucket `repoos-hub-downloads` exists (created 2026-11-28) in the 
 
 - 2026-11-28T00:38:18Z · created · t@t
 - 2026-11-28T01:00:02Z · body: Notes for AI (added 1, removed 1)
+- 2026-11-28T01:00:03Z · cli_override, model_override
