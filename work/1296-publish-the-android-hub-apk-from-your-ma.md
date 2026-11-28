@@ -2,17 +2,17 @@
 id: "1296"
 title: "Publish the Android Hub APK from your Mac to repoos.org, Tiao style"
 type: feature
-status: ready
+status: active
 priority: p2
 area: [mobile, docs]
 story: RepoOS Hub for Mobile
 assigned_to: ai
 created_by: t@t
-branch: ""
+branch: feat/publish-the-android-hub-apk-from-your-ma
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-28T00:38:18Z"
-updated_at: "2026-11-28T01:00:05Z"
+updated_at: "2026-11-28T01:00:06Z"
 ---
 ## Problem
 
@@ -42,3 +42,4 @@ The private R2 bucket `repoos-hub-downloads` exists (created 2026-11-28) in the 
 - 2026-11-28T01:00:02Z · body: Notes for AI (added 1, removed 1)
 - 2026-11-28T01:00:03Z · cli_override, model_override
 - 2026-11-28T01:00:05Z · status inbox→ready
+- 2026-11-28T01:00:06Z · status ready→active, branch
