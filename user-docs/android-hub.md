@@ -13,19 +13,16 @@ against the live board.
 
 - **Requires Android 8.0 (API 26) or newer.** The isolated WebView that loads
   server content needs API 26.
-- Download the latest [RepoOS Hub APK](https://github.com/repo-os/repoos/releases/latest/download/RepoOSHub.apk),
-  or browse [all RepoOS releases](https://github.com/repo-os/repoos/releases).
-  Stable tags include `RepoOSHub.apk` next to the macOS `RepoOSHub.dmg`.
+- Download the latest [RepoOS Hub APK](https://repoos.org/downloads/repoos-hub.apk).
+  If no APK has been published yet, the link will not be available.
 
 The app is **not on the Play Store yet**. You install it by sideloading the
 APK, so Android will ask you to allow installs from the app you downloaded it
 with (usually Chrome or your file manager).
 
-Release APKs are signed with the RepoOS release key, never the Android debug
-key. If signing secrets are not configured for a release, that release has no
-APK. The `latest/download/RepoOSHub.apk` link does not search older releases
-for an APK and will return 404 when the latest stable release has none; browse
-all releases and choose one that lists the APK asset.
+Release APKs are signed on the maintainer's Mac with the RepoOS release key.
+The published version and checksums are available at
+[`version.json`](https://repoos.org/downloads/version.json).
 
 ## Install the APK
 
@@ -65,14 +62,9 @@ The output includes a line like:
 Signer #1 certificate SHA-256 digest: <64 hex characters>
 ```
 
-Compare that SHA-256 with the **release certificate SHA-256** printed in the
-`Release Android Hub APK` job summary of the [Android Hub workflow
-run](https://github.com/repo-os/repoos/actions/workflows/android-hub.yml) that
-published the release you downloaded. The same fingerprint is used for every
-release signed with the current key; it changes only if the signing key is
-rotated. This guide deliberately does not hard-code a fingerprint — the
-authoritative value comes from the signing run, and a value copied into a doc
-could drift.
+Compare that SHA-256 with `certificateSha256` in the
+[`version.json`](https://repoos.org/downloads/version.json) published beside
+the APK. The fingerprint changes only if the signing key is rotated.
 
 `apksigner` also fails outright if the APK is unsigned or its signature does
 not verify. Treat any APK whose fingerprint does not match as not ours and do
@@ -85,8 +77,7 @@ shows the same certificate digest without a command line.
 
 Updates are APK installs, not store updates:
 
-1. Download the newer `RepoOSHub.apk` from
-   [GitHub Releases](https://github.com/repo-os/repoos/releases/latest).
+1. Download the newer [RepoOS Hub APK](https://repoos.org/downloads/repoos-hub.apk).
 2. Open it and install it over the existing app.
 
 Android allows the install because the package name stays
@@ -97,13 +88,23 @@ keeps app data across an in-place upgrade.
 
 If Android says **App not installed** or reports a signature mismatch, stop:
 the APK is not signed with the same key as the installed app. Do not uninstall
-the old app just to force it through — that deletes its local data and would
-paper over a bad download. Re-download from the RepoOS releases page and
+   the old app just to force it through — that deletes its local data and would
+   paper over a bad download. Re-download from repoos.org and
 compare the certificate as above.
 
-Only stable releases are offered by the `latest/download` link. Prerelease tags
-can also carry an APK; they are listed on the releases page but do not take the
-"Latest" badge.
+### Publish a new APK (maintainers)
+
+The Android CI workflow builds and tests the debug variant; it does not publish
+release APKs. Configure the four `REPOOS_ANDROID_*` signing values in the
+environment or in the untracked file
+`~/.config/repoos-hub/release-signing.env`, then configure
+`CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` for the RepoOS account.
+From the repository root run `just publish-hub-apk`. The command builds and
+verifies the release APK before uploading it and its version metadata to the
+private `repoos-hub-downloads` bucket. Run `just publish-hub-apk --dry-run` to
+build and verify without uploading. Never put signing values in the repository.
+To update the app, publish a higher app version/version code with the same
+signing key; users install the new download over the existing app.
 
 ## Privacy and security
 
@@ -168,8 +169,8 @@ access → Install unknown apps**.
 
 ### "There was a problem parsing the package"
 
-The download is incomplete or corrupt. Delete it and download again from the
-[releases page](https://github.com/repo-os/repoos/releases/latest); do not
+The download is incomplete or corrupt. Delete it and download again from
+repoos.org; do not
 rename or re-zip the file.
 
 ### The app opens but a server won't connect

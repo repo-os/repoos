@@ -70,44 +70,28 @@ aren't enough) — see [justfile](../justfile) for exact requirements/errors.
 
 ### Release signing
 
-The public Android download is a **release-signed** APK attached to each stable
-GitHub Release by `.github/workflows/android-hub.yml`. It is never the debug
-key, and no signing material is committed: CI writes the keystore from a
-repository secret, builds `assembleRelease`, verifies the certificate, and
-uploads the file as `RepoOSHub.apk` next to `RepoOSHub.dmg`.
-
-Repository secrets required by the workflow:
-
-| Secret | Purpose |
-| --- | --- |
-| `REPOOS_ANDROID_KEYSTORE_BASE64` | Base64 of the release keystore (`base64 < release.keystore`, one line) |
-| `REPOOS_ANDROID_KEYSTORE_PASSWORD` | Keystore (store) password |
-| `REPOOS_ANDROID_KEY_ALIAS` | Key alias inside the keystore |
-| `REPOOS_ANDROID_KEY_PASSWORD` | Password for that key |
-
-Creating the keystore and adding those secrets is a human step. Until they
-exist, the workflow skips the APK with a note in the job summary and leaves the
-release itself green.
-
-For a local release build, export the same values the Gradle file reads. Use a
-real file path, not base64, and a keystore stored **outside** the repo:
+The Android workflow builds and tests the debug variant. Release APKs are
+signed and published from the maintainer's Mac with `just publish-hub-apk`.
+Signing material stays outside the repository. Configure these environment
+values or place them in `~/.config/repoos-hub/release-signing.env`:
 
 ```bash
 export REPOOS_ANDROID_KEYSTORE_PATH="$HOME/.config/repoos-hub/release.keystore"
 export REPOOS_ANDROID_KEYSTORE_PASSWORD='…'
 export REPOOS_ANDROID_KEY_ALIAS='repoos-hub'
 export REPOOS_ANDROID_KEY_PASSWORD='…'
-just build-android-release            # version from mobile/package.json
-just build-android-release v0.6.23    # or from a release tag
+export CLOUDFLARE_API_TOKEN='…'
+export CLOUDFLARE_ACCOUNT_ID='…'
+just publish-hub-apk
+just publish-hub-apk --dry-run       # build and verify, upload nothing
 ```
 
-The recipe writes `mobile/app-release.apk` and runs
-`mobile/scripts/verify-release-apk.ts`, which compares the APK's certificate
-SHA-256 (via `apksigner verify --print-certs`) with the configured keystore and
-refuses the Android debug certificate. The same script runs in CI, which puts
-the verified fingerprint in the job summary. A release build with no signing
-configuration fails with the variable names and a pointer back here; debug
-builds need none of it.
+The publisher builds with Gradle's configuration cache disabled, writes
+`mobile/app-release.apk`, and uses `mobile/scripts/verify-release-apk.ts` to
+compare the APK certificate with the configured keystore. It rejects
+debuggable APKs and uploads the APK plus version/checksum metadata to the
+`repoos-hub-downloads` R2 bucket. Cloudflare credentials are required only for
+a real upload.
 
 `versionName` comes from `REPOOS_APP_VERSION` (the release tag without `v`) or,
 when unset, `mobile/package.json`. `versionCode` is derived from that semver as

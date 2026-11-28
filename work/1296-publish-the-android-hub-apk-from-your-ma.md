@@ -1,13 +1,12 @@
 ---
-last_close_out_gate_ms: 92000
-last_close_out_gate_at: "2026-11-28T01:40:24.397Z"
 id: "1296"
 title: "Publish the Android Hub APK from your Mac to repoos.org, Tiao style"
 type: feature
-status: review
+status: done
 priority: p2
 area: [mobile, docs]
 story: RepoOS Hub for Mobile
+merged_commit: 64e70028f7187256bcaa9091f507e21d64615fd6
 assigned_to: ai
 created_by: t@t
 branch: feat/publish-the-android-hub-apk-from-your-ma
@@ -15,6 +14,8 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-28T00:38:18Z"
 updated_at: "2026-11-28T01:40:24Z"
+last_close_out_gate_ms: 92000
+last_close_out_gate_at: "2026-11-28T01:40:24.397Z"
 review_passes: 2
 review_rounds: 1
 ---

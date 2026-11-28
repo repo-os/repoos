@@ -723,13 +723,20 @@ build-android-release tag="":
     export ANDROID_SDK_ROOT="$sdk_root"
     # Clean so a version change from a previous local build always lands in
     # the APK (Gradle does not treat these env-derived values as task inputs).
-    ./gradlew clean assembleRelease
+    ./gradlew --no-configuration-cache clean assembleRelease
     apk="app/build/outputs/apk/release/app-release.apk"
     cp -f "$apk" ../app-release.apk
     fingerprint="$(bun "$repo_root/mobile/scripts/verify-release-apk.ts" ../app-release.apk)"
     echo "==> mobile/app-release.apk ($(du -h ../app-release.apk | cut -f1)) — release-signed, verified against $REPOOS_ANDROID_KEYSTORE_PATH"
     echo "==> release certificate SHA-256: $fingerprint"
     echo "    install with: adb install -r mobile/app-release.apk"
+
+# build, verify, and publish the Android Hub APK to repoos.org; add --dry-run to build without upload
+[group('mobile')]
+publish-hub-apk *args:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    exec bun mobile/scripts/publish-hub-apk.ts {{args}}
 
 # build the mobile app for the iOS Simulator (unsigned .app, no device/App Store signing) `just build-ios`
 [group('mobile')]
