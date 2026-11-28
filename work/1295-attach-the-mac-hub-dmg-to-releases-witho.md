@@ -13,7 +13,7 @@ branch: feat/attach-the-mac-hub-dmg-to-releases-witho
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-28T00:00:35Z"
-updated_at: "2026-11-28T00:35:21Z"
+updated_at: "2026-11-28T00:35:37Z"
 last_close_out_gate_ms: 1084630
 last_close_out_gate_at: "2026-11-28T00:35:21.200Z"
 review_passes: 1
@@ -55,4 +55,4 @@ Do not implement Developer ID signing (#0577, #0578). Do not change the Android 
 - 2026-11-28T00:12:11Z · note: shots: skipped — Docs site skipped: no docs shot declared
 - 2026-11-28T00:12:50Z · note: review pass 1: good to go
 - 2026-11-28T00:35:21Z · close-out gate completed in 1085s
-
+- 2026-11-28T00:35:37Z · status done→done, release:success
