@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-28T01:23:40Z"
+review_passes: 2
 id: "1296"
 title: "Publish the Android Hub APK from your Mac to repoos.org, Tiao style"
 type: feature
@@ -12,9 +14,7 @@ branch: feat/publish-the-android-hub-apk-from-your-ma
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-28T00:38:18Z"
-updated_at: "2026-11-28T01:23:40Z"
 review_rounds: 1
-review_passes: 1
 ---
 ## Problem
 
@@ -72,3 +72,4 @@ The private R2 bucket `repoos-hub-downloads` exists (created 2026-11-28) in the 
 - 2026-11-28T01:23:03Z · status active→review
 - 2026-11-28T01:23:03Z · message_queued at 2026-11-28T01:23:03.273Z
 - 2026-11-28T01:23:40Z · note: review pass 2: good to go
+
