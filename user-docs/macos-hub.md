@@ -36,7 +36,10 @@ the app — see [Per-server sessions](#per-server-sessions)).
 
 Download the latest [RepoOS Hub DMG](https://github.com/repo-os/repoos/releases/latest/download/RepoOSHub.dmg),
 or browse [all RepoOS releases](https://github.com/repo-os/repoos/releases).
-Each stable tag includes `RepoOSHub.dmg`.
+Each stable tag includes `RepoOSHub.dmg`. When Apple notarization credentials are
+not configured, the release is not notarized; on first launch, use **Open
+Anyway** below. Once credentials are configured, releases are notarized and the
+Open Anyway step is no longer expected.
 
 ## Install and first launch
 
@@ -46,8 +49,9 @@ Each stable tag includes `RepoOSHub.dmg`.
 
 ### Distribution status
 
-The release pipeline produces an **ad-hoc signed, not-notarized** DMG. That
-means the first time you open the app, macOS shows a Gatekeeper warning:
+When Apple notarization credentials are not configured, the release pipeline
+produces an **ad-hoc signed, not-notarized** DMG. The job summary identifies
+this state. On first launch macOS shows a Gatekeeper warning:
 
 > "RepoOS Hub cannot be opened because it is from an unidentified developer."
 
@@ -67,10 +71,9 @@ an advanced, trust-only fallback is:
 xattr -dr com.apple.quarantine "/Applications/RepoOS Hub.app"
 ```
 
-Notarization and a stable Developer ID signature are planned but are not in
-place yet; treat the DMG as you would any unsigned software you download. A
-fully trusted first-launch experience requires that signing and notarization
-work, not a different DMG layout.
+When the release is notarized, this exception flow is not expected. Until then,
+treat the DMG as you would any software you download: verify it came from the
+RepoOS releases page before allowing it to open.
 
 ## Hub settings
 

@@ -7,9 +7,6 @@ on:
       - ".github/workflows/macos-hub.yml"
   push:
     branches: [main]
-    paths:
-      - "macos/**"
-      - ".github/workflows/macos-hub.yml"
     tags:
       - "v*.*.*"
   workflow_dispatch:
@@ -145,6 +142,23 @@ jobs:
 
           if [[ "${{ inputs.dry_run || 'false' }}" == "true" ]]; then
             echo "::notice::Dry run: exercising notarization, stapling and verification; the GitHub Release upload will be skipped."
+          fi
+
+          if [[ -z "${APPLE_TEAM_ID:-}${APPLE_ID:-}${APPLE_APP_SPECIFIC_PASSWORD:-}${APPLE_API_KEY:-}${APPLE_API_KEY_ID:-}${APPLE_API_ISSUER_ID:-}" ]]; then
+            if [[ "${{ inputs.dry_run || 'false' }}" == "true" ]]; then
+              echo "::error::Dry run did not exercise notarization because no Apple notarization credentials are configured." >&2
+              {
+                echo "### Notarization not exercised"
+                echo "- Dry run failed because no Apple notarization credentials are configured."
+              } >> "$GITHUB_STEP_SUMMARY"
+              exit 1
+            fi
+            echo "::warning::Apple notarization credentials are not configured; RepoOSHub.dmg will be uploaded without notarization."
+            {
+              echo "### Notarization skipped"
+              echo "- **Not notarized:** no Apple notarization credentials are configured. The DMG passed build, bundle and install checks and will be uploaded without a notarization ticket."
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 0
           fi
 
           if ! command -v jq >/dev/null 2>&1; then

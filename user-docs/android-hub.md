@@ -22,8 +22,10 @@ APK, so Android will ask you to allow installs from the app you downloaded it
 with (usually Chrome or your file manager).
 
 Release APKs are signed with the RepoOS release key, never the Android debug
-key. If signing secrets are not configured for a release, that release simply
-has no APK — the download link then points at the newest release that does.
+key. If signing secrets are not configured for a release, that release has no
+APK. The `latest/download/RepoOSHub.apk` link does not search older releases
+for an APK and will return 404 when the latest stable release has none; browse
+all releases and choose one that lists the APK asset.
 
 ## Install the APK
 
